@@ -3,11 +3,6 @@ services:
     build: .
     ports:
       - "27272:27272"
-    command: >
-      sh -c "
-        docker-compose down -v &&
-        docker-compose up -d --build
-      "
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
