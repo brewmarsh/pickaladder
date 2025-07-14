@@ -10,6 +10,34 @@
     <div class="container">
         {% include 'navbar.html' %}
         <h2>Find Friends</h2>
+        <form method="get" action="/users">
+            <input type="text" name="search" placeholder="Search by username or name" value="{{ search_term }}">
+            <input type="submit" value="Search">
+        </form>
+        <h3>Friends of Friends</h3>
+        <div class="users-list">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Name</th>
+                        <th>DUPR Rating</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in all_users %}
+                        <tr>
+                            <td>{{ user[1] }}</td>
+                            <td>{{ user[4] }}</td>
+                            <td>{{ user[5] }}</td>
+                            <td><a href="/add_friend/{{ user[0] }}">Add Friend</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <h3>All Users</h3>
         <div class="users-list">
             <table>
                 <thead>

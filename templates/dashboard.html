@@ -10,11 +10,24 @@
     <div class="container">
         {% include 'navbar.html' %}
         <h2>Welcome, {{ user[4] }}!</h2>
+        {% if user[7] %}
+            <img src="{{ url_for('static', filename='uploads/' + user[7]) }}" alt="Profile Picture" width="100">
+        {% endif %}
         <div class="profile-info">
             <p><strong>Username:</strong> {{ user[1] }}</p>
             <p><strong>Email:</strong> {{ user[3] }}</p>
             <p><strong>DUPR Rating:</strong> {{ user[5] }}</p>
         </div>
+        <h3>Update Profile</h3>
+        <form method="post" action="/update_profile" enctype="multipart/form-data">
+            <label for="profile_picture">Profile Picture:</label>
+            <input type="file" id="profile_picture" name="profile_picture">
+            <label for="dupr_rating">DUPR Rating:</label>
+            <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user[5] }}">
+            <label for="password">New Password:</label>
+            <input type="password" id="password" name="password">
+            <input type="submit" value="Update Profile">
+        </form>
         <h3>Your Friends</h3>
         <div class="friends-list">
             {% if friends %}
