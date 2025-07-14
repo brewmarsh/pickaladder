@@ -43,7 +43,7 @@ def install():
         password = request.form['password']
         email = request.form['email']
         name = request.form['name']
-        dupr_rating = request.form['dupr_rating']
+        dupr_rating = request.form['dupr_rating'] or None
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         try:
             cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s)',
@@ -89,7 +89,7 @@ def register():
         password = request.form['password']
         email = request.form['email']
         name = request.form['name']
-        dupr_rating = request.form['dupr_rating']
+        dupr_rating = request.form['dupr_rating'] or None
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         conn = get_db_connection()
         cur = conn.cursor()
