@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>pickaladder - Register</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>pickaladder</h1>
+        <div class="login-form">
+            <h2>Register</h2>
+            <form method="post" action="{{ url_for('register') }}">
+                <label for="username">Username:</label><br>
+                <input type="text" id="username" name="username"><br>
+                <label for="password">Password:</label><br>
+                <input type="password" id="password" name="password"><br><br>
+                <input type="submit" value="Register">
+            </form>
+            <p>Already have an account? <a href="/">Login here</a>.</p>
+        </div>
+    </div>
+</body>
+</html>

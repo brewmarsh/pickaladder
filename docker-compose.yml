@@ -1,0 +1,19 @@
+services:
+  web:
+    build: .
+    ports:
+      - "27272:27272"
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=mydb
+    depends_on:
+      - db
+  db:
+    image: postgres:13
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=mydb
