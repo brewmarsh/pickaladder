@@ -111,4 +111,4 @@ def add_friend(friend_id):
     return redirect(url_for('users'))
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.a.a.a', port=27272)
+    app.run(debug=True, host='0.0.0.0', port=27272)
