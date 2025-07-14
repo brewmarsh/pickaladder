@@ -1,22 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>pickaladder</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to pickaladder</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>pickaladder</h1>
-        <div class="login-form">
-            <h2>Login</h2>
-            <form method="post" action="{{ url_for('login') }}">
-                <label for="username">Username:</label><br>
-                <input type="text" id="username" name="username"><br>
-                <label for="password">Password:</label><br>
-                <input type="password" id="password" name="password"><br><br>
-                <input type="submit" value="Login">
-            </form>
-            <p>Don't have an account? <a href="/register">Register here</a>.</p>
+        <h1>Welcome to pickaladder</h1>
+        <p>Your ultimate platform for pickleball ladders and tournaments.</p>
+        <div style="margin-top: 30px;">
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('register') }}">Create Account</a>
         </div>
     </div>
 </body>

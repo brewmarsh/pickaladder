@@ -17,4 +17,4 @@ EXPOSE 27272
 ENV NAME World
 
 # Run app.py when the container launches
-CMD ["python", "app.py"]
+CMD ["gunicorn", "--bind", "0.0.0.0:27272", "app:app"]
