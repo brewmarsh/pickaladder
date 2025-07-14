@@ -228,6 +228,12 @@ def reset_password():
         return redirect(url_for('login'))
     return render_template('reset_password.html', email=email)
 
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
     if 'user_id' not in session:
@@ -239,9 +245,12 @@ def update_profile():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    if profile_picture:
+    if profile_picture and allowed_file(profile_picture.filename):
         filename = secure_filename(profile_picture.filename)
-        profile_picture.save(os.path.join('static/uploads', filename))
+        upload_folder = 'static/uploads'
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+        profile_picture.save(os.path.join(upload_folder, filename))
         cur.execute('UPDATE users SET profile_picture = %s WHERE id = %s', (filename, user_id))
 
     if password:
