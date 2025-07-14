@@ -1,22 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>pickaladder - Register</title>
+    <title>Register - pickaladder</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>pickaladder</h1>
         <div class="login-form">
-            <h2>Register</h2>
+            <h2>Create Account</h2>
             <form method="post" action="{{ url_for('register') }}">
                 <label for="username">Username:</label><br>
-                <input type="text" id="username" name="username"><br>
+                <input type="text" id="username" name="username" required><br>
                 <label for="password">Password:</label><br>
-                <input type="password" id="password" name="password"><br><br>
+                <input type="password" id="password" name="password" required><br>
+                <label for="email">Email:</label><br>
+                <input type="email" id="email" name="email"><br>
+                <label for="name">Name:</label><br>
+                <input type="text" id="name" name="name"><br>
+                <label for="dupr_rating">DUPR Rating:</label><br>
+                <input type="number" step="0.01" id="dupr_rating" name="dupr_rating"><br><br>
                 <input type="submit" value="Register">
             </form>
-            <p>Already have an account? <a href="/">Login here</a>.</p>
         </div>
     </div>
 </body>

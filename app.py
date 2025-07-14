@@ -39,11 +39,15 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        email = request.form['email']
+        name = request.form['name']
+        dupr_rating = request.form['dupr_rating']
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         conn = get_db_connection()
         cur = conn.cursor()
         try:
-            cur.execute('INSERT INTO users (username, password) VALUES (%s, %s)', (username, hashed_password))
+            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating) VALUES (%s, %s, %s, %s, %s)',
+                        (username, hashed_password, email, name, dupr_rating))
             conn.commit()
         except:
             conn.rollback()
