@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Admin Account - pickaladder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="login-form">
+            <h2>Create Admin Account</h2>
+            <form method="post" action="/install">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name">
+                <label for="dupr_rating">DUPR Rating:</label>
+                <input type="number" step="0.01" id="dupr_rating" name="dupr_rating">
+                <input type="submit" value="Create Admin">
+            </form>
+        </div>
+    </div>
+</body>
+</html>

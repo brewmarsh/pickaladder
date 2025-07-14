@@ -25,7 +25,38 @@ def get_db_connection():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return redirect(url_for('install'))
+
+@app.route('/install', methods=['GET', 'POST'])
+def install():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT id FROM users')
+    user_exists = cur.fetchone() is not None
+    if user_exists:
+        cur.close()
+        conn.close()
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        email = request.form['email']
+        name = request.form['name']
+        dupr_rating = request.form['dupr_rating']
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        try:
+            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s)',
+                        (username, hashed_password, email, name, dupr_rating, True))
+            conn.commit()
+        except:
+            conn.rollback()
+            return "Username already exists."
+        finally:
+            cur.close()
+            conn.close()
+        return redirect(url_for('login'))
+    return render_template('install.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -62,11 +93,9 @@ def register():
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT id FROM users')
-        is_first_user = cur.fetchone() is None
         try:
             cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s)',
-                        (username, hashed_password, email, name, dupr_rating, is_first_user))
+                        (username, hashed_password, email, name, dupr_rating, False))
             conn.commit()
         except:
             conn.rollback()
