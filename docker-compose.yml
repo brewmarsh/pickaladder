@@ -11,8 +11,6 @@ services:
       - db
   db:
     image: postgres:13
-    volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password

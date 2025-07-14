@@ -4,7 +4,8 @@ CREATE TABLE users (
     password TEXT NOT NULL,
     email TEXT,
     name TEXT,
-    dupr_rating NUMERIC(3, 2)
+    dupr_rating NUMERIC(3, 2),
+    is_admin BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE friends (
