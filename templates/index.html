@@ -12,11 +12,11 @@
         <p>Your ultimate platform for pickleball ladders and tournaments.</p>
         <div style="margin-top: 30px;">
             {% if session['user_id'] %}
-                <a href="{{ url_for('dashboard') }}">Dashboard</a>
-                <a href="{{ url_for('logout') }}">Logout</a>
+                <a href="/dashboard">Dashboard</a>
+                <a href="/logout">Logout</a>
             {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-                <a href="{{ url_for('register') }}">Create Account</a>
+                <a href="/login">Login</a>
+                <a href="/register">Create Account</a>
             {% endif %}
         </div>
     </div>
