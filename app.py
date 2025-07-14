@@ -32,7 +32,7 @@ def login():
             return 'Logged in successfully!'
         else:
             return 'Invalid username or password.'
-    return render_template('index.html')
+    return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
