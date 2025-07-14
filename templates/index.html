@@ -11,8 +11,13 @@
         <h1>Welcome to pickaladder</h1>
         <p>Your ultimate platform for pickleball ladders and tournaments.</p>
         <div style="margin-top: 30px;">
-            <a href="{{ url_for('login') }}">Login</a>
-            <a href="{{ url_for('register') }}">Create Account</a>
+            {% if session['user_id'] %}
+                <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('register') }}">Create Account</a>
+            {% endif %}
         </div>
     </div>
 </body>

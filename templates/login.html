@@ -8,6 +8,7 @@
 </head>
 <body>
     <div class="container">
+        {% include 'navbar.html' %}
         <div class="login-form">
             <h2>Login</h2>
             <form method="post" action="{{ url_for('login') }}">

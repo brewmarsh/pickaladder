@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - pickaladder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        {% include 'navbar.html' %}
+        <h2>Welcome, {{ user[4] }}!</h2>
+        <div class="profile-info">
+            <p><strong>Username:</strong> {{ user[1] }}</p>
+            <p><strong>Email:</strong> {{ user[3] }}</p>
+            <p><strong>DUPR Rating:</strong> {{ user[5] }}</p>
+        </div>
+        <h3>Your Friends</h3>
+        <div class="friends-list">
+            {% if friends %}
+                <ul>
+                    {% for friend in friends %}
+                        <li>{{ friend[2] }} ({{ friend[1] }}) - DUPR: {{ friend[3] }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>You have no friends yet. <a href="{{ url_for('users') }}">Find some!</a></p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

@@ -6,3 +6,9 @@ CREATE TABLE users (
     name TEXT,
     dupr_rating NUMERIC(3, 2)
 );
+
+CREATE TABLE friends (
+    user_id INTEGER REFERENCES users(id),
+    friend_id INTEGER REFERENCES users(id),
+    PRIMARY KEY (user_id, friend_id)
+);
