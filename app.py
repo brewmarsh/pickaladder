@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, render_template, request, redirect, url_for
 import psycopg2
 import os
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
@@ -13,13 +14,45 @@ def get_db_connection():
     return conn
 
 @app.route('/')
-def hello_world():
-    try:
+def index():
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
         conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM users WHERE username = %s', (username,))
+        user = cur.fetchone()
+        cur.close()
         conn.close()
-        return 'Hello, World! Database connection successful.'
-    except Exception as e:
-        return f"Hello, World! Database connection failed: {e}"
+        if user and check_password_hash(user[2], password):
+            return 'Logged in successfully!'
+        else:
+            return 'Invalid username or password.'
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute('INSERT INTO users (username, password) VALUES (%s, %s)', (username, hashed_password))
+            conn.commit()
+        except:
+            conn.rollback()
+            return "Username already exists."
+        finally:
+            cur.close()
+            conn.close()
+        return redirect(url_for('login'))
+    return render_template('register.html')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=27272)
