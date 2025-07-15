@@ -32,4 +32,4 @@ services:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=mydb
-    command: ["postgres", "-c", "init_file=/docker-entrypoint-initdb.d/reset-db.sh"]
+    command: ["/docker-entrypoint-initdb.d/reset-db.sh"]
