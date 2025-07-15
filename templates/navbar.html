@@ -1,5 +1,6 @@
-<nav>
-    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+<div class="container">
+    <nav>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
     <a href="{{ url_for('users') }}">Users</a>
     {% if session['is_admin'] %}
     <a href="{{ url_for('admin') }}">Admin</a>
@@ -19,4 +20,5 @@
             <a href="{{ url_for('logout') }}">Logout</a>
         </div>
     </div>
-</nav>
+    </nav>
+</div>

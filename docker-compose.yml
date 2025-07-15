@@ -9,7 +9,7 @@ services:
           echo 'Waiting for postgres...'
           sleep 2
         done
-        gunicorn --bind 0.0.0.0:27272 app:app
+        gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
       "
     environment:
       - POSTGRES_USER=user
