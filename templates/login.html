@@ -8,16 +8,18 @@
 </head>
 <body>
     <div class="container">
+        {% include 'navbar.html' %}
         <div class="login-form">
             <h2>Login</h2>
-            <form method="post" action="{{ url_for('login') }}">
+            <form method="post" action="/login">
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
                 <input type="submit" value="Login">
             </form>
-            <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a>.</p>
+            <p>Don't have an account? <a href="/register">Register here</a>.</p>
+            <p><a href="/forgot_password">Forgot Password?</a></p>
         </div>
     </div>
 </body>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - pickaladder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        {% include 'navbar.html' %}
+        <h2>Welcome, {{ user[4] }}!</h2>
+        {% if user[7] %}
+            <img src="{{ url_for('static', filename='uploads/' + user[7]) }}" alt="Profile Picture" width="100">
+        {% endif %}
+        <div class="profile-info">
+            <p><strong>Username:</strong> {{ user[1] }}</p>
+            <p><strong>Email:</strong> {{ user[3] }}</p>
+            <p><strong>DUPR Rating:</strong> {{ user[5] }}</p>
+        </div>
+        <h3>Update Profile</h3>
+        <form method="post" action="/update_profile" enctype="multipart/form-data">
+            <label for="profile_picture">Profile Picture:</label>
+            <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif">
+            <label for="dupr_rating">DUPR Rating:</label>
+            <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user[5] }}">
+            <label for="password">New Password:</label>
+            <input type="password" id="password" name="password">
+            <input type="submit" value="Update Profile">
+        </form>
+        <h3>Your Friends</h3>
+        <div class="friends-list">
+            {% if friends %}
+                <ul>
+                    {% for friend in friends %}
+                        <li>{{ friend[2] }} ({{ friend[1] }}) - DUPR: {{ friend[3] }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>You have no friends yet. <a href="/users">Find some!</a></p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
