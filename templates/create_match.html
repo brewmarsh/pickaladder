@@ -24,7 +24,11 @@
             <label for="match_date">Date:</label>
             <input type="date" id="match_date" name="match_date" required>
             <input type="submit" value="Create Match">
+            <a href="{{ url_for('dashboard') }}" class="button">Cancel</a>
         </form>
+        <script>
+            document.getElementById('match_date').valueAsDate = new Date();
+        </script>
     </div>
     {% include 'footer.html' %}
 </body>

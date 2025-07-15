@@ -8,9 +8,11 @@
 </head>
 <body>
     {% include 'navbar.html' %}
-    <div class="container">
-        <h2>Admin Panel</h2>
-        <a href="{{ url_for('reset_db') }}">Reset Database</a>
+    <div class="content">
+        <div class="container">
+            <h2>Admin Panel</h2>
+            <a href="{{ url_for('reset_db') }}">Reset Database</a>
+        </div>
     </div>
     {% include 'footer.html' %}
 </body>

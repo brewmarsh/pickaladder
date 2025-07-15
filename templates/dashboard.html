@@ -8,8 +8,9 @@
 </head>
 <body>
     {% include 'navbar.html' %}
-    <div class="container">
-        <h2>Welcome, {{ user[4] }}!</h2>
+    <div class="content">
+        <div class="container">
+            <h2>Welcome, {{ user[4] }}!</h2>
         {% if user[7] %}
             <img src="{{ url_for('static', filename='uploads/' + user[7]) }}" alt="Profile Picture" width="100">
         {% endif %}
@@ -56,7 +57,6 @@
             {% endif %}
         </div>
         <h3>Your Friends</h3>
-        <a href="{{ url_for('create_match') }}" class="button">Record a Match</a>
         <div class="friends-list">
             {% if friends %}
                 <table>

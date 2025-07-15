@@ -132,7 +132,7 @@ def dashboard():
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s', (user_id,))
+    cur.execute("SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'accepted'", (user_id,))
     friends = cur.fetchall()
     cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE m.player1_id = %s OR m.player2_id = %s ORDER BY m.match_date DESC', (user_id, user_id))
     matches = cur.fetchall()
@@ -154,14 +154,18 @@ def users():
         cur.execute('SELECT * FROM users WHERE id != %s', (user_id,))
     all_users = cur.fetchall()
 
-    cur.execute("""
-        SELECT DISTINCT u.id, u.username, u.name, u.dupr_rating
-        FROM users u
-        JOIN friends f1 ON u.id = f1.friend_id
-        JOIN friends f2 ON f1.user_id = f2.friend_id
-        WHERE f2.user_id = %s AND u.id != %s AND u.id NOT IN (SELECT friend_id FROM friends WHERE user_id = %s)
-    """, (user_id, user_id, user_id))
-    fof = cur.fetchall()
+    cur.execute("SELECT friend_id FROM friends WHERE user_id = %s AND status = 'accepted'", (user_id,))
+    friends = [row[0] for row in cur.fetchall()]
+    if friends:
+        cur.execute(f"""
+            SELECT DISTINCT u.id, u.username, u.name, u.dupr_rating
+            FROM users u
+            JOIN friends f1 ON u.id = f1.friend_id
+            WHERE f1.user_id IN %s AND u.id != %s AND u.id NOT IN (SELECT friend_id FROM friends WHERE user_id = %s)
+        """, (tuple(friends), user_id, user_id))
+        fof = cur.fetchall()
+    else:
+        fof = []
 
     cur.close()
     conn.close()
@@ -176,7 +180,7 @@ def add_friend(friend_id):
     cur = conn.cursor()
     try:
         # Check if the friendship already exists
-        cur.execute('SELECT * FROM friends WHERE user_id = %s AND friend_id = %s', (user_id, friend_id))
+        cur.execute('SELECT * FROM friends WHERE (user_id = %s AND friend_id = %s) OR (user_id = %s AND friend_id = %s)', (user_id, friend_id, friend_id, user_id))
         if cur.fetchone() is None:
             cur.execute('INSERT INTO friends (user_id, friend_id) VALUES (%s, %s)', (user_id, friend_id))
             conn.commit()
@@ -316,6 +320,45 @@ def view_match(match_id):
     cur.close()
     conn.close()
     return render_template('view_match.html', match=match)
+
+@app.route('/friend_requests')
+def friend_requests():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'", (user_id,))
+    requests = cur.fetchall()
+    cur.close()
+    conn.close()
+    return render_template('friend_requests.html', requests=requests)
+
+@app.route('/accept_friend_request/<int:friend_id>')
+def accept_friend_request(friend_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE friends SET status = 'accepted' WHERE user_id = %s AND friend_id = %s", (friend_id, user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect(url_for('friend_requests'))
+
+@app.route('/decline_friend_request/<int:friend_id>')
+def decline_friend_request(friend_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM friends WHERE user_id = %s AND friend_id = %s", (friend_id, user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect(url_for('friend_requests'))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=27272)

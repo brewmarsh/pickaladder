@@ -12,6 +12,7 @@ CREATE TABLE users (
 CREATE TABLE friends (
     user_id INTEGER REFERENCES users(id),
     friend_id INTEGER REFERENCES users(id),
+    status TEXT DEFAULT 'pending',
     PRIMARY KEY (user_id, friend_id)
 );
 
