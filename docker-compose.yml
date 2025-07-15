@@ -3,13 +3,20 @@ services:
     build: .
     ports:
       - "27272:27272"
+    command: >
+      sh -c "
+        until pg_isready -h db -p 5432 -U user; do
+          echo 'Waiting for postgres...'
+          sleep 2
+        done
+        gunicorn --bind 0.0.0.0:27272 app:app
+      "
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=mydb
     depends_on:
-      db:
-        condition: service_healthy
+      - db
   db:
     image: postgres:13
     healthcheck:
