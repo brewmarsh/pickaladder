@@ -31,3 +31,7 @@ This document outlines the requirements that have been implemented for the picka
 *   **Database:** The application uses a PostgreSQL database.
 *   **File Uploads:** Profile pictures are uploaded to the `static/uploads` directory. The application only accepts `.png`, `.jpg`, `.jpeg`, and `.gif` files.
 *   **Database Initialization:** The database is automatically initialized with the correct schema when the application is started. To force a re-initialization, run `make build`.
+
+## Known Issues
+
+*   There is a race condition between the `web` and `db` containers that causes the application to time out on startup. This issue needs to be resolved.
