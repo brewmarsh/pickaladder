@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Match - pickaladder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <div class="container">
+        <h2>Match Details</h2>
+        <div class="match-details">
+            <p><strong>Date:</strong> {{ match[5] }}</p>
+            <p><strong>Player 1:</strong> {{ match[1] }}</p>
+            <p><strong>Player 2:</strong> {{ match[2] }}</p>
+            <p><strong>Score:</strong> {{ match[3] }} - {{ match[4] }}</p>
+        </div>
+    </div>
+    {% include 'footer.html' %}
+</body>
+</html>

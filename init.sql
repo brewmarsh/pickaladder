@@ -14,3 +14,12 @@ CREATE TABLE friends (
     friend_id INTEGER REFERENCES users(id),
     PRIMARY KEY (user_id, friend_id)
 );
+
+CREATE TABLE matches (
+    id SERIAL PRIMARY KEY,
+    player1_id INTEGER REFERENCES users(id),
+    player2_id INTEGER REFERENCES users(id),
+    player1_score INTEGER,
+    player2_score INTEGER,
+    match_date DATE
+);

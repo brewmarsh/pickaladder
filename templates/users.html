@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    {% include 'navbar.html' %}
     <div class="container">
-        {% include 'navbar.html' %}
         <h2>Find Friends</h2>
         <form method="get" action="/users">
             <input type="text" name="search" placeholder="Search by username or name" value="{{ search_term }}">
