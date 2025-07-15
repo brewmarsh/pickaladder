@@ -10,7 +10,8 @@
     <div class="container">
         {% include 'navbar.html' %}
         <h2>Admin Panel</h2>
-        <a href="/admin/reset_db">Reset Database</a>
+        <a href="{{ url_for('reset_db') }}">Reset Database</a>
     </div>
+    {% include 'footer.html' %}
 </body>
 </html>

@@ -1,8 +1,15 @@
 <nav>
-    <a href="/dashboard">Dashboard</a>
-    <a href="/users">Find Friends</a>
+    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('users') }}">Users</a>
     {% if session['is_admin'] %}
-    <a href="/admin">Admin</a>
+    <a href="{{ url_for('admin') }}">Admin</a>
     {% endif %}
-    <a href="/logout">Logout</a>
+    <div class="dropdown">
+        <button class="dropbtn">Account</button>
+        <div class="dropdown-content">
+            <a href="{{ url_for('dashboard') }}">Profile</a>
+            <a href="{{ url_for('reset_password') }}">Change Password</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
 </nav>

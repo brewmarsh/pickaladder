@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    {% include 'navbar.html' %}
     <div class="container">
         <h1>Welcome to pickaladder</h1>
         <p>Your ultimate platform for pickleball ladders and tournaments.</p>
@@ -20,5 +21,6 @@
             {% endif %}
         </div>
     </div>
+    {% include 'footer.html' %}
 </body>
 </html>

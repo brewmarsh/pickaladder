@@ -1,28 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, session
-import psycopg2
-import os
+from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+import os
+from database import get_db_connection
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-
-import time
-
-def get_db_connection():
-    retries = 5
-    while retries > 0:
-        try:
-            conn = psycopg2.connect(
-                host="db",
-                database=os.environ['POSTGRES_DB'],
-                user=os.environ['POSTGRES_USER'],
-                password=os.environ['POSTGRES_PASSWORD'])
-            return conn
-        except psycopg2.OperationalError:
-            retries -= 1
-            time.sleep(1)
-    raise Exception("Could not connect to database")
 
 @app.route('/')
 def index():
@@ -60,7 +44,10 @@ def install():
         password = request.form['password']
         email = request.form['email']
         name = request.form['name']
-        dupr_rating = request.form['dupr_rating'] or None
+        try:
+            dupr_rating = float(request.form['dupr_rating']) if request.form['dupr_rating'] else None
+        except ValueError:
+            return "Invalid DUPR rating."
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         try:
             cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s)',
@@ -106,7 +93,10 @@ def register():
         password = request.form['password']
         email = request.form['email']
         name = request.form['name']
-        dupr_rating = request.form['dupr_rating'] or None
+        try:
+            dupr_rating = float(request.form['dupr_rating']) if request.form['dupr_rating'] else None
+        except ValueError:
+            return "Invalid DUPR rating."
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         conn = get_db_connection()
         cur = conn.cursor()
@@ -173,8 +163,11 @@ def add_friend(friend_id):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        cur.execute('INSERT INTO friends (user_id, friend_id) VALUES (%s, %s)', (user_id, friend_id))
-        conn.commit()
+        # Check if the friendship already exists
+        cur.execute('SELECT * FROM friends WHERE user_id = %s AND friend_id = %s', (user_id, friend_id))
+        if cur.fetchone() is None:
+            cur.execute('INSERT INTO friends (user_id, friend_id) VALUES (%s, %s)', (user_id, friend_id))
+            conn.commit()
     except:
         conn.rollback()
     finally:
@@ -241,18 +234,17 @@ def reset_password():
         return redirect(url_for('login'))
     return render_template('reset_password.html', email=email)
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+from utils import allowed_file
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
-    dupr_rating = request.form['dupr_rating'] or None
+    try:
+        dupr_rating = float(request.form['dupr_rating']) if request.form['dupr_rating'] else None
+    except ValueError:
+        return "Invalid DUPR rating."
     password = request.form['password']
     profile_picture = request.files['profile_picture']
     conn = get_db_connection()
