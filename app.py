@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask import Flask, render_template, request, redirect, url_for, session
+from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import os
@@ -7,6 +8,15 @@ from database import get_db_connection
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+
+# Mail configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+
+mail = Mail(app)
 
 @app.route('/')
 def index():
@@ -78,7 +88,7 @@ def login():
             session['is_admin'] = user[6]
             return redirect(url_for('dashboard'))
         else:
-            return 'Invalid username or password.'
+            return render_template('login.html', error='Invalid username or password.')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -104,6 +114,9 @@ def register():
             cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s)',
                         (username, hashed_password, email, name, dupr_rating, False))
             conn.commit()
+            msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
+            msg.body = 'Click the link to verify your email: {}'.format(url_for('verify_email', email=email, _external=True))
+            mail.send(msg)
         except:
             conn.rollback()
             return "Username already exists."
@@ -136,9 +149,11 @@ def dashboard():
     friends = cur.fetchall()
     cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE m.player1_id = %s OR m.player2_id = %s ORDER BY m.match_date DESC', (user_id, user_id))
     matches = cur.fetchall()
+    cur.execute("SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'", (user_id,))
+    requests = cur.fetchall()
     cur.close()
     conn.close()
-    return render_template('dashboard.html', friends=friends, matches=matches)
+    return render_template('dashboard.html', friends=friends, matches=matches, requests=requests)
 
 @app.route('/users')
 def users():
@@ -230,9 +245,10 @@ def reset_db():
 def forgot_password():
     if request.method == 'POST':
         email = request.form['email']
-        # In a real application, you would send an email with a password reset link.
-        # For this example, we'll just redirect to a page where they can enter a new password.
-        return redirect(url_for('reset_password', email=email))
+        msg = Message('Password reset', sender=app.config['MAIL_USERNAME'], recipients=[email])
+        msg.body = 'Click the link to reset your password: {}'.format(url_for('reset_password', email=email, _external=True))
+        mail.send(msg)
+        return "Password reset email sent."
     return render_template('forgot_password.html')
 
 @app.route('/reset_password', methods=['GET', 'POST'])
@@ -359,6 +375,16 @@ def decline_friend_request(friend_id):
     cur.close()
     conn.close()
     return redirect(url_for('friend_requests'))
+
+@app.route('/verify_email/<email>')
+def verify_email(email):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE users SET is_admin = TRUE WHERE email = %s", (email,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return "Email verified."
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=27272)

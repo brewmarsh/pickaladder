@@ -29,6 +29,31 @@
             <input type="password" id="password" name="password">
             <input type="submit" value="Update Profile">
         </form>
+        <h3>Friend Requests</h3>
+        <div class="friend-requests-list">
+            {% if requests %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in requests %}
+                            <tr>
+                                <td>{{ request[1] }}</td>
+                                <td><a href="{{ url_for('accept_friend_request', friend_id=request[0]) }}" class="button">Accept</a></td>
+                                <td><a href="{{ url_for('decline_friend_request', friend_id=request[0]) }}" class="button">Decline</a></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>You have no friend requests.</p>
+            {% endif %}
+        </div>
         <h3>Your Matches</h3>
         <div class="matches-list">
             {% if matches %}
@@ -75,7 +100,12 @@
                                         <img src="{{ url_for('static', filename='uploads/' + friend[4]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
                                     {% endif %}
                                 </td>
-                                <td>{{ friend[1] }}</td>
+                                <td>
+                                    {% if friend[4] %}
+                                        <img src="{{ url_for('static', filename='uploads/' + friend[4]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
+                                    {% endif %}
+                                    {{ friend[1] }}
+                                </td>
                                 <td>{{ friend[3] }}</td>
                             </tr>
                         {% endfor %}

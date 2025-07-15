@@ -32,7 +32,9 @@
                             <td>{{ user[1] }}</td>
                             <td>{{ user[4] }}</td>
                             <td>{{ user[5] }}</td>
-                            <td><a href="/add_friend/{{ user[0] }}">Add Friend</a></td>
+                            <td>
+                                <a href="/add_friend/{{ user[0] }}" class="button" onclick="this.innerHTML = 'Request Sent'; this.onclick = null;">Add Friend</a>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
