@@ -32,15 +32,28 @@ def index():
 def install():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT id FROM users')
-    user_exists = cur.fetchone() is not None
-    if user_exists:
-        cur.close()
-        conn.close()
-        return redirect(url_for('login'))
+
+    # Check if the users table exists
+    cur.execute("SELECT to_regclass('public.users')")
+    table_exists = cur.fetchone()[0]
+
+    if not table_exists:
+        # If the table does not exist, create it by executing init.sql
+        with open('init.sql', 'r') as f:
+            cur.execute(f.read())
+        conn.commit()
+    else:
+        # If the table exists, check if there are any users
+        cur.execute('SELECT id FROM users')
+        user_exists = cur.fetchone() is not None
+        if user_exists:
+            cur.close()
+            conn.close()
+            return redirect(url_for('login'))
 
     if request.method == 'GET':
-        return render_template('welcome.html')
+        # Now, we either have a fresh DB or an empty one, show the install form.
+        return render_template('install.html')
 
     if request.method == 'POST':
         username = request.form['username']
