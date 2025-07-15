@@ -11,11 +11,6 @@ services:
       - db
   db:
     image: postgres:13
-    command: >
-      sh -c "
-        rm -rf /var/lib/postgresql/data &&
-        docker-entrypoint.sh postgres
-      "
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
