@@ -4,8 +4,14 @@
     {% if session['is_admin'] %}
     <a href="{{ url_for('admin') }}">Admin</a>
     {% endif %}
-    <div class="dropdown">
-        <button class="dropbtn">Account</button>
+    <div class="dropdown" style="float:right;">
+        <button class="dropbtn">
+            {% if user and user[7] %}
+                <img src="{{ url_for('static', filename='uploads/' + user[7]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
+            {% else %}
+                Account
+            {% endif %}
+        </button>
         <div class="dropdown-content">
             <a href="{{ url_for('dashboard') }}">Profile</a>
             <a href="{{ url_for('reset_password') }}">Change Password</a>

@@ -113,6 +113,18 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+@app.context_processor
+def inject_user():
+    if 'user_id' in session:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM users WHERE id = %s', (session['user_id'],))
+        user = cur.fetchone()
+        cur.close()
+        conn.close()
+        return dict(user=user)
+    return dict(user=None)
+
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
@@ -120,13 +132,11 @@ def dashboard():
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
-    user = cur.fetchone()
-    cur.execute('SELECT u.id, u.username, u.name, u.dupr_rating FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s', (user_id,))
+    cur.execute('SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s', (user_id,))
     friends = cur.fetchall()
     cur.close()
     conn.close()
-    return render_template('dashboard.html', user=user, friends=friends)
+    return render_template('dashboard.html', friends=friends)
 
 @app.route('/users')
 def users():

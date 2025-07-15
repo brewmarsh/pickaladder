@@ -31,11 +31,28 @@
         <h3>Your Friends</h3>
         <div class="friends-list">
             {% if friends %}
-                <ul>
-                    {% for friend in friends %}
-                        <li>{{ friend[2] }} ({{ friend[1] }}) - DUPR: {{ friend[3] }}</li>
-                    {% endfor %}
-                </ul>
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Username</th>
+                            <th>DUPR Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for friend in friends %}
+                            <tr>
+                                <td>
+                                    {% if friend[4] %}
+                                        <img src="{{ url_for('static', filename='uploads/' + friend[4]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
+                                    {% endif %}
+                                </td>
+                                <td>{{ friend[1] }}</td>
+                                <td>{{ friend[3] }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             {% else %}
                 <p>You have no friends yet. <a href="/users">Find some!</a></p>
             {% endif %}
