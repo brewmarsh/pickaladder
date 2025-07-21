@@ -11,6 +11,7 @@
     <div class="content">
         <div class="container">
             <h2>Friend Requests</h2>
+            <h3>Received</h3>
             <div class="friend-requests-list">
                 {% if requests %}
                     <table>
@@ -33,6 +34,29 @@
                     </table>
                 {% else %}
                     <p>You have no friend requests.</p>
+                {% endif %}
+            </div>
+            <h3>Sent</h3>
+            <div class="friend-requests-list">
+                {% if sent_requests %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in sent_requests %}
+                                <tr>
+                                    <td>{{ request[1] }}</td>
+                                    <td>{{ request[2] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>You have no sent friend requests.</p>
                 {% endif %}
             </div>
         </div>

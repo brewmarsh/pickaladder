@@ -111,8 +111,8 @@ def register():
         conn = get_db_connection()
         cur = conn.cursor()
         try:
-            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s)',
-                        (username, hashed_password, email, name, dupr_rating, False))
+            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin, profile_picture) VALUES (%s, %s, %s, %s, %s, %s, %s)',
+                        (username, hashed_password, email, name, dupr_rating, False, 'pickaladder_icon.png'))
             conn.commit()
             msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
             msg.body = 'Click the link to verify your email: {}'.format(url_for('verify_email', email=email, _external=True))
@@ -346,9 +346,11 @@ def friend_requests():
     cur = conn.cursor()
     cur.execute("SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'", (user_id,))
     requests = cur.fetchall()
+    cur.execute("SELECT u.id, u.username, f.status FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s", (user_id,))
+    sent_requests = cur.fetchall()
     cur.close()
     conn.close()
-    return render_template('friend_requests.html', requests=requests)
+    return render_template('friend_requests.html', requests=requests, sent_requests=sent_requests)
 
 @app.route('/accept_friend_request/<int:friend_id>')
 def accept_friend_request(friend_id):

@@ -22,7 +22,8 @@
         <h3>Update Profile</h3>
         <form method="post" action="/update_profile" enctype="multipart/form-data">
             <label for="profile_picture">Profile Picture:</label>
-            <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif">
+            <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif" onchange="previewImage(event)">
+            <img id="preview" src="#" alt="your image" width="100" style="display:none;"/>
             <label for="dupr_rating">DUPR Rating:</label>
             <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user[5] }}">
             <label for="password">New Password:</label>
@@ -101,9 +102,6 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if friend[4] %}
-                                        <img src="{{ url_for('static', filename='uploads/' + friend[4]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
-                                    {% endif %}
                                     {{ friend[1] }}
                                 </td>
                                 <td>{{ friend[3] }}</td>
@@ -117,5 +115,16 @@
         </div>
     </div>
     {% include 'footer.html' %}
+    <script>
+        function previewImage(event) {
+            var reader = new FileReader();
+            reader.onload = function(){
+                var output = document.getElementById('preview');
+                output.src = reader.result;
+                output.style.display = 'block';
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+    </script>
 </body>
 </html>
