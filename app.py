@@ -278,6 +278,8 @@ def reset_admin():
     conn.close()
     return render_template('reset_admin.html')
 
+from psycopg2 import errors
+
 @app.route('/admin/delete_user/<int:user_id>')
 def delete_user(user_id):
     if 'user_id' not in session or not session.get('is_admin'):
@@ -285,10 +287,13 @@ def delete_user(user_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        cur.execute('DELETE FROM friends WHERE user_id = %s OR friend_id = %s', (user_id, user_id))
         cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
         conn.commit()
         cur.close()
         conn.close()
+    except errors.ForeignKeyViolation as e:
+        return render_template('error.html', error=f"Cannot delete user: {e}"), 500
     except Exception as e:
         return render_template('error.html', error=str(e)), 500
     return redirect(url_for('users'))
