@@ -266,6 +266,33 @@ def reset_password():
         return redirect(url_for('login'))
     return render_template('reset_password.html', email=email)
 
+@app.route('/change_password', methods=['GET', 'POST'])
+def change_password():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+    if request.method == 'POST':
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+        if password and password == confirm_password:
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute('UPDATE users SET password = %s WHERE id = %s', (hashed_password, user_id))
+            conn.commit()
+            cur.close()
+            conn.close()
+            return redirect(url_for('dashboard'))
+        else:
+            return render_template('change_password.html', user=user, error='Passwords do not match.')
+    return render_template('change_password.html', user=user)
+
 from utils import allowed_file
 
 @app.route('/update_profile', methods=['POST'])
@@ -277,7 +304,6 @@ def update_profile():
         dupr_rating = float(request.form['dupr_rating']) if request.form['dupr_rating'] else None
     except ValueError:
         return "Invalid DUPR rating."
-    password = request.form['password']
     profile_picture = request.files['profile_picture']
     conn = get_db_connection()
     cur = conn.cursor()
@@ -290,11 +316,7 @@ def update_profile():
         profile_picture.save(os.path.join(upload_folder, filename))
         cur.execute('UPDATE users SET profile_picture = %s WHERE id = %s', (filename, user_id))
 
-    if password:
-        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        cur.execute('UPDATE users SET dupr_rating = %s, password = %s WHERE id = %s', (dupr_rating, hashed_password, user_id))
-    else:
-        cur.execute('UPDATE users SET dupr_rating = %s WHERE id = %s', (dupr_rating, user_id))
+    cur.execute('UPDATE users SET dupr_rating = %s WHERE id = %s', (dupr_rating, user_id))
     conn.commit()
     cur.close()
     conn.close()
