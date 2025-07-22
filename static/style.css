@@ -158,6 +158,32 @@ input[type="submit"], .btn {
     background-color: #ffc107;
     color: #333;
     text-align: center;
-    padding: 10px;
+    padding: 5px;
+    font-size: 0.9em;
+}
+
+.match-details {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.player {
+    text-align: center;
+}
+
+.score {
+    font-size: 2em;
     font-weight: bold;
+}
+
+.separator {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.match-date {
+    text-align: center;
+    margin-top: 20px;
 }

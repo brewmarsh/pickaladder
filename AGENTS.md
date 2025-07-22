@@ -30,6 +30,11 @@ This document outlines the requirements that have been implemented for the picka
 *   **Template Syntax Error:** Fixed a `TemplateSyntaxError` on the `/users` page by adding a missing `endblock` tag.
 *   **Generated Users Page:** Fixed the formatting and user display on the `/admin/generate_users` page by extending the `layout.html` template.
 *   **Promote Users:** Admin users can promote other users to administrators.
+*   **Reset Passwords:** Admin users can reset user passwords. The new password will be sent to the user's email address.
+
+## Security
+
+*   **UUIDs:** User and match IDs are now UUIDs to enhance privacy and prevent sequential ID guessing.
 
 ## Database
 

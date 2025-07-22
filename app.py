@@ -4,6 +4,8 @@ from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import os
+import random
+import string
 from database import get_db_connection
 from faker import Faker
 
@@ -210,7 +212,7 @@ def users():
     conn.close()
     return render_template('users.html', all_users=all_users, search_term=search_term, fof=fof)
 
-@app.route('/add_friend/<int:friend_id>')
+@app.route('/add_friend/<uuid:friend_id>')
 def add_friend(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -282,7 +284,7 @@ def reset_admin():
 
 from psycopg2 import errors
 
-@app.route('/admin/delete_user/<int:user_id>')
+@app.route('/admin/delete_user/<uuid:user_id>')
 def delete_user(user_id):
     if 'user_id' not in session or not session.get('is_admin'):
         return redirect(url_for('login'))
@@ -303,7 +305,7 @@ def delete_user(user_id):
         return render_template('error.html', error=str(e)), 500
     return redirect(url_for('users'))
 
-@app.route('/admin/promote_user/<int:user_id>')
+@app.route('/admin/promote_user/<uuid:user_id>')
 def promote_user(user_id):
     if 'user_id' not in session or not session.get('is_admin'):
         return redirect(url_for('login'))
@@ -313,6 +315,29 @@ def promote_user(user_id):
     conn.commit()
     cur.close()
     conn.close()
+    return redirect(url_for('users'))
+
+@app.route('/admin/reset_password/<uuid:user_id>')
+def admin_reset_password(user_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT email FROM users WHERE id = %s', (user_id,))
+        email = cur.fetchone()[0]
+        new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+        hashed_password = generate_password_hash(new_password, method='pbkdf2:sha256')
+        cur.execute('UPDATE users SET password = %s WHERE id = %s', (hashed_password, user_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        msg = Message('Your new password', sender=app.config['MAIL_USERNAME'], recipients=[email])
+        msg.body = f'Your new password is: {new_password}'
+        mail.send(msg)
+        flash('Password reset successfully and sent to the user.', 'success')
+    except Exception as e:
+        flash(f"An error occurred: {e}", 'danger')
     return redirect(url_for('users'))
 
 @app.route('/admin/generate_users')
@@ -464,7 +489,7 @@ def create_match():
     conn.close()
     return render_template('create_match.html', friends=friends)
 
-@app.route('/match/<int:match_id>')
+@app.route('/match/<uuid:match_id>')
 def view_match(match_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -491,7 +516,7 @@ def friend_requests():
     conn.close()
     return render_template('friend_requests.html', requests=requests, sent_requests=sent_requests)
 
-@app.route('/accept_friend_request/<int:friend_id>')
+@app.route('/accept_friend_request/<uuid:friend_id>')
 def accept_friend_request(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -504,7 +529,7 @@ def accept_friend_request(friend_id):
     conn.close()
     return redirect(url_for('friend_requests'))
 
-@app.route('/decline_friend_request/<int:friend_id>')
+@app.route('/decline_friend_request/<uuid:friend_id>')
 def decline_friend_request(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))

@@ -28,6 +28,7 @@
                     <td>
                         <a href="{{ url_for('delete_user', user_id=user[0]) }}" class="btn btn-danger btn-sm">Delete</a>
                         <a href="{{ url_for('promote_user', user_id=user[0]) }}" class="btn btn-warning btn-sm">Promote</a>
+                        <a href="{{ url_for('admin_reset_password', user_id=user[0]) }}" class="btn btn-info btn-sm">Reset Password</a>
                     </td>
                     {% endif %}
                             <td>
