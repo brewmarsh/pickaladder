@@ -300,8 +300,13 @@ def generate_users():
         conn.close()
         return redirect(url_for('dashboard'))
 
+    cur.execute('SELECT username FROM users')
+    existing_usernames = {row[0] for row in cur.fetchall()}
+
     for i in range(10):
         username = f'user{i}'
+        if username in existing_usernames:
+            continue
         password = 'password'
         email = f'user{i}@test.com'
         name = f'User {i}'
