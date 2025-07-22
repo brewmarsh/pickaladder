@@ -20,6 +20,7 @@ This document outlines the requirements that have been implemented for the picka
 
 *   **Admin Panel:** Admin users have access to an admin panel where they can manage the application.
 *   **Reset Database:** Admin users can reset the user database from the admin panel.
+*   **Reset Admin:** Admin users can reset the admin account to the first user in the database.
 
 ## Onboarding Flow
 

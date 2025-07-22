@@ -22,6 +22,9 @@
                 <input type="text" id="name" name="name">
                 <label for="dupr_rating">DUPR Rating:</label>
                 <input type="number" step="0.01" id="dupr_rating" name="dupr_rating">
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
                 <input type="submit" value="Register">
             </form>
         </div>

@@ -113,6 +113,7 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    error = None
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -125,6 +126,13 @@ def register():
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         conn = get_db_connection()
         cur = conn.cursor()
+        cur.execute('SELECT * FROM users WHERE username = %s', (username,))
+        existing_user = cur.fetchone()
+        if existing_user:
+            error = 'Username already exists. Please choose a different one.'
+            cur.close()
+            conn.close()
+            return render_template('register.html', error=error)
         try:
             cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin, profile_picture) VALUES (%s, %s, %s, %s, %s, %s, %s)',
                         (username, hashed_password, email, name, dupr_rating, False, 'pickaladder_icon.png'))
@@ -134,12 +142,12 @@ def register():
             mail.send(msg)
         except:
             conn.rollback()
-            return "Username already exists."
+            return "An error occurred during registration."
         finally:
             cur.close()
             conn.close()
         return redirect(url_for('login'))
-    return render_template('register.html')
+    return render_template('register.html', error=error)
 
 @app.context_processor
 def inject_user():
@@ -255,6 +263,28 @@ def reset_db():
     cur.close()
     conn.close()
     return redirect(url_for('admin'))
+
+@app.route('/admin/reset-admin', methods=['GET', 'POST'])
+def reset_admin():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if request.method == 'POST':
+        # Reset all users to not be admin
+        cur.execute("UPDATE users SET is_admin = FALSE")
+        # Set the first user to be admin
+        cur.execute("UPDATE users SET is_admin = TRUE WHERE id = (SELECT id FROM users ORDER BY id LIMIT 1)")
+        conn.commit()
+        cur.close()
+        conn.close()
+        return redirect(url_for('admin'))
+
+    cur.close()
+    conn.close()
+    return render_template('reset_admin.html')
 
 @app.route('/admin/generate_users')
 def generate_users():
@@ -452,6 +482,14 @@ def verify_email(email):
     cur.close()
     conn.close()
     return "Email verified."
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=27272)
