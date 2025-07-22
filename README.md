@@ -27,6 +27,9 @@ The admin can:
 * Reset the database
 * Generate random users
 * Reset the admin account
+* Delete users
+* Promote users to administrators
+* Reset user passwords
 
 ### Database
 
