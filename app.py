@@ -304,6 +304,7 @@ def generate_users():
     cur.execute('SELECT username FROM users')
     existing_usernames = {row[0] for row in cur.fetchall()}
     fake = Faker()
+    new_users = []
 
     for _ in range(10):
         name = fake.name()
@@ -314,12 +315,14 @@ def generate_users():
         email = f'{username}@example.com'
         dupr_rating = round(fake.pyfloat(left_digits=1, right_digits=2, positive=True, min_value=1.0, max_value=5.0), 2)
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s)',
+        cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, username, email, name, dupr_rating',
                     (username, hashed_password, email, name, dupr_rating, False))
+        new_user = cur.fetchone()
+        new_users.append(new_user)
     conn.commit()
     cur.close()
     conn.close()
-    return redirect(url_for('admin'))
+    return render_template('generated_users.html', users=new_users)
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
