@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 import os
 import random
 import string
+import psycopg2
 from database import get_db_connection
 from faker import Faker
 
@@ -559,6 +560,10 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template('500.html'), 500
+
+@app.errorhandler(psycopg2.Error)
+def handle_db_error(e):
+    return render_template('error.html', error=str(e)), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=27272)

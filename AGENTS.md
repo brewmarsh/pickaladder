@@ -36,6 +36,11 @@ This document outlines the requirements that have been implemented for the picka
 
 *   **UUIDs:** User and match IDs are now UUIDs to enhance privacy and prevent sequential ID guessing.
 
+## UI/UX
+
+*   **Dashboard:** The password field has been removed from the "Update Profile" form on the dashboard.
+*   **Match Page:** The match page formatting has been reviewed and confirmed to be correct.
+
 ## Database
 
 *   **Reset Database:** The database can be reset by running `make reset-db`. This will drop all tables and recreate them based on the `init.sql` file.
