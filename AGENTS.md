@@ -25,6 +25,10 @@ This document outlines the requirements that have been implemented for the picka
 *   **Delete Users:** Admin users can delete users from the user database.
 *   **Promote Users:** Admin users can promote other users to administrators.
 
+## Database
+
+*   **Reset Database:** The database can be reset by running `make reset-db`. This will drop all tables and recreate them based on the `init.sql` file.
+
 ## User Profile
 
 *   **Dark Mode:** Users can enable or disable dark mode from their dashboard.

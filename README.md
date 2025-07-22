@@ -27,3 +27,11 @@ The admin can:
 * Reset the database
 * Generate random users
 * Reset the admin account
+
+### Database
+
+To reset the database, run the following command:
+
+```
+make reset-db
+```
