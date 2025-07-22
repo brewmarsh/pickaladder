@@ -401,36 +401,32 @@ def update_profile():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
-    dark_mode = 'dark_mode' in request.form
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('UPDATE users SET dark_mode = %s WHERE id = %s', (dark_mode, user_id))
-    conn.commit()
-    cur.close()
-    conn.close()
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    user_id = session['user_id']
     try:
-        dupr_rating = float(request.form['dupr_rating']) if request.form['dupr_rating'] else None
-    except ValueError:
-        return "Invalid DUPR rating."
-    profile_picture = request.files['profile_picture']
-    conn = get_db_connection()
-    cur = conn.cursor()
+        dark_mode = 'dark_mode' in request.form
+        dupr_rating = float(request.form.get('dupr_rating')) if request.form.get('dupr_rating') else None
+        profile_picture = request.files.get('profile_picture')
 
-    if profile_picture and allowed_file(profile_picture.filename):
-        filename = secure_filename(profile_picture.filename)
-        upload_folder = 'static/uploads'
-        if not os.path.exists(upload_folder):
-            os.makedirs(upload_folder)
-        profile_picture.save(os.path.join(upload_folder, filename))
-        cur.execute('UPDATE users SET profile_picture = %s WHERE id = %s', (filename, user_id))
+        conn = get_db_connection()
+        cur = conn.cursor()
 
-    cur.execute('UPDATE users SET dupr_rating = %s WHERE id = %s', (dupr_rating, user_id))
-    conn.commit()
-    cur.close()
-    conn.close()
+        cur.execute('UPDATE users SET dark_mode = %s WHERE id = %s', (dark_mode, user_id))
+
+        if profile_picture and allowed_file(profile_picture.filename):
+            filename = secure_filename(profile_picture.filename)
+            upload_folder = 'static/uploads'
+            if not os.path.exists(upload_folder):
+                os.makedirs(upload_folder)
+            profile_picture.save(os.path.join(upload_folder, filename))
+            cur.execute('UPDATE users SET profile_picture = %s WHERE id = %s', (filename, user_id))
+
+        if dupr_rating is not None:
+            cur.execute('UPDATE users SET dupr_rating = %s WHERE id = %s', (dupr_rating, user_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        return render_template('500.html', error=str(e)), 500
     return redirect(url_for('dashboard'))
 
 @app.route('/create_match', methods=['GET', 'POST'])

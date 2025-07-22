@@ -31,7 +31,7 @@ This document outlines the requirements that have been implemented for the picka
 
 ## Error Handling
 
-*   **Database Errors:** The application will now handle database errors more gracefully, displaying a user-friendly error page instead of crashing.
+*   **Database Errors:** The application will now handle database errors more gracefully, displaying a user-friendly error page instead of crashing. This applies to both user deletion and profile updates.
 
 ## User Profile
 
