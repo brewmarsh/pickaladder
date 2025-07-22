@@ -7,9 +7,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        {% include 'navbar.html' %}
-        <h2>Welcome, {{ user[4] }}!</h2>
+    {% include 'navbar.html' %}
+    <div class="content">
+        <div class="container">
+            <h2>Welcome, {{ user[4] }}!</h2>
         {% if user[7] %}
             <img src="{{ url_for('static', filename='uploads/' + user[7]) }}" alt="Profile Picture" width="100">
         {% endif %}
@@ -21,25 +22,109 @@
         <h3>Update Profile</h3>
         <form method="post" action="/update_profile" enctype="multipart/form-data">
             <label for="profile_picture">Profile Picture:</label>
-            <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif">
+            <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif" onchange="previewImage(event)">
+            <img id="preview" src="#" alt="your image" width="100" style="display:none;"/>
             <label for="dupr_rating">DUPR Rating:</label>
             <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user[5] }}">
             <label for="password">New Password:</label>
             <input type="password" id="password" name="password">
             <input type="submit" value="Update Profile">
         </form>
+        <h3>Friend Requests</h3>
+        <div class="friend-requests-list">
+            {% if requests %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in requests %}
+                            <tr>
+                                <td>{{ request[1] }}</td>
+                                <td><a href="{{ url_for('accept_friend_request', friend_id=request[0]) }}" class="button">Accept</a></td>
+                                <td><a href="{{ url_for('decline_friend_request', friend_id=request[0]) }}" class="button">Decline</a></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>You have no friend requests.</p>
+            {% endif %}
+        </div>
+        <h3>Your Matches</h3>
+        <div class="matches-list">
+            {% if matches %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Opponent</th>
+                            <th>Score</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in matches %}
+                            <tr>
+                                <td>{{ match[5] }}</td>
+                                <td>{{ match[7] }}</td>
+                                <td>{{ match[3] }} - {{ match[4] }}</td>
+                                <td><a href="{{ url_for('view_match', match_id=match[0]) }}">View</a></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>You have no matches yet. <a href="{{ url_for('create_match') }}">Record one!</a></p>
+            {% endif %}
+        </div>
         <h3>Your Friends</h3>
         <div class="friends-list">
             {% if friends %}
-                <ul>
-                    {% for friend in friends %}
-                        <li>{{ friend[2] }} ({{ friend[1] }}) - DUPR: {{ friend[3] }}</li>
-                    {% endfor %}
-                </ul>
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Username</th>
+                            <th>DUPR Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for friend in friends %}
+                            <tr>
+                                <td>
+                                    {% if friend[4] %}
+                                        <img src="{{ url_for('static', filename='uploads/' + friend[4]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ friend[1] }}
+                                </td>
+                                <td>{{ friend[3] }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             {% else %}
                 <p>You have no friends yet. <a href="/users">Find some!</a></p>
             {% endif %}
         </div>
     </div>
+    {% include 'footer.html' %}
+    <script>
+        function previewImage(event) {
+            var reader = new FileReader();
+            reader.onload = function(){
+                var output = document.getElementById('preview');
+                output.src = reader.result;
+                output.style.display = 'block';
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+    </script>
 </body>
 </html>

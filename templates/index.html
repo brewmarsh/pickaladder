@@ -7,8 +7,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to pickaladder</h1>
+    {% include 'navbar.html' %}
+    <div class="content">
+        <div class="container">
+            <h1>Welcome to pickaladder</h1>
         <p>Your ultimate platform for pickleball ladders and tournaments.</p>
         <div style="margin-top: 30px;">
             {% if session['user_id'] %}
@@ -20,5 +22,6 @@
             {% endif %}
         </div>
     </div>
+    {% include 'footer.html' %}
 </body>
 </html>

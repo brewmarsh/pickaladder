@@ -7,11 +7,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to pickaladder!</h1>
+    {% include 'navbar.html' %}
+    <div class="content">
+        <div class="container">
+            <h1>Welcome to pickaladder!</h1>
         <p>This is a platform for pickleball ladders and tournaments.</p>
         <p>To get started, you need to create an admin account. This account will be used to manage the application and reset the database if needed.</p>
         <a href="/install" class="button">Create Admin Account</a>
     </div>
+    {% include 'footer.html' %}
 </body>
 </html>

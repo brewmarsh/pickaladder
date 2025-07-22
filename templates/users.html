@@ -7,9 +7,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        {% include 'navbar.html' %}
-        <h2>Find Friends</h2>
+    {% include 'navbar.html' %}
+    <div class="content">
+        <div class="container">
+            <h2>Find Friends</h2>
         <form method="get" action="/users">
             <input type="text" name="search" placeholder="Search by username or name" value="{{ search_term }}">
             <input type="submit" value="Search">
@@ -31,7 +32,9 @@
                             <td>{{ user[1] }}</td>
                             <td>{{ user[4] }}</td>
                             <td>{{ user[5] }}</td>
-                            <td><a href="/add_friend/{{ user[0] }}">Add Friend</a></td>
+                            <td>
+                                <a href="/add_friend/{{ user[0] }}" class="button" onclick="this.innerHTML = 'Request Sent'; this.onclick = null;">Add Friend</a>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -61,5 +64,6 @@
             </table>
         </div>
     </div>
+    {% include 'footer.html' %}
 </body>
 </html>

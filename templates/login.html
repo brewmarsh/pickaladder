@@ -7,10 +7,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        {% include 'navbar.html' %}
-        <div class="login-form">
-            <h2>Login</h2>
+    <div class="content">
+        <div class="container">
+            <div class="login-form">
+                <h2>Login</h2>
+            {% if error %}
+                <p class="error">{{ error }}</p>
+            {% endif %}
             <form method="post" action="/login">
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
@@ -22,5 +25,6 @@
             <p><a href="/forgot_password">Forgot Password?</a></p>
         </div>
     </div>
+    {% include 'footer.html' %}
 </body>
 </html>

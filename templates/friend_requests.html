@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friend Requests - pickaladder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% include 'navbar.html' %}
+    <div class="content">
+        <div class="container">
+            <h2>Friend Requests</h2>
+            <h3>Received</h3>
+            <div class="friend-requests-list">
+                {% if requests %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in requests %}
+                                <tr>
+                                    <td>{{ request[1] }}</td>
+                                    <td><a href="{{ url_for('accept_friend_request', friend_id=request[0]) }}" class="button">Accept</a></td>
+                                    <td><a href="{{ url_for('decline_friend_request', friend_id=request[0]) }}" class="button">Decline</a></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>You have no friend requests.</p>
+                {% endif %}
+            </div>
+            <h3>Sent</h3>
+            <div class="friend-requests-list">
+                {% if sent_requests %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in sent_requests %}
+                                <tr>
+                                    <td>{{ request[1] }}</td>
+                                    <td>{{ request[2] }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>You have no sent friend requests.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% include 'footer.html' %}
+</body>
+</html>

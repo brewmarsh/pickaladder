@@ -7,10 +7,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        {% include 'navbar.html' %}
-        <div class="login-form">
-            <h2>Create Account</h2>
+    <div class="content">
+        <div class="container">
+            <div class="login-form">
+                <h2>Create Account</h2>
             <form method="post" action="/register">
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
@@ -26,5 +26,6 @@
             </form>
         </div>
     </div>
+    {% include 'footer.html' %}
 </body>
 </html>
