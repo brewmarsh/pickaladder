@@ -290,7 +290,7 @@ def delete_user(user_id):
         cur.close()
         conn.close()
     except Exception as e:
-        return render_template('500.html', error=str(e)), 500
+        return render_template('error.html', error=str(e)), 500
     return redirect(url_for('users'))
 
 @app.route('/admin/promote_user/<int:user_id>')
@@ -426,7 +426,7 @@ def update_profile():
         cur.close()
         conn.close()
     except Exception as e:
-        return render_template('500.html', error=str(e)), 500
+        return render_template('error.html', error=str(e)), 500
     return redirect(url_for('dashboard'))
 
 @app.route('/create_match', methods=['GET', 'POST'])
