@@ -232,17 +232,8 @@ def add_friend(friend_id):
 
 @app.route('/admin')
 def admin():
-    if 'user_id' not in session:
+    if 'user_id' not in session or not session.get('is_admin'):
         return redirect(url_for('login'))
-    user_id = session['user_id']
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('SELECT is_admin FROM users WHERE id = %s', (user_id,))
-    is_admin = cur.fetchone()[0]
-    cur.close()
-    conn.close()
-    if not is_admin:
-        return redirect(url_for('dashboard'))
     return render_template('admin.html')
 
 @app.route('/admin/reset_db')
@@ -286,6 +277,30 @@ def reset_admin():
     cur.close()
     conn.close()
     return render_template('reset_admin.html')
+
+@app.route('/admin/delete_user/<int:user_id>')
+def delete_user(user_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect(url_for('users'))
+
+@app.route('/admin/promote_user/<int:user_id>')
+def promote_user(user_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('UPDATE users SET is_admin = TRUE WHERE id = %s', (user_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect(url_for('users'))
 
 @app.route('/admin/generate_users')
 def generate_users():
@@ -380,6 +395,16 @@ from utils import allowed_file
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    dark_mode = 'dark_mode' in request.form
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('UPDATE users SET dark_mode = %s WHERE id = %s', (dark_mode, user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']

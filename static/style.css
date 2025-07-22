@@ -153,3 +153,11 @@ input[type="submit"], .btn {
     background-color: #f8d7da;
     border-color: #f5c6cb;
 }
+
+.admin-banner {
+    background-color: #ffc107;
+    color: #333;
+    text-align: center;
+    padding: 10px;
+    font-weight: bold;
+}

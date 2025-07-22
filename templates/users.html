@@ -32,6 +32,12 @@
                             <td>{{ user[1] }}</td>
                             <td>{{ user[4] }}</td>
                             <td>{{ user[5] }}</td>
+                    {% if session['is_admin'] %}
+                    <td>
+                        <a href="{{ url_for('delete_user', user_id=user[0]) }}" class="btn btn-danger btn-sm">Delete</a>
+                        <a href="{{ url_for('promote_user', user_id=user[0]) }}" class="btn btn-warning btn-sm">Promote</a>
+                    </td>
+                    {% endif %}
                             <td>
                                 <a href="/add_friend/{{ user[0] }}" class="button" onclick="this.innerHTML = 'Request Sent'; this.onclick = null;">Add Friend</a>
                             </td>

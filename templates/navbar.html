@@ -1,3 +1,9 @@
+<body class="{{ 'dark-mode' if user and user[8] else '' }}">
+{% if session['is_admin'] %}
+<div class="admin-banner">
+    <p>You are logged in as an administrator.</p>
+</div>
+{% endif %}
 <div class="container">
     <nav>
         <div class="dropdown" style="float:right;">
