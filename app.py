@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import os
 from database import get_db_connection
+from faker import Faker
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -302,15 +303,16 @@ def generate_users():
 
     cur.execute('SELECT username FROM users')
     existing_usernames = {row[0] for row in cur.fetchall()}
+    fake = Faker()
 
-    for i in range(10):
-        username = f'user{i}'
+    for _ in range(10):
+        name = fake.name()
+        username = name.lower().replace(" ", "")
         if username in existing_usernames:
             continue
         password = 'password'
-        email = f'user{i}@test.com'
-        name = f'User {i}'
-        dupr_rating = 3.5
+        email = f'{username}@example.com'
+        dupr_rating = round(fake.pyfloat(left_digits=1, right_digits=2, positive=True, min_value=1.0, max_value=5.0), 2)
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s)',
                     (username, hashed_password, email, name, dupr_rating, False))
