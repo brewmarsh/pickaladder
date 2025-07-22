@@ -29,6 +29,10 @@ This document outlines the requirements that have been implemented for the picka
 
 *   **Reset Database:** The database can be reset by running `make reset-db`. This will drop all tables and recreate them based on the `init.sql` file.
 
+## Error Handling
+
+*   **Database Errors:** The application will now handle database errors more gracefully, displaying a user-friendly error page instead of crashing.
+
 ## User Profile
 
 *   **Dark Mode:** Users can enable or disable dark mode from their dashboard.

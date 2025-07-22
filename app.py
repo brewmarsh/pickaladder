@@ -282,12 +282,15 @@ def reset_admin():
 def delete_user(user_id):
     if 'user_id' not in session or not session.get('is_admin'):
         return redirect(url_for('login'))
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        return render_template('500.html', error=str(e)), 500
     return redirect(url_for('users'))
 
 @app.route('/admin/promote_user/<int:user_id>')
