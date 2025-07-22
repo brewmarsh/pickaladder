@@ -22,7 +22,8 @@ This document outlines the requirements that have been implemented for the picka
 *   **Reset Database:** Admin users can reset the user database from the admin panel.
 *   **Reset Admin:** Admin users can reset the admin account to the first user in the database.
 *   **Generate Users:** Admin users can generate 10 random users with human-like names. The generated users are displayed on a separate page. This function will not create users that already exist.
-*   **Delete Users:** Admin users can delete users from the user database. The application will also automatically delete any friendships associated with the deleted user.
+*   **Delete Users:** Admin users can delete users from the user database. The application will also automatically delete any friendships associated with the deleted user. A toast message will be displayed to confirm the deletion.
+*   **Add Friends:** When a user sends a friend request, a toast message will be displayed to confirm that the request has been sent.
 *   **Promote Users:** Admin users can promote other users to administrators.
 
 ## Database

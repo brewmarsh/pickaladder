@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -223,8 +223,10 @@ def add_friend(friend_id):
         if cur.fetchone() is None:
             cur.execute('INSERT INTO friends (user_id, friend_id) VALUES (%s, %s)', (user_id, friend_id))
             conn.commit()
+            flash('Friend request sent.', 'success')
     except:
         conn.rollback()
+        flash('An error occurred while sending the friend request.', 'danger')
     finally:
         cur.close()
         conn.close()
@@ -290,11 +292,14 @@ def delete_user(user_id):
         cur.execute('DELETE FROM friends WHERE user_id = %s OR friend_id = %s', (user_id, user_id))
         cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
         conn.commit()
+        flash('User deleted successfully.', 'success')
         cur.close()
         conn.close()
     except errors.ForeignKeyViolation as e:
+        flash(f"Cannot delete user: {e}", 'danger')
         return render_template('error.html', error=f"Cannot delete user: {e}"), 500
     except Exception as e:
+        flash(f"An error occurred: {e}", 'danger')
         return render_template('error.html', error=str(e)), 500
     return redirect(url_for('users'))
 
