@@ -20,7 +20,19 @@ mail = Mail(app)
 
 @app.route('/')
 def index():
-    return redirect(url_for('install'))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT to_regclass('public.users')")
+    table_exists = cur.fetchone()[0]
+    if not table_exists:
+        return redirect(url_for('install'))
+    cur.execute('SELECT id FROM users WHERE is_admin = TRUE')
+    admin_exists = cur.fetchone() is not None
+    cur.close()
+    conn.close()
+    if not admin_exists:
+        return redirect(url_for('install'))
+    return redirect(url_for('login'))
 
 @app.route('/install', methods=['GET', 'POST'])
 def install():
@@ -38,7 +50,7 @@ def install():
         conn.commit()
     else:
         # If the table exists, check if there are any users
-        cur.execute('SELECT id FROM users')
+        cur.execute('SELECT id FROM users WHERE is_admin = TRUE')
         user_exists = cur.fetchone() is not None
         if user_exists:
             cur.close()
@@ -60,16 +72,19 @@ def install():
             return "Invalid DUPR rating."
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         try:
-            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s)',
+            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
                         (username, hashed_password, email, name, dupr_rating, True))
+            user_id = cur.fetchone()[0]
             conn.commit()
+            session['user_id'] = user_id
+            session['is_admin'] = True
         except:
             conn.rollback()
             return "Username already exists."
         finally:
             cur.close()
             conn.close()
-        return redirect(url_for('login'))
+        return redirect(url_for('dashboard'))
     return render_template('install.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -236,6 +251,34 @@ def reset_db():
         return redirect(url_for('dashboard'))
 
     cur.execute('TRUNCATE TABLE friends, users RESTART IDENTITY')
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect(url_for('admin'))
+
+@app.route('/admin/generate_users')
+def generate_users():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT is_admin FROM users WHERE id = %s', (user_id,))
+    is_admin = cur.fetchone()[0]
+    if not is_admin:
+        cur.close()
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    for i in range(10):
+        username = f'user{i}'
+        password = 'password'
+        email = f'user{i}@test.com'
+        name = f'User {i}'
+        dupr_rating = 3.5
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s)',
+                    (username, hashed_password, email, name, dupr_rating, False))
     conn.commit()
     cur.close()
     conn.close()

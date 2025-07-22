@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # Install any needed packages specified in requirements.txt
-RUN apt-get update && apt-get install -y postgresql-client
+RUN apt-get update --allow-insecure-repositories && apt-get install -y postgresql-client && apt-get clean
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Make port 27272 available to the world outside this container
