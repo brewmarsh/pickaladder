@@ -85,7 +85,7 @@ This document outlines the requirements that have been implemented for the picka
 
 *   **Type Checking:** Introduce static type checking with a tool like `mypy` to improve code quality and catch type-related errors early.
 *   **Comprehensive Testing:** Expand the test suite to include integration and end-to-end tests to ensure the application is well-tested and stable.
-*   **Code Coverage:** Measure code coverage to identify untested parts of the codebase. The CI/CD pipeline should be configured to enforce a minimum code coverage threshold.
+*   **Code Coverage:** Measure code coverage to identify untested parts of the codebase.
 
 ### Documentation
 
@@ -94,9 +94,9 @@ This document outlines the requirements that have been implemented for the picka
 
 ### CI/CD
 
-*   **Automated Deployments:** A CI/CD pipeline has been implemented using GitHub Actions to automate the deployment process and ensure that all changes are automatically tested and deployed.
+*   **Automated Deployments:** Implement a CI/CD pipeline to automate the deployment process and ensure that all changes are automatically tested and deployed.
 *   **Infrastructure as Code:** Use a tool like Terraform to manage the application's infrastructure as code.
-*   **Linting and Static Analysis:** The CI/CD pipeline includes steps for linting (`ruff`), static analysis (`mypy`), and security scanning (`bandit`) to ensure code quality and security.
+*   **Linting and Static Analysis:** The CI/CD pipeline should include steps for linting and static analysis to ensure code quality.
 
 ### Configuration
 
