@@ -6,8 +6,15 @@ import os
 import random
 import string
 import psycopg2
+from psycopg2 import errors
 from database import get_db_connection
 from faker import Faker
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def apply_migrations():
     conn = get_db_connection()
