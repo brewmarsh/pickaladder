@@ -7,7 +7,7 @@ def get_db_connection():
     while retries > 0:
         try:
             conn = psycopg2.connect(
-                host="db",
+                host=os.environ.get("DB_HOST", "db"),
                 database=os.environ['POSTGRES_DB'],
                 user=os.environ['POSTGRES_USER'],
                 password=os.environ['POSTGRES_PASSWORD'])
