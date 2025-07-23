@@ -23,15 +23,25 @@ def apply_migrations():
     migration_dir = 'migrations'
     if not os.path.exists(migration_dir):
         return
+    cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'migrations'")
+    table_exists = cur.fetchone() is not None
+    if not table_exists:
+        cur.execute('CREATE TABLE migrations (id SERIAL PRIMARY KEY, migration_name TEXT NOT NULL)')
+        conn.commit()
+    cur.execute('SELECT migration_name FROM migrations')
+    applied_migrations = {row[0] for row in cur.fetchall()}
     for migration_file in sorted(os.listdir(migration_dir)):
-        with open(os.path.join(migration_dir, migration_file), 'r') as f:
-            cur.execute(f.read())
-    conn.commit()
+        if migration_file not in applied_migrations:
+            with open(os.path.join(migration_dir, migration_file), 'r') as f:
+                cur.execute(f.read())
+            cur.execute('INSERT INTO migrations (migration_name) VALUES (%s)', (migration_file,))
+            conn.commit()
     cur.close()
     conn.close()
 
 app = Flask(__name__)
-apply_migrations()
+with app.app_context():
+    apply_migrations()
 app.secret_key = os.urandom(24)
 
 # Mail configuration
