@@ -94,9 +94,9 @@ This document outlines the requirements that have been implemented for the picka
 
 ### CI/CD
 
-*   **Automated Deployments:** Implement a CI/CD pipeline to automate the deployment process and ensure that all changes are automatically tested and deployed.
+*   **Automated Deployments:** A CI/CD pipeline has been implemented using GitHub Actions to automate the deployment process and ensure that all changes are automatically tested and deployed.
 *   **Infrastructure as Code:** Use a tool like Terraform to manage the application's infrastructure as code.
-*   **Linting and Static Analysis:** The CI/CD pipeline should include steps for linting and static analysis to ensure code quality.
+*   **Linting and Static Analysis:** The CI/CD pipeline includes steps for linting (`ruff`), static analysis (`mypy`), and security scanning (`bandit`) to ensure code quality and security.
 
 ### Configuration
 
