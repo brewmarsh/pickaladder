@@ -19,21 +19,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for user in all_users %}
+                    {% for user in fof %}
                         <tr>
                             <td>{{ user[1] }}</td>
-                            <td>{{ user[4] }}</td>
-                            <td>{{ user[5] }}</td>
-                    {% if session['is_admin'] %}
-                    <td>
-                        <a href="{{ url_for('delete_user', user_id=user[0]) }}" class="btn btn-danger btn-sm">Delete</a>
-                        <a href="{{ url_for('promote_user', user_id=user[0]) }}" class="btn btn-warning btn-sm">Promote</a>
-                        <a href="{{ url_for('admin_reset_password', user_id=user[0]) }}" class="btn btn-info btn-sm">Reset Password</a>
-                    </td>
-                    {% endif %}
-                            <td>
-                                <a href="/add_friend/{{ user[0] }}" class="button" onclick="this.innerHTML = 'Request Sent'; this.onclick = null;">Add Friend</a>
-                            </td>
+                            <td>{{ user[2] }}</td>
+                            <td>{{ user[3] }}</td>
+                            <td><a href="{{ url_for('add_friend', friend_id=user[0]) }}" class="btn btn-primary btn-sm">Add Friend</a></td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -56,7 +47,14 @@
                             <td>{{ user[1] }}</td>
                             <td>{{ user[4] }}</td>
                             <td>{{ user[5] }}</td>
-                            <td><a href="/add_friend/{{ user[0] }}">Add Friend</a></td>
+                            <td>
+                                <a href="{{ url_for('add_friend', friend_id=user[0]) }}" class="btn btn-primary btn-sm">Add Friend</a>
+                                {% if session['is_admin'] %}
+                                    <a href="{{ url_for('delete_user', user_id=user[0]) }}" class="btn btn-danger btn-sm">Delete</a>
+                                    <a href="{{ url_for('promote_user', user_id=user[0]) }}" class="btn btn-warning btn-sm">Promote</a>
+                                    <a href="{{ url_for('admin_reset_password', user_id=user[0]) }}" class="btn btn-info btn-sm">Reset Password</a>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
