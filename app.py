@@ -112,7 +112,7 @@ def install():
                         (username, hashed_password, email, name, dupr_rating, True))
             user_id = cur.fetchone()[0]
             conn.commit()
-            session['user_id'] = user_id
+            session['user_id'] = str(user_id)
             session['is_admin'] = True
         except Exception as e:
             conn.rollback()
@@ -295,12 +295,17 @@ def admin_matches():
 def admin_delete_match(match_id):
     if 'user_id' not in session or not session.get('is_admin'):
         return redirect(url_for('login'))
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('DELETE FROM matches WHERE id = %s', (match_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM matches WHERE id = %s', (match_id,))
+        conn.commit()
+        flash('Match deleted successfully.', 'success')
+    except Exception as e:
+        flash(f"An error occurred: {e}", 'danger')
+    finally:
+        cur.close()
+        conn.close()
     return redirect(url_for('admin_matches'))
 
 @app.route('/admin/reset_db')
