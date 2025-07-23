@@ -110,9 +110,9 @@ This document outlines the requirements that have been implemented for the picka
 
 ### Gameplay
 
-*   **Match Formatting:** The formatting of the match page needs to be fixed.
-*   **Match IDs:** Matches should have a large random ID instead of a static number for privacy reasons.
-*   **Dark Mode:** Dark mode needs to be implemented correctly.
+*   **Match Formatting:** The formatting of the match page has been fixed.
+*   **Match IDs:** Matches now have a large random ID for privacy reasons.
+*   **Dark Mode:** Dark mode has been implemented correctly.
 *   **User Dashboard:** On the user's dashboard, we should show their record in matches and their ladder ranking.
 *   **Ladder Ranking:** The average ladder ranking is determined by averaging their total points per game.
 *   **Multiple Ladder Rankings:** We may add another ladder ranking later.

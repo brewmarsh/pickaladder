@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 import os
 import random
 import string
+import uuid
 import psycopg2
 from psycopg2 import errors
 from database import get_db_connection
@@ -506,8 +507,9 @@ def create_match():
         player1_score = request.form['player1_score']
         player2_score = request.form['player2_score']
         match_date = request.form['match_date']
-        cur.execute('INSERT INTO matches (player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s)',
-                    (player1_id, player2_id, player1_score, player2_score, match_date))
+        match_id = str(uuid.uuid4())
+        cur.execute('INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s, %s)',
+                    (match_id, player1_id, player2_id, player1_score, player2_score, match_date))
         conn.commit()
         cur.close()
         conn.close()
