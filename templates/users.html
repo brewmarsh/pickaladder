@@ -1,16 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Find Friends - pickaladder</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    {% include 'navbar.html' %}
-    <div class="content">
-        <div class="container">
-            <h2>Find Friends</h2>
+{% extends "layout.html" %}
+{% block title %}Find Friends{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Find Friends</h2>
         <form method="get" action="/users">
             <input type="text" name="search" placeholder="Search by username or name" value="{{ search_term }}">
             <input type="submit" value="Search">
@@ -32,6 +24,13 @@
                             <td>{{ user[1] }}</td>
                             <td>{{ user[4] }}</td>
                             <td>{{ user[5] }}</td>
+                    {% if session['is_admin'] %}
+                    <td>
+                        <a href="{{ url_for('delete_user', user_id=user[0]) }}" class="btn btn-danger btn-sm">Delete</a>
+                        <a href="{{ url_for('promote_user', user_id=user[0]) }}" class="btn btn-warning btn-sm">Promote</a>
+                        <a href="{{ url_for('admin_reset_password', user_id=user[0]) }}" class="btn btn-info btn-sm">Reset Password</a>
+                    </td>
+                    {% endif %}
                             <td>
                                 <a href="/add_friend/{{ user[0] }}" class="button" onclick="this.innerHTML = 'Request Sent'; this.onclick = null;">Add Friend</a>
                             </td>
@@ -65,5 +64,6 @@
         </div>
     </div>
     {% include 'footer.html' %}
+{% endblock %}
 </body>
 </html>

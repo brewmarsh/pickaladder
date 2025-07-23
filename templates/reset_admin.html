@@ -1,0 +1,11 @@
+{% extends "navbar.html" %}
+{% block title %}Reset Admin{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Reset Admin</h2>
+    <p>This will reset the admin privileges. The first user in the database will be the new admin.</p>
+    <form method="POST">
+        <button type="submit" class="btn btn-danger">Reset Admin</button>
+    </form>
+</div>
+{% endblock %}
