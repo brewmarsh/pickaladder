@@ -25,5 +25,9 @@ jobs:
         run: |
           pip install bandit
           bandit -r .
+      - name: Static Type Checking with mypy
+        run: |
+          pip install mypy
+          mypy .
       - name: Run tests
         run: python -m unittest discover tests
