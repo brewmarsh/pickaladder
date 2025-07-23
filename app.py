@@ -536,7 +536,7 @@ def view_match(match_id):
         return redirect(url_for('login'))
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE m.id = %s', (match_id,))
+    cur.execute('SELECT m.*, p1.username, p2.username, p1.profile_picture, p2.profile_picture FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE m.id = %s', (match_id,))
     match = cur.fetchone()
     cur.close()
     conn.close()

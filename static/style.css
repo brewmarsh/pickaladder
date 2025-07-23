@@ -184,7 +184,47 @@ input[type="submit"], .btn {
     font-weight: bold;
 }
 
-.match-date {
-    text-align: center;
+.match-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-top: 20px;
+}
+
+.match-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.match-header h2 {
+    margin: 0;
+}
+
+.match-date {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.match-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+}
+
+.player-details {
+    text-align: center;
+}
+
+.profile-picture {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 10px;
+}
+
+.score-details {
+    font-size: 2em;
+    font-weight: bold;
 }

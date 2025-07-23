@@ -2,18 +2,24 @@
 {% block title %}View Match{% endblock %}
 {% block content %}
 <div class="container">
-    <h2>Match Details</h2>
-    <div class="match-details">
-        <div class="player">
-            <h3>{{ match[6] }}</h3>
-            <p class="score">{{ match[3] }}</p>
+    <div class="match-card">
+        <div class="match-header">
+            <h2>Match Details</h2>
+            <p class="match-date">{{ match[5] }}</p>
         </div>
-        <div class="separator">vs</div>
-        <div class="player">
-            <h3>{{ match[7] }}</h3>
-            <p class="score">{{ match[4] }}</p>
+        <div class="match-body">
+            <div class="player-details">
+                <img src="{{ url_for('static', filename='uploads/' + match[8]) }}" alt="{{ match[6] }}" class="profile-picture">
+                <h3>{{ match[6] }}</h3>
+            </div>
+            <div class="score-details">
+                <p class="score">{{ match[3] }} - {{ match[4] }}</p>
+            </div>
+            <div class="player-details">
+                <img src="{{ url_for('static', filename='uploads/' + match[9]) }}" alt="{{ match[7] }}" class="profile-picture">
+                <h3>{{ match[7] }}</h3>
+            </div>
         </div>
     </div>
-    <p class="match-date"><strong>Date:</strong> {{ match[5] }}</p>
 </div>
 {% endblock %}
