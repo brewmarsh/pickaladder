@@ -14,8 +14,13 @@ body.dark-mode {
     border-bottom: 1px solid #444;
 }
 
+.dark-mode a {
+    color: #61dafb;
+    text-decoration: underline;
+}
+
 .dark-mode nav a {
-    color: #bb86fc;
+    color: #61dafb;
 }
 
 .dark-mode .btn {

@@ -255,7 +255,7 @@ def users():
 def add_friend(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    user_id = session['user_id']
+    user_id = uuid.UUID(session['user_id'])
     conn = get_db_connection()
     cur = conn.cursor()
     try:
@@ -271,7 +271,7 @@ def add_friend(friend_id):
     finally:
         cur.close()
         conn.close()
-    return redirect(url_for('users'))
+    return redirect(request.referrer or url_for('users'))
 
 @app.route('/admin')
 def admin():
