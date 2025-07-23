@@ -96,6 +96,12 @@ This document outlines the requirements that have been implemented for the picka
 
 *   **Automated Deployments:** Implement a CI/CD pipeline to automate the deployment process and ensure that all changes are automatically tested and deployed.
 *   **Infrastructure as Code:** Use a tool like Terraform to manage the application's infrastructure as code.
+*   **Linting and Static Analysis:** The CI/CD pipeline should include steps for linting and static analysis to ensure code quality.
+
+### Configuration
+
+*   **Configuration File:** The application should use a configuration file to store settings, rather than relying on environment variables.
+*   **Logging:** The application should have a robust logging system that can be configured to log to different destinations (e.g., file, syslog, console).
 
 ### Documentation
 
@@ -112,7 +118,9 @@ This document outlines the requirements that have been implemented for the picka
 *   **Multiple Ladder Rankings:** We may add another ladder ranking later.
 *   **Leaderboard:** The app should have a leaderboard page, showing the top 10 by ranking, including their average and number of games.
 *   **Generate Random Matches:** We need a "generate 10 random matches" button on the admin page that would simulate 10 matches between friends in the database, randomly scoring from 0 to 11, or win by 2 if the lower score is 9 or 10.
-*   **Admin Page:** The admin page needs a more professional look.
+*   **Admin Page:** The admin page needs a more professional look, including the ability to customize the branding with a company logo and color scheme.
+*   **Terms of Service:** The application should have a page where users can view the terms of service.
+*   **Data Export:** Users should be able to export their data from the application.
 
 ## Known Issues
 
