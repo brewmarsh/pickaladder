@@ -27,6 +27,12 @@ This document outlines the requirements that have been implemented for the picka
 *   **Promote Users:** Admin users can promote other users to administrators.
 *   **Reset Passwords:** Admin users can reset user passwords. The new password will be sent to the user's email address.
 
+## Non-Functional Requirements
+
+*   **Idempotency:** Database operations are idempotent to prevent duplicate entries and other inconsistencies.
+*   **Code Quality:** The project uses `ruff` for linting and code formatting to maintain a consistent code style.
+*   **Testing:** The project has a basic test suite to ensure the core functionality of the application is working correctly.
+
 ## Security
 
 *   **UUIDs:** User and match IDs are now UUIDs to enhance privacy and prevent sequential ID guessing.

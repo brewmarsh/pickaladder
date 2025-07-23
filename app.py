@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-from flask import Flask, render_template, request, redirect, url_for, session
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -82,8 +81,9 @@ def install():
             conn.commit()
             session['user_id'] = user_id
             session['is_admin'] = True
-        except:
+        except Exception as e:
             conn.rollback()
+            flash(f"An error occurred: {e}", 'danger')
             return "Username already exists."
         finally:
             cur.close()
@@ -144,8 +144,9 @@ def register():
             msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
             msg.body = 'Click the link to verify your email: {}'.format(url_for('verify_email', email=email, _external=True))
             mail.send(msg)
-        except:
+        except Exception as e:
             conn.rollback()
+            flash(f"An error occurred: {e}", 'danger')
             return "An error occurred during registration."
         finally:
             cur.close()
@@ -199,7 +200,7 @@ def users():
     cur.execute("SELECT friend_id FROM friends WHERE user_id = %s AND status = 'accepted'", (user_id,))
     friends = [row[0] for row in cur.fetchall()]
     if friends:
-        cur.execute(f"""
+        cur.execute("""
             SELECT DISTINCT u.id, u.username, u.name, u.dupr_rating
             FROM users u
             JOIN friends f1 ON u.id = f1.friend_id
@@ -227,9 +228,9 @@ def add_friend(friend_id):
             cur.execute('INSERT INTO friends (user_id, friend_id) VALUES (%s, %s)', (user_id, friend_id))
             conn.commit()
             flash('Friend request sent.', 'success')
-    except:
+    except Exception as e:
         conn.rollback()
-        flash('An error occurred while sending the friend request.', 'danger')
+        flash(f"An error occurred while sending the friend request: {e}", 'danger')
     finally:
         cur.close()
         conn.close()
@@ -283,7 +284,6 @@ def reset_admin():
     conn.close()
     return render_template('reset_admin.html')
 
-from psycopg2 import errors
 
 @app.route('/admin/delete_user/<uuid:user_id>')
 def delete_user(user_id):
@@ -430,7 +430,6 @@ def change_password():
             return render_template('change_password.html', user=user, error='Passwords do not match.')
     return render_template('change_password.html', user=user)
 
-from utils import allowed_file
 
 @app.route('/update_profile', methods=['POST'])
 def update_profile():

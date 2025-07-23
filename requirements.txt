@@ -4,3 +4,4 @@ Werkzeug==2.2.2
 gunicorn
 Flask-Mail==0.9.1
 Faker==18.4.0
+ruff==0.0.272
