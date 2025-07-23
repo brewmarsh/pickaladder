@@ -23,6 +23,7 @@ services:
       - type: bind
         source: ./init.sql
         target: /docker-entrypoint-initdb.d/init.sql
+      - /app/migrations:/migrations
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password

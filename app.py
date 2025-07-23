@@ -18,6 +18,7 @@ app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 mail = Mail(app)
 
@@ -448,7 +449,7 @@ def update_profile():
 
         if profile_picture and allowed_file(profile_picture.filename):
             filename = secure_filename(profile_picture.filename)
-            upload_folder = 'static/uploads'
+            upload_folder = app.config['UPLOAD_FOLDER']
             if not os.path.exists(upload_folder):
                 os.makedirs(upload_folder)
             profile_picture.save(os.path.join(upload_folder, filename))
