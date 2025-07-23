@@ -476,7 +476,7 @@ def update_profile():
         cur.close()
         conn.close()
     except psycopg2.errors.UndefinedColumn as e:
-        flash(f"Database error: {e}. Please run migrations.", 'danger')
+        flash(f"Database error: {e}. The 'dark_mode' column is missing. Please run database migrations or contact an administrator.", 'danger')
         return render_template('error.html', error=str(e)), 500
     except psycopg2.Error as e:
         flash(f"Database error: {e}", 'danger')
