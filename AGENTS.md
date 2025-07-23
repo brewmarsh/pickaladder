@@ -96,3 +96,26 @@ This document outlines the requirements that have been implemented for the picka
 
 *   **Automated Deployments:** Implement a CI/CD pipeline to automate the deployment process and ensure that all changes are automatically tested and deployed.
 *   **Infrastructure as Code:** Use a tool like Terraform to manage the application's infrastructure as code.
+
+### Documentation
+
+*   **Code Comments:** The code should be well-commented to make it easier for other developers to understand.
+*   **README.md:** The `README.md` file should be updated with more information about the project.
+
+### Gameplay
+
+*   **Match Formatting:** The formatting of the match page needs to be fixed.
+*   **Match IDs:** Matches should have a large random ID instead of a static number for privacy reasons.
+*   **Dark Mode:** Dark mode needs to be implemented correctly.
+*   **User Dashboard:** On the user's dashboard, we should show their record in matches and their ladder ranking.
+*   **Ladder Ranking:** The average ladder ranking is determined by averaging their total points per game.
+*   **Multiple Ladder Rankings:** We may add another ladder ranking later.
+*   **Leaderboard:** The app should have a leaderboard page, showing the top 10 by ranking, including their average and number of games.
+*   **Generate Random Matches:** We need a "generate 10 random matches" button on the admin page that would simulate 10 matches between friends in the database, randomly scoring from 0 to 11, or win by 2 if the lower score is 9 or 10.
+*   **Admin Page:** The admin page needs a more professional look.
+
+## Known Issues
+
+*   There is a race condition between the `web` and `db` containers that causes the application to time out on startup. This issue needs to be resolved.
+*   There is a "Bad Request" error during installation that needs to be investigated and fixed.
+*   The testing environment needs to be stabilized to allow for proper testing of the application.
