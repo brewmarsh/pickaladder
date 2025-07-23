@@ -136,7 +136,7 @@ def login():
         cur.close()
         conn.close()
         if user and check_password_hash(user[2], password):
-            session['user_id'] = user[0]
+            session['user_id'] = str(user[0])
             session['is_admin'] = user[6]
             return redirect(url_for('dashboard'))
         else:
@@ -512,8 +512,7 @@ def create_match():
     conn = get_db_connection()
     cur = conn.cursor()
     if request.method == 'POST':
-        cur.execute('SELECT id FROM users WHERE id = %s', (user_id,))
-        player1_id = cur.fetchone()[0]
+        player1_id = session['user_id']
         player2_id = request.form['player2']
         player1_score = request.form['player1_score']
         player2_score = request.form['player2_score']
