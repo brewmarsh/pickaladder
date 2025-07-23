@@ -214,11 +214,27 @@ def dashboard():
     friends = cur.fetchall()
     cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE m.player1_id = %s OR m.player2_id = %s ORDER BY m.match_date DESC', (user_id, user_id))
     matches = cur.fetchall()
+    wins = 0
+    losses = 0
+    for match in matches:
+        if match[1] == user_id and match[3] > match[4]:
+            wins += 1
+        elif match[2] == user_id and match[4] > match[3]:
+            wins += 1
+        else:
+            losses += 1
     cur.execute("SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'", (user_id,))
     requests = cur.fetchall()
+    total_points = 0
+    for match in matches:
+        if match[1] == user_id:
+            total_points += match[3]
+        else:
+            total_points += match[4]
+    ladder_ranking = total_points / len(matches) if matches else 0
     cur.close()
     conn.close()
-    return render_template('dashboard.html', friends=friends, matches=matches, requests=requests)
+    return render_template('user_dashboard.html', friends=friends, matches=matches, requests=requests, wins=wins, losses=losses, ladder_ranking=ladder_ranking)
 
 @app.route('/users')
 def users():
