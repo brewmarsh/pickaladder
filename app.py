@@ -476,6 +476,14 @@ def generate_matches():
         new_user = cur.fetchone()
         new_users.append(new_user)
     conn.commit()
+
+    # Add random friendships
+    for i in range(len(new_users)):
+        for j in range(i + 1, len(new_users)):
+            if random.random() < 0.5:
+                cur.execute('INSERT INTO friends (user_id, friend_id, status) VALUES (%s, %s, %s)', (new_users[i][0], new_users[j][0], 'accepted'))
+    conn.commit()
+
     cur.close()
     conn.close()
     return render_template('generated_users.html', users=new_users)
