@@ -158,8 +158,8 @@ input[type="submit"], .btn {
     background-color: #ffc107;
     color: #333;
     text-align: center;
-    padding: 5px;
-    font-size: 0.9em;
+    padding: 2px;
+    font-size: 0.8em;
 }
 
 .match-details {

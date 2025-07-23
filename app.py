@@ -113,6 +113,7 @@ def install():
             user_id = cur.fetchone()[0]
             conn.commit()
             session['user_id'] = str(user_id)
+            session['is_admin'] = False
             session['is_admin'] = True
         except Exception as e:
             conn.rollback()
@@ -303,12 +304,13 @@ def admin_delete_match(match_id):
         cur.execute('DELETE FROM matches WHERE id = %s', (match_id,))
         conn.commit()
         flash('Match deleted successfully.', 'success')
+        return redirect(url_for('admin_matches'))
     except Exception as e:
         flash(f"An error occurred: {e}", 'danger')
+        return redirect(url_for('admin_matches'))
     finally:
         cur.close()
         conn.close()
-    return redirect(url_for('admin_matches'))
 
 @app.route('/admin/reset_db')
 def reset_db():
@@ -413,6 +415,34 @@ def admin_reset_password(user_id):
 def generate_users():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
+@app.route('/admin/generate_matches')
+def generate_matches():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT user_id, friend_id FROM friends WHERE status = 'accepted'")
+    friends = cur.fetchall()
+    for _ in range(10):
+        player1_id, player2_id = random.choice(friends)
+        score1 = random.randint(0, 11)
+        if score1 == 10:
+            score2 = 12
+        else:
+            score2 = 11
+        if random.choice([True, False]):
+            player1_score, player2_score = score1, score2
+        else:
+            player1_score, player2_score = score2, score1
+        match_id = str(uuid.uuid4())
+        cur.execute('INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s, %s)',
+                    (match_id, player1_id, player2_id, player1_score, player2_score, 'NOW()'))
+    conn.commit()
+    cur.close()
+    conn.close()
+    flash('10 random matches generated.', 'success')
+    return redirect(url_for('admin_matches'))
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()
@@ -521,6 +551,8 @@ def update_profile():
                 os.makedirs(upload_folder)
             profile_picture.save(os.path.join(upload_folder, filename))
             cur.execute('UPDATE users SET profile_picture = %s WHERE id = %s', (filename, user_id))
+        elif profile_picture:
+            flash('Invalid file type for profile picture.', 'danger')
 
         if dupr_rating is not None:
             cur.execute('UPDATE users SET dupr_rating = %s WHERE id = %s', (dupr_rating, user_id))

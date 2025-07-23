@@ -3,11 +3,54 @@
 {% block content %}
 <div class="container">
     <h2>Admin Panel</h2>
-    <div class="list-group">
-        <a href="{{ url_for('reset_db') }}" class="list-group-item list-group-item-action list-group-item-danger">Reset Database</a>
-        <a href="{{ url_for('generate_users') }}" class="list-group-item list-group-item-action">Generate 10 Random Users</a>
-        <a href="{{ url_for('reset_admin') }}" class="list-group-item list-group-item-action list-group-item-warning">Reset Admin</a>
-        <a href="{{ url_for('admin_matches') }}" class="list-group-item list-group-item-action">View Matches</a>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Reset Database</h5>
+                    <p class="card-text">This will delete all users, matches, and friends.</p>
+                    <a href="{{ url_for('reset_db') }}" class="btn btn-danger">Reset Database</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Generate Users</h5>
+                    <p class="card-text">This will generate 10 random users.</p>
+                    <a href="{{ url_for('generate_users') }}" class="btn btn-primary">Generate Users</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Reset Admin</h5>
+                    <p class="card-text">This will reset the admin account to the first user in the database.</p>
+                    <a href="{{ url_for('reset_admin') }}" class="btn btn-warning">Reset Admin</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Generate Matches</h5>
+                    <p class="card-text">This will generate 10 random matches between friends.</p>
+                    <a href="{{ url_for('generate_matches') }}" class="btn btn-primary">Generate Matches</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">View Matches</h5>
+                    <p class="card-text">View all matches in the database.</p>
+                    <a href="{{ url_for('admin_matches') }}" class="btn btn-primary">View Matches</a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
