@@ -512,7 +512,8 @@ def create_match():
     conn = get_db_connection()
     cur = conn.cursor()
     if request.method == 'POST':
-        player1_id = user_id
+        cur.execute('SELECT id FROM users WHERE id = %s', (user_id,))
+        player1_id = cur.fetchone()[0]
         player2_id = request.form['player2']
         player1_score = request.form['player1_score']
         player2_score = request.form['player2_score']
