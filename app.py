@@ -9,7 +9,24 @@ import psycopg2
 from database import get_db_connection
 from faker import Faker
 
+def apply_migrations():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    migration_dir = 'migrations'
+    if not os.path.exists(migration_dir):
+        return
+    for migration_file in sorted(os.listdir(migration_dir)):
+        with open(os.path.join(migration_dir, migration_file), 'r') as f:
+            cur.execute(f.read())
+    conn.commit()
+    cur.close()
+    conn.close()
+
 app = Flask(__name__)
+
+@app.before_first_request
+def initialize_app():
+    apply_migrations()
 app.secret_key = os.urandom(24)
 
 # Mail configuration
@@ -461,7 +478,11 @@ def update_profile():
         conn.commit()
         cur.close()
         conn.close()
+    except psycopg2.Error as e:
+        flash(f"Database error: {e}", 'danger')
+        return render_template('error.html', error=str(e)), 500
     except Exception as e:
+        flash(f"An error occurred: {e}", 'danger')
         return render_template('error.html', error=str(e)), 500
     return redirect(url_for('dashboard'))
 
