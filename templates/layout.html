@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %} - pickaladder</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    {% if user and user[8] %}
     <link rel="stylesheet" href="{{ url_for('static', filename='dark.css') }}">
-    {% endif %}
 </head>
 <body class="{{ 'dark-mode' if user and user[8] else '' }}">
     {% include 'navbar.html' %}
