@@ -114,6 +114,7 @@ def install():
             conn.commit()
             session['user_id'] = str(user_id)
             session['is_admin'] = False
+            session['is_admin'] = False
             session['is_admin'] = True
         except Exception as e:
             conn.rollback()
@@ -294,7 +295,7 @@ def admin_matches():
     conn.close()
     return render_template('admin_matches.html', matches=matches, search_term=search_term)
 
-@app.route('/admin/delete_match/<uuid:match_id>')
+@app.route('/admin/delete_match/<string:match_id>')
 def admin_delete_match(match_id):
     if 'user_id' not in session or not session.get('is_admin'):
         return redirect(url_for('login'))
@@ -424,6 +425,9 @@ def generate_matches():
     cur = conn.cursor()
     cur.execute("SELECT user_id, friend_id FROM friends WHERE status = 'accepted'")
     friends = cur.fetchall()
+    if not friends:
+        flash('There are no accepted friendships to generate matches from.', 'danger')
+        return redirect(url_for('admin'))
     for _ in range(10):
         player1_id, player2_id = random.choice(friends)
         score1 = random.randint(0, 11)
