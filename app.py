@@ -275,6 +275,34 @@ def admin():
         return redirect(url_for('login'))
     return render_template('admin.html')
 
+@app.route('/admin/matches')
+def admin_matches():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+    search_term = request.args.get('search', '')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    if search_term:
+        cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE p1.username ILIKE %s OR p2.username ILIKE %s ORDER BY m.match_date DESC', (f'%{search_term}%', f'%{search_term}%'))
+    else:
+        cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id ORDER BY m.match_date DESC')
+    matches = cur.fetchall()
+    cur.close()
+    conn.close()
+    return render_template('admin_matches.html', matches=matches, search_term=search_term)
+
+@app.route('/admin/delete_match/<uuid:match_id>')
+def admin_delete_match(match_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('DELETE FROM matches WHERE id = %s', (match_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return redirect(url_for('admin_matches'))
+
 @app.route('/admin/reset_db')
 def reset_db():
     if 'user_id' not in session:
