@@ -256,6 +256,9 @@ def add_friend(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = uuid.UUID(session['user_id'])
+    if user_id == friend_id:
+        flash("You cannot add yourself as a friend.", 'danger')
+        return redirect(request.referrer or url_for('users'))
     conn = get_db_connection()
     cur = conn.cursor()
     try:
@@ -416,6 +419,46 @@ def admin_reset_password(user_id):
 def generate_users():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT is_admin FROM users WHERE id = %s', (user_id,))
+    is_admin = cur.fetchone()[0]
+    if not is_admin:
+        cur.close()
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    cur.execute('SELECT username FROM users')
+    existing_usernames = {row[0] for row in cur.fetchall()}
+    fake = Faker()
+    new_users = []
+
+    for _ in range(10):
+        name = fake.name()
+        username = name.lower().replace(" ", "")
+        if username in existing_usernames:
+            continue
+        password = 'password'
+        email = f'{username}@example.com'
+        dupr_rating = round(fake.pyfloat(left_digits=1, right_digits=2, positive=True, min_value=1.0, max_value=5.0), 2)
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, username, email, name, dupr_rating',
+                    (username, hashed_password, email, name, dupr_rating, False))
+        new_user = cur.fetchone()
+        new_users.append(new_user)
+    conn.commit()
+
+    # Add random friendships
+    for i in range(len(new_users)):
+        for j in range(i + 1, len(new_users)):
+            if random.random() < 0.5:
+                cur.execute('INSERT INTO friends (user_id, friend_id, status) VALUES (%s, %s, %s)', (new_users[i][0], new_users[j][0], 'accepted'))
+    conn.commit()
+
+    cur.close()
+    conn.close()
+    return render_template('generated_users.html', users=new_users)
 
 @app.route('/admin/generate_matches')
 def generate_matches():
