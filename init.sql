@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS friends, matches, users CASCADE;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE users (

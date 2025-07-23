@@ -171,9 +171,11 @@ def register():
             conn.close()
             return render_template('register.html', error=error)
         try:
-            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin, profile_picture) VALUES (%s, %s, %s, %s, %s, %s, %s)',
+            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin, profile_picture) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id',
                         (username, hashed_password, email, name, dupr_rating, False, 'pickaladder_icon.png'))
+            user_id = cur.fetchone()[0]
             conn.commit()
+            session['user_id'] = str(user_id)
             msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
             msg.body = 'Click the link to verify your email: {}'.format(url_for('verify_email', email=email, _external=True))
             mail.send(msg)
