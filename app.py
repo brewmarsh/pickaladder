@@ -512,8 +512,8 @@ def create_match():
     conn = get_db_connection()
     cur = conn.cursor()
     if request.method == 'POST':
-        player1_id = session['user_id']
-        player2_id = request.form['player2']
+        player1_id = uuid.UUID(session['user_id'])
+        player2_id = uuid.UUID(request.form['player2'])
         player1_score = request.form['player1_score']
         player2_score = request.form['player2_score']
         match_date = request.form['match_date']
