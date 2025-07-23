@@ -85,7 +85,7 @@ This document outlines the requirements that have been implemented for the picka
 
 *   **Type Checking:** Introduce static type checking with a tool like `mypy` to improve code quality and catch type-related errors early.
 *   **Comprehensive Testing:** Expand the test suite to include integration and end-to-end tests to ensure the application is well-tested and stable.
-*   **Code Coverage:** Measure code coverage to identify untested parts of the codebase.
+*   **Code Coverage:** Measure code coverage to identify untested parts of the codebase. The CI/CD pipeline should be configured to enforce a minimum code coverage threshold.
 
 ### Documentation
 
