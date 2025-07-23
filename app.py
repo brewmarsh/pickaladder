@@ -23,10 +23,7 @@ def apply_migrations():
     conn.close()
 
 app = Flask(__name__)
-
-@app.before_first_request
-def initialize_app():
-    apply_migrations()
+apply_migrations()
 app.secret_key = os.urandom(24)
 
 # Mail configuration
@@ -478,6 +475,9 @@ def update_profile():
         conn.commit()
         cur.close()
         conn.close()
+    except psycopg2.errors.UndefinedColumn as e:
+        flash(f"Database error: {e}. Please run migrations.", 'danger')
+        return render_template('error.html', error=str(e)), 500
     except psycopg2.Error as e:
         flash(f"Database error: {e}", 'danger')
         return render_template('error.html', error=str(e)), 500
