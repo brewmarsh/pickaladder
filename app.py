@@ -211,29 +211,11 @@ def dashboard():
     cur = conn.cursor()
     cur.execute("SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'accepted'", (user_id,))
     friends = cur.fetchall()
-    cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE m.player1_id = %s OR m.player2_id = %s ORDER BY m.match_date DESC', (user_id, user_id))
-    matches = cur.fetchall()
-    wins = 0
-    losses = 0
-    for match in matches:
-        if match[1] == user_id and match[3] > match[4]:
-            wins += 1
-        elif match[2] == user_id and match[4] > match[3]:
-            wins += 1
-        else:
-            losses += 1
     cur.execute("SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'", (user_id,))
     requests = cur.fetchall()
-    total_points = 0
-    for match in matches:
-        if match[1] == user_id:
-            total_points += match[3]
-        else:
-            total_points += match[4]
-    ladder_ranking = total_points / len(matches) if matches else 0
     cur.close()
     conn.close()
-    return render_template('user_dashboard.html', friends=friends, matches=matches, requests=requests, wins=wins, losses=losses, ladder_ranking=ladder_ranking)
+    return render_template('user_dashboard.html', friends=friends, requests=requests)
 
 @app.route('/users')
 def users():
@@ -294,39 +276,6 @@ def admin():
         return redirect(url_for('login'))
     return render_template('admin.html')
 
-@app.route('/admin/matches')
-def admin_matches():
-    if 'user_id' not in session or not session.get('is_admin'):
-        return redirect(url_for('login'))
-    search_term = request.args.get('search', '')
-    conn = get_db_connection()
-    cur = conn.cursor()
-    if search_term:
-        cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE p1.username ILIKE %s OR p2.username ILIKE %s ORDER BY m.match_date DESC', (f'%{search_term}%', f'%{search_term}%'))
-    else:
-        cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id ORDER BY m.match_date DESC')
-    matches = cur.fetchall()
-    cur.close()
-    conn.close()
-    return render_template('admin_matches.html', matches=matches, search_term=search_term)
-
-@app.route('/admin/delete_match/<string:match_id>')
-def admin_delete_match(match_id):
-    if 'user_id' not in session or not session.get('is_admin'):
-        return redirect(url_for('login'))
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('DELETE FROM matches WHERE id = %s', (match_id,))
-        conn.commit()
-        flash('Match deleted successfully.', 'success')
-        return redirect(url_for('admin_matches'))
-    except Exception as e:
-        flash(f"An error occurred: {e}", 'danger')
-        return redirect(url_for('admin_matches'))
-    finally:
-        cur.close()
-        conn.close()
 
 @app.route('/admin/reset_db')
 def reset_db():
@@ -472,36 +421,6 @@ def generate_users():
     conn.close()
     return render_template('generated_users.html', users=new_users)
 
-@app.route('/admin/generate_matches')
-def generate_matches():
-    if 'user_id' not in session or not session.get('is_admin'):
-        return redirect(url_for('login'))
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT user_id, friend_id FROM friends WHERE status = 'accepted'")
-    friends = cur.fetchall()
-    if not friends:
-        flash('There are no accepted friendships to generate matches from.', 'danger')
-        return redirect(url_for('admin'))
-    for _ in range(10):
-        player1_id, player2_id = random.choice(friends)
-        score1 = random.randint(0, 11)
-        if score1 == 10:
-            score2 = 12
-        else:
-            score2 = 11
-        if random.choice([True, False]):
-            player1_score, player2_score = score1, score2
-        else:
-            player1_score, player2_score = score2, score1
-        match_id = str(uuid.uuid4())
-        cur.execute('INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s, %s)',
-                    (match_id, str(player1_id), str(player2_id), player1_score, player2_score, 'NOW()'))
-    conn.commit()
-    cur.close()
-    conn.close()
-    flash('10 random matches generated.', 'success')
-    return redirect(url_for('admin_matches'))
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()

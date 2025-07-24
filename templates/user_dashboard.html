@@ -60,33 +60,6 @@
                 <p>You have no friend requests.</p>
             {% endif %}
         </div>
-        <h3>Your Matches</h3>
-        <div class="matches-list">
-            {% if matches %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Opponent</th>
-                            <th>Score</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for match in matches %}
-                            <tr>
-                                <td>{{ match[5] }}</td>
-                                <td>{{ match[7] }}</td>
-                                <td>{{ match[3] }} - {{ match[4] }}</td>
-                                <td><a href="{{ url_for('view_match', match_id=match[0]) }}">View</a></td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>You have no matches yet. <a href="{{ url_for('create_match') }}">Record one!</a></p>
-            {% endif %}
-        </div>
         <h3>Your Friends</h3>
         <div class="friends-list">
             {% if friends %}
