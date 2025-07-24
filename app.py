@@ -545,7 +545,7 @@ def update_profile():
 
         cur.execute('UPDATE users SET dark_mode = %s WHERE id = %s', (dark_mode, user_id))
 
-        if profile_picture and allowed_file(profile_picture.filename):
+        if profile_picture and profile_picture.filename and allowed_file(profile_picture.filename):
             if len(profile_picture.read()) > 1024 * 1024:
                 flash('Profile picture is too large. The maximum size is 1MB.', 'danger')
                 return redirect(request.referrer or url_for('dashboard'))
