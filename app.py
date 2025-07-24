@@ -181,6 +181,8 @@ def register():
             user_id = cur.fetchone()[0]
             conn.commit()
             session['user_id'] = str(user_id)
+            session['is_admin'] = False
+            app.logger.info(f"New user registered: {username}")
             msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
             msg.body = 'Click the link to verify your email: {}'.format(url_for('verify_email', email=email, _external=True))
             mail.send(msg)
@@ -191,7 +193,7 @@ def register():
         finally:
             cur.close()
             conn.close()
-        return redirect(url_for('login'))
+        return redirect(url_for('dashboard'))
     return render_template('register.html', error=error)
 
 @app.context_processor
@@ -519,7 +521,7 @@ def change_password():
     return render_template('change_password.html', user=user)
 
 
-@app.route('/profile_picture/<uuid:user_id>')
+@app.route('/profile_picture/<string:user_id>')
 def profile_picture(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
