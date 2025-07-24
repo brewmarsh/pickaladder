@@ -703,7 +703,7 @@ def friend_requests():
 def accept_friend_request(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    user_id = session['user_id']
+    user_id = uuid.UUID(session['user_id'])
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("UPDATE friends SET status = 'accepted' WHERE user_id = %s AND friend_id = %s", (friend_id, user_id))
