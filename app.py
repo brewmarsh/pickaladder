@@ -523,28 +523,36 @@ def change_password():
 
 @app.route('/profile_picture/<string:user_id>')
 def profile_picture(user_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('SELECT profile_picture FROM users WHERE id = %s', (user_id,))
-    profile_picture_data = cur.fetchone()
-    cur.close()
-    conn.close()
-    if profile_picture_data and profile_picture_data[0]:
-        return profile_picture_data[0], 200, {'Content-Type': 'image/png'}
-    else:
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT profile_picture FROM users WHERE id = %s', (user_id,))
+        profile_picture_data = cur.fetchone()
+        cur.close()
+        conn.close()
+        if profile_picture_data and profile_picture_data[0]:
+            return profile_picture_data[0], 200, {'Content-Type': 'image/png'}
+        else:
+            return redirect(url_for('static', filename='user_icon.png'))
+    except Exception as e:
+        app.logger.error(f"Error serving profile picture: {e}")
         return redirect(url_for('static', filename='user_icon.png'))
 
 @app.route('/profile_picture_thumbnail/<string:user_id>')
 def profile_picture_thumbnail(user_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('SELECT profile_picture_thumbnail FROM users WHERE id = %s', (user_id,))
-    thumbnail_data = cur.fetchone()
-    cur.close()
-    conn.close()
-    if thumbnail_data and thumbnail_data[0]:
-        return thumbnail_data[0], 200, {'Content-Type': 'image/png'}
-    else:
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT profile_picture_thumbnail FROM users WHERE id = %s', (user_id,))
+        thumbnail_data = cur.fetchone()
+        cur.close()
+        conn.close()
+        if thumbnail_data and thumbnail_data[0]:
+            return thumbnail_data[0], 200, {'Content-Type': 'image/png'}
+        else:
+            return redirect(url_for('static', filename='user_icon.png'))
+    except Exception as e:
+        app.logger.error(f"Error serving profile picture thumbnail: {e}")
         return redirect(url_for('static', filename='user_icon.png'))
 
 @app.route('/update_profile', methods=['POST'])
