@@ -2,6 +2,13 @@
 {% block title %}Friend Requests{% endblock %}
 {% block content %}
 <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
     <h2>Friend Requests</h2>
     <h3>Received</h3>
     <div class="friend-requests-list">

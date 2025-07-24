@@ -721,7 +721,7 @@ def accept_friend_request(friend_id):
         conn.close()
     return redirect(url_for('friend_requests'))
 
-@app.route('/decline_friend_request/<uuid:friend_id>')
+@app.route('/decline_friend_request/<string:friend_id>')
 def decline_friend_request(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
