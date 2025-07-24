@@ -266,11 +266,11 @@ def users():
     conn.close()
     return render_template('users.html', all_users=all_users, search_term=search_term, fof=fof)
 
-@app.route('/add_friend/<uuid:friend_id>')
+@app.route('/add_friend/<string:friend_id>')
 def add_friend(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    user_id = uuid.UUID(session['user_id'])
+    user_id = session['user_id']
     if user_id == friend_id:
         flash("You cannot add yourself as a friend.", 'danger')
         return redirect(request.referrer or url_for('users'))
@@ -285,6 +285,8 @@ def add_friend(friend_id):
             conn.commit()
             flash('Friend request sent.', 'success')
             app.logger.info(f"Friend request sent: user_id={user_id}, friend_id={friend_id}")
+        else:
+            flash('Friend request already sent.', 'info')
     except Exception as e:
         conn.rollback()
         flash(f"An error occurred while sending the friend request: {e}", 'danger')
