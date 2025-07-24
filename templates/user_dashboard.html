@@ -19,8 +19,6 @@
             <p><strong>Username:</strong> {{ user[1] }}</p>
             <p><strong>Email:</strong> {{ user[3] }}</p>
             <p><strong>DUPR Rating:</strong> {{ user[5] }}</p>
-            <p><strong>Record:</strong> {{ wins }} - {{ losses }}</p>
-            <p><strong>Ladder Ranking:</strong> {{ '%.2f'|format(ladder_ranking) }}</p>
         </div>
         <h3>Update Profile</h3>
         <form method="post" action="/update_profile" enctype="multipart/form-data">
