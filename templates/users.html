@@ -44,7 +44,7 @@
                 <tbody>
                     {% for user in all_users %}
                         <tr>
-                            <td><img src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;"></td>
+                            <td><img src="{{ url_for('profile_picture_thumbnail', user_id=user[0]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;"></td>
                             <td>{{ user[1] }}</td>
                             <td>{{ user[4] }}</td>
                             <td>{{ user[5] }}</td>

@@ -534,6 +534,19 @@ def profile_picture(user_id):
     else:
         return redirect(url_for('static', filename='user_icon.png'))
 
+@app.route('/profile_picture_thumbnail/<string:user_id>')
+def profile_picture_thumbnail(user_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT profile_picture_thumbnail FROM users WHERE id = %s', (user_id,))
+    thumbnail_data = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    if thumbnail_data:
+        return thumbnail_data, 200, {'Content-Type': 'image/png'}
+    else:
+        return redirect(url_for('static', filename='user_icon.png'))
+
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
     if 'user_id' not in session:
@@ -560,7 +573,13 @@ def update_profile():
             buf = io.BytesIO()
             img.save(buf, format='PNG')
             profile_picture_data = buf.getvalue()
-            cur.execute('UPDATE users SET profile_picture = %s WHERE id = %s', (profile_picture_data, user_id))
+
+            img.thumbnail((64, 64))
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            thumbnail_data = buf.getvalue()
+
+            cur.execute('UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s WHERE id = %s', (profile_picture_data, thumbnail_data, user_id))
             app.logger.info(f"User {user_id} updated their profile picture.")
         elif profile_picture:
             flash('Invalid file type for profile picture.', 'danger')

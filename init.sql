@@ -10,6 +10,7 @@ CREATE TABLE users (
     dupr_rating NUMERIC(3, 2),
     is_admin BOOLEAN DEFAULT FALSE,
     profile_picture BYTEA,
+    profile_picture_thumbnail BYTEA,
     dark_mode BOOLEAN DEFAULT FALSE
 );
 
