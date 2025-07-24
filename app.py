@@ -115,6 +115,8 @@ def install():
             conn.commit()
             session['user_id'] = str(user_id)
             session['is_admin'] = False
+            app.logger.info(f"New user registered: {username}")
+            session['is_admin'] = False
             session['is_admin'] = False
             session['is_admin'] = True
         except Exception as e:
@@ -557,6 +559,7 @@ def update_profile():
             img.save(buf, format='PNG')
             profile_picture_data = buf.getvalue()
             cur.execute('UPDATE users SET profile_picture = %s WHERE id = %s', (profile_picture_data, user_id))
+            app.logger.info(f"User {user_id} updated their profile picture.")
         elif profile_picture:
             flash('Invalid file type for profile picture.', 'danger')
 
