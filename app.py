@@ -699,17 +699,26 @@ def friend_requests():
     conn.close()
     return render_template('friend_requests.html', requests=requests, sent_requests=sent_requests)
 
-@app.route('/accept_friend_request/<uuid:friend_id>')
+@app.route('/accept_friend_request/<string:friend_id>')
 def accept_friend_request(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    user_id = uuid.UUID(session['user_id'])
+    user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE friends SET status = 'accepted' WHERE user_id = %s AND friend_id = %s", (friend_id, user_id))
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        app.logger.info(f"Accepting friend request: user_id={user_id}, friend_id={friend_id}")
+        cur.execute("UPDATE friends SET status = 'accepted' WHERE user_id = %s AND friend_id = %s", (friend_id, user_id))
+        conn.commit()
+        flash('Friend request accepted.', 'success')
+        app.logger.info(f"Friend request accepted: user_id={user_id}, friend_id={friend_id}")
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred while accepting the friend request: {e}", 'danger')
+        app.logger.error(f"Error accepting friend request: {e}")
+    finally:
+        cur.close()
+        conn.close()
     return redirect(url_for('friend_requests'))
 
 @app.route('/decline_friend_request/<uuid:friend_id>')
