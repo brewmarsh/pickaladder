@@ -1,5 +1,9 @@
 {% extends "layout.html" %}
 {% block title %}View Match{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='dark.css') }}">
+{% endblock %}
 {% block content %}
 <div class="container">
     <div class="match-card">

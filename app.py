@@ -114,7 +114,6 @@ def install():
             conn.commit()
             session['user_id'] = str(user_id)
             session['is_admin'] = False
-            session['is_admin'] = False
             session['is_admin'] = True
         except Exception as e:
             conn.rollback()
