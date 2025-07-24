@@ -13,7 +13,7 @@
         <div class="container">
             <h2>Welcome, {{ user[4] }}!</h2>
         {% if user[7] %}
-            <img src="{{ url_for('static', filename='uploads/' + user[7]) }}" alt="Profile Picture" width="100">
+            <img src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="Profile Picture" width="100">
         {% endif %}
         <div class="profile-info">
             <p><strong>Username:</strong> {{ user[1] }}</p>

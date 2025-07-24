@@ -9,7 +9,7 @@ CREATE TABLE users (
     name TEXT,
     dupr_rating NUMERIC(3, 2),
     is_admin BOOLEAN DEFAULT FALSE,
-    profile_picture TEXT,
+    profile_picture BYTEA,
     dark_mode BOOLEAN DEFAULT FALSE
 );
 

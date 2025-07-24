@@ -10,6 +10,7 @@ import psycopg2
 from psycopg2 import errors
 from database import get_db_connection
 from faker import Faker
+from PIL import Image
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -515,6 +516,19 @@ def change_password():
     return render_template('change_password.html', user=user)
 
 
+@app.route('/profile_picture/<uuid:user_id>')
+def profile_picture(user_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT profile_picture FROM users WHERE id = %s', (user_id,))
+    profile_picture_data = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    if profile_picture_data:
+        return profile_picture_data, 200, {'Content-Type': 'image/png'}
+    else:
+        return redirect(url_for('static', filename='user_icon.png'))
+
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
     if 'user_id' not in session:
@@ -531,12 +545,17 @@ def update_profile():
         cur.execute('UPDATE users SET dark_mode = %s WHERE id = %s', (dark_mode, user_id))
 
         if profile_picture and allowed_file(profile_picture.filename):
-            filename = secure_filename(profile_picture.filename)
-            upload_folder = app.config['UPLOAD_FOLDER']
-            if not os.path.exists(upload_folder):
-                os.makedirs(upload_folder)
-            profile_picture.save(os.path.join(upload_folder, filename))
-            cur.execute('UPDATE users SET profile_picture = %s WHERE id = %s', (filename, user_id))
+            if len(profile_picture.read()) > 1024 * 1024:
+                flash('Profile picture is too large. The maximum size is 1MB.', 'danger')
+                return redirect(request.referrer or url_for('dashboard'))
+            profile_picture.seek(0)
+            img = Image.open(profile_picture)
+            img.thumbnail((256, 256))
+            import io
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            profile_picture_data = buf.getvalue()
+            cur.execute('UPDATE users SET profile_picture = %s WHERE id = %s', (profile_picture_data, user_id))
         elif profile_picture:
             flash('Invalid file type for profile picture.', 'danger')
 
