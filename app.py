@@ -297,7 +297,7 @@ def reset_db():
         conn.close()
         return redirect(url_for('dashboard'))
 
-    cur.execute('TRUNCATE TABLE friends, users RESTART IDENTITY')
+    cur.execute('TRUNCATE TABLE friends, users CASCADE')
     conn.commit()
     cur.close()
     conn.close()
