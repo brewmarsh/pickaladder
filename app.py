@@ -526,11 +526,11 @@ def profile_picture(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute('SELECT profile_picture FROM users WHERE id = %s', (user_id,))
-    profile_picture_data = cur.fetchone()[0]
+    profile_picture_data = cur.fetchone()
     cur.close()
     conn.close()
-    if profile_picture_data:
-        return profile_picture_data, 200, {'Content-Type': 'image/png'}
+    if profile_picture_data and profile_picture_data[0]:
+        return profile_picture_data[0], 200, {'Content-Type': 'image/png'}
     else:
         return redirect(url_for('static', filename='user_icon.png'))
 
@@ -539,11 +539,11 @@ def profile_picture_thumbnail(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute('SELECT profile_picture_thumbnail FROM users WHERE id = %s', (user_id,))
-    thumbnail_data = cur.fetchone()[0]
+    thumbnail_data = cur.fetchone()
     cur.close()
     conn.close()
-    if thumbnail_data:
-        return thumbnail_data, 200, {'Content-Type': 'image/png'}
+    if thumbnail_data and thumbnail_data[0]:
+        return thumbnail_data[0], 200, {'Content-Type': 'image/png'}
     else:
         return redirect(url_for('static', filename='user_icon.png'))
 
