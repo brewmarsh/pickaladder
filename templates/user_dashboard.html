@@ -12,9 +12,7 @@
     <div class="content">
         <div class="container">
             <h2>Welcome, {{ user[4] }}!</h2>
-        {% if user[7] %}
-            <img src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="Profile Picture" width="256">
-        {% endif %}
+        <img src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="Profile Picture" width="256" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
         <div class="profile-info">
             <p><strong>Username:</strong> {{ user[1] }}</p>
             <p><strong>Email:</strong> {{ user[3] }}</p>
@@ -29,6 +27,8 @@
             <label for="profile_picture">Profile Picture:</label>
             <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif" onchange="previewImage(event)">
             <img id="preview" src="#" alt="your image" width="100" style="display:none;"/>
+            <progress id="progressBar" value="0" max="100" style="width:300px;"></progress>
+            <button type="button" onclick="uploadFile()">Upload</button>
             <label for="dupr_rating">DUPR Rating:</label>
             <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user[5] }}">
             <input type="submit" value="Update Profile">
@@ -100,6 +100,36 @@
                 output.style.display = 'block';
             };
             reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function uploadFile() {
+            var file = document.getElementById("profile_picture").files[0];
+            var formdata = new FormData();
+            formdata.append("profile_picture", file);
+            var ajax = new XMLHttpRequest();
+            ajax.upload.addEventListener("progress", progressHandler, false);
+            ajax.addEventListener("load", completeHandler, false);
+            ajax.addEventListener("error", errorHandler, false);
+            ajax.addEventListener("abort", abortHandler, false);
+            ajax.open("POST", "/update_profile");
+            ajax.send(formdata);
+        }
+
+        function progressHandler(event) {
+            var percent = (event.loaded / event.total) * 100;
+            document.getElementById("progressBar").value = Math.round(percent);
+        }
+
+        function completeHandler(event) {
+            location.reload();
+        }
+
+        function errorHandler(event) {
+            alert("Upload Failed");
+        }
+
+        function abortHandler(event) {
+            alert("Upload Aborted");
         }
     </script>
 </body>

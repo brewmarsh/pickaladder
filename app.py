@@ -11,6 +11,8 @@ from psycopg2 import errors
 from database import get_db_connection
 from faker import Faker
 from PIL import Image
+import networkx as nx
+import matplotlib.pyplot as plt
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -116,6 +118,28 @@ def install():
             session['user_id'] = str(user_id)
             session['is_admin'] = False
             app.logger.info(f"New user registered: {username}")
+
+            # Generate profile picture
+            img = Image.new('RGB', (256, 256), color = (73, 109, 137))
+            d = ImageDraw.Draw(img)
+            initials = "".join([name[0] for name in name.split()])
+            d.text((128, 128), initials, fill=(255,255,0))
+            import io
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            profile_picture_data = buf.getvalue()
+
+            img.thumbnail((64, 64))
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            thumbnail_data = buf.getvalue()
+
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute('UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s WHERE id = %s', (profile_picture_data, thumbnail_data, user_id))
+            conn.commit()
+            cur.close()
+            conn.close()
             session['is_admin'] = False
             session['is_admin'] = False
             session['is_admin'] = True
@@ -176,8 +200,8 @@ def register():
             conn.close()
             return render_template('register.html', error=error)
         try:
-            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin, profile_picture) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id',
-                        (username, hashed_password, email, name, dupr_rating, False, 'pickaladder_icon.png'))
+            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
+                        (username, hashed_password, email, name, dupr_rating, False))
             user_id = cur.fetchone()[0]
             conn.commit()
             session['user_id'] = str(user_id)
@@ -281,6 +305,27 @@ def admin():
     if 'user_id' not in session or not session.get('is_admin'):
         return redirect(url_for('login'))
     return render_template('admin.html')
+
+@app.route('/admin/friend_graph')
+def friend_graph():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT user_id, friend_id FROM friends WHERE status = 'accepted'")
+    friends = cur.fetchall()
+    cur.close()
+    conn.close()
+    G = nx.Graph()
+    for user_id, friend_id in friends:
+        G.add_edge(str(user_id), str(friend_id))
+    plt.figure(figsize=(12, 12))
+    nx.draw(G, with_labels=True, node_color='skyblue', node_size=2000, edge_color='k', linewidths=1, font_size=15)
+    import io
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    return buf.read(), 200, {'Content-Type': 'image/png'}
 
 
 @app.route('/admin/reset_db')
@@ -571,12 +616,12 @@ def update_profile():
         cur.execute('UPDATE users SET dark_mode = %s WHERE id = %s', (dark_mode, user_id))
 
         if profile_picture and profile_picture.filename and allowed_file(profile_picture.filename):
-            if len(profile_picture.read()) > 1024 * 1024:
-                flash('Profile picture is too large. The maximum size is 1MB.', 'danger')
+            if len(profile_picture.read()) > 10 * 1024 * 1024:
+                flash('Profile picture is too large. The maximum size is 10MB.', 'danger')
                 return redirect(request.referrer or url_for('dashboard'))
             profile_picture.seek(0)
             img = Image.open(profile_picture)
-            img.thumbnail((256, 256))
+            img.thumbnail((512, 512))
             import io
             buf = io.BytesIO()
             img.save(buf, format='PNG')
@@ -591,6 +636,7 @@ def update_profile():
             app.logger.info(f"User {user_id} updated their profile picture.")
         elif profile_picture:
             flash('Invalid file type for profile picture.', 'danger')
+            return redirect(request.referrer or url_for('dashboard'))
 
         if dupr_rating is not None:
             cur.execute('UPDATE users SET dupr_rating = %s WHERE id = %s', (dupr_rating, user_id))

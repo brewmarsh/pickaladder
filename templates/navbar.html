@@ -8,11 +8,7 @@
     <nav>
         <div class="dropdown" style="float:right;">
             <button class="dropbtn">
-                {% if user and user[7] %}
-                    <img src="{{ url_for('profile_picture_thumbnail', user_id=user[0]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
-                {% else %}
-                    Account
-                {% endif %}
+                <img src="{{ url_for('profile_picture_thumbnail', user_id=user[0]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
             </button>
             <div class="dropdown-content">
                 <a href="{{ url_for('dashboard') }}">📈 Dashboard</a>
