@@ -66,7 +66,7 @@ This document outlines the requirements that have been implemented for the picka
 ### Technical Requirements
 
 *   **Database:** The application uses a PostgreSQL database.
-*   **File Uploads:** Profile pictures are uploaded to the `static/uploads` directory. The application only accepts `.png`, `.jpg`, `.jpeg`, and `.gif` files.
+*   **File Uploads:** Profile pictures are stored in the database as blobs. The application only accepts `.png`, `.jpg`, `.jpeg`, and `.gif` files. The maximum file size is 1MB. The images are resized to a maximum of 256x256 and a thumbnail of 64x64 is generated.
 
 ## Known Issues
 
