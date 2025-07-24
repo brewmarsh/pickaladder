@@ -277,20 +277,12 @@ def add_friend(friend_id):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        app.logger.info(f"Adding friend: user_id={user_id}, friend_id={friend_id}")
-        # Check if the friendship already exists
-        cur.execute('SELECT * FROM friends WHERE (user_id = %s AND friend_id = %s) OR (user_id = %s AND friend_id = %s)', (user_id, friend_id, friend_id, user_id))
-        if cur.fetchone() is None:
-            cur.execute('INSERT INTO friends (user_id, friend_id) VALUES (%s, %s)', (user_id, friend_id))
-            conn.commit()
-            flash('Friend request sent.', 'success')
-            app.logger.info(f"Friend request sent: user_id={user_id}, friend_id={friend_id}")
-        else:
-            flash('Friend request already sent.', 'info')
+        cur.execute('INSERT INTO friends (user_id, friend_id) VALUES (%s, %s)', (user_id, friend_id))
+        conn.commit()
+        flash('Friend request sent.', 'success')
     except Exception as e:
         conn.rollback()
         flash(f"An error occurred while sending the friend request: {e}", 'danger')
-        app.logger.error(f"Error adding friend: {e}")
     finally:
         cur.close()
         conn.close()
@@ -654,17 +646,23 @@ def create_match():
     conn = get_db_connection()
     cur = conn.cursor()
     if request.method == 'POST':
-        player1_id = session['user_id']
+        player1_id = user_id
         player2_id = request.form['player2']
         player1_score = request.form['player1_score']
         player2_score = request.form['player2_score']
         match_date = request.form['match_date']
-        match_id = str(uuid.uuid4())
-        cur.execute('INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s, %s)',
-                    (match_id, player1_id, player2_id, player1_score, player2_score, match_date))
-        conn.commit()
-        cur.close()
-        conn.close()
+        try:
+            match_id = str(uuid.uuid4())
+            cur.execute('INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s, %s)',
+                        (match_id, player1_id, player2_id, player1_score, player2_score, match_date))
+            conn.commit()
+            flash('Match created successfully.', 'success')
+        except Exception as e:
+            conn.rollback()
+            flash(f"An error occurred while creating the match: {e}", 'danger')
+        finally:
+            cur.close()
+            conn.close()
         return redirect(url_for('dashboard'))
     cur.execute('SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s', (user_id,))
     friends = cur.fetchall()
@@ -707,15 +705,12 @@ def accept_friend_request(friend_id):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        app.logger.info(f"Accepting friend request: user_id={user_id}, friend_id={friend_id}")
         cur.execute("UPDATE friends SET status = 'accepted' WHERE user_id = %s AND friend_id = %s", (friend_id, user_id))
         conn.commit()
         flash('Friend request accepted.', 'success')
-        app.logger.info(f"Friend request accepted: user_id={user_id}, friend_id={friend_id}")
     except Exception as e:
         conn.rollback()
         flash(f"An error occurred while accepting the friend request: {e}", 'danger')
-        app.logger.error(f"Error accepting friend request: {e}")
     finally:
         cur.close()
         conn.close()
