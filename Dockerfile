@@ -6,9 +6,9 @@ WORKDIR /app/frontend
 RUN npm ci
 COPY frontend/public /app/public
 WORKDIR /app/frontend
-RUN npm run build
 RUN ls -R /app
 RUN ls -R /app/frontend
+RUN npm run build
 
 # production environment
 FROM nginx:stable-alpine
