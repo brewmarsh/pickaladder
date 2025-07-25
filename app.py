@@ -11,6 +11,7 @@ from psycopg2 import errors
 from database import get_db_connection
 from faker import Faker
 from PIL import Image, ImageDraw
+from io import BytesIO
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -119,40 +120,18 @@ def install():
             session['is_admin'] = True
             app.logger.info(f"New user registered: {username}")
 
-            # Generate profile picture
-            img = Image.new('RGB', (256, 256), color = (73, 109, 137))
-            d = ImageDraw.Draw(img)
-            initials = "".join([name[0] for name in name.split()])
-            d.text((128, 128), initials, fill=(255,255,0))
-            import io
-            buf = io.BytesIO()
-            img.save(buf, format='PNG')
-            profile_picture_data = buf.getvalue()
-
-            img.thumbnail((64, 64))
-            buf = io.BytesIO()
-            img.save(buf, format='PNG')
-            thumbnail_data = buf.getvalue()
-
-            conn = get_db_connection()
-            cur = conn.cursor()
-            cur.execute('UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s WHERE id = %s', (profile_picture_data, thumbnail_data, user_id))
-            conn.commit()
-            cur.close()
-            conn.close()
 
             # Generate profile picture
             img = Image.new('RGB', (256, 256), color = (73, 109, 137))
             d = ImageDraw.Draw(img)
             initials = "".join([name[0] for name in name.split()])
             d.text((128, 128), initials, fill=(255,255,0))
-            import io
-            buf = io.BytesIO()
+            buf = BytesIO()
             img.save(buf, format='PNG')
             profile_picture_data = buf.getvalue()
 
             img.thumbnail((64, 64))
-            buf = io.BytesIO()
+            buf = BytesIO()
             img.save(buf, format='PNG')
             thumbnail_data = buf.getvalue()
 
