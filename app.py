@@ -116,7 +116,7 @@ def install():
             user_id = cur.fetchone()[0]
             conn.commit()
             session['user_id'] = str(user_id)
-            session['is_admin'] = False
+            session['is_admin'] = True
             app.logger.info(f"New user registered: {username}")
 
             # Generate profile picture
@@ -162,9 +162,6 @@ def install():
             conn.commit()
             cur.close()
             conn.close()
-            session['is_admin'] = False
-            session['is_admin'] = False
-            session['is_admin'] = True
         except Exception as e:
             conn.rollback()
             flash(f"An error occurred: {e}", 'danger')
@@ -229,6 +226,28 @@ def register():
             session['user_id'] = str(user_id)
             session['is_admin'] = False
             app.logger.info(f"New user registered: {username}")
+
+            # Generate profile picture
+            img = Image.new('RGB', (256, 256), color = (73, 109, 137))
+            d = ImageDraw.Draw(img)
+            initials = "".join([name[0] for name in name.split()])
+            d.text((128, 128), initials, fill=(255,255,0))
+            import io
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            profile_picture_data = buf.getvalue()
+
+            img.thumbnail((64, 64))
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            thumbnail_data = buf.getvalue()
+
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute('UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s WHERE id = %s', (profile_picture_data, thumbnail_data, user_id))
+            conn.commit()
+            cur.close()
+            conn.close()
             msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
             msg.body = 'Click the link to verify your email: {}'.format(url_for('verify_email', email=email, _external=True))
             mail.send(msg)
@@ -770,7 +789,7 @@ def accept_friend_request(friend_id):
     finally:
         cur.close()
         conn.close()
-    return redirect(url_for('friend_requests'))
+    return redirect(url_for('friends'))
 
 @app.route('/decline_friend_request/<string:friend_id>')
 def decline_friend_request(friend_id):
