@@ -12,7 +12,7 @@
     <div class="content">
         <div class="container">
             <h2>Welcome, {{ user[4] }}!</h2>
-        <img src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="Profile Picture" width="256" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+        <img src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="Profile Picture" width="256" onerror="this.onerror=null;this.src=&quot;{{ url_for('static', filename='user_icon.png') }}&quot;;">
         <div class="profile-info">
             <p><strong>Username:</strong> {{ user[1] }}</p>
             <p><strong>Email:</strong> {{ user[3] }}</p>
