@@ -15,8 +15,9 @@ This document outlines the requirements that have been implemented for the picka
 
 *   **Find Friends:** Users can find other users to be friends with.
 *   **Add Friends:** Users can add other users as friends. A toast message will be displayed to confirm that the request has been sent.
-*   **View Friends:** Users can view a list of their friends on their dashboard.
+*   **View Friends:** Users can view a list of their friends on the friends page.
 *   **Friends of Friends:** Users can see a list of "friends of friends" to get recommendations for new friends.
+*   **View Friend Profile:** Users can view a friend's profile by clicking on their name in the friends list.
 
 ### Admin Functionality
 
@@ -66,7 +67,7 @@ This document outlines the requirements that have been implemented for the picka
 ### Technical Requirements
 
 *   **Database:** The application uses a PostgreSQL database.
-*   **File Uploads:** Profile pictures are stored in the database as blobs. The application only accepts `.png`, `.jpg`, `.jpeg`, and `.gif` files. The maximum file size is 1MB. The images are resized to a maximum of 256x256 and a thumbnail of 64x64 is generated.
+*   **File Uploads:** Profile pictures are stored in the database as blobs. The application only accepts `.png`, `.jpg`, `.jpeg`, and `.gif` files. The maximum file size is 10MB. The images are resized to a maximum of 512x512 and a thumbnail of 64x64 is generated. A default profile picture is generated for new users.
 
 ## Known Issues
 
