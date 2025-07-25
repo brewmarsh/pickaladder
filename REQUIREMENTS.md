@@ -122,6 +122,13 @@ This document outlines the requirements that have been implemented for the picka
 ### Gameplay
 
 *   **Dark Mode:** Dark mode has been implemented correctly.
+*   **Match Formatting:** The formatting of the match page has been fixed.
+*   **Match IDs:** Matches now have a large random ID for privacy reasons. Matches should only be allowed between friends.
+*   **User Dashboard:** On the user's dashboard, we should show their DUPR rating.
+*   **Ladder Ranking:** The average ladder ranking is determined by averaging their total points per game.
+*   **Multiple Ladder Rankings:** We may add another ladder ranking later.
+*   **Leaderboard:** The app should have a leaderboard page, showing the top 10 by ranking, including their average and number of games.
+*   **Generate Random Matches:** We need a "generate 10 random matches" button on the admin page that would simulate 10 matches between friends in the database, randomly scoring from 0 to 11, or win by 2 if the lower score is 9 or 10.
 *   **Admin Page:** The admin page needs a more professional look, including the ability to customize the branding with a company logo and color scheme.
 *   **Terms of Service:** The application should have a page where users can view the terms of service.
 *   **Data Export:** Users should be able to export their data from the application.

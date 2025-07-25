@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block title %}View Match{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="match-card">
+        <div class="match-header">
+            <h2>Match Details</h2>
+            <p class="match-date">{{ match[5] }}</p>
+        </div>
+        <div class="match-body">
+            <div class="player-details">
+                <img src="{{ url_for('profile_picture', user_id=match[6]) }}" alt="{{ match[6] }}" class="profile-picture">
+                <h3>{{ match[6] }}</h3>
+            </div>
+            <div class="score-details">
+                <p class="score">{{ match[3] }} - {{ match[4] }}</p>
+            </div>
+            <div class="player-details">
+                <img src="{{ url_for('profile_picture', user_id=match[7]) }}" alt="{{ match[7] }}" class="profile-picture">
+                <h3>{{ match[7] }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
