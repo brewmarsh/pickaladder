@@ -667,37 +667,6 @@ def profile_picture_thumbnail(user_id):
         app.logger.error(f"Error serving profile picture thumbnail: {e}")
         return redirect(url_for('static', filename='user_icon.png'))
 
-@app.route('/create_match', methods=['GET', 'POST'])
-def create_match():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    user_id = session['user_id']
-    conn = get_db_connection()
-    cur = conn.cursor()
-    if request.method == 'POST':
-        player1_id = user_id
-        player2_id = request.form['player2']
-        player1_score = request.form['player1_score']
-        player2_score = request.form['player2_score']
-        match_date = request.form['match_date']
-        try:
-            match_id = str(uuid.uuid4())
-            cur.execute('INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s, %s)',
-                        (match_id, player1_id, player2_id, player1_score, player2_score, match_date))
-            conn.commit()
-            flash('Match created successfully.', 'success')
-        except Exception as e:
-            conn.rollback()
-            flash(f"An error occurred while creating the match: {e}", 'danger')
-        finally:
-            cur.close()
-            conn.close()
-        return redirect(url_for('dashboard'))
-    cur.execute('SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s', (user_id,))
-    friends = cur.fetchall()
-    cur.close()
-    conn.close()
-    return render_template('create_match.html', friends=friends)
 
 @app.route('/match/<uuid:match_id>')
 def view_match(match_id):
