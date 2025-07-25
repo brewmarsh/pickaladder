@@ -10,7 +10,7 @@ import psycopg2
 from psycopg2 import errors
 from database import get_db_connection
 from faker import Faker
-from PIL import Image
+from PIL import Image, ImageDraw
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -140,6 +140,28 @@ def install():
             conn.commit()
             cur.close()
             conn.close()
+
+            # Generate profile picture
+            img = Image.new('RGB', (256, 256), color = (73, 109, 137))
+            d = ImageDraw.Draw(img)
+            initials = "".join([name[0] for name in name.split()])
+            d.text((128, 128), initials, fill=(255,255,0))
+            import io
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            profile_picture_data = buf.getvalue()
+
+            img.thumbnail((64, 64))
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            thumbnail_data = buf.getvalue()
+
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute('UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s WHERE id = %s', (profile_picture_data, thumbnail_data, user_id))
+            conn.commit()
+            cur.close()
+            conn.close()
             session['is_admin'] = False
             session['is_admin'] = False
             session['is_admin'] = True
@@ -246,6 +268,18 @@ def dashboard():
     cur.close()
     conn.close()
     return render_template('user_dashboard.html', friends=friends, requests=requests)
+
+@app.route('/users/<string:user_id>')
+def view_user(user_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+    return render_template('user_profile.html', user=user)
 
 @app.route('/users')
 def users():
@@ -701,20 +735,22 @@ def view_match(match_id):
     conn.close()
     return render_template('view_match.html', match=match)
 
-@app.route('/friend_requests')
-def friend_requests():
+@app.route('/friends')
+def friends():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()
+    cur.execute("SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'accepted'", (user_id,))
+    friends = cur.fetchall()
     cur.execute("SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'", (user_id,))
     requests = cur.fetchall()
-    cur.execute("SELECT u.id, u.username, f.status FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s", (user_id,))
+    cur.execute("SELECT u.id, u.username, f.status FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'pending'", (user_id,))
     sent_requests = cur.fetchall()
     cur.close()
     conn.close()
-    return render_template('friend_requests.html', requests=requests, sent_requests=sent_requests)
+    return render_template('friends.html', friends=friends, requests=requests, sent_requests=sent_requests)
 
 @app.route('/accept_friend_request/<string:friend_id>')
 def accept_friend_request(friend_id):
@@ -725,6 +761,7 @@ def accept_friend_request(friend_id):
     cur = conn.cursor()
     try:
         cur.execute("UPDATE friends SET status = 'accepted' WHERE user_id = %s AND friend_id = %s", (friend_id, user_id))
+        cur.execute("INSERT INTO friends (user_id, friend_id, status) VALUES (%s, %s, %s)", (user_id, friend_id, 'accepted'))
         conn.commit()
         flash('Friend request accepted.', 'success')
     except Exception as e:

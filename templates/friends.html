@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Friend Requests{% endblock %}
+{% block title %}Friends{% endblock %}
 {% block content %}
 <div class="container">
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -9,6 +9,37 @@
             {% endfor %}
         {% endif %}
     {% endwith %}
+    <h2>Friends</h2>
+    <div class="friends-list">
+        {% if friends %}
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Username</th>
+                        <th>DUPR Rating</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for friend in friends %}
+                        <tr>
+                            <td>
+                                {% if friend[4] %}
+                                    <img src="{{ url_for('profile_picture_thumbnail', user_id=friend[0]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('view_user', user_id=friend[0]) }}">{{ friend[1] }}</a>
+                            </td>
+                            <td>{{ friend[3] }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>You have no friends yet. <a href="/users">Find some!</a></p>
+        {% endif %}
+    </div>
     <h2>Friend Requests</h2>
     <h3>Received</h3>
     <div class="friend-requests-list">
