@@ -1,12 +1,12 @@
 # build environment
 FROM node:16-alpine as build
 WORKDIR /app
-COPY frontend .
-WORKDIR /app/frontend
+COPY frontend/ .
+WORKDIR /app
 RUN npm ci
-COPY frontend/public /app/public
-WORKDIR /app/frontend
-RUN npm run build && ls -R /app/frontend
+COPY public /app/public
+WORKDIR /app
+RUN npm run build && ls -R /app
 
 # production environment
 FROM nginx:stable-alpine
