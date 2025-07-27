@@ -1,15 +1,22 @@
-# build environment
-FROM node:16-alpine as build
+# build environment for frontend
+FROM node:16-alpine as frontend
 WORKDIR /app
 COPY frontend/ .
-WORKDIR /app
 RUN npm ci
+RUN npm run build
+
+# build environment for backend
+FROM python:3.9-slim as backend
 WORKDIR /app
-RUN npm run build && ls -R /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
 
 # production environment
-FROM nginx:stable-alpine
-RUN apk add --no-cache postgresql-client
-COPY --from=build /app/build /usr/share/nginx/html
+FROM python:3.9-slim
+WORKDIR /app
+COPY --from=backend /app /app
+COPY --from=frontend /app/build /app/static/build
+RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["gunicorn", "--bind", "0.0.0.0:80", "app:app"]
