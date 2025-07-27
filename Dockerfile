@@ -9,6 +9,7 @@ RUN npm run build && ls -R /app
 
 # production environment
 FROM nginx:stable-alpine
+RUN apk add --no-cache postgresql-client
 COPY --from=build /app/build /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
