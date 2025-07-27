@@ -18,5 +18,6 @@ WORKDIR /app
 COPY --from=backend /app /app
 COPY --from=frontend /app/build /app/static/build
 RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client
+RUN pip install gunicorn
 EXPOSE 80
-CMD ["gunicorn", "--bind", "0.0.0.0:80", "app:app"]
+CMD ["/usr/local/bin/gunicorn", "--bind", "0.0.0.0:80", "app:app"]
