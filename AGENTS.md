@@ -35,6 +35,7 @@ This document provides instructions for agents working on this project.
 *   **React:** All React components should be functional components.
 *   **Error Handling:** Use centralized `try-catch` blocks and log to `console.error`.
 *   **Refactoring:** Prefer `const` over `let` where variable reassignment is not needed.
+*   **Resources** Prefer libraries and modules that use minimal resources and prune unecessary resources from larger packages 
 
 ## Resource Optimization Guidelines
 
