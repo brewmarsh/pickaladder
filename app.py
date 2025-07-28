@@ -7,6 +7,7 @@ from flask import (
     session,
     flash,
     Response,
+    jsonify,
 )
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -20,8 +21,6 @@ from database import get_db_connection
 from faker import Faker
 from PIL import Image, ImageDraw
 from io import BytesIO
-import networkx as nx
-import matplotlib.pyplot as plt
 from utils import allowed_file
 
 
@@ -468,35 +467,25 @@ def admin_delete_match(match_id):
     return redirect(url_for('admin_matches'))
 
 
-@app.route('/admin/friend_graph')
-def friend_graph():
+
+
+@app.route('/admin/friend_graph_data')
+def friend_graph_data():
     if 'user_id' not in session or not session.get('is_admin'):
-        return redirect(url_for('login'))
+        return jsonify({"error": "Unauthorized"}), 401
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("SELECT id, username FROM users")
+    users = cur.fetchall()
     cur.execute("SELECT user_id, friend_id FROM friends WHERE status = 'accepted'")
     friends = cur.fetchall()
     cur.close()
     conn.close()
-    G = nx.Graph()
-    for user_id, friend_id in friends:
-        G.add_edge(str(user_id), str(friend_id))
-    plt.figure(figsize=(12, 12))
-    nx.draw(
-        G,
-        with_labels=True,
-        node_color='skyblue',
-        node_size=2000,
-        edge_color='k',
-        linewidths=1,
-        font_size=15,
-    )
-    import io
 
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    buf.seek(0)
-    return buf.read(), 200, {'Content-Type': 'image/png'}
+    nodes = [{"id": str(user['id']), "label": user['username']} for user in users]
+    edges = [{"from": str(friend['user_id']), "to": str(friend['friend_id'])} for friend in friends]
+
+    return jsonify({"nodes": nodes, "edges": edges})
 
 
 @app.route('/admin/reset_db')

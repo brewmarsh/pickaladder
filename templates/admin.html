@@ -18,7 +18,9 @@
                 <div class="card-body">
                     <h5 class="card-title">Friend Graph</h5>
                     <p class="card-text">View a visual graph of friend connections.</p>
-                    <a href="{{ url_for('friend_graph') }}" class="btn btn-primary">View Graph</a>
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#friendGraphModal">
+                        View Graph
+                    </button>
                 </div>
             </div>
         </div>
@@ -51,4 +53,33 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="friendGraphModal" tabindex="-1" role="dialog" aria-labelledby="friendGraphModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="friendGraphModalLabel">Friend Graph</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="friend-graph" style="height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+<script>
+    $('#friendGraphModal').on('shown.bs.modal', function () {
+        fetch('/admin/friend_graph_data')
+            .then(response => response.json())
+            .then(data => {
+                var container = document.getElementById('friend-graph');
+                var options = {};
+                var network = new vis.Network(container, data, options);
+            });
+    });
+</script>
 {% endblock %}
