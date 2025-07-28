@@ -1,5 +1,5 @@
 # Use the official Python image.
-FROM python:3.9-buster
+FROM python:3.9-bullseye
 
 # Set the working directory.
 WORKDIR /app
