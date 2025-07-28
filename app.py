@@ -7,7 +7,7 @@ import random
 import string
 import uuid
 import psycopg2
-from psycopg2 import errors
+from psycopg2 import errors, extras
 from database import get_db_connection
 from faker import Faker
 from PIL import Image, ImageDraw
@@ -253,14 +253,16 @@ def dashboard():
         return redirect(url_for('login'))
     user_id = session['user_id']
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cur.execute("SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture_thumbnail FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'accepted'", (user_id,))
     friends = cur.fetchall()
     cur.execute("SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'", (user_id,))
     requests = cur.fetchall()
+    cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+    user = cur.fetchone()
     cur.close()
     conn.close()
-    return render_template('user_dashboard.html', friends=friends, requests=requests)
+    return render_template('user_dashboard.html', friends=friends, requests=requests, user=user)
 
 @app.route('/users/<string:user_id>')
 def view_user(user_id):
@@ -531,6 +533,98 @@ def generate_users():
     cur.close()
     conn.close()
     return render_template('generated_users.html', users=new_users)
+
+@app.route('/admin/generate_matches')
+def generate_matches():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # Get all friendships
+        cur.execute("SELECT user_id, friend_id FROM friends WHERE status = 'accepted'")
+        friends = cur.fetchall()
+
+        if not friends:
+            flash('No friendships found to generate matches.', 'warning')
+            return redirect(url_for('admin'))
+
+        # Generate 10 random matches
+        for _ in range(10):
+            user_id, friend_id = random.choice(friends)
+
+            # Generate scores
+            score1 = random.randint(0, 11)
+            if score1 >= 10:
+                score2 = score1 - 2
+            else:
+                score2 = random.randint(0, 11)
+                while abs(score1 - score2) < 2 and max(score1, score2) >= 11:
+                    score2 = random.randint(0, 11)
+
+            # Randomly assign scores to players
+            if random.random() < 0.5:
+                player1_score, player2_score = score1, score2
+            else:
+                player1_score, player2_score = score2, score1
+
+            # Insert match
+            match_id = str(uuid.uuid4())
+            cur.execute(
+                'INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s, NOW())',
+                (match_id, user_id, friend_id, player1_score, player2_score)
+            )
+
+        conn.commit()
+        flash('10 random matches generated successfully.', 'success')
+
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred while generating matches: {e}", 'danger')
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return redirect(url_for('admin'))
+
+@app.route('/leaderboard')
+def leaderboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    try:
+        # Calculate average scores and games played for each user
+        cur.execute("""
+            SELECT
+                u.id,
+                u.name,
+                AVG(CASE WHEN m.player1_id = u.id THEN m.player1_score ELSE m.player2_score END) as avg_score,
+                COUNT(m.id) as games_played
+            FROM
+                users u
+            JOIN
+                matches m ON u.id = m.player1_id OR u.id = m.player2_id
+            GROUP BY
+                u.id, u.name
+            ORDER BY
+                avg_score DESC
+            LIMIT 10
+        """)
+        players = cur.fetchall()
+    except Exception as e:
+        players = []
+        flash(f"An error occurred while fetching the leaderboard: {e}", 'danger')
+    finally:
+        cur.close()
+        conn.close()
+
+    return render_template('leaderboard.html', players=players)
 
     user_id = session['user_id']
     conn = get_db_connection()

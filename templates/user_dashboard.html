@@ -16,7 +16,7 @@
         <div class="profile-info">
             <p><strong>Username:</strong> {{ user[1] }}</p>
             <p><strong>Email:</strong> {{ user[3] }}</p>
-            <p><strong>DUPR Rating:</strong> {{ user[5] }}</p>
+            <p><strong>DUPR Rating:</strong> {{ user.dupr_rating if user.dupr_rating else "Not set" }}</p>
         </div>
         <h3>Update Profile</h3>
         <form method="post" action="/update_profile" enctype="multipart/form-data">

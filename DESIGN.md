@@ -12,7 +12,7 @@ The application is a monolithic web application built with Flask and PostgreSQL.
 
 ## 3. Database Schema
 
-The database schema is defined in the `init.sql` file. The schema consists of two tables: `users` and `friends`.
+The database schema is defined in the `init.sql` file. The schema consists of three tables: `users`, `friends`, and `matches`.
 
 ### 3.1. `users` table
 
@@ -37,6 +37,17 @@ The `friends` table stores information about the friendships between users. The 
 *   `friend_id`: The ID of the user who received the friendship.
 *   `status`: The status of the friendship. The status can be `pending` or `accepted`.
 
+### 3.3. `matches` table
+
+The `matches` table stores information about the matches played between users. The table has the following columns:
+
+*   `id`: A UUID that uniquely identifies each match.
+*   `player1_id`: The ID of the first player.
+*   `player2_id`: The ID of the second player.
+*   `player1_score`: The score of the first player.
+*   `player2_score`: The score of the second player.
+*   `match_date`: The date the match was played.
+
 ## 4. Application Logic
 
 The application logic is implemented in the `app.py` file. The file contains the following routes:
@@ -58,6 +69,8 @@ The application logic is implemented in the `app.py` file. The file contains the
 *   `/admin/promote_user/<user_id>`: The route to promote a user.
 *   `/admin/reset_password/<user_id>`: The route to reset a user's password.
 *   `/admin/generate_users`: The route to generate random users.
+*   `/admin/generate_matches`: The route to generate random matches.
+*   `/leaderboard`: The leaderboard page.
 *   `/forgot_password`: The forgot password page.
 *   `/reset_password`: The reset password page.
 *   `/change_password`: The change password page.

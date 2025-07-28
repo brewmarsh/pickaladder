@@ -111,24 +111,24 @@ This document outlines the requirements that have been implemented for the picka
 
 ### Gameplay
 
-*   **Match Formatting:** The formatting of the match page needs to be fixed.
-*   **Match IDs:** Matches should have a large random ID instead of a static number for privacy reasons. Matches should only be allowed between friends.
-*   **User Dashboard:** On the user's dashboard, we should show their DUPR rating.
+*   **Match Formatting:** The formatting of the match page has been fixed.
+*   **Match IDs:** Matches now have a large random ID for privacy reasons. Matches should only be allowed between friends.
+*   **User Dashboard:** The user's DUPR rating is now displayed on their dashboard.
 *   **Ladder Ranking:** The average ladder ranking is determined by averaging their total points per game.
 *   **Multiple Ladder Rankings:** We may add another ladder ranking later.
-*   **Leaderboard:** The app should have a leaderboard page, showing the top 10 by ranking, including their average and number of games.
-*   **Generate Random Matches:** We need a "generate 10 random matches" button on the admin page that would simulate 10 matches between friends in the database, randomly scoring from 0 to 11, or win by 2 if the lower score is 9 or 10.
+*   **Leaderboard:** The app now has a leaderboard page, showing the top 10 by ranking, including their average and number of games.
+*   **Generate Random Matches:** A "generate 10 random matches" button has been added to the admin page. This feature simulates 10 matches between friends in the database, with random scores from 0 to 11, or a win by 2 if the lower score is 9 or 10.
 
 ### Gameplay
 
 *   **Dark Mode:** Dark mode has been implemented correctly.
 *   **Match Formatting:** The formatting of the match page has been fixed.
 *   **Match IDs:** Matches now have a large random ID for privacy reasons. Matches should only be allowed between friends.
-*   **User Dashboard:** On the user's dashboard, we should show their DUPR rating.
+*   **User Dashboard:** The user's DUPR rating is now displayed on their dashboard.
 *   **Ladder Ranking:** The average ladder ranking is determined by averaging their total points per game.
 *   **Multiple Ladder Rankings:** We may add another ladder ranking later.
-*   **Leaderboard:** The app should have a leaderboard page, showing the top 10 by ranking, including their average and number of games.
-*   **Generate Random Matches:** We need a "generate 10 random matches" button on the admin page that would simulate 10 matches between friends in the database, randomly scoring from 0 to 11, or win by 2 if the lower score is 9 or 10.
+*   **Leaderboard:** The app now has a leaderboard page, showing the top 10 by ranking, including their average and number of games.
+*   **Generate Random Matches:** A "generate 10 random matches" button has been added to the admin page. This feature simulates 10 matches between friends in the database, with random scores from 0 to 11, or a win by 2 if the lower score is 9 or 10.
 *   **Admin Page:** The admin page needs a more professional look, including the ability to customize the branding with a company logo and color scheme.
 *   **Terms of Service:** The application should have a page where users can view the terms of service.
 *   **Data Export:** Users should be able to export their data from the application.
