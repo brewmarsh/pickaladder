@@ -14,7 +14,7 @@ services:
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=user
+      - POSTGRES_DB=mydb
     depends_on:
       db:
         condition: service_healthy
@@ -28,7 +28,7 @@ services:
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=user
+      - POSTGRES_DB=mydb
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user"]
       interval: 5s
