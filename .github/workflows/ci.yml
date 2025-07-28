@@ -20,7 +20,7 @@ jobs:
       - name: Lint with ruff
         run: |
           pip install ruff
-          ruff check .
+          ruff --fix .
       - name: Security Analysis with Bandit
         run: |
           pip install bandit
