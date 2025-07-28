@@ -8,7 +8,7 @@ def get_db_connection():
         try:
             conn = psycopg2.connect(
                 host=os.environ.get("DB_HOST", "db"),
-                database='user',
+                database=os.environ['POSTGRES_DB'],
                 user=os.environ['POSTGRES_USER'],
                 password=os.environ['POSTGRES_PASSWORD'])
             return conn
