@@ -1,13 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Response
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
 import os
 import random
 import string
 import uuid
 import psycopg2
-from psycopg2 import errors, extras
+from psycopg2 import errors
 from database import get_db_connection
 from faker import Faker
 from PIL import Image, ImageDraw
@@ -22,7 +21,9 @@ def apply_migrations():
     migration_dir = 'migrations'
     if not os.path.exists(migration_dir):
         return
-    cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'migrations'")
+    cur.execute(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'migrations'"
+    )
     table_exists = cur.fetchone() is not None
     if not table_exists:
         cur.execute('CREATE TABLE migrations (id SERIAL PRIMARY KEY, migration_name TEXT NOT NULL)')
@@ -107,8 +108,10 @@ def install():
             return "Invalid DUPR rating."
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         try:
-            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
-                        (username, hashed_password, email, name, dupr_rating, True))
+            cur.execute(
+                'INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
+                (username, hashed_password, email, name, dupr_rating, True),
+            )
             user_id = cur.fetchone()[0]
             conn.commit()
             session['user_id'] = str(user_id)
@@ -132,7 +135,10 @@ def install():
 
             conn = get_db_connection()
             cur = conn.cursor()
-            cur.execute('UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s WHERE id = %s', (profile_picture_data, thumbnail_data, user_id))
+            cur.execute(
+                'UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s WHERE id = %s',
+                (profile_picture_data, thumbnail_data, user_id),
+            )
             conn.commit()
             cur.close()
             conn.close()
@@ -193,8 +199,10 @@ def register():
             conn.close()
             return render_template('register.html', error=error)
         try:
-            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
-                        (username, hashed_password, email, name, dupr_rating, False))
+            cur.execute(
+                'INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
+                (username, hashed_password, email, name, dupr_rating, False),
+            )
             user_id = cur.fetchone()[0]
             conn.commit()
             session['user_id'] = str(user_id)
@@ -218,12 +226,19 @@ def register():
 
             conn = get_db_connection()
             cur = conn.cursor()
-            cur.execute('UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s WHERE id = %s', (profile_picture_data, thumbnail_data, user_id))
+            cur.execute(
+                'UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s WHERE id = %s',
+                (profile_picture_data, thumbnail_data, user_id),
+            )
             conn.commit()
             cur.close()
             conn.close()
             msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
-            msg.body = 'Click the link to verify your email: {}'.format(url_for('verify_email', email=email, _external=True))
+            msg.body = (
+                'Click the link to verify your email: {}'.format(
+                    url_for('verify_email', email=email, _external=True)
+                )
+            )
             mail.send(msg)
         except Exception as e:
             conn.rollback()
@@ -254,9 +269,15 @@ def dashboard():
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture_thumbnail FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'accepted'", (user_id,))
+    cur.execute(
+        "SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture_thumbnail FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'accepted'",
+        (user_id,),
+    )
     friends = cur.fetchall()
-    cur.execute("SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'", (user_id,))
+    cur.execute(
+        "SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'",
+        (user_id,),
+    )
     requests = cur.fetchall()
     cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
     user = cur.fetchone()
@@ -285,7 +306,10 @@ def users():
     conn = get_db_connection()
     cur = conn.cursor()
     if search_term:
-        cur.execute('SELECT * FROM users WHERE id != %s AND (username ILIKE %s OR name ILIKE %s)', (user_id, f'%{search_term}%', f'%{search_term}%'))
+        cur.execute(
+            'SELECT * FROM users WHERE id != %s AND (username ILIKE %s OR name ILIKE %s)',
+            (user_id, f'%{search_term}%', f'%{search_term}%'),
+        )
     else:
         cur.execute('SELECT * FROM users WHERE id != %s', (user_id,))
     all_users = cur.fetchall()
@@ -293,12 +317,15 @@ def users():
     cur.execute("SELECT friend_id FROM friends WHERE user_id = %s AND status = 'accepted'", (user_id,))
     friends = [row[0] for row in cur.fetchall()]
     if friends:
-        cur.execute("""
+        cur.execute(
+            """
             SELECT DISTINCT u.id, u.username, u.name, u.dupr_rating
             FROM users u
             JOIN friends f1 ON u.id = f1.friend_id
             WHERE f1.user_id IN %s AND u.id != %s AND u.id NOT IN (SELECT friend_id FROM friends WHERE user_id = %s)
-        """, (tuple(friends), user_id, user_id))
+            """,
+            (tuple(friends), user_id, user_id),
+        )
         fof = cur.fetchall()
     else:
         fof = []
@@ -323,7 +350,9 @@ def add_friend(friend_id):
         flash('Friend request sent.', 'success')
     except Exception as e:
         conn.rollback()
-        flash(f"An error occurred while sending the friend request: {e}", 'danger')
+        flash(
+            f"An error occurred while sending the friend request: {e}", 'danger'
+        )
     finally:
         cur.close()
         conn.close()
@@ -343,9 +372,14 @@ def admin_matches():
     conn = get_db_connection()
     cur = conn.cursor()
     if search_term:
-        cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE p1.username ILIKE %s OR p2.username ILIKE %s ORDER BY m.match_date DESC', (f'%{search_term}%', f'%{search_term}%'))
+        cur.execute(
+            'SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE p1.username ILIKE %s OR p2.username ILIKE %s ORDER BY m.match_date DESC',
+            (f'%{search_term}%', f'%{search_term}%'),
+        )
     else:
-        cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id ORDER BY m.match_date DESC')
+        cur.execute(
+            'SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id ORDER BY m.match_date DESC'
+        )
     matches = cur.fetchall()
     cur.close()
     conn.close()
@@ -382,7 +416,15 @@ def friend_graph():
     for user_id, friend_id in friends:
         G.add_edge(str(user_id), str(friend_id))
     plt.figure(figsize=(12, 12))
-    nx.draw(G, with_labels=True, node_color='skyblue', node_size=2000, edge_color='k', linewidths=1, font_size=15)
+    nx.draw(
+        G,
+        with_labels=True,
+        node_color='skyblue',
+        node_size=2000,
+        edge_color='k',
+        linewidths=1,
+        font_size=15,
+    )
     import io
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
@@ -422,7 +464,9 @@ def reset_admin():
         # Reset all users to not be admin
         cur.execute("UPDATE users SET is_admin = FALSE")
         # Set the first user to be admin
-        cur.execute("UPDATE users SET is_admin = TRUE WHERE id = (SELECT id FROM users ORDER BY id LIMIT 1)")
+        cur.execute(
+            "UPDATE users SET is_admin = TRUE WHERE id = (SELECT id FROM users ORDER BY id LIMIT 1)"
+        )
         conn.commit()
         cur.close()
         conn.close()
@@ -440,7 +484,9 @@ def delete_user(user_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('DELETE FROM friends WHERE user_id = %s OR friend_id = %s', (user_id, user_id))
+        cur.execute(
+            'DELETE FROM friends WHERE user_id = %s OR friend_id = %s', (user_id, user_id)
+        )
         cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
         conn.commit()
         flash('User deleted successfully.', 'success')
@@ -475,9 +521,15 @@ def admin_reset_password(user_id):
         cur = conn.cursor()
         cur.execute('SELECT email FROM users WHERE id = %s', (user_id,))
         email = cur.fetchone()[0]
-        new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-        hashed_password = generate_password_hash(new_password, method='pbkdf2:sha256')
-        cur.execute('UPDATE users SET password = %s WHERE id = %s', (hashed_password, user_id))
+        new_password = "".join(
+            random.choices(string.ascii_letters + string.digits, k=12)
+        )
+        hashed_password = generate_password_hash(
+            new_password, method='pbkdf2:sha256'
+        )
+        cur.execute(
+            'UPDATE users SET password = %s WHERE id = %s', (hashed_password, user_id)
+        )
         conn.commit()
         cur.close()
         conn.close()
@@ -515,10 +567,21 @@ def generate_users():
             continue
         password = 'password'
         email = f'{username}@example.com'
-        dupr_rating = round(fake.pyfloat(left_digits=1, right_digits=2, positive=True, min_value=1.0, max_value=5.0), 2)
+        dupr_rating = round(
+            fake.pyfloat(
+                left_digits=1,
+                right_digits=2,
+                positive=True,
+                min_value=1.0,
+                max_value=5.0,
+            ),
+            2,
+        )
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, username, email, name, dupr_rating',
-                    (username, hashed_password, email, name, dupr_rating, False))
+        cur.execute(
+            'INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, username, email, name, dupr_rating',
+            (username, hashed_password, email, name, dupr_rating, False),
+        )
         new_user = cur.fetchone()
         new_users.append(new_user)
     conn.commit()
@@ -574,7 +637,13 @@ def generate_matches():
             match_id = str(uuid.uuid4())
             cur.execute(
                 'INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s, NOW())',
-                (match_id, user_id, friend_id, player1_score, player2_score)
+                (
+                    match_id,
+                    user_id,
+                    friend_id,
+                    player1_score,
+                    player2_score,
+                ),
             )
 
         conn.commit()
@@ -600,7 +669,8 @@ def leaderboard():
 
     try:
         # Calculate average scores and games played for each user
-        cur.execute("""
+        cur.execute(
+            """
             SELECT
                 u.id,
                 u.name,
@@ -615,7 +685,8 @@ def leaderboard():
             ORDER BY
                 avg_score DESC
             LIMIT 10
-        """)
+        """
+        )
         players = cur.fetchall()
     except Exception as e:
         players = []
@@ -648,10 +719,21 @@ def leaderboard():
             continue
         password = 'password'
         email = f'{username}@example.com'
-        dupr_rating = round(fake.pyfloat(left_digits=1, right_digits=2, positive=True, min_value=1.0, max_value=5.0), 2)
+        dupr_rating = round(
+            fake.pyfloat(
+                left_digits=1,
+                right_digits=2,
+                positive=True,
+                min_value=1.0,
+                max_value=5.0,
+            ),
+            2,
+        )
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, username, email, name, dupr_rating',
-                    (username, hashed_password, email, name, dupr_rating, False))
+        cur.execute(
+            'INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, username, email, name, dupr_rating',
+            (username, hashed_password, email, name, dupr_rating, False),
+        )
         new_user = cur.fetchone()
         new_users.append(new_user)
     conn.commit()
@@ -671,8 +753,12 @@ def leaderboard():
 def forgot_password():
     if request.method == 'POST':
         email = request.form['email']
-        msg = Message('Password reset', sender=app.config['MAIL_USERNAME'], recipients=[email])
-        msg.body = 'Click the link to reset your password: {}'.format(url_for('reset_password', email=email, _external=True))
+        msg = Message(
+            'Password reset', sender=app.config['MAIL_USERNAME'], recipients=[email]
+        )
+        msg.body = 'Click the link to reset your password: {}'.format(
+            url_for('reset_password', email=email, _external=True)
+        )
         mail.send(msg)
         return "Password reset email sent."
     return render_template('forgot_password.html')
@@ -720,8 +806,6 @@ def change_password():
     return render_template('change_password.html', user=user)
 
 
-from flask import Response
-
 @app.route('/profile_picture/<string:user_id>')
 def profile_picture(user_id):
     try:
@@ -763,7 +847,10 @@ def view_match_page(match_id):
         return redirect(url_for('login'))
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT m.*, p1.username, p2.username, p1.profile_picture, p2.profile_picture FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE m.id = %s', (match_id,))
+    cur.execute(
+        'SELECT m.*, p1.username, p2.username, p1.profile_picture, p2.profile_picture FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE m.id = %s',
+        (match_id,),
+    )
     match = cur.fetchone()
     cur.close()
     conn.close()
@@ -814,7 +901,10 @@ def update_profile():
         cur.close()
         conn.close()
     except psycopg2.errors.UndefinedColumn as e:
-        flash(f"Database error: {e}. The 'dark_mode' column is missing. Please run database migrations or contact an administrator.", 'danger')
+        flash(
+            f"Database error: {e}. The 'dark_mode' column is missing. Please run database migrations or contact an administrator.",
+            'danger',
+        )
         return render_template('error.html', error=str(e)), 500
     except psycopg2.Error as e:
         flash(f"Database error: {e}", 'danger')
@@ -839,8 +929,17 @@ def create_match():
         match_date = request.form['match_date']
         try:
             match_id = str(uuid.uuid4())
-            cur.execute('INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s, %s)',
-                        (match_id, player1_id, player2_id, player1_score, player2_score, match_date))
+            cur.execute(
+                'INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s, %s)',
+                (
+                    match_id,
+                    player1_id,
+                    player2_id,
+                    player1_score,
+                    player2_score,
+                    match_date,
+                ),
+            )
             conn.commit()
             flash('Match created successfully.', 'success')
         except Exception as e:
@@ -850,7 +949,10 @@ def create_match():
             cur.close()
             conn.close()
         return redirect(url_for('dashboard'))
-    cur.execute('SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s', (user_id,))
+    cur.execute(
+        'SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s',
+        (user_id,),
+    )
     friends = cur.fetchall()
     cur.close()
     conn.close()
@@ -864,11 +966,20 @@ def friends():
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'accepted'", (user_id,))
+    cur.execute(
+        "SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'accepted'",
+        (user_id,),
+    )
     friends = cur.fetchall()
-    cur.execute("SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'", (user_id,))
+    cur.execute(
+        "SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'",
+        (user_id,),
+    )
     requests = cur.fetchall()
-    cur.execute("SELECT u.id, u.username, f.status FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'pending'", (user_id,))
+    cur.execute(
+        "SELECT u.id, u.username, f.status FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'pending'",
+        (user_id,),
+    )
     sent_requests = cur.fetchall()
     cur.close()
     conn.close()
@@ -882,13 +993,21 @@ def accept_friend_request(friend_id):
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        cur.execute("UPDATE friends SET status = 'accepted' WHERE user_id = %s AND friend_id = %s", (friend_id, user_id))
-        cur.execute("INSERT INTO friends (user_id, friend_id, status) VALUES (%s, %s, %s)", (user_id, friend_id, 'accepted'))
+        cur.execute(
+            "UPDATE friends SET status = 'accepted' WHERE user_id = %s AND friend_id = %s",
+            (friend_id, user_id),
+        )
+        cur.execute(
+            "INSERT INTO friends (user_id, friend_id, status) VALUES (%s, %s, %s)",
+            (user_id, friend_id, 'accepted'),
+        )
         conn.commit()
         flash('Friend request accepted.', 'success')
     except Exception as e:
         conn.rollback()
-        flash(f"An error occurred while accepting the friend request: {e}", 'danger')
+        flash(
+            f"An error occurred while accepting the friend request: {e}", 'danger'
+        )
     finally:
         cur.close()
         conn.close()
