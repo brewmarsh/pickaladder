@@ -28,7 +28,7 @@ RUN apt-get update && \
 RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client
 
 # Expose the port.
-EXPOSE 80
+EXPOSE 27272
 
 # Run the application.
-CMD ["/usr/local/bin/gunicorn", "--bind", "0.0.0.0:80", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:27272", "app:app"]

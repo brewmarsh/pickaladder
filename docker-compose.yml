@@ -3,7 +3,6 @@ services:
     build: .
     ports:
       - "27272:27272"
-    command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
