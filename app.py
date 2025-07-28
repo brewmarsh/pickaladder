@@ -25,12 +25,6 @@ import matplotlib.pyplot as plt
 from utils import allowed_file
 
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 def apply_migrations():
     conn = get_db_connection()
     cur = conn.cursor()
