@@ -61,3 +61,7 @@ This document provides instructions for agents working on this project.
 ## Iterative Problem Resolution
 
 Agents should iteratively resolve similar problems. For example, if there is an error in a single file regarding indentation, agents should examine all files for similar issues, starting with those files closest in the folder structure. Then agents should continuously update the agents.md file with their findings on how to further avoid similar problems.
+
+## Closed Loop Documentation
+
+Agents must update any documentation as they make changes to code, including updating AGENTS.md when they find a new development or debugging technique, updating REQUIREMENTS.md when requirements are implemented, new bugs are found or new features are identified and updating DESIGN.md when soemthing from the design is updated.  
