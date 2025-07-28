@@ -1,26 +1,49 @@
-## Agent Instructions
+# Agent Instructions
 
-This document provides instructions for agents working on the pickaladder application.
+This document provides instructions for agents working on this project.
 
-### System Decomposition
+## Project Structure and Key Directories
 
-The pickaladder application is a monolithic Flask application. To facilitate parallel development, the application can be conceptually broken down into the following components:
+*   `/`: The root directory contains the main application file (`app.py`), Docker-related files (`Dockerfile`, `docker-compose.yml`), and other configuration files.
+*   `frontend/`: Contains the React-based frontend application.
+*   `static/`: Contains static assets such as CSS and images.
+*   `templates/`: Contains Flask templates for the web application.
+*   `tests/`: Contains tests for the application.
+*   `migrations/`: Contains database migration scripts.
 
-*   **Frontend:** The user interface, implemented with HTML, CSS, and JavaScript. The frontend is located in the `templates` and `static` directories.
-*   **Backend:** The application logic, implemented in Python with Flask. The main application file is `app.py`.
-*   **Database:** The PostgreSQL database. The schema is defined in `init.sql`.
+## Build, Test, and Deployment Commands
 
-### Working on Components
+*   **Build the Docker image:** `docker build . -t picka`
+*   **Run the application:** `docker-compose up`
+*   **Run tests:** `docker-compose exec web python -m pytest`
 
-*   **Frontend Agents:** Frontend agents should focus on the `templates` and `static` directories. They should have expertise in HTML, CSS, and JavaScript.
-*   **Backend Agents:** Backend agents should focus on `app.py` and other Python files. They should have expertise in Python, Flask, and PostgreSQL.
-*   **Database Agents:** Database agents should focus on `init.sql` and other database-related files. They should have expertise in PostgreSQL.
+## Common Debugging Procedures and Tools
 
-### Interface Documentation
+*   **Check application logs:** The application logs are streamed to the console when running `docker-compose up`. You can also view them with `docker-compose logs web`.
+*   **Check database logs:** `docker-compose logs db`
+*   **Docker build issues:** If a Docker build fails, try rebuilding with `DOCKER_BUILDKIT=0` for more verbose output to inspect the layers.
+*   **Cleaning the environment:** To clean up the Docker environment, use `docker-compose down -v`.
 
-The interface between the frontend, backend, and database is not formally documented. However, the following conventions are used:
+## Coding Standards and Best Practices
 
-*   The backend exposes a set of routes that are called by the frontend. These routes are defined in `app.py`.
-*   The backend interacts with the database using the `psycopg2` library. The database queries are embedded in the Python code.
+*   **Python:** Follow PEP 8 style guidelines.
+*   **Flask:** Use Blueprints for organizing routes.
+*   **Error Handling:** Use `try-catch` blocks for database operations and other potentially failing code. Log errors to the console.
 
-To improve the development process, it is recommended to create a formal API documentation that specifies the routes, request/response formats, and data models. This will help to decouple the frontend and backend and allow for independent development and testing.
+## Resource Optimization Guidelines
+
+*   **Clear Docker cache:** If you are running low on disk space, you can clear the Docker build cache with `docker builder prune`.
+*   **Clean npm cache:** For frontend-related issues, you can clean the npm cache with `npm cache clean --force`.
+
+## Environment Variables
+
+*   `POSTGRES_USER`: The username for the PostgreSQL database.
+*   `POSTGRES_PASSWORD`: The password for the PostgreSQL database.
+*   `POSTGRES_DB`: The name of the PostgreSQL database.
+*   `MAIL_USERNAME`: The username for the email server.
+*   `MAIL_PASSWORD`: The password for the email server.
+
+## Input/Output Conventions
+
+*   **API Responses:** API responses should be in JSON format.
+*   **Code Coverage:** All new features should include corresponding unit tests with at least 80% code coverage.
