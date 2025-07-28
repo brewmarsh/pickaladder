@@ -1,5 +1,5 @@
 # Use the official Python image.
-FROM python:3.9-slim
+FROM python:3.9-buster
 
 # Set the working directory.
 WORKDIR /app
@@ -9,6 +9,9 @@ COPY requirements.txt .
 
 # Install the dependencies.
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Verify that the dependencies are installed.
+RUN pip list
 
 # Copy the rest of the application code.
 COPY . .

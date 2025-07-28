@@ -5,6 +5,7 @@ services:
       - "27272:27272"
     command: >
       sh -c "
+        printenv &&
         until pg_isready -h db -p 5432 -U user; do
           echo 'Waiting for postgres...'
           sleep 2
