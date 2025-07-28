@@ -12,11 +12,6 @@ services:
         condition: service_healthy
   db:
     image: postgres:13
-    volumes:
-      - type: bind
-        source: ./init.sql
-        target: /docker-entrypoint-initdb.d/init.sql
-      - ./migrations:/migrations
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
