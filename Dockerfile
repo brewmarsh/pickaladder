@@ -1,21 +1,34 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+# Use the official Python image.
+FROM python:3.9-bullseye
 
-# Set the working directory in the container
+# Set the working directory.
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Copy the requirements file.
+COPY requirements.txt .
 
-# Install any needed packages specified in requirements.txt
-RUN apt-get update --allow-insecure-repositories && apt-get install -y postgresql-client && apt-get clean
+# Install the dependencies.
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 27272 available to the world outside this container
-EXPOSE 27272
+# Verify that the dependencies are installed.
+RUN pip list
 
-# Define environment variable
-ENV NAME World
+# Copy the rest of the application code.
+COPY . .
 
-# Run app.py when the container launches
-CMD ["gunicorn", "--bind", "0.0.0.0:27272", "app:app"]
+# Install Node.js and build the frontend.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends nodejs npm && \
+    npm ci --prefix frontend && \
+    npm run build --prefix frontend && \
+    apt-get purge -y --auto-remove nodejs npm && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install PostgreSQL client.
+RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client
+
+# Expose the port.
+EXPOSE 80
+
+# Run the application.
+CMD ["/usr/local/bin/gunicorn", "--bind", "0.0.0.0:80", "app:app"]

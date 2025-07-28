@@ -15,8 +15,9 @@ This document outlines the requirements that have been implemented for the picka
 
 *   **Find Friends:** Users can find other users to be friends with.
 *   **Add Friends:** Users can add other users as friends. A toast message will be displayed to confirm that the request has been sent.
-*   **View Friends:** Users can view a list of their friends on their dashboard.
+*   **View Friends:** Users can view a list of their friends on the friends page.
 *   **Friends of Friends:** Users can see a list of "friends of friends" to get recommendations for new friends.
+*   **View Friend Profile:** Users can view a friend's profile by clicking on their name in the friends list.
 
 ### Admin Functionality
 
@@ -66,7 +67,7 @@ This document outlines the requirements that have been implemented for the picka
 ### Technical Requirements
 
 *   **Database:** The application uses a PostgreSQL database.
-*   **File Uploads:** Profile pictures are uploaded to the `static/uploads` directory. The application only accepts `.png`, `.jpg`, `.jpeg`, and `.gif` files.
+*   **File Uploads:** Profile pictures are stored in the database as blobs. The application only accepts `.png`, `.jpg`, `.jpeg`, and `.gif` files. The maximum file size is 10MB. The images are resized to a maximum of 512x512 and a thumbnail of 64x64 is generated. A default profile picture is generated for new users.
 
 ## Known Issues
 
@@ -83,9 +84,9 @@ This document outlines the requirements that have been implemented for the picka
 
 ### Quality
 
-*   **Type Checking:** Introduce static type checking with a tool like `mypy` to improve code quality and catch type-related errors early.
+*   **Type Checking:** Static type checking with `mypy` has been added to the CI/CD pipeline to improve code quality and catch type-related errors early.
 *   **Comprehensive Testing:** Expand the test suite to include integration and end-to-end tests to ensure the application is well-tested and stable.
-*   **Code Coverage:** Measure code coverage to identify untested parts of the codebase.
+*   **Code Coverage:** Code coverage is now measured as part of the CI/CD pipeline to identify untested parts of the codebase.
 
 ### Documentation
 
@@ -94,9 +95,9 @@ This document outlines the requirements that have been implemented for the picka
 
 ### CI/CD
 
-*   **Automated Deployments:** Implement a CI/CD pipeline to automate the deployment process and ensure that all changes are automatically tested and deployed.
+*   **Automated Deployments:** A CI/CD pipeline has been implemented using GitHub Actions to automate the deployment process and ensure that all changes are automatically tested and deployed.
 *   **Infrastructure as Code:** Use a tool like Terraform to manage the application's infrastructure as code.
-*   **Linting and Static Analysis:** The CI/CD pipeline should include steps for linting and static analysis to ensure code quality.
+*   **Linting and Static Analysis:** The CI/CD pipeline includes steps for linting (`ruff`), static analysis (`mypy`), and security scanning (`bandit`) to ensure code quality and security.
 
 ### Configuration
 
@@ -110,14 +111,24 @@ This document outlines the requirements that have been implemented for the picka
 
 ### Gameplay
 
-*   **Match Formatting:** The formatting of the match page needs to be fixed.
-*   **Match IDs:** Matches should have a large random ID instead of a static number for privacy reasons.
-*   **Dark Mode:** Dark mode needs to be implemented correctly.
-*   **User Dashboard:** On the user's dashboard, we should show their record in matches and their ladder ranking.
+*   **Match Formatting:** The formatting of the match page has been fixed.
+*   **Match IDs:** Matches now have a large random ID for privacy reasons. Matches should only be allowed between friends.
+*   **User Dashboard:** The user's DUPR rating is now displayed on their dashboard.
 *   **Ladder Ranking:** The average ladder ranking is determined by averaging their total points per game.
 *   **Multiple Ladder Rankings:** We may add another ladder ranking later.
-*   **Leaderboard:** The app should have a leaderboard page, showing the top 10 by ranking, including their average and number of games.
-*   **Generate Random Matches:** We need a "generate 10 random matches" button on the admin page that would simulate 10 matches between friends in the database, randomly scoring from 0 to 11, or win by 2 if the lower score is 9 or 10.
+*   **Leaderboard:** The app now has a leaderboard page, showing the top 10 by ranking, including their average and number of games.
+*   **Generate Random Matches:** A "generate 10 random matches" button has been added to the admin page. This feature simulates 10 matches between friends in the database, with random scores from 0 to 11, or a win by 2 if the lower score is 9 or 10.
+
+### Gameplay
+
+*   **Dark Mode:** Dark mode has been implemented correctly.
+*   **Match Formatting:** The formatting of the match page has been fixed.
+*   **Match IDs:** Matches now have a large random ID for privacy reasons. Matches should only be allowed between friends.
+*   **User Dashboard:** The user's DUPR rating is now displayed on their dashboard.
+*   **Ladder Ranking:** The average ladder ranking is determined by averaging their total points per game.
+*   **Multiple Ladder Rankings:** We may add another ladder ranking later.
+*   **Leaderboard:** The app now has a leaderboard page, showing the top 10 by ranking, including their average and number of games.
+*   **Generate Random Matches:** A "generate 10 random matches" button has been added to the admin page. This feature simulates 10 matches between friends in the database, with random scores from 0 to 11, or a win by 2 if the lower score is 9 or 10.
 *   **Admin Page:** The admin page needs a more professional look, including the ability to customize the branding with a company logo and color scheme.
 *   **Terms of Service:** The application should have a page where users can view the terms of service.
 *   **Data Export:** Users should be able to export their data from the application.

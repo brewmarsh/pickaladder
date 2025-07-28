@@ -1,21 +1,26 @@
 body.dark-mode {
-    background-color: #121212;
-    color: #e0e0e0;
+    background-color: #1a1a1a;
+    color: #f5f5f5;
 }
 
 .dark-mode .container {
-    background-color: #1e1e1e;
+    background-color: #2a2a2a;
     box-shadow: 0 2px 4px rgba(255,255,255,0.1);
 }
 
 .dark-mode nav {
-    background-color: #1e1e1e;
-    color: #e0e0e0;
-    border-bottom: 1px solid #333;
+    background-color: #2a2a2a;
+    color: #f5f5f5;
+    border-bottom: 1px solid #444;
+}
+
+.dark-mode a {
+    color: #61dafb;
+    text-decoration: underline;
 }
 
 .dark-mode nav a {
-    color: #e0e0e0;
+    color: #61dafb;
 }
 
 .dark-mode .btn {
@@ -52,4 +57,8 @@ body.dark-mode {
 .dark-mode .admin-banner {
     background-color: #ffc107;
     color: #333;
+}
+
+.dark-mode .dropbtn {
+    color: #f5f5f5;
 }

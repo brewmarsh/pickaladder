@@ -1,35 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Match - pickaladder</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    {% include 'navbar.html' %}
-    <div class="container">
-        <h2>Create Match</h2>
-        <form method="post" action="{{ url_for('create_match') }}">
-            <label for="player2">Opponent:</label>
-            <select id="player2" name="player2" required>
-                {% for friend in friends %}
-                    <option value="{{ friend[0] }}">{{ friend[2] }} ({{ friend[1] }})</option>
-                {% endfor %}
-            </select>
-            <label for="player1_score">Your Score:</label>
-            <input type="number" id="player1_score" name="player1_score" required>
-            <label for="player2_score">Opponent's Score:</label>
-            <input type="number" id="player2_score" name="player2_score" required>
-            <label for="match_date">Date:</label>
-            <input type="date" id="match_date" name="match_date" required>
-            <input type="submit" value="Create Match">
-            <a href="{{ url_for('dashboard') }}" class="button">Cancel</a>
-        </form>
-        <script>
-            document.getElementById('match_date').valueAsDate = new Date();
-        </script>
-    </div>
-    {% include 'footer.html' %}
-</body>
-</html>
+{% extends "layout.html" %}
+{% block title %}Create Match{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Create Match</h2>
+    <form method="post" action="{{ url_for('create_match') }}">
+        <label for="player2">Opponent:</label>
+        <select id="player2" name="player2" required>
+            {% for friend in friends %}
+                <option value="{{ friend[0] }}">{{ friend[2] }} ({{ friend[1] }})</option>
+            {% endfor %}
+        </select>
+        <label for="player1_score">Your Score:</label>
+        <input type="number" id="player1_score" name="player1_score" required>
+        <label for="player2_score">Opponent's Score:</label>
+        <input type="number" id="player2_score" name="player2_score" required>
+        <label for="match_date">Date:</label>
+        <input type="date" id="match_date" name="match_date" required>
+        <input type="submit" value="Create Match">
+        <a href="{{ url_for('dashboard') }}" class="button">Cancel</a>
+    </form>
+    <script>
+        document.getElementById('match_date').valueAsDate = new Date();
+    </script>
+</div>
+{% endblock %}

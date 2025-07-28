@@ -1,20 +1,29 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash,
+    Response,
+)
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
 import os
 import random
 import string
+import uuid
 import psycopg2
 from psycopg2 import errors
 from database import get_db_connection
 from faker import Faker
+from PIL import Image, ImageDraw
+from io import BytesIO
+import networkx as nx
+import matplotlib.pyplot as plt
+from utils import allowed_file
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def apply_migrations():
     conn = get_db_connection()
@@ -22,15 +31,34 @@ def apply_migrations():
     migration_dir = 'migrations'
     if not os.path.exists(migration_dir):
         return
+    cur.execute(
+        "SELECT table_name FROM information_schema.tables "
+        "WHERE table_schema = 'public' AND table_name = 'migrations'"
+    )
+    table_exists = cur.fetchone() is not None
+    if not table_exists:
+        cur.execute(
+            'CREATE TABLE migrations (id SERIAL PRIMARY KEY, migration_name TEXT NOT NULL)'
+        )
+        conn.commit()
+    cur.execute('SELECT migration_name FROM migrations')
+    applied_migrations = {row[0] for row in cur.fetchall()}
     for migration_file in sorted(os.listdir(migration_dir)):
-        with open(os.path.join(migration_dir, migration_file), 'r') as f:
-            cur.execute(f.read())
-    conn.commit()
+        if migration_file not in applied_migrations:
+            with open(os.path.join(migration_dir, migration_file), 'r') as f:
+                cur.execute(f.read())
+            cur.execute(
+                'INSERT INTO migrations (migration_name) VALUES (%s)',
+                (migration_file,),
+            )
+            conn.commit()
     cur.close()
     conn.close()
 
+
 app = Flask(__name__)
-apply_migrations()
+with app.app_context():
+    apply_migrations()
 app.secret_key = os.urandom(24)
 
 # Mail configuration
@@ -42,6 +70,7 @@ app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 mail = Mail(app)
+
 
 @app.route('/')
 def index():
@@ -58,6 +87,7 @@ def index():
     if not admin_exists:
         return redirect(url_for('install'))
     return redirect(url_for('login'))
+
 
 @app.route('/install', methods=['GET', 'POST'])
 def install():
@@ -92,17 +122,50 @@ def install():
         email = request.form['email']
         name = request.form['name']
         try:
-            dupr_rating = float(request.form['dupr_rating']) if request.form['dupr_rating'] else None
+            dupr_rating = (
+                float(request.form['dupr_rating'])
+                if request.form['dupr_rating']
+                else None
+            )
         except ValueError:
             return "Invalid DUPR rating."
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         try:
-            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
-                        (username, hashed_password, email, name, dupr_rating, True))
+            cur.execute(
+                'INSERT INTO users (username, password, email, name, dupr_rating, is_admin) '
+                'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
+                (username, hashed_password, email, name, dupr_rating, True),
+            )
             user_id = cur.fetchone()[0]
             conn.commit()
-            session['user_id'] = user_id
+            session['user_id'] = str(user_id)
             session['is_admin'] = True
+            app.logger.info(f"New user registered: {username}")
+
+            # Generate profile picture
+            img = Image.new('RGB', (256, 256), color=(73, 109, 137))
+            d = ImageDraw.Draw(img)
+            initials = "".join([name[0] for name in name.split()])
+            d.text((128, 128), initials, fill=(255, 255, 0))
+            buf = BytesIO()
+            img.save(buf, format='PNG')
+            profile_picture_data = buf.getvalue()
+
+            img.thumbnail((64, 64))
+            buf = BytesIO()
+            img.save(buf, format='PNG')
+            thumbnail_data = buf.getvalue()
+
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute(
+                'UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s '
+                'WHERE id = %s',
+                (profile_picture_data, thumbnail_data, user_id),
+            )
+            conn.commit()
+            cur.close()
+            conn.close()
         except Exception as e:
             conn.rollback()
             flash(f"An error occurred: {e}", 'danger')
@@ -112,6 +175,7 @@ def install():
             conn.close()
         return redirect(url_for('dashboard'))
     return render_template('install.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -125,17 +189,19 @@ def login():
         cur.close()
         conn.close()
         if user and check_password_hash(user[2], password):
-            session['user_id'] = user[0]
+            session['user_id'] = str(user[0])
             session['is_admin'] = user[6]
             return redirect(url_for('dashboard'))
         else:
             return render_template('login.html', error='Invalid username or password.')
     return render_template('login.html')
 
+
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('index'))
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -146,7 +212,11 @@ def register():
         email = request.form['email']
         name = request.form['name']
         try:
-            dupr_rating = float(request.form['dupr_rating']) if request.form['dupr_rating'] else None
+            dupr_rating = (
+                float(request.form['dupr_rating'])
+                if request.form['dupr_rating']
+                else None
+            )
         except ValueError:
             return "Invalid DUPR rating."
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
@@ -160,11 +230,53 @@ def register():
             conn.close()
             return render_template('register.html', error=error)
         try:
-            cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin, profile_picture) VALUES (%s, %s, %s, %s, %s, %s, %s)',
-                        (username, hashed_password, email, name, dupr_rating, False, 'pickaladder_icon.png'))
+            cur.execute(
+                'INSERT INTO users (username, password, email, name, dupr_rating, is_admin) '
+                'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
+                (username, hashed_password, email, name, dupr_rating, False),
+            )
+            user_id = cur.fetchone()[0]
             conn.commit()
-            msg = Message('Verify your email', sender=app.config['MAIL_USERNAME'], recipients=[email])
-            msg.body = 'Click the link to verify your email: {}'.format(url_for('verify_email', email=email, _external=True))
+            session['user_id'] = str(user_id)
+            session['is_admin'] = False
+            app.logger.info(f"New user registered: {username}")
+
+            # Generate profile picture
+            img = Image.new('RGB', (256, 256), color=(73, 109, 137))
+            d = ImageDraw.Draw(img)
+            initials = "".join([name[0] for name in name.split()])
+            d.text((128, 128), initials, fill=(255, 255, 0))
+            import io
+
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            profile_picture_data = buf.getvalue()
+
+            img.thumbnail((64, 64))
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            thumbnail_data = buf.getvalue()
+
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute(
+                'UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s '
+                'WHERE id = %s',
+                (profile_picture_data, thumbnail_data, user_id),
+            )
+            conn.commit()
+            cur.close()
+            conn.close()
+            msg = Message(
+                'Verify your email',
+                sender=app.config['MAIL_USERNAME'],
+                recipients=[email],
+            )
+            msg.body = (
+                'Click the link to verify your email: {}'.format(
+                    url_for('verify_email', email=email, _external=True)
+                )
+            )
             mail.send(msg)
         except Exception as e:
             conn.rollback()
@@ -173,8 +285,9 @@ def register():
         finally:
             cur.close()
             conn.close()
-        return redirect(url_for('login'))
+        return redirect(url_for('dashboard'))
     return render_template('register.html', error=error)
+
 
 @app.context_processor
 def inject_user():
@@ -188,22 +301,48 @@ def inject_user():
         return dict(user=user)
     return dict(user=None)
 
+
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
     conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s AND f.status = 'accepted'", (user_id,))
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute(
+        "SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture_thumbnail "
+        "FROM users u JOIN friends f ON u.id = f.friend_id "
+        "WHERE f.user_id = %s AND f.status = 'accepted'",
+        (user_id,),
+    )
     friends = cur.fetchall()
-    cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE m.player1_id = %s OR m.player2_id = %s ORDER BY m.match_date DESC', (user_id, user_id))
-    matches = cur.fetchall()
-    cur.execute("SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'", (user_id,))
+    cur.execute(
+        "SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id "
+        "WHERE f.friend_id = %s AND f.status = 'pending'",
+        (user_id,),
+    )
     requests = cur.fetchall()
+    cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+    user = cur.fetchone()
     cur.close()
     conn.close()
-    return render_template('dashboard.html', friends=friends, matches=matches, requests=requests)
+    return render_template(
+        'user_dashboard.html', friends=friends, requests=requests, user=user
+    )
+
+
+@app.route('/users/<string:user_id>')
+def view_user(user_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+    return render_template('user_profile.html', user=user)
+
 
 @app.route('/users')
 def users():
@@ -214,55 +353,151 @@ def users():
     conn = get_db_connection()
     cur = conn.cursor()
     if search_term:
-        cur.execute('SELECT * FROM users WHERE id != %s AND (username ILIKE %s OR name ILIKE %s)', (user_id, f'%{search_term}%', f'%{search_term}%'))
+        cur.execute(
+            'SELECT * FROM users WHERE id != %s AND (username ILIKE %s OR name ILIKE %s)',
+            (user_id, f'%{search_term}%', f'%{search_term}%'),
+        )
     else:
         cur.execute('SELECT * FROM users WHERE id != %s', (user_id,))
     all_users = cur.fetchall()
 
-    cur.execute("SELECT friend_id FROM friends WHERE user_id = %s AND status = 'accepted'", (user_id,))
+    cur.execute(
+        "SELECT friend_id FROM friends WHERE user_id = %s AND status = 'accepted'",
+        (user_id,),
+    )
     friends = [row[0] for row in cur.fetchall()]
     if friends:
-        cur.execute("""
+        cur.execute(
+            """
             SELECT DISTINCT u.id, u.username, u.name, u.dupr_rating
             FROM users u
             JOIN friends f1 ON u.id = f1.friend_id
             WHERE f1.user_id IN %s AND u.id != %s AND u.id NOT IN (SELECT friend_id FROM friends WHERE user_id = %s)
-        """, (tuple(friends), user_id, user_id))
+            """,
+            (tuple(friends), user_id, user_id),
+        )
         fof = cur.fetchall()
     else:
         fof = []
 
     cur.close()
     conn.close()
-    return render_template('users.html', all_users=all_users, search_term=search_term, fof=fof)
+    return render_template(
+        'users.html', all_users=all_users, search_term=search_term, fof=fof
+    )
 
-@app.route('/add_friend/<uuid:friend_id>')
+
+@app.route('/add_friend/<string:friend_id>')
 def add_friend(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
+    if user_id == friend_id:
+        flash("You cannot add yourself as a friend.", 'danger')
+        return redirect(request.referrer or url_for('users'))
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        # Check if the friendship already exists
-        cur.execute('SELECT * FROM friends WHERE (user_id = %s AND friend_id = %s) OR (user_id = %s AND friend_id = %s)', (user_id, friend_id, friend_id, user_id))
-        if cur.fetchone() is None:
-            cur.execute('INSERT INTO friends (user_id, friend_id) VALUES (%s, %s)', (user_id, friend_id))
-            conn.commit()
-            flash('Friend request sent.', 'success')
+        cur.execute(
+            'INSERT INTO friends (user_id, friend_id) VALUES (%s, %s)',
+            (user_id, friend_id),
+        )
+        conn.commit()
+        flash('Friend request sent.', 'success')
     except Exception as e:
         conn.rollback()
         flash(f"An error occurred while sending the friend request: {e}", 'danger')
     finally:
         cur.close()
         conn.close()
-    return redirect(url_for('users'))
+    return redirect(request.referrer or url_for('users'))
+
 
 @app.route('/admin')
 def admin():
     if 'user_id' not in session or not session.get('is_admin'):
         return redirect(url_for('login'))
     return render_template('admin.html')
+
+
+@app.route('/admin/matches')
+def admin_matches():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+    search_term = request.args.get('search', '')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    if search_term:
+        cur.execute(
+            'SELECT m.*, p1.username, p2.username FROM matches m '
+            'JOIN users p1 ON m.player1_id = p1.id '
+            'JOIN users p2 ON m.player2_id = p2.id '
+            'WHERE p1.username ILIKE %s OR p2.username ILIKE %s '
+            'ORDER BY m.match_date DESC',
+            (f'%{search_term}%', f'%{search_term}%'),
+        )
+    else:
+        cur.execute(
+            'SELECT m.*, p1.username, p2.username FROM matches m '
+            'JOIN users p1 ON m.player1_id = p1.id '
+            'JOIN users p2 ON m.player2_id = p2.id ORDER BY m.match_date DESC'
+        )
+    matches = cur.fetchall()
+    cur.close()
+    conn.close()
+    return render_template(
+        'admin_matches.html', matches=matches, search_term=search_term
+    )
+
+
+@app.route('/admin/delete_match/<string:match_id>')
+def admin_delete_match(match_id):
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM matches WHERE id = %s', (match_id,))
+        conn.commit()
+        flash('Match deleted successfully.', 'success')
+    except Exception as e:
+        flash(f"An error occurred: {e}", 'danger')
+    finally:
+        cur.close()
+        conn.close()
+    return redirect(url_for('admin_matches'))
+
+
+@app.route('/admin/friend_graph')
+def friend_graph():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT user_id, friend_id FROM friends WHERE status = 'accepted'")
+    friends = cur.fetchall()
+    cur.close()
+    conn.close()
+    G = nx.Graph()
+    for user_id, friend_id in friends:
+        G.add_edge(str(user_id), str(friend_id))
+    plt.figure(figsize=(12, 12))
+    nx.draw(
+        G,
+        with_labels=True,
+        node_color='skyblue',
+        node_size=2000,
+        edge_color='k',
+        linewidths=1,
+        font_size=15,
+    )
+    import io
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    return buf.read(), 200, {'Content-Type': 'image/png'}
+
 
 @app.route('/admin/reset_db')
 def reset_db():
@@ -278,11 +513,12 @@ def reset_db():
         conn.close()
         return redirect(url_for('dashboard'))
 
-    cur.execute('TRUNCATE TABLE friends, users RESTART IDENTITY')
+    cur.execute('TRUNCATE TABLE friends, users CASCADE')
     conn.commit()
     cur.close()
     conn.close()
     return redirect(url_for('admin'))
+
 
 @app.route('/admin/reset-admin', methods=['GET', 'POST'])
 def reset_admin():
@@ -296,7 +532,9 @@ def reset_admin():
         # Reset all users to not be admin
         cur.execute("UPDATE users SET is_admin = FALSE")
         # Set the first user to be admin
-        cur.execute("UPDATE users SET is_admin = TRUE WHERE id = (SELECT id FROM users ORDER BY id LIMIT 1)")
+        cur.execute(
+            "UPDATE users SET is_admin = TRUE WHERE id = (SELECT id FROM users ORDER BY id LIMIT 1)"
+        )
         conn.commit()
         cur.close()
         conn.close()
@@ -314,7 +552,10 @@ def delete_user(user_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('DELETE FROM friends WHERE user_id = %s OR friend_id = %s', (user_id, user_id))
+        cur.execute(
+            'DELETE FROM friends WHERE user_id = %s OR friend_id = %s',
+            (user_id, user_id),
+        )
         cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
         conn.commit()
         flash('User deleted successfully.', 'success')
@@ -328,6 +569,7 @@ def delete_user(user_id):
         return render_template('error.html', error=str(e)), 500
     return redirect(url_for('users'))
 
+
 @app.route('/admin/promote_user/<uuid:user_id>')
 def promote_user(user_id):
     if 'user_id' not in session or not session.get('is_admin'):
@@ -340,6 +582,7 @@ def promote_user(user_id):
     conn.close()
     return redirect(url_for('users'))
 
+
 @app.route('/admin/reset_password/<uuid:user_id>')
 def admin_reset_password(user_id):
     if 'user_id' not in session or not session.get('is_admin'):
@@ -349,19 +592,26 @@ def admin_reset_password(user_id):
         cur = conn.cursor()
         cur.execute('SELECT email FROM users WHERE id = %s', (user_id,))
         email = cur.fetchone()[0]
-        new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+        new_password = "".join(random.choices(string.ascii_letters + string.digits, k=12))
         hashed_password = generate_password_hash(new_password, method='pbkdf2:sha256')
-        cur.execute('UPDATE users SET password = %s WHERE id = %s', (hashed_password, user_id))
+        cur.execute(
+            'UPDATE users SET password = %s WHERE id = %s', (hashed_password, user_id)
+        )
         conn.commit()
         cur.close()
         conn.close()
-        msg = Message('Your new password', sender=app.config['MAIL_USERNAME'], recipients=[email])
+        msg = Message(
+            'Your new password',
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[email],
+        )
         msg.body = f'Your new password is: {new_password}'
         mail.send(msg)
         flash('Password reset successfully and sent to the user.', 'success')
     except Exception as e:
         flash(f"An error occurred: {e}", 'danger')
     return redirect(url_for('users'))
+
 
 @app.route('/admin/generate_users')
 def generate_users():
@@ -389,26 +639,208 @@ def generate_users():
             continue
         password = 'password'
         email = f'{username}@example.com'
-        dupr_rating = round(fake.pyfloat(left_digits=1, right_digits=2, positive=True, min_value=1.0, max_value=5.0), 2)
+        dupr_rating = round(
+            fake.pyfloat(
+                left_digits=1, right_digits=2, positive=True, min_value=1.0, max_value=5.0
+            ),
+            2,
+        )
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-        cur.execute('INSERT INTO users (username, password, email, name, dupr_rating, is_admin) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id, username, email, name, dupr_rating',
-                    (username, hashed_password, email, name, dupr_rating, False))
+        cur.execute(
+            'INSERT INTO users (username, password, email, name, dupr_rating, is_admin) '
+            'VALUES (%s, %s, %s, %s, %s, %s) '
+            'RETURNING id, username, email, name, dupr_rating',
+            (username, hashed_password, email, name, dupr_rating, False),
+        )
         new_user = cur.fetchone()
         new_users.append(new_user)
     conn.commit()
+
+    # Add random friendships
+    for i in range(len(new_users)):
+        for j in range(i + 1, len(new_users)):
+            if random.random() < 0.5:
+                cur.execute(
+                    'INSERT INTO friends (user_id, friend_id, status) VALUES (%s, %s, %s)',
+                    (new_users[i][0], new_users[j][0], 'accepted'),
+                )
+    conn.commit()
+
     cur.close()
     conn.close()
     return render_template('generated_users.html', users=new_users)
+
+
+@app.route('/admin/generate_matches')
+def generate_matches():
+    if 'user_id' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        # Get all friendships
+        cur.execute("SELECT user_id, friend_id FROM friends WHERE status = 'accepted'")
+        friends = cur.fetchall()
+
+        if not friends:
+            flash('No friendships found to generate matches.', 'warning')
+            return redirect(url_for('admin'))
+
+        # Generate 10 random matches
+        for _ in range(10):
+            user_id, friend_id = random.choice(friends)
+
+            # Generate scores
+            score1 = random.randint(0, 11)
+            if score1 >= 10:
+                score2 = score1 - 2
+            else:
+                score2 = random.randint(0, 11)
+                while abs(score1 - score2) < 2 and max(score1, score2) >= 11:
+                    score2 = random.randint(0, 11)
+
+            # Randomly assign scores to players
+            if random.random() < 0.5:
+                player1_score, player2_score = score1, score2
+            else:
+                player1_score, player2_score = score2, score1
+
+            # Insert match
+            match_id = str(uuid.uuid4())
+            cur.execute(
+                'INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) '
+                'VALUES (%s, %s, %s, %s, %s, NOW())',
+                (
+                    match_id,
+                    user_id,
+                    friend_id,
+                    player1_score,
+                    player2_score,
+                ),
+            )
+
+        conn.commit()
+        flash('10 random matches generated successfully.', 'success')
+
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred while generating matches: {e}", 'danger')
+
+    finally:
+        cur.close()
+        conn.close()
+
+    return redirect(url_for('admin'))
+
+
+@app.route('/leaderboard')
+def leaderboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    try:
+        # Calculate average scores and games played for each user
+        cur.execute(
+            """
+            SELECT
+                u.id,
+                u.name,
+                AVG(CASE WHEN m.player1_id = u.id THEN m.player1_score ELSE m.player2_score END) as avg_score,
+                COUNT(m.id) as games_played
+            FROM
+                users u
+            JOIN
+                matches m ON u.id = m.player1_id OR u.id = m.player2_id
+            GROUP BY
+                u.id, u.name
+            ORDER BY
+                avg_score DESC
+            LIMIT 10
+        """
+        )
+        players = cur.fetchall()
+    except Exception as e:
+        players = []
+        flash(f"An error occurred while fetching the leaderboard: {e}", 'danger')
+    finally:
+        cur.close()
+        conn.close()
+
+    return render_template('leaderboard.html', players=players)
+
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT is_admin FROM users WHERE id = %s', (user_id,))
+    is_admin = cur.fetchone()[0]
+    if not is_admin:
+        cur.close()
+        conn.close()
+        return redirect(url_for('dashboard'))
+
+    cur.execute('SELECT username FROM users')
+    existing_usernames = {row[0] for row in cur.fetchall()}
+    fake = Faker()
+    new_users = []
+
+    for _ in range(10):
+        name = fake.name()
+        username = name.lower().replace(" ", "")
+        if username in existing_usernames:
+            continue
+        password = 'password'
+        email = f'{username}@example.com'
+        dupr_rating = round(
+            fake.pyfloat(
+                left_digits=1, right_digits=2, positive=True, min_value=1.0, max_value=5.0
+            ),
+            2,
+        )
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+        cur.execute(
+            'INSERT INTO users (username, password, email, name, dupr_rating, is_admin) '
+            'VALUES (%s, %s, %s, %s, %s, %s) '
+            'RETURNING id, username, email, name, dupr_rating',
+            (username, hashed_password, email, name, dupr_rating, False),
+        )
+        new_user = cur.fetchone()
+        new_users.append(new_user)
+    conn.commit()
+
+    # Add random friendships
+    for i in range(len(new_users)):
+        for j in range(i + 1, len(new_users)):
+            if random.random() < 0.5:
+                cur.execute(
+                    'INSERT INTO friends (user_id, friend_id, status) VALUES (%s, %s, %s)',
+                    (new_users[i][0], new_users[j][0], 'accepted'),
+                )
+    conn.commit()
+
+    cur.close()
+    conn.close()
+    return render_template('generated_users.html', users=new_users)
+
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
         email = request.form['email']
-        msg = Message('Password reset', sender=app.config['MAIL_USERNAME'], recipients=[email])
-        msg.body = 'Click the link to reset your password: {}'.format(url_for('reset_password', email=email, _external=True))
+        msg = Message(
+            'Password reset', sender=app.config['MAIL_USERNAME'], recipients=[email]
+        )
+        msg.body = 'Click the link to reset your password: {}'.format(
+            url_for('reset_password', email=email, _external=True)
+        )
         mail.send(msg)
         return "Password reset email sent."
     return render_template('forgot_password.html')
+
 
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
@@ -418,12 +850,15 @@ def reset_password():
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('UPDATE users SET password = %s WHERE email = %s', (hashed_password, email))
+        cur.execute(
+            'UPDATE users SET password = %s WHERE email = %s', (hashed_password, email)
+        )
         conn.commit()
         cur.close()
         conn.close()
         return redirect(url_for('login'))
     return render_template('reset_password.html', email=email)
+
 
 @app.route('/change_password', methods=['GET', 'POST'])
 def change_password():
@@ -443,14 +878,72 @@ def change_password():
             hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
             conn = get_db_connection()
             cur = conn.cursor()
-            cur.execute('UPDATE users SET password = %s WHERE id = %s', (hashed_password, user_id))
+            cur.execute(
+                'UPDATE users SET password = %s WHERE id = %s', (hashed_password, user_id)
+            )
             conn.commit()
             cur.close()
             conn.close()
             return redirect(url_for('dashboard'))
         else:
-            return render_template('change_password.html', user=user, error='Passwords do not match.')
+            return render_template(
+                'change_password.html', user=user, error='Passwords do not match.'
+            )
     return render_template('change_password.html', user=user)
+
+
+@app.route('/profile_picture/<string:user_id>')
+def profile_picture(user_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT profile_picture FROM users WHERE id = %s', (user_id,))
+        profile_picture_data = cur.fetchone()
+        cur.close()
+        conn.close()
+        if profile_picture_data and profile_picture_data[0]:
+            return Response(profile_picture_data[0], mimetype='image/png')
+        else:
+            return redirect(url_for('static', filename='user_icon.png'))
+    except Exception as e:
+        app.logger.error(f"Error serving profile picture: {e}")
+        return redirect(url_for('static', filename='user_icon.png'))
+
+
+@app.route('/profile_picture_thumbnail/<string:user_id>')
+def profile_picture_thumbnail(user_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT profile_picture_thumbnail FROM users WHERE id = %s', (user_id,))
+        thumbnail_data = cur.fetchone()
+        cur.close()
+        conn.close()
+        if thumbnail_data and thumbnail_data[0]:
+            return Response(thumbnail_data[0], mimetype='image/png')
+        else:
+            return redirect(url_for('static', filename='user_icon.png'))
+    except Exception as e:
+        app.logger.error(f"Error serving profile picture thumbnail: {e}")
+        return redirect(url_for('static', filename='user_icon.png'))
+
+
+@app.route('/match/<uuid:match_id>')
+def view_match_page(match_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        'SELECT m.*, p1.username, p2.username, p1.profile_picture, p2.profile_picture '
+        'FROM matches m JOIN users p1 ON m.player1_id = p1.id '
+        'JOIN users p2 ON m.player2_id = p2.id WHERE m.id = %s',
+        (match_id,),
+    )
+    match = cur.fetchone()
+    cur.close()
+    conn.close()
+    return render_template('view_match.html', match=match)
 
 
 @app.route('/update_profile', methods=['POST'])
@@ -460,7 +953,11 @@ def update_profile():
     user_id = session['user_id']
     try:
         dark_mode = 'dark_mode' in request.form
-        dupr_rating = float(request.form.get('dupr_rating')) if request.form.get('dupr_rating') else None
+        dupr_rating = (
+            float(request.form.get('dupr_rating'))
+            if request.form.get('dupr_rating')
+            else None
+        )
         profile_picture = request.files.get('profile_picture')
 
         conn = get_db_connection()
@@ -468,13 +965,37 @@ def update_profile():
 
         cur.execute('UPDATE users SET dark_mode = %s WHERE id = %s', (dark_mode, user_id))
 
-        if profile_picture and allowed_file(profile_picture.filename):
-            filename = secure_filename(profile_picture.filename)
-            upload_folder = app.config['UPLOAD_FOLDER']
-            if not os.path.exists(upload_folder):
-                os.makedirs(upload_folder)
-            profile_picture.save(os.path.join(upload_folder, filename))
-            cur.execute('UPDATE users SET profile_picture = %s WHERE id = %s', (filename, user_id))
+        if (
+            profile_picture
+            and profile_picture.filename
+            and allowed_file(profile_picture.filename)
+        ):
+            if len(profile_picture.read()) > 10 * 1024 * 1024:
+                flash('Profile picture is too large. The maximum size is 10MB.', 'danger')
+                return redirect(request.referrer or url_for('dashboard'))
+            profile_picture.seek(0)
+            img = Image.open(profile_picture)
+            img.thumbnail((512, 512))
+            import io
+
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            profile_picture_data = buf.getvalue()
+
+            img.thumbnail((64, 64))
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            thumbnail_data = buf.getvalue()
+
+            cur.execute(
+                'UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s '
+                'WHERE id = %s',
+                (profile_picture_data, thumbnail_data, user_id),
+            )
+            app.logger.info(f"User {user_id} updated their profile picture.")
+        elif profile_picture:
+            flash('Invalid file type for profile picture.', 'danger')
+            return redirect(request.referrer or url_for('dashboard'))
 
         if dupr_rating is not None:
             cur.execute('UPDATE users SET dupr_rating = %s WHERE id = %s', (dupr_rating, user_id))
@@ -483,7 +1004,13 @@ def update_profile():
         cur.close()
         conn.close()
     except psycopg2.errors.UndefinedColumn as e:
-        flash(f"Database error: {e}. The 'dark_mode' column is missing. Please run database migrations or contact an administrator.", 'danger')
+        flash(
+            (
+                f"Database error: {e}. The 'dark_mode' column is missing. "
+                "Please run database migrations or contact an administrator."
+            ),
+            'danger',
+        )
         return render_template('error.html', error=str(e)), 500
     except psycopg2.Error as e:
         flash(f"Database error: {e}", 'danger')
@@ -492,6 +1019,7 @@ def update_profile():
         flash(f"An error occurred: {e}", 'danger')
         return render_template('error.html', error=str(e)), 500
     return redirect(url_for('dashboard'))
+
 
 @app.route('/create_match', methods=['GET', 'POST'])
 def create_match():
@@ -506,70 +1034,119 @@ def create_match():
         player1_score = request.form['player1_score']
         player2_score = request.form['player2_score']
         match_date = request.form['match_date']
-        cur.execute('INSERT INTO matches (player1_id, player2_id, player1_score, player2_score, match_date) VALUES (%s, %s, %s, %s, %s)',
-                    (player1_id, player2_id, player1_score, player2_score, match_date))
-        conn.commit()
-        cur.close()
-        conn.close()
+        try:
+            match_id = str(uuid.uuid4())
+            cur.execute(
+                'INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) '
+                'VALUES (%s, %s, %s, %s, %s, %s)',
+                (
+                    match_id,
+                    player1_id,
+                    player2_id,
+                    player1_score,
+                    player2_score,
+                    match_date,
+                ),
+            )
+            conn.commit()
+            flash('Match created successfully.', 'success')
+        except Exception as e:
+            conn.rollback()
+            flash(f"An error occurred while creating the match: {e}", 'danger')
+        finally:
+            cur.close()
+            conn.close()
         return redirect(url_for('dashboard'))
-    cur.execute('SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s', (user_id,))
+    cur.execute(
+        'SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture '
+        'FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s',
+        (user_id,),
+    )
     friends = cur.fetchall()
     cur.close()
     conn.close()
     return render_template('create_match.html', friends=friends)
 
-@app.route('/match/<uuid:match_id>')
-def view_match(match_id):
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('SELECT m.*, p1.username, p2.username FROM matches m JOIN users p1 ON m.player1_id = p1.id JOIN users p2 ON m.player2_id = p2.id WHERE m.id = %s', (match_id,))
-    match = cur.fetchone()
-    cur.close()
-    conn.close()
-    return render_template('view_match.html', match=match)
 
-@app.route('/friend_requests')
-def friend_requests():
+@app.route('/friends')
+def friends():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id WHERE f.friend_id = %s AND f.status = 'pending'", (user_id,))
+    cur.execute(
+        "SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture "
+        "FROM users u JOIN friends f ON u.id = f.friend_id "
+        "WHERE f.user_id = %s AND f.status = 'accepted'",
+        (user_id,),
+    )
+    friends = cur.fetchall()
+    cur.execute(
+        "SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id "
+        "WHERE f.friend_id = %s AND f.status = 'pending'",
+        (user_id,),
+    )
     requests = cur.fetchall()
-    cur.execute("SELECT u.id, u.username, f.status FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s", (user_id,))
+    cur.execute(
+        "SELECT u.id, u.username, f.status FROM users u JOIN friends f ON u.id = f.friend_id "
+        "WHERE f.user_id = %s AND f.status = 'pending'",
+        (user_id,),
+    )
     sent_requests = cur.fetchall()
     cur.close()
     conn.close()
-    return render_template('friend_requests.html', requests=requests, sent_requests=sent_requests)
+    return render_template(
+        'friends.html',
+        friends=friends,
+        requests=requests,
+        sent_requests=sent_requests,
+    )
 
-@app.route('/accept_friend_request/<uuid:friend_id>')
+
+@app.route('/accept_friend_request/<string:friend_id>')
 def accept_friend_request(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE friends SET status = 'accepted' WHERE user_id = %s AND friend_id = %s", (friend_id, user_id))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return redirect(url_for('friend_requests'))
+    try:
+        cur.execute(
+            "UPDATE friends SET status = 'accepted' WHERE user_id = %s AND friend_id = %s",
+            (friend_id, user_id),
+        )
+        cur.execute(
+            "INSERT INTO friends (user_id, friend_id, status) VALUES (%s, %s, %s)",
+            (user_id, friend_id, 'accepted'),
+        )
+        conn.commit()
+        flash('Friend request accepted.', 'success')
+    except Exception as e:
+        conn.rollback()
+        flash(f"An error occurred while accepting the friend request: {e}", 'danger')
+    finally:
+        cur.close()
+        conn.close()
+    return redirect(url_for('friends'))
 
-@app.route('/decline_friend_request/<uuid:friend_id>')
+
+@app.route('/decline_friend_request/<string:friend_id>')
 def decline_friend_request(friend_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     user_id = session['user_id']
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM friends WHERE user_id = %s AND friend_id = %s", (friend_id, user_id))
+    cur.execute(
+        "DELETE FROM friends WHERE user_id = %s AND friend_id = %s",
+        (friend_id, user_id),
+    )
     conn.commit()
     cur.close()
     conn.close()
     return redirect(url_for('friend_requests'))
+
 
 @app.route('/verify_email/<email>')
 def verify_email(email):
@@ -581,17 +1158,21 @@ def verify_email(email):
     conn.close()
     return "Email verified."
 
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
+
 
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template('500.html'), 500
 
+
 @app.errorhandler(psycopg2.Error)
 def handle_db_error(e):
     return render_template('error.html', error=str(e)), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=27272)

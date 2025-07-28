@@ -1,0 +1,41 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint with ruff
+        run: |
+          pip install ruff
+          ruff check .
+      - name: Security Analysis with Bandit
+        run: |
+          pip install bandit
+          bandit -r .
+      - name: Static Type Checking with mypy
+        run: |
+          pip install mypy
+          mypy .
+      - name: Run tests with coverage
+        run: |
+          pip install coverage
+          coverage run -m unittest discover tests
+          coverage xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: true
