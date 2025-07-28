@@ -1,4 +1,13 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, Response
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash,
+    Response,
+)
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
@@ -888,7 +897,10 @@ def update_profile():
             img.save(buf, format='PNG')
             thumbnail_data = buf.getvalue()
 
-            cur.execute('UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s WHERE id = %s', (profile_picture_data, thumbnail_data, user_id))
+            cur.execute(
+                'UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s WHERE id = %s',
+                (profile_picture_data, thumbnail_data, user_id),
+            )
             app.logger.info(f"User {user_id} updated their profile picture.")
         elif profile_picture:
             flash('Invalid file type for profile picture.', 'danger')
@@ -902,7 +914,10 @@ def update_profile():
         conn.close()
     except psycopg2.errors.UndefinedColumn as e:
         flash(
-            f"Database error: {e}. The 'dark_mode' column is missing. Please run database migrations or contact an administrator.",
+            (
+                f"Database error: {e}. The 'dark_mode' column is missing. "
+                "Please run database migrations or contact an administrator."
+            ),
             'danger',
         )
         return render_template('error.html', error=str(e)), 500
