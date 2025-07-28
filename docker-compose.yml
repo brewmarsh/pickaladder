@@ -16,15 +16,21 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=mydb
     depends_on:
-      - db
+      db:
+        condition: service_healthy
   db:
     image: postgres:13
     volumes:
       - type: bind
         source: ./init.sql
         target: /docker-entrypoint-initdb.d/init.sql
-      - /app/migrations:/migrations
+      - ./migrations:/migrations
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=mydb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
