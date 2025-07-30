@@ -1,3 +1,7 @@
+CREATE DATABASE "user";
+
+\c "user";
+
 DROP TABLE IF EXISTS friends, matches, users CASCADE;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 

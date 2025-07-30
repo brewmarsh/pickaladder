@@ -13,11 +13,10 @@ services:
   db:
     image: postgres:13
     volumes:
-      - ./init.sh:/docker-entrypoint-initdb.d/init.sh
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=user
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user"]
       interval: 5s
