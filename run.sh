@@ -7,6 +7,9 @@ docker run -d --name picka-db -e POSTGRES_PASSWORD=password -p 5432:5432 postgre
 echo "Waiting for database to start..."
 sleep 10
 
+# Install dependencies
+pip install -r requirements.txt
+
 # Run the application
 export POSTGRES_USER=postgres
 export POSTGRES_PASSWORD=password
