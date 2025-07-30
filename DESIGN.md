@@ -10,12 +10,22 @@ The pickaladder application is a web-based application that allows users to crea
 
 The application is a monolithic web application built with Flask and PostgreSQL. It is containerized with Docker and deployed with docker-compose.
 
+### 2.1. Application Architecture
+
 The Flask application is organized using a blueprint-based architecture. The application is divided into the following blueprints:
 
 *   **auth**: Handles user authentication, including registration, login, logout, and password management.
 *   **user**: Handles user-facing features, such as the user dashboard, user profiles, and friend management.
 *   **admin**: Handles administrative features, such as user management, database management, and data generation.
 *   **match**: Handles match-related features, such as creating and viewing matches, and the leaderboard.
+
+### 2.2. Build Process
+
+The application is built using a multi-stage Docker build.
+*   **Stage 1 (builder)**: This stage uses a `node` base image to build the React frontend. It copies the frontend code, installs dependencies, and runs the build script.
+*   **Stage 2 (final)**: This stage uses a `python` base image. It copies the Python application code, installs the Python dependencies, and then copies the built frontend assets from the `builder` stage.
+
+This approach results in a small, optimized production image that does not contain any of the build-time dependencies.
 
 ## 3. Database
 

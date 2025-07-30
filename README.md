@@ -18,6 +18,20 @@ To get started with the application, you will need to have Docker and Docker Com
 3. Run `make up` to start the application
 4. The application will be available at `http://localhost:27272`
 
+## Build
+
+The application is built using a multi-stage Docker build. The first stage builds the React frontend, and the second stage builds the final Python application, copying the built frontend assets from the first stage. This results in a small, optimized production image.
+
+## Testing
+
+To run the tests, use the following command:
+
+```
+make test
+```
+
+This will run the backend tests in a separate test database to avoid interfering with the development database.
+
 ## Admin
 
 The first user to register will be an admin. The admin can access the admin panel at `/admin`.
@@ -33,7 +47,7 @@ The admin can:
 
 ### Database
 
-To reset the database, run the following command:
+To reset the development database, run the following command:
 
 ```
 make reset-db
