@@ -7,6 +7,10 @@ docker run -d --name picka-db -e POSTGRES_PASSWORD=password -p 5432:5432 postgre
 echo "Waiting for database to start..."
 sleep 10
 
+# Create and activate a virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
 # Install dependencies
 pip install -r requirements.txt
 
