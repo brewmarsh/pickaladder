@@ -118,11 +118,16 @@ def register():
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(f'SELECT {USER_ID} FROM {USERS_TABLE} WHERE {USER_IS_ADMIN} = TRUE')
+    admin_exists = cur.fetchone()
+    if not admin_exists:
+        return redirect(url_for('auth.install'))
+
     if request.method == 'POST':
         username = request.form[USER_USERNAME]
         password = request.form[USER_PASSWORD]
-        conn = get_db_connection()
-        cur = conn.cursor()
         cur.execute(f'SELECT * FROM {USERS_TABLE} WHERE {USER_USERNAME} = %s', (username,))
         user = cur.fetchone()
         if user and check_password_hash(user[2], password):

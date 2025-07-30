@@ -4,7 +4,7 @@
 <div class="container">
     <div class="login-form">
         <h2>Create Account</h2>
-    <form method="post" action="/register">
+    <form method="post" action="{{ url_for('auth.register') }}">
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required>
         <label for="password">Password:</label>
