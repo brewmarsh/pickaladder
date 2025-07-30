@@ -52,3 +52,13 @@ To reset the development database, run the following command:
 ```
 make reset-db
 ```
+
+## Troubleshooting
+
+If you are having issues with the database not being created correctly, you can try running the following command to remove the old database volume:
+
+```
+docker-compose down -v
+```
+
+After running this command, you can try running `make build` and `make up` again.

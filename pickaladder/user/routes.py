@@ -8,7 +8,7 @@ from flask import (
     Response,
     g
 )
-from db import get_db_connection
+from pickaladder.db import get_db_connection
 from . import bp
 import psycopg2
 from utils import allowed_file

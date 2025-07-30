@@ -16,7 +16,7 @@ import string
 from PIL import Image, ImageDraw
 from io import BytesIO
 
-from db import get_db_connection
+from pickaladder.db import get_db_connection
 from . import bp
 from pickaladder import mail
 import psycopg2

@@ -6,7 +6,7 @@ from flask import (
     session,
     flash,
 )
-from db import get_db_connection
+from pickaladder.db import get_db_connection
 from . import bp
 import psycopg2
 import uuid
