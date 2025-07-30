@@ -64,6 +64,15 @@ Generates 10 random matches between friends.
 *   **Response:**
     *   Redirects to the admin page.
 
+#### `GET /admin/friend_graph_data`
+
+Returns the data for the friend graph.
+
+*   **Response:**
+    *   A JSON object with two keys: `nodes` and `edges`.
+        *   `nodes` is a list of objects, each with an `id` and `label`.
+        *   `edges` is a list of objects, each with a `from` and `to`.
+
 ## 3. Data Models
 
 ### 3.1. User
