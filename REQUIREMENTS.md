@@ -1,140 +1,81 @@
 # pickaladder Application Requirements
 
-This document outlines the requirements that have been implemented for the pickaladder application.
+This document outlines the requirements for the pickaladder application.
 
 ## Functional Requirements
 
 ### User Management
-
-*   **User Registration:** Users can create an account with a username, password, email address, and name. The first user to register will be an admin.
+*   **User Registration:** Users can create an account with a username, password, email address, and name.
+*   **Email Verification:** Users must verify their email address before they can log in.
 *   **User Login:** Users can log in with their username and password.
 *   **Password Reset:** Users can reset their password if they forget it.
 *   **Profile Updates:** Users can update their DUPR rating, password, and profile picture from their dashboard.
 
 ### Friend Management
-
 *   **Find Friends:** Users can find other users to be friends with.
-*   **Add Friends:** Users can add other users as friends. A toast message will be displayed to confirm that the request has been sent.
-*   **View Friends:** Users can view a list of their friends on the friends page.
+*   **Add Friends:** Users can add other users as friends.
+*   **View Friends:** Users can view a list of their friends.
 *   **Friends of Friends:** Users can see a list of "friends of friends" to get recommendations for new friends.
-*   **View Friend Profile:** Users can view a friend's profile by clicking on their name in the friends list.
+*   **View Friend Profile:** Users can view a friend's profile.
+
+### Gameplay
+*   **Match Creation:** Users can create matches with their friends.
+*   **Match Viewing:** Users can view the details of a match.
+*   **Leaderboard:** The application has a leaderboard that shows the top 10 players by average score.
 
 ### Admin Functionality
-
-*   **Admin Panel:** Admin users have access to an admin panel where they can manage the application.
-*   **Reset Database:** Admin users can reset the user database from the admin panel.
-*   **Reset Admin:** Admin users can reset the admin account to the first user in the database.
-*   **Generate Users:** Admin users can generate 10 random users with human-like names. The generated users are displayed on a separate page. This function will not create users that already exist.
-*   **Delete Users:** Admin users can delete users from the user database. The application will also automatically delete any friendships associated with the deleted user. A toast message will be displayed to confirm the deletion.
-*   **Promote Users:** Admin users can promote other users to administrators.
-*   **Reset Passwords:** Admin users can reset user passwords. The new password will be sent to the user's email address.
-
-### User Profile
-
-*   **Dark Mode:** Users can enable or disable dark mode from their dashboard.
-
-### Onboarding Flow
-
-*   **Welcome Screen:** New users are greeted with a welcome screen that explains the application and the installation process.
-*   **Admin Registration:** The first user to register is prompted to create an admin account.
+*   **Admin Panel:** Admin users have access to an admin panel.
+*   **User Management:** Admins can delete users, promote users to admins, and reset user passwords.
+*   **Database Management:** Admins can reset the database.
+*   **Data Generation:** Admins can generate random users and matches for testing purposes.
 
 ## Non-Functional Requirements
 
-### Reliability
-
-*   **Idempotency:** Database operations are idempotent to prevent duplicate entries and other inconsistencies.
-*   **Error Handling:** The application will now handle database errors more gracefully, displaying a custom error page with a link back to the dashboard instead of crashing. This applies to both user deletion and profile updates.
-
-### Quality
-
-*   **Code Quality:** The project uses `ruff` for linting and code formatting to maintain a consistent code style.
-*   **Testing:** The project has a basic test suite to ensure the core functionality of the application is working correctly.
-
-### Security
-
-*   **UUIDs:** User and match IDs are now UUIDs to enhance privacy and prevent sequential ID guessing.
-
-### UI/UX
-
-*   **Dashboard:** The password field has been removed from the "Update Profile" form on the dashboard.
-*   **Match Page:** The match page formatting has been reviewed and confirmed to be correct.
+### Architecture
+*   **Monolithic Application:** The application is a monolithic web application built with Flask and PostgreSQL.
+*   **Containerized:** The application is containerized with Docker and deployed with docker-compose.
+*   **Blueprint-based:** The Flask application is organized using a blueprint-based structure.
 
 ### Database
-
-*   **Reset Database:** The database can be reset by running `make reset-db`. This will drop all tables and recreate them based on the `init.sql` file.
-*   **Database Initialization:** The database is automatically initialized with the correct schema when the application is started. To force a re-initialization, run `make build`.
-
-### Technical Requirements
-
 *   **Database:** The application uses a PostgreSQL database.
-*   **File Uploads:** Profile pictures are stored in the database as blobs. The application only accepts `.png`, `.jpg`, `.jpeg`, and `.gif` files. The maximum file size is 10MB. The images are resized to a maximum of 512x512 and a thumbnail of 64x64 is generated. A default profile picture is generated for new users.
+*   **Connection Pooling:** The application uses a connection pool to manage database connections.
+*   **Database Initialization:** The database is automatically initialized and migrated when the application starts.
 
-## Known Issues
+### Security
+*   **UUIDs:** User and match IDs are UUIDs to enhance privacy.
+*   **Password Hashing:** Passwords are securely hashed using pbkdf2:sha256.
 
-*   There is a race condition between the `web` and `db` containers that causes the application to time out on startup. This issue needs to be resolved.
+### Code Quality
+*   **Linting:** The project uses `ruff` for linting and code formatting.
+*   **Testing:** The project has a basic test suite.
 
 ## Future Enhancements
 
 ### Security
-
-*   **Input Validation:** Implement robust input validation on all user-supplied data to prevent common vulnerabilities such as XSS and SQL injection.
-*   **Password Policies:** Enforce strong password policies, including minimum length and complexity requirements.
-*   **Session Management:** Implement secure session management practices, including session timeouts and protection against session fixation.
-*   **Rate Limiting:** Implement rate limiting on authentication and other sensitive endpoints to prevent brute-force attacks.
+*   **Input Validation:** Implement robust input validation on all user-supplied data.
+*   **Password Policies:** Enforce strong password policies.
+*   **Session Management:** Implement secure session management practices.
+*   **Rate Limiting:** Implement rate limiting on sensitive endpoints.
 
 ### Quality
-
-*   **Type Checking:** Static type checking with `mypy` has been added to the CI/CD pipeline to improve code quality and catch type-related errors early.
-*   **Comprehensive Testing:** Expand the test suite to include integration and end-to-end tests to ensure the application is well-tested and stable.
-*   **Code Coverage:** Code coverage is now measured as part of the CI/CD pipeline to identify untested parts of the codebase.
+*   **Type Checking:** Add static type checking with `mypy`.
+*   **Comprehensive Testing:** Expand the test suite to include integration and end-to-end tests.
+*   **Code Coverage:** Measure code coverage to identify untested parts of the codebase.
 
 ### Documentation
-
-*   **API Documentation:** Generate API documentation to make it easier for developers to understand and use the application's API.
-*   **User Guide:** Create a comprehensive user guide to help users understand how to use the application.
+*   **API Documentation:** Generate API documentation.
+*   **User Guide:** Create a comprehensive user guide.
 
 ### CI/CD
-
-*   **Automated Deployments:** A CI/CD pipeline has been implemented using GitHub Actions to automate the deployment process and ensure that all changes are automatically tested and deployed.
-*   **Infrastructure as Code:** Use a tool like Terraform to manage the application's infrastructure as code.
-*   **Linting and Static Analysis:** The CI/CD pipeline includes steps for linting (`ruff`), static analysis (`mypy`), and security scanning (`bandit`) to ensure code quality and security.
+*   **Automated Deployments:** Implement a CI/CD pipeline for automated testing and deployment.
+*   **Infrastructure as Code:** Use a tool like Terraform to manage infrastructure as code.
 
 ### Configuration
+*   **Configuration File:** Use a configuration file instead of environment variables for all settings.
+*   **Logging:** Implement a more robust and configurable logging system.
 
-*   **Configuration File:** The application should use a configuration file to store settings, rather than relying on environment variables.
-*   **Logging:** The application should have a robust logging system that can be configured to log to different destinations (e.g., file, syslog, console).
-
-### Documentation
-
-*   **Code Comments:** The code should be well-commented to make it easier for other developers to understand.
-*   **README.md:** The `README.md` file should be updated with more information about the project.
-
-### Gameplay
-
-*   **Match Formatting:** The formatting of the match page has been fixed.
-*   **Match IDs:** Matches now have a large random ID for privacy reasons. Matches should only be allowed between friends.
-*   **User Dashboard:** The user's DUPR rating is now displayed on their dashboard.
-*   **Ladder Ranking:** The average ladder ranking is determined by averaging their total points per game.
-*   **Multiple Ladder Rankings:** We may add another ladder ranking later.
-*   **Leaderboard:** The app now has a leaderboard page, showing the top 10 by ranking, including their average and number of games.
-*   **Generate Random Matches:** A "generate 10 random matches" button has been added to the admin page. This feature simulates 10 matches between friends in the database, with random scores from 0 to 11, or a win by 2 if the lower score is 9 or 10.
-
-### Gameplay
-
-*   **Dark Mode:** Dark mode has been implemented correctly.
-*   **Match Formatting:** The formatting of the match page has been fixed.
-*   **Match IDs:** Matches now have a large random ID for privacy reasons. Matches should only be allowed between friends.
-*   **User Dashboard:** The user's DUPR rating is now displayed on their dashboard.
-*   **Ladder Ranking:** The average ladder ranking is determined by averaging their total points per game.
-*   **Multiple Ladder Rankings:** We may add another ladder ranking later.
-*   **Leaderboard:** The app now has a leaderboard page, showing the top 10 by ranking, including their average and number of games.
-*   **Generate Random Matches:** A "generate 10 random matches" button has been added to the admin page. This feature simulates 10 matches between friends in the database, with random scores from 0 to 11, or a win by 2 if the lower score is 9 or 10.
-*   **Admin Page:** The admin page needs a more professional look, including the ability to customize the branding with a company logo and color scheme.
-*   **Terms of Service:** The application should have a page where users can view the terms of service.
-*   **Data Export:** Users should be able to export their data from the application.
-
-## Known Issues
-
-*   There is a race condition between the `web` and `db` containers that causes the application to time out on startup. This issue needs to be resolved.
-*   There is a "Bad Request" error during installation that needs to be investigated and fixed.
-*   The testing environment needs to be stabilized to allow for proper testing of the application.
+### Features
+*   **Multiple Ladder Rankings:** Add support for multiple ladder ranking systems.
+*   **Customizable Branding:** Allow admins to customize the branding of the admin page.
+*   **Terms of Service:** Add a terms of service page.
+*   **Data Export:** Allow users to export their data.

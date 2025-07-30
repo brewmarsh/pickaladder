@@ -5,11 +5,13 @@ services:
       - "27272:27272"
     command: >
       sh -c "
-        printenv &&
+        echo 'Waiting for DB to be ready...'
         until pg_isready -h db -p 5432 -U user; do
-          echo 'Waiting for postgres...'
           sleep 2
         done
+        echo 'DB is ready, running migrations...'
+        python migrate.py
+        echo 'Migrations complete, starting app...'
         gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
       "
     environment:

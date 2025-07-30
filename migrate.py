@@ -1,0 +1,62 @@
+import os
+import psycopg2
+from db import get_db_connection
+
+def apply_migrations():
+    """
+    Connects to the database and applies any pending migrations from the 'migrations' directory.
+    """
+    # Database connection environment variables must be set.
+    # We will wait for the database to be ready before running this script.
+    conn = get_db_connection()
+    cur = conn.cursor()
+    migration_dir = 'migrations'
+
+    print("Running database migrations...")
+
+    if not os.path.exists(migration_dir):
+        print("No 'migrations' directory found. Skipping.")
+        return
+
+    # Ensure the migrations table exists to track applied migrations.
+    cur.execute(
+        "SELECT table_name FROM information_schema.tables "
+        "WHERE table_schema = 'public' AND table_name = 'migrations'"
+    )
+    if cur.fetchone() is None:
+        print("Creating 'migrations' table.")
+        cur.execute(
+            'CREATE TABLE migrations (id SERIAL PRIMARY KEY, migration_name TEXT NOT NULL UNIQUE)'
+        )
+        conn.commit()
+
+    # Get the set of already applied migrations.
+    cur.execute('SELECT migration_name FROM migrations')
+    applied_migrations = {row[0] for row in cur.fetchall()}
+    print(f"Found {len(applied_migrations)} applied migrations.")
+
+    # Find and apply new migrations.
+    migration_files = sorted([f for f in os.listdir(migration_dir) if f.endswith('.sql')])
+    for migration_file in migration_files:
+        if migration_file not in applied_migrations:
+            print(f"Applying migration: {migration_file}...")
+            with open(os.path.join(migration_dir, migration_file), 'r') as f:
+                sql = f.read()
+                cur.execute(sql)
+
+            # Record the migration so it doesn't run again.
+            cur.execute(
+                'INSERT INTO migrations (migration_name) VALUES (%s)',
+                (migration_file,),
+            )
+            conn.commit()
+            print(f"Successfully applied {migration_file}.")
+
+    print("Database migrations complete.")
+    cur.close()
+    conn.close()
+
+if __name__ == '__main__':
+    # The 'web' service in docker-compose will wait for the DB to be healthy
+    # before running this script.
+    apply_migrations()
