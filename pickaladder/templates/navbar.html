@@ -1,5 +1,5 @@
-<body class="{{ 'dark-mode' if user and user[8] else '' }}">
-{% if session['is_admin'] %}
+<body class="{{ 'dark-mode' if user and user.dark_mode else '' }}">
+{% if session.get('is_admin') %}
 <div class="admin-banner">
     <p>You are logged in as an administrator.</p>
 </div>
@@ -7,21 +7,23 @@
 <div class="container">
     <nav>
         <div class="dropdown" style="float:right;">
+            {% if user %}
             <button class="dropbtn">
-                <img src="{{ url_for('profile_picture_thumbnail', user_id=user[0]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                <img src="{{ url_for('user.profile_picture_thumbnail', user_id=user.id) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
             </button>
             <div class="dropdown-content">
-                <a href="{{ url_for('dashboard') }}">📈 Dashboard</a>
-                <a href="{{ url_for('users') }}">👥 Users</a>
-                <a href="{{ url_for('friends') }}">🧑‍🤝‍🧑 Friends</a>
-                <a href="{{ url_for('leaderboard') }}">🏆 Leaderboard</a>
-                <a href="{{ url_for('change_password') }}">🔑 Change Password</a>
-                <a href="{{ url_for('logout') }}">🚪 Logout</a>
-                {% if session['is_admin'] %}
+                <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
+                <a href="{{ url_for('user.users') }}">👥 Users</a>
+                <a href="{{ url_for('user.friends') }}">🧑‍🤝‍🧑 Friends</a>
+                <a href="{{ url_for('match.leaderboard') }}">🏆 Leaderboard</a>
+                <a href="{{ url_for('auth.change_password') }}">🔑 Change Password</a>
+                <a href="{{ url_for('auth.logout') }}">🚪 Logout</a>
+                {% if session.get('is_admin') %}
                 <hr>
-                <a href="{{ url_for('admin') }}">👑 Admin</a>
+                <a href="{{ url_for('admin.admin') }}">👑 Admin</a>
                 {% endif %}
             </div>
+            {% endif %}
         </div>
     </nav>
 </div>
