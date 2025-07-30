@@ -16,13 +16,6 @@ RUN pip list
 # Copy the rest of the application code.
 COPY . .
 
-# Install Node.js and build the frontend.
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends nodejs npm && \
-    npm install --prefix frontend && \
-    npm run build --prefix frontend && \
-    apt-get purge -y --auto-remove nodejs npm && \
-    rm -rf /var/lib/apt/lists/*
 
 # Install PostgreSQL client.
 RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client
