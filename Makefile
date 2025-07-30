@@ -9,7 +9,7 @@ test:
 	docker compose -f docker-compose.yml -f docker-compose.test.yml exec web python -m unittest discover tests
 
 reset-db:
-	docker compose exec db psql -U user -d pickaladder -c "DROP TABLE IF EXISTS friends, matches, users CASCADE;"
+	docker compose exec db psql -U $$POSTGRES_USER -d $$POSTGRES_DB -c "DROP TABLE IF EXISTS friends, matches, users CASCADE;"
 
 migrate:
-	docker compose exec -T db psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} -f /migrations/1_add_dark_mode_column.sql
+	docker compose exec -T db psql -U $$POSTGRES_USER -d $$POSTGRES_DB -f /migrations/1_add_dark_mode_column.sql

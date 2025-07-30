@@ -6,7 +6,8 @@ from flask import (
     session,
     flash,
     Response,
-    g
+    g,
+    current_app,
 )
 from pickaladder.db import get_db_connection
 from . import bp
@@ -14,28 +15,42 @@ import psycopg2
 from utils import allowed_file
 from PIL import Image
 import io
+from pickaladder.constants import (
+    USERS_TABLE,
+    FRIENDS_TABLE,
+    USER_ID,
+    USER_USERNAME,
+    USER_NAME,
+    USER_DUPR_RATING,
+    USER_PROFILE_PICTURE,
+    USER_PROFILE_PICTURE_THUMBNAIL,
+    USER_DARK_MODE,
+    FRIENDS_USER_ID,
+    FRIENDS_FRIEND_ID,
+    FRIENDS_STATUS,
+)
 
 @bp.route('/dashboard')
 def dashboard():
-    if 'user_id' not in session:
+    if USER_ID not in session:
         return redirect(url_for('auth.login'))
-    user_id = session['user_id']
+    user_id = session[USER_ID]
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cur.execute(
-        "SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture_thumbnail "
-        "FROM users u JOIN friends f ON u.id = f.friend_id "
-        "WHERE f.user_id = %s AND f.status = 'accepted'",
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
+        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
+        f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'",
         (user_id,),
     )
     friends = cur.fetchall()
     cur.execute(
-        "SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id "
-        "WHERE f.friend_id = %s AND f.status = 'pending'",
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME} FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_USER_ID} "
+        f"WHERE f.{FRIENDS_FRIEND_ID} = %s AND f.{FRIENDS_STATUS} = 'pending'",
         (user_id,),
     )
     requests = cur.fetchall()
-    cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+    cur.execute(f'SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s', (user_id,))
     user = cur.fetchone()
     return render_template(
         'user_dashboard.html', friends=friends, requests=requests, user=user
@@ -43,44 +58,44 @@ def dashboard():
 
 @bp.route('/<string:user_id>')
 def view_user(user_id):
-    if 'user_id' not in session:
+    if USER_ID not in session:
         return redirect(url_for('auth.login'))
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+    cur.execute(f'SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s', (user_id,))
     user = cur.fetchone()
     return render_template('user_profile.html', user=user)
 
 
-@bp.route('/users')
+@bp.route(f'/{USERS_TABLE}')
 def users():
-    if 'user_id' not in session:
+    if USER_ID not in session:
         return redirect(url_for('auth.login'))
-    user_id = session['user_id']
+    user_id = session[USER_ID]
     search_term = request.args.get('search', '')
     conn = get_db_connection()
     cur = conn.cursor()
     if search_term:
         cur.execute(
-            'SELECT * FROM users WHERE id != %s AND (username ILIKE %s OR name ILIKE %s)',
+            f'SELECT * FROM {USERS_TABLE} WHERE {USER_ID} != %s AND ({USER_USERNAME} ILIKE %s OR {USER_NAME} ILIKE %s)',
             (user_id, f'%{search_term}%', f'%{search_term}%'),
         )
     else:
-        cur.execute('SELECT * FROM users WHERE id != %s', (user_id,))
+        cur.execute(f'SELECT * FROM {USERS_TABLE} WHERE {USER_ID} != %s', (user_id,))
     all_users = cur.fetchall()
 
     cur.execute(
-        "SELECT friend_id FROM friends WHERE user_id = %s AND status = 'accepted'",
+        f"SELECT {FRIENDS_FRIEND_ID} FROM {FRIENDS_TABLE} WHERE {FRIENDS_USER_ID} = %s AND {FRIENDS_STATUS} = 'accepted'",
         (user_id,),
     )
     friends = [row[0] for row in cur.fetchall()]
     if friends:
         cur.execute(
-            """
-            SELECT DISTINCT u.id, u.username, u.name, u.dupr_rating
-            FROM users u
-            JOIN friends f1 ON u.id = f1.friend_id
-            WHERE f1.user_id IN %s AND u.id != %s AND u.id NOT IN (SELECT friend_id FROM friends WHERE user_id = %s)
+            f"""
+            SELECT DISTINCT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, u.{USER_DUPR_RATING}
+            FROM {USERS_TABLE} u
+            JOIN {FRIENDS_TABLE} f1 ON u.{USER_ID} = f1.{FRIENDS_FRIEND_ID}
+            WHERE f1.{FRIENDS_USER_ID} IN %s AND u.{USER_ID} != %s AND u.{USER_ID} NOT IN (SELECT {FRIENDS_FRIEND_ID} FROM {FRIENDS_TABLE} WHERE {FRIENDS_USER_ID} = %s)
             """,
             (tuple(friends), user_id, user_id),
         )
@@ -95,9 +110,9 @@ def users():
 
 @bp.route('/add_friend/<string:friend_id>')
 def add_friend(friend_id):
-    if 'user_id' not in session:
+    if USER_ID not in session:
         return redirect(url_for('auth.login'))
-    user_id = session['user_id']
+    user_id = session[USER_ID]
     if user_id == friend_id:
         flash("You cannot add yourself as a friend.", 'danger')
         return redirect(request.referrer or url_for('.users'))
@@ -105,7 +120,7 @@ def add_friend(friend_id):
     cur = conn.cursor()
     try:
         cur.execute(
-            'INSERT INTO friends (user_id, friend_id) VALUES (%s, %s)',
+            f'INSERT INTO {FRIENDS_TABLE} ({FRIENDS_USER_ID}, {FRIENDS_FRIEND_ID}) VALUES (%s, %s)',
             (user_id, friend_id),
         )
         conn.commit()
@@ -116,29 +131,29 @@ def add_friend(friend_id):
     return redirect(request.referrer or url_for('.users'))
 
 
-@bp.route('/friends')
+@bp.route(f'/{FRIENDS_TABLE}')
 def friends():
-    if 'user_id' not in session:
+    if USER_ID not in session:
         return redirect(url_for('auth.login'))
-    user_id = session['user_id']
+    user_id = session[USER_ID]
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture "
-        "FROM users u JOIN friends f ON u.id = f.friend_id "
-        "WHERE f.user_id = %s AND f.status = 'accepted'",
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE} "
+        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
+        f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'",
         (user_id,),
     )
     friends = cur.fetchall()
     cur.execute(
-        "SELECT u.id, u.username FROM users u JOIN friends f ON u.id = f.user_id "
-        "WHERE f.friend_id = %s AND f.status = 'pending'",
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME} FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_USER_ID} "
+        f"WHERE f.{FRIENDS_FRIEND_ID} = %s AND f.{FRIENDS_STATUS} = 'pending'",
         (user_id,),
     )
     requests = cur.fetchall()
     cur.execute(
-        "SELECT u.id, u.username, f.status FROM users u JOIN friends f ON u.id = f.friend_id "
-        "WHERE f.user_id = %s AND f.status = 'pending'",
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, f.{FRIENDS_STATUS} FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
+        f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'pending'",
         (user_id,),
     )
     sent_requests = cur.fetchall()
@@ -152,18 +167,18 @@ def friends():
 
 @bp.route('/accept_friend_request/<string:friend_id>')
 def accept_friend_request(friend_id):
-    if 'user_id' not in session:
+    if USER_ID not in session:
         return redirect(url_for('auth.login'))
-    user_id = session['user_id']
+    user_id = session[USER_ID]
     conn = get_db_connection()
     cur = conn.cursor()
     try:
         cur.execute(
-            "UPDATE friends SET status = 'accepted' WHERE user_id = %s AND friend_id = %s",
+            f"UPDATE {FRIENDS_TABLE} SET {FRIENDS_STATUS} = 'accepted' WHERE {FRIENDS_USER_ID} = %s AND {FRIENDS_FRIEND_ID} = %s",
             (friend_id, user_id),
         )
         cur.execute(
-            "INSERT INTO friends (user_id, friend_id, status) VALUES (%s, %s, %s)",
+            f"INSERT INTO {FRIENDS_TABLE} ({FRIENDS_USER_ID}, {FRIENDS_FRIEND_ID}, {FRIENDS_STATUS}) VALUES (%s, %s, %s)",
             (user_id, friend_id, 'accepted'),
         )
         conn.commit()
@@ -176,25 +191,25 @@ def accept_friend_request(friend_id):
 
 @bp.route('/decline_friend_request/<string:friend_id>')
 def decline_friend_request(friend_id):
-    if 'user_id' not in session:
+    if USER_ID not in session:
         return redirect(url_for('auth.login'))
-    user_id = session['user_id']
+    user_id = session[USER_ID]
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "DELETE FROM friends WHERE user_id = %s AND friend_id = %s",
+        f"DELETE FROM {FRIENDS_TABLE} WHERE {FRIENDS_USER_ID} = %s AND {FRIENDS_FRIEND_ID} = %s",
         (friend_id, user_id),
     )
     conn.commit()
     return redirect(url_for('.friends'))
 
 
-@bp.route('/profile_picture/<string:user_id>')
+@bp.route(f'/{USER_PROFILE_PICTURE}/<string:user_id>')
 def profile_picture(user_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT profile_picture FROM users WHERE id = %s', (user_id,))
+        cur.execute(f'SELECT {USER_PROFILE_PICTURE} FROM {USERS_TABLE} WHERE id = %s', (user_id,))
         profile_picture_data = cur.fetchone()
         if profile_picture_data and profile_picture_data[0]:
             return Response(profile_picture_data[0], mimetype='image/png')
@@ -205,12 +220,15 @@ def profile_picture(user_id):
         return redirect(url_for('static', filename='user_icon.png'))
 
 
-@bp.route('/profile_picture_thumbnail/<string:user_id>')
+@bp.route(f'/{USER_PROFILE_PICTURE_THUMBNAIL}/<string:user_id>')
 def profile_picture_thumbnail(user_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT profile_picture_thumbnail FROM users WHERE id = %s', (user_id,))
+        cur.execute(
+            f'SELECT {USER_PROFILE_PICTURE_THUMBNAIL} FROM {USERS_TABLE} WHERE {USER_ID} = %s',
+            (user_id,),
+        )
         thumbnail_data = cur.fetchone()
         if thumbnail_data and thumbnail_data[0]:
             return Response(thumbnail_data[0], mimetype='image/png')
@@ -223,22 +241,25 @@ def profile_picture_thumbnail(user_id):
 
 @bp.route('/update_profile', methods=['POST'])
 def update_profile():
-    if 'user_id' not in session:
+    if USER_ID not in session:
         return redirect(url_for('auth.login'))
-    user_id = session['user_id']
+    user_id = session[USER_ID]
     try:
-        dark_mode = 'dark_mode' in request.form
+        dark_mode = USER_DARK_MODE in request.form
         dupr_rating = (
-            float(request.form.get('dupr_rating'))
-            if request.form.get('dupr_rating')
+            float(request.form.get(USER_DUPR_RATING))
+            if request.form.get(USER_DUPR_RATING)
             else None
         )
-        profile_picture = request.files.get('profile_picture')
+        profile_picture = request.files.get(USER_PROFILE_PICTURE)
 
         conn = get_db_connection()
         cur = conn.cursor()
 
-        cur.execute('UPDATE users SET dark_mode = %s WHERE id = %s', (dark_mode, user_id))
+        cur.execute(
+            f'UPDATE {USERS_TABLE} SET {USER_DARK_MODE} = %s WHERE {USER_ID} = %s',
+            (dark_mode, user_id),
+        )
 
         if (
             profile_picture
@@ -262,8 +283,8 @@ def update_profile():
             thumbnail_data = buf.getvalue()
 
             cur.execute(
-                'UPDATE users SET profile_picture = %s, profile_picture_thumbnail = %s '
-                'WHERE id = %s',
+                f'UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, {USER_PROFILE_PICTURE_THUMBNAIL} = %s '
+                f'WHERE {USER_ID} = %s',
                 (profile_picture_data, thumbnail_data, user_id),
             )
             current_app.logger.info(f"User {user_id} updated their profile picture.")
@@ -272,7 +293,10 @@ def update_profile():
             return redirect(request.referrer or url_for('.dashboard'))
 
         if dupr_rating is not None:
-            cur.execute('UPDATE users SET dupr_rating = %s WHERE id = %s', (dupr_rating, user_id))
+            cur.execute(
+                f'UPDATE {USERS_TABLE} SET {USER_DUPR_RATING} = %s WHERE {USER_ID} = %s',
+                (dupr_rating, user_id),
+            )
 
         conn.commit()
     except psycopg2.errors.UndefinedColumn as e:

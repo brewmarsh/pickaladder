@@ -6,7 +6,8 @@ from flask import (
     session,
     flash,
     jsonify,
-    g
+    g,
+    current_app,
 )
 from pickaladder.db import get_db_connection
 from . import bp
@@ -19,47 +20,68 @@ from werkzeug.security import generate_password_hash
 from pickaladder import mail
 from flask_mail import Message
 import uuid
+from pickaladder.constants import (
+    USERS_TABLE,
+    FRIENDS_TABLE,
+    MATCHES_TABLE,
+    USER_ID,
+    USER_USERNAME,
+    USER_IS_ADMIN,
+    FRIENDS_USER_ID,
+    FRIENDS_FRIEND_ID,
+    FRIENDS_STATUS,
+    MATCH_ID,
+    MATCH_PLAYER1_ID,
+    MATCH_PLAYER2_ID,
+    MATCH_DATE,
+    USER_EMAIL,
+    USER_PASSWORD,
+    USER_NAME,
+    USER_DUPR_RATING,
+    MATCH_PLAYER1_SCORE,
+    MATCH_PLAYER2_SCORE,
+)
 
 @bp.before_request
 def before_request():
-    if not session.get('is_admin'):
+    if not session.get(USER_IS_ADMIN):
         return redirect(url_for('auth.login'))
 
 @bp.route('/')
 def admin():
     return render_template('admin.html')
 
-@bp.route('/matches')
+@bp.route(f'/{MATCHES_TABLE}')
 def admin_matches():
     search_term = request.args.get('search', '')
     conn = get_db_connection()
     cur = conn.cursor()
     if search_term:
         cur.execute(
-            'SELECT m.*, p1.username, p2.username FROM matches m '
-            'JOIN users p1 ON m.player1_id = p1.id '
-            'JOIN users p2 ON m.player2_id = p2.id '
-            'WHERE p1.username ILIKE %s OR p2.username ILIKE %s '
-            'ORDER BY m.match_date DESC',
+            f'SELECT m.*, p1.{USER_USERNAME}, p2.{USER_USERNAME} FROM {MATCHES_TABLE} m '
+            f'JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} '
+            f'JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} '
+            f'WHERE p1.{USER_USERNAME} ILIKE %s OR p2.{USER_USERNAME} ILIKE %s '
+            f'ORDER BY m.{MATCH_DATE} DESC',
             (f'%{search_term}%', f'%{search_term}%'),
         )
     else:
         cur.execute(
-            'SELECT m.*, p1.username, p2.username FROM matches m '
-            'JOIN users p1 ON m.player1_id = p1.id '
-            'JOIN users p2 ON m.player2_id = p2.id ORDER BY m.match_date DESC'
+            f'SELECT m.*, p1.{USER_USERNAME}, p2.{USER_USERNAME} FROM {MATCHES_TABLE} m '
+            f'JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} '
+            f'JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} ORDER BY m.{MATCH_DATE} DESC'
         )
     matches = cur.fetchall()
     return render_template(
         'admin_matches.html', matches=matches, search_term=search_term
     )
 
-@bp.route('/delete_match/<string:match_id>')
+@bp.route(f'/delete_match/<string:match_id>')
 def admin_delete_match(match_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('DELETE FROM matches WHERE id = %s', (match_id,))
+        cur.execute(f'DELETE FROM {MATCHES_TABLE} WHERE {MATCH_ID} = %s', (match_id,))
         conn.commit()
         flash('Match deleted successfully.', 'success')
     except Exception as e:
@@ -70,13 +92,18 @@ def admin_delete_match(match_id):
 def friend_graph_data():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("SELECT id, username FROM users")
+    cur.execute(f"SELECT {USER_ID}, {USER_USERNAME} FROM {USERS_TABLE}")
     users = cur.fetchall()
-    cur.execute("SELECT user_id, friend_id FROM friends WHERE status = 'accepted'")
+    cur.execute(
+        f"SELECT {FRIENDS_USER_ID}, {FRIENDS_FRIEND_ID} FROM {FRIENDS_TABLE} WHERE {FRIENDS_STATUS} = 'accepted'"
+    )
     friends = cur.fetchall()
 
-    nodes = [{"id": str(user['id']), "label": user['username']} for user in users]
-    edges = [{"from": str(friend['user_id']), "to": str(friend['friend_id'])} for friend in friends]
+    nodes = [{"id": str(user[USER_ID]), "label": user[USER_USERNAME]} for user in users]
+    edges = [
+        {"from": str(friend[FRIENDS_USER_ID]), "to": str(friend[FRIENDS_FRIEND_ID])}
+        for friend in friends
+    ]
 
     return jsonify({"nodes": nodes, "edges": edges})
 
@@ -84,7 +111,7 @@ def friend_graph_data():
 def reset_db():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('TRUNCATE TABLE friends, users, matches CASCADE')
+    cur.execute(f'TRUNCATE TABLE {FRIENDS_TABLE}, {USERS_TABLE}, {MATCHES_TABLE} CASCADE')
     conn.commit()
     return redirect(url_for('.admin'))
 
@@ -95,26 +122,26 @@ def reset_admin():
 
     if request.method == 'POST':
         # Reset all users to not be admin
-        cur.execute("UPDATE users SET is_admin = FALSE")
+        cur.execute(f"UPDATE {USERS_TABLE} SET {USER_IS_ADMIN} = FALSE")
         # Set the first user to be admin
         cur.execute(
-            "UPDATE users SET is_admin = TRUE WHERE id = (SELECT id FROM users ORDER BY id LIMIT 1)"
+            f"UPDATE {USERS_TABLE} SET {USER_IS_ADMIN} = TRUE WHERE {USER_ID} = (SELECT {USER_ID} FROM {USERS_TABLE} ORDER BY {USER_ID} LIMIT 1)"
         )
         conn.commit()
         return redirect(url_for('.admin'))
 
     return render_template('reset_admin.html')
 
-@bp.route('/delete_user/<uuid:user_id>')
+@bp.route(f'/delete_user/<uuid:{USER_ID}>')
 def delete_user(user_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            'DELETE FROM friends WHERE user_id = %s OR friend_id = %s',
+            f'DELETE FROM {FRIENDS_TABLE} WHERE {FRIENDS_USER_ID} = %s OR {FRIENDS_FRIEND_ID} = %s',
             (user_id, user_id),
         )
-        cur.execute('DELETE FROM users WHERE id = %s', (user_id,))
+        cur.execute(f'DELETE FROM {USERS_TABLE} WHERE {USER_ID} = %s', (user_id,))
         conn.commit()
         flash('User deleted successfully.', 'success')
     except errors.ForeignKeyViolation as e:
@@ -125,25 +152,26 @@ def delete_user(user_id):
         return render_template('error.html', error=str(e)), 500
     return redirect(url_for('user.users'))
 
-@bp.route('/promote_user/<uuid:user_id>')
+@bp.route(f'/promote_user/<uuid:{USER_ID}>')
 def promote_user(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('UPDATE users SET is_admin = TRUE WHERE id = %s', (user_id,))
+    cur.execute(f'UPDATE {USERS_TABLE} SET {USER_IS_ADMIN} = TRUE WHERE {USER_ID} = %s', (user_id,))
     conn.commit()
     return redirect(url_for('user.users'))
 
-@bp.route('/reset_password/<uuid:user_id>')
+@bp.route(f'/reset_password/<uuid:{USER_ID}>')
 def admin_reset_password(user_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT email FROM users WHERE id = %s', (user_id,))
+        cur.execute(f'SELECT {USER_EMAIL} FROM {USERS_TABLE} WHERE {USER_ID} = %s', (user_id,))
         email = cur.fetchone()[0]
         new_password = "".join(random.choices(string.ascii_letters + string.digits, k=12))
         hashed_password = generate_password_hash(new_password, method='pbkdf2:sha256')
         cur.execute(
-            'UPDATE users SET password = %s WHERE id = %s', (hashed_password, user_id)
+            f'UPDATE {USERS_TABLE} SET {USER_PASSWORD} = %s WHERE {USER_ID} = %s',
+            (hashed_password, user_id),
         )
         conn.commit()
         msg = Message(
@@ -162,7 +190,7 @@ def admin_reset_password(user_id):
 def generate_users():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute('SELECT username FROM users')
+    cur.execute(f'SELECT {USER_USERNAME} FROM {USERS_TABLE}')
     existing_usernames = {row[0] for row in cur.fetchall()}
     fake = Faker()
     new_users = []
@@ -182,9 +210,9 @@ def generate_users():
         )
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         cur.execute(
-            'INSERT INTO users (username, password, email, name, dupr_rating, is_admin) '
+            f'INSERT INTO {USERS_TABLE} ({USER_USERNAME}, {USER_PASSWORD}, {USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}, {USER_IS_ADMIN}) '
             'VALUES (%s, %s, %s, %s, %s, %s) '
-            'RETURNING id, username, email, name, dupr_rating',
+            f'RETURNING {USER_ID}, {USER_USERNAME}, {USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}',
             (username, hashed_password, email, name, dupr_rating, False),
         )
         new_user = cur.fetchone()
@@ -196,7 +224,7 @@ def generate_users():
         for j in range(i + 1, len(new_users)):
             if random.random() < 0.5:
                 cur.execute(
-                    'INSERT INTO friends (user_id, friend_id, status) VALUES (%s, %s, %s)',
+                    f'INSERT INTO {FRIENDS_TABLE} ({FRIENDS_USER_ID}, {FRIENDS_FRIEND_ID}, {FRIENDS_STATUS}) VALUES (%s, %s, %s)',
                     (new_users[i][0], new_users[j][0], 'accepted'),
                 )
     conn.commit()
@@ -210,7 +238,9 @@ def generate_matches():
 
     try:
         # Get all friendships
-        cur.execute("SELECT user_id, friend_id FROM friends WHERE status = 'accepted'")
+        cur.execute(
+            f"SELECT {FRIENDS_USER_ID}, {FRIENDS_FRIEND_ID} FROM {FRIENDS_TABLE} WHERE {FRIENDS_STATUS} = 'accepted'"
+        )
         friends = cur.fetchall()
 
         if not friends:
@@ -239,7 +269,7 @@ def generate_matches():
             # Insert match
             match_id = str(uuid.uuid4())
             cur.execute(
-                'INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) '
+                f'INSERT INTO {MATCHES_TABLE} ({MATCH_ID}, {MATCH_PLAYER1_ID}, {MATCH_PLAYER2_ID}, {MATCH_PLAYER1_SCORE}, {MATCH_PLAYER2_SCORE}, {MATCH_DATE}) '
                 'VALUES (%s, %s, %s, %s, %s, NOW())',
                 (
                     match_id,

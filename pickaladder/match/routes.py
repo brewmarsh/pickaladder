@@ -10,17 +10,35 @@ from pickaladder.db import get_db_connection
 from . import bp
 import psycopg2
 import uuid
+from pickaladder.constants import (
+    USERS_TABLE,
+    FRIENDS_TABLE,
+    MATCHES_TABLE,
+    USER_ID,
+    USER_USERNAME,
+    USER_NAME,
+    USER_DUPR_RATING,
+    USER_PROFILE_PICTURE,
+    FRIENDS_USER_ID,
+    FRIENDS_FRIEND_ID,
+    MATCH_ID,
+    MATCH_PLAYER1_ID,
+    MATCH_PLAYER2_ID,
+    MATCH_PLAYER1_SCORE,
+    MATCH_PLAYER2_SCORE,
+    MATCH_DATE,
+)
 
 @bp.route('/<uuid:match_id>')
 def view_match_page(match_id):
-    if 'user_id' not in session:
+    if USER_ID not in session:
         return redirect(url_for('auth.login'))
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        'SELECT m.*, p1.username, p2.username, p1.profile_picture, p2.profile_picture '
-        'FROM matches m JOIN users p1 ON m.player1_id = p1.id '
-        'JOIN users p2 ON m.player2_id = p2.id WHERE m.id = %s',
+        f'SELECT m.*, p1.{USER_USERNAME}, p2.{USER_USERNAME}, p1.{USER_PROFILE_PICTURE}, p2.{USER_PROFILE_PICTURE} '
+        f'FROM {MATCHES_TABLE} m JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} '
+        f'JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} WHERE m.{MATCH_ID} = %s',
         (match_id,),
     )
     match = cur.fetchone()
@@ -29,21 +47,21 @@ def view_match_page(match_id):
 
 @bp.route('/create', methods=['GET', 'POST'])
 def create_match():
-    if 'user_id' not in session:
+    if USER_ID not in session:
         return redirect(url_for('auth.login'))
-    user_id = session['user_id']
+    user_id = session[USER_ID]
     conn = get_db_connection()
     cur = conn.cursor()
     if request.method == 'POST':
         player1_id = user_id
         player2_id = request.form['player2']
-        player1_score = request.form['player1_score']
-        player2_score = request.form['player2_score']
-        match_date = request.form['match_date']
+        player1_score = request.form[MATCH_PLAYER1_SCORE]
+        player2_score = request.form[MATCH_PLAYER2_SCORE]
+        match_date = request.form[MATCH_DATE]
         try:
             match_id = str(uuid.uuid4())
             cur.execute(
-                'INSERT INTO matches (id, player1_id, player2_id, player1_score, player2_score, match_date) '
+                f'INSERT INTO {MATCHES_TABLE} ({MATCH_ID}, {MATCH_PLAYER1_ID}, {MATCH_PLAYER2_ID}, {MATCH_PLAYER1_SCORE}, {MATCH_PLAYER2_SCORE}, {MATCH_DATE}) '
                 'VALUES (%s, %s, %s, %s, %s, %s)',
                 (
                     match_id,
@@ -61,8 +79,8 @@ def create_match():
             flash(f"An error occurred while creating the match: {e}", 'danger')
         return redirect(url_for('user.dashboard'))
     cur.execute(
-        'SELECT u.id, u.username, u.name, u.dupr_rating, u.profile_picture '
-        'FROM users u JOIN friends f ON u.id = f.friend_id WHERE f.user_id = %s',
+        f'SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE} '
+        f'FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} WHERE f.{FRIENDS_USER_ID} = %s',
         (user_id,),
     )
     friends = cur.fetchall()
@@ -71,7 +89,7 @@ def create_match():
 
 @bp.route('/leaderboard')
 def leaderboard():
-    if 'user_id' not in session:
+    if USER_ID not in session:
         return redirect(url_for('auth.login'))
 
     conn = get_db_connection()
@@ -80,18 +98,18 @@ def leaderboard():
     try:
         # Calculate average scores and games played for each user
         cur.execute(
-            """
+            f"""
             SELECT
-                u.id,
-                u.name,
-                AVG(CASE WHEN m.player1_id = u.id THEN m.player1_score ELSE m.player2_score END) as avg_score,
-                COUNT(m.id) as games_played
+                u.{USER_ID},
+                u.{USER_NAME},
+                AVG(CASE WHEN m.{MATCH_PLAYER1_ID} = u.{USER_ID} THEN m.{MATCH_PLAYER1_SCORE} ELSE m.{MATCH_PLAYER2_SCORE} END) as avg_score,
+                COUNT(m.{MATCH_ID}) as games_played
             FROM
-                users u
+                {USERS_TABLE} u
             JOIN
-                matches m ON u.id = m.player1_id OR u.id = m.player2_id
+                {MATCHES_TABLE} m ON u.{USER_ID} = m.{MATCH_PLAYER1_ID} OR u.{USER_ID} = m.{MATCH_PLAYER2_ID}
             GROUP BY
-                u.id, u.name
+                u.{USER_ID}, u.{USER_NAME}
             ORDER BY
                 avg_score DESC
             LIMIT 10

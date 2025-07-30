@@ -1,6 +1,9 @@
 import os
-from flask import Flask
+from flask import Flask, session, render_template
 from flask_mail import Mail
+import psycopg2
+from . import db
+from .constants import USERS_TABLE, USER_ID
 
 mail = Mail()
 
@@ -42,7 +45,6 @@ def create_app():
     from . import match
     app.register_blueprint(match.bp)
 
-    from . import db
     db.init_app(app)
 
     # make url_for('index') == url_for('auth.login')
@@ -53,10 +55,10 @@ def create_app():
 
     @app.context_processor
     def inject_user():
-        if 'user_id' in session:
+        if USER_ID in session:
             conn = db.get_db_connection()
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            cur.execute('SELECT * FROM users WHERE id = %s', (session['user_id'],))
+            cur.execute(f'SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s', (session[USER_ID],))
             user = cur.fetchone()
             cur.close()
             return dict(user=user)

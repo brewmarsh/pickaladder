@@ -18,6 +18,7 @@ services:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=pickaladder
+      - DB_HOST=db
     depends_on:
       db:
         condition: service_healthy
@@ -31,7 +32,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=pickaladder
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d pickaladder"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 5

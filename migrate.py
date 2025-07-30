@@ -2,6 +2,11 @@ import os
 import psycopg2
 from pickaladder import create_app
 from pickaladder.db import get_db_connection
+from pickaladder.constants import (
+    MIGRATIONS_TABLE,
+    MIGRATION_ID,
+    MIGRATION_NAME,
+)
 
 def apply_migrations():
     """
@@ -22,17 +27,17 @@ def apply_migrations():
         # Ensure the migrations table exists to track applied migrations.
         cur.execute(
             "SELECT table_name FROM information_schema.tables "
-            "WHERE table_schema = 'public' AND table_name = 'migrations'"
+            f"WHERE table_schema = 'public' AND table_name = '{MIGRATIONS_TABLE}'"
         )
         if cur.fetchone() is None:
-            print("Creating 'migrations' table.")
+            print(f"Creating '{MIGRATIONS_TABLE}' table.")
             cur.execute(
-                'CREATE TABLE migrations (id SERIAL PRIMARY KEY, migration_name TEXT NOT NULL UNIQUE)'
+                f'CREATE TABLE {MIGRATIONS_TABLE} ({MIGRATION_ID} SERIAL PRIMARY KEY, {MIGRATION_NAME} TEXT NOT NULL UNIQUE)'
             )
             conn.commit()
 
         # Get the set of already applied migrations.
-        cur.execute('SELECT migration_name FROM migrations')
+        cur.execute(f'SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}')
         applied_migrations = {row[0] for row in cur.fetchall()}
         print(f"Found {len(applied_migrations)} applied migrations.")
 
@@ -47,7 +52,7 @@ def apply_migrations():
 
                 # Record the migration so it doesn't run again.
                 cur.execute(
-                    'INSERT INTO migrations (migration_name) VALUES (%s)',
+                    f'INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) VALUES (%s)',
                     (migration_file,),
                 )
                 conn.commit()
