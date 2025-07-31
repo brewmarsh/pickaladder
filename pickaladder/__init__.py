@@ -2,6 +2,7 @@ import os
 from flask import Flask, session, render_template
 from flask_mail import Mail
 import psycopg2
+import psycopg2.extras
 from . import db
 from .constants import USERS_TABLE, USER_ID
 

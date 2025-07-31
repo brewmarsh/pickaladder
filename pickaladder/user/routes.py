@@ -12,6 +12,7 @@ from flask import (
 from pickaladder.db import get_db_connection
 from . import bp
 import psycopg2
+import psycopg2.extras
 from utils import allowed_file
 from PIL import Image
 import io
@@ -56,7 +57,7 @@ def dashboard():
         'user_dashboard.html', friends=friends, requests=requests, user=user
     )
 
-@bp.route('/<string:user_id>')
+@bp.route('/<uuid:user_id>')
 def view_user(user_id):
     if USER_ID not in session:
         return redirect(url_for('auth.login'))

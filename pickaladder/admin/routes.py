@@ -12,6 +12,7 @@ from flask import (
 from pickaladder.db import get_db_connection
 from . import bp
 import psycopg2
+import psycopg2.extras
 from psycopg2 import errors
 from faker import Faker
 import random

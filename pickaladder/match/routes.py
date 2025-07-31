@@ -9,6 +9,7 @@ from flask import (
 from pickaladder.db import get_db_connection
 from . import bp
 import psycopg2
+import psycopg2.extras
 import uuid
 from pickaladder.constants import (
     USERS_TABLE,
