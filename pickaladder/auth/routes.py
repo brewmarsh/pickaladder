@@ -150,11 +150,12 @@ def install():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Check if an admin user already exists.
-    cur.execute(f'SELECT {USER_ID} FROM {USERS_TABLE} WHERE {USER_IS_ADMIN} = TRUE')
-    admin_exists = cur.fetchone()
-    if admin_exists:
-        return redirect(url_for('auth.login'))
+    if request.method == 'GET':
+        # Check if an admin user already exists.
+        cur.execute(f'SELECT {USER_ID} FROM {USERS_TABLE} WHERE {USER_IS_ADMIN} = TRUE')
+        admin_exists = cur.fetchone()
+        if admin_exists:
+            return redirect(url_for('auth.login'))
 
     if request.method == 'POST':
         username = request.form[USER_USERNAME]
