@@ -9,7 +9,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Reset Database</h5>
                     <p class="card-text">This will delete all users, matches, and friends.</p>
-                    <a href="{{ url_for('reset_db') }}" class="btn btn-danger">Reset Database</a>
+                    <a href="{{ url_for('admin.reset_db') }}" class="btn btn-danger">Reset Database</a>
                 </div>
             </div>
         </div>
@@ -29,7 +29,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Generate Users</h5>
                     <p class="card-text">This will generate 10 random users.</p>
-                    <a href="{{ url_for('generate_users') }}" class="btn btn-primary">Generate Users</a>
+                    <a href="{{ url_for('admin.generate_users') }}" class="btn btn-primary">Generate Users</a>
                 </div>
             </div>
         </div>
@@ -38,7 +38,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Reset Admin</h5>
                     <p class="card-text">This will reset the admin account to the first user in the database.</p>
-                    <a href="{{ url_for('reset_admin') }}" class="btn btn-warning">Reset Admin</a>
+                    <a href="{{ url_for('admin.reset_admin') }}" class="btn btn-warning">Reset Admin</a>
                 </div>
             </div>
         </div>
@@ -47,7 +47,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Generate Matches</h5>
                     <p class="card-text">This will generate 10 random matches between friends.</p>
-                    <a href="{{ url_for('generate_matches') }}" class="btn btn-primary">Generate Matches</a>
+                    <a href="{{ url_for('admin.generate_matches') }}" class="btn btn-primary">Generate Matches</a>
                 </div>
             </div>
         </div>
