@@ -62,10 +62,32 @@ def view_user(user_id):
     if USER_ID not in session:
         return redirect(url_for('auth.login'))
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cur.execute(f'SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s', (user_id,))
     user = cur.fetchone()
-    return render_template('user_profile.html', user=user)
+
+    # Get friends
+    cur.execute(
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
+        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
+        f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'",
+        (user_id,),
+    )
+    friends = cur.fetchall()
+
+    # Get match history
+    cur.execute(
+        f"SELECT m.*, p1.{USER_USERNAME} as player1, p2.{USER_USERNAME} as player2 "
+        f"FROM {MATCHES_TABLE} m "
+        f"JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
+        f"JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} "
+        f"WHERE m.{MATCH_PLAYER1_ID} = %s OR m.{MATCH_PLAYER2_ID} = %s "
+        f"ORDER BY m.{MATCH_DATE} DESC",
+        (user_id, user_id),
+    )
+    matches = cur.fetchall()
+
+    return render_template('user_profile.html', user=user, friends=friends, matches=matches)
 
 
 @bp.route(f'/{USERS_TABLE}')

@@ -8,7 +8,67 @@
         <p>@{{ user[1] }}</p>
     </div>
     <div class="profile-info">
-        <p><strong>DUPR Rating:</strong> {{ user[5] }}</p>
+        <p><strong>DUPR Rating:</strong> {{ user.dupr_rating }}</p>
+    </div>
+
+    <h3>Friends</h3>
+    <div class="friends-list">
+        {% if friends %}
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Username</th>
+                        <th>DUPR Rating</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for friend in friends %}
+                        <tr>
+                            <td>
+                                {% if friend.profile_picture_thumbnail %}
+                                    <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend.id) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
+                            </td>
+                            <td>{{ friend.dupr_rating }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>{{ user.name }} has no friends yet.</p>
+        {% endif %}
+    </div>
+
+    <h3>Match History</h3>
+    <div class="matches-list">
+        {% if matches %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Player 1</th>
+                        <th>Player 2</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for match in matches %}
+                        <tr>
+                            <td>{{ match.match_date }}</td>
+                            <td>{{ match.player1 }}</td>
+                            <td>{{ match.player2 }}</td>
+                            <td>{{ match.player1_score }} - {{ match.player2_score }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>{{ user.name }} has no matches yet.</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
