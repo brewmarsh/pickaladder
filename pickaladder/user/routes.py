@@ -63,10 +63,13 @@ def view_user(user_id):
         return redirect(url_for('auth.login'))
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    current_app.logger.info(f"Viewing user profile for user_id: {user_id}")
     cur.execute(f'SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s', (user_id,))
     user = cur.fetchone()
+    current_app.logger.info(f"User object: {user}")
 
     if user is None:
+        current_app.logger.info(f"User with user_id {user_id} not found.")
         return render_template('404.html'), 404
 
     # Get friends
