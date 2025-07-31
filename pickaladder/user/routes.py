@@ -66,6 +66,9 @@ def view_user(user_id):
     cur.execute(f'SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s', (user_id,))
     user = cur.fetchone()
 
+    if user is None:
+        return render_template('404.html'), 404
+
     # Get friends
     cur.execute(
         f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
