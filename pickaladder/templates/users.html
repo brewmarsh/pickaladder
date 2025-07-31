@@ -51,9 +51,9 @@
                             <td>
                                 <a href="{{ url_for('user.add_friend', friend_id=user[0]) }}" class="btn btn-primary btn-sm">Add Friend</a>
                                 {% if session['is_admin'] %}
-                                    <a href="{{ url_for('admin.delete_user', user_id=user[0]) }}" class="btn btn-danger btn-sm">Delete</a>
-                                    <a href="{{ url_for('admin.promote_user', user_id=user[0]) }}" class="btn btn-warning btn-sm">Promote</a>
-                                    <a href="{{ url_for('admin.admin_reset_password', user_id=user[0]) }}" class="btn btn-info btn-sm">Reset Password</a>
+                                    <a href="{{ url_for('admin.delete_user', id=user[0]) }}" class="btn btn-danger btn-sm">Delete</a>
+                                    <a href="{{ url_for('admin.promote_user', id=user[0]) }}" class="btn btn-warning btn-sm">Promote</a>
+                                    <a href="{{ url_for('admin.admin_reset_password', id=user[0]) }}" class="btn btn-info btn-sm">Reset Password</a>
                                 {% endif %}
                             </td>
                         </tr>
