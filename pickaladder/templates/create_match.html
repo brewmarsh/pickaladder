@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container">
     <h2>Create Match</h2>
-    <form method="post" action="{{ url_for('create_match') }}">
+    <form method="post" action="{{ url_for('match.create_match') }}">
         <label for="player2">Opponent:</label>
         <select id="player2" name="player2" required>
             {% for friend in friends %}

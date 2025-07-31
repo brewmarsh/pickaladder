@@ -17,7 +17,7 @@
             {% for player in players %}
             <tr>
                 <td>{{ loop.index }}</td>
-                <td><a href="{{ url_for('view_user', user_id=player.id) }}">{{ player.name }}</a></td>
+                <td><a href="{{ url_for('user.view_user', user_id=player.id) }}">{{ player.name }}</a></td>
                 <td>{{ "%.2f"|format(player.avg_score|float) }}</td>
                 <td>{{ player.games_played }}</td>
             </tr>

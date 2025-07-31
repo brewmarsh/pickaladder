@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container">
     <h2>All Matches</h2>
-    <form method="get" action="{{ url_for('admin_matches') }}">
+    <form method="get" action="{{ url_for('admin.admin_matches') }}">
         <input type="text" name="search" placeholder="Search by player name..." value="{{ search_term }}">
         <input type="submit" value="Search">
     </form>
@@ -24,7 +24,7 @@
                     <td>{{ match[6] }}</td>
                     <td>{{ match[7] }}</td>
                     <td>{{ match[3] }} - {{ match[4] }}</td>
-                    <td><a href="{{ url_for('admin_delete_match', match_id=match[0]) }}" class="btn btn-danger">Delete</a></td>
+                    <td><a href="{{ url_for('admin.admin_delete_match', match_id=match[0]) }}" class="btn btn-danger">Delete</a></td>
                 </tr>
             {% endfor %}
         </tbody>

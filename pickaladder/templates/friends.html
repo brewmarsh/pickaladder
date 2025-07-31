@@ -25,11 +25,11 @@
                         <tr>
                             <td>
                                 {% if friend[4] %}
-                                    <img src="{{ url_for('profile_picture_thumbnail', user_id=friend[0]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
+                                    <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend[0]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{{ url_for('view_user', user_id=friend[0]) }}">{{ friend[1] }}</a>
+                                <a href="{{ url_for('user.view_user', user_id=friend[0]) }}">{{ friend[1] }}</a>
                             </td>
                             <td>{{ friend[3] }}</td>
                         </tr>
@@ -37,7 +37,7 @@
                 </tbody>
             </table>
         {% else %}
-            <p>You have no friends yet. <a href="/users">Find some!</a></p>
+            <p>You have no friends yet. <a href="{{ url_for('user.users') }}">Find some!</a></p>
         {% endif %}
     </div>
     <h2>Friend Requests</h2>
@@ -56,8 +56,8 @@
                     {% for request in requests %}
                         <tr>
                             <td>{{ request[1] }}</td>
-                            <td><a href="{{ url_for('accept_friend_request', friend_id=request[0]) }}" class="button">Accept</a></td>
-                            <td><a href="{{ url_for('decline_friend_request', friend_id=request[0]) }}" class="button">Decline</a></td>
+                            <td><a href="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}" class="button">Accept</a></td>
+                            <td><a href="{{ url_for('user.decline_friend_request', friend_id=request[0]) }}" class="button">Decline</a></td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -89,6 +89,6 @@
             <p>You have no sent friend requests.</p>
         {% endif %}
     </div>
-    <a href="{{ url_for('users') }}" class="btn btn-primary">Add Friends</a>
+    <a href="{{ url_for('user.users') }}" class="btn btn-primary">Add Friends</a>
 </div>
 {% endblock %}

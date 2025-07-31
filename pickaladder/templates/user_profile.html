@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container">
     <div class="profile-header">
-        <img src="{{ url_for('profile_picture', user_id=user[0]) }}" alt="Profile Picture" width="150" height="150" style="border-radius: 50%;">
+        <img src="{{ url_for('user.profile_picture', user_id=user[0]) }}" alt="Profile Picture" width="150" height="150" style="border-radius: 50%;">
         <h2>{{ user[4] }}</h2>
         <p>@{{ user[1] }}</p>
     </div>
