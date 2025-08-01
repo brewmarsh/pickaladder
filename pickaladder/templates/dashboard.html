@@ -7,30 +7,30 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='dark.css') }}">
 </head>
-<body class="{{ 'dark-mode' if user and user[8] else '' }}">
+<body class="{{ 'dark-mode' if user and user.dark_mode else '' }}">
     {% include 'navbar.html' %}
     <div class="content">
         <div class="container">
-            <h2>Welcome, {{ user[4] }}!</h2>
-        {% if user[7] %}
-            <img src="{{ url_for('static', filename='uploads/' + user[7]) }}" alt="Profile Picture" width="100">
+            <h2>Welcome, {{ user.name }}!</h2>
+        {% if user.profile_picture %}
+            <img src="{{ url_for('user.profile_picture', user_id=user.id) }}" alt="Profile Picture" width="100">
         {% endif %}
         <div class="profile-info">
-            <p><strong>Username:</strong> {{ user[1] }}</p>
-            <p><strong>Email:</strong> {{ user[3] }}</p>
-            <p><strong>DUPR Rating:</strong> {{ user[5] }}</p>
+            <p><strong>Username:</strong> {{ user.username }}</p>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>DUPR Rating:</strong> {{ user.dupr_rating }}</p>
         </div>
         <h3>Update Profile</h3>
         <form method="post" action="{{ url_for('user.update_profile') }}" enctype="multipart/form-data">
             <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" name="dark_mode" id="darkModeSwitch" {% if user[8] %}checked{% endif %} onchange="this.form.submit()">
+                <input class="form-check-input" type="checkbox" name="dark_mode" id="darkModeSwitch" {% if user.dark_mode %}checked{% endif %} onchange="this.form.submit()">
                 <label class="form-check-label" for="darkModeSwitch">Dark Mode</label>
             </div>
             <label for="profile_picture">Profile Picture:</label>
             <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif" onchange="previewImage(event)">
             <img id="preview" src="#" alt="your image" width="100" style="display:none;"/>
             <label for="dupr_rating">DUPR Rating:</label>
-            <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user[5] }}">
+            <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user.dupr_rating }}">
             <input type="submit" value="Update Profile">
         </form>
         <h3>Friend Requests</h3>

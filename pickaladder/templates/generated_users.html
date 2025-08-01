@@ -16,11 +16,11 @@
         <tbody>
             {% for user in users %}
             <tr>
-                <td>{{ user[0] }}</td>
-                <td>{{ user[1] }}</td>
-                <td>{{ user[2] }}</td>
-                <td>{{ user[3] }}</td>
-                <td>{{ user[4] }}</td>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.name }}</td>
+                <td>{{ user.dupr_rating }}</td>
             </tr>
             {% endfor %}
         </tbody>

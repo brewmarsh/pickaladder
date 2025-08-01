@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='dark.css') }}">
 </head>
-<body class="{{ 'dark-mode' if user and user[8] else '' }}">
+<body class="{{ 'dark-mode' if user and user.dark_mode else '' }}">
     {% include 'navbar.html' %}
     <div class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}

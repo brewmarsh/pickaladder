@@ -24,14 +24,14 @@
                     {% for friend in friends %}
                         <tr>
                             <td>
-                                {% if friend[4] %}
-                                    <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend[0]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
+                                {% if friend.profile_picture_thumbnail %}
+                                    <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend.id) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{{ url_for('user.view_user', user_id=friend[0]) }}">{{ friend[1] }}</a>
+                                <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
                             </td>
-                            <td>{{ friend[3] }}</td>
+                            <td>{{ friend.dupr_rating }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

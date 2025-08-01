@@ -20,11 +20,11 @@
         <tbody>
             {% for match in matches %}
                 <tr>
-                    <td>{{ match[5] }}</td>
-                    <td>{{ match[6] }}</td>
-                    <td>{{ match[7] }}</td>
-                    <td>{{ match[3] }} - {{ match[4] }}</td>
-                    <td><a href="{{ url_for('admin.admin_delete_match', match_id=match[0]) }}" class="btn btn-danger">Delete</a></td>
+                    <td>{{ match.match_date }}</td>
+                    <td>{{ match.player1_username }}</td>
+                    <td>{{ match.player2_username }}</td>
+                    <td>{{ match.player1_score }} - {{ match.player2_score }}</td>
+                    <td><a href="{{ url_for('admin.admin_delete_match', match_id=match.id) }}" class="btn btn-danger">Delete</a></td>
                 </tr>
             {% endfor %}
         </tbody>
