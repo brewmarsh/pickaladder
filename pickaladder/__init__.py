@@ -8,6 +8,7 @@ from .constants import USERS_TABLE, USER_ID
 
 mail = Mail()
 
+
 def create_app():
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__, instance_relative_config=True)
@@ -22,12 +23,12 @@ def create_app():
     app.config.from_mapping(
         SECRET_KEY=os.urandom(24),
         # Default mail settings, can be overridden in config.py
-        MAIL_SERVER='smtp.gmail.com',
+        MAIL_SERVER="smtp.gmail.com",
         MAIL_PORT=587,
         MAIL_USE_TLS=True,
-        MAIL_USERNAME=os.environ.get('MAIL_USERNAME'),
-        MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'),
-        UPLOAD_FOLDER='static/uploads',
+        MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
+        MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
+        UPLOAD_FOLDER="static/uploads",
     )
 
     # Initialize extensions
@@ -35,15 +36,19 @@ def create_app():
 
     # Register blueprints
     from . import auth
+
     app.register_blueprint(auth.bp)
 
     from . import admin
+
     app.register_blueprint(admin.bp)
 
     from . import user
+
     app.register_blueprint(user.bp)
 
     from . import match
+
     app.register_blueprint(match.bp)
 
     db.init_app(app)
@@ -60,7 +65,7 @@ def create_app():
             conn = db.get_db_connection()
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
             cur.execute(
-                f'SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s', (session[USER_ID],)
+                f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (session[USER_ID],)
             )
             user = cur.fetchone()
             cur.close()
@@ -69,14 +74,14 @@ def create_app():
 
     @app.errorhandler(404)
     def page_not_found(e):
-        return render_template('404.html'), 404
+        return render_template("404.html"), 404
 
     @app.errorhandler(500)
     def internal_server_error(e):
-        return render_template('500.html'), 500
+        return render_template("500.html"), 500
 
     @app.errorhandler(psycopg2.Error)
     def handle_db_error(e):
-        return render_template('error.html', error=str(e)), 500
+        return render_template("error.html", error=str(e)), 500
 
     return app

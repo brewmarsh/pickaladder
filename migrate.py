@@ -44,7 +44,9 @@ def apply_migrations():
         print(f"Found {len(applied_migrations)} applied migrations.")
 
         # Find and apply new migrations.
-        migration_files = sorted([f for f in os.listdir(migration_dir) if f.endswith('.sql')])
+        migration_files = sorted(
+            [f for f in os.listdir(migration_dir) if f.endswith('.sql')]
+        )
         for migration_file in migration_files:
             if migration_file not in applied_migrations:
                 print(f"Applying migration: {migration_file}...")
