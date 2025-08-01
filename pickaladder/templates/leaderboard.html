@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% block title %}Leaderboard{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Leaderboard</h2>
+    <p>Top 10 players by average points per game.</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Average Score</th>
+                <th>Games Played</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for player in players %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><a href="{{ url_for('user.view_user', user_id=player.id) }}">{{ player.name }}</a></td>
+                <td>{{ "%.2f"|format(player.avg_score|float) }}</td>
+                <td>{{ player.games_played }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

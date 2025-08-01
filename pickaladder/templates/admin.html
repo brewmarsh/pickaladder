@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+{% block title %}Admin Panel{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Admin Panel</h2>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Reset Database</h5>
+                    <p class="card-text">This will delete all users, matches, and friends.</p>
+                    <a href="{{ url_for('admin.reset_db') }}" class="btn btn-danger">Reset Database</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Friend Graph</h5>
+                    <p class="card-text">View a visual graph of friend connections.</p>
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#friendGraphModal">
+                        View Graph
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Generate Users</h5>
+                    <p class="card-text">This will generate 10 random users.</p>
+                    <a href="{{ url_for('admin.generate_users') }}" class="btn btn-primary">Generate Users</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Reset Admin</h5>
+                    <p class="card-text">This will reset the admin account to the first user in the database.</p>
+                    <a href="{{ url_for('admin.reset_admin') }}" class="btn btn-warning">Reset Admin</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Generate Matches</h5>
+                    <p class="card-text">This will generate 10 random matches between friends.</p>
+                    <a href="{{ url_for('admin.generate_matches') }}" class="btn btn-primary">Generate Matches</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="friendGraphModal" tabindex="-1" role="dialog" aria-labelledby="friendGraphModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="friendGraphModalLabel">Friend Graph</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="friend-graph" style="height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+<script>
+    $('#friendGraphModal').on('shown.bs.modal', function () {
+        fetch('/admin/friend_graph_data')
+            .then(response => response.json())
+            .then(data => {
+                var container = document.getElementById('friend-graph');
+                var options = {};
+                var network = new vis.Network(container, data, options);
+            });
+    });
+</script>
+{% endblock %}

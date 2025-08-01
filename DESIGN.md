@@ -8,15 +8,37 @@ The pickaladder application is a web-based application that allows users to crea
 
 ## 2. System Architecture
 
-The application is a monolithic web application built with Flask and PostgreSQL. The application is containerized with Docker and deployed with docker-compose.
+The application is a monolithic web application built with Flask and PostgreSQL. It is containerized with Docker and deployed with docker-compose.
 
-## 3. Database Schema
+### 2.1. Application Architecture
 
-The database schema is defined in the `init.sql` file. The schema consists of three tables: `users`, `friends`, and `matches`.
+The Flask application is organized using a blueprint-based architecture. The application is divided into the following blueprints:
 
-### 3.1. `users` table
+*   **auth**: Handles user authentication, including registration, login, logout, and password management.
+*   **user**: Handles user-facing features, such as the user dashboard, user profiles, and friend management.
+*   **admin**: Handles administrative features, such as user management, database management, and data generation.
+*   **match**: Handles match-related features, such as creating and viewing matches, and the leaderboard.
 
-The `users` table stores information about the users of the application. The table has the following columns:
+### 2.2. Build Process
+
+The application is built using a multi-stage Docker build.
+*   **Stage 1 (builder)**: This stage uses a `node` base image to build the React frontend. It copies the frontend code, installs dependencies, and runs the build script.
+*   **Stage 2 (final)**: This stage uses a `python` base image. It copies the Python application code, installs the Python dependencies, and then copies the built frontend assets from the `builder` stage.
+
+This approach results in a small, optimized production image that does not contain any of the build-time dependencies.
+
+## 3. Database
+
+### 3.1. Database Schema
+
+The database schema is defined in the `init.sql` file and is versioned with migration scripts in the `migrations` directory. The schema consists of the following tables:
+
+*   `users`: Stores user information.
+*   `friends`: Stores friendship information.
+*   `matches`: Stores match information.
+*   `migrations`: Stores information about applied migrations.
+
+The `users` table has the following columns:
 
 *   `id`: A UUID that uniquely identifies each user.
 *   `username`: The user's username.
@@ -28,68 +50,18 @@ The `users` table stores information about the users of the application. The tab
 *   `profile_picture`: The user's profile picture, stored as a blob.
 *   `profile_picture_thumbnail`: A thumbnail of the user's profile picture, stored as a blob.
 *   `dark_mode`: A boolean that indicates whether the user has enabled dark mode.
+*   `email_verified`: A boolean that indicates whether the user has verified their email address.
 
-### 3.2. `friends` table
+### 3.2. Database Connection Management
 
-The `friends` table stores information about the friendships between users. The table has the following columns:
-
-*   `user_id`: The ID of the user who initiated the friendship.
-*   `friend_id`: The ID of the user who received the friendship.
-*   `status`: The status of the friendship. The status can be `pending` or `accepted`.
-
-### 3.3. `matches` table
-
-The `matches` table stores information about the matches played between users. The table has the following columns:
-
-*   `id`: A UUID that uniquely identifies each match.
-*   `player1_id`: The ID of the first player.
-*   `player2_id`: The ID of the second player.
-*   `player1_score`: The score of the first player.
-*   `player2_score`: The score of the second player.
-*   `match_date`: The date the match was played.
+The application uses a `psycopg2` connection pool to manage database connections. The connection pool is initialized when the application starts, and connections are managed by the Flask application context.
 
 ## 4. Application Logic
 
-The application logic is implemented in the `app.py` file. The file contains the following routes:
+The application logic is implemented in the `pickaladder` package. The application is divided into blueprints, each with its own `routes.py` file that contains the routes for that part of the application.
 
-*   `/`: The home page.
-*   `/install`: The installation page.
-*   `/login`: The login page.
-*   `/logout`: The logout route.
-*   `/register`: The registration page.
-*   `/dashboard`: The user dashboard.
-*   `/users`: The users page.
-*   `/add_friend/<friend_id>`: The route to add a friend.
-*   `/accept_friend_request/<friend_id>`: The route to accept a friend request.
-*   `/decline_friend_request/<friend_id>`: The route to decline a friend request.
-*   `/admin`: The admin page.
-*   `/admin/reset_db`: The route to reset the database.
-*   `/admin/reset-admin`: The route to reset the admin account.
-*   `/admin/delete_user/<user_id>`: The route to delete a user.
-*   `/admin/promote_user/<user_id>`: The route to promote a user.
-*   `/admin/reset_password/<user_id>`: The route to reset a user's password.
-*   `/admin/generate_users`: The route to generate random users.
-*   `/admin/generate_matches`: The route to generate random matches.
-*   `/leaderboard`: The leaderboard page.
-*   `/forgot_password`: The forgot password page.
-*   `/reset_password`: The reset password page.
-*   `/change_password`: The change password page.
-*   `/profile_picture/<user_id>`: The route to serve a user's profile picture.
-*   `/profile_picture_thumbnail/<user_id>`: The route to serve a user's profile picture thumbnail.
-*   `/update_profile`: The route to update a user's profile.
-*   `/verify_email/<email>`: The route to verify a user's email address.
-*   `/friends`: The friends page.
-*   `/users/<user_id>`: The route to view a user's profile.
-*   `/admin/friend_graph`: The route to view a visual graph of friend connections.
+The application uses an application factory pattern (`create_app`) to create and configure the Flask application instance.
 
 ## 5. User Interface
 
-The user interface is implemented with HTML, CSS, and JavaScript. The application uses the Bootstrap framework for styling.
-
-## 6. Future Enhancements
-
-The following enhancements are planned for the future:
-
-*   **Match functionality:** The match functionality will be re-implemented.
-*   **API:** An API will be created to allow third-party applications to interact with the application.
-*   **Real-time updates:** The application will be updated to use WebSockets for real-time updates.
+The user interface is implemented with HTML, CSS, and JavaScript. The application uses the Bootstrap framework for styling. The templates and static files are located in the `pickaladder` package.

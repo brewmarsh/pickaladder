@@ -8,88 +8,92 @@ The API uses a session-based authentication mechanism. After a user logs in, a `
 
 ## 2. Endpoints
 
-### 2.1. User Management
+The application is divided into blueprints, and the endpoints are prefixed with the blueprint name.
 
-#### `POST /register`
+### 2.1. Auth Blueprint (`/auth`)
 
+#### `POST /auth/register`
 Registers a new user.
 
-*   **Request Body:**
-    *   `username` (string, required): The user's username.
-    *   `password` (string, required): The user's password.
-    *   `email` (string, required): The user's email address.
-    *   `name` (string, required): The user's name.
-    *   `dupr_rating` (float, optional): The user's DUPR rating.
-*   **Response:**
-    *   Redirects to the dashboard on success.
-    *   Returns an error message on failure.
+*   **Request Body:** `username`, `password`, `email`, `name`, `dupr_rating`
+*   **Response:** Redirects to the dashboard on success.
 
-#### `POST /login`
-
+#### `POST /auth/login`
 Logs in a user.
 
-*   **Request Body:**
-    *   `username` (string, required): The user's username.
-    *   `password` (string, required): The user's password.
-*   **Response:**
-    *   Redirects to the dashboard on success.
-    *   Returns an error message on failure.
+*   **Request Body:** `username`, `password`
+*   **Response:** Redirects to the dashboard on success.
 
-#### `GET /logout`
-
+#### `GET /auth/logout`
 Logs out a user.
 
-*   **Response:**
-    *   Redirects to the index page.
+*   **Response:** Redirects to the index page.
 
-### 2.2. Gameplay
+#### `GET /auth/verify_email/<email>`
+Verifies a user's email address.
 
-#### `GET /leaderboard`
+*   **Response:** Redirects to the login page.
 
+### 2.2. User Blueprint (`/`)
+
+#### `GET /dashboard`
+Displays the user's dashboard.
+
+#### `GET /users`
+Displays a list of all users.
+
+#### `GET /users/<user_id>`
+Displays a user's profile.
+
+#### `GET /friends`
+Displays the user's friends and friend requests.
+
+### 2.3. Match Blueprint (`/match`)
+
+#### `GET /match/leaderboard`
 Returns the top 10 players by average score.
 
-*   **Response:**
-    *   A JSON object containing a list of players. Each player object has the following fields:
-        *   `id` (string): The player's ID.
-        *   `name` (string): The player's name.
-        *   `avg_score` (float): The player's average score.
-        *   `games_played` (integer): The number of games the player has played.
+*   **Response:** A rendered HTML page with the leaderboard.
 
-### 2.3. Admin
+#### `GET /match/<uuid:match_id>`
+Displays the details of a match.
+
+### 2.4. Admin Blueprint (`/admin`)
 
 #### `GET /admin/generate_matches`
-
 Generates 10 random matches between friends.
 
-*   **Response:**
-    *   Redirects to the admin page.
+*   **Response:** Redirects to the admin page.
+
+#### `GET /admin/friend_graph_data`
+Returns the data for the friend graph.
+
+*   **Response:** A JSON object with `nodes` and `edges`.
 
 ## 3. Data Models
 
 ### 3.1. User
-
-*   `id` (UUID): The user's ID.
-*   `username` (string): The user's username.
-*   `password` (string): The user's hashed password.
-*   `email` (string): The user's email address.
-*   `name` (string): The user's name.
-*   `dupr_rating` (float): The user's DUPR rating.
-*   `is_admin` (boolean): Whether the user is an admin.
-*   `profile_picture` (bytea): The user's profile picture.
-*   `profile_picture_thumbnail` (bytea): The user's profile picture thumbnail.
-*   `dark_mode` (boolean): Whether the user has dark mode enabled.
+*   `id` (UUID)
+*   `username` (string)
+*   `password` (string)
+*   `email` (string)
+*   `name` (string)
+*   `dupr_rating` (float)
+*   `is_admin` (boolean)
+*   `profile_picture` (bytea)
+*   `profile_picture_thumbnail` (bytea)
+*   `dark_mode` (boolean)
+*   `email_verified` (boolean)
 
 ### 3.2. Match
-
-*   `id` (UUID): The match's ID.
-*   `player1_id` (UUID): The ID of the first player.
-*   `player2_id` (UUID): The ID of the second player.
-*   `player1_score` (integer): The score of the first player.
-*   `player2_score` (integer): The score of the second player.
-*   `match_date` (date): The date the match was played.
+*   `id` (UUID)
+*   `player1_id` (UUID)
+*   `player2_id` (UUID)
+*   `player1_score` (integer)
+*   `player2_score` (integer)
+*   `match_date` (date)
 
 ### 3.3. Friend
-
-*   `user_id` (UUID): The ID of the user who initiated the friendship.
-*   `friend_id` (UUID): The ID of the user who received the friendship.
-*   `status` (string): The status of the friendship (`pending` or `accepted`).
+*   `user_id` (UUID)
+*   `friend_id` (UUID)
+*   `status` (string)

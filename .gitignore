@@ -1,2 +1,7 @@
 *.pyc
 __pycache__/
+
+# Docker
+*-data/
+.test.db.data/
+pgdata-test/

@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block title %}Create Account{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="login-form">
+        <h2>Create Account</h2>
+    <form method="post" action="{{ url_for('auth.register') }}">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name">
+        <label for="dupr_rating">DUPR Rating:</label>
+        <input type="number" step="0.01" id="dupr_rating" name="dupr_rating">
+{% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+        <input type="submit" value="Register">
+    </form>
+</div>
+</div>
+{% endblock %}

@@ -39,3 +39,10 @@ jobs:
         with:
           files: ./coverage.xml
           fail_ci_if_error: true
+      - name: Run vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1'

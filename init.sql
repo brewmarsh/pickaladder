@@ -11,7 +11,8 @@ CREATE TABLE users (
     is_admin BOOLEAN DEFAULT FALSE,
     profile_picture BYTEA,
     profile_picture_thumbnail BYTEA,
-    dark_mode BOOLEAN DEFAULT FALSE
+    dark_mode BOOLEAN DEFAULT FALSE,
+    email_verified BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE friends (

@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block title %}Create Match{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Create Match</h2>
+    <form method="post" action="{{ url_for('match.create_match') }}">
+        <label for="player2">Opponent:</label>
+        <select id="player2" name="player2" required>
+            {% for friend in friends %}
+                <option value="{{ friend.id }}">{{ friend.name }} ({{ friend.username }})</option>
+            {% endfor %}
+        </select>
+        <label for="player1_score">Your Score:</label>
+        <input type="number" id="player1_score" name="player1_score" required>
+        <label for="player2_score">Opponent's Score:</label>
+        <input type="number" id="player2_score" name="player2_score" required>
+        <label for="match_date">Date:</label>
+        <input type="date" id="match_date" name="match_date" required>
+        <input type="submit" value="Create Match">
+        <a href="{{ url_for('dashboard') }}" class="button">Cancel</a>
+    </form>
+    <script>
+        document.getElementById('match_date').valueAsDate = new Date();
+    </script>
+</div>
+{% endblock %}
