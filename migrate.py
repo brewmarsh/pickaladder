@@ -27,7 +27,8 @@ def apply_migrations():
         # Ensure the migrations table exists to track applied migrations.
         cur.execute(
             "SELECT table_name FROM information_schema.tables "
-            f"WHERE table_schema = 'public' AND table_name = '{MIGRATIONS_TABLE}'"
+            f"WHERE table_schema = 'public' "
+            f"AND table_name = '{MIGRATIONS_TABLE}'"
         )
         if cur.fetchone() is None:
             print(f"Creating '{MIGRATIONS_TABLE}' table.")

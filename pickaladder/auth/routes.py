@@ -176,10 +176,13 @@ def install():
             return "Invalid DUPR rating."
         hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
         try:
-            cur.execute(
+            sql = (
                 f"INSERT INTO {USERS_TABLE} ({USER_USERNAME}, {USER_PASSWORD}, "
                 f"{USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}, {USER_IS_ADMIN}) "
-                f"VALUES (%s, %s, %s, %s, %s, %s) RETURNING {USER_ID}",
+                f"VALUES (%s, %s, %s, %s, %s, %s) RETURNING {USER_ID}"
+            )
+            cur.execute(
+                sql,
                 (username, hashed_password, email, name, dupr_rating, True),
             )
             user_id = cur.fetchone()[0]

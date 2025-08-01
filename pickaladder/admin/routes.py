@@ -139,7 +139,7 @@ def reset_admin():
         # Set the first user to be admin
         cur.execute(
             f"UPDATE {USERS_TABLE} SET {USER_IS_ADMIN} = TRUE WHERE {USER_ID} = "
-            f"(SELECT {USER_ID} FROM {USERS_TABLE} ORDER BY {USER_ID} LIMIT 1)",
+            f"(SELECT {USER_ID} FROM {USERS_TABLE} ORDER BY {USER_ID} LIMIT 1);"
         )
         conn.commit()
         return redirect(url_for(".admin"))
@@ -238,12 +238,15 @@ def generate_users():
             2,
         )
         hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
-        cur.execute(
+        sql = (
             f"INSERT INTO {USERS_TABLE} ({USER_USERNAME}, {USER_PASSWORD}, "
             f"{USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}, {USER_IS_ADMIN}) "
             "VALUES (%s, %s, %s, %s, %s, %s) "
             f"RETURNING {USER_ID}, {USER_USERNAME}, {USER_EMAIL}, {USER_NAME}, "
-            f"{USER_DUPR_RATING}",
+            f"{USER_DUPR_RATING}"
+        )
+        cur.execute(
+            sql,
             (username, hashed_password, email, name, dupr_rating, False),
         )
         new_user = cur.fetchone()
@@ -300,11 +303,14 @@ def generate_matches():
 
             # Insert match
             match_id = str(uuid.uuid4())
-            cur.execute(
+            sql = (
                 f"INSERT INTO {MATCHES_TABLE} ({MATCH_ID}, {MATCH_PLAYER1_ID}, "
                 f"{MATCH_PLAYER2_ID}, {MATCH_PLAYER1_SCORE}, "
                 f"{MATCH_PLAYER2_SCORE}, {MATCH_DATE}) "
-                "VALUES (%s, %s, %s, %s, %s, NOW())",
+                "VALUES (%s, %s, %s, %s, %s, NOW())"
+            )
+            cur.execute(
+                sql,
                 (
                     match_id,
                     user_id,

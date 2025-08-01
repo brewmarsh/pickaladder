@@ -184,14 +184,14 @@ def friends():
     user_id = session[USER_ID]
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute(
+    sql = (
         f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
         f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE} "
         f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f "
         f"ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
-        f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'",
-        (user_id,),
+        f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'"
     )
+    cur.execute(sql, (user_id,))
     friends = cur.fetchall()
     cur.execute(
         f"SELECT u.{USER_ID}, u.{USER_USERNAME} FROM {USERS_TABLE} u "
@@ -200,13 +200,13 @@ def friends():
         (user_id,),
     )
     requests = cur.fetchall()
-    cur.execute(
+    sql = (
         f"SELECT u.{USER_ID}, u.{USER_USERNAME}, f.{FRIENDS_STATUS} "
         f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f "
         f"ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
-        f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'pending'",
-        (user_id,),
+        f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'pending'"
     )
+    cur.execute(sql, (user_id,))
     sent_requests = cur.fetchall()
     return render_template(
         "friends.html",
@@ -338,12 +338,12 @@ def update_profile():
             img.save(buf, format="PNG")
             thumbnail_data = buf.getvalue()
 
-            cur.execute(
+            sql = (
                 f"UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, "
                 f"{USER_PROFILE_PICTURE_THUMBNAIL} = %s "
-                f"WHERE {USER_ID} = %s",
-                (profile_picture_data, thumbnail_data, user_id),
+                f"WHERE {USER_ID} = %s"
             )
+            cur.execute(sql, (profile_picture_data, thumbnail_data, user_id))
             current_app.logger.info(f"User {user_id} updated their profile picture.")
         elif profile_picture:
             flash("Invalid file type for profile picture.", "danger")
