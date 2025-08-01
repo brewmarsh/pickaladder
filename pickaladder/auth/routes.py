@@ -61,7 +61,9 @@ def register():
             return render_template('register.html', error=error)
         try:
             cur.execute(
-                f'INSERT INTO {USERS_TABLE} ({USER_USERNAME}, {USER_PASSWORD}, {USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}, {USER_IS_ADMIN}) '
+                f'INSERT INTO {USERS_TABLE} ('
+                f'{USER_USERNAME}, {USER_PASSWORD}, {USER_EMAIL}, {USER_NAME}, '
+                f'{USER_DUPR_RATING}, {USER_IS_ADMIN}) '
                 f'VALUES (%s, %s, %s, %s, %s, %s) RETURNING {USER_ID}',
                 (username, hashed_password, email, name, dupr_rating, False),
             )
@@ -88,7 +90,8 @@ def register():
             thumbnail_data = buf.getvalue()
 
             cur.execute(
-                f'UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, {USER_PROFILE_PICTURE_THUMBNAIL} = %s '
+                f'UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, '
+                f'{USER_PROFILE_PICTURE_THUMBNAIL} = %s '
                 f'WHERE {USER_ID} = %s',
                 (profile_picture_data, thumbnail_data, user_id),
             )
@@ -173,7 +176,9 @@ def install():
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         try:
             cur.execute(
-                f'INSERT INTO {USERS_TABLE} ({USER_USERNAME}, {USER_PASSWORD}, {USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}, {USER_IS_ADMIN}) '
+                f'INSERT INTO {USERS_TABLE} ('
+                f'{USER_USERNAME}, {USER_PASSWORD}, {USER_EMAIL}, {USER_NAME}, '
+                f'{USER_DUPR_RATING}, {USER_IS_ADMIN}) '
                 f'VALUES (%s, %s, %s, %s, %s, %s) RETURNING {USER_ID}',
                 (username, hashed_password, email, name, dupr_rating, True),
             )
@@ -198,7 +203,8 @@ def install():
             thumbnail_data = buf.getvalue()
 
             cur.execute(
-                f'UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, {USER_PROFILE_PICTURE_THUMBNAIL} = %s '
+                f'UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, '
+                f'{USER_PROFILE_PICTURE_THUMBNAIL} = %s '
                 f'WHERE {USER_ID} = %s',
                 (profile_picture_data, thumbnail_data, user_id),
             )

@@ -37,9 +37,13 @@ def view_match_page(match_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        f'SELECT m.*, p1.{USER_USERNAME}, p2.{USER_USERNAME}, p1.{USER_PROFILE_PICTURE}, p2.{USER_PROFILE_PICTURE} '
-        f'FROM {MATCHES_TABLE} m JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} '
-        f'JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} WHERE m.{MATCH_ID} = %s',
+        f'SELECT m.*, p1.{USER_USERNAME} as player1_username, '
+        f'p2.{USER_USERNAME} as player2_username, p1.{USER_PROFILE_PICTURE}, '
+        f'p2.{USER_PROFILE_PICTURE} '
+        f'FROM {MATCHES_TABLE} m JOIN {USERS_TABLE} p1 '
+        f'ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} '
+        f'JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} '
+        f'WHERE m.{MATCH_ID} = %s',
         (match_id,),
     )
     match = cur.fetchone()
@@ -62,7 +66,9 @@ def create_match():
         try:
             match_id = str(uuid.uuid4())
             cur.execute(
-                f'INSERT INTO {MATCHES_TABLE} ({MATCH_ID}, {MATCH_PLAYER1_ID}, {MATCH_PLAYER2_ID}, {MATCH_PLAYER1_SCORE}, {MATCH_PLAYER2_SCORE}, {MATCH_DATE}) '
+                f'INSERT INTO {MATCHES_TABLE} ('
+                f'{MATCH_ID}, {MATCH_PLAYER1_ID}, {MATCH_PLAYER2_ID}, '
+                f'{MATCH_PLAYER1_SCORE}, {MATCH_PLAYER2_SCORE}, {MATCH_DATE}) '
                 'VALUES (%s, %s, %s, %s, %s, %s)',
                 (
                     match_id,
@@ -80,8 +86,11 @@ def create_match():
             flash(f"An error occurred while creating the match: {e}", 'danger')
         return redirect(url_for('user.dashboard'))
     cur.execute(
-        f'SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE} '
-        f'FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} WHERE f.{FRIENDS_USER_ID} = %s',
+        f'SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, '
+        f'u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE} '
+        f'FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f '
+        f'ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} '
+        f'WHERE f.{FRIENDS_USER_ID} = %s',
         (user_id,),
     )
     friends = cur.fetchall()
@@ -103,12 +112,15 @@ def leaderboard():
             SELECT
                 u.{USER_ID},
                 u.{USER_NAME},
-                AVG(CASE WHEN m.{MATCH_PLAYER1_ID} = u.{USER_ID} THEN m.{MATCH_PLAYER1_SCORE} ELSE m.{MATCH_PLAYER2_SCORE} END) as avg_score,
+                AVG(CASE WHEN m.{MATCH_PLAYER1_ID} = u.{USER_ID}
+                    THEN m.{MATCH_PLAYER1_SCORE}
+                    ELSE m.{MATCH_PLAYER2_SCORE} END) as avg_score,
                 COUNT(m.{MATCH_ID}) as games_played
             FROM
                 {USERS_TABLE} u
             JOIN
-                {MATCHES_TABLE} m ON u.{USER_ID} = m.{MATCH_PLAYER1_ID} OR u.{USER_ID} = m.{MATCH_PLAYER2_ID}
+                {MATCHES_TABLE} m ON u.{USER_ID} = m.{MATCH_PLAYER1_ID}
+                OR u.{USER_ID} = m.{MATCH_PLAYER2_ID}
             GROUP BY
                 u.{USER_ID}, u.{USER_NAME}
             ORDER BY

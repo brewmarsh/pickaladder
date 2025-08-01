@@ -29,6 +29,10 @@ from pickaladder.constants import (
     FRIENDS_USER_ID,
     FRIENDS_FRIEND_ID,
     FRIENDS_STATUS,
+    MATCHES_TABLE,
+    MATCH_PLAYER1_ID,
+    MATCH_PLAYER2_ID,
+    MATCH_DATE,
 )
 
 @bp.route('/dashboard')
@@ -39,14 +43,17 @@ def dashboard():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cur.execute(
-        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
-        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
+        f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
+        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f "
+        f"ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
         f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'",
         (user_id,),
     )
     friends = cur.fetchall()
     cur.execute(
-        f"SELECT u.{USER_ID}, u.{USER_USERNAME} FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_USER_ID} "
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME} FROM {USERS_TABLE} u "
+        f"JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_USER_ID} "
         f"WHERE f.{FRIENDS_FRIEND_ID} = %s AND f.{FRIENDS_STATUS} = 'pending'",
         (user_id,),
     )
@@ -74,8 +81,10 @@ def view_user(user_id):
 
     # Get friends
     cur.execute(
-        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
-        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
+        f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
+        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f "
+        f"ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
         f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'",
         (user_id,),
     )
@@ -83,7 +92,8 @@ def view_user(user_id):
 
     # Get match history
     cur.execute(
-        f"SELECT m.*, p1.{USER_USERNAME} as player1, p2.{USER_USERNAME} as player2 "
+        f"SELECT m.*, p1.{USER_USERNAME} as player1, "
+        f"p2.{USER_USERNAME} as player2 "
         f"FROM {MATCHES_TABLE} m "
         f"JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
         f"JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} "
@@ -121,10 +131,13 @@ def users():
     if friends:
         cur.execute(
             f"""
-            SELECT DISTINCT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, u.{USER_DUPR_RATING}
+            SELECT DISTINCT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME},
+            u.{USER_DUPR_RATING}
             FROM {USERS_TABLE} u
             JOIN {FRIENDS_TABLE} f1 ON u.{USER_ID} = f1.{FRIENDS_FRIEND_ID}
-            WHERE f1.{FRIENDS_USER_ID} IN %s AND u.{USER_ID} != %s AND u.{USER_ID} NOT IN (SELECT {FRIENDS_FRIEND_ID} FROM {FRIENDS_TABLE} WHERE {FRIENDS_USER_ID} = %s)
+            WHERE f1.{FRIENDS_USER_ID} IN %s AND u.{USER_ID} != %s
+            AND u.{USER_ID} NOT IN (SELECT {FRIENDS_FRIEND_ID}
+            FROM {FRIENDS_TABLE} WHERE {FRIENDS_USER_ID} = %s)
             """,
             (tuple(friends), user_id, user_id),
         )
@@ -168,20 +181,25 @@ def friends():
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE} "
-        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
+        f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE} "
+        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f "
+        f"ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
         f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'",
         (user_id,),
     )
     friends = cur.fetchall()
     cur.execute(
-        f"SELECT u.{USER_ID}, u.{USER_USERNAME} FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_USER_ID} "
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME} FROM {USERS_TABLE} u "
+        f"JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_USER_ID} "
         f"WHERE f.{FRIENDS_FRIEND_ID} = %s AND f.{FRIENDS_STATUS} = 'pending'",
         (user_id,),
     )
     requests = cur.fetchall()
     cur.execute(
-        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, f.{FRIENDS_STATUS} FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, f.{FRIENDS_STATUS} "
+        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f "
+        f"ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
         f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'pending'",
         (user_id,),
     )
@@ -312,11 +330,14 @@ def update_profile():
             thumbnail_data = buf.getvalue()
 
             cur.execute(
-                f'UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, {USER_PROFILE_PICTURE_THUMBNAIL} = %s '
+                f'UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, '
+                f'{USER_PROFILE_PICTURE_THUMBNAIL} = %s '
                 f'WHERE {USER_ID} = %s',
                 (profile_picture_data, thumbnail_data, user_id),
             )
-            current_app.logger.info(f"User {user_id} updated their profile picture.")
+            current_app.logger.info(
+                f"User {user_id} updated their profile picture."
+            )
         elif profile_picture:
             flash('Invalid file type for profile picture.', 'danger')
             return redirect(request.referrer or url_for('.dashboard'))

@@ -59,7 +59,8 @@ def admin_matches():
     cur = conn.cursor()
     if search_term:
         cur.execute(
-            f'SELECT m.*, p1.{USER_USERNAME}, p2.{USER_USERNAME} FROM {MATCHES_TABLE} m '
+            f'SELECT m.*, p1.{USER_USERNAME}, p2.{USER_USERNAME} '
+            f'FROM {MATCHES_TABLE} m '
             f'JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} '
             f'JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} '
             f'WHERE p1.{USER_USERNAME} ILIKE %s OR p2.{USER_USERNAME} ILIKE %s '
@@ -68,9 +69,11 @@ def admin_matches():
         )
     else:
         cur.execute(
-            f'SELECT m.*, p1.{USER_USERNAME}, p2.{USER_USERNAME} FROM {MATCHES_TABLE} m '
+            f'SELECT m.*, p1.{USER_USERNAME}, p2.{USER_USERNAME} '
+            f'FROM {MATCHES_TABLE} m '
             f'JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} '
-            f'JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} ORDER BY m.{MATCH_DATE} DESC'
+            f'JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} '
+            f'ORDER BY m.{MATCH_DATE} DESC'
         )
     matches = cur.fetchall()
     return render_template(
@@ -126,7 +129,8 @@ def reset_admin():
         cur.execute(f"UPDATE {USERS_TABLE} SET {USER_IS_ADMIN} = FALSE")
         # Set the first user to be admin
         cur.execute(
-            f"UPDATE {USERS_TABLE} SET {USER_IS_ADMIN} = TRUE WHERE {USER_ID} = (SELECT {USER_ID} FROM {USERS_TABLE} ORDER BY {USER_ID} LIMIT 1)"
+            f"UPDATE {USERS_TABLE} SET {USER_IS_ADMIN} = TRUE WHERE {USER_ID} = "
+            f"(SELECT {USER_ID} FROM {USERS_TABLE} ORDER BY {USER_ID} LIMIT 1)"
         )
         conn.commit()
         return redirect(url_for('.admin'))
@@ -211,9 +215,12 @@ def generate_users():
         )
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         cur.execute(
-            f'INSERT INTO {USERS_TABLE} ({USER_USERNAME}, {USER_PASSWORD}, {USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}, {USER_IS_ADMIN}) '
+            f'INSERT INTO {USERS_TABLE} ('
+            f'{USER_USERNAME}, {USER_PASSWORD}, {USER_EMAIL}, {USER_NAME}, '
+            f'{USER_DUPR_RATING}, {USER_IS_ADMIN}) '
             'VALUES (%s, %s, %s, %s, %s, %s) '
-            f'RETURNING {USER_ID}, {USER_USERNAME}, {USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}',
+            f'RETURNING {USER_ID}, {USER_USERNAME}, {USER_EMAIL}, {USER_NAME}, '
+            f'{USER_DUPR_RATING}',
             (username, hashed_password, email, name, dupr_rating, False),
         )
         new_user = cur.fetchone()
@@ -270,7 +277,9 @@ def generate_matches():
             # Insert match
             match_id = str(uuid.uuid4())
             cur.execute(
-                f'INSERT INTO {MATCHES_TABLE} ({MATCH_ID}, {MATCH_PLAYER1_ID}, {MATCH_PLAYER2_ID}, {MATCH_PLAYER1_SCORE}, {MATCH_PLAYER2_SCORE}, {MATCH_DATE}) '
+                f'INSERT INTO {MATCHES_TABLE} ('
+                f'{MATCH_ID}, {MATCH_PLAYER1_ID}, {MATCH_PLAYER2_ID}, '
+                f'{MATCH_PLAYER1_SCORE}, {MATCH_PLAYER2_SCORE}, {MATCH_DATE}) '
                 'VALUES (%s, %s, %s, %s, %s, NOW())',
                 (
                     match_id,

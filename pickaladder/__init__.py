@@ -59,7 +59,9 @@ def create_app():
         if USER_ID in session:
             conn = db.get_db_connection()
             cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            cur.execute(f'SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s', (session[USER_ID],))
+            cur.execute(
+                f'SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s', (session[USER_ID],)
+            )
             user = cur.fetchone()
             cur.close()
             return dict(user=user)

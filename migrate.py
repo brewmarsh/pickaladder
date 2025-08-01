@@ -32,7 +32,9 @@ def apply_migrations():
         if cur.fetchone() is None:
             print(f"Creating '{MIGRATIONS_TABLE}' table.")
             cur.execute(
-                f'CREATE TABLE {MIGRATIONS_TABLE} ({MIGRATION_ID} SERIAL PRIMARY KEY, {MIGRATION_NAME} TEXT NOT NULL UNIQUE)'
+                f'CREATE TABLE {MIGRATIONS_TABLE} ('
+                f'{MIGRATION_ID} SERIAL PRIMARY KEY, '
+                f'{MIGRATION_NAME} TEXT NOT NULL UNIQUE)'
             )
             conn.commit()
 
