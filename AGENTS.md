@@ -31,7 +31,7 @@ This document provides instructions for agents working on this project.
 
 ## Coding Standards and Best Practices
 
-*   **Python:** Follow PEP 8 style guidelines. All new functions should have docstrings.
+*   **Python:** Follow PEP 8 style guidelines. All new functions should have docstrings. Before checking in any code, please run `black .` and `flake8 .` to format and lint the code.
 *   **React:** All React components should be functional components.
 *   **Error Handling:** Use centralized `try-catch` blocks and log to `console.error`.
 *   **Refactoring:** Prefer `const` over `let` where variable reassignment is not needed.
