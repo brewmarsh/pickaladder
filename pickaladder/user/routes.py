@@ -70,6 +70,9 @@ def dashboard():
 def view_user(user_id):
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
+
+    flash(f"Loading profile for user ID: {user_id}", "info")
+
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     current_app.logger.info(f"Viewing user profile for user_id: {user_id}")
@@ -79,6 +82,7 @@ def view_user(user_id):
 
     if user is None:
         current_app.logger.info(f"User with user_id {user_id} not found.")
+        flash(f"User with ID {user_id} not found.", "danger")
         return render_template("404.html"), 404
 
     # Get friends
