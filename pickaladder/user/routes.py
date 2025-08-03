@@ -68,6 +68,7 @@ def dashboard():
 
 @bp.route("/<uuid:user_id>")
 def view_user(user_id):
+    current_app.logger.info(f"ENTERING view_user with user_id: {user_id}")
     try:
         if USER_ID not in session:
             return redirect(url_for("auth.login"))
@@ -80,6 +81,7 @@ def view_user(user_id):
         cur.execute(f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (str(user_id),))
         user = cur.fetchone()
         current_app.logger.info(f"User object: {user}")
+        current_app.logger.info(f"the user is {user}")
 
         if user is None:
             current_app.logger.info(f"User with user_id {user_id} not found.")
