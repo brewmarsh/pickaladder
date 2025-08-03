@@ -1,14 +1,14 @@
 {% extends "layout.html" %}
-{% block title %}{{ user.username }}'s Profile{% endblock %}
+{% block title %}{{ profile_user.username }}'s Profile{% endblock %}
 {% block content %}
 <div class="container">
     <div class="profile-header">
-<img src="{{ url_for('user.profile_picture', user_id=user['id']) }}" alt="Profile Picture" width="150" height="150" style="border-radius: 50%;">
-<h2>{{ user['name'] }}</h2>
-<p>@{{ user['username'] }}</p>
+<img src="{{ url_for('user.profile_picture', user_id=profile_user['id']) }}" alt="Profile Picture" width="150" height="150" style="border-radius: 50%;">
+<h2>{{ profile_user['name'] }}</h2>
+<p>@{{ profile_user['username'] }}</p>
     </div>
     <div class="profile-info">
-        <p><strong>DUPR Rating:</strong> {{ user['dupr_rating'] }}</p>
+        <p><strong>DUPR Rating:</strong> {{ profile_user['dupr_rating'] }}</p>
     </div>
 
     <h3>Friends</h3>
@@ -39,7 +39,7 @@
                 </tbody>
             </table>
         {% else %}
-            <p>{{ user['name'] }} has no friends yet.</p>
+            <p>{{ profile_user['name'] }} has no friends yet.</p>
         {% endif %}
     </div>
 
@@ -67,7 +67,7 @@
                 </tbody>
             </table>
         {% else %}
-            <p>{{ user['name'] }} has no matches yet.</p>
+            <p>{{ profile_user['name'] }} has no matches yet.</p>
         {% endif %}
     </div>
 </div>

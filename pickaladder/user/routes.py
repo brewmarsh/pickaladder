@@ -111,7 +111,7 @@ def view_user(user_id):
         matches = cur.fetchall()
 
         return render_template(
-            "user_profile.html", user=user, friends=friends, matches=matches
+            "user_profile.html", profile_user=user, friends=friends, matches=matches
         )
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
