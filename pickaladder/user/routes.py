@@ -77,7 +77,7 @@ def view_user(user_id):
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         current_app.logger.info(f"Viewing user profile for user_id: {user_id}")
-        cur.execute(f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (user_id,))
+        cur.execute(f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (str(user_id),))
         user = cur.fetchone()
         current_app.logger.info(f"User object: {user}")
 
