@@ -190,6 +190,7 @@ def install():
             return redirect(url_for("auth.install"))
         except Exception as e:
             conn.rollback()
+            current_app.logger.error(f"An error occurred during installation: {e}")
             flash(f"An error occurred: {e}", "danger")
             return "An error occurred during installation."
         return redirect(url_for("user.dashboard"))
