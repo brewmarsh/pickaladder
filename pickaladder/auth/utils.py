@@ -1,13 +1,17 @@
 from PIL import Image, ImageDraw, ImageFont
 import io
 
+import os
+
 def generate_profile_picture(name):
     """
     Generates a profile picture with the user's initials.
     """
-    img = Image.new("RGB", (256, 256), color=(73, 109, 137))
+    # Get the absolute path to the static directory
+    static_dir = os.path.join(os.path.dirname(__file__), '..', 'static')
+    img = Image.open(os.path.join(static_dir, 'user_icon.png')).convert("RGB")
     d = ImageDraw.Draw(img)
-    initials = "".join([name[0] for name in name.split()])
+    initials = "".join([name[0]for name in name.split()])
 
     # Use a truetype font
     try:
