@@ -97,8 +97,21 @@ def view_user(user_id):
         )
         friends = cur.fetchall()
 
+        # Get match history
+        cur.execute(
+            f"SELECT m.*, p1.{USER_USERNAME} as player1, "
+            f"p2.{USER_USERNAME} as player2 "
+            f"FROM {MATCHES_TABLE} m "
+            f"JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
+            f"JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} "
+            f"WHERE m.{MATCH_PLAYER1_ID} = %s OR m.{MATCH_PLAYER2_ID} = %s "
+            f"ORDER BY m.{MATCH_DATE} DESC",
+            (str(user_id), str(user_id)),
+        )
+        matches = cur.fetchall()
+
         return render_template(
-            "user_profile.html", profile_user=user, friends=friends, matches=[]
+            "user_profile.html", profile_user=user, friends=friends, matches=matches
         )
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
