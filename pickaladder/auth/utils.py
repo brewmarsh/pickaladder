@@ -11,7 +11,7 @@ def generate_profile_picture(name):
 
     # Use a truetype font
     try:
-        font = ImageFont.truetype("arial.ttf", 120)
+        font = ImageFont.truetype("DejaVuSans.ttf", 120)
     except IOError:
         font = ImageFont.load_default()
 
