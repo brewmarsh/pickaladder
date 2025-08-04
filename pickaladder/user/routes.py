@@ -86,8 +86,19 @@ def view_user(user_id):
             flash(f"User with ID {user_id} not found.", "danger")
             return render_template("404.html"), 404
 
+        # Get friends
+        cur.execute(
+            f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
+            f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
+            f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON "
+            f"u.{USER_ID} = f.{FRIENDS_FRIEND_ID} WHERE f.{FRIENDS_USER_ID} = %s "
+            f"AND f.{FRIENDS_STATUS} = 'accepted'",
+            (str(user_id),),
+        )
+        friends = cur.fetchall()
+
         return render_template(
-            "user_profile.html", profile_user=user, friends=[], matches=[]
+            "user_profile.html", profile_user=user, friends=friends, matches=[]
         )
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
