@@ -68,46 +68,54 @@ def dashboard():
 
 @bp.route("/<uuid:user_id>")
 def view_user(user_id):
-    if USER_ID not in session:
-        return redirect(url_for("auth.login"))
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    current_app.logger.info(f"Viewing user profile for user_id: {user_id}")
-    cur.execute(f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (user_id,))
-    user = cur.fetchone()
-    current_app.logger.info(f"User object: {user}")
+    try:
+        if USER_ID not in session:
+            return redirect(url_for("auth.login"))
 
-    if user is None:
-        current_app.logger.info(f"User with user_id {user_id} not found.")
-        return render_template("404.html"), 404
+        flash(f"Loading profile for user ID: {user_id}", "info")
 
-    # Get friends
-    cur.execute(
-        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
-        f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
-        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON "
-        f"u.{USER_ID} = f.{FRIENDS_FRIEND_ID} WHERE f.{FRIENDS_USER_ID} = %s "
-        f"AND f.{FRIENDS_STATUS} = 'accepted'",
-        (user_id,),
-    )
-    friends = cur.fetchall()
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        current_app.logger.info(f"Viewing user profile for user_id: {user_id}")
+        cur.execute(f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (str(user_id),))
+        user = cur.fetchone()
+        current_app.logger.info(f"User object: {user}")
 
-    # Get match history
-    cur.execute(
-        f"SELECT m.*, p1.{USER_USERNAME} as player1, "
-        f"p2.{USER_USERNAME} as player2 "
-        f"FROM {MATCHES_TABLE} m "
-        f"JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
-        f"JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} "
-        f"WHERE m.{MATCH_PLAYER1_ID} = %s OR m.{MATCH_PLAYER2_ID} = %s "
-        f"ORDER BY m.{MATCH_DATE} DESC",
-        (user_id, user_id),
-    )
-    matches = cur.fetchall()
+        if user is None:
+            current_app.logger.info(f"User with user_id {user_id} not found.")
+            flash(f"User with ID {user_id} not found.", "danger")
+            return render_template("404.html"), 404
 
-    return render_template(
-        "user_profile.html", user=user, friends=friends, matches=matches
-    )
+        # Get friends
+        cur.execute(
+            f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
+            f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
+            f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON "
+            f"u.{USER_ID} = f.{FRIENDS_FRIEND_ID} WHERE f.{FRIENDS_USER_ID} = %s "
+            f"AND f.{FRIENDS_STATUS} = 'accepted'",
+            (str(user_id),),
+        )
+        friends = cur.fetchall()
+
+        # Get match history
+        cur.execute(
+            f"SELECT m.*, p1.{USER_USERNAME} as player1, "
+            f"p2.{USER_USERNAME} as player2 "
+            f"FROM {MATCHES_TABLE} m "
+            f"JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
+            f"JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} "
+            f"WHERE m.{MATCH_PLAYER1_ID} = %s OR m.{MATCH_PLAYER2_ID} = %s "
+            f"ORDER BY m.{MATCH_DATE} DESC",
+            (str(user_id), str(user_id)),
+        )
+        matches = cur.fetchall()
+
+        return render_template(
+            "user_profile.html", profile_user=user, friends=friends, matches=matches
+        )
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+        return render_template("error.html", error=str(e)), 500
 
 
 @bp.route(f"/{USERS_TABLE}")
@@ -261,7 +269,7 @@ def profile_picture(user_id):
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            f"SELECT {USER_PROFILE_PICTURE} FROM {USERS_TABLE} WHERE id = %s",
+            f"SELECT {USER_PROFILE_PICTURE} FROM {USERS_TABLE} WHERE {USER_ID} = %s",
             (user_id,),
         )
         profile_picture_data = cur.fetchone()

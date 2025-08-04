@@ -1,17 +1,28 @@
 import os
+import uuid
 from flask import Flask, session, render_template
 from flask_mail import Mail
 import psycopg2
 import psycopg2.extras
+from werkzeug.routing import BaseConverter
 from . import db
 from .constants import USERS_TABLE, USER_ID
 
 mail = Mail()
 
 
+class UUIDConverter(BaseConverter):
+    def to_python(self, value):
+        return uuid.UUID(value)
+
+    def to_url(self, value):
+        return str(value)
+
+
 def create_app():
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__, instance_relative_config=True)
+    app.url_map.converters["uuid"] = UUIDConverter
 
     # Ensure the instance folder exists
     try:

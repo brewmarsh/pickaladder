@@ -13,12 +13,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import random
 import string
-from PIL import Image, ImageDraw
 from io import BytesIO
 
 from pickaladder.db import get_db_connection
 from . import bp
 from pickaladder import mail
+from .utils import generate_profile_picture
 import psycopg2
 from pickaladder.constants import (
     USERS_TABLE,
@@ -74,22 +74,7 @@ def register():
             session[USER_IS_ADMIN] = False
             current_app.logger.info(f"New user registered: {username}")
 
-            # Generate profile picture
-            img = Image.new("RGB", (256, 256), color=(73, 109, 137))
-            d = ImageDraw.Draw(img)
-            initials = "".join([name[0] for name in name.split()])
-            d.text((128, 128), initials, fill=(255, 255, 0))
-            import io
-
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            profile_picture_data = buf.getvalue()
-
-            img.thumbnail((64, 64))
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            thumbnail_data = buf.getvalue()
-
+            profile_picture_data, thumbnail_data = generate_profile_picture(name)
             cur.execute(
                 f"UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, "
                 f"{USER_PROFILE_PICTURE_THUMBNAIL} = %s "
@@ -191,20 +176,7 @@ def install():
             session[USER_IS_ADMIN] = True
             current_app.logger.info(f"New user registered: {username}")
 
-            # Generate profile picture
-            img = Image.new("RGB", (256, 256), color=(73, 109, 137))
-            d = ImageDraw.Draw(img)
-            initials = "".join([name[0] for name in name.split()])
-            d.text((128, 128), initials, fill=(255, 255, 0))
-            buf = BytesIO()
-            img.save(buf, format="PNG")
-            profile_picture_data = buf.getvalue()
-
-            img.thumbnail((64, 64))
-            buf = BytesIO()
-            img.save(buf, format="PNG")
-            thumbnail_data = buf.getvalue()
-
+            profile_picture_data, thumbnail_data = generate_profile_picture(name)
             cur.execute(
                 f"UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, "
                 f"{USER_PROFILE_PICTURE_THUMBNAIL} = %s "
@@ -218,6 +190,7 @@ def install():
             return redirect(url_for("auth.install"))
         except Exception as e:
             conn.rollback()
+            current_app.logger.error(f"An error occurred during installation: {e}")
             flash(f"An error occurred: {e}", "danger")
             return "An error occurred during installation."
         return redirect(url_for("user.dashboard"))
