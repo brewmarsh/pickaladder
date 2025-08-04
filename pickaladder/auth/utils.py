@@ -16,7 +16,9 @@ def generate_profile_picture(name):
         font = ImageFont.load_default()
 
     # Center the text
-    text_width, text_height = d.textsize(initials, font=font)
+    bbox = font.getbbox(initials)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
     position = ((256 - text_width) / 2, (256 - text_height) / 2)
 
     d.text(position, initials, fill=(255, 255, 0), font=font)
