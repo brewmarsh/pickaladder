@@ -68,7 +68,30 @@ def dashboard():
 
 @bp.route("/<uuid:user_id>")
 def view_user(user_id):
-    return f"<h1>Hello, user {user_id}!</h1>"
+    try:
+        if USER_ID not in session:
+            return redirect(url_for("auth.login"))
+
+        flash(f"Loading profile for user ID: {user_id}", "info")
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        current_app.logger.info(f"Viewing user profile for user_id: {user_id}")
+        cur.execute(f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (str(user_id),))
+        user = cur.fetchone()
+        current_app.logger.info(f"User object: {user}")
+
+        if user is None:
+            current_app.logger.info(f"User with user_id {user_id} not found.")
+            flash(f"User with ID {user_id} not found.", "danger")
+            return render_template("404.html"), 404
+
+        return render_template(
+            "user_profile.html", profile_user=user, friends=[], matches=[]
+        )
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+        return render_template("error.html", error=str(e)), 500
 
 
 @bp.route(f"/{USERS_TABLE}")
