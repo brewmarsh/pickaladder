@@ -66,62 +66,9 @@ def dashboard():
     )
 
 
-@bp.route("/hello")
-def hello():
-    return "Hello, World!"
-
 @bp.route("/<uuid:user_id>")
 def view_user(user_id):
-    current_app.logger.info(f"ENTERING view_user with user_id: {user_id}")
-    try:
-        if USER_ID not in session:
-            return redirect(url_for("auth.login"))
-
-        flash(f"Loading profile for user ID: {user_id}", "info")
-
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        current_app.logger.info(f"Viewing user profile for user_id: {user_id}")
-        cur.execute(f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (str(user_id),))
-        user = cur.fetchone()
-        current_app.logger.info(f"User object: {user}")
-        current_app.logger.info(f"the user is {user}")
-
-        if user is None:
-            current_app.logger.info(f"User with user_id {user_id} not found.")
-            flash(f"User with ID {user_id} not found.", "danger")
-            return render_template("404.html"), 404
-
-        # Get friends
-        cur.execute(
-            f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
-            f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
-            f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON "
-            f"u.{USER_ID} = f.{FRIENDS_FRIEND_ID} WHERE f.{FRIENDS_USER_ID} = %s "
-            f"AND f.{FRIENDS_STATUS} = 'accepted'",
-            (user_id,),
-        )
-        friends = cur.fetchall()
-
-        # Get match history
-        cur.execute(
-            f"SELECT m.*, p1.{USER_USERNAME} as player1, "
-            f"p2.{USER_USERNAME} as player2 "
-            f"FROM {MATCHES_TABLE} m "
-            f"JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
-            f"JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} "
-            f"WHERE m.{MATCH_PLAYER1_ID} = %s OR m.{MATCH_PLAYER2_ID} = %s "
-            f"ORDER BY m.{MATCH_DATE} DESC",
-            (user_id, user_id),
-        )
-        matches = cur.fetchall()
-
-        return render_template(
-            "user_profile.html", profile_user=user, friends=friends, matches=matches
-        )
-    except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
-        return render_template("error.html", error=str(e)), 500
+    return f"<h1>Hello, user {user_id}!</h1>"
 
 
 @bp.route(f"/{USERS_TABLE}")
