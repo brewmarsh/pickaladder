@@ -45,6 +45,10 @@ This document outlines the requirements for the pickaladder application.
 *   **UUIDs:** User and match IDs are UUIDs to enhance privacy.
 *   **Password Hashing:** Passwords are securely hashed using pbkdf2:sha256.
 
+### User Interface
+*   **Modern Design:** The application has a modern, clean, and responsive user interface with a Google-inspired design.
+*   **Custom Styling:** The application uses a custom stylesheet and does not depend on any external CSS frameworks like Bootstrap.
+
 ### Code Quality
 *   **Linting:** The project uses `ruff` for linting and code formatting.
 *   **Testing:** The project has a basic test suite.

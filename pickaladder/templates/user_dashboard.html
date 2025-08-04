@@ -1,46 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - pickaladder</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='dark.css') }}">
-</head>
-<body class="{{ 'dark-mode' if user and user[8] else '' }}">
-    {% include 'navbar.html' %}
-    <div class="content">
-        <div class="container">
-            <h2>Welcome, {{ user[4] }}!</h2>
-        <img src="{{ url_for('user.profile_picture', user_id=user.id) }}" alt="Profile Picture" width="256" onerror="this.onerror=null;this.src=&quot;{{ url_for('static', filename='user_icon.png') }}&quot;;">
-        <div class="profile-info">
-            <p><strong>Username:</strong> {{ user[1] }}</p>
-            <p><strong>Email:</strong> {{ user[3] }}</p>
-            <p><strong>DUPR Rating:</strong> {{ user.dupr_rating if user.dupr_rating else "Not set" }}</p>
-        </div>
-        <h3>Update Profile</h3>
-        <form method="post" action="/update_profile" enctype="multipart/form-data">
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" name="dark_mode" id="darkModeSwitch" {% if user[8] %}checked{% endif %} onchange="this.form.submit()">
-                <label class="form-check-label" for="darkModeSwitch">Dark Mode</label>
+{% extends "layout.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+    <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Welcome, {{ user.name }}!</p>
+    </div>
+
+    <div class="grid-container">
+        <div class="card">
+            <h3>Profile Information</h3>
+            <div class="profile-header" style="margin-bottom: 20px;">
+                <img src="{{ url_for('user.profile_picture', user_id=user.id) }}" alt="Profile Picture" class="profile-picture">
+                <h4>@{{ user.username }}</h4>
             </div>
-            <label for="profile_picture">Profile Picture:</label>
-            <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif" onchange="previewImage(event)">
-            <img id="preview" src="#" alt="your image" width="100" style="display:none;"/>
-            <progress id="progressBar" value="0" max="100" style="width:300px;"></progress>
-            <button type="button" onclick="uploadFile()">Upload</button>
-            <label for="dupr_rating">DUPR Rating:</label>
-            <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user[5] }}">
-            <input type="submit" value="Update Profile">
-        </form>
-        <h3>Friend Requests</h3>
-        <div class="friend-requests-list">
-            {% if requests %}
-                <table>
+
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>DUPR Rating:</strong> {{ user.dupr_rating if user.dupr_rating else "Not set" }}</p>
+
+            <form method="post" action="/update_profile" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="dupr_rating">Update DUPR Rating:</label>
+                    <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user.dupr_rating }}">
+                </div>
+                <div class="form-group">
+                    <label for="profile_picture">Update Profile Picture:</label>
+                    <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif">
+                </div>
+                <input type="submit" value="Update Profile" class="btn">
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Friend Requests</h3>
+            <div class="table-container">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Username</th>
-                            <th></th>
                             <th></th>
                         </tr>
                     </thead>
@@ -48,23 +44,21 @@
                         {% for request in requests %}
                             <tr>
                                 <td>{{ request[1] }}</td>
-                                <td><a href="{{ url_for('accept_friend_request', friend_id=request[0]) }}" class="button">Accept</a></td>
-                                <td><a href="{{ url_for('decline_friend_request', friend_id=request[0]) }}" class="button">Decline</a></td>
+                                <td style="text-align: right;">
+                                    <a href="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}" class="btn">Accept</a>
+                                    <a href="{{ url_for('user.decline_friend_request', friend_id=request[0]) }}" class="btn btn-danger">Decline</a>
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-            {% else %}
-                <p>You have no friend requests.</p>
-            {% endif %}
-        </div>
-        <h3>Your Friends</h3>
-        <div class="friends-list">
-            {% if friends %}
-                <table>
+            </div>
+
+            <h3 style="margin-top: 20px;">Your Friends</h3>
+            <div class="table-container">
+                <table class="table">
                     <thead>
                         <tr>
-                            <th></th>
                             <th>Username</th>
                             <th>DUPR Rating</th>
                         </tr>
@@ -73,64 +67,15 @@
                         {% for friend in friends %}
                             <tr>
                                 <td>
-                                    {% if friend[4] %}
-                                        <img src="{{ url_for('static', filename='uploads/' + friend[4]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
-                                    {% endif %}
+                                    <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
                                 </td>
-                                <td>
-                                    {{ friend[1] }}
-                                </td>
-                                <td>{{ friend[3] }}</td>
+                                <td>{{ friend.dupr_rating }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-            {% else %}
-                <p>You have no friends yet. <a href="/users">Find some!</a></p>
-            {% endif %}
+            </div>
+            <a href="{{ url_for('user.users') }}" class="btn" style="margin-top: 20px;">Find More Friends</a>
         </div>
     </div>
-    {% include 'footer.html' %}
-    <script>
-        function previewImage(event) {
-            var reader = new FileReader();
-            reader.onload = function(){
-                var output = document.getElementById('preview');
-                output.src = reader.result;
-                output.style.display = 'block';
-            };
-            reader.readAsDataURL(event.target.files[0]);
-        }
-
-        function uploadFile() {
-            var file = document.getElementById("profile_picture").files[0];
-            var formdata = new FormData();
-            formdata.append("profile_picture", file);
-            var ajax = new XMLHttpRequest();
-            ajax.upload.addEventListener("progress", progressHandler, false);
-            ajax.addEventListener("load", completeHandler, false);
-            ajax.addEventListener("error", errorHandler, false);
-            ajax.addEventListener("abort", abortHandler, false);
-            ajax.open("POST", "/update_profile");
-            ajax.send(formdata);
-        }
-
-        function progressHandler(event) {
-            var percent = (event.loaded / event.total) * 100;
-            document.getElementById("progressBar").value = Math.round(percent);
-        }
-
-        function completeHandler(event) {
-            location.reload();
-        }
-
-        function errorHandler(event) {
-            alert("Upload Failed");
-        }
-
-        function abortHandler(event) {
-            alert("Upload Aborted");
-        }
-    </script>
-</body>
-</html>
+{% endblock %}

@@ -1,68 +1,73 @@
 {% extends "layout.html" %}
-{% block title %}Find Friends{% endblock %}
+{% block title %}Find Players{% endblock %}
 {% block content %}
-<div class="container">
-    <h2>Find Friends</h2>
-        <form method="get" action="{{ url_for('user.users') }}">
-            <input type="text" name="search" placeholder="Search by username or name" value="{{ search_term }}">
-            <input type="submit" value="Search">
-        </form>
-        <h3>Friends of Friends</h3>
-        <div class="users-list">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Name</th>
-                        <th>DUPR Rating</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in fof %}
-                        <tr>
-                            <td>{{ user.username }}</td>
-                            <td>{{ user.name }}</td>
-                            <td>{{ user.dupr_rating }}</td>
-                            <td><a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn btn-primary btn-sm">Add Friend</a></td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <h3>All Users</h3>
-        <div class="users-list">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Name</th>
-                        <th>DUPR Rating</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in all_users %}
-                        <tr>
-                            <td><img src="{{ url_for('user.profile_picture_thumbnail', user_id=user.id) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;"></td>
-                            <td>{{ user.username }}</td>
-                            <td>{{ user.name }}</td>
-                            <td>{{ user.dupr_rating }}</td>
-                            <td>
-                                <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn btn-primary btn-sm">Add Friend</a>
-                                {% if session['is_admin'] %}
-                                    <a href="{{ url_for('admin.delete_user', id=user.id) }}" class="btn btn-danger btn-sm">Delete</a>
-                                    <a href="{{ url_for('admin.promote_user', id=user.id) }}" class="btn btn-warning btn-sm">Promote</a>
-                                    <a href="{{ url_for('admin.admin_reset_password', id=user.id) }}" class="btn btn-info btn-sm">Reset Password</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="page-header">
+        <h1>Find Players</h1>
     </div>
-    {% include 'footer.html' %}
+    <form method="get" action="{{ url_for('user.users') }}">
+        <div class="form-group">
+            <input type="text" name="search" placeholder="Search by username or name" value="{{ search_term }}">
+        </div>
+        <input type="submit" value="Search" class="btn">
+    </form>
+
+    <h3 style="margin-top: 30px;">Friends of Friends</h3>
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>DUPR Rating</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in fof %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.dupr_rating }}</td>
+                        <td style="text-align: right;">
+                            <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn">Add Friend</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h3 style="margin-top: 30px;">All Users</h3>
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>DUPR Rating</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in all_users %}
+                    <tr>
+                        <td>
+                            <img src="{{ url_for('user.profile_picture_thumbnail', user_id=user.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
+                        </td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.dupr_rating }}</td>
+                        <td style="text-align: right;">
+                            <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn">Add Friend</a>
+                            {% if session['is_admin'] %}
+                                <a href="{{ url_for('admin.delete_user', id=user.id) }}" class="btn btn-danger">Delete</a>
+                                <a href="{{ url_for('admin.promote_user', id=user.id) }}" class="btn btn-warning">Promote</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endblock %}
-</body>
-</html>

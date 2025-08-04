@@ -1,30 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - pickaladder</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="content">
-        <div class="container">
-            <div class="login-form">
-                <h2>Login</h2>
-            {% if error %}
-                <p class="error">{{ error }}</p>
-            {% endif %}
-            <form method="post" action="{{ url_for('auth.login') }}">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-                <input type="submit" value="Login">
-            </form>
-            <p>Don't have an account? <a href="/register">Register here</a>.</p>
-            <p><a href="/forgot_password">Forgot Password?</a></p>
+{% extends "layout.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="form-container">
+    <h2>Login</h2>
+    <form method="post">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" name="username" id="username" required>
         </div>
-    </div>
-    {% include 'footer.html' %}
-</body>
-</html>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" name="password" id="password" required>
+        </div>
+        <input type="submit" value="Login" class="btn">
+    </form>
+    <p class="text-center" style="margin-top: 20px;"><a href="{{ url_for('auth.forgot_password') }}">Forgot Password?</a></p>
+    <p class="text-center">Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>.</p>
+</div>
+{% endblock %}

@@ -1,74 +1,62 @@
 {% extends "layout.html" %}
 {% block title %}{{ profile_user.username }}'s Profile{% endblock %}
 {% block content %}
-<div class="container">
     <div class="profile-header">
-<img src="{{ url_for('user.profile_picture', user_id=profile_user['id']) }}" alt="Profile Picture" width="150" height="150" style="border-radius: 50%;">
-<h2>{{ profile_user['name'] }}</h2>
-<p>@{{ profile_user['username'] }}</p>
-    </div>
-    <div class="profile-info">
-        <p><strong>DUPR Rating:</strong> {{ profile_user['dupr_rating'] }}</p>
+        <img src="{{ url_for('user.profile_picture', user_id=profile_user.id) }}" alt="Profile Picture" class="profile-picture">
+        <h1>{{ profile_user.name }}</h1>
+        <p>@{{ profile_user.username }}</p>
+        <p><strong>DUPR Rating:</strong> {{ profile_user.dupr_rating }}</p>
     </div>
 
-    <h3>Friends</h3>
-    <div class="friends-list">
-        {% if friends %}
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Username</th>
-                        <th>DUPR Rating</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for friend in friends %}
+    <div class="grid-container" style="grid-template-columns: 1fr 1fr; gap: 40px;">
+        <div class="card">
+            <h3>Friends</h3>
+            <div class="table-container">
+                <table class="table">
+                    <tbody>
+                        {% for friend in friends %}
+                            <tr>
+                                <td>
+                                    <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
+                                </td>
+                                <td>{{ friend.dupr_rating }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Match History</h3>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
                         <tr>
-                            <td>
-                                {% if friend['profile_picture_thumbnail'] %}
-                                    <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend['id']) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{{ url_for('user.view_user', user_id=friend['id']) }}">{{ friend['username'] }}</a>
-                            </td>
-                            <td>{{ friend['dupr_rating'] }}</td>
+                            <th>Date</th>
+                            <th>Opponent</th>
+                            <th>Score</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>{{ profile_user['name'] }} has no friends yet.</p>
-        {% endif %}
+                    </thead>
+                    <tbody>
+                        {% for match in matches %}
+                            <tr>
+                                <td>{{ match.match_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if match.player1 == profile_user.username %}
+                                        {{ match.player2 }}
+                                    {% else %}
+                                        {{ match.player1 }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ match.player1_score }} - {{ match.player2_score }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-
-    <h3>Match History</h3>
-    <div class="matches-list">
-        {% if matches %}
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Player 1</th>
-                        <th>Player 2</th>
-                        <th>Score</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for match in matches %}
-                        <tr>
-                            <td>{{ match['match_date'] }}</td>
-                            <td>{{ match['player1'] }}</td>
-                            <td>{{ match['player2'] }}</td>
-                            <td>{{ match['player1_score'] }} - {{ match['player2_score'] }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>{{ profile_user['name'] }} has no matches yet.</p>
-        {% endif %}
-    </div>
-</div>
 {% endblock %}

@@ -1,94 +1,63 @@
 {% extends "layout.html" %}
 {% block title %}Friends{% endblock %}
 {% block content %}
-<div class="container">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    <h2>Friends</h2>
-    <div class="friends-list">
-        {% if friends %}
-            <table>
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Username</th>
-                        <th>DUPR Rating</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for friend in friends %}
-                        <tr>
-                            <td>
-                                {% if friend.profile_picture_thumbnail %}
-                                    <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend.id) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
-                            </td>
-                            <td>{{ friend.dupr_rating }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>You have no friends yet. <a href="{{ url_for('user.users') }}">Find some!</a></p>
-        {% endif %}
+    <div class="page-header">
+        <h1>Friends</h1>
+        <a href="{{ url_for('user.users') }}" class="btn">Find New Friends</a>
     </div>
-    <h2>Friend Requests</h2>
-    <h3>Received</h3>
-    <div class="friend-requests-list">
-        {% if requests %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th></th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for request in requests %}
-                        <tr>
-                            <td>{{ request[1] }}</td>
-                            <td><a href="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}" class="button">Accept</a></td>
-                            <td><a href="{{ url_for('user.decline_friend_request', friend_id=request[0]) }}" class="button">Decline</a></td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>You have no friend requests.</p>
-        {% endif %}
+
+    <div class="grid-container" style="grid-template-columns: 1fr 1fr; gap: 40px;">
+        <div class="card">
+            <h3>Your Friends</h3>
+            <div class="table-container">
+                <table class="table">
+                    <tbody>
+                        {% for friend in friends %}
+                            <tr>
+                                <td>
+                                    <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
+                                </td>
+                                <td>{{ friend.dupr_rating }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Friend Requests</h3>
+            <h4>Received</h4>
+            <div class="table-container">
+                <table class="table">
+                    <tbody>
+                        {% for request in requests %}
+                            <tr>
+                                <td>{{ request[1] }}</td>
+                                <td style="text-align: right;">
+                                    <a href="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}" class="btn">Accept</a>
+                                    <a href="{{ url_for('user.decline_friend_request', friend_id=request[0]) }}" class="btn btn-danger">Decline</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <h4 style="margin-top: 20px;">Sent</h4>
+            <div class="table-container">
+                <table class="table">
+                    <tbody>
+                        {% for request in sent_requests %}
+                            <tr>
+                                <td>{{ request[1] }}</td>
+                                <td>{{ request[2] }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <h3>Sent</h3>
-    <div class="friend-requests-list">
-        {% if sent_requests %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for request in sent_requests %}
-                        <tr>
-                            <td>{{ request[1] }}</td>
-                            <td>{{ request[2] }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>You have no sent friend requests.</p>
-        {% endif %}
-    </div>
-    <a href="{{ url_for('user.users') }}" class="btn btn-primary">Add Friends</a>
-</div>
 {% endblock %}
