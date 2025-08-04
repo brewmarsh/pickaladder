@@ -66,6 +66,10 @@ def dashboard():
     )
 
 
+@bp.route("/hello")
+def hello():
+    return "Hello, World!"
+
 @bp.route("/<uuid:user_id>")
 def view_user(user_id):
     current_app.logger.info(f"ENTERING view_user with user_id: {user_id}")
