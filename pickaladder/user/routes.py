@@ -116,7 +116,10 @@ def view_user(user_id):
             f"SELECT * FROM {FRIENDS_TABLE} WHERE {FRIENDS_USER_ID} = %s AND {FRIENDS_FRIEND_ID} = %s",
             (session[USER_ID], str(user_id)),
         )
-        is_friend = cur.fetchone() is not None
+        friendship = cur.fetchone()
+        is_friend = friendship is not None and friendship['status'] == 'accepted'
+        friend_request_sent = friendship is not None and friendship['status'] == 'pending'
+
 
         return render_template(
             "user_profile.html",
@@ -124,6 +127,7 @@ def view_user(user_id):
             friends=friends,
             matches=matches,
             is_friend=is_friend,
+            friend_request_sent=friend_request_sent,
         )
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
