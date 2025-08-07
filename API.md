@@ -48,6 +48,11 @@ Displays a user's profile.
 #### `GET /friends`
 Displays the user's friends and friend requests.
 
+#### `POST /user/add_friend/<friend_id>`
+Sends a friend request to another user. This endpoint is intended to be used with AJAX.
+
+*   **Response:** A JSON object with a `success` boolean and a `message` string.
+
 ### 2.3. Match Blueprint (`/match`)
 
 #### `GET /match/leaderboard`
