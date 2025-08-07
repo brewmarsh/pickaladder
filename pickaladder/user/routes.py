@@ -7,6 +7,7 @@ from flask import (
     flash,
     Response,
     current_app,
+    jsonify,
 )
 from pickaladder.db import get_db_connection
 from . import bp
@@ -179,14 +180,13 @@ def users():
     )
 
 
-@bp.route("/add_friend/<string:friend_id>")
+@bp.route("/add_friend/<string:friend_id>", methods=["POST"])
 def add_friend(friend_id):
     if USER_ID not in session:
-        return redirect(url_for("auth.login"))
+        return jsonify({"success": False, "message": "Not logged in"}), 401
     user_id = session[USER_ID]
     if user_id == friend_id:
-        flash("You cannot add yourself as a friend.", "danger")
-        return redirect(request.referrer or url_for(".users"))
+        return jsonify({"success": False, "message": "You cannot add yourself as a friend."}), 400
     conn = get_db_connection()
     cur = conn.cursor()
     try:
@@ -195,11 +195,10 @@ def add_friend(friend_id):
             (user_id, friend_id),
         )
         conn.commit()
-        flash("Friend request sent.", "success")
+        return jsonify({"success": True, "message": "Friend request sent."})
     except Exception as e:
         conn.rollback()
-        flash(f"An error occurred while sending the friend request: {e}", "danger")
-    return redirect(request.referrer or url_for(".users"))
+        return jsonify({"success": False, "message": f"An error occurred while sending the friend request: {e}"}), 500
 
 
 @bp.route(f"/{FRIENDS_TABLE}")

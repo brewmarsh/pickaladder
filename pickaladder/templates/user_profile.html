@@ -75,9 +75,26 @@
         if (addFriendBtn) {
             addFriendBtn.addEventListener("click", (e) => {
                 e.preventDefault();
-                addFriendBtn.textContent = "Friend Requested";
-                addFriendBtn.disabled = true;
-                window.location.href = addFriendBtn.href;
+                const url = addFriendBtn.href;
+                fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        addFriendBtn.textContent = "Friend Request Sent";
+                        addFriendBtn.disabled = true;
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("An error occurred while sending the friend request.");
+                });
             });
         }
     });
