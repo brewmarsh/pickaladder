@@ -92,8 +92,9 @@ def register():
             return redirect(url_for("auth.register"))
         except Exception as e:
             conn.rollback()
-            flash(f"An error occurred: {e}", "danger")
-            return "An error occurred during registration."
+            current_app.logger.error(f"An error occurred during registration: {e}")
+            flash(f"An error occurred during registration: {e}", "danger")
+            return render_template("error.html", error=str(e)), 500
         return redirect(url_for("user.dashboard"))
     return render_template("register.html", error=error)
 
