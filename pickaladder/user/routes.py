@@ -204,10 +204,10 @@ def friends():
         return redirect(url_for("auth.login"))
     user_id = session[USER_ID]
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     sql = (
         f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
-        f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE} "
+        f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
         f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f "
         f"ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
         f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'"

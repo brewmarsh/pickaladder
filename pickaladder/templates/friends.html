@@ -13,12 +13,12 @@
                 <table class="table">
                     <tbody>
                         {% for friend in friends %}
-                            <tr>
+                            <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=friend.id) }}">
                                 <td>
                                     <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
                                 </td>
                                 <td>
-                                    <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
+                                    {{ friend.username }}
                                 </td>
                                 <td>{{ friend.dupr_rating }}</td>
                             </tr>
