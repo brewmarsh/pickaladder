@@ -29,7 +29,7 @@
                         <td>{{ user.name }}</td>
                         <td>{{ user.dupr_rating }}</td>
                         <td style="text-align: right;">
-                            <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn">Add Friend</a>
+                            <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
                         </td>
                     </tr>
                 {% endfor %}
@@ -59,7 +59,7 @@
                         <td>{{ user.name }}</td>
                         <td>{{ user.dupr_rating }}</td>
                         <td style="text-align: right;">
-                            <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn">Add Friend</a>
+                            <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
                             {% if session['is_admin'] %}
                                 <a href="{{ url_for('admin.delete_user', id=user.id) }}" class="btn btn-danger">Delete</a>
                                 <a href="{{ url_for('admin.promote_user', id=user.id) }}" class="btn btn-warning">Promote</a>
@@ -70,4 +70,38 @@
             </tbody>
         </table>
     </div>
+{% endblock %}
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const addFriendBtns = document.querySelectorAll(".add-friend-btn");
+        addFriendBtns.forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                const url = btn.href;
+                fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        btn.textContent = "Friend Request Sent";
+                        btn.disabled = true;
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("An error occurred while sending the friend request.");
+                });
+            });
+        });
+    });
+</script>
 {% endblock %}
