@@ -216,12 +216,14 @@ def generate_users():
     existing_usernames = {row[0] for row in cur.fetchall()}
     fake = Faker()
     new_users = []
+    new_user_ids = []
 
     for _ in range(10):
         name = fake.name()
         username = name.lower().replace(" ", "")
         if username in existing_usernames:
-            continue
+            username = f"{username}{random.randint(1, 999)}" # ensure username is unique
+
         password = "password"
         email = f"{username}@example.com"
         dupr_rating = round(
@@ -248,19 +250,29 @@ def generate_users():
         )
         new_user = cur.fetchone()
         new_users.append(new_user)
+        new_user_ids.append(new_user[0])
     conn.commit()
 
-    # Add random friendships
-    for i in range(len(new_users)):
-        for j in range(i + 1, len(new_users)):
-            if random.random() < 0.5:
+    # Have a random number of new users send a friend request to the admin
+    admin_id = session.get(USER_ID)
+    if admin_id and new_user_ids:
+        num_requests = random.randint(0, len(new_user_ids))
+        users_to_send_request = random.sample(new_user_ids, num_requests)
+
+        for user_id in users_to_send_request:
+            # Ensure no duplicate friend requests are made
+            cur.execute(
+                f"SELECT 1 FROM {FRIENDS_TABLE} WHERE ({FRIENDS_USER_ID} = %s AND {FRIENDS_FRIEND_ID} = %s) OR ({FRIENDS_USER_ID} = %s AND {FRIENDS_FRIEND_ID} = %s)",
+                (user_id, admin_id, admin_id, user_id)
+            )
+            if cur.fetchone() is None:
                 cur.execute(
-                    f"INSERT INTO {FRIENDS_TABLE} ({FRIENDS_USER_ID}, "
-                    f"{FRIENDS_FRIEND_ID}, {FRIENDS_STATUS}) "
+                    f"INSERT INTO {FRIENDS_TABLE} ({FRIENDS_USER_ID}, {FRIENDS_FRIEND_ID}, {FRIENDS_STATUS}) "
                     "VALUES (%s, %s, %s)",
-                    (new_users[i][0], new_users[j][0], "accepted"),
+                    (user_id, admin_id, "pending"),
                 )
-    conn.commit()
+        conn.commit()
+
 
     return render_template("generated_users.html", users=new_users)
 
