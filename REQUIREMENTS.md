@@ -69,6 +69,7 @@ This document outlines the requirements for the pickaladder application.
 *   **Player Statistics:** Users should be able to view detailed statistics about their own play, such as their win/loss record against specific opponents, their performance over time, and other metrics.
 *   **Find a Partner:** A feature that allows users to find other players of a similar skill level to play with would be a great addition.
 *   **Social Sharing:** Users should be able to share their match results and other achievements on social media.
+*   **Match Location:** Users should be able to optionally record the location of a match. This could be a simple text field or integrated with a mapping service. This would be useful for tracking where matches are played and for facilities to see which courts are being used.
 
 ### Manager Features
 *   **Tournament Brackets:** The application should support the creation and management of tournament brackets. This would include single-elimination, double-elimination, and round-robin formats.
