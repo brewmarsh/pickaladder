@@ -42,7 +42,7 @@
                     </thead>
                     <tbody>
                         {% for match in matches %}
-                            <tr class="clickable-row" data-href="{{ url_for('match.view_match', match_id=match.id) }}">
+                            <tr class="clickable-row" data-href="{{ url_for('match.view_match_page', match_id=match.id) }}">
                                 <td>{{ match.match_date.strftime('%Y-%m-%d') }}</td>
                                 <td>
                                     {% if match.player1 == profile_user.username %}
