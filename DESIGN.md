@@ -82,3 +82,8 @@ All styling is handled by a custom CSS stylesheet located at `pickaladder/static
 ### 5.3. Templates
 
 The application uses the Jinja2 templating engine. All pages extend a base layout template (`layout.html`) to ensure a consistent structure. The templates are located in the `pickaladder/templates` directory.
+
+### 5.4. Key UI Features
+
+*   **Match View:** The match view page provides a detailed look at a single match. It emphasizes the winner's profile picture with a border and a box-shadow, and fades the loser's icon to create a clear visual distinction. It also displays each player's win/loss record under their username. The user's icon and username are clickable links to their profile page.
+*   **User Profile:** The user profile page includes a match history section. Each match in the history is a clickable link to the match details page, and the winning score is displayed in bold.
