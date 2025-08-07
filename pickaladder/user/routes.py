@@ -6,8 +6,8 @@ from flask import (
     session,
     flash,
     Response,
-    g,
     current_app,
+    jsonify,
 )
 from pickaladder.db import get_db_connection
 from . import bp
@@ -48,7 +48,7 @@ def dashboard():
         f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
         f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = "
         f"f.{FRIENDS_FRIEND_ID} WHERE f.{FRIENDS_USER_ID} = %s AND "
-        f"f.{FRIENDS_STATUS} = 'accepted'",
+        "f.status = 'accepted'",
         (user_id,),
     )
     friends = cur.fetchall()
@@ -77,7 +77,9 @@ def view_user(user_id):
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         current_app.logger.info(f"Viewing user profile for user_id: {user_id}")
-        cur.execute(f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (str(user_id),))
+        cur.execute(
+            f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (str(user_id),)
+        )
         user = cur.fetchone()
         current_app.logger.info(f"User object: {user}")
 
@@ -91,8 +93,8 @@ def view_user(user_id):
             f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
             f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
             f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON "
-            f"u.{USER_ID} = f.{FRIENDS_FRIEND_ID} WHERE f.{FRIENDS_USER_ID} = %s "
-            f"AND f.{FRIENDS_STATUS} = 'accepted'",
+            f"u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
+            f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'",
             (str(user_id),),
         )
         friends = cur.fetchall()
@@ -110,8 +112,23 @@ def view_user(user_id):
         )
         matches = cur.fetchall()
 
+        # Check if the current user is friends with the user whose profile is being viewed
+        cur.execute(
+            f"SELECT * FROM {FRIENDS_TABLE} WHERE {FRIENDS_USER_ID} = %s AND {FRIENDS_FRIEND_ID} = %s",
+            (session[USER_ID], str(user_id)),
+        )
+        friendship = cur.fetchone()
+        is_friend = friendship is not None and friendship['status'] == 'accepted'
+        friend_request_sent = friendship is not None and friendship['status'] == 'pending'
+
+
         return render_template(
-            "user_profile.html", profile_user=user, friends=friends, matches=matches
+            "user_profile.html",
+            profile_user=user,
+            friends=friends,
+            matches=matches,
+            is_friend=is_friend,
+            friend_request_sent=friend_request_sent,
         )
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
@@ -125,10 +142,11 @@ def users():
     user_id = session[USER_ID]
     search_term = request.args.get("search", "")
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     if search_term:
         cur.execute(
-            f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} != %s AND ({USER_USERNAME} ILIKE %s OR {USER_NAME} ILIKE %s)",
+            f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} != %s "
+            f"AND ({USER_USERNAME} ILIKE %s OR {USER_NAME} ILIKE %s)",
             (user_id, f"%{search_term}%", f"%{search_term}%"),
         )
     else:
@@ -162,14 +180,13 @@ def users():
     )
 
 
-@bp.route("/add_friend/<string:friend_id>")
+@bp.route("/add_friend/<string:friend_id>", methods=["POST"])
 def add_friend(friend_id):
     if USER_ID not in session:
-        return redirect(url_for("auth.login"))
+        return jsonify({"success": False, "message": "Not logged in"}), 401
     user_id = session[USER_ID]
     if user_id == friend_id:
-        flash("You cannot add yourself as a friend.", "danger")
-        return redirect(request.referrer or url_for(".users"))
+        return jsonify({"success": False, "message": "You cannot add yourself as a friend."}), 400
     conn = get_db_connection()
     cur = conn.cursor()
     try:
@@ -178,11 +195,10 @@ def add_friend(friend_id):
             (user_id, friend_id),
         )
         conn.commit()
-        flash("Friend request sent.", "success")
+        return jsonify({"success": True, "message": "Friend request sent."})
     except Exception as e:
         conn.rollback()
-        flash(f"An error occurred while sending the friend request: {e}", "danger")
-    return redirect(request.referrer or url_for(".users"))
+        return jsonify({"success": False, "message": f"An error occurred while sending the friend request: {e}"}), 500
 
 
 @bp.route(f"/{FRIENDS_TABLE}")
@@ -191,10 +207,10 @@ def friends():
         return redirect(url_for("auth.login"))
     user_id = session[USER_ID]
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     sql = (
         f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
-        f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE} "
+        f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
         f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f "
         f"ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
         f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'"

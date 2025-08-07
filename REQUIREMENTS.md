@@ -20,8 +20,9 @@ This document outlines the requirements for the pickaladder application.
 
 ### Gameplay
 *   **Match Creation:** Users can create matches with their friends.
-*   **Match Viewing:** Users can view the details of a match.
+*   **Match Viewing:** Users can view the details of a match, including an emphasized icon for the winner and each player's win/loss record. The player's icon and username are also clickable links to their profile page.
 *   **Leaderboard:** The application has a leaderboard that shows the top 10 players by average score.
+*   **Match History:** The user profile page displays a history of the user's matches. The winning score is bolded, and each match is a clickable link to the match details page.
 
 ### Admin Functionality
 *   **Admin Panel:** Admin users have access to an admin panel.
@@ -44,6 +45,10 @@ This document outlines the requirements for the pickaladder application.
 ### Security
 *   **UUIDs:** User and match IDs are UUIDs to enhance privacy.
 *   **Password Hashing:** Passwords are securely hashed using pbkdf2:sha256.
+
+### User Interface
+*   **Modern Design:** The application has a modern, clean, and responsive user interface with a Google-inspired design.
+*   **Custom Styling:** The application uses a custom stylesheet and does not depend on any external CSS frameworks like Bootstrap.
 
 ### Code Quality
 *   **Linting:** The project uses `ruff` for linting and code formatting.

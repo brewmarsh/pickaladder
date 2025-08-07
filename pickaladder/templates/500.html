@@ -1,8 +1,10 @@
-{% extends "navbar.html" %}
+{% extends "layout.html" %}
 {% block title %}Internal Server Error{% endblock %}
 {% block content %}
-<div class="container">
-    <h1>500 - Internal Server Error</h1>
-    <p>Something went wrong on our end. Please try again later.</p>
-</div>
+    <div class="hero">
+        <h1>500</h1>
+        <h2>Internal Server Error</h2>
+        <p>Something went wrong on our end. Please try again later.</p>
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+    </div>
 {% endblock %}

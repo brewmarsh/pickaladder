@@ -22,7 +22,6 @@ def generate_profile_picture(name):
     # Center the text horizontally, and position it towards the top vertically
     bbox = font.getbbox(first_name)
     text_width = bbox[2] - bbox[0]
-    text_height = bbox[3] - bbox[1]
     position = ((256 - text_width) / 2, 20)
 
     d.text(position, first_name, fill=(128, 128, 128), font=font)

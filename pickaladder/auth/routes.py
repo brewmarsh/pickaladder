@@ -5,15 +5,10 @@ from flask import (
     url_for,
     session,
     flash,
-    Response,
     current_app,
 )
 from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
-import os
-import random
-import string
-from io import BytesIO
 
 from pickaladder.db import get_db_connection
 from . import bp
@@ -97,8 +92,9 @@ def register():
             return redirect(url_for("auth.register"))
         except Exception as e:
             conn.rollback()
-            flash(f"An error occurred: {e}", "danger")
-            return "An error occurred during registration."
+            current_app.logger.error(f"An error occurred during registration: {e}")
+            flash(f"An error occurred during registration: {e}", "danger")
+            return render_template("error.html", error=str(e)), 500
         return redirect(url_for("user.dashboard"))
     return render_template("register.html", error=error)
 
@@ -131,7 +127,7 @@ def login():
 @bp.route("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("index"))
+    return redirect(url_for("auth.login"))
 
 
 @bp.route("/install", methods=["GET", "POST"])
@@ -244,7 +240,9 @@ def change_password():
         password = request.form[USER_PASSWORD]
         confirm_password = request.form["confirm_password"]
         if password and password == confirm_password:
-            hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
+            hashed_password = generate_password_hash(
+                password, method="pbkdf2:sha256"
+            )
             cur.execute(
                 f"UPDATE {USERS_TABLE} SET {USER_PASSWORD} = %s WHERE {USER_ID} = %s",
                 (hashed_password, user_id),

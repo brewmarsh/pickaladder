@@ -64,4 +64,26 @@ The application uses an application factory pattern (`create_app`) to create and
 
 ## 5. User Interface
 
-The user interface is implemented with HTML, CSS, and JavaScript. The application uses the Bootstrap framework for styling. The templates and static files are located in the `pickaladder` package.
+The user interface is implemented with HTML, CSS, and JavaScript, following a modern, clean, and responsive design aesthetic inspired by Google's Material Design. The application uses a custom stylesheet for all its styling, ensuring a lightweight and consistent look and feel across all pages.
+
+### 5.1. Design Philosophy
+
+The UI design is guided by the following principles:
+
+*   **Clarity:** The interface is designed to be intuitive and easy to navigate.
+*   **Efficiency:** Users can accomplish tasks with a minimum number of actions.
+*   **Consistency:** UI elements and layouts are consistent throughout the application.
+*   **Simplicity:** The design is clean and uncluttered, with a focus on a great user experience.
+
+### 5.2. Styling
+
+All styling is handled by a custom CSS stylesheet located at `pickaladder/static/style.css`. The stylesheet uses CSS variables for colors, fonts, and other properties to ensure consistency and maintainability. The application does not use any external CSS frameworks like Bootstrap.
+
+### 5.3. Templates
+
+The application uses the Jinja2 templating engine. All pages extend a base layout template (`layout.html`) to ensure a consistent structure. The templates are located in the `pickaladder/templates` directory.
+
+### 5.4. Key UI Features
+
+*   **Match View:** The match view page provides a detailed look at a single match. It emphasizes the winner's profile picture with a border and a box-shadow, and fades the loser's icon to create a clear visual distinction. It also displays each player's win/loss record under their username. The user's icon and username are clickable links to their profile page.
+*   **User Profile:** The user profile page includes a match history section. Each match in the history is a clickable link to the match details page, and the winning score is displayed in bold.

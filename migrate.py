@@ -1,5 +1,4 @@
 import os
-import psycopg2
 from pickaladder import create_app
 from pickaladder.db import get_db_connection
 from pickaladder.constants import (
@@ -10,7 +9,8 @@ from pickaladder.constants import (
 
 def apply_migrations():
     """
-    Connects to the database and applies any pending migrations from the 'migrations' directory.
+    Connects to the database and applies any pending migrations
+    from the 'migrations' directory.
     """
     app = create_app()
     with app.app_context():

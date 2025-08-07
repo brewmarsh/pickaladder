@@ -36,19 +36,67 @@ def view_match_page(match_id):
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cur.execute(
-        f"SELECT m.*, p1.{USER_USERNAME} as player1_username, "
-        f"p2.{USER_USERNAME} as player2_username, p1.{USER_PROFILE_PICTURE}, "
-        f"p2.{USER_PROFILE_PICTURE} "
-        f"FROM {MATCHES_TABLE} m JOIN {USERS_TABLE} p1 "
-        f"ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
+        f"SELECT m.*, p1.{USER_ID} as player1_id, "
+        f"p1.{USER_USERNAME} as player1_username, "
+        f"p2.{USER_ID} as player2_id, "
+        f"p2.{USER_USERNAME} as player2_username, "
+        f"p1.{USER_PROFILE_PICTURE}, p2.{USER_PROFILE_PICTURE} "
+        f"FROM {MATCHES_TABLE} m "
+        f"JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
         f"JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} "
         f"WHERE m.{MATCH_ID} = %s",
-        (match_id,),
+        (str(match_id),),
     )
     match = cur.fetchone()
-    return render_template("view_match.html", match=match)
+
+    # Get player 1 record
+    cur.execute(
+        f"""
+        SELECT
+            SUM(CASE WHEN (m.{MATCH_PLAYER1_ID} = %s AND m.{MATCH_PLAYER1_SCORE} > m.{MATCH_PLAYER2_SCORE}) OR (m.{MATCH_PLAYER2_ID} = %s AND m.{MATCH_PLAYER2_SCORE} > m.{MATCH_PLAYER1_SCORE}) THEN 1 ELSE 0 END) as wins,
+            SUM(CASE WHEN (m.{MATCH_PLAYER1_ID} = %s AND m.{MATCH_PLAYER1_SCORE} < m.{MATCH_PLAYER2_SCORE}) OR (m.{MATCH_PLAYER2_ID} = %s AND m.{MATCH_PLAYER2_SCORE} < m.{MATCH_PLAYER1_SCORE}) THEN 1 ELSE 0 END) as losses
+        FROM {MATCHES_TABLE} m
+        WHERE m.{MATCH_PLAYER1_ID} = %s OR m.{MATCH_PLAYER2_ID} = %s
+        """,
+        (
+            match["player1_id"],
+            match["player1_id"],
+            match["player1_id"],
+            match["player1_id"],
+            match["player1_id"],
+            match["player1_id"],
+        ),
+    )
+    player1_record = cur.fetchone()
+
+    # Get player 2 record
+    cur.execute(
+        f"""
+        SELECT
+            SUM(CASE WHEN (m.{MATCH_PLAYER1_ID} = %s AND m.{MATCH_PLAYER1_SCORE} > m.{MATCH_PLAYER2_SCORE}) OR (m.{MATCH_PLAYER2_ID} = %s AND m.{MATCH_PLAYER2_SCORE} > m.{MATCH_PLAYER1_SCORE}) THEN 1 ELSE 0 END) as wins,
+            SUM(CASE WHEN (m.{MATCH_PLAYER1_ID} = %s AND m.{MATCH_PLAYER1_SCORE} < m.{MATCH_PLAYER2_SCORE}) OR (m.{MATCH_PLAYER2_ID} = %s AND m.{MATCH_PLAYER2_SCORE} < m.{MATCH_PLAYER1_SCORE}) THEN 1 ELSE 0 END) as losses
+        FROM {MATCHES_TABLE} m
+        WHERE m.{MATCH_PLAYER1_ID} = %s OR m.{MATCH_PLAYER2_ID} = %s
+        """,
+        (
+            match["player2_id"],
+            match["player2_id"],
+            match["player2_id"],
+            match["player2_id"],
+            match["player2_id"],
+            match["player2_id"],
+        ),
+    )
+    player2_record = cur.fetchone()
+
+    return render_template(
+        "view_match.html",
+        match=match,
+        player1_record=player1_record,
+        player2_record=player2_record,
+    )
 
 
 @bp.route("/create", methods=["GET", "POST"])
