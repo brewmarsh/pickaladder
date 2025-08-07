@@ -42,7 +42,7 @@
                     </thead>
                     <tbody>
                         {% for match in matches %}
-                            <tr>
+                            <tr class="clickable-row" data-href="{{ url_for('match.view_match', match_id=match.id) }}">
                                 <td>{{ match.match_date.strftime('%Y-%m-%d') }}</td>
                                 <td>
                                     {% if match.player1 == profile_user.username %}
@@ -51,7 +51,10 @@
                                         {{ match.player1 }}
                                     {% endif %}
                                 </td>
-                                <td>{{ match.player1_score }} - {{ match.player2_score }}</td>
+                                <td>
+                                    <span class="{{ 'winning-score' if match.player1_score > match.player2_score else '' }}">{{ match.player1_score }}</span> -
+                                    <span class="{{ 'winning-score' if match.player2_score > match.player1_score else '' }}">{{ match.player2_score }}</span>
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>

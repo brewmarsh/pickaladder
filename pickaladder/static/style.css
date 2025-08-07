@@ -492,3 +492,15 @@ input[type="submit"], .btn {
 .text-center {
     text-align: center;
 }
+
+.winning-score {
+    font-weight: bold;
+}
+
+.clickable-row {
+    cursor: pointer;
+}
+
+.clickable-row:hover {
+    background-color: var(--background-color);
+}
