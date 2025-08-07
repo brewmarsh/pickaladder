@@ -48,7 +48,34 @@ def view_match_page(match_id):
         (str(match_id),),
     )
     match = cur.fetchone()
-    return render_template("view_match.html", match=match)
+
+    # Get player 1 record
+    cur.execute(
+        f"""
+        SELECT
+            SUM(CASE WHEN (m.{MATCH_PLAYER1_ID} = %s AND m.{MATCH_PLAYER1_SCORE} > m.{MATCH_PLAYER2_SCORE}) OR (m.{MATCH_PLAYER2_ID} = %s AND m.{MATCH_PLAYER2_SCORE} > m.{MATCH_PLAYER1_SCORE}) THEN 1 ELSE 0 END) as wins,
+            SUM(CASE WHEN (m.{MATCH_PLAYER1_ID} = %s AND m.{MATCH_PLAYER1_SCORE} < m.{MATCH_PLAYER2_SCORE}) OR (m.{MATCH_PLAYER2_ID} = %s AND m.{MATCH_PLAYER2_SCORE} < m.{MATCH_PLAYER1_SCORE}) THEN 1 ELSE 0 END) as losses
+        FROM {MATCHES_TABLE} m
+        WHERE m.{MATCH_PLAYER1_ID} = %s OR m.{MATCH_PLAYER2_ID} = %s
+        """,
+        (match['player1_id'], match['player1_id'], match['player1_id'], match['player1_id'], match['player1_id'], match['player1_id'])
+    )
+    player1_record = cur.fetchone()
+
+    # Get player 2 record
+    cur.execute(
+        f"""
+        SELECT
+            SUM(CASE WHEN (m.{MATCH_PLAYER1_ID} = %s AND m.{MATCH_PLAYER1_SCORE} > m.{MATCH_PLAYER2_SCORE}) OR (m.{MATCH_PLAYER2_ID} = %s AND m.{MATCH_PLAYER2_SCORE} > m.{MATCH_PLAYER1_SCORE}) THEN 1 ELSE 0 END) as wins,
+            SUM(CASE WHEN (m.{MATCH_PLAYER1_ID} = %s AND m.{MATCH_PLAYER1_SCORE} < m.{MATCH_PLAYER2_SCORE}) OR (m.{MATCH_PLAYER2_ID} = %s AND m.{MATCH_PLAYER2_SCORE} < m.{MATCH_PLAYER1_SCORE}) THEN 1 ELSE 0 END) as losses
+        FROM {MATCHES_TABLE} m
+        WHERE m.{MATCH_PLAYER1_ID} = %s OR m.{MATCH_PLAYER2_ID} = %s
+        """,
+        (match['player2_id'], match['player2_id'], match['player2_id'], match['player2_id'], match['player2_id'], match['player2_id'])
+    )
+    player2_record = cur.fetchone()
+
+    return render_template("view_match.html", match=match, player1_record=player1_record, player2_record=player2_record)
 
 
 @bp.route("/create", methods=["GET", "POST"])

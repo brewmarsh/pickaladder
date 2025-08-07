@@ -43,6 +43,10 @@ body {
     font-weight: 400;
 }
 
+.winner-icon {
+    border: 4px solid var(--warning-color);
+}
+
 /* Header and Navbar */
 .header {
     background-color: var(--surface-color);

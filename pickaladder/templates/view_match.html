@@ -8,14 +8,16 @@
         </div>
         <div class="match-body">
             <div class="player-details">
-                <img src="{{ url_for('user.profile_picture', user_id=match.player1_id) }}" alt="{{ match.player1_username }}" class="profile-picture">
+                <img src="{{ url_for('user.profile_picture', user_id=match.player1_id) }}" alt="{{ match.player1_username }}" class="profile-picture {{ 'winner-icon' if match.player1_score > match.player2_score else '' }}">
                 <h3>{{ match.player1_username }}</h3>
+                <p>Record: {{ player1_record.wins|int }} - {{ player1_record.losses|int }}</p>
                 <p class="score-details">{{ match.player1_score }}</p>
             </div>
             <div class="separator">vs</div>
             <div class="player-details">
-                <img src="{{ url_for('user.profile_picture', user_id=match.player2_id) }}" alt="{{ match.player2_username }}" class="profile-picture">
+                <img src="{{ url_for('user.profile_picture', user_id=match.player2_id) }}" alt="{{ match.player2_username }}" class="profile-picture {{ 'winner-icon' if match.player2_score > match.player1_score else '' }}">
                 <h3>{{ match.player2_username }}</h3>
+                <p>Record: {{ player2_record.wins|int }} - {{ player2_record.losses|int }}</p>
                 <p class="score-details">{{ match.player2_score }}</p>
             </div>
         </div>
