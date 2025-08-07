@@ -99,19 +99,63 @@ def view_match_page(match_id):
     )
 
 
+def get_friends(cur, user_id):
+    cur.execute(
+        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
+        f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE} "
+        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f "
+        f"ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
+        f"WHERE f.{FRIENDS_USER_ID} = %s",
+        (user_id,),
+    )
+    return cur.fetchall()
+
+
 @bp.route("/create", methods=["GET", "POST"])
 def create_match():
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
     user_id = session[USER_ID]
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
     if request.method == "POST":
         player1_id = user_id
         player2_id = request.form["player2"]
-        player1_score = request.form[MATCH_PLAYER1_SCORE]
-        player2_score = request.form[MATCH_PLAYER2_SCORE]
+        player1_score_str = request.form[MATCH_PLAYER1_SCORE]
+        player2_score_str = request.form[MATCH_PLAYER2_SCORE]
         match_date = request.form[MATCH_DATE]
+
+        # --- Validation Logic ---
+        try:
+            player1_score = int(player1_score_str)
+            player2_score = int(player2_score_str)
+        except (ValueError, TypeError):
+            error = "Scores must be valid numbers."
+            friends = get_friends(cur, user_id)
+            return render_template("create_match.html", friends=friends, error=error)
+
+        if player1_score < 0 or player2_score < 0:
+            error = "Scores cannot be negative."
+            friends = get_friends(cur, user_id)
+            return render_template("create_match.html", friends=friends, error=error)
+
+        if player1_score == player2_score:
+            error = "Scores cannot be the same."
+            friends = get_friends(cur, user_id)
+            return render_template("create_match.html", friends=friends, error=error)
+
+        if max(player1_score, player2_score) < 11:
+            error = "One player must have at least 11 points to win."
+            friends = get_friends(cur, user_id)
+            return render_template("create_match.html", friends=friends, error=error)
+
+        if abs(player1_score - player2_score) < 2:
+            error = "The winner must win by at least 2 points."
+            friends = get_friends(cur, user_id)
+            return render_template("create_match.html", friends=friends, error=error)
+        # --- End Validation Logic ---
+
         try:
             match_id = str(uuid.uuid4())
             cur.execute(
@@ -134,15 +178,8 @@ def create_match():
             conn.rollback()
             flash(f"An error occurred while creating the match: {e}", "danger")
         return redirect(url_for("user.dashboard"))
-    cur.execute(
-        f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
-        f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE} "
-        f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f "
-        f"ON u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
-        f"WHERE f.{FRIENDS_USER_ID} = %s",
-        (user_id,),
-    )
-    friends = cur.fetchall()
+
+    friends = get_friends(cur, user_id)
     return render_template("create_match.html", friends=friends)
 
 

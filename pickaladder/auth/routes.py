@@ -30,14 +30,43 @@ from pickaladder.constants import (
 )
 
 
+import re
+
+
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     error = None
     if request.method == "POST":
         username = request.form[USER_USERNAME]
         password = request.form[USER_PASSWORD]
+        confirm_password = request.form["confirm_password"]
         email = request.form[USER_EMAIL]
         name = request.form[USER_NAME]
+
+        # --- Validation Logic ---
+        if len(username) < 3 or len(username) > 25:
+            error = "Username must be between 3 and 25 characters."
+            return render_template("register.html", error=error)
+        if not username.isalnum():
+            error = "Username must contain only letters and numbers."
+            return render_template("register.html", error=error)
+        if password != confirm_password:
+            error = "Passwords do not match."
+            return render_template("register.html", error=error)
+        if len(password) < 8:
+            error = "Password must be at least 8 characters long."
+            return render_template("register.html", error=error)
+        if not re.search(r"[A-Z]", password):
+            error = "Password must contain at least one uppercase letter."
+            return render_template("register.html", error=error)
+        if not re.search(r"[a-z]", password):
+            error = "Password must contain at least one lowercase letter."
+            return render_template("register.html", error=error)
+        if not re.search(r"\d", password):
+            error = "Password must contain at least one number."
+            return render_template("register.html", error=error)
+        # --- End Validation Logic ---
+
         try:
             dupr_rating = (
                 float(request.form[USER_DUPR_RATING])
@@ -45,7 +74,9 @@ def register():
                 else None
             )
         except ValueError:
-            return "Invalid DUPR rating."
+            error = "Invalid DUPR rating."
+            return render_template("register.html", error=error)
+
         hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
         conn = get_db_connection()
         cur = conn.cursor()
@@ -88,8 +119,9 @@ def register():
             mail.send(msg)
         except psycopg2.IntegrityError:
             conn.rollback()
-            flash("Username or email already exists.", "danger")
-            return redirect(url_for("auth.register"))
+            # Instead of flashing and redirecting, render the template with an error
+            error = "Username or email already exists."
+            return render_template("register.html", error=error)
         except Exception as e:
             conn.rollback()
             current_app.logger.error(f"An error occurred during registration: {e}")
