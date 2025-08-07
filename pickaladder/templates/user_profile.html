@@ -11,6 +11,9 @@
     <div class="grid-container" style="grid-template-columns: 1fr 1fr; gap: 40px;">
         <div class="card">
             <h3>Friends</h3>
+            {% if not is_friend and user.id != profile_user.id %}
+                <a href="{{ url_for('user.add_friend', friend_id=profile_user.id) }}" class="btn">Add Friend</a>
+            {% endif %}
             <div class="table-container">
                 <table class="table">
                     <tbody>

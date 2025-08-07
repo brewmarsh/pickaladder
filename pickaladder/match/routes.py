@@ -38,11 +38,13 @@ def view_match_page(match_id):
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cur.execute(
-        f"SELECT m.*, p1.{USER_ID} as player1_id, p1.{USER_USERNAME} as player1_username, "
-        f"p2.{USER_ID} as player2_id, p2.{USER_USERNAME} as player2_username, p1.{USER_PROFILE_PICTURE}, "
-        f"p2.{USER_PROFILE_PICTURE} "
-        f"FROM {MATCHES_TABLE} m JOIN {USERS_TABLE} p1 "
-        f"ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
+        f"SELECT m.*, p1.{USER_ID} as player1_id, "
+        f"p1.{USER_USERNAME} as player1_username, "
+        f"p2.{USER_ID} as player2_id, "
+        f"p2.{USER_USERNAME} as player2_username, "
+        f"p1.{USER_PROFILE_PICTURE}, p2.{USER_PROFILE_PICTURE} "
+        f"FROM {MATCHES_TABLE} m "
+        f"JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
         f"JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} "
         f"WHERE m.{MATCH_ID} = %s",
         (str(match_id),),
@@ -58,7 +60,14 @@ def view_match_page(match_id):
         FROM {MATCHES_TABLE} m
         WHERE m.{MATCH_PLAYER1_ID} = %s OR m.{MATCH_PLAYER2_ID} = %s
         """,
-        (match['player1_id'], match['player1_id'], match['player1_id'], match['player1_id'], match['player1_id'], match['player1_id'])
+        (
+            match["player1_id"],
+            match["player1_id"],
+            match["player1_id"],
+            match["player1_id"],
+            match["player1_id"],
+            match["player1_id"],
+        ),
     )
     player1_record = cur.fetchone()
 
@@ -71,11 +80,23 @@ def view_match_page(match_id):
         FROM {MATCHES_TABLE} m
         WHERE m.{MATCH_PLAYER1_ID} = %s OR m.{MATCH_PLAYER2_ID} = %s
         """,
-        (match['player2_id'], match['player2_id'], match['player2_id'], match['player2_id'], match['player2_id'], match['player2_id'])
+        (
+            match["player2_id"],
+            match["player2_id"],
+            match["player2_id"],
+            match["player2_id"],
+            match["player2_id"],
+            match["player2_id"],
+        ),
     )
     player2_record = cur.fetchone()
 
-    return render_template("view_match.html", match=match, player1_record=player1_record, player2_record=player2_record)
+    return render_template(
+        "view_match.html",
+        match=match,
+        player1_record=player1_record,
+        player2_record=player2_record,
+    )
 
 
 @bp.route("/create", methods=["GET", "POST"])

@@ -103,13 +103,19 @@ def friend_graph_data():
     cur.execute(f"SELECT {USER_ID}, {USER_USERNAME} FROM {USERS_TABLE}")
     users = cur.fetchall()
     cur.execute(
-        f"SELECT {FRIENDS_USER_ID}, {FRIENDS_FRIEND_ID} FROM {FRIENDS_TABLE} WHERE {FRIENDS_STATUS} = 'accepted'"
+        f"SELECT {FRIENDS_USER_ID}, {FRIENDS_FRIEND_ID} FROM {FRIENDS_TABLE} "
+        f"WHERE {FRIENDS_STATUS} = 'accepted'"
     )
     friends = cur.fetchall()
 
-    nodes = [{"id": str(user[USER_ID]), "label": user[USER_USERNAME]} for user in users]
+    nodes = [
+        {"id": str(user[USER_ID]), "label": user[USER_USERNAME]} for user in users
+    ]
     edges = [
-        {"from": str(friend[FRIENDS_USER_ID]), "to": str(friend[FRIENDS_FRIEND_ID])}
+        {
+            "from": str(friend[FRIENDS_USER_ID]),
+            "to": str(friend[FRIENDS_FRIEND_ID]),
+        }
         for friend in friends
     ]
 
@@ -138,7 +144,7 @@ def reset_admin():
         # Set the first user to be admin
         cur.execute(
             f"UPDATE {USERS_TABLE} SET {USER_IS_ADMIN} = TRUE WHERE {USER_ID} = "
-            f"(SELECT {USER_ID} FROM {USERS_TABLE} ORDER BY {USER_ID} LIMIT 1);"
+            f"(SELECT {USER_ID} FROM {USERS_TABLE} ORDER BY {USER_ID} LIMIT 1)"
         )
         conn.commit()
         return redirect(url_for(".admin"))
@@ -238,15 +244,15 @@ def generate_users():
         )
         hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
         sql = (
-            f"INSERT INTO {USERS_TABLE} ({USER_USERNAME}, {USER_PASSWORD}, "
-            f"{USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}, {USER_IS_ADMIN}) "
+            f"INSERT INTO {USERS_TABLE} ("
+            f"{USER_USERNAME}, {USER_PASSWORD}, {USER_EMAIL}, {USER_NAME}, "
+            f"{USER_DUPR_RATING}, {USER_IS_ADMIN}) "
             "VALUES (%s, %s, %s, %s, %s, %s) "
             f"RETURNING {USER_ID}, {USER_USERNAME}, {USER_EMAIL}, {USER_NAME}, "
             f"{USER_DUPR_RATING}"
         )
         cur.execute(
-            sql,
-            (username, hashed_password, email, name, dupr_rating, False),
+            sql, (username, hashed_password, email, name, dupr_rating, False)
         )
         new_user = cur.fetchone()
         new_users.append(new_user)
@@ -257,7 +263,9 @@ def generate_users():
         for j in range(i + 1, len(new_users)):
             if random.random() < 0.5:
                 cur.execute(
-                    f"INSERT INTO {FRIENDS_TABLE} ({FRIENDS_USER_ID}, {FRIENDS_FRIEND_ID}, {FRIENDS_STATUS}) VALUES (%s, %s, %s)",
+                    f"INSERT INTO {FRIENDS_TABLE} ({FRIENDS_USER_ID}, "
+                    f"{FRIENDS_FRIEND_ID}, {FRIENDS_STATUS}) "
+                    "VALUES (%s, %s, %s)",
                     (new_users[i][0], new_users[j][0], "accepted"),
                 )
     conn.commit()

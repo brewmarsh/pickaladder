@@ -47,7 +47,7 @@ def dashboard():
         f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
         f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON u.{USER_ID} = "
         f"f.{FRIENDS_FRIEND_ID} WHERE f.{FRIENDS_USER_ID} = %s AND "
-        f"f.{FRIENDS_STATUS} = 'accepted'",
+        "f.status = 'accepted'",
         (user_id,),
     )
     friends = cur.fetchall()
@@ -76,7 +76,9 @@ def view_user(user_id):
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         current_app.logger.info(f"Viewing user profile for user_id: {user_id}")
-        cur.execute(f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (str(user_id),))
+        cur.execute(
+            f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (str(user_id),)
+        )
         user = cur.fetchone()
         current_app.logger.info(f"User object: {user}")
 
@@ -90,8 +92,8 @@ def view_user(user_id):
             f"SELECT u.{USER_ID}, u.{USER_USERNAME}, u.{USER_NAME}, "
             f"u.{USER_DUPR_RATING}, u.{USER_PROFILE_PICTURE_THUMBNAIL} "
             f"FROM {USERS_TABLE} u JOIN {FRIENDS_TABLE} f ON "
-            f"u.{USER_ID} = f.{FRIENDS_FRIEND_ID} WHERE f.{FRIENDS_USER_ID} = %s "
-            f"AND f.{FRIENDS_STATUS} = 'accepted'",
+            f"u.{USER_ID} = f.{FRIENDS_FRIEND_ID} "
+            f"WHERE f.{FRIENDS_USER_ID} = %s AND f.{FRIENDS_STATUS} = 'accepted'",
             (str(user_id),),
         )
         friends = cur.fetchall()
@@ -109,8 +111,19 @@ def view_user(user_id):
         )
         matches = cur.fetchall()
 
+        # Check if the current user is friends with the user whose profile is being viewed
+        cur.execute(
+            f"SELECT * FROM {FRIENDS_TABLE} WHERE {FRIENDS_USER_ID} = %s AND {FRIENDS_FRIEND_ID} = %s",
+            (session[USER_ID], str(user_id)),
+        )
+        is_friend = cur.fetchone() is not None
+
         return render_template(
-            "user_profile.html", profile_user=user, friends=friends, matches=matches
+            "user_profile.html",
+            profile_user=user,
+            friends=friends,
+            matches=matches,
+            is_friend=is_friend,
         )
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
@@ -124,10 +137,11 @@ def users():
     user_id = session[USER_ID]
     search_term = request.args.get("search", "")
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     if search_term:
         cur.execute(
-            f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} != %s AND ({USER_USERNAME} ILIKE %s OR {USER_NAME} ILIKE %s)",
+            f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} != %s "
+            f"AND ({USER_USERNAME} ILIKE %s OR {USER_NAME} ILIKE %s)",
             (user_id, f"%{search_term}%", f"%{search_term}%"),
         )
     else:

@@ -126,7 +126,7 @@ def login():
 @bp.route("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("index"))
+    return redirect(url_for("auth.login"))
 
 
 @bp.route("/install", methods=["GET", "POST"])
@@ -239,7 +239,9 @@ def change_password():
         password = request.form[USER_PASSWORD]
         confirm_password = request.form["confirm_password"]
         if password and password == confirm_password:
-            hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
+            hashed_password = generate_password_hash(
+                password, method="pbkdf2:sha256"
+            )
             cur.execute(
                 f"UPDATE {USERS_TABLE} SET {USER_PASSWORD} = %s WHERE {USER_ID} = %s",
                 (hashed_password, user_id),
