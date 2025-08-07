@@ -62,6 +62,10 @@ def create_app():
 
     app.register_blueprint(match.bp)
 
+    from . import error_handlers
+
+    app.register_blueprint(error_handlers.error_handlers_bp)
+
     db.init_app(app)
 
     # make url_for('index') == url_for('auth.login')
@@ -82,17 +86,5 @@ def create_app():
             cur.close()
             return dict(user=user)
         return dict(user=None)
-
-    @app.errorhandler(404)
-    def page_not_found(e):
-        return render_template("404.html"), 404
-
-    @app.errorhandler(500)
-    def internal_server_error(e):
-        return render_template("500.html"), 500
-
-    @app.errorhandler(psycopg2.Error)
-    def handle_db_error(e):
-        return render_template("error.html", error=str(e)), 500
 
     return app

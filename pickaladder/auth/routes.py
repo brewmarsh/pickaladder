@@ -1,4 +1,5 @@
 import secrets
+import re
 from datetime import datetime, timedelta
 from flask import (
     render_template,
@@ -11,12 +12,13 @@ from flask import (
 )
 from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
+import psycopg2
 
 from pickaladder.db import get_db_connection
 from . import bp
 from pickaladder import mail
 from .utils import generate_profile_picture
-import psycopg2
+from pickaladder.errors import ValidationError, DuplicateResourceError
 from pickaladder.constants import (
     USERS_TABLE,
     USER_ID,
@@ -34,12 +36,8 @@ from pickaladder.constants import (
 )
 
 
-import re
-
-
 @bp.route("/register", methods=["GET", "POST"])
 def register():
-    error = None
     if request.method == "POST":
         username = request.form[USER_USERNAME]
         password = request.form[USER_PASSWORD]
@@ -49,26 +47,19 @@ def register():
 
         # --- Validation Logic ---
         if len(username) < 3 or len(username) > 25:
-            error = "Username must be between 3 and 25 characters."
-            return render_template("register.html", error=error)
+            raise ValidationError("Username must be between 3 and 25 characters.")
         if not username.isalnum():
-            error = "Username must contain only letters and numbers."
-            return render_template("register.html", error=error)
+            raise ValidationError("Username must contain only letters and numbers.")
         if password != confirm_password:
-            error = "Passwords do not match."
-            return render_template("register.html", error=error)
+            raise ValidationError("Passwords do not match.")
         if len(password) < 8:
-            error = "Password must be at least 8 characters long."
-            return render_template("register.html", error=error)
+            raise ValidationError("Password must be at least 8 characters long.")
         if not re.search(r"[A-Z]", password):
-            error = "Password must contain at least one uppercase letter."
-            return render_template("register.html", error=error)
+            raise ValidationError("Password must contain at least one uppercase letter.")
         if not re.search(r"[a-z]", password):
-            error = "Password must contain at least one lowercase letter."
-            return render_template("register.html", error=error)
+            raise ValidationError("Password must contain at least one lowercase letter.")
         if not re.search(r"\d", password):
-            error = "Password must contain at least one number."
-            return render_template("register.html", error=error)
+            raise ValidationError("Password must contain at least one number.")
         # --- End Validation Logic ---
 
         try:
@@ -78,19 +69,18 @@ def register():
                 else None
             )
         except ValueError:
-            error = "Invalid DUPR rating."
-            return render_template("register.html", error=error)
+            raise ValidationError("Invalid DUPR rating.")
 
         hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
         conn = get_db_connection()
         cur = conn.cursor()
+
         cur.execute(
-            f"SELECT * FROM {USERS_TABLE} WHERE {USER_USERNAME} = %s", (username,)
+            f"SELECT {USER_ID} FROM {USERS_TABLE} WHERE {USER_USERNAME} = %s", (username,)
         )
-        existing_user = cur.fetchone()
-        if existing_user:
-            error = "Username already exists. Please choose a different one."
-            return render_template("register.html", error=error)
+        if cur.fetchone():
+            raise DuplicateResourceError("Username already exists. Please choose a different one.")
+
         try:
             cur.execute(
                 f"INSERT INTO {USERS_TABLE} ({USER_USERNAME}, {USER_PASSWORD}, "
@@ -99,10 +89,6 @@ def register():
                 (username, hashed_password, email, name, dupr_rating, False),
             )
             user_id = cur.fetchone()[0]
-            conn.commit()
-            session[USER_ID] = str(user_id)
-            session[USER_IS_ADMIN] = False
-            current_app.logger.info(f"New user registered: {username}")
 
             profile_picture_data, thumbnail_data = generate_profile_picture(name)
             cur.execute(
@@ -111,7 +97,7 @@ def register():
                 f"WHERE {USER_ID} = %s",
                 (profile_picture_data, thumbnail_data, user_id),
             )
-            conn.commit()
+
             msg = Message(
                 "Verify your email",
                 sender=current_app.config["MAIL_USERNAME"],
@@ -121,18 +107,23 @@ def register():
                 url_for("auth.verify_email", email=email, _external=True)
             )
             mail.send(msg)
+
+            conn.commit()
+
+            session[USER_ID] = str(user_id)
+            session[USER_IS_ADMIN] = False
+            current_app.logger.info(f"New user registered: {username}")
+
         except psycopg2.IntegrityError:
             conn.rollback()
-            # Instead of flashing and redirecting, render the template with an error
-            error = "Username or email already exists."
-            return render_template("register.html", error=error)
-        except Exception as e:
+            raise DuplicateResourceError("Username or email already exists.")
+        except Exception:
             conn.rollback()
-            current_app.logger.error(f"An error occurred during registration: {e}")
-            flash(f"An error occurred during registration: {e}", "danger")
-            return render_template("error.html", error=str(e)), 500
+            # Let the centralized handler deal with this
+            raise
+
         return redirect(url_for("user.dashboard"))
-    return render_template("register.html", error=error)
+    return render_template("register.html")
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -151,12 +142,12 @@ def login():
             f"SELECT * FROM {USERS_TABLE} WHERE {USER_USERNAME} = %s", (username,)
         )
         user = cur.fetchone()
-        if user and check_password_hash(user[2], password):
-            session[USER_ID] = str(user[0])
-            session[USER_IS_ADMIN] = user[6]
-            return redirect(url_for("user.dashboard"))
-        else:
-            return render_template("login.html", error="Invalid username or password.")
+        if not user or not check_password_hash(user[2], password):
+            raise ValidationError("Invalid username or password.")
+
+        session[USER_ID] = str(user[0])
+        session[USER_IS_ADMIN] = user[6]
+        return redirect(url_for("user.dashboard"))
     return render_template("login.html")
 
 
@@ -171,11 +162,10 @@ def install():
     conn = get_db_connection()
     cur = conn.cursor()
 
+    # Check if an admin user already exists on GET request.
     if request.method == "GET":
-        # Check if an admin user already exists.
         cur.execute(f"SELECT {USER_ID} FROM {USERS_TABLE} WHERE {USER_IS_ADMIN} = TRUE")
-        admin_exists = cur.fetchone()
-        if admin_exists:
+        if cur.fetchone():
             return redirect(url_for("auth.login"))
 
     if request.method == "POST":
@@ -190,7 +180,8 @@ def install():
                 else None
             )
         except ValueError:
-            return "Invalid DUPR rating."
+            raise ValidationError("Invalid DUPR rating.")
+
         hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
         try:
             sql = (
@@ -198,15 +189,8 @@ def install():
                 f"{USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}, {USER_IS_ADMIN}) "
                 f"VALUES (%s, %s, %s, %s, %s, %s) RETURNING {USER_ID}"
             )
-            cur.execute(
-                sql,
-                (username, hashed_password, email, name, dupr_rating, True),
-            )
+            cur.execute(sql, (username, hashed_password, email, name, dupr_rating, True))
             user_id = cur.fetchone()[0]
-            conn.commit()
-            session[USER_ID] = str(user_id)
-            session[USER_IS_ADMIN] = True
-            current_app.logger.info(f"New user registered: {username}")
 
             profile_picture_data, thumbnail_data = generate_profile_picture(name)
             cur.execute(
@@ -216,15 +200,17 @@ def install():
                 (profile_picture_data, thumbnail_data, user_id),
             )
             conn.commit()
+
+            session[USER_ID] = str(user_id)
+            session[USER_IS_ADMIN] = True
+            current_app.logger.info(f"Admin user created: {username}")
         except psycopg2.IntegrityError:
             conn.rollback()
-            flash("Username or email already exists.", "danger")
-            return redirect(url_for("auth.install"))
-        except Exception as e:
+            raise DuplicateResourceError("Username or email already exists.")
+        except Exception:
             conn.rollback()
-            current_app.logger.error(f"An error occurred during installation: {e}")
-            flash(f"An error occurred: {e}", "danger")
-            return "An error occurred during installation."
+            raise
+
         return redirect(url_for("user.dashboard"))
     return render_template("install.html")
 
@@ -259,6 +245,7 @@ def reset_password_with_token(token):
             break
 
     if not user_id:
+        # Using flash still makes sense here as it's a redirect
         flash("Password reset link is invalid or has expired.", "danger")
         return redirect(url_for("auth.login"))
 
@@ -267,11 +254,11 @@ def reset_password_with_token(token):
         confirm_password = request.form["confirm_password"]
 
         if password != confirm_password:
-            return render_template("reset_password_with_token.html", token=token, error="Passwords do not match.")
+            raise ValidationError("Passwords do not match.")
 
         # Add password complexity validation here as well
         if len(password) < 8:
-            return render_template("reset_password_with_token.html", token=token, error="Password must be at least 8 characters long.")
+            raise ValidationError("Password must be at least 8 characters long.")
 
         hashed_password = generate_password_hash(password)
         cur.execute(
@@ -290,27 +277,30 @@ def change_password():
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
     user_id = session[USER_ID]
+
+    if request.method == "POST":
+        password = request.form[USER_PASSWORD]
+        confirm_password = request.form["confirm_password"]
+
+        if not password or password != confirm_password:
+            raise ValidationError("Passwords do not match.")
+
+        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            f"UPDATE {USERS_TABLE} SET {USER_PASSWORD} = %s WHERE {USER_ID} = %s",
+            (hashed_password, user_id),
+        )
+        conn.commit()
+        flash("Password changed successfully.", "success")
+        return redirect(url_for("user.dashboard"))
+
+    # For GET request
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (user_id,))
     user = cur.fetchone()
-    if request.method == "POST":
-        password = request.form[USER_PASSWORD]
-        confirm_password = request.form["confirm_password"]
-        if password and password == confirm_password:
-            hashed_password = generate_password_hash(
-                password, method="pbkdf2:sha256"
-            )
-            cur.execute(
-                f"UPDATE {USERS_TABLE} SET {USER_PASSWORD} = %s WHERE {USER_ID} = %s",
-                (hashed_password, user_id),
-            )
-            conn.commit()
-            return redirect(url_for("user.dashboard"))
-        else:
-            return render_template(
-                "change_password.html", user=user, error="Passwords do not match."
-            )
     return render_template("change_password.html", user=user)
 
 
