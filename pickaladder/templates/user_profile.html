@@ -79,8 +79,10 @@
                 fetch(url, {
                     method: "POST",
                     headers: {
-                        "X-Requested-With": "XMLHttpRequest"
-                    }
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({})
                 })
                 .then(response => response.json())
                 .then(data => {
