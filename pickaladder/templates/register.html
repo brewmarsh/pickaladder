@@ -20,6 +20,10 @@
             <label for="name">Name</label>
             <input type="text" name="name" id="name" required>
         </div>
+        <div class="form-group">
+            <label for="dupr_rating">DUPR Rating</label>
+            <input type="number" step="0.01" name="dupr_rating" id="dupr_rating">
+        </div>
         <input type="submit" value="Register" class="btn">
     </form>
     <p class="text-center" style="margin-top: 20px;">Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>.</p>
