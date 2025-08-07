@@ -45,7 +45,7 @@ def view_match_page(match_id):
         f"ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
         f"JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} "
         f"WHERE m.{MATCH_ID} = %s",
-        (match_id,),
+        (str(match_id),),
     )
     match = cur.fetchone()
     return render_template("view_match.html", match=match)
