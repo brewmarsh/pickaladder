@@ -19,6 +19,8 @@ USER_PROFILE_PICTURE = "profile_picture"
 USER_PROFILE_PICTURE_THUMBNAIL = "profile_picture_thumbnail"
 USER_DARK_MODE = "dark_mode"
 USER_EMAIL_VERIFIED = "email_verified"
+USER_RESET_TOKEN = "reset_token"
+USER_RESET_TOKEN_EXPIRATION = "reset_token_expiration"
 
 # Columns for 'friends' table
 FRIENDS_USER_ID = "user_id"

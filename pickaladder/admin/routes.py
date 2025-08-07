@@ -185,32 +185,24 @@ def promote_user(user_id):
     return redirect(url_for("user.users"))
 
 
+from pickaladder.auth.utils import send_password_reset_email
+
 @bp.route(f"/reset_password/<uuid:{USER_ID}>")
 def admin_reset_password(user_id):
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            f"SELECT {USER_EMAIL} FROM {USERS_TABLE} WHERE {USER_ID} = %s", (user_id,)
-        )
-        email = cur.fetchone()[0]
-        new_password = "".join(
-            random.choices(string.ascii_letters + string.digits, k=12)
-        )
-        hashed_password = generate_password_hash(new_password, method="pbkdf2:sha256")
-        cur.execute(
-            f"UPDATE {USERS_TABLE} SET {USER_PASSWORD} = %s WHERE {USER_ID} = %s",
-            (hashed_password, user_id),
-        )
-        conn.commit()
-        msg = Message(
-            "Your new password",
-            sender=current_app.config["MAIL_USERNAME"],
-            recipients=[email],
-        )
-        msg.body = f"Your new password is: {new_password}"
-        mail.send(msg)
-        flash("Password reset successfully and sent to the user.", "success")
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute(f"SELECT {USER_EMAIL} FROM {USERS_TABLE} WHERE {USER_ID} = %s", (user_id,))
+        user = cur.fetchone()
+
+        if user and user[USER_EMAIL]:
+            send_password_reset_email(user[USER_EMAIL])
+            flash(f"Password reset link sent to {user[USER_EMAIL]}.", "success")
+        elif user:
+            flash("This user does not have an email address on file.", "warning")
+        else:
+            flash("User not found.", "danger")
+
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for("user.users"))

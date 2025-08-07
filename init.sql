@@ -12,7 +12,9 @@ CREATE TABLE users (
     profile_picture BYTEA,
     profile_picture_thumbnail BYTEA,
     dark_mode BOOLEAN DEFAULT FALSE,
-    email_verified BOOLEAN DEFAULT FALSE
+    email_verified BOOLEAN DEFAULT FALSE,
+    reset_token TEXT,
+    reset_token_expiration TIMESTAMP
 );
 
 CREATE TABLE friends (

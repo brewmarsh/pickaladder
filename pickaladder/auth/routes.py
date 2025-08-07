@@ -1,3 +1,5 @@
+import secrets
+from datetime import datetime, timedelta
 from flask import (
     render_template,
     request,
@@ -27,6 +29,8 @@ from pickaladder.constants import (
     USER_PROFILE_PICTURE,
     USER_PROFILE_PICTURE_THUMBNAIL,
     USER_EMAIL_VERIFIED,
+    USER_RESET_TOKEN,
+    USER_RESET_TOKEN_EXPIRATION,
 )
 
 
@@ -225,38 +229,60 @@ def install():
     return render_template("install.html")
 
 
+from .utils import send_password_reset_email
+
 @bp.route("/forgot_password", methods=["GET", "POST"])
 def forgot_password():
     if request.method == "POST":
         email = request.form[USER_EMAIL]
-        msg = Message(
-            "Password reset",
-            sender=current_app.config["MAIL_USERNAME"],
-            recipients=[email],
-        )
-        msg.body = "Click the link to reset your password: {}".format(
-            url_for("auth.reset_password", email=email, _external=True)
-        )
-        mail.send(msg)
-        return "Password reset email sent."
+        send_password_reset_email(email)
+        # Show a generic message to prevent user enumeration
+        flash("If an account with that email exists, a password reset link has been sent.", "info")
+        return redirect(url_for("auth.login"))
+
     return render_template("forgot_password.html")
 
 
-@bp.route("/reset_password", methods=["GET", "POST"])
-def reset_password():
-    email = request.args.get(USER_EMAIL)
+@bp.route("/reset/<token>", methods=["GET", "POST"])
+def reset_password_with_token(token):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Find user by token
+    cur.execute(f"SELECT {USER_ID}, {USER_RESET_TOKEN} FROM {USERS_TABLE} WHERE {USER_RESET_TOKEN_EXPIRATION} > %s", (datetime.utcnow(),))
+    users_with_tokens = cur.fetchall()
+
+    user_id = None
+    for user in users_with_tokens:
+        if check_password_hash(user[USER_RESET_TOKEN], token):
+            user_id = user[USER_ID]
+            break
+
+    if not user_id:
+        flash("Password reset link is invalid or has expired.", "danger")
+        return redirect(url_for("auth.login"))
+
     if request.method == "POST":
         password = request.form[USER_PASSWORD]
-        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
-        conn = get_db_connection()
-        cur = conn.cursor()
+        confirm_password = request.form["confirm_password"]
+
+        if password != confirm_password:
+            return render_template("reset_password_with_token.html", token=token, error="Passwords do not match.")
+
+        # Add password complexity validation here as well
+        if len(password) < 8:
+            return render_template("reset_password_with_token.html", token=token, error="Password must be at least 8 characters long.")
+
+        hashed_password = generate_password_hash(password)
         cur.execute(
-            f"UPDATE {USERS_TABLE} SET {USER_PASSWORD} = %s WHERE {USER_EMAIL} = %s",
-            (hashed_password, email),
+            f"UPDATE {USERS_TABLE} SET {USER_PASSWORD} = %s, {USER_RESET_TOKEN} = NULL, {USER_RESET_TOKEN_EXPIRATION} = NULL WHERE {USER_ID} = %s",
+            (hashed_password, user_id),
         )
         conn.commit()
+        flash("Your password has been updated!", "success")
         return redirect(url_for("auth.login"))
-    return render_template("reset_password.html", email=email)
+
+    return render_template("reset_password_with_token.html", token=token)
 
 
 @bp.route("/change_password", methods=["GET", "POST"])

@@ -88,5 +88,18 @@ class AppTestCase(unittest.TestCase):
         #     self.assertIn(b'Scores cannot be negative.', response.data)
         pass
 
+    def test_forgot_password_post_redirects_and_flashes(self):
+        response = self.app.post('/forgot_password', data={
+            'email': 'test@example.com'
+        }, follow_redirects=True)
+        self.assertEqual(response.status_code, 200) # Should be on login page
+        self.assertIn(b'If an account with that email exists', response.data)
+
+    def test_reset_with_invalid_token(self):
+        response = self.app.get('/reset/invalidtoken', follow_redirects=True)
+        self.assertEqual(response.status_code, 200) # Should be on login page
+        self.assertIn(b'Password reset link is invalid or has expired.', response.data)
+
+
 if __name__ == '__main__':
     unittest.main()
