@@ -1,4 +1,5 @@
 from flask import Blueprint
-from . import routes as routes
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+from . import routes  # noqa: E402, F401
