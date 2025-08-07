@@ -56,6 +56,27 @@ This document outlines the requirements for the pickaladder application.
 
 ## Future Enhancements
 
+### Usability Improvements
+*   **Real-time Updates:** The application currently requires a page reload to see updates. Implementing real-time updates using WebSockets would provide a much better user experience. For example, the leaderboard could update in real-time as matches are completed.
+*   **Improved User Profiles:** User profiles could be enhanced to include more information, such as a user's match history, win/loss record, and a short bio.
+*   **Friend Request Notifications:** When a user receives a friend request, they should receive a notification. This could be an in-app notification or an email.
+*   **Match Confirmation:** When a match is recorded, both players should be required to confirm the score. This would help prevent disputes and ensure the accuracy of match results.
+*   **Dark Mode:** The database schema includes a `dark_mode` column, but it does not seem to be fully implemented in the frontend. This feature should be completed.
+
+### New User Features
+*   **Match Scheduling:** Users should be able to schedule matches with other players. This would involve selecting a date, time, and location for the match.
+*   **Double Matches:** The current application only supports singles matches. Adding support for doubles matches would be a valuable feature for many players.
+*   **Player Statistics:** Users should be able to view detailed statistics about their own play, such as their win/loss record against specific opponents, their performance over time, and other metrics.
+*   **Find a Partner:** A feature that allows users to find other players of a similar skill level to play with would be a great addition.
+*   **Social Sharing:** Users should be able to share their match results and other achievements on social media.
+
+### Manager Features
+*   **Tournament Brackets:** The application should support the creation and management of tournament brackets. This would include single-elimination, double-elimination, and round-robin formats.
+*   **Facility Management:** Managers should be able to manage facility information, such as court availability and hours of operation.
+*   **Event Registration:** The application should allow users to register for events and tournaments. This would include collecting registration fees and managing participant lists.
+*   **Announcements:** Managers should be able to send announcements to all participants in an event or to all users of the application.
+*   **Reporting:** The application should provide detailed reports on event participation, match results, and other key metrics. This would be useful for analyzing the success of events and for planning future ones.
+
 ### Security
 *   **Input Validation:** Implement robust input validation on all user-supplied data.
 *   **Password Policies:** Enforce strong password policies.
@@ -79,7 +100,7 @@ This document outlines the requirements for the pickaladder application.
 *   **Configuration File:** Use a configuration file instead of environment variables for all settings.
 *   **Logging:** Implement a more robust and configurable logging system.
 
-### Features
+### Other Features
 *   **Multiple Ladder Rankings:** Add support for multiple ladder ranking systems.
 *   **Customizable Branding:** Allow admins to customize the branding of the admin page.
 *   **Terms of Service:** Add a terms of service page.
