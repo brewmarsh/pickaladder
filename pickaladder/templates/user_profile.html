@@ -12,7 +12,7 @@
         <div class="card">
             <h3>Friends</h3>
             {% if not is_friend and user.id != profile_user.id %}
-                <a href="{{ url_for('user.add_friend', friend_id=profile_user.id) }}" class="btn">Add Friend</a>
+                <a href="{{ url_for('user.add_friend', friend_id=profile_user.id) }}" class="btn" id="addFriendBtn">Add Friend</a>
             {% endif %}
             <div class="table-container">
                 <table class="table">
@@ -65,4 +65,19 @@
             </div>
         </div>
     </div>
+{% endblock %}
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const addFriendBtn = document.getElementById("addFriendBtn");
+        if (addFriendBtn) {
+            addFriendBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                addFriendBtn.textContent = "Friend Requested";
+                addFriendBtn.disabled = true;
+                window.location.href = addFriendBtn.href;
+            });
+        }
+    });
+</script>
 {% endblock %}
