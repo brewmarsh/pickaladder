@@ -36,10 +36,10 @@ def view_match_page(match_id):
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
     conn = get_db_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cur.execute(
-        f"SELECT m.*, p1.{USER_USERNAME} as player1_username, "
-        f"p2.{USER_USERNAME} as player2_username, p1.{USER_PROFILE_PICTURE}, "
+        f"SELECT m.*, p1.{USER_ID} as player1_id, p1.{USER_USERNAME} as player1_username, "
+        f"p2.{USER_ID} as player2_id, p2.{USER_USERNAME} as player2_username, p1.{USER_PROFILE_PICTURE}, "
         f"p2.{USER_PROFILE_PICTURE} "
         f"FROM {MATCHES_TABLE} m JOIN {USERS_TABLE} p1 "
         f"ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
