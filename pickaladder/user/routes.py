@@ -6,7 +6,6 @@ from flask import (
     session,
     flash,
     Response,
-    g,
     current_app,
 )
 from pickaladder.db import get_db_connection

@@ -1,5 +1,4 @@
 import os
-import psycopg2
 from pickaladder import create_app
 from pickaladder.db import get_db_connection
 from pickaladder.constants import (

@@ -6,7 +6,6 @@ from flask import (
     session,
     flash,
     jsonify,
-    g,
     current_app,
 )
 from pickaladder.db import get_db_connection
@@ -84,7 +83,7 @@ def admin_matches():
     )
 
 
-@bp.route(f"/delete_match/<string:match_id>")
+@bp.route("/delete_match/<string:match_id>")
 def admin_delete_match(match_id):
     try:
         conn = get_db_connection()
