@@ -106,3 +106,24 @@ This document outlines the requirements for the pickaladder application.
 *   **Customizable Branding:** Allow admins to customize the branding of the admin page.
 *   **Terms of Service:** Add a terms of service page.
 *   **Data Export:** Allow users to export their data.
+
+### Deeper Feature Suggestions
+
+Based on a more in-depth review of the codebase, here are some more detailed feature suggestions.
+
+#### Usability Improvements
+*   **Autocomplete for User Search:** In the user search and "Create Match" opponent selection, implement an autocomplete feature to make it easier to find users, especially in a system with many users.
+*   **Interactive Leaderboard:** The leaderboard could be made more interactive. For example, allowing users to see their own rank even if they are not in the top 10, and showing how many places they have moved up or down since the last time they checked.
+*   **Dashboard Feed:** The user dashboard could be enhanced to show a "feed" of recent activity from their friends, such as recently played matches.
+
+#### New User Features
+*   **Advanced Ranking System:** Implement a more advanced ranking system like Elo or Glicko-2. These systems are better at predicting match outcomes and provide a more accurate measure of a player's skill level. This would also allow for features like predicting the outcome of a match before it's played.
+*   **Public Profile URLs:** Allow users to have a public profile URL that they can share with others, even those who are not registered on the site. This could be an optional feature that users can enable or disable.
+*   **Match History Charts:** On a user's profile, display charts and graphs to visualize their match history, such as their win/loss ratio over time, or their performance against different opponents.
+*   **Achievements/Badges:** Add a system of achievements or badges that users can earn for reaching certain milestones (e.g., "Played 10 matches," "First win," "On a winning streak").
+
+#### Manager Features
+*   **Multiple Ladder Types:** Allow facility managers to create and manage different types of ladders, such as singles, doubles, mixed doubles, age-based ladders, or skill-level-based ladders (e.g., 3.0-3.5, 4.0-4.5).
+*   **Court Reservation System:** Integrate a court reservation system. This would allow managers to define the courts available at their facility and allow users to book courts for their matches.
+*   **Event-specific Leaderboards:** For tournaments or leagues, create separate leaderboards that are specific to that event, in addition to the overall site-wide leaderboard.
+*   **Broadcast Messaging:** Give managers the ability to send broadcast messages to all participants of a specific tournament or league, or to all users who have played at their facility. This could be used for announcements, updates, or promotions.
