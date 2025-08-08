@@ -1,3 +1,7 @@
+a {
+    color: #4dabf7;
+}
+
 :root {
     --background-color: #121212;
     --surface-color: #1E1E1E;
@@ -41,4 +45,9 @@ select {
     color: #d4edda;
     background-color: #155724;
     border-color: #c3e6cb;
+}
+
+.admin-banner {
+    background-color: #0d47a1;
+    color: var(--on-surface-color);
 }
