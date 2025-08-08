@@ -6,6 +6,9 @@
         <h1>{{ profile_user.name }}</h1>
         <p>@{{ profile_user.username }}</p>
         <p><strong>DUPR Rating:</strong> {{ profile_user.dupr_rating }}</p>
+        {% if is_friend %}
+            <a href="{{ url_for('match.create_match', opponent_id=profile_user.id) }}" class="btn">Record Match</a>
+        {% endif %}
     </div>
 
     <div class="grid-container" style="grid-template-columns: 1fr 1fr; gap: 40px;">

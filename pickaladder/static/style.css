@@ -552,3 +552,8 @@ input[type="submit"], .btn {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+.highlight-row {
+    background-color: var(--warning-color) !important;
+    font-weight: bold;
+}

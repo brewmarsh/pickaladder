@@ -89,6 +89,8 @@ def create_match():
     friend_ids = [f.friend_id for f in user.friend_requests_sent if f.status == 'accepted']
     friends = User.query.filter(User.id.in_(friend_ids)).all()
 
+    pre_selected_opponent_id = request.args.get('opponent_id', type=uuid.UUID)
+
     if request.method == "POST":
         try:
             form_data = {
@@ -121,7 +123,7 @@ def create_match():
             flash(f"An unexpected error occurred: {e}", "danger")
             return redirect(url_for(".create_match"))
 
-    return render_template("create_match.html", friends=friends)
+    return render_template("create_match.html", friends=friends, pre_selected_opponent_id=pre_selected_opponent_id)
 
 
 @bp.route("/leaderboard")
@@ -153,4 +155,5 @@ def leaderboard():
         players = []
         flash(f"An error occurred while fetching the leaderboard: {e}", "danger")
 
-    return render_template("leaderboard.html", players=players)
+    current_user_id = uuid.UUID(session[USER_ID])
+    return render_template("leaderboard.html", players=players, current_user_id=current_user_id)

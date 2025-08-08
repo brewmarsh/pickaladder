@@ -11,7 +11,9 @@
             <label for="player2">Opponent</label>
             <select id="player2" name="player2" required>
                 {% for friend in friends %}
-                    <option value="{{ friend.id }}">{{ friend.name }} ({{ friend.username }})</option>
+                    <option value="{{ friend.id }}" {{ 'selected' if friend.id == pre_selected_opponent_id else '' }}>
+                        {{ friend.name }} ({{ friend.username }})
+                    </option>
                 {% endfor %}
             </select>
         </div>
