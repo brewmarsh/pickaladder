@@ -58,7 +58,10 @@
                 <p>You have no friend requests.</p>
             {% endif %}
         </div>
-        <h3>Your Matches</h3>
+        <div class="header-with-button">
+            <h3>Your Matches</h3>
+            <a href="{{ url_for('match.create_match') }}" class="btn">Record a Match</a>
+        </div>
         <div class="matches-list">
             {% if matches %}
                 <table>
@@ -82,7 +85,7 @@
                     </tbody>
                 </table>
             {% else %}
-                <p>You have no matches yet. <a href="{{ url_for('match.create_match') }}">Record one!</a></p>
+                <p>You have no matches yet.</p>
             {% endif %}
         </div>
         <h3>Your Friends</h3>
