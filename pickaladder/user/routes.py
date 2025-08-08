@@ -11,7 +11,7 @@ from flask import (
     current_app,
     jsonify,
 )
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from sqlalchemy.exc import IntegrityError
 from PIL import Image
 from utils import allowed_file
@@ -103,8 +103,8 @@ def add_friend(friend_id):
 
     existing_friendship = Friend.query.filter(
         or_(
-            (Friend.user_id == user_id) & (Friend.friend_id == friend_id),
-            (Friend.user_id == friend_id) & (Friend.friend_id == user_id)
+            and_(Friend.user_id == user_id, Friend.friend_id == friend_id),
+            and_(Friend.user_id == friend_id, Friend.friend_id == user_id)
         )
     ).first()
 

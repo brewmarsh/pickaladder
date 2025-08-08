@@ -1,12 +1,44 @@
 import uuid
+from datetime import date
 from flask import render_template, request, redirect, url_for, session, flash
 from sqlalchemy import or_, case, func
+from pydantic import BaseModel, validator, ValidationError as PydanticValidationError
 
 from pickaladder import db
 from . import bp
 from pickaladder.models import Match, User, Friend
 from pickaladder.errors import ValidationError
 from pickaladder.constants import USER_ID
+
+
+class MatchCreateSchema(BaseModel):
+    player2_id: uuid.UUID
+    player1_score: int
+    player2_score: int
+    match_date: date
+
+    @validator('player1_score', 'player2_score')
+    def scores_must_be_positive(cls, v):
+        if v < 0:
+            raise ValueError('Scores cannot be negative.')
+        return v
+
+    @validator('player2_score')
+    def scores_cannot_be_the_same(cls, v, values):
+        if 'player1_score' in values and v == values['player1_score']:
+            raise ValueError('Scores cannot be the same.')
+        return v
+
+    @validator('player2_score')
+    def winner_must_have_11_points_and_win_by_2(cls, v, values):
+        if 'player1_score' in values:
+            p1_score = values['player1_score']
+            p2_score = v
+            if max(p1_score, p2_score) < 11:
+                raise ValueError('One player must have at least 11 points to win.')
+            if abs(p1_score - p2_score) < 2:
+                raise ValueError('The winner must win by at least 2 points.')
+        return v
 
 
 def get_player_record(player_id):
@@ -59,39 +91,34 @@ def create_match():
 
     if request.method == "POST":
         try:
-            player2_id = request.form["player2"]
-            player1_score = int(request.form["player1_score"])
-            player2_score = int(request.form["player2_score"])
-            match_date = request.form["match_date"]
-
-            # --- Validation Logic ---
-            if player1_score < 0 or player2_score < 0:
-                raise ValidationError("Scores cannot be negative.")
-            if player1_score == player2_score:
-                raise ValidationError("Scores cannot be the same.")
-            if max(player1_score, player2_score) < 11:
-                raise ValidationError("One player must have at least 11 points to win.")
-            if abs(player1_score - player2_score) < 2:
-                raise ValidationError("The winner must win by at least 2 points.")
-            # --- End Validation Logic ---
+            form_data = {
+                "player2_id": request.form.get("player2"),
+                "player1_score": request.form.get("player1_score"),
+                "player2_score": request.form.get("player2_score"),
+                "match_date": request.form.get("match_date"),
+            }
+            validated_data = MatchCreateSchema(**form_data)
 
             new_match = Match(
                 player1_id=user_id,
-                player2_id=player2_id,
-                player1_score=player1_score,
-                player2_score=player2_score,
-                match_date=match_date
+                player2_id=validated_data.player2_id,
+                player1_score=validated_data.player1_score,
+                player2_score=validated_data.player2_score,
+                match_date=validated_data.match_date
             )
             db.session.add(new_match)
             db.session.commit()
             flash("Match created successfully.", "success")
             return redirect(url_for("user.dashboard"))
 
-        except (ValueError, TypeError):
-            raise ValidationError("Scores must be valid numbers.")
+        except PydanticValidationError as e:
+            # Pydantic gives detailed errors, we can pass them to the user
+            # For now, we'll just show the first error message.
+            error_message = e.errors()[0]['msg']
+            raise ValidationError(error_message)
         except Exception as e:
             db.session.rollback()
-            flash(f"An error occurred while creating the match: {e}", "danger")
+            flash(f"An unexpected error occurred: {e}", "danger")
             return redirect(url_for(".create_match"))
 
     return render_template("create_match.html", friends=friends)
