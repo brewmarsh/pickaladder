@@ -61,8 +61,8 @@
                         <td style="text-align: right;">
                             <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
                             {% if session['is_admin'] %}
-                                <a href="{{ url_for('admin.delete_user', id=user.id) }}" class="btn btn-danger">Delete</a>
-                                <a href="{{ url_for('admin.promote_user', id=user.id) }}" class="btn btn-warning">Promote</a>
+                                <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
+                                <a href="{{ url_for('admin.promote_user', user_id=user.id) }}" class="btn btn-warning">Promote</a>
                             {% endif %}
                         </td>
                     </tr>
