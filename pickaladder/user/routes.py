@@ -103,14 +103,11 @@ def add_friend(friend_id):
     if user_id == friend_id:
         return jsonify({"success": False, "message": "You cannot add yourself as a friend."}), 400
 
-    existing_friendship = Friend.query.filter(
-        or_(
-            and_(Friend.user_id == user_id, Friend.friend_id == friend_id),
-            and_(Friend.user_id == friend_id, Friend.friend_id == user_id)
-        )
-    ).first()
+    # Check for friendship in either direction
+    f1 = Friend.query.filter_by(user_id=user_id, friend_id=friend_id).first()
+    f2 = Friend.query.filter_by(user_id=friend_id, friend_id=user_id).first()
 
-    if existing_friendship:
+    if f1 or f2:
         return jsonify({"success": False, "message": "Friend request already sent or you are already friends."}), 400
 
     try:
