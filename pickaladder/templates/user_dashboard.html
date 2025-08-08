@@ -131,7 +131,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const requestRowTemplate = (request) => `
         <tr>
-            <td><a href="${urls.view_user(request.id)}">${request.username}</a></td>
+            <td>
+                <img src="${request.thumbnail_url}" alt="${request.username}'s thumbnail" class="profile-picture-thumbnail" style="vertical-align: middle; margin-right: 10px;">
+                <a href="${urls.view_user(request.id)}">${request.username}</a>
+            </td>
             <td style="text-align: right;">
                 <a href="${urls.accept_request(request.id)}" class="btn">Accept</a>
                 <a href="${urls.decline_request(request.id)}" class="btn btn-danger">Decline</a>

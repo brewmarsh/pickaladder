@@ -307,7 +307,13 @@ def api_dashboard():
         "dupr_rating": str(user.dupr_rating) if user.dupr_rating else None
     }
     friends_data = [{"id": str(f.id), "username": f.username, "dupr_rating": str(f.dupr_rating) if f.dupr_rating else None} for f in friends]
-    requests_data = [{"id": str(r.id), "username": r.username} for r in requests]
+    requests_data = []
+    for r in requests:
+        requests_data.append({
+            "id": str(r.id),
+            "username": r.username,
+            "thumbnail_url": url_for('user.profile_picture_thumbnail', user_id=r.id)
+        })
     matches_data = []
     for match in matches:
         opponent = match.player2 if match.player1_id == user_id else match.player1
