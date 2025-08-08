@@ -41,6 +41,7 @@ When getting started, it's helpful to review these key files to understand the a
 
 ### Linting and Formatting
 *   **Ruff:** This project uses `ruff` for both linting and formatting, replacing `flake8` and `black`. Before submitting, please run `ruff check --fix .` and `ruff format .` to ensure your code is compliant. The CI pipeline will fail if there are linting errors.
+*   Fix all ruff 501 erros before submitting.
 
 ### Business Logic
 *   **Keep Routes Thin:** Route handlers in the `routes.py` files should be kept as "thin" as possible. Complex business logic should be encapsulated in separate utility functions or, for larger features, dedicated service classes.
