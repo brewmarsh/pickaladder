@@ -1,6 +1,4 @@
-import secrets
 import re
-from datetime import datetime, timedelta
 from flask import (
     render_template,
     request,
@@ -100,7 +98,8 @@ def register():
                 sender=current_app.config["MAIL_USERNAME"],
                 recipients=[email],
             )
-            msg.body = f"Click the link to verify your email: {url_for('auth.verify_email', email=email, _external=True)}"
+            verify_url = url_for("auth.verify_email", email=email, _external=True)
+            msg.body = f"Click the link to verify your email: {verify_url}"
             mail.send(msg)
 
             session[USER_ID] = str(new_user.id)
@@ -202,10 +201,10 @@ def forgot_password():
         user = User.query.filter_by(email=email).first()
         if user:
             send_password_reset_email(user)
-        flash(
-            "If an account with that email exists, a password reset link has been sent.",
-            "info",
+        message = (
+            "If an account with that email exists, a password reset link has been sent."
         )
+        flash(message, "info")
         return redirect(url_for("auth.login"))
 
     return render_template("forgot_password.html")

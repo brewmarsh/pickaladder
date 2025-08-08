@@ -12,7 +12,7 @@ from flask import (
     jsonify,
 )
 from sqlalchemy import or_, and_
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import aliased
 from PIL import Image
 from utils import allowed_file
 
@@ -21,8 +21,6 @@ from . import bp
 from pickaladder.models import User, Friend, Match
 from pickaladder.constants import (
     USER_ID,
-    USER_NAME,
-    USER_USERNAME,
     USER_DUPR_RATING,
     USER_DARK_MODE,
 )
@@ -85,9 +83,6 @@ def view_user(user_id):
         is_friend=is_friend,
         friend_request_sent=friend_request_sent,
     )
-
-
-from sqlalchemy.orm import aliased
 
 
 @bp.route("/users")
@@ -163,12 +158,8 @@ def add_friend(friend_id):
     ).first()
 
     if existing_friendship:
-        return jsonify(
-            {
-                "success": False,
-                "message": "Friend request already sent or you are already friends.",
-            }
-        ), 400
+        message = "Friend request already sent or you are already friends."
+        return jsonify({"success": False, "message": message}), 400
 
     try:
         new_friend_request = Friend(

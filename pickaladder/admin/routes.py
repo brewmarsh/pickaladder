@@ -116,7 +116,7 @@ def reset_admin():
     return render_template("reset_admin.html")
 
 
-@bp.route(f"/delete_user/<uuid:user_id>")
+@bp.route("/delete_user/<uuid:user_id>")
 def delete_user(user_id):
     try:
         user = User.query.get(user_id)
@@ -135,7 +135,7 @@ def delete_user(user_id):
     return redirect(url_for("user.users"))
 
 
-@bp.route(f"/promote_user/<uuid:user_id>")
+@bp.route("/promote_user/<uuid:user_id>")
 def promote_user(user_id):
     try:
         user = User.query.get(user_id)
@@ -151,7 +151,7 @@ def promote_user(user_id):
     return redirect(url_for("user.users"))
 
 
-@bp.route(f"/reset_password/<uuid:user_id>")
+@bp.route("/reset_password/<uuid:user_id>")
 def admin_reset_password(user_id):
     try:
         user = User.query.get(user_id)

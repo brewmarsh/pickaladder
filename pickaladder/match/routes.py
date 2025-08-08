@@ -6,7 +6,7 @@ from pydantic import BaseModel, validator, ValidationError as PydanticValidation
 
 from pickaladder import db
 from . import bp
-from pickaladder.models import Match, User, Friend
+from pickaladder.models import Match, User
 from pickaladder.errors import ValidationError
 from pickaladder.constants import USER_ID
 

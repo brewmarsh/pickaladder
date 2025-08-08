@@ -1,12 +1,10 @@
 import os
 import uuid
-from flask import Flask, session, render_template
+from flask import Flask, session
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
-import psycopg2
-import psycopg2.extras
 from werkzeug.routing import BaseConverter
-from .constants import USERS_TABLE, USER_ID
+from .constants import USER_ID
 
 db = SQLAlchemy()
 mail = Mail()

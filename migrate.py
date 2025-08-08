@@ -29,7 +29,8 @@ def apply_migrations():
                 result = connection.execute(
                     text(
                         "SELECT table_name FROM information_schema.tables "
-                        f"WHERE table_schema = 'public' AND table_name = '{MIGRATIONS_TABLE}'"
+                        f"WHERE table_schema = 'public' "
+                        f"AND table_name = '{MIGRATIONS_TABLE}'"
                     )
                 )
                 if result.fetchone() is None:
@@ -65,7 +66,8 @@ def apply_migrations():
                         # Record the migration so it doesn't run again.
                         connection.execute(
                             text(
-                                f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) VALUES (:migration_file)"
+                                f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) "
+                                "VALUES (:migration_file)"
                             ),
                             {"migration_file": migration_file},
                         )

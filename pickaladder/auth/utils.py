@@ -1,10 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 import io
 import os
-import secrets
-from datetime import datetime, timedelta
-from flask import url_for, current_app
-from flask_mail import Message
 from flask import url_for, current_app
 from flask_mail import Message
 from pickaladder import mail
