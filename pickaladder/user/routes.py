@@ -1,5 +1,4 @@
 import uuid
-import io
 import os
 from flask import (
     render_template,
@@ -17,10 +16,10 @@ from sqlalchemy import or_, and_
 from sqlalchemy.orm import aliased
 from PIL import Image
 from werkzeug.utils import secure_filename
-from utils import allowed_file
 
 from pickaladder import db
 from . import bp
+from .forms import UpdateProfileForm
 from pickaladder.models import User, Friend, Match
 from pickaladder.match.routes import get_player_record
 from pickaladder.constants import (
@@ -35,8 +34,13 @@ def dashboard():
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
 
+    user_id = uuid.UUID(session[USER_ID])
+    user = User.query.get_or_404(user_id)
+    form = UpdateProfileForm(obj=user)
+
     # The template is now a shell, data is fetched by client-side JS
-    return render_template("user_dashboard.html")
+    # But the form needs to be passed for the update profile section
+    return render_template("user_dashboard.html", form=form)
 
 
 @bp.route("/<uuid:user_id>")
@@ -306,59 +310,54 @@ def update_profile():
 
     user_id = uuid.UUID(session[USER_ID])
     user = User.query.get_or_404(user_id)
+    form = UpdateProfileForm()
 
-    try:
-        user.dark_mode = USER_DARK_MODE in request.form
+    if form.validate_on_submit():
+        try:
+            user.dark_mode = form.dark_mode.data
+            if form.dupr_rating.data is not None:
+                user.dupr_rating = form.dupr_rating.data
 
-        dupr_rating_str = request.form.get(USER_DUPR_RATING)
-        if dupr_rating_str:
-            user.dupr_rating = float(dupr_rating_str)
+            profile_picture_file = form.profile_picture.data
+            if profile_picture_file:
+                # The FileAllowed validator already checked the extension
+                if len(profile_picture_file.read()) > 10 * 1024 * 1024:
+                    flash("Profile picture is too large (max 10MB).", "danger")
+                    return redirect(url_for(".dashboard"))
 
-        profile_picture_file = request.files.get("profile_picture")
-        if (
-            profile_picture_file
-            and profile_picture_file.filename
-            and allowed_file(profile_picture_file.filename)
-        ):
-            if len(profile_picture_file.read()) > 10 * 1024 * 1024:
-                flash("Profile picture is too large (max 10MB).", "danger")
-                return redirect(request.referrer or url_for(".dashboard"))
+                profile_picture_file.seek(0)
+                img = Image.open(profile_picture_file)
 
-            profile_picture_file.seek(0)
-            img = Image.open(profile_picture_file)
+                unique_id = uuid.uuid4().hex
+                filename = secure_filename(f"{unique_id}_profile.png")
+                thumbnail_filename = secure_filename(f"{unique_id}_thumbnail.png")
 
-            unique_id = uuid.uuid4().hex
-            filename = secure_filename(f"{unique_id}_profile.png")
-            thumbnail_filename = secure_filename(f"{unique_id}_thumbnail.png")
+                upload_folder = current_app.config["UPLOAD_FOLDER"]
+                if not os.path.exists(upload_folder):
+                    os.makedirs(upload_folder)
 
-            upload_folder = current_app.config["UPLOAD_FOLDER"]
-            if not os.path.exists(upload_folder):
-                os.makedirs(upload_folder)
+                img.thumbnail((512, 512))
+                filepath = os.path.join(upload_folder, filename)
+                img.save(filepath, format="PNG")
+                user.profile_picture_path = filename
 
-            # For main picture
-            img.thumbnail((512, 512))
-            filepath = os.path.join(upload_folder, filename)
-            img.save(filepath, format="PNG")
-            user.profile_picture_path = filename
+                img.thumbnail((64, 64))
+                thumbnail_filepath = os.path.join(upload_folder, thumbnail_filename)
+                img.save(thumbnail_filepath, format="PNG")
+                user.profile_picture_thumbnail_path = thumbnail_filename
 
-            # For thumbnail
-            img.thumbnail((64, 64))
-            thumbnail_filepath = os.path.join(upload_folder, thumbnail_filename)
-            img.save(thumbnail_filepath, format="PNG")
-            user.profile_picture_thumbnail_path = thumbnail_filename
+                current_app.logger.info(f"User {user_id} updated their profile picture.")
 
-            current_app.logger.info(f"User {user_id} updated their profile picture.")
-
-        elif profile_picture_file:
-            flash("Invalid file type for profile picture.", "danger")
-            return redirect(request.referrer or url_for(".dashboard"))
-
-        db.session.commit()
-        flash("Profile updated successfully.", "success")
-
-    except Exception as e:
-        db.session.rollback()
-        flash(f"An error occurred: {e}", "danger")
+            db.session.commit()
+            flash("Profile updated successfully.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"An error occurred: {e}", "danger")
+    else:
+        # If the form is invalid, flash the errors
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
 
     return redirect(url_for(".dashboard"))
 
