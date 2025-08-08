@@ -13,7 +13,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import IntegrityError
 import uuid
 
-from pickaladder import db
+from pickaladder import db, csrf
 from . import bp
 from pickaladder import mail
 from .utils import generate_profile_picture, send_password_reset_email, create_user
@@ -138,6 +138,7 @@ def logout():
 
 
 @bp.route("/install", methods=["GET", "POST"])
+@csrf.exempt
 def install():
     if User.query.filter_by(is_admin=True).first() is not None:
         return redirect(url_for("auth.login"))
