@@ -1,5 +1,6 @@
 import uuid
 import io
+import os
 from flask import (
     render_template,
     request,
@@ -10,15 +11,18 @@ from flask import (
     Response,
     current_app,
     jsonify,
+    send_from_directory,
 )
 from sqlalchemy import or_, and_
 from sqlalchemy.orm import aliased
 from PIL import Image
+from werkzeug.utils import secure_filename
 from utils import allowed_file
 
 from pickaladder import db
 from . import bp
 from pickaladder.models import User, Friend, Match
+from pickaladder.match.routes import get_player_record
 from pickaladder.constants import (
     USER_ID,
     USER_DUPR_RATING,
@@ -75,6 +79,8 @@ def view_user(user_id):
         and friendship.user_id == current_user_id
     )
 
+    record = get_player_record(user_id)
+
     return render_template(
         "user_profile.html",
         profile_user=profile_user,
@@ -82,6 +88,7 @@ def view_user(user_id):
         matches=matches,
         is_friend=is_friend,
         friend_request_sent=friend_request_sent,
+        record=record,
     )
 
 
@@ -275,16 +282,20 @@ def decline_friend_request(friend_id):
 @bp.route("/profile_picture/<uuid:user_id>")
 def profile_picture(user_id):
     user = User.query.get_or_404(user_id)
-    if user.profile_picture:
-        return Response(user.profile_picture, mimetype="image/png")
+    if user.profile_picture_path:
+        return send_from_directory(
+            current_app.config["UPLOAD_FOLDER"], user.profile_picture_path
+        )
     return redirect(url_for("static", filename="user_icon.png"))
 
 
 @bp.route("/profile_picture_thumbnail/<uuid:user_id>")
 def profile_picture_thumbnail(user_id):
     user = User.query.get_or_404(user_id)
-    if user.profile_picture_thumbnail:
-        return Response(user.profile_picture_thumbnail, mimetype="image/png")
+    if user.profile_picture_thumbnail_path:
+        return send_from_directory(
+            current_app.config["UPLOAD_FOLDER"], user.profile_picture_thumbnail_path
+        )
     return redirect(url_for("static", filename="user_icon.png"))
 
 
@@ -316,17 +327,25 @@ def update_profile():
             profile_picture_file.seek(0)
             img = Image.open(profile_picture_file)
 
+            unique_id = uuid.uuid4().hex
+            filename = secure_filename(f"{unique_id}_profile.png")
+            thumbnail_filename = secure_filename(f"{unique_id}_thumbnail.png")
+
+            upload_folder = current_app.config["UPLOAD_FOLDER"]
+            if not os.path.exists(upload_folder):
+                os.makedirs(upload_folder)
+
             # For main picture
             img.thumbnail((512, 512))
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            user.profile_picture = buf.getvalue()
+            filepath = os.path.join(upload_folder, filename)
+            img.save(filepath, format="PNG")
+            user.profile_picture_path = filename
 
             # For thumbnail
             img.thumbnail((64, 64))
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            user.profile_picture_thumbnail = buf.getvalue()
+            thumbnail_filepath = os.path.join(upload_folder, thumbnail_filename)
+            img.save(thumbnail_filepath, format="PNG")
+            user.profile_picture_thumbnail_path = thumbnail_filename
 
             current_app.logger.info(f"User {user_id} updated their profile picture.")
 

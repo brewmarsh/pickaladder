@@ -40,7 +40,7 @@ def create_app():
         MAIL_USE_TLS=True,
         MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
         MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
-        UPLOAD_FOLDER="static/uploads",
+        UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 
     db_host = os.environ.get("DB_HOST", "localhost")

@@ -18,8 +18,10 @@ class User(db.Model):
     name = db.Column(db.String)
     dupr_rating = db.Column(db.Numeric(3, 2))
     is_admin = db.Column(db.Boolean, default=False)
-    profile_picture = db.Column(db.LargeBinary)
-    profile_picture_thumbnail = db.Column(db.LargeBinary)
+    # profile_picture = db.Column(db.LargeBinary)  # Deprecated
+    # profile_picture_thumbnail = db.Column(db.LargeBinary)  # Deprecated
+    profile_picture_path = db.Column(db.String(255))
+    profile_picture_thumbnail_path = db.Column(db.String(255))
     dark_mode = db.Column(db.Boolean, default=False)
     email_verified = db.Column(db.Boolean, default=False)
 
