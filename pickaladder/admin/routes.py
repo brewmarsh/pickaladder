@@ -183,9 +183,10 @@ def generate_users():
             if username in existing_usernames:
                 username = f"{username}{random.randint(1, 999)}"
 
+            hashed_password = generate_password_hash("password", method="pbkdf2:sha256")
             new_user = User(
                 username=username,
-                password=generate_password_hash("password", method="pbkdf2:sha256"),
+                password=hashed_password,
                 email=f"{username}@example.com",
                 name=name,
                 dupr_rating=round(

@@ -146,9 +146,8 @@ def add_friend(friend_id):
 
     user_id = uuid.UUID(session[USER_ID])
     if user_id == friend_id:
-        return jsonify(
-            {"success": False, "message": "You cannot add yourself as a friend."}
-        ), 400
+        message = "You cannot add yourself as a friend."
+        return jsonify({"success": False, "message": message}), 400
 
     existing_friendship = Friend.query.filter(
         or_(
