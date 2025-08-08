@@ -12,15 +12,16 @@ from flask import (
 )
 from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
-import psycopg2
+from sqlalchemy.exc import IntegrityError
+import uuid
 
-from pickaladder.db import get_db_connection
+from pickaladder import db
 from . import bp
 from pickaladder import mail
-from .utils import generate_profile_picture
+from .utils import generate_profile_picture, send_password_reset_email
 from pickaladder.errors import ValidationError, DuplicateResourceError
+from pickaladder.models import User
 from pickaladder.constants import (
-    USERS_TABLE,
     USER_ID,
     USER_USERNAME,
     USER_PASSWORD,
@@ -28,11 +29,6 @@ from pickaladder.constants import (
     USER_NAME,
     USER_DUPR_RATING,
     USER_IS_ADMIN,
-    USER_PROFILE_PICTURE,
-    USER_PROFILE_PICTURE_THUMBNAIL,
-    USER_EMAIL_VERIFIED,
-    USER_RESET_TOKEN,
-    USER_RESET_TOKEN_EXPIRATION,
 )
 
 
@@ -71,55 +67,45 @@ def register():
         except ValueError:
             raise ValidationError("Invalid DUPR rating.")
 
-        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        cur.execute(
-            f"SELECT {USER_ID} FROM {USERS_TABLE} WHERE {USER_USERNAME} = %s", (username,)
-        )
-        if cur.fetchone():
+        if User.query.filter_by(username=username).first() is not None:
             raise DuplicateResourceError("Username already exists. Please choose a different one.")
+        if User.query.filter_by(email=email).first() is not None:
+            raise DuplicateResourceError("Email address is already registered.")
+
+        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
+        profile_picture_data, thumbnail_data = generate_profile_picture(name)
+
+        new_user = User(
+            username=username,
+            password=hashed_password,
+            email=email,
+            name=name,
+            dupr_rating=dupr_rating,
+            profile_picture=profile_picture_data,
+            profile_picture_thumbnail=thumbnail_data,
+        )
 
         try:
-            cur.execute(
-                f"INSERT INTO {USERS_TABLE} ({USER_USERNAME}, {USER_PASSWORD}, "
-                f"{USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}, {USER_IS_ADMIN}) "
-                f"VALUES (%s, %s, %s, %s, %s, %s) RETURNING {USER_ID}",
-                (username, hashed_password, email, name, dupr_rating, False),
-            )
-            user_id = cur.fetchone()[0]
-
-            profile_picture_data, thumbnail_data = generate_profile_picture(name)
-            cur.execute(
-                f"UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, "
-                f"{USER_PROFILE_PICTURE_THUMBNAIL} = %s "
-                f"WHERE {USER_ID} = %s",
-                (profile_picture_data, thumbnail_data, user_id),
-            )
+            db.session.add(new_user)
+            db.session.commit()
 
             msg = Message(
                 "Verify your email",
                 sender=current_app.config["MAIL_USERNAME"],
                 recipients=[email],
             )
-            msg.body = "Click the link to verify your email: {}".format(
-                url_for("auth.verify_email", email=email, _external=True)
-            )
+            msg.body = f"Click the link to verify your email: {url_for('auth.verify_email', email=email, _external=True)}"
             mail.send(msg)
 
-            conn.commit()
-
-            session[USER_ID] = str(user_id)
-            session[USER_IS_ADMIN] = False
+            session[USER_ID] = str(new_user.id)
+            session[USER_IS_ADMIN] = new_user.is_admin
             current_app.logger.info(f"New user registered: {username}")
 
-        except psycopg2.IntegrityError:
-            conn.rollback()
+        except IntegrityError:
+            db.session.rollback()
             raise DuplicateResourceError("Username or email already exists.")
         except Exception:
-            conn.rollback()
-            # Let the centralized handler deal with this
+            db.session.rollback()
             raise
 
         return redirect(url_for("user.dashboard"))
@@ -128,25 +114,20 @@ def register():
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(f"SELECT {USER_ID} FROM {USERS_TABLE} WHERE {USER_IS_ADMIN} = TRUE")
-    admin_exists = cur.fetchone()
-    if not admin_exists:
+    if User.query.filter_by(is_admin=True).first() is None:
         return redirect(url_for("auth.install"))
 
     if request.method == "POST":
         username = request.form[USER_USERNAME]
         password = request.form[USER_PASSWORD]
-        cur.execute(
-            f"SELECT * FROM {USERS_TABLE} WHERE {USER_USERNAME} = %s", (username,)
-        )
-        user = cur.fetchone()
-        if not user or not check_password_hash(user[2], password):
+
+        user = User.query.filter_by(username=username).first()
+
+        if user is None or not check_password_hash(user.password, password):
             raise ValidationError("Invalid username or password.")
 
-        session[USER_ID] = str(user[0])
-        session[USER_IS_ADMIN] = user[6]
+        session[USER_ID] = str(user.id)
+        session[USER_IS_ADMIN] = user.is_admin
         return redirect(url_for("user.dashboard"))
     return render_template("login.html")
 
@@ -159,14 +140,8 @@ def logout():
 
 @bp.route("/install", methods=["GET", "POST"])
 def install():
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    # Check if an admin user already exists on GET request.
-    if request.method == "GET":
-        cur.execute(f"SELECT {USER_ID} FROM {USERS_TABLE} WHERE {USER_IS_ADMIN} = TRUE")
-        if cur.fetchone():
-            return redirect(url_for("auth.login"))
+    if User.query.filter_by(is_admin=True).first() is not None:
+        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         username = request.form[USER_USERNAME]
@@ -183,46 +158,44 @@ def install():
             raise ValidationError("Invalid DUPR rating.")
 
         hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
+        profile_picture_data, thumbnail_data = generate_profile_picture(name)
+
+        admin_user = User(
+            username=username,
+            password=hashed_password,
+            email=email,
+            name=name,
+            dupr_rating=dupr_rating,
+            is_admin=True,
+            profile_picture=profile_picture_data,
+            profile_picture_thumbnail=thumbnail_data,
+        )
+
         try:
-            sql = (
-                f"INSERT INTO {USERS_TABLE} ({USER_USERNAME}, {USER_PASSWORD}, "
-                f"{USER_EMAIL}, {USER_NAME}, {USER_DUPR_RATING}, {USER_IS_ADMIN}) "
-                f"VALUES (%s, %s, %s, %s, %s, %s) RETURNING {USER_ID}"
-            )
-            cur.execute(sql, (username, hashed_password, email, name, dupr_rating, True))
-            user_id = cur.fetchone()[0]
+            db.session.add(admin_user)
+            db.session.commit()
 
-            profile_picture_data, thumbnail_data = generate_profile_picture(name)
-            cur.execute(
-                f"UPDATE {USERS_TABLE} SET {USER_PROFILE_PICTURE} = %s, "
-                f"{USER_PROFILE_PICTURE_THUMBNAIL} = %s "
-                f"WHERE {USER_ID} = %s",
-                (profile_picture_data, thumbnail_data, user_id),
-            )
-            conn.commit()
-
-            session[USER_ID] = str(user_id)
-            session[USER_IS_ADMIN] = True
+            session[USER_ID] = str(admin_user.id)
+            session[USER_IS_ADMIN] = admin_user.is_admin
             current_app.logger.info(f"Admin user created: {username}")
-        except psycopg2.IntegrityError:
-            conn.rollback()
+        except IntegrityError:
+            db.session.rollback()
             raise DuplicateResourceError("Username or email already exists.")
         except Exception:
-            conn.rollback()
+            db.session.rollback()
             raise
 
         return redirect(url_for("user.dashboard"))
     return render_template("install.html")
 
 
-from .utils import send_password_reset_email
-
 @bp.route("/forgot_password", methods=["GET", "POST"])
 def forgot_password():
     if request.method == "POST":
         email = request.form[USER_EMAIL]
-        send_password_reset_email(email)
-        # Show a generic message to prevent user enumeration
+        user = User.query.filter_by(email=email).first()
+        if user:
+            send_password_reset_email(user)
         flash("If an account with that email exists, a password reset link has been sent.", "info")
         return redirect(url_for("auth.login"))
 
@@ -231,21 +204,8 @@ def forgot_password():
 
 @bp.route("/reset/<token>", methods=["GET", "POST"])
 def reset_password_with_token(token):
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-
-    # Find user by token
-    cur.execute(f"SELECT {USER_ID}, {USER_RESET_TOKEN} FROM {USERS_TABLE} WHERE {USER_RESET_TOKEN_EXPIRATION} > %s", (datetime.utcnow(),))
-    users_with_tokens = cur.fetchall()
-
-    user_id = None
-    for user in users_with_tokens:
-        if check_password_hash(user[USER_RESET_TOKEN], token):
-            user_id = user[USER_ID]
-            break
-
-    if not user_id:
-        # Using flash still makes sense here as it's a redirect
+    user = User.verify_reset_token(token)
+    if not user:
         flash("Password reset link is invalid or has expired.", "danger")
         return redirect(url_for("auth.login"))
 
@@ -255,17 +215,14 @@ def reset_password_with_token(token):
 
         if password != confirm_password:
             raise ValidationError("Passwords do not match.")
-
-        # Add password complexity validation here as well
         if len(password) < 8:
             raise ValidationError("Password must be at least 8 characters long.")
 
-        hashed_password = generate_password_hash(password)
-        cur.execute(
-            f"UPDATE {USERS_TABLE} SET {USER_PASSWORD} = %s, {USER_RESET_TOKEN} = NULL, {USER_RESET_TOKEN_EXPIRATION} = NULL WHERE {USER_ID} = %s",
-            (hashed_password, user_id),
-        )
-        conn.commit()
+        user.password = generate_password_hash(password)
+        user.reset_token = None
+        user.reset_token_expiration = None
+        db.session.commit()
+
         flash("Your password has been updated!", "success")
         return redirect(url_for("auth.login"))
 
@@ -276,7 +233,11 @@ def reset_password_with_token(token):
 def change_password():
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
-    user_id = session[USER_ID]
+
+    user = db.session.get(User, uuid.UUID(session[USER_ID]))
+    if not user:
+        session.clear()
+        return redirect(url_for("auth.login"))
 
     if request.method == "POST":
         password = request.form[USER_PASSWORD]
@@ -285,33 +246,22 @@ def change_password():
         if not password or password != confirm_password:
             raise ValidationError("Passwords do not match.")
 
-        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            f"UPDATE {USERS_TABLE} SET {USER_PASSWORD} = %s WHERE {USER_ID} = %s",
-            (hashed_password, user_id),
-        )
-        conn.commit()
+        user.password = generate_password_hash(password, method="pbkdf2:sha256")
+        db.session.commit()
+
         flash("Password changed successfully.", "success")
         return redirect(url_for("user.dashboard"))
 
-    # For GET request
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (user_id,))
-    user = cur.fetchone()
     return render_template("change_password.html", user=user)
 
 
 @bp.route(f"/verify_email/<{USER_EMAIL}>")
 def verify_email(email):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        f"UPDATE {USERS_TABLE} SET {USER_EMAIL_VERIFIED} = TRUE WHERE {USER_EMAIL} = %s",
-        (email,),
-    )
-    conn.commit()
-    flash("Email verified. You can now log in.", "success")
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.email_verified = True
+        db.session.commit()
+        flash("Email verified. You can now log in.", "success")
+    else:
+        flash("Invalid verification link.", "danger")
     return redirect(url_for("auth.login"))
