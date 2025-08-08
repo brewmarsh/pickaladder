@@ -4,6 +4,29 @@ import os
 from flask import url_for, current_app
 from flask_mail import Message
 from pickaladder import mail
+from werkzeug.security import generate_password_hash
+
+from pickaladder import db
+from pickaladder.models import User
+
+
+def create_user(username, password, email, name, dupr_rating=None, is_admin=False):
+    """Creates and prepares a new user object for database insertion."""
+    hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
+    profile_picture_data, thumbnail_data = generate_profile_picture(name)
+
+    new_user = User(
+        username=username,
+        password=hashed_password,
+        email=email,
+        name=name,
+        dupr_rating=dupr_rating,
+        is_admin=is_admin,
+        profile_picture=profile_picture_data,
+        profile_picture_thumbnail=thumbnail_data,
+    )
+    db.session.add(new_user)
+    return new_user
 
 
 def send_password_reset_email(user):

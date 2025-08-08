@@ -16,7 +16,7 @@ import uuid
 from pickaladder import db
 from . import bp
 from pickaladder import mail
-from .utils import generate_profile_picture, send_password_reset_email
+from .utils import generate_profile_picture, send_password_reset_email, create_user
 from pickaladder.errors import ValidationError, DuplicateResourceError
 from pickaladder.models import User
 from pickaladder.constants import (
@@ -76,22 +76,14 @@ def register():
         if User.query.filter_by(email=email).first() is not None:
             raise DuplicateResourceError("Email address is already registered.")
 
-        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
-        profile_picture_data, thumbnail_data = generate_profile_picture(name)
-
-        new_user = User(
-            username=username,
-            password=hashed_password,
-            email=email,
-            name=name,
-            dupr_rating=dupr_rating,
-            profile_picture=profile_picture_data,
-            profile_picture_thumbnail=thumbnail_data,
-        )
-
         try:
-            db.session.add(new_user)
-            db.session.commit()
+            new_user = create_user(
+                username=username,
+                password=password,
+                email=email,
+                name=name,
+                dupr_rating=dupr_rating,
+            )
 
             msg = Message(
                 "Verify your email",
@@ -101,6 +93,8 @@ def register():
             verify_url = url_for("auth.verify_email", email=email, _external=True)
             msg.body = f"Click the link to verify your email: {verify_url}"
             mail.send(msg)
+
+            db.session.commit()
 
             session[USER_ID] = str(new_user.id)
             session[USER_IS_ADMIN] = new_user.is_admin
@@ -162,22 +156,15 @@ def install():
         except ValueError:
             raise ValidationError("Invalid DUPR rating.")
 
-        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
-        profile_picture_data, thumbnail_data = generate_profile_picture(name)
-
-        admin_user = User(
-            username=username,
-            password=hashed_password,
-            email=email,
-            name=name,
-            dupr_rating=dupr_rating,
-            is_admin=True,
-            profile_picture=profile_picture_data,
-            profile_picture_thumbnail=thumbnail_data,
-        )
-
         try:
-            db.session.add(admin_user)
+            admin_user = create_user(
+                username=username,
+                password=password,
+                email=email,
+                name=name,
+                dupr_rating=dupr_rating,
+                is_admin=True,
+            )
             db.session.commit()
 
             session[USER_ID] = str(admin_user.id)
