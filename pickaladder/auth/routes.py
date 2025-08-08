@@ -214,8 +214,6 @@ def reset_password_with_token(token):
             raise ValidationError("Password must be at least 8 characters long.")
 
         user.password = generate_password_hash(password)
-        user.reset_token = None
-        user.reset_token_expiration = None
         db.session.commit()
 
         flash("Your password has been updated!", "success")

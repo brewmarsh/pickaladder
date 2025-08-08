@@ -91,49 +91,53 @@ def users():
         return redirect(url_for("auth.login"))
 
     search_term = request.args.get("search", "")
-    users_with_status = []
+    page = request.args.get("page", 1, type=int)
+    current_user_id = uuid.UUID(session[USER_ID])
+
+    # Aliases for the friends table to distinguish between sent and received requests
+    sent_request = aliased(Friend)
+    received_request = aliased(Friend)
+
+    # Base query
+    query = (
+        db.session.query(
+            User,
+            sent_request.status.label("sent_status"),
+            received_request.status.label("received_status"),
+        )
+        .outerjoin(
+            sent_request,
+            and_(
+                sent_request.user_id == current_user_id,
+                sent_request.friend_id == User.id,
+            ),
+        )
+        .outerjoin(
+            received_request,
+            and_(
+                received_request.user_id == User.id,
+                received_request.friend_id == current_user_id,
+            ),
+        )
+        .filter(User.id != current_user_id)
+    )
 
     if search_term:
-        current_user_id = uuid.UUID(session[USER_ID])
         like_term = f"%{search_term}%"
-
-        # Aliases for the friends table to distinguish between sent and received requests
-        sent_request = aliased(Friend)
-        received_request = aliased(Friend)
-
-        users_with_status = (
-            db.session.query(
-                User,
-                sent_request.status.label("sent_status"),
-                received_request.status.label("received_status"),
-            )
-            .outerjoin(
-                sent_request,
-                and_(
-                    sent_request.user_id == current_user_id,
-                    sent_request.friend_id == User.id,
-                ),
-            )
-            .outerjoin(
-                received_request,
-                and_(
-                    received_request.user_id == User.id,
-                    received_request.friend_id == current_user_id,
-                ),
-            )
-            .filter(
-                User.id != current_user_id,
-                or_(User.username.ilike(like_term), User.name.ilike(like_term)),
-            )
-            .all()
+        query = query.filter(
+            or_(User.username.ilike(like_term), User.name.ilike(like_term))
         )
+
+    pagination = query.order_by(User.username).paginate(
+        page=page, per_page=10, error_out=False
+    )
 
     # This is a complex query, let's simplify for now. Friends of friends can be a future enhancement.
     fof = []
 
     return render_template(
         "users.html",
-        users_with_status=users_with_status,
+        pagination=pagination,
         search_term=search_term,
         fof=fof,
     )

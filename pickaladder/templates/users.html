@@ -37,7 +37,7 @@
         </table>
     </div>
 
-    <h3 style="margin-top: 30px;">Search Results</h3>
+    <h3 style="margin-top: 30px;">All Users</h3>
     <div class="table-container">
         <table class="table">
             <thead>
@@ -50,45 +50,49 @@
                 </tr>
             </thead>
             <tbody>
-                {% if search_term %}
-                    {% for user, sent_status, received_status in users_with_status %}
-                        <tr>
-                            <td>
-                                <img src="{{ url_for('user.profile_picture_thumbnail', user_id=user.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
-                            </td>
-                            <td>{{ user.username }}</td>
-                            <td>{{ user.name }}</td>
-                            <td>{{ user.dupr_rating }}</td>
-                            <td style="text-align: right;">
-                                {% if sent_status == 'accepted' or received_status == 'accepted' %}
-                                    <button class="btn" disabled>Friends</button>
-                                {% elif sent_status == 'pending' %}
-                                    <button class="btn" disabled>Request Sent</button>
-                                {% elif received_status == 'pending' %}
-                                    <a href="{{ url_for('user.friends') }}" class="btn btn-warning">Review Request</a>
-                                {% else %}
-                                    <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
-                                {% endif %}
+                {% for user, sent_status, received_status in pagination.items %}
+                    <tr>
+                        <td>
+                            <img src="{{ url_for('user.profile_picture_thumbnail', user_id=user.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
+                        </td>
+                        <td><a href="{{ url_for('user.view_user', user_id=user.id) }}">{{ user.username }}</a></td>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.dupr_rating }}</td>
+                        <td style="text-align: right;">
+                            {% if sent_status == 'accepted' or received_status == 'accepted' %}
+                                <button class="btn" disabled>Friends</button>
+                            {% elif sent_status == 'pending' %}
+                                <button class="btn" disabled>Request Sent</button>
+                            {% elif received_status == 'pending' %}
+                                <a href="{{ url_for('user.friends') }}" class="btn btn-warning">Review Request</a>
+                            {% else %}
+                                <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
+                            {% endif %}
 
-                                {% if session['is_admin'] %}
-                                    <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
-                                    <a href="{{ url_for('admin.promote_user', user_id=user.id) }}" class="btn btn-warning">Promote</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="5">No users found for '{{ search_term }}'.</td>
-                        </tr>
-                    {% endfor %}
+                            {% if session['is_admin'] %}
+                                <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
+                                <a href="{{ url_for('admin.promote_user', user_id=user.id) }}" class="btn btn-warning">Promote</a>
+                            {% endif %}
+                        </td>
+                    </tr>
                 {% else %}
                     <tr>
-                        <td colspan="5">Please enter a name or username to search for players.</td>
+                        <td colspan="5">
+                            {% if search_term %}
+                                No users found for '{{ search_term }}'.
+                            {% else %}
+                                No users found.
+                            {% endif %}
+                        </td>
                     </tr>
-                {% endif %}
+                {% endfor %}
             </tbody>
         </table>
     </div>
+
+    {% if pagination.pages > 1 %}
+        {% include '_pagination.html' %}
+    {% endif %}
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const addFriendBtns = document.querySelectorAll(".add-friend-btn");
