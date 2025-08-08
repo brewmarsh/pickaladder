@@ -27,24 +27,8 @@ def dashboard():
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
 
-    user_id = uuid.UUID(session[USER_ID])
-    user = User.query.get_or_404(user_id)
-
-    # Get accepted friends
-    friends = db.session.query(User).join(Friend, User.id == Friend.friend_id).filter(
-        Friend.user_id == user_id,
-        Friend.status == 'accepted'
-    ).all()
-
-    # Get pending friend requests
-    requests = db.session.query(User).join(Friend, User.id == Friend.user_id).filter(
-        Friend.friend_id == user_id,
-        Friend.status == 'pending'
-    ).all()
-
-    return render_template(
-        "user_dashboard.html", friends=friends, requests=requests, user=user
-    )
+    # The template is now a shell, data is fetched by client-side JS
+    return render_template("user_dashboard.html")
 
 
 @bp.route("/<uuid:user_id>")
@@ -287,3 +271,56 @@ def update_profile():
         flash(f"An error occurred: {e}", "danger")
 
     return redirect(url_for(".dashboard"))
+
+
+@bp.route("/api/dashboard")
+def api_dashboard():
+    if USER_ID not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    user_id = uuid.UUID(session[USER_ID])
+    user = User.query.get_or_404(user_id)
+
+    # Get accepted friends
+    friends = db.session.query(User).join(Friend, User.id == Friend.friend_id).filter(
+        Friend.user_id == user_id,
+        Friend.status == 'accepted'
+    ).all()
+
+    # Get pending friend requests
+    requests = db.session.query(User).join(Friend, User.id == Friend.user_id).filter(
+        Friend.friend_id == user_id,
+        Friend.status == 'pending'
+    ).all()
+
+    # Get match history
+    matches = Match.query.filter(or_(Match.player1_id == user_id, Match.player2_id == user_id)).order_by(Match.match_date.desc()).limit(10).all()
+
+    # Prepare data for JSON response
+    user_data = {
+        "id": str(user.id),
+        "name": user.name,
+        "username": user.username,
+        "email": user.email,
+        "dupr_rating": str(user.dupr_rating) if user.dupr_rating else None
+    }
+    friends_data = [{"id": str(f.id), "username": f.username, "dupr_rating": str(f.dupr_rating) if f.dupr_rating else None} for f in friends]
+    requests_data = [{"id": str(r.id), "username": r.username} for r in requests]
+    matches_data = []
+    for match in matches:
+        opponent = match.player2 if match.player1_id == user_id else match.player1
+        matches_data.append({
+            "id": str(match.id),
+            "opponent_username": opponent.username,
+            "opponent_id": str(opponent.id),
+            "user_score": match.player1_score if match.player1_id == user_id else match.player2_score,
+            "opponent_score": match.player2_score if match.player1_id == user_id else match.player1_score,
+            "date": match.match_date.strftime('%Y-%m-%d') if match.match_date else None
+        })
+
+    return jsonify({
+        "user": user_data,
+        "friends": friends_data,
+        "requests": requests_data,
+        "matches": matches_data
+    })

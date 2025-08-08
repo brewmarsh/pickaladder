@@ -1,85 +1,164 @@
 {% extends "layout.html" %}
 {% block title %}Dashboard{% endblock %}
+
 {% block content %}
     <div class="page-header">
         <h1>Dashboard</h1>
-        <p>Welcome, {{ user.name }}!</p>
+        <p>Welcome, <span id="user-name">...</span>!</p>
     </div>
 
-    <div class="grid-container">
-        <div class="card">
-            <h3>Profile Information</h3>
-            <div class="profile-header" style="margin-bottom: 20px;">
-                <img src="{{ url_for('user.profile_picture', user_id=user.id) }}" alt="Profile Picture" class="profile-picture">
-                <h4>@{{ user.username }}</h4>
+    <div id="dashboard-content" style="display: none;">
+        <div class="grid-container">
+            <div class="card">
+                <h3>Profile Information</h3>
+                <div class="profile-header" style="margin-bottom: 20px;">
+                    <img src="" alt="Profile Picture" class="profile-picture" id="profile-picture-img">
+                    <h4 id="user-username"></h4>
+                </div>
+                <p><strong>Email:</strong> <span id="user-email"></span></p>
+                <p><strong>DUPR Rating:</strong> <span id="user-dupr"></span></p>
             </div>
 
-            <p><strong>Email:</strong> {{ user.email }}</p>
-            <p><strong>DUPR Rating:</strong> {{ user.dupr_rating if user.dupr_rating else "Not set" }}</p>
+            <div class="card">
+                <h3>Friend Requests</h3>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="friend-requests-body">
+                            <!-- Friend requests will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
 
-            <form method="post" action="{{ url_for('user.update_profile') }}" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="dupr_rating">Update DUPR Rating:</label>
-                    <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user.dupr_rating }}">
+                <h3 style="margin-top: 20px;">Your Friends</h3>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>DUPR Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody id="friends-body">
+                            <!-- Friends will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
-                <div class="form-group">
-                    <label for="profile_picture">Update Profile Picture:</label>
-                    <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif">
-                </div>
-                <input type="submit" value="Update Profile" class="btn">
-            </form>
+            </div>
         </div>
 
-        <div class="card">
-            <h3>Friend Requests</h3>
+        <div class="card" style="margin-top: 20px;">
+            <div class="header-with-button">
+                <h3>Your Matches</h3>
+                <a href="{{ url_for('match.create_match') }}" class="btn">Record a Match</a>
+            </div>
             <div class="table-container">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Username</th>
-                            <th></th>
+                            <th>Date</th>
+                            <th>Opponent</th>
+                            <th>Score</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for request in requests %}
-                            <tr>
-                                <td><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
-                                <td style="text-align: right;">
-                                    <a href="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" class="btn">Accept</a>
-                                    <a href="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" class="btn btn-danger">Decline</a>
-                                </td>
-                            </tr>
-                        {% else %}
-                            <tr>
-                                <td colspan="2">You have no pending friend requests.</td>
-                            </tr>
-                        {% endfor %}
+                    <tbody id="matches-body">
+                        <!-- Matches will be inserted here by JavaScript -->
                     </tbody>
                 </table>
             </div>
-
-            <h3 style="margin-top: 20px;">Your Friends</h3>
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>DUPR Rating</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for friend in friends %}
-                            <tr>
-                                <td>
-                                    <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
-                                </td>
-                                <td>{{ friend.dupr_rating }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <a href="{{ url_for('user.users') }}" class="btn" style="margin-top: 20px;">Find More Friends</a>
         </div>
     </div>
+
+    <div id="loader" class="loader-container">
+        <div class="loader"></div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loader = document.getElementById('loader');
+    const dashboardContent = document.getElementById('dashboard-content');
+
+    // URLs that will be used in the templates
+    const urls = {
+        view_user: (userId) => `/user/${userId}`,
+        accept_request: (friendId) => `/user/accept_friend_request/${friendId}`,
+        decline_request: (friendId) => `/user/decline_friend_request/${friendId}`,
+        profile_picture: (userId) => `/user/profile_picture/${userId}`
+    };
+
+    function renderUserInfo(user) {
+        document.getElementById('user-name').textContent = user.name || 'User';
+        document.getElementById('user-username').textContent = `@${user.username}`;
+        document.getElementById('user-email').textContent = user.email;
+        document.getElementById('user-dupr').textContent = user.dupr_rating || 'Not set';
+        document.getElementById('profile-picture-img').src = urls.profile_picture(user.id);
+    }
+
+    function renderTable(tbodyId, items, rowTemplate, noDataMessage) {
+        const tbody = document.getElementById(tbodyId);
+        tbody.innerHTML = ''; // Clear existing content
+        if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="100%">${noDataMessage}</td></tr>`;
+            return;
+        }
+        items.forEach(item => {
+            tbody.insertAdjacentHTML('beforeend', rowTemplate(item));
+        });
+    }
+
+    const requestRowTemplate = (request) => `
+        <tr>
+            <td><a href="${urls.view_user(request.id)}">${request.username}</a></td>
+            <td style="text-align: right;">
+                <a href="${urls.accept_request(request.id)}" class="btn">Accept</a>
+                <a href="${urls.decline_request(request.id)}" class="btn btn-danger">Decline</a>
+            </td>
+        </tr>
+    `;
+
+    const friendRowTemplate = (friend) => `
+        <tr>
+            <td><a href="${urls.view_user(friend.id)}">${friend.username}</a></td>
+            <td>${friend.dupr_rating || 'N/A'}</td>
+        </tr>
+    `;
+
+    const matchRowTemplate = (match) => `
+        <tr class="clickable-row" data-href="/match/${match.id}">
+            <td>${match.date || 'N/A'}</td>
+            <td><a href="${urls.view_user(match.opponent_id)}">${match.opponent_username}</a></td>
+            <td>${match.user_score} - ${match.opponent_score}</td>
+        </tr>
+    `;
+
+    fetch('/user/api/dashboard')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            renderUserInfo(data.user);
+            renderTable('friend-requests-body', data.requests, requestRowTemplate, 'No pending friend requests.');
+            renderTable('friends-body', data.friends, friendRowTemplate, 'You have no friends yet.');
+            renderTable('matches-body', data.matches, matchRowTemplate, 'You have no match history.');
+
+            // Hide loader and show content
+            loader.style.display = 'none';
+            dashboardContent.style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error fetching dashboard data:', error);
+            loader.innerHTML = '<p class="alert alert-danger">Could not load dashboard data. Please try again later.</p>';
+        });
+});
+</script>
 {% endblock %}
