@@ -6,6 +6,7 @@ from pickaladder.constants import (
     MIGRATION_NAME,
 )
 
+
 def apply_migrations():
     """
     Connects to the database via SQLAlchemy and applies any pending raw SQL migrations
@@ -13,7 +14,7 @@ def apply_migrations():
     """
     app = create_app()
     with app.app_context():
-        migration_dir = 'migrations'
+        migration_dir = "migrations"
         print("Running database migrations...")
 
         if not os.path.exists(migration_dir):
@@ -25,38 +26,49 @@ def apply_migrations():
             trans = connection.begin()
             try:
                 # Ensure the migrations table exists.
-                result = connection.execute(text(
-                    "SELECT table_name FROM information_schema.tables "
-                    f"WHERE table_schema = 'public' AND table_name = '{MIGRATIONS_TABLE}'"
-                ))
+                result = connection.execute(
+                    text(
+                        "SELECT table_name FROM information_schema.tables "
+                        f"WHERE table_schema = 'public' AND table_name = '{MIGRATIONS_TABLE}'"
+                    )
+                )
                 if result.fetchone() is None:
                     print(f"Creating '{MIGRATIONS_TABLE}' table.")
-                    connection.execute(text(
-                        f'CREATE TABLE {MIGRATIONS_TABLE} ('
-                        'id SERIAL PRIMARY KEY, '
-                        f'{MIGRATION_NAME} TEXT NOT NULL UNIQUE)'
-                    ))
+                    connection.execute(
+                        text(
+                            f"CREATE TABLE {MIGRATIONS_TABLE} ("
+                            "id SERIAL PRIMARY KEY, "
+                            f"{MIGRATION_NAME} TEXT NOT NULL UNIQUE)"
+                        )
+                    )
 
                 # Get the set of already applied migrations.
-                result = connection.execute(text(f'SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}'))
+                result = connection.execute(
+                    text(f"SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}")
+                )
                 applied_migrations = {row[0] for row in result.fetchall()}
                 print(f"Found {len(applied_migrations)} applied migrations.")
 
                 # Find and apply new migrations.
                 migration_files = sorted(
-                    [f for f in os.listdir(migration_dir) if f.endswith('.sql')]
+                    [f for f in os.listdir(migration_dir) if f.endswith(".sql")]
                 )
                 for migration_file in migration_files:
                     if migration_file not in applied_migrations:
                         print(f"Applying migration: {migration_file}...")
-                        with open(os.path.join(migration_dir, migration_file), 'r') as f:
+                        with open(
+                            os.path.join(migration_dir, migration_file), "r"
+                        ) as f:
                             sql = f.read()
                             connection.execute(text(sql))
 
                         # Record the migration so it doesn't run again.
-                        connection.execute(text(
-                            f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) VALUES (:migration_file)"
-                        ), {'migration_file': migration_file})
+                        connection.execute(
+                            text(
+                                f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) VALUES (:migration_file)"
+                            ),
+                            {"migration_file": migration_file},
+                        )
 
                 # Commit the transaction
                 trans.commit()
@@ -70,5 +82,6 @@ def apply_migrations():
 
         print("Database migrations complete.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     apply_migrations()

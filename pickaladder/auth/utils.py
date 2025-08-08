@@ -9,6 +9,7 @@ from flask import url_for, current_app
 from flask_mail import Message
 from pickaladder import mail
 
+
 def send_password_reset_email(user):
     """
     Sends a password reset email to the user.
@@ -33,8 +34,8 @@ def generate_profile_picture(name):
     Generates a profile picture with the user's initials.
     """
     # Get the absolute path to the static directory
-    static_dir = os.path.join(os.path.dirname(__file__), '..', 'static')
-    img = Image.open(os.path.join(static_dir, 'user_icon.png')).convert("RGB")
+    static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+    img = Image.open(os.path.join(static_dir, "user_icon.png")).convert("RGB")
     d = ImageDraw.Draw(img)
     first_name = name.split()[0]
 

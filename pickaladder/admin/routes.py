@@ -35,11 +35,17 @@ def admin():
 @bp.route("/matches")
 def admin_matches():
     search_term = request.args.get("search", "")
-    query = db.session.query(Match).join(User, Match.player1).join(User, Match.player2, aliased=True)
+    query = (
+        db.session.query(Match)
+        .join(User, Match.player1)
+        .join(User, Match.player2, aliased=True)
+    )
 
     if search_term:
         like_term = f"%{search_term}%"
-        query = query.filter(or_(User.username.ilike(like_term), User.username.ilike(like_term)))
+        query = query.filter(
+            or_(User.username.ilike(like_term), User.username.ilike(like_term))
+        )
 
     matches = query.order_by(Match.match_date.desc()).all()
 
@@ -67,10 +73,12 @@ def admin_delete_match(match_id):
 @bp.route("/friend_graph_data")
 def friend_graph_data():
     users = User.query.all()
-    friends = Friend.query.filter_by(status='accepted').all()
+    friends = Friend.query.filter_by(status="accepted").all()
 
     nodes = [{"id": str(user.id), "label": user.username} for user in users]
-    edges = [{"from": str(friend.user_id), "to": str(friend.friend_id)} for friend in friends]
+    edges = [
+        {"from": str(friend.user_id), "to": str(friend.friend_id)} for friend in friends
+    ]
 
     return jsonify({"nodes": nodes, "edges": edges})
 
@@ -79,7 +87,9 @@ def friend_graph_data():
 def reset_db():
     try:
         # Using raw SQL for TRUNCATE, as it's more efficient than deleting all objects.
-        db.session.execute(text("TRUNCATE TABLE friends, users, matches RESTART IDENTITY CASCADE"))
+        db.session.execute(
+            text("TRUNCATE TABLE friends, users, matches RESTART IDENTITY CASCADE")
+        )
         db.session.commit()
         flash("Database has been reset.", "success")
     except Exception as e:
@@ -163,7 +173,9 @@ def generate_users():
     new_users = []
 
     try:
-        existing_usernames = {u.username for u in User.query.with_entities(User.username).all()}
+        existing_usernames = {
+            u.username for u in User.query.with_entities(User.username).all()
+        }
 
         for _ in range(10):
             name = fake.name()
@@ -176,20 +188,37 @@ def generate_users():
                 password=generate_password_hash("password", method="pbkdf2:sha256"),
                 email=f"{username}@example.com",
                 name=name,
-                dupr_rating=round(fake.pyfloat(left_digits=1, right_digits=2, positive=True, min_value=1.0, max_value=5.0), 2)
+                dupr_rating=round(
+                    fake.pyfloat(
+                        left_digits=1,
+                        right_digits=2,
+                        positive=True,
+                        min_value=1.0,
+                        max_value=5.0,
+                    ),
+                    2,
+                ),
             )
             db.session.add(new_user)
             new_users.append(new_user)
 
-        db.session.flush() # Flush to get IDs for relationships before creating friendships
+        db.session.flush()  # Flush to get IDs for relationships before creating friendships
 
         # Create friendships between new users
         for i in range(len(new_users)):
             for j in range(i + 1, len(new_users)):
                 if random.random() < 0.5:
                     # Create accepted friendship both ways
-                    friendship1 = Friend(user_id=new_users[i].id, friend_id=new_users[j].id, status='accepted')
-                    friendship2 = Friend(user_id=new_users[j].id, friend_id=new_users[i].id, status='accepted')
+                    friendship1 = Friend(
+                        user_id=new_users[i].id,
+                        friend_id=new_users[j].id,
+                        status="accepted",
+                    )
+                    friendship2 = Friend(
+                        user_id=new_users[j].id,
+                        friend_id=new_users[i].id,
+                        status="accepted",
+                    )
                     db.session.add(friendship1)
                     db.session.add(friendship2)
 
@@ -200,9 +229,13 @@ def generate_users():
             users_to_send_request = random.sample(new_users, num_requests)
             for user in users_to_send_request:
                 # Check if a friendship/request already exists
-                existing = Friend.query.filter_by(user_id=user.id, friend_id=admin_id).first()
+                existing = Friend.query.filter_by(
+                    user_id=user.id, friend_id=admin_id
+                ).first()
                 if not existing:
-                    friend_request = Friend(user_id=user.id, friend_id=admin_id, status='pending')
+                    friend_request = Friend(
+                        user_id=user.id, friend_id=admin_id, status="pending"
+                    )
                     db.session.add(friend_request)
 
         db.session.commit()
@@ -217,7 +250,7 @@ def generate_users():
 @bp.route("/generate_matches")
 def generate_matches():
     try:
-        friends = Friend.query.filter_by(status='accepted').all()
+        friends = Friend.query.filter_by(status="accepted").all()
         if not friends:
             flash("No friendships found to generate matches.", "warning")
             return redirect(url_for(".admin"))
@@ -229,16 +262,18 @@ def generate_matches():
             score1 = random.randint(0, 11)
             score2 = score1 - 2 if score1 >= 10 else random.randint(0, 11)
             if abs(score1 - score2) < 2 and max(score1, score2) >= 11:
-                score2 = random.randint(0, 11) # Simple retry
+                score2 = random.randint(0, 11)  # Simple retry
 
-            p1_score, p2_score = (score1, score2) if random.random() < 0.5 else (score2, score1)
+            p1_score, p2_score = (
+                (score1, score2) if random.random() < 0.5 else (score2, score1)
+            )
 
             new_match = Match(
                 player1_id=player1_id,
                 player2_id=player2_id,
                 player1_score=p1_score,
                 player2_score=p2_score,
-                match_date=datetime.utcnow()
+                match_date=datetime.utcnow(),
             )
             db.session.add(new_match)
 

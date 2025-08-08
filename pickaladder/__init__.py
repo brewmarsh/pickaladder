@@ -59,7 +59,9 @@ def create_app():
     db_name = os.environ["POSTGRES_DB"]
     db_user = os.environ["POSTGRES_USER"]
     db_pass = os.environ["POSTGRES_PASSWORD"]
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{db_user}:{db_pass}@{db_host}/{db_name}"
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        f"postgresql://{db_user}:{db_pass}@{db_host}/{db_name}"
+    )
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Initialize extensions
@@ -87,7 +89,6 @@ def create_app():
 
     app.register_blueprint(error_handlers.error_handlers_bp)
 
-
     # make url_for('index') == url_for('auth.login')
     # in another app, you might define a separate main index here with
     # app.route, while giving the auth blueprint a url_prefix, but for
@@ -99,6 +100,7 @@ def create_app():
         if USER_ID in session:
             # This will be refactored to use the ORM in a later step
             from .models import User
+
             user = User.query.get(session[USER_ID])
             return dict(user=user)
         return dict(user=None)

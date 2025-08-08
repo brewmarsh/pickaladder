@@ -19,7 +19,13 @@ from utils import allowed_file
 from pickaladder import db
 from . import bp
 from pickaladder.models import User, Friend, Match
-from pickaladder.constants import USER_ID, USER_NAME, USER_USERNAME, USER_DUPR_RATING, USER_DARK_MODE
+from pickaladder.constants import (
+    USER_ID,
+    USER_NAME,
+    USER_USERNAME,
+    USER_DUPR_RATING,
+    USER_DARK_MODE,
+)
 
 
 @bp.route("/dashboard")
@@ -40,24 +46,36 @@ def view_user(user_id):
     current_user_id = uuid.UUID(session[USER_ID])
 
     # Get friends
-    friends = db.session.query(User).join(Friend, User.id == Friend.friend_id).filter(
-        Friend.user_id == user_id,
-        Friend.status == 'accepted'
-    ).all()
+    friends = (
+        db.session.query(User)
+        .join(Friend, User.id == Friend.friend_id)
+        .filter(Friend.user_id == user_id, Friend.status == "accepted")
+        .all()
+    )
 
     # Get match history
-    matches = Match.query.filter(or_(Match.player1_id == user_id, Match.player2_id == user_id)).order_by(Match.match_date.desc()).all()
+    matches = (
+        Match.query.filter(
+            or_(Match.player1_id == user_id, Match.player2_id == user_id)
+        )
+        .order_by(Match.match_date.desc())
+        .all()
+    )
 
     # Check friendship status
     friendship = Friend.query.filter(
         or_(
             (Friend.user_id == current_user_id) & (Friend.friend_id == user_id),
-            (Friend.user_id == user_id) & (Friend.friend_id == current_user_id)
+            (Friend.user_id == user_id) & (Friend.friend_id == current_user_id),
         )
     ).first()
 
-    is_friend = friendship is not None and friendship.status == 'accepted'
-    friend_request_sent = friendship is not None and friendship.status == 'pending' and friendship.user_id == current_user_id
+    is_friend = friendship is not None and friendship.status == "accepted"
+    friend_request_sent = (
+        friendship is not None
+        and friendship.status == "pending"
+        and friendship.user_id == current_user_id
+    )
 
     return render_template(
         "user_profile.html",
@@ -70,6 +88,7 @@ def view_user(user_id):
 
 
 from sqlalchemy.orm import aliased
+
 
 @bp.route("/users")
 def users():
@@ -87,26 +106,41 @@ def users():
         sent_request = aliased(Friend)
         received_request = aliased(Friend)
 
-        users_with_status = db.session.query(
-            User,
-            sent_request.status.label('sent_status'),
-            received_request.status.label('received_status')
-        ).outerjoin(
-            sent_request,
-            and_(sent_request.user_id == current_user_id, sent_request.friend_id == User.id)
-        ).outerjoin(
-            received_request,
-            and_(received_request.user_id == User.id, received_request.friend_id == current_user_id)
-        ).filter(
-            User.id != current_user_id,
-            or_(User.username.ilike(like_term), User.name.ilike(like_term))
-        ).all()
+        users_with_status = (
+            db.session.query(
+                User,
+                sent_request.status.label("sent_status"),
+                received_request.status.label("received_status"),
+            )
+            .outerjoin(
+                sent_request,
+                and_(
+                    sent_request.user_id == current_user_id,
+                    sent_request.friend_id == User.id,
+                ),
+            )
+            .outerjoin(
+                received_request,
+                and_(
+                    received_request.user_id == User.id,
+                    received_request.friend_id == current_user_id,
+                ),
+            )
+            .filter(
+                User.id != current_user_id,
+                or_(User.username.ilike(like_term), User.name.ilike(like_term)),
+            )
+            .all()
+        )
 
     # This is a complex query, let's simplify for now. Friends of friends can be a future enhancement.
     fof = []
 
     return render_template(
-        "users.html", users_with_status=users_with_status, search_term=search_term, fof=fof
+        "users.html",
+        users_with_status=users_with_status,
+        search_term=search_term,
+        fof=fof,
     )
 
 
@@ -117,20 +151,29 @@ def add_friend(friend_id):
 
     user_id = uuid.UUID(session[USER_ID])
     if user_id == friend_id:
-        return jsonify({"success": False, "message": "You cannot add yourself as a friend."}), 400
+        return jsonify(
+            {"success": False, "message": "You cannot add yourself as a friend."}
+        ), 400
 
     existing_friendship = Friend.query.filter(
         or_(
             and_(Friend.user_id == user_id, Friend.friend_id == friend_id),
-            and_(Friend.user_id == friend_id, Friend.friend_id == user_id)
+            and_(Friend.user_id == friend_id, Friend.friend_id == user_id),
         )
     ).first()
 
     if existing_friendship:
-        return jsonify({"success": False, "message": "Friend request already sent or you are already friends."}), 400
+        return jsonify(
+            {
+                "success": False,
+                "message": "Friend request already sent or you are already friends.",
+            }
+        ), 400
 
     try:
-        new_friend_request = Friend(user_id=user_id, friend_id=friend_id, status='pending')
+        new_friend_request = Friend(
+            user_id=user_id, friend_id=friend_id, status="pending"
+        )
         db.session.add(new_friend_request)
         db.session.commit()
         return jsonify({"success": True, "message": "Friend request sent."})
@@ -147,22 +190,28 @@ def friends():
     user_id = uuid.UUID(session[USER_ID])
 
     # Get accepted friends
-    friends = db.session.query(User).join(Friend, User.id == Friend.friend_id).filter(
-        Friend.user_id == user_id,
-        Friend.status == 'accepted'
-    ).all()
+    friends = (
+        db.session.query(User)
+        .join(Friend, User.id == Friend.friend_id)
+        .filter(Friend.user_id == user_id, Friend.status == "accepted")
+        .all()
+    )
 
     # Get pending friend requests received
-    requests = db.session.query(User).join(Friend, User.id == Friend.user_id).filter(
-        Friend.friend_id == user_id,
-        Friend.status == 'pending'
-    ).all()
+    requests = (
+        db.session.query(User)
+        .join(Friend, User.id == Friend.user_id)
+        .filter(Friend.friend_id == user_id, Friend.status == "pending")
+        .all()
+    )
 
     # Get pending friend requests sent
-    sent_requests = db.session.query(User).join(Friend, User.id == Friend.friend_id).filter(
-        Friend.user_id == user_id,
-        Friend.status == 'pending'
-    ).all()
+    sent_requests = (
+        db.session.query(User)
+        .join(Friend, User.id == Friend.friend_id)
+        .filter(Friend.user_id == user_id, Friend.status == "pending")
+        .all()
+    )
 
     return render_template(
         "friends.html",
@@ -181,15 +230,19 @@ def accept_friend_request(friend_id):
 
     try:
         # Find and update the incoming request
-        request_to_accept = Friend.query.filter_by(user_id=friend_id, friend_id=user_id, status='pending').first()
+        request_to_accept = Friend.query.filter_by(
+            user_id=friend_id, friend_id=user_id, status="pending"
+        ).first()
         if not request_to_accept:
             flash("Friend request not found or already handled.", "warning")
             return redirect(url_for(".friends"))
 
-        request_to_accept.status = 'accepted'
+        request_to_accept.status = "accepted"
 
         # Create the reciprocal friendship
-        reciprocal_friendship = Friend(user_id=user_id, friend_id=friend_id, status='accepted')
+        reciprocal_friendship = Friend(
+            user_id=user_id, friend_id=friend_id, status="accepted"
+        )
         db.session.add(reciprocal_friendship)
 
         db.session.commit()
@@ -209,7 +262,9 @@ def decline_friend_request(friend_id):
     user_id = uuid.UUID(session[USER_ID])
 
     try:
-        request_to_decline = Friend.query.filter_by(user_id=friend_id, friend_id=user_id, status='pending').first()
+        request_to_decline = Friend.query.filter_by(
+            user_id=friend_id, friend_id=user_id, status="pending"
+        ).first()
         if request_to_decline:
             db.session.delete(request_to_decline)
             db.session.commit()
@@ -254,8 +309,12 @@ def update_profile():
         if dupr_rating_str:
             user.dupr_rating = float(dupr_rating_str)
 
-        profile_picture_file = request.files.get('profile_picture')
-        if profile_picture_file and profile_picture_file.filename and allowed_file(profile_picture_file.filename):
+        profile_picture_file = request.files.get("profile_picture")
+        if (
+            profile_picture_file
+            and profile_picture_file.filename
+            and allowed_file(profile_picture_file.filename)
+        ):
             if len(profile_picture_file.read()) > 10 * 1024 * 1024:
                 flash("Profile picture is too large (max 10MB).", "danger")
                 return redirect(request.referrer or url_for(".dashboard"))
@@ -300,19 +359,30 @@ def api_dashboard():
     user = User.query.get_or_404(user_id)
 
     # Get accepted friends
-    friends = db.session.query(User).join(Friend, User.id == Friend.friend_id).filter(
-        Friend.user_id == user_id,
-        Friend.status == 'accepted'
-    ).all()
+    friends = (
+        db.session.query(User)
+        .join(Friend, User.id == Friend.friend_id)
+        .filter(Friend.user_id == user_id, Friend.status == "accepted")
+        .all()
+    )
 
     # Get pending friend requests
-    requests = db.session.query(User).join(Friend, User.id == Friend.user_id).filter(
-        Friend.friend_id == user_id,
-        Friend.status == 'pending'
-    ).all()
+    requests = (
+        db.session.query(User)
+        .join(Friend, User.id == Friend.user_id)
+        .filter(Friend.friend_id == user_id, Friend.status == "pending")
+        .all()
+    )
 
     # Get match history
-    matches = Match.query.filter(or_(Match.player1_id == user_id, Match.player2_id == user_id)).order_by(Match.match_date.desc()).limit(10).all()
+    matches = (
+        Match.query.filter(
+            or_(Match.player1_id == user_id, Match.player2_id == user_id)
+        )
+        .order_by(Match.match_date.desc())
+        .limit(10)
+        .all()
+    )
 
     # Prepare data for JSON response
     user_data = {
@@ -320,31 +390,52 @@ def api_dashboard():
         "name": user.name,
         "username": user.username,
         "email": user.email,
-        "dupr_rating": str(user.dupr_rating) if user.dupr_rating else None
+        "dupr_rating": str(user.dupr_rating) if user.dupr_rating else None,
     }
-    friends_data = [{"id": str(f.id), "username": f.username, "dupr_rating": str(f.dupr_rating) if f.dupr_rating else None} for f in friends]
+    friends_data = [
+        {
+            "id": str(f.id),
+            "username": f.username,
+            "dupr_rating": str(f.dupr_rating) if f.dupr_rating else None,
+        }
+        for f in friends
+    ]
     requests_data = []
     for r in requests:
-        requests_data.append({
-            "id": str(r.id),
-            "username": r.username,
-            "thumbnail_url": url_for('user.profile_picture_thumbnail', user_id=r.id)
-        })
+        requests_data.append(
+            {
+                "id": str(r.id),
+                "username": r.username,
+                "thumbnail_url": url_for(
+                    "user.profile_picture_thumbnail", user_id=r.id
+                ),
+            }
+        )
     matches_data = []
     for match in matches:
         opponent = match.player2 if match.player1_id == user_id else match.player1
-        matches_data.append({
-            "id": str(match.id),
-            "opponent_username": opponent.username,
-            "opponent_id": str(opponent.id),
-            "user_score": match.player1_score if match.player1_id == user_id else match.player2_score,
-            "opponent_score": match.player2_score if match.player1_id == user_id else match.player1_score,
-            "date": match.match_date.strftime('%Y-%m-%d') if match.match_date else None
-        })
+        matches_data.append(
+            {
+                "id": str(match.id),
+                "opponent_username": opponent.username,
+                "opponent_id": str(opponent.id),
+                "user_score": match.player1_score
+                if match.player1_id == user_id
+                else match.player2_score,
+                "opponent_score": match.player2_score
+                if match.player1_id == user_id
+                else match.player1_score,
+                "date": match.match_date.strftime("%Y-%m-%d")
+                if match.match_date
+                else None,
+            }
+        )
 
-    return jsonify({
-        "user": user_data,
-        "friends": friends_data,
-        "requests": requests_data,
-        "matches": matches_data
-    })
+    return jsonify(
+        {
+            "user": user_data,
+            "friends": friends_data,
+            "requests": requests_data,
+            "matches": matches_data,
+        }
+    )

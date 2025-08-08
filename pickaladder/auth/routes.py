@@ -51,9 +51,13 @@ def register():
         if len(password) < 8:
             raise ValidationError("Password must be at least 8 characters long.")
         if not re.search(r"[A-Z]", password):
-            raise ValidationError("Password must contain at least one uppercase letter.")
+            raise ValidationError(
+                "Password must contain at least one uppercase letter."
+            )
         if not re.search(r"[a-z]", password):
-            raise ValidationError("Password must contain at least one lowercase letter.")
+            raise ValidationError(
+                "Password must contain at least one lowercase letter."
+            )
         if not re.search(r"\d", password):
             raise ValidationError("Password must contain at least one number.")
         # --- End Validation Logic ---
@@ -68,7 +72,9 @@ def register():
             raise ValidationError("Invalid DUPR rating.")
 
         if User.query.filter_by(username=username).first() is not None:
-            raise DuplicateResourceError("Username already exists. Please choose a different one.")
+            raise DuplicateResourceError(
+                "Username already exists. Please choose a different one."
+            )
         if User.query.filter_by(email=email).first() is not None:
             raise DuplicateResourceError("Email address is already registered.")
 
@@ -196,7 +202,10 @@ def forgot_password():
         user = User.query.filter_by(email=email).first()
         if user:
             send_password_reset_email(user)
-        flash("If an account with that email exists, a password reset link has been sent.", "info")
+        flash(
+            "If an account with that email exists, a password reset link has been sent.",
+            "info",
+        )
         return redirect(url_for("auth.login"))
 
     return render_template("forgot_password.html")
