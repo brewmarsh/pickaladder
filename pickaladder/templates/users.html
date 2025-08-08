@@ -51,7 +51,7 @@
             </thead>
             <tbody>
                 {% if search_term %}
-                    {% for user in all_users %}
+                    {% for user, sent_status, received_status in users_with_status %}
                         <tr>
                             <td>
                                 <img src="{{ url_for('user.profile_picture_thumbnail', user_id=user.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
@@ -60,7 +60,16 @@
                             <td>{{ user.name }}</td>
                             <td>{{ user.dupr_rating }}</td>
                             <td style="text-align: right;">
-                                <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
+                                {% if sent_status == 'accepted' or received_status == 'accepted' %}
+                                    <button class="btn" disabled>Friends</button>
+                                {% elif sent_status == 'pending' %}
+                                    <button class="btn" disabled>Request Sent</button>
+                                {% elif received_status == 'pending' %}
+                                    <a href="{{ url_for('user.friends') }}" class="btn btn-warning">Review Request</a>
+                                {% else %}
+                                    <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
+                                {% endif %}
+
                                 {% if session['is_admin'] %}
                                     <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
                                     <a href="{{ url_for('admin.promote_user', user_id=user.id) }}" class="btn btn-warning">Promote</a>

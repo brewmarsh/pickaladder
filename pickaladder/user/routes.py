@@ -69,28 +69,44 @@ def view_user(user_id):
     )
 
 
+from sqlalchemy.orm import aliased
+
 @bp.route("/users")
 def users():
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
 
-    current_user_id = uuid.UUID(session[USER_ID])
     search_term = request.args.get("search", "")
-    all_users = []
+    users_with_status = []
 
     if search_term:
+        current_user_id = uuid.UUID(session[USER_ID])
         like_term = f"%{search_term}%"
-        query = User.query.filter(
+
+        # Aliases for the friends table to distinguish between sent and received requests
+        sent_request = aliased(Friend)
+        received_request = aliased(Friend)
+
+        users_with_status = db.session.query(
+            User,
+            sent_request.status.label('sent_status'),
+            received_request.status.label('received_status')
+        ).outerjoin(
+            sent_request,
+            and_(sent_request.user_id == current_user_id, sent_request.friend_id == User.id)
+        ).outerjoin(
+            received_request,
+            and_(received_request.user_id == User.id, received_request.friend_id == current_user_id)
+        ).filter(
             User.id != current_user_id,
             or_(User.username.ilike(like_term), User.name.ilike(like_term))
-        )
-        all_users = query.all()
+        ).all()
 
     # This is a complex query, let's simplify for now. Friends of friends can be a future enhancement.
     fof = []
 
     return render_template(
-        "users.html", all_users=all_users, search_term=search_term, fof=fof
+        "users.html", users_with_status=users_with_status, search_term=search_term, fof=fof
     )
 
 
@@ -103,11 +119,14 @@ def add_friend(friend_id):
     if user_id == friend_id:
         return jsonify({"success": False, "message": "You cannot add yourself as a friend."}), 400
 
-    # Check for friendship in either direction
-    f1 = Friend.query.filter_by(user_id=user_id, friend_id=friend_id).first()
-    f2 = Friend.query.filter_by(user_id=friend_id, friend_id=user_id).first()
+    existing_friendship = Friend.query.filter(
+        or_(
+            and_(Friend.user_id == user_id, Friend.friend_id == friend_id),
+            and_(Friend.user_id == friend_id, Friend.friend_id == user_id)
+        )
+    ).first()
 
-    if f1 or f2:
+    if existing_friendship:
         return jsonify({"success": False, "message": "Friend request already sent or you are already friends."}), 400
 
     try:
