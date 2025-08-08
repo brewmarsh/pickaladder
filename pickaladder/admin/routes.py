@@ -9,6 +9,7 @@ from flask import (
 )
 from faker import Faker
 import random
+from datetime import datetime
 from werkzeug.security import generate_password_hash
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text, or_
@@ -159,11 +160,10 @@ def admin_reset_password(user_id):
 @bp.route("/generate_users")
 def generate_users():
     fake = Faker()
-    new_users_info = []
+    new_users = []
 
     try:
         existing_usernames = {u.username for u in User.query.with_entities(User.username).all()}
-        new_users = []
 
         for _ in range(10):
             name = fake.name()
@@ -181,25 +181,37 @@ def generate_users():
             db.session.add(new_user)
             new_users.append(new_user)
 
-        db.session.flush() # Flush to get IDs for relationships
+        db.session.flush() # Flush to get IDs for relationships before creating friendships
 
+        # Create friendships between new users
+        for i in range(len(new_users)):
+            for j in range(i + 1, len(new_users)):
+                if random.random() < 0.5:
+                    # Create accepted friendship both ways
+                    friendship1 = Friend(user_id=new_users[i].id, friend_id=new_users[j].id, status='accepted')
+                    friendship2 = Friend(user_id=new_users[j].id, friend_id=new_users[i].id, status='accepted')
+                    db.session.add(friendship1)
+                    db.session.add(friendship2)
+
+        # Send friend requests to admin
         admin_id = session.get(USER_ID)
         if admin_id:
             num_requests = random.randint(0, len(new_users))
             users_to_send_request = random.sample(new_users, num_requests)
-
             for user in users_to_send_request:
-                friend_request = Friend(user_id=user.id, friend_id=admin_id, status='pending')
-                db.session.add(friend_request)
+                # Check if a friendship/request already exists
+                existing = Friend.query.filter_by(user_id=user.id, friend_id=admin_id).first()
+                if not existing:
+                    friend_request = Friend(user_id=user.id, friend_id=admin_id, status='pending')
+                    db.session.add(friend_request)
 
         db.session.commit()
-        new_users_info = [{"username": u.username, "email": u.email, "name": u.name, "dupr_rating": str(u.dupr_rating)} for u in new_users]
 
     except Exception as e:
         db.session.rollback()
         flash(f"An error occurred while generating users: {e}", "danger")
 
-    return render_template("generated_users.html", users=new_users_info)
+    return render_template("generated_users.html", users=new_users)
 
 
 @bp.route("/generate_matches")
@@ -225,7 +237,8 @@ def generate_matches():
                 player1_id=player1_id,
                 player2_id=player2_id,
                 player1_score=p1_score,
-                player2_score=p2_score
+                player2_score=p2_score,
+                match_date=datetime.utcnow()
             )
             db.session.add(new_match)
 
