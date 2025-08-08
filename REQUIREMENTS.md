@@ -56,6 +56,28 @@ This document outlines the requirements for the pickaladder application.
 
 ## Future Enhancements
 
+### Usability Improvements
+*   **Real-time Updates:** The application currently requires a page reload to see updates. Implementing real-time updates using WebSockets would provide a much better user experience. For example, the leaderboard could update in real-time as matches are completed.
+*   **Improved User Profiles:** User profiles could be enhanced to include more information, such as a user's match history, win/loss record, and a short bio.
+*   **Friend Request Notifications:** When a user receives a friend request, they should receive a notification. This could be an in-app notification or an email.
+*   **Match Confirmation:** When a match is recorded, both players should be required to confirm the score. This would help prevent disputes and ensure the accuracy of match results.
+*   **Dark Mode:** The database schema includes a `dark_mode` column, but it does not seem to be fully implemented in the frontend. This feature should be completed.
+
+### New User Features
+*   **Match Scheduling:** Users should be able to schedule matches with other players. This would involve selecting a date, time, and location for the match.
+*   **Double Matches:** The current application only supports singles matches. Adding support for doubles matches would be a valuable feature for many players.
+*   **Player Statistics:** Users should be able to view detailed statistics about their own play, such as their win/loss record against specific opponents, their performance over time, and other metrics.
+*   **Find a Partner:** A feature that allows users to find other players of a similar skill level to play with would be a great addition.
+*   **Social Sharing:** Users should be able to share their match results and other achievements on social media.
+*   **Match Location:** Users should be able to optionally record the location of a match. This could be a simple text field or integrated with a mapping service. This would be useful for tracking where matches are played and for facilities to see which courts are being used.
+
+### Manager Features
+*   **Tournament Brackets:** The application should support the creation and management of tournament brackets. This would include single-elimination, double-elimination, and round-robin formats.
+*   **Facility Management:** Managers should be able to manage facility information, such as court availability and hours of operation.
+*   **Event Registration:** The application should allow users to register for events and tournaments. This would include collecting registration fees and managing participant lists.
+*   **Announcements:** Managers should be able to send announcements to all participants in an event or to all users of the application.
+*   **Reporting:** The application should provide detailed reports on event participation, match results, and other key metrics. This would be useful for analyzing the success of events and for planning future ones.
+
 ### Security
 *   **Input Validation:** Implement robust input validation on all user-supplied data.
 *   **Password Policies:** Enforce strong password policies.
@@ -79,8 +101,29 @@ This document outlines the requirements for the pickaladder application.
 *   **Configuration File:** Use a configuration file instead of environment variables for all settings.
 *   **Logging:** Implement a more robust and configurable logging system.
 
-### Features
+### Other Features
 *   **Multiple Ladder Rankings:** Add support for multiple ladder ranking systems.
 *   **Customizable Branding:** Allow admins to customize the branding of the admin page.
 *   **Terms of Service:** Add a terms of service page.
 *   **Data Export:** Allow users to export their data.
+
+### Deeper Feature Suggestions
+
+Based on a more in-depth review of the codebase, here are some more detailed feature suggestions.
+
+#### Usability Improvements
+*   **Autocomplete for User Search:** In the user search and "Create Match" opponent selection, implement an autocomplete feature to make it easier to find users, especially in a system with many users.
+*   **Interactive Leaderboard:** The leaderboard could be made more interactive. For example, allowing users to see their own rank even if they are not in the top 10, and showing how many places they have moved up or down since the last time they checked.
+*   **Dashboard Feed:** The user dashboard could be enhanced to show a "feed" of recent activity from their friends, such as recently played matches.
+
+#### New User Features
+*   **Advanced Ranking System:** Implement a more advanced ranking system like Elo or Glicko-2. These systems are better at predicting match outcomes and provide a more accurate measure of a player's skill level. This would also allow for features like predicting the outcome of a match before it's played.
+*   **Public Profile URLs:** Allow users to have a public profile URL that they can share with others, even those who are not registered on the site. This could be an optional feature that users can enable or disable.
+*   **Match History Charts:** On a user's profile, display charts and graphs to visualize their match history, such as their win/loss ratio over time, or their performance against different opponents.
+*   **Achievements/Badges:** Add a system of achievements or badges that users can earn for reaching certain milestones (e.g., "Played 10 matches," "First win," "On a winning streak").
+
+#### Manager Features
+*   **Multiple Ladder Types:** Allow facility managers to create and manage different types of ladders, such as singles, doubles, mixed doubles, age-based ladders, or skill-level-based ladders (e.g., 3.0-3.5, 4.0-4.5).
+*   **Court Reservation System:** Integrate a court reservation system. This would allow managers to define the courts available at their facility and allow users to book courts for their matches.
+*   **Event-specific Leaderboards:** For tournaments or leagues, create separate leaderboards that are specific to that event, in addition to the overall site-wide leaderboard.
+*   **Broadcast Messaging:** Give managers the ability to send broadcast messages to all participants of a specific tournament or league, or to all users who have played at their facility. This could be used for announcements, updates, or promotions.

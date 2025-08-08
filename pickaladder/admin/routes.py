@@ -6,41 +6,19 @@ from flask import (
     session,
     flash,
     jsonify,
-    current_app,
 )
-from pickaladder.db import get_db_connection
-from . import bp
-import psycopg2
-import psycopg2.extras
-from psycopg2 import errors
 from faker import Faker
 import random
-import string
+from datetime import datetime
 from werkzeug.security import generate_password_hash
-from pickaladder import mail
-from flask_mail import Message
-import uuid
-from pickaladder.constants import (
-    USERS_TABLE,
-    FRIENDS_TABLE,
-    MATCHES_TABLE,
-    USER_ID,
-    USER_USERNAME,
-    USER_IS_ADMIN,
-    FRIENDS_USER_ID,
-    FRIENDS_FRIEND_ID,
-    FRIENDS_STATUS,
-    MATCH_ID,
-    MATCH_PLAYER1_ID,
-    MATCH_PLAYER2_ID,
-    MATCH_DATE,
-    USER_EMAIL,
-    USER_PASSWORD,
-    USER_NAME,
-    USER_DUPR_RATING,
-    MATCH_PLAYER1_SCORE,
-    MATCH_PLAYER2_SCORE,
-)
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import text, or_
+
+from pickaladder import db
+from . import bp
+from pickaladder.models import User, Friend, Match
+from pickaladder.auth.utils import send_password_reset_email
+from pickaladder.constants import USER_ID, USER_IS_ADMIN
 
 
 @bp.before_request
@@ -54,30 +32,23 @@ def admin():
     return render_template("admin.html")
 
 
-@bp.route(f"/{MATCHES_TABLE}")
+@bp.route("/matches")
 def admin_matches():
     search_term = request.args.get("search", "")
-    conn = get_db_connection()
-    cur = conn.cursor()
+    query = (
+        db.session.query(Match)
+        .join(User, Match.player1)
+        .join(User, Match.player2, aliased=True)
+    )
+
     if search_term:
-        cur.execute(
-            f"SELECT m.*, p1.{USER_USERNAME}, p2.{USER_USERNAME} "
-            f"FROM {MATCHES_TABLE} m "
-            f"JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
-            f"JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} "
-            f"WHERE p1.{USER_USERNAME} ILIKE %s OR p2.{USER_USERNAME} ILIKE %s "
-            f"ORDER BY m.{MATCH_DATE} DESC",
-            (f"%{search_term}%", f"%{search_term}%"),
+        like_term = f"%{search_term}%"
+        query = query.filter(
+            or_(User.username.ilike(like_term), User.username.ilike(like_term))
         )
-    else:
-        cur.execute(
-            f"SELECT m.*, p1.{USER_USERNAME}, p2.{USER_USERNAME} "
-            f"FROM {MATCHES_TABLE} m "
-            f"JOIN {USERS_TABLE} p1 ON m.{MATCH_PLAYER1_ID} = p1.{USER_ID} "
-            f"JOIN {USERS_TABLE} p2 ON m.{MATCH_PLAYER2_ID} = p2.{USER_ID} "
-            f"ORDER BY m.{MATCH_DATE} DESC"
-        )
-    matches = cur.fetchall()
+
+    matches = query.order_by(Match.match_date.desc()).all()
+
     return render_template(
         "admin_matches.html", matches=matches, search_term=search_term
     )
@@ -86,37 +57,27 @@ def admin_matches():
 @bp.route("/delete_match/<string:match_id>")
 def admin_delete_match(match_id):
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(f"DELETE FROM {MATCHES_TABLE} WHERE {MATCH_ID} = %s", (match_id,))
-        conn.commit()
-        flash("Match deleted successfully.", "success")
+        match = Match.query.get(match_id)
+        if match:
+            db.session.delete(match)
+            db.session.commit()
+            flash("Match deleted successfully.", "success")
+        else:
+            flash("Match not found.", "danger")
     except Exception as e:
+        db.session.rollback()
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for(".admin_matches"))
 
 
 @bp.route("/friend_graph_data")
 def friend_graph_data():
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute(f"SELECT {USER_ID}, {USER_USERNAME} FROM {USERS_TABLE}")
-    users = cur.fetchall()
-    cur.execute(
-        f"SELECT {FRIENDS_USER_ID}, {FRIENDS_FRIEND_ID} FROM {FRIENDS_TABLE} "
-        f"WHERE {FRIENDS_STATUS} = 'accepted'"
-    )
-    friends = cur.fetchall()
+    users = User.query.all()
+    friends = Friend.query.filter_by(status="accepted").all()
 
-    nodes = [
-        {"id": str(user[USER_ID]), "label": user[USER_USERNAME]} for user in users
-    ]
+    nodes = [{"id": str(user.id), "label": user.username} for user in users]
     edges = [
-        {
-            "from": str(friend[FRIENDS_USER_ID]),
-            "to": str(friend[FRIENDS_FRIEND_ID]),
-        }
-        for friend in friends
+        {"from": str(friend.user_id), "to": str(friend.friend_id)} for friend in friends
     ]
 
     return jsonify({"nodes": nodes, "edges": edges})
@@ -124,93 +85,83 @@ def friend_graph_data():
 
 @bp.route("/reset_db")
 def reset_db():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        f"TRUNCATE TABLE {FRIENDS_TABLE}, {USERS_TABLE}, {MATCHES_TABLE} CASCADE"
-    )
-    conn.commit()
+    try:
+        # Using raw SQL for TRUNCATE, as it's more efficient than deleting all objects.
+        db.session.execute(
+            text("TRUNCATE TABLE friends, users, matches RESTART IDENTITY CASCADE")
+        )
+        db.session.commit()
+        flash("Database has been reset.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"An error occurred while resetting the database: {e}", "danger")
     return redirect(url_for(".admin"))
 
 
 @bp.route("/reset-admin", methods=["GET", "POST"])
 def reset_admin():
-    conn = get_db_connection()
-    cur = conn.cursor()
-
     if request.method == "POST":
-        # Reset all users to not be admin
-        cur.execute(f"UPDATE {USERS_TABLE} SET {USER_IS_ADMIN} = FALSE")
-        # Set the first user to be admin
-        cur.execute(
-            f"UPDATE {USERS_TABLE} SET {USER_IS_ADMIN} = TRUE WHERE {USER_ID} = "
-            f"(SELECT {USER_ID} FROM {USERS_TABLE} ORDER BY {USER_ID} LIMIT 1)"
-        )
-        conn.commit()
+        try:
+            User.query.update({User.is_admin: False})
+            first_user = User.query.order_by(User.id).first()
+            if first_user:
+                first_user.is_admin = True
+            db.session.commit()
+            flash("Admin privileges have been reset.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"An error occurred: {e}", "danger")
         return redirect(url_for(".admin"))
 
     return render_template("reset_admin.html")
 
 
-@bp.route(f"/delete_user/<uuid:{USER_ID}>")
+@bp.route("/delete_user/<uuid:user_id>")
 def delete_user(user_id):
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            f"DELETE FROM {FRIENDS_TABLE} WHERE {FRIENDS_USER_ID} = %s OR {FRIENDS_FRIEND_ID} = %s",
-            (user_id, user_id),
-        )
-        cur.execute(f"DELETE FROM {USERS_TABLE} WHERE {USER_ID} = %s", (user_id,))
-        conn.commit()
-        flash("User deleted successfully.", "success")
-    except errors.ForeignKeyViolation as e:
-        flash(f"Cannot delete user: {e}", "danger")
-        return render_template("error.html", error=f"Cannot delete user: {e}"), 500
+        user = User.query.get(user_id)
+        if user:
+            db.session.delete(user)
+            db.session.commit()
+            flash("User deleted successfully.", "success")
+        else:
+            flash("User not found.", "danger")
+    except IntegrityError:
+        db.session.rollback()
+        flash("Cannot delete user as they are part of existing matches.", "danger")
     except Exception as e:
+        db.session.rollback()
         flash(f"An error occurred: {e}", "danger")
-        return render_template("error.html", error=str(e)), 500
     return redirect(url_for("user.users"))
 
 
-@bp.route(f"/promote_user/<uuid:{USER_ID}>")
+@bp.route("/promote_user/<uuid:user_id>")
 def promote_user(user_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        f"UPDATE {USERS_TABLE} SET {USER_IS_ADMIN} = TRUE WHERE {USER_ID} = %s",
-        (user_id,),
-    )
-    conn.commit()
+    try:
+        user = User.query.get(user_id)
+        if user:
+            user.is_admin = True
+            db.session.commit()
+            flash(f"{user.username} has been promoted to admin.", "success")
+        else:
+            flash("User not found.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"An error occurred: {e}", "danger")
     return redirect(url_for("user.users"))
 
 
-@bp.route(f"/reset_password/<uuid:{USER_ID}>")
+@bp.route("/reset_password/<uuid:user_id>")
 def admin_reset_password(user_id):
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            f"SELECT {USER_EMAIL} FROM {USERS_TABLE} WHERE {USER_ID} = %s", (user_id,)
-        )
-        email = cur.fetchone()[0]
-        new_password = "".join(
-            random.choices(string.ascii_letters + string.digits, k=12)
-        )
-        hashed_password = generate_password_hash(new_password, method="pbkdf2:sha256")
-        cur.execute(
-            f"UPDATE {USERS_TABLE} SET {USER_PASSWORD} = %s WHERE {USER_ID} = %s",
-            (hashed_password, user_id),
-        )
-        conn.commit()
-        msg = Message(
-            "Your new password",
-            sender=current_app.config["MAIL_USERNAME"],
-            recipients=[email],
-        )
-        msg.body = f"Your new password is: {new_password}"
-        mail.send(msg)
-        flash("Password reset successfully and sent to the user.", "success")
+        user = User.query.get(user_id)
+        if user and user.email:
+            send_password_reset_email(user)
+            flash(f"Password reset link sent to {user.email}.", "success")
+        elif user:
+            flash("This user does not have an email address on file.", "warning")
+        else:
+            flash("User not found.", "danger")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for("user.users"))
@@ -218,120 +169,120 @@ def admin_reset_password(user_id):
 
 @bp.route("/generate_users")
 def generate_users():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(f"SELECT {USER_USERNAME} FROM {USERS_TABLE}")
-    existing_usernames = {row[0] for row in cur.fetchall()}
     fake = Faker()
     new_users = []
 
-    for _ in range(10):
-        name = fake.name()
-        username = name.lower().replace(" ", "")
-        if username in existing_usernames:
-            continue
-        password = "password"
-        email = f"{username}@example.com"
-        dupr_rating = round(
-            fake.pyfloat(
-                left_digits=1,
-                right_digits=2,
-                positive=True,
-                min_value=1.0,
-                max_value=5.0,
-            ),
-            2,
-        )
-        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
-        sql = (
-            f"INSERT INTO {USERS_TABLE} ("
-            f"{USER_USERNAME}, {USER_PASSWORD}, {USER_EMAIL}, {USER_NAME}, "
-            f"{USER_DUPR_RATING}, {USER_IS_ADMIN}) "
-            "VALUES (%s, %s, %s, %s, %s, %s) "
-            f"RETURNING {USER_ID}, {USER_USERNAME}, {USER_EMAIL}, {USER_NAME}, "
-            f"{USER_DUPR_RATING}"
-        )
-        cur.execute(
-            sql, (username, hashed_password, email, name, dupr_rating, False)
-        )
-        new_user = cur.fetchone()
-        new_users.append(new_user)
-    conn.commit()
+    try:
+        existing_usernames = {
+            u.username for u in User.query.with_entities(User.username).all()
+        }
 
-    # Add random friendships
-    for i in range(len(new_users)):
-        for j in range(i + 1, len(new_users)):
-            if random.random() < 0.5:
-                cur.execute(
-                    f"INSERT INTO {FRIENDS_TABLE} ({FRIENDS_USER_ID}, "
-                    f"{FRIENDS_FRIEND_ID}, {FRIENDS_STATUS}) "
-                    "VALUES (%s, %s, %s)",
-                    (new_users[i][0], new_users[j][0], "accepted"),
-                )
-    conn.commit()
+        for _ in range(10):
+            name = fake.name()
+            username = name.lower().replace(" ", "")
+            if username in existing_usernames:
+                username = f"{username}{random.randint(1, 999)}"
+
+            hashed_password = generate_password_hash("password", method="pbkdf2:sha256")
+            new_user = User(
+                username=username,
+                password=hashed_password,
+                email=f"{username}@example.com",
+                name=name,
+                dupr_rating=round(
+                    fake.pyfloat(
+                        left_digits=1,
+                        right_digits=2,
+                        positive=True,
+                        min_value=1.0,
+                        max_value=5.0,
+                    ),
+                    2,
+                ),
+            )
+            db.session.add(new_user)
+            new_users.append(new_user)
+
+        db.session.flush()  # Flush to get IDs for relationships before creating friendships
+
+        # Create friendships between new users
+        for i in range(len(new_users)):
+            for j in range(i + 1, len(new_users)):
+                if random.random() < 0.5:
+                    # Create accepted friendship both ways
+                    friendship1 = Friend(
+                        user_id=new_users[i].id,
+                        friend_id=new_users[j].id,
+                        status="accepted",
+                    )
+                    friendship2 = Friend(
+                        user_id=new_users[j].id,
+                        friend_id=new_users[i].id,
+                        status="accepted",
+                    )
+                    db.session.add(friendship1)
+                    db.session.add(friendship2)
+
+        # Send friend requests to admin
+        admin_id = session.get(USER_ID)
+        if admin_id:
+            num_requests = random.randint(0, len(new_users))
+            users_to_send_request = random.sample(new_users, num_requests)
+            for user in users_to_send_request:
+                # Check if a friendship/request already exists
+                existing = Friend.query.filter_by(
+                    user_id=user.id, friend_id=admin_id
+                ).first()
+                if not existing:
+                    friend_request = Friend(
+                        user_id=user.id, friend_id=admin_id, status="pending"
+                    )
+                    db.session.add(friend_request)
+
+        db.session.commit()
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"An error occurred while generating users: {e}", "danger")
 
     return render_template("generated_users.html", users=new_users)
 
 
 @bp.route("/generate_matches")
 def generate_matches():
-    conn = get_db_connection()
-    cur = conn.cursor()
-
     try:
-        # Get all friendships
-        cur.execute(
-            f"SELECT {FRIENDS_USER_ID}, {FRIENDS_FRIEND_ID} FROM {FRIENDS_TABLE} WHERE {FRIENDS_STATUS} = 'accepted'"
-        )
-        friends = cur.fetchall()
-
+        friends = Friend.query.filter_by(status="accepted").all()
         if not friends:
             flash("No friendships found to generate matches.", "warning")
             return redirect(url_for(".admin"))
 
-        # Generate 10 random matches
         for _ in range(10):
-            user_id, friend_id = random.choice(friends)
+            friendship = random.choice(friends)
+            player1_id, player2_id = friendship.user_id, friendship.friend_id
 
-            # Generate scores
             score1 = random.randint(0, 11)
-            if score1 >= 10:
-                score2 = score1 - 2
-            else:
-                score2 = random.randint(0, 11)
-                while abs(score1 - score2) < 2 and max(score1, score2) >= 11:
-                    score2 = random.randint(0, 11)
+            score2 = score1 - 2 if score1 >= 10 else random.randint(0, 11)
+            if abs(score1 - score2) < 2 and max(score1, score2) >= 11:
+                score2 = random.randint(0, 11)  # Simple retry
 
-            # Randomly assign scores to players
-            if random.random() < 0.5:
-                player1_score, player2_score = score1, score2
-            else:
-                player1_score, player2_score = score2, score1
-
-            # Insert match
-            match_id = str(uuid.uuid4())
-            sql = (
-                f"INSERT INTO {MATCHES_TABLE} ({MATCH_ID}, {MATCH_PLAYER1_ID}, "
-                f"{MATCH_PLAYER2_ID}, {MATCH_PLAYER1_SCORE}, "
-                f"{MATCH_PLAYER2_SCORE}, {MATCH_DATE}) "
-                "VALUES (%s, %s, %s, %s, %s, NOW())"
-            )
-            cur.execute(
-                sql,
-                (
-                    match_id,
-                    user_id,
-                    friend_id,
-                    player1_score,
-                    player2_score,
-                ),
+            p1_score, p2_score = (
+                (score1, score2) if random.random() < 0.5 else (score2, score1)
             )
 
-        conn.commit()
+            new_match = Match(
+                player1_id=player1_id,
+                player2_id=player2_id,
+                player1_score=p1_score,
+                player2_score=p2_score,
+                match_date=datetime.utcnow(),
+            )
+            db.session.add(new_match)
+
+        db.session.commit()
         flash("10 random matches generated successfully.", "success")
 
     except Exception as e:
-        conn.rollback()
+        db.session.rollback()
         flash(f"An error occurred while generating matches: {e}", "danger")
 
     return redirect(url_for(".admin"))

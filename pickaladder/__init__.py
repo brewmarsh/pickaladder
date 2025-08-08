@@ -1,13 +1,12 @@
 import os
 import uuid
-from flask import Flask, session, render_template
+from flask import Flask, session
 from flask_mail import Mail
-import psycopg2
-import psycopg2.extras
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.routing import BaseConverter
-from . import db
-from .constants import USERS_TABLE, USER_ID
+from .constants import USER_ID
 
+db = SQLAlchemy()
 mail = Mail()
 
 
@@ -42,8 +41,30 @@ def create_app():
         UPLOAD_FOLDER="static/uploads",
     )
 
+    # Load configuration
+    app.config.from_mapping(
+        SECRET_KEY=os.urandom(24),
+        # Default mail settings, can be overridden in config.py
+        MAIL_SERVER="smtp.gmail.com",
+        MAIL_PORT=587,
+        MAIL_USE_TLS=True,
+        MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
+        MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
+        UPLOAD_FOLDER="static/uploads",
+    )
+
+    db_host = os.environ.get("DB_HOST", "localhost")
+    db_name = os.environ["POSTGRES_DB"]
+    db_user = os.environ["POSTGRES_USER"]
+    db_pass = os.environ["POSTGRES_PASSWORD"]
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        f"postgresql://{db_user}:{db_pass}@{db_host}/{db_name}"
+    )
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
     # Initialize extensions
     mail.init_app(app)
+    db.init_app(app)
 
     # Register blueprints
     from . import auth
@@ -62,7 +83,9 @@ def create_app():
 
     app.register_blueprint(match.bp)
 
-    db.init_app(app)
+    from . import error_handlers
+
+    app.register_blueprint(error_handlers.error_handlers_bp)
 
     # make url_for('index') == url_for('auth.login')
     # in another app, you might define a separate main index here with
@@ -73,26 +96,11 @@ def create_app():
     @app.context_processor
     def inject_user():
         if USER_ID in session:
-            conn = db.get_db_connection()
-            cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-            cur.execute(
-                f"SELECT * FROM {USERS_TABLE} WHERE {USER_ID} = %s", (session[USER_ID],)
-            )
-            user = cur.fetchone()
-            cur.close()
+            # This will be refactored to use the ORM in a later step
+            from .models import User
+
+            user = User.query.get(session[USER_ID])
             return dict(user=user)
         return dict(user=None)
-
-    @app.errorhandler(404)
-    def page_not_found(e):
-        return render_template("404.html"), 404
-
-    @app.errorhandler(500)
-    def internal_server_error(e):
-        return render_template("500.html"), 500
-
-    @app.errorhandler(psycopg2.Error)
-    def handle_db_error(e):
-        return render_template("error.html", error=str(e)), 500
 
     return app

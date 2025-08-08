@@ -35,12 +35,14 @@
                     <tbody>
                         {% for request in requests %}
                             <tr>
-                                <td>{{ request[1] }}</td>
+                                <td><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
                                 <td style="text-align: right;">
-                                    <a href="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}" class="btn">Accept</a>
-                                    <a href="{{ url_for('user.decline_friend_request', friend_id=request[0]) }}" class="btn btn-danger">Decline</a>
+                                    <a href="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" class="btn">Accept</a>
+                                    <a href="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" class="btn btn-danger">Decline</a>
                                 </td>
                             </tr>
+                        {% else %}
+                            <tr><td colspan="2">No incoming requests.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -51,9 +53,11 @@
                     <tbody>
                         {% for request in sent_requests %}
                             <tr>
-                                <td>{{ request[1] }}</td>
-                                <td>{{ request[2] }}</td>
+                                <td><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
+                                <td>Pending</td>
                             </tr>
+                        {% else %}
+                             <tr><td>No outgoing requests.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

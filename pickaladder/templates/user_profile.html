@@ -6,6 +6,9 @@
         <h1>{{ profile_user.name }}</h1>
         <p>@{{ profile_user.username }}</p>
         <p><strong>DUPR Rating:</strong> {{ profile_user.dupr_rating }}</p>
+        {% if is_friend %}
+            <a href="{{ url_for('match.create_match', opponent_id=profile_user.id) }}" class="btn">Record Match</a>
+        {% endif %}
     </div>
 
     <div class="grid-container" style="grid-template-columns: 1fr 1fr; gap: 40px;">
@@ -48,12 +51,12 @@
                     <tbody>
                         {% for match in matches %}
                             <tr class="clickable-row" data-href="{{ url_for('match.view_match_page', match_id=match.id) }}">
-                                <td>{{ match.match_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ match.match_date.strftime('%Y-%m-%d') if match.match_date else 'N/A' }}</td>
                                 <td>
-                                    {% if match.player1 == profile_user.username %}
-                                        {{ match.player2 }}
+                                    {% if match.player1_id == profile_user.id %}
+                                        <a href="{{ url_for('user.view_user', user_id=match.player2.id) }}">{{ match.player2.username }}</a>
                                     {% else %}
-                                        {{ match.player1 }}
+                                        <a href="{{ url_for('user.view_user', user_id=match.player1.id) }}">{{ match.player1.username }}</a>
                                     {% endif %}
                                 </td>
                                 <td>

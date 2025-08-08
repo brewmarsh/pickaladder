@@ -25,8 +25,8 @@
                 {% for match in matches %}
                     <tr>
                         <td>{{ match.match_date.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ match.player1_username }}</td>
-                        <td>{{ match.player2_username }}</td>
+                        <td>{{ match.player1.username }}</td>
+                        <td>{{ match.player2.username }}</td>
                         <td>{{ match.player1_score }} - {{ match.player2_score }}</td>
                         <td><a href="{{ url_for('admin.admin_delete_match', match_id=match.id) }}" class="btn btn-danger">Delete</a></td>
                     </tr>

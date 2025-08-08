@@ -1,68 +1,61 @@
 # Agent Instructions
 
-This document provides instructions for agents working on this project.
+This document provides instructions for agents working on this project. By following these guidelines, you can contribute effectively and maintain the quality of the codebase.
 
-## Project Structure and Key Directories
+## 1. High-Level Architectural Overview
 
-*   `/`: The root directory contains the main application file (`app.py`), Docker-related files (`Dockerfile`, `docker-compose.yml`), and other configuration files.
-*   `frontend/`: Contains the React-based frontend application.
-    *   `frontend/src/`: Contains the React source code.
-    *   `frontend/public/`: Contains the public assets for the frontend.
-*   `static/`: Contains static assets such as CSS and images.
-*   `templates/`: Contains Flask templates for the web application.
+This is a monolithic web application built with **Flask**. The frontend is rendered server-side using **Jinja2 templates**. The application uses a **PostgreSQL** database, accessed directly via the `psycopg2` library (there is no ORM).
+
+The Flask application is organized into blueprints. The main application is configured in `pickaladder/__init__.py`.
+
+**IMPORTANT NOTE:** The `frontend/` directory contains a boilerplate React application that is **not currently used** by the main Flask app. All frontend work should be done in the `pickaladder/templates/` and `pickaladder/static/` directories.
+
+## 2. Key Files and Directories
+
+When getting started, it's helpful to review these key files to understand the application's structure and logic.
+
+*   `pickaladder/__init__.py`: The main Flask application factory. This is where the app is created and configured, and blueprints are registered.
+*   `init.sql`: The database schema. This is the source of truth for the database structure.
+*   `pickaladder/db.py`: Manages the database connection pool.
+*   `pickaladder/auth/routes.py`: Handles user registration, login, and authentication logic.
+*   `pickaladder/user/routes.py`: Handles user profiles, friends, and other user-centric features.
+*   `pickaladder/match/routes.py`: Handles match creation and viewing the leaderboard.
+*   `pickaladder/admin/routes.py`: Handles administrative functions.
+*   `pickaladder/templates/`: Contains all Jinja2 HTML templates.
+*   `pickaladder/static/`: Contains static assets like CSS and images.
 *   `tests/`: Contains tests for the application.
-*   `migrations/`: Contains database migration scripts.
 
-## Build, Test, and Deployment Commands
+## 3. Build, Test, and Deployment
 
-*   **To install dependencies:** `make build`
-*   **To run the application:** `make up`
+*   **To build and start the application:** `make up`
 *   **To run backend tests:** `make test`
-*   **To run frontend tests:** `npm test --prefix frontend`
-*   **To build the project:** `docker compose build`
-*   **To start local services:** `docker compose up --build -d`
+*   **To clean the Docker environment:** `docker-compose down -v`
 
-## Common Debugging Procedures and Tools
+*For more commands, see the `Makefile` and `README.md`.*
 
-*   **Check application logs:** When debugging API issues, first check `app.log` for application-level errors.
-*   **Check container logs:** For Docker container issues, use `docker logs [container_name]` to retrieve logs.
-*   **Verbose Docker builds:** If a Docker build fails, consider rebuilding with `DOCKER_BUILDKIT=0` for more verbose output to inspect layers.
-*   **Cleaning the environment:** To clean up the Docker environment, use `docker-compose down -v`.
+## 4. Coding Standards and Contribution Guidelines
 
-## Coding Standards and Best Practices
+### General
+*   **Python:** Follow PEP 8 style guidelines. All new functions should have docstrings.
+*   **Commits:** Commit messages should follow the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/).
 
-*   **Python:** Follow PEP 8 style guidelines. All new functions should have docstrings. Before checking in any code, please run `black .` and `flake8 .` to format and lint the code.
-*   **React:** All React components should be functional components.
-*   **Error Handling:** Use centralized `try-catch` blocks and log to `console.error`.
-*   **Refactoring:** Prefer `const` over `let` where variable reassignment is not needed.
-*   **Resources** Prefer libraries and modules that use minimal resources and prune unecessary resources from larger packages 
+### Linting and Formatting
+*   **Ruff:** This project uses `ruff` for both linting and formatting, replacing `flake8` and `black`. Before submitting, please run `ruff check --fix .` and `ruff format .` to ensure your code is compliant. The CI pipeline will fail if there are linting errors.
 
-## Resource Optimization Guidelines
+### Business Logic
+*   **Keep Routes Thin:** Route handlers in the `routes.py` files should be kept as "thin" as possible. Complex business logic should be encapsulated in separate utility functions or, for larger features, dedicated service classes.
 
-*   **Clear Docker cache:** If you are running low on disk space, you can clear the Docker build cache with `docker builder prune`.
-*   **Clean npm cache:** Before running large builds, execute `npm cache clean --force` to free up disk space in the VM.
+### Database
+*   **Beware N+1 Queries:** When fetching lists of items that have related data, be mindful of the N+1 query problem. Use SQL `JOIN`s to fetch all necessary data in a single, efficient query.
+*   **Parameterized Queries:** Always use `psycopg2`'s parameter substitution (`%s`) for query values to prevent SQL injection. For dynamic table or column names, validate them against a whitelist.
 
-## Environment Variables
+### Security
+*   **CSRF Protection:** All forms and endpoints that perform state-changing actions (POST, PUT, DELETE requests) must be protected against Cross-Site Request Forgery (CSRF).
+*   **Password Security:** Never handle passwords in plaintext. Use the provided `werkzeug.security` functions for hashing and checking passwords. Password reset functionality must use secure, single-use tokens.
+*   **Input Validation:** All user-provided input must be validated on the server side before being used or stored.
 
-*   `POSTGRES_USER`: The username for the PostgreSQL database.
-*   `POSTGRES_PASSWORD`: The password for the PostgreSQL database.
-*   `POSTGRES_DB`: The name of the PostgreSQL database.
-*   `MAIL_SERVER`: The hostname or IP address of the email server.
-*   `MAIL_PORT`: The port of the email server.
-*   `MAIL_USERNAME`: The username for the email server.
-*   `MAIL_PASSWORD`: The password for the email server.
-*   `API_BASE_URL`: The base URL for the API. Default value: `http://localhost:27272/api`.
+## 5. Iterative Improvement and Documentation
 
-## Input/Output Conventions
-
-*   **API Responses:** API responses should be in JSON format.
-*   **Code Coverage:** All new features should include corresponding unit tests with at least 80% code coverage.
-*   **Commit Messages:** Commit messages should follow the conventional commit format.
-
-## Iterative Problem Resolution
-
-Agents should iteratively resolve similar problems. For example, if there is an error in a single file regarding indentation, agents should examine all files for similar issues, starting with those files closest in the folder structure. Then agents should continuously update the agents.md file with their findings on how to further avoid similar problems.
-
-## Closed Loop Documentation
-
-Agents must update any documentation as they make changes to code, including updating AGENTS.md when they find a new development or debugging technique, updating REQUIREMENTS.md when requirements are implemented, new bugs are found or new features are identified and updating DESIGN.md when soemthing from the design is updated.  
+*   **Iterative Problem Resolution:** If you encounter an issue (e.g., a security vulnerability, a bug, a confusing pattern), please look for other instances of the same problem in the codebase and address them.
+*   **Update This File:** If you discover a new development technique, a useful debugging procedure, or a common pitfall, please update this `AGENTS.md` file to help future agents.
+*   **Update Other Docs:** As you make changes, ensure that `REQUIREMENTS.md` and `DESIGN.md` (if applicable) are also updated to reflect the new state of the application.

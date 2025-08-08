@@ -513,3 +513,47 @@ input[type="submit"], .btn {
 .clickable-row:hover {
     background-color: var(--background-color);
 }
+
+.header-with-button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    margin-bottom: 10px;
+}
+
+.header-with-button h3 {
+    margin: 0;
+}
+
+.header-with-button .btn {
+    width: auto; /* Override the 100% width for buttons */
+    margin-top: 0;
+}
+
+/* Loading Spinner */
+.loader-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+}
+
+.loader {
+    border: 5px solid var(--background-color);
+    border-top: 5px solid var(--primary-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.highlight-row {
+    background-color: var(--warning-color) !important;
+    font-weight: bold;
+}
