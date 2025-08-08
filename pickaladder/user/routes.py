@@ -76,13 +76,15 @@ def users():
 
     current_user_id = uuid.UUID(session[USER_ID])
     search_term = request.args.get("search", "")
+    all_users = []
 
-    query = User.query.filter(User.id != current_user_id)
     if search_term:
         like_term = f"%{search_term}%"
-        query = query.filter(or_(User.username.ilike(like_term), User.name.ilike(like_term)))
-
-    all_users = query.all()
+        query = User.query.filter(
+            User.id != current_user_id,
+            or_(User.username.ilike(like_term), User.name.ilike(like_term))
+        )
+        all_users = query.all()
 
     # This is a complex query, let's simplify for now. Friends of friends can be a future enhancement.
     fof = []

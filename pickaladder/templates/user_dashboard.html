@@ -17,6 +17,20 @@
                 </div>
                 <p><strong>Email:</strong> <span id="user-email"></span></p>
                 <p><strong>DUPR Rating:</strong> <span id="user-dupr"></span></p>
+
+                <hr>
+                <h4 style="margin-top: 20px;">Update Profile</h4>
+                <form method="post" action="{{ url_for('user.update_profile') }}" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="dupr_rating">Update DUPR Rating:</label>
+                        <input type="number" step="0.01" id="dupr_rating_input" name="dupr_rating">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile_picture">Update Profile Picture:</label>
+                        <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif">
+                    </div>
+                    <input type="submit" value="Update Profile" class="btn">
+                </form>
             </div>
 
             <div class="card">
@@ -99,6 +113,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('user-email').textContent = user.email;
         document.getElementById('user-dupr').textContent = user.dupr_rating || 'Not set';
         document.getElementById('profile-picture-img').src = urls.profile_picture(user.id);
+        // Also populate the value in the update form
+        document.getElementById('dupr_rating_input').value = user.dupr_rating || '';
     }
 
     function renderTable(tbodyId, items, rowTemplate, noDataMessage) {
