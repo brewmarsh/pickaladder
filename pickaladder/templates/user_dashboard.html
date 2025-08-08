@@ -21,7 +21,6 @@
                 <hr>
                 <h4 style="margin-top: 20px;">Update Profile</h4>
                 <form method="post" action="{{ url_for('user.update_profile') }}" enctype="multipart/form-data">
-                    {{ csrf_token() }}
                     <div class="form-group">
                         <label for="dupr_rating">Update DUPR Rating:</label>
                         <input type="number" step="0.01" id="dupr_rating_input" name="dupr_rating">
