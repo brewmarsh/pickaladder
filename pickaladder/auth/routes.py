@@ -13,10 +13,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import IntegrityError
 import uuid
 
-from pickaladder import db
+from pickaladder import db, csrf
 from . import bp
+from .forms import LoginForm, RegisterForm
 from pickaladder import mail
-from .utils import generate_profile_picture, send_password_reset_email
+from .utils import send_password_reset_email, create_user
 from pickaladder.errors import ValidationError, DuplicateResourceError
 from pickaladder.models import User
 from pickaladder.constants import (
@@ -32,89 +33,51 @@ from pickaladder.constants import (
 
 @bp.route("/register", methods=["GET", "POST"])
 def register():
-    if request.method == "POST":
-        username = request.form[USER_USERNAME]
-        password = request.form[USER_PASSWORD]
-        confirm_password = request.form["confirm_password"]
-        email = request.form[USER_EMAIL]
-        name = request.form[USER_NAME]
-
-        # --- Validation Logic ---
-        if len(username) < 3 or len(username) > 25:
-            raise ValidationError("Username must be between 3 and 25 characters.")
-        if not username.isalnum():
-            raise ValidationError("Username must contain only letters and numbers.")
-        if password != confirm_password:
-            raise ValidationError("Passwords do not match.")
-        if len(password) < 8:
-            raise ValidationError("Password must be at least 8 characters long.")
-        if not re.search(r"[A-Z]", password):
-            raise ValidationError(
-                "Password must contain at least one uppercase letter."
-            )
-        if not re.search(r"[a-z]", password):
-            raise ValidationError(
-                "Password must contain at least one lowercase letter."
-            )
-        if not re.search(r"\d", password):
-            raise ValidationError("Password must contain at least one number.")
-        # --- End Validation Logic ---
+    form = RegisterForm()
+    if form.validate_on_submit():
+        if User.query.filter_by(username=form.username.data).first():
+            flash("Username already exists. Please choose a different one.", "danger")
+            return redirect(url_for(".register"))
+        if User.query.filter_by(email=form.email.data).first():
+            flash("Email address is already registered.", "danger")
+            return redirect(url_for(".register"))
 
         try:
-            dupr_rating = (
-                float(request.form[USER_DUPR_RATING])
-                if request.form[USER_DUPR_RATING]
-                else None
+            new_user = create_user(
+                username=form.username.data,
+                password=form.password.data,
+                email=form.email.data,
+                name=form.name.data,
+                dupr_rating=form.dupr_rating.data,
             )
-        except ValueError:
-            raise ValidationError("Invalid DUPR rating.")
-
-        if User.query.filter_by(username=username).first() is not None:
-            raise DuplicateResourceError(
-                "Username already exists. Please choose a different one."
-            )
-        if User.query.filter_by(email=email).first() is not None:
-            raise DuplicateResourceError("Email address is already registered.")
-
-        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
-        profile_picture_data, thumbnail_data = generate_profile_picture(name)
-
-        new_user = User(
-            username=username,
-            password=hashed_password,
-            email=email,
-            name=name,
-            dupr_rating=dupr_rating,
-            profile_picture=profile_picture_data,
-            profile_picture_thumbnail=thumbnail_data,
-        )
-
-        try:
-            db.session.add(new_user)
-            db.session.commit()
 
             msg = Message(
                 "Verify your email",
                 sender=current_app.config["MAIL_USERNAME"],
-                recipients=[email],
+                recipients=[form.email.data],
             )
-            verify_url = url_for("auth.verify_email", email=email, _external=True)
+            verify_url = url_for("auth.verify_email", email=form.email.data, _external=True)
             msg.body = f"Click the link to verify your email: {verify_url}"
             mail.send(msg)
 
+            db.session.commit()
+
             session[USER_ID] = str(new_user.id)
             session[USER_IS_ADMIN] = new_user.is_admin
-            current_app.logger.info(f"New user registered: {username}")
+            current_app.logger.info(f"New user registered: {form.username.data}")
+            flash("Registration successful! Please check your email to verify your account.", "success")
+            return redirect(url_for("user.dashboard"))
 
         except IntegrityError:
             db.session.rollback()
-            raise DuplicateResourceError("Username or email already exists.")
-        except Exception:
+            flash("Username or email already exists.", "danger")
+        except Exception as e:
             db.session.rollback()
-            raise
+            flash(f"An unexpected error occurred: {e}", "danger")
 
-        return redirect(url_for("user.dashboard"))
-    return render_template("register.html")
+        return redirect(url_for(".register"))
+
+    return render_template("register.html", form=form)
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -122,19 +85,18 @@ def login():
     if User.query.filter_by(is_admin=True).first() is None:
         return redirect(url_for("auth.install"))
 
-    if request.method == "POST":
-        username = request.form[USER_USERNAME]
-        password = request.form[USER_PASSWORD]
-
-        user = User.query.filter_by(username=username).first()
-
-        if user is None or not check_password_hash(user.password, password):
-            raise ValidationError("Invalid username or password.")
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user is None or not check_password_hash(user.password, form.password.data):
+            flash("Invalid username or password.", "danger")
+            return redirect(url_for(".login"))
 
         session[USER_ID] = str(user.id)
         session[USER_IS_ADMIN] = user.is_admin
         return redirect(url_for("user.dashboard"))
-    return render_template("login.html")
+
+    return render_template("login.html", form=form)
 
 
 @bp.route("/logout")
@@ -144,6 +106,7 @@ def logout():
 
 
 @bp.route("/install", methods=["GET", "POST"])
+@csrf.exempt
 def install():
     if User.query.filter_by(is_admin=True).first() is not None:
         return redirect(url_for("auth.login"))
@@ -162,22 +125,15 @@ def install():
         except ValueError:
             raise ValidationError("Invalid DUPR rating.")
 
-        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
-        profile_picture_data, thumbnail_data = generate_profile_picture(name)
-
-        admin_user = User(
-            username=username,
-            password=hashed_password,
-            email=email,
-            name=name,
-            dupr_rating=dupr_rating,
-            is_admin=True,
-            profile_picture=profile_picture_data,
-            profile_picture_thumbnail=thumbnail_data,
-        )
-
         try:
-            db.session.add(admin_user)
+            admin_user = create_user(
+                username=username,
+                password=password,
+                email=email,
+                name=name,
+                dupr_rating=dupr_rating,
+                is_admin=True,
+            )
             db.session.commit()
 
             session[USER_ID] = str(admin_user.id)

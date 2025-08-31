@@ -9,3 +9,5 @@ Faker==18.4.0
 ruff==0.0.272
 Pillow
 pydantic==1.10.7
+Flask-WTF
+email-validator

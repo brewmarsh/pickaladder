@@ -1,5 +1,5 @@
 import uuid
-import io
+import os
 from flask import (
     render_template,
     request,
@@ -10,15 +10,18 @@ from flask import (
     Response,
     current_app,
     jsonify,
+    send_from_directory,
 )
 from sqlalchemy import or_, and_
 from sqlalchemy.orm import aliased
 from PIL import Image
-from utils import allowed_file
+from werkzeug.utils import secure_filename
 
 from pickaladder import db
 from . import bp
+from .forms import UpdateProfileForm
 from pickaladder.models import User, Friend, Match
+from pickaladder.match.routes import get_player_record
 from pickaladder.constants import (
     USER_ID,
     USER_DUPR_RATING,
@@ -31,8 +34,13 @@ def dashboard():
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
 
+    user_id = uuid.UUID(session[USER_ID])
+    user = User.query.get_or_404(user_id)
+    form = UpdateProfileForm(obj=user)
+
     # The template is now a shell, data is fetched by client-side JS
-    return render_template("user_dashboard.html")
+    # But the form needs to be passed for the update profile section
+    return render_template("user_dashboard.html", form=form)
 
 
 @bp.route("/<uuid:user_id>")
@@ -75,6 +83,8 @@ def view_user(user_id):
         and friendship.user_id == current_user_id
     )
 
+    record = get_player_record(user_id)
+
     return render_template(
         "user_profile.html",
         profile_user=profile_user,
@@ -82,6 +92,7 @@ def view_user(user_id):
         matches=matches,
         is_friend=is_friend,
         friend_request_sent=friend_request_sent,
+        record=record,
     )
 
 
@@ -91,49 +102,53 @@ def users():
         return redirect(url_for("auth.login"))
 
     search_term = request.args.get("search", "")
-    users_with_status = []
+    page = request.args.get("page", 1, type=int)
+    current_user_id = uuid.UUID(session[USER_ID])
+
+    # Aliases for the friends table to distinguish between sent and received requests
+    sent_request = aliased(Friend)
+    received_request = aliased(Friend)
+
+    # Base query
+    query = (
+        db.session.query(
+            User,
+            sent_request.status.label("sent_status"),
+            received_request.status.label("received_status"),
+        )
+        .outerjoin(
+            sent_request,
+            and_(
+                sent_request.user_id == current_user_id,
+                sent_request.friend_id == User.id,
+            ),
+        )
+        .outerjoin(
+            received_request,
+            and_(
+                received_request.user_id == User.id,
+                received_request.friend_id == current_user_id,
+            ),
+        )
+        .filter(User.id != current_user_id)
+    )
 
     if search_term:
-        current_user_id = uuid.UUID(session[USER_ID])
         like_term = f"%{search_term}%"
-
-        # Aliases for the friends table to distinguish between sent and received requests
-        sent_request = aliased(Friend)
-        received_request = aliased(Friend)
-
-        users_with_status = (
-            db.session.query(
-                User,
-                sent_request.status.label("sent_status"),
-                received_request.status.label("received_status"),
-            )
-            .outerjoin(
-                sent_request,
-                and_(
-                    sent_request.user_id == current_user_id,
-                    sent_request.friend_id == User.id,
-                ),
-            )
-            .outerjoin(
-                received_request,
-                and_(
-                    received_request.user_id == User.id,
-                    received_request.friend_id == current_user_id,
-                ),
-            )
-            .filter(
-                User.id != current_user_id,
-                or_(User.username.ilike(like_term), User.name.ilike(like_term)),
-            )
-            .all()
+        query = query.filter(
+            or_(User.username.ilike(like_term), User.name.ilike(like_term))
         )
+
+    pagination = query.order_by(User.username).paginate(
+        page=page, per_page=10, error_out=False
+    )
 
     # This is a complex query, let's simplify for now. Friends of friends can be a future enhancement.
     fof = []
 
     return render_template(
         "users.html",
-        users_with_status=users_with_status,
+        pagination=pagination,
         search_term=search_term,
         fof=fof,
     )
@@ -271,16 +286,20 @@ def decline_friend_request(friend_id):
 @bp.route("/profile_picture/<uuid:user_id>")
 def profile_picture(user_id):
     user = User.query.get_or_404(user_id)
-    if user.profile_picture:
-        return Response(user.profile_picture, mimetype="image/png")
+    if user.profile_picture_path:
+        return send_from_directory(
+            current_app.config["UPLOAD_FOLDER"], user.profile_picture_path
+        )
     return redirect(url_for("static", filename="user_icon.png"))
 
 
 @bp.route("/profile_picture_thumbnail/<uuid:user_id>")
 def profile_picture_thumbnail(user_id):
     user = User.query.get_or_404(user_id)
-    if user.profile_picture_thumbnail:
-        return Response(user.profile_picture_thumbnail, mimetype="image/png")
+    if user.profile_picture_thumbnail_path:
+        return send_from_directory(
+            current_app.config["UPLOAD_FOLDER"], user.profile_picture_thumbnail_path
+        )
     return redirect(url_for("static", filename="user_icon.png"))
 
 
@@ -291,51 +310,54 @@ def update_profile():
 
     user_id = uuid.UUID(session[USER_ID])
     user = User.query.get_or_404(user_id)
+    form = UpdateProfileForm()
 
-    try:
-        user.dark_mode = USER_DARK_MODE in request.form
+    if form.validate_on_submit():
+        try:
+            user.dark_mode = form.dark_mode.data
+            if form.dupr_rating.data is not None:
+                user.dupr_rating = form.dupr_rating.data
 
-        dupr_rating_str = request.form.get(USER_DUPR_RATING)
-        if dupr_rating_str:
-            user.dupr_rating = float(dupr_rating_str)
+            profile_picture_file = form.profile_picture.data
+            if profile_picture_file:
+                # The FileAllowed validator already checked the extension
+                if len(profile_picture_file.read()) > 10 * 1024 * 1024:
+                    flash("Profile picture is too large (max 10MB).", "danger")
+                    return redirect(url_for(".dashboard"))
 
-        profile_picture_file = request.files.get("profile_picture")
-        if (
-            profile_picture_file
-            and profile_picture_file.filename
-            and allowed_file(profile_picture_file.filename)
-        ):
-            if len(profile_picture_file.read()) > 10 * 1024 * 1024:
-                flash("Profile picture is too large (max 10MB).", "danger")
-                return redirect(request.referrer or url_for(".dashboard"))
+                profile_picture_file.seek(0)
+                img = Image.open(profile_picture_file)
 
-            profile_picture_file.seek(0)
-            img = Image.open(profile_picture_file)
+                unique_id = uuid.uuid4().hex
+                filename = secure_filename(f"{unique_id}_profile.png")
+                thumbnail_filename = secure_filename(f"{unique_id}_thumbnail.png")
 
-            # For main picture
-            img.thumbnail((512, 512))
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            user.profile_picture = buf.getvalue()
+                upload_folder = current_app.config["UPLOAD_FOLDER"]
+                if not os.path.exists(upload_folder):
+                    os.makedirs(upload_folder)
 
-            # For thumbnail
-            img.thumbnail((64, 64))
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            user.profile_picture_thumbnail = buf.getvalue()
+                img.thumbnail((512, 512))
+                filepath = os.path.join(upload_folder, filename)
+                img.save(filepath, format="PNG")
+                user.profile_picture_path = filename
 
-            current_app.logger.info(f"User {user_id} updated their profile picture.")
+                img.thumbnail((64, 64))
+                thumbnail_filepath = os.path.join(upload_folder, thumbnail_filename)
+                img.save(thumbnail_filepath, format="PNG")
+                user.profile_picture_thumbnail_path = thumbnail_filename
 
-        elif profile_picture_file:
-            flash("Invalid file type for profile picture.", "danger")
-            return redirect(request.referrer or url_for(".dashboard"))
+                current_app.logger.info(f"User {user_id} updated their profile picture.")
 
-        db.session.commit()
-        flash("Profile updated successfully.", "success")
-
-    except Exception as e:
-        db.session.rollback()
-        flash(f"An error occurred: {e}", "danger")
+            db.session.commit()
+            flash("Profile updated successfully.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"An error occurred: {e}", "danger")
+    else:
+        # If the form is invalid, flash the errors
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
 
     return redirect(url_for(".dashboard"))
 

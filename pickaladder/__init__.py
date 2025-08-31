@@ -3,11 +3,13 @@ import uuid
 from flask import Flask, session
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 from werkzeug.routing import BaseConverter
 from .constants import USER_ID
 
 db = SQLAlchemy()
 mail = Mail()
+csrf = CSRFProtect()
 
 
 class UUIDConverter(BaseConverter):
@@ -38,19 +40,7 @@ def create_app():
         MAIL_USE_TLS=True,
         MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
         MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
-        UPLOAD_FOLDER="static/uploads",
-    )
-
-    # Load configuration
-    app.config.from_mapping(
-        SECRET_KEY=os.urandom(24),
-        # Default mail settings, can be overridden in config.py
-        MAIL_SERVER="smtp.gmail.com",
-        MAIL_PORT=587,
-        MAIL_USE_TLS=True,
-        MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
-        MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
-        UPLOAD_FOLDER="static/uploads",
+        UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 
     db_host = os.environ.get("DB_HOST", "localhost")
@@ -65,6 +55,7 @@ def create_app():
     # Initialize extensions
     mail.init_app(app)
     db.init_app(app)
+    csrf.init_app(app)
 
     # Register blueprints
     from . import auth

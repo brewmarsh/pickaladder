@@ -1,21 +1,4 @@
-# Stage 1: Build the frontend
-FROM node:16-bullseye as builder
-
-WORKDIR /app/frontend
-
-# Copy the frontend package files
-COPY frontend/package.json frontend/package-lock.json ./
-
-# Install frontend dependencies
-RUN npm ci
-
-# Copy the rest of the frontend source code
-COPY frontend/ ./
-
-# Build the frontend
-RUN npm run build
-
-# Stage 2: Build the final image
+# Stage 1: Build the final image
 FROM python:3.9-bullseye
 
 WORKDIR /app
@@ -33,9 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code
 COPY . .
-
-# Copy the built frontend from the builder stage
-COPY --from=builder /app/frontend/build ./pickaladder/static/frontend
 
 # Expose the port
 EXPOSE 27272

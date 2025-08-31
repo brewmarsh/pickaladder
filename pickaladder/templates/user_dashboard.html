@@ -21,15 +21,20 @@
                 <hr>
                 <h4 style="margin-top: 20px;">Update Profile</h4>
                 <form method="post" action="{{ url_for('user.update_profile') }}" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
                     <div class="form-group">
-                        <label for="dupr_rating">Update DUPR Rating:</label>
-                        <input type="number" step="0.01" id="dupr_rating_input" name="dupr_rating">
+                        {{ form.dupr_rating.label }}
+                        {{ form.dupr_rating(class="form-control", id="dupr_rating_input") }}
                     </div>
                     <div class="form-group">
-                        <label for="profile_picture">Update Profile Picture:</label>
-                        <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif">
+                        {{ form.profile_picture.label }}
+                        {{ form.profile_picture(class="form-control") }}
                     </div>
-                    <input type="submit" value="Update Profile" class="btn">
+                    <div class="form-group">
+                        {{ form.dark_mode.label }}
+                        {{ form.dark_mode() }}
+                    </div>
+                    {{ form.submit(class="btn") }}
                 </form>
             </div>
 
