@@ -31,10 +31,16 @@ class User(db.Model):
 
     # Relationships
     matches_as_player1 = db.relationship(
-        "Match", foreign_keys="Match.player1_id", backref="player1", lazy=True
+        "Match",
+        foreign_keys="Match.player1_id",
+        backref="player1",
+        lazy=True,
     )
     matches_as_player2 = db.relationship(
-        "Match", foreign_keys="Match.player2_id", backref="player2", lazy=True
+        "Match",
+        foreign_keys="Match.player2_id",
+        backref="player2",
+        lazy=True,
     )
 
     # Friendships initiated by this user

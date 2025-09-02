@@ -133,7 +133,10 @@ def users():
     if search_term:
         like_term = f"%{search_term}%"
         query = query.filter(
-            or_(User.username.ilike(like_term), User.name.ilike(like_term))
+            or_(
+                User.username.ilike(like_term),
+                User.name.ilike(like_term),
+            )
         )
 
     pagination = query.order_by(User.username).paginate(
@@ -318,7 +321,9 @@ def update_profile():
             profile_picture_file = form.profile_picture.data
             if profile_picture_file:
                 # The FileAllowed validator already checked the extension
-                if len(profile_picture_file.read()) > 10 * 1024 * 1024:
+                if (
+                    len(profile_picture_file.read()) > 10 * 1024 * 1024
+                ):  # 10MB max size
                     flash("Profile picture is too large (max 10MB).", "danger")
                     return redirect(url_for(".dashboard"))
 

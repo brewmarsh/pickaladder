@@ -34,7 +34,9 @@ def send_password_reset_email(user):
     Sends a password reset email to the user.
     """
     token = user.get_reset_token()
-    reset_url = url_for("auth.reset_password_with_token", token=token, _external=True)
+    reset_url = url_for(
+        "auth.reset_password_with_token", token=token, _external=True
+    )
     msg = Message(
         "Password Reset Request",
         sender=current_app.config["MAIL_USERNAME"],

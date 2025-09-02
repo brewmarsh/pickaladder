@@ -56,7 +56,9 @@ def register():
                 recipients=[form.email.data],
             )
             verify_url = url_for(
-                "auth.verify_email", email=form.email.data, _external=True
+                "auth.verify_email",
+                email=form.email.data,
+                _external=True,
             )
             msg.body = f"Click the link to verify your email: {verify_url}"
             mail.send(msg)
@@ -67,7 +69,8 @@ def register():
             session[USER_IS_ADMIN] = new_user.is_admin
             current_app.logger.info(f"New user registered: {form.username.data}")
             flash(
-                "Registration successful! Please check your email to verify your account.",
+                "Registration successful! Please check your email to verify "
+                "your account.",
                 "success",
             )
             return redirect(url_for("user.dashboard"))

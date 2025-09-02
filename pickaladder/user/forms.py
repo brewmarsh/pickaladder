@@ -10,7 +10,9 @@ class UpdateProfileForm(FlaskForm):
         validators=[
             Optional(),
             NumberRange(
-                min=2.0, max=8.0, message="DUPR rating must be between 2.0 and 8.0"
+                min=2.0,
+                max=8.0,
+                message="DUPR rating must be between 2.0 and 8.0",
             ),
         ],
         places=2,

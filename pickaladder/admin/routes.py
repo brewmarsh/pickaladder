@@ -173,9 +173,9 @@ def generate_users():
     new_users = []
 
     try:
-        existing_usernames = {
+        existing_usernames = set(
             u.username for u in User.query.with_entities(User.username).all()
-        }
+        )
 
         for _ in range(10):
             name = fake.name()

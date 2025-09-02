@@ -17,7 +17,8 @@ class MatchForm(FlaskForm):
         if field.data < 0:
             raise ValidationError("Scores cannot be negative.")
 
-        # This validation depends on player1_score, if it's not present, we can't validate.
+        # This validation depends on player1_score, if it's not present, we
+        # can't validate.
         # The DataRequired validator on player1_score should prevent this state.
         if self.player1_score.data is None:
             return
