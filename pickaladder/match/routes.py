@@ -60,6 +60,8 @@ def view_match_page(match_id):
 
 @bp.route("/create", methods=["GET", "POST"])
 def create_match():
+    if User.query.filter_by(is_admin=True).first() is None:
+        return redirect(url_for("auth.install"))
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
 

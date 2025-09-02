@@ -152,6 +152,8 @@ def install():
 
 @bp.route("/forgot_password", methods=["GET", "POST"])
 def forgot_password():
+    if User.query.filter_by(is_admin=True).first() is None:
+        return redirect(url_for("auth.install"))
     if request.method == "POST":
         email = request.form[USER_EMAIL]
         user = User.query.filter_by(email=email).first()
@@ -168,6 +170,8 @@ def forgot_password():
 
 @bp.route("/reset/<token>", methods=["GET", "POST"])
 def reset_password_with_token(token):
+    if User.query.filter_by(is_admin=True).first() is None:
+        return redirect(url_for("auth.install"))
     user = User.verify_reset_token(token)
     if not user:
         flash("Password reset link is invalid or has expired.", "danger")

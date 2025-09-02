@@ -11,10 +11,24 @@
         <div class="form-group">
             {{ form.username.label }}
             {{ form.username(class="form-control") }}
+            {% if form.username.errors %}
+                <ul class=errors>
+                {% for error in form.username.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
         </div>
         <div class="form-group">
             {{ form.password.label }}
             {{ form.password(class="form-control") }}
+            {% if form.password.errors %}
+                <ul class=errors>
+                {% for error in form.password.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
             <small style="color: #6c757d; font-size: 0.875em;">
                 Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.
             </small>
@@ -22,18 +36,46 @@
         <div class="form-group">
             {{ form.confirm_password.label }}
             {{ form.confirm_password(class="form-control") }}
+            {% if form.confirm_password.errors %}
+                <ul class=errors>
+                {% for error in form.confirm_password.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
         </div>
         <div class="form-group">
             {{ form.email.label }}
             {{ form.email(class="form-control") }}
+            {% if form.email.errors %}
+                <ul class=errors>
+                {% for error in form.email.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
         </div>
         <div class="form-group">
             {{ form.name.label }}
             {{ form.name(class="form-control") }}
+            {% if form.name.errors %}
+                <ul class=errors>
+                {% for error in form.name.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
         </div>
         <div class="form-group">
             {{ form.dupr_rating.label }}
             {{ form.dupr_rating(class="form-control") }}
+            {% if form.dupr_rating.errors %}
+                <ul class=errors>
+                {% for error in form.dupr_rating.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
         </div>
         {{ form.submit(class="btn") }}
     </form>
