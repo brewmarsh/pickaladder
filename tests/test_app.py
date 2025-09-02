@@ -49,7 +49,7 @@ class AppTestCase(unittest.TestCase):
                 "confirm_password": "Password456",
                 "email": "test@example.com",
                 "name": "Test User",
-                "submit": "Register"
+                "submit": "Register",
             },
             follow_redirects=True,
         )
@@ -70,7 +70,9 @@ class AppTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Field must be at least 8 characters long.", response.data)
-        self.assertIn(b"Password must contain at least one uppercase letter.", response.data)
+        self.assertIn(
+            b"Password must contain at least one uppercase letter.", response.data
+        )
         # The number validation is not reached because the custom validator short-circuits.
         # self.assertIn(b"Password must contain at least one number.", response.data)
 

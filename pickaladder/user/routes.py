@@ -7,7 +7,6 @@ from flask import (
     url_for,
     session,
     flash,
-    Response,
     current_app,
     jsonify,
     send_from_directory,
@@ -24,8 +23,6 @@ from pickaladder.models import User, Friend, Match
 from pickaladder.match.routes import get_player_record
 from pickaladder.constants import (
     USER_ID,
-    USER_DUPR_RATING,
-    USER_DARK_MODE,
 )
 
 
@@ -346,7 +343,9 @@ def update_profile():
                 img.save(thumbnail_filepath, format="PNG")
                 user.profile_picture_thumbnail_path = thumbnail_filename
 
-                current_app.logger.info(f"User {user_id} updated their profile picture.")
+                current_app.logger.info(
+                    f"User {user_id} updated their profile picture."
+                )
 
             db.session.commit()
             flash("Profile updated successfully.", "success")

@@ -1,5 +1,4 @@
 from PIL import Image, ImageDraw, ImageFont
-import io
 import os
 import uuid
 from flask import url_for, current_app

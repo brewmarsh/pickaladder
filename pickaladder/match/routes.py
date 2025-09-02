@@ -1,12 +1,10 @@
 import uuid
-from datetime import date
 from flask import render_template, request, redirect, url_for, session, flash
 from sqlalchemy import or_, case, func
 from pickaladder import db
 from . import bp
 from .forms import MatchForm
 from pickaladder.models import Match, User
-from pickaladder.errors import ValidationError
 from pickaladder.constants import USER_ID
 
 
@@ -77,7 +75,7 @@ def create_match():
     form.player2.choices = [(str(f.id), f.name) for f in friends]
 
     pre_selected_opponent_id = request.args.get("opponent_id")
-    if pre_selected_opponent_id and request.method == 'GET':
+    if pre_selected_opponent_id and request.method == "GET":
         form.player2.data = pre_selected_opponent_id
 
     if form.validate_on_submit():
