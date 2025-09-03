@@ -11,3 +11,7 @@ Pillow
 pydantic==1.10.7
 Flask-WTF
 email-validator
+types-WTForms
+types-psycopg2
+types-SQLAlchemy
+types-Pillow
