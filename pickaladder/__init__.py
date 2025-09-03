@@ -1,13 +1,15 @@
 import os
 import uuid
 from flask import Flask, session
-from flask_mail import Mail
+from flask_mail import Mail  # type: ignore
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect  # type: ignore
 from werkzeug.routing import BaseConverter
 from .constants import USER_ID
 
-db = SQLAlchemy()
+db: SQLAlchemy = SQLAlchemy()
 mail = Mail()
+csrf = CSRFProtect()
 
 
 class UUIDConverter(BaseConverter):
@@ -38,25 +40,14 @@ def create_app():
         MAIL_USE_TLS=True,
         MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
         MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
-        UPLOAD_FOLDER="static/uploads",
+        MAIL_DEFAULT_SENDER="noreply@example.com",
+        UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 
-    # Load configuration
-    app.config.from_mapping(
-        SECRET_KEY=os.urandom(24),
-        # Default mail settings, can be overridden in config.py
-        MAIL_SERVER="smtp.gmail.com",
-        MAIL_PORT=587,
-        MAIL_USE_TLS=True,
-        MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
-        MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
-        UPLOAD_FOLDER="static/uploads",
-    )
-
-    db_host = os.environ.get("DB_HOST", "localhost")
-    db_name = os.environ["POSTGRES_DB"]
-    db_user = os.environ["POSTGRES_USER"]
-    db_pass = os.environ["POSTGRES_PASSWORD"]
+    db_host = os.environ.get("DB_HOST", "db")
+    db_name = os.environ.get("POSTGRES_DB", "test_db")
+    db_user = os.environ.get("POSTGRES_USER", "user")
+    db_pass = os.environ.get("POSTGRES_PASSWORD", "password")
     app.config["SQLALCHEMY_DATABASE_URI"] = (
         f"postgresql://{db_user}:{db_pass}@{db_host}/{db_name}"
     )
@@ -65,6 +56,7 @@ def create_app():
     # Initialize extensions
     mail.init_app(app)
     db.init_app(app)
+    csrf.init_app(app)
 
     # Register blueprints
     from . import auth

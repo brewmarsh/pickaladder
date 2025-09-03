@@ -3,6 +3,8 @@ services:
     build: .
     ports:
       - "27272:27272"
+    volumes:
+      - .:/app
     command: >
       sh -c "
         echo 'Waiting for DB to be ready...'

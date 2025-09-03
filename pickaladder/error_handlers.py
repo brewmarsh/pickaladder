@@ -51,6 +51,9 @@ def handle_db_error(e):
     """Handles database errors."""
     current_app.logger.error(f"Database Error: {e}")
     # Avoid exposing raw database error details to the user
-    return render_template(
-        "error.html", error="A database error occurred. Please try again later."
-    ), 500
+    return (
+        render_template(
+            "error.html", error="A database error occurred. Please try again later."
+        ),
+        500,
+    )

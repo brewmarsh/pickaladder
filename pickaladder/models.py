@@ -6,7 +6,7 @@ from flask import current_app
 from itsdangerous import URLSafeTimedSerializer as Serializer
 
 
-class User(db.Model):
+class User(db.Model):  # type: ignore
     __tablename__ = "users"
 
     id = db.Column(
@@ -18,21 +18,30 @@ class User(db.Model):
     name = db.Column(db.String)
     dupr_rating = db.Column(db.Numeric(3, 2))
     is_admin = db.Column(db.Boolean, default=False)
-    profile_picture = db.Column(db.LargeBinary)
-    profile_picture_thumbnail = db.Column(db.LargeBinary)
+    # profile_picture = db.Column(db.LargeBinary)  # Deprecated
+    # profile_picture_thumbnail = db.Column(db.LargeBinary)  # Deprecated
+    profile_picture_path = db.Column(db.String(255))
+    profile_picture_thumbnail_path = db.Column(db.String(255))
     dark_mode = db.Column(db.Boolean, default=False)
     email_verified = db.Column(db.Boolean, default=False)
 
-    # These columns are no longer needed as the token contains the user id and expiration
+    # These columns are no longer needed as the token contains the user id and
+    # expiration
     # reset_token = db.Column(db.String)
     # reset_token_expiration = db.Column(db.DateTime(timezone=True))
 
     # Relationships
     matches_as_player1 = db.relationship(
-        "Match", foreign_keys="Match.player1_id", backref="player1", lazy=True
+        "Match",
+        foreign_keys="Match.player1_id",
+        backref="player1",
+        lazy=True,
     )
     matches_as_player2 = db.relationship(
-        "Match", foreign_keys="Match.player2_id", backref="player2", lazy=True
+        "Match",
+        foreign_keys="Match.player2_id",
+        backref="player2",
+        lazy=True,
     )
 
     # Friendships initiated by this user
@@ -69,7 +78,7 @@ class User(db.Model):
         return f"<User {self.username}>"
 
 
-class Friend(db.Model):
+class Friend(db.Model):  # type: ignore
     __tablename__ = "friends"
     user_id = db.Column(
         UUID(as_uuid=True),
@@ -87,7 +96,7 @@ class Friend(db.Model):
         return f"<Friendship from {self.user_id} to {self.friend_id}>"
 
 
-class Match(db.Model):
+class Match(db.Model):  # type: ignore
     __tablename__ = "matches"
 
     id = db.Column(

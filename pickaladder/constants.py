@@ -10,7 +10,7 @@ MIGRATIONS_TABLE = "migrations"
 # Columns for 'users' table
 USER_ID = "id"
 USER_USERNAME = "username"
-USER_PASSWORD = "password"
+USER_PASSWORD = "password"  # nosec B105
 USER_EMAIL = "email"
 USER_NAME = "name"
 USER_DUPR_RATING = "dupr_rating"
@@ -19,8 +19,8 @@ USER_PROFILE_PICTURE = "profile_picture"
 USER_PROFILE_PICTURE_THUMBNAIL = "profile_picture_thumbnail"
 USER_DARK_MODE = "dark_mode"
 USER_EMAIL_VERIFIED = "email_verified"
-USER_RESET_TOKEN = "reset_token"
-USER_RESET_TOKEN_EXPIRATION = "reset_token_expiration"
+USER_RESET_TOKEN = "reset_token"  # nosec B105
+USER_RESET_TOKEN_EXPIRATION = "reset_token_expiration"  # nosec B105
 
 # Columns for 'friends' table
 FRIENDS_USER_ID = "user_id"

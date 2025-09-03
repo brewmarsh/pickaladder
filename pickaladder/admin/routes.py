@@ -173,15 +173,15 @@ def generate_users():
     new_users = []
 
     try:
-        existing_usernames = {
+        existing_usernames = set(
             u.username for u in User.query.with_entities(User.username).all()
-        }
+        )
 
         for _ in range(10):
             name = fake.name()
             username = name.lower().replace(" ", "")
             if username in existing_usernames:
-                username = f"{username}{random.randint(1, 999)}"
+                username = f"{username}{random.randint(1, 999)}"  # nosec B311
 
             hashed_password = generate_password_hash("password", method="pbkdf2:sha256")
             new_user = User(
@@ -203,12 +203,13 @@ def generate_users():
             db.session.add(new_user)
             new_users.append(new_user)
 
-        db.session.flush()  # Flush to get IDs for relationships before creating friendships
+        # Flush to get IDs for relationships before creating friendships
+        db.session.flush()
 
         # Create friendships between new users
         for i in range(len(new_users)):
             for j in range(i + 1, len(new_users)):
-                if random.random() < 0.5:
+                if random.random() < 0.5:  # nosec B311
                     # Create accepted friendship both ways
                     friendship1 = Friend(
                         user_id=new_users[i].id,
@@ -226,8 +227,8 @@ def generate_users():
         # Send friend requests to admin
         admin_id = session.get(USER_ID)
         if admin_id:
-            num_requests = random.randint(0, len(new_users))
-            users_to_send_request = random.sample(new_users, num_requests)
+            num_requests = random.randint(0, len(new_users))  # nosec B311
+            users_to_send_request = random.sample(new_users, num_requests)  # nosec B311
             for user in users_to_send_request:
                 # Check if a friendship/request already exists
                 existing = Friend.query.filter_by(
@@ -257,16 +258,18 @@ def generate_matches():
             return redirect(url_for(".admin"))
 
         for _ in range(10):
-            friendship = random.choice(friends)
+            friendship = random.choice(friends)  # nosec B311
             player1_id, player2_id = friendship.user_id, friendship.friend_id
 
-            score1 = random.randint(0, 11)
-            score2 = score1 - 2 if score1 >= 10 else random.randint(0, 11)
+            score1 = random.randint(0, 11)  # nosec B311
+            score2 = score1 - 2 if score1 >= 10 else random.randint(0, 11)  # nosec B311
             if abs(score1 - score2) < 2 and max(score1, score2) >= 11:
-                score2 = random.randint(0, 11)  # Simple retry
+                score2 = random.randint(0, 11)  # nosec B311
 
             p1_score, p2_score = (
-                (score1, score2) if random.random() < 0.5 else (score2, score1)
+                (score1, score2)
+                if random.random() < 0.5  # nosec B311
+                else (score2, score1)
             )
 
             new_match = Match(

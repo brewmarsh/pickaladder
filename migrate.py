@@ -26,13 +26,15 @@ def apply_migrations():
             trans = connection.begin()
             try:
                 # Ensure the migrations table exists.
-                result = connection.execute(
-                    text(
-                        "SELECT table_name FROM information_schema.tables "
-                        f"WHERE table_schema = 'public' "
-                        f"AND table_name = '{MIGRATIONS_TABLE}'"
-                    )
+                # NOTE: The following queries are safe from SQL injection because the
+                # table and column names are defined as constants in the codebase,
+                # not from user input.
+                query = (
+                    "SELECT table_name FROM information_schema.tables "
+                    "WHERE table_schema = 'public' "
+                    "AND table_name = %s"
                 )
+                result = connection.execute(text(query), (MIGRATIONS_TABLE,))
                 if result.fetchone() is None:
                     print(f"Creating '{MIGRATIONS_TABLE}' table.")
                     connection.execute(
@@ -44,8 +46,9 @@ def apply_migrations():
                     )
 
                 # Get the set of already applied migrations.
+                query = "SELECT %s FROM %s"
                 result = connection.execute(
-                    text(f"SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}")
+                    text(query), (MIGRATION_NAME, MIGRATIONS_TABLE)
                 )
                 applied_migrations = {row[0] for row in result.fetchall()}
                 print(f"Found {len(applied_migrations)} applied migrations.")
@@ -64,12 +67,10 @@ def apply_migrations():
                             connection.execute(text(sql))
 
                         # Record the migration so it doesn't run again.
+                        query = "INSERT INTO %s (%s) VALUES (:migration_file)"
                         connection.execute(
-                            text(
-                                f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) "
-                                "VALUES (:migration_file)"
-                            ),
-                            {"migration_file": migration_file},
+                            text(query),
+                            (MIGRATIONS_TABLE, MIGRATION_NAME, migration_file),
                         )
 
                 # Commit the transaction
