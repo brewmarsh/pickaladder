@@ -21,8 +21,7 @@ class RegisterForm(FlaskForm):
             Length(min=3, max=25),
             Regexp(
                 r"^[A-Za-z0-9_.]*$",
-                message="Username must have only letters, numbers, dots or "
-                "underscores",
+                message="Username must have only letters, numbers, dots or underscores",
             ),
         ],
     )
@@ -43,11 +42,11 @@ class RegisterForm(FlaskForm):
     def validate_password(self, field):
         if not re.search(r"[A-Z]", field.data):
             raise ValidationError(
-                "Password must contain at least one " "uppercase letter."
+                "Password must contain at least one uppercase letter."
             )
         if not re.search(r"[a-z]", field.data):
             raise ValidationError(
-                "Password must contain at least one " "lowercase letter."
+                "Password must contain at least one lowercase letter."
             )
         if not re.search(r"\d", field.data):
             raise ValidationError("Password must contain at least one number.")

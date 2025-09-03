@@ -227,8 +227,8 @@ def friends():
     )
 
 
-@bp.route("/accept_friend_request/<uuid:friend_id>")
-def accept_friend_request(friend_id):
+@bp.route("/friend/accept/<uuid:request_id>", methods=["POST"])
+def accept_friend_request(request_id):
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
 
@@ -236,18 +236,19 @@ def accept_friend_request(friend_id):
 
     try:
         # Find and update the incoming request
-        request_to_accept = Friend.query.filter_by(
-            user_id=friend_id, friend_id=user_id, status="pending"
-        ).first()
-        if not request_to_accept:
-            flash("Friend request not found or already handled.", "warning")
+        request_to_accept = Friend.query.get(request_id)
+        if not request_to_accept or request_to_accept.friend_id != user_id:
+            flash(
+                "Friend request not found or you are not authorized to accept it.",
+                "warning",
+            )
             return redirect(url_for(".friends"))
 
         request_to_accept.status = "accepted"
 
         # Create the reciprocal friendship
         reciprocal_friendship = Friend(
-            user_id=user_id, friend_id=friend_id, status="accepted"
+            user_id=user_id, friend_id=request_to_accept.user_id, status="accepted"
         )
         db.session.add(reciprocal_friendship)
 
@@ -260,23 +261,24 @@ def accept_friend_request(friend_id):
     return redirect(url_for(".friends"))
 
 
-@bp.route("/decline_friend_request/<uuid:friend_id>")
-def decline_friend_request(friend_id):
+@bp.route("/friend/decline/<uuid:request_id>", methods=["POST"])
+def decline_friend_request(request_id):
     if USER_ID not in session:
         return redirect(url_for("auth.login"))
 
     user_id = uuid.UUID(session[USER_ID])
 
     try:
-        request_to_decline = Friend.query.filter_by(
-            user_id=friend_id, friend_id=user_id, status="pending"
-        ).first()
-        if request_to_decline:
+        request_to_decline = Friend.query.get(request_id)
+        if request_to_decline and request_to_decline.friend_id == user_id:
             db.session.delete(request_to_decline)
             db.session.commit()
             flash("Friend request declined.", "success")
         else:
-            flash("Friend request not found or already handled.", "warning")
+            flash(
+                "Friend request not found or you are not authorized to decline it.",
+                "warning",
+            )
     except Exception as e:
         db.session.rollback()
         flash(f"An error occurred: {e}", "danger")
