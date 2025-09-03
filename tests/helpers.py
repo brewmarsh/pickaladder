@@ -8,7 +8,13 @@ from werkzeug.security import generate_password_hash
 TEST_PASSWORD = "Password123!"  # nosec
 
 
-def create_user(username="testuser", password=TEST_PASSWORD, email="test@example.com", name="Test User", is_admin=False):
+def create_user(
+    username="testuser",
+    password=TEST_PASSWORD,
+    email="test@example.com",
+    name="Test User",
+    is_admin=False,
+):
     """Creates a user in the database and returns the user object."""
     hashed_password = generate_password_hash(password)
     user = User(

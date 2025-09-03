@@ -16,7 +16,7 @@ class MatchTestCase(BaseTestCase):
         self.assertIn(b"Create Match", response.data)
 
     def test_create_match(self):
-        winner = create_user(
+        create_user(
             username="winner_create",
             password=TEST_PASSWORD,
             is_admin=True,
@@ -64,7 +64,7 @@ class MatchTestCase(BaseTestCase):
         self.assertIn(b"5", response.data)
 
     def test_leaderboard_update(self):
-        winner = create_user(
+        create_user(
             username="winner_leaderboard",
             password=TEST_PASSWORD,
             is_admin=True,
