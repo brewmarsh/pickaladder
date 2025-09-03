@@ -143,7 +143,8 @@ def users():
         page=page, per_page=10, error_out=False
     )
 
-    # This is a complex query, let's simplify for now. Friends of friends can be a future enhancement.
+    # This is a complex query, let's simplify for now. Friends of friends can be a
+    # future enhancement.
     fof = []
 
     return render_template(
@@ -321,9 +322,7 @@ def update_profile():
             profile_picture_file = form.profile_picture.data
             if profile_picture_file:
                 # The FileAllowed validator already checked the extension
-                if (
-                    len(profile_picture_file.read()) > 10 * 1024 * 1024
-                ):  # 10MB max size
+                if len(profile_picture_file.read()) > 10 * 1024 * 1024:  # 10MB max size
                     flash("Profile picture is too large (max 10MB).", "danger")
                     return redirect(url_for(".dashboard"))
 
@@ -435,15 +434,19 @@ def api_dashboard():
                 "id": str(match.id),
                 "opponent_username": opponent.username,
                 "opponent_id": str(opponent.id),
-                "user_score": match.player1_score
-                if match.player1_id == user_id
-                else match.player2_score,
-                "opponent_score": match.player2_score
-                if match.player1_id == user_id
-                else match.player1_score,
-                "date": match.match_date.strftime("%Y-%m-%d")
-                if match.match_date
-                else None,
+                "user_score": (
+                    match.player1_score
+                    if match.player1_id == user_id
+                    else match.player2_score
+                ),
+                "opponent_score": (
+                    match.player2_score
+                    if match.player1_id == user_id
+                    else match.player1_score
+                ),
+                "date": (
+                    match.match_date.strftime("%Y-%m-%d") if match.match_date else None
+                ),
             }
         )
 

@@ -10,7 +10,9 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(
-        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.uuid_generate_v4(),
     )
     username = db.Column(db.String, unique=True, nullable=False)
     password = db.Column(db.String, nullable=False)
@@ -25,7 +27,8 @@ class User(db.Model):
     dark_mode = db.Column(db.Boolean, default=False)
     email_verified = db.Column(db.Boolean, default=False)
 
-    # These columns are no longer needed as the token contains the user id and expiration
+    # These columns are no longer needed as the token contains the user id and
+    # expiration
     # reset_token = db.Column(db.String)
     # reset_token_expiration = db.Column(db.DateTime(timezone=True))
 

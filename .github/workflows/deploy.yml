@@ -46,6 +46,13 @@ jobs:
             docker stop app-web-1 || true
             docker rm app-web-1 || true
             docker run -d --restart always \
+              --network app_default \
+              -e SECRET_KEY=${{ secrets.SECRET_KEY }} \
+              -e MAIL_SERVER=${{ secrets.MAIL_SERVER }} \
+              -e MAIL_PORT=${{ secrets.MAIL_PORT }} \
+              -e MAIL_USE_TLS=${{ secrets.MAIL_USE_TLS }} \
+              -e MAIL_USERNAME=${{ secrets.MAIL_USERNAME }} \
+              -e MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }} \
               -e POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
               -e POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
               -e POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
@@ -53,3 +60,6 @@ jobs:
               --name app-web-1 \
               -p 27272:27272 \
               ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+            sleep 10 # Give the app time to start up before running migrations
+            docker exec app-web-1 python migrate.py

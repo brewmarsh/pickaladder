@@ -42,11 +42,11 @@ def send_password_reset_email(user):
         sender=current_app.config["MAIL_USERNAME"],
         recipients=[user.email],
     )
-    msg.body = f"""To reset your password, visit the following link:
-{reset_url}
-
-If you did not make this request then simply ignore this email and no changes will be made.
-"""
+    msg.body = (
+        f"To reset your password, visit the following link:\n{reset_url}\n\n"
+        "If you did not make this request then simply ignore this email and no "
+        "changes will be made."
+    )
     mail.send(msg)
 
 

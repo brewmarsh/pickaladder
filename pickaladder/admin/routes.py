@@ -203,7 +203,8 @@ def generate_users():
             db.session.add(new_user)
             new_users.append(new_user)
 
-        db.session.flush()  # Flush to get IDs for relationships before creating friendships
+        # Flush to get IDs for relationships before creating friendships
+        db.session.flush()
 
         # Create friendships between new users
         for i in range(len(new_users)):

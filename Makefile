@@ -12,4 +12,4 @@ reset-db:
 	docker compose exec db psql -U $$POSTGRES_USER -d $$POSTGRES_DB -c "DROP TABLE IF EXISTS friends, matches, users CASCADE;"
 
 migrate:
-	docker compose exec -T db psql -U $$POSTGRES_USER -d $$POSTGRES_DB -f /migrations/1_add_dark_mode_column.sql
+	docker compose exec web python migrate.py
