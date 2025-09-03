@@ -25,7 +25,8 @@ class User(db.Model):  # type: ignore
     dark_mode = db.Column(db.Boolean, default=False)
     email_verified = db.Column(db.Boolean, default=False)
 
-    # These columns are no longer needed as the token contains the user id and expiration
+    # These columns are no longer needed as the token contains the user id and
+    # expiration
     # reset_token = db.Column(db.String)
     # reset_token_expiration = db.Column(db.DateTime(timezone=True))
 
