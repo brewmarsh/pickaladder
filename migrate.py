@@ -28,7 +28,7 @@ def apply_migrations():
                 # Ensure the migrations table exists.
                 result = connection.execute(
                     text(
-                        "SELECT table_name FROM information_schema.tables "
+                        "SELECT table_name FROM information_schema.tables "  # nosec B608
                         f"WHERE table_schema = 'public' "
                         f"AND table_name = '{MIGRATIONS_TABLE}'"
                     )
@@ -45,7 +45,7 @@ def apply_migrations():
 
                 # Get the set of already applied migrations.
                 result = connection.execute(
-                    text(f"SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}")
+                    text(f"SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}")  # nosec B608
                 )
                 applied_migrations = {row[0] for row in result.fetchall()}
                 print(f"Found {len(applied_migrations)} applied migrations.")
@@ -66,7 +66,7 @@ def apply_migrations():
                         # Record the migration so it doesn't run again.
                         connection.execute(
                             text(
-                                f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) "
+                                f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) "  # nosec B608
                                 "VALUES (:migration_file)"
                             ),
                             {"migration_file": migration_file},
