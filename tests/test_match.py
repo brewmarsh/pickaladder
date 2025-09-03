@@ -1,4 +1,4 @@
-from tests.helpers import BaseTestCase, create_user, create_match
+from tests.helpers import BaseTestCase, create_user, create_match, TEST_PASSWORD
 from pickaladder.models import User
 
 
@@ -6,11 +6,11 @@ class MatchTestCase(BaseTestCase):
     def test_create_match_page_load(self):
         create_user(
             username="testuser_match_load",
-            password="Password123!",
+            password=TEST_PASSWORD,
             is_admin=True,
             email="testuser_match_load@example.com",
         )
-        self.login("testuser_match_load", "Password123!")
+        self.login("testuser_match_load", TEST_PASSWORD)
         response = self.app.get("/match/create")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Create Match", response.data)
@@ -18,16 +18,16 @@ class MatchTestCase(BaseTestCase):
     def test_create_match(self):
         create_user(
             username="winner_create",
-            password="Password123!",
+            password=TEST_PASSWORD,
             is_admin=True,
             email="winner_create@example.com",
         )
         loser = create_user(
             username="loser_create",
-            password="Password123!",
+            password=TEST_PASSWORD,
             email="loser_create@example.com",
         )
-        self.login("winner_create", "Password123!")
+        self.login("winner_create", TEST_PASSWORD)
         response = self.app.post(
             "/match/create",
             data={
@@ -45,17 +45,17 @@ class MatchTestCase(BaseTestCase):
     def test_view_match(self):
         winner = create_user(
             username="winner_view",
-            password="Password123!",
+            password=TEST_PASSWORD,
             is_admin=True,
             email="winner_view@example.com",
         )
         loser = create_user(
             username="loser_view",
-            password="Password123!",
+            password=TEST_PASSWORD,
             email="loser_view@example.com",
         )
         match = create_match(winner.id, loser.id)
-        self.login("winner_view", "Password123!")
+        self.login("winner_view", TEST_PASSWORD)
         response = self.app.get(f"/match/{match.id}")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"winner_view", response.data)
@@ -66,16 +66,16 @@ class MatchTestCase(BaseTestCase):
     def test_leaderboard_update(self):
         create_user(
             username="winner_leaderboard",
-            password="Password123!",
+            password=TEST_PASSWORD,
             is_admin=True,
             email="winner_leaderboard@example.com",
         )
         loser = create_user(
             username="loser_leaderboard",
-            password="Password123!",
+            password=TEST_PASSWORD,
             email="loser_leaderboard@example.com",
         )
-        self.login("winner_leaderboard", "Password123!")
+        self.login("winner_leaderboard", TEST_PASSWORD)
         self.app.post(
             "/match/create",
             data={

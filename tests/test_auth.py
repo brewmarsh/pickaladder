@@ -1,4 +1,4 @@
-from tests.helpers import BaseTestCase, create_user
+from tests.helpers import BaseTestCase, create_user, TEST_PASSWORD
 
 
 class AuthTestCase(BaseTestCase):
@@ -20,8 +20,8 @@ class AuthTestCase(BaseTestCase):
             "/auth/register",
             data={
                 "username": "newuser",
-                "password": "Password123!",
-                "confirm_password": "Password123!",
+                "password": TEST_PASSWORD,
+                "confirm_password": TEST_PASSWORD,
                 "email": "new@example.com",
                 "name": "New User",
             },
@@ -33,12 +33,12 @@ class AuthTestCase(BaseTestCase):
     def test_login_logout(self):
         create_user(
             username="testuser",
-            password="Password123!",
+            password=TEST_PASSWORD,
             is_admin=True,
             email="testuser@example.com",
         )
         # Test successful login
-        response = self.login("testuser", "Password123!")
+        response = self.login("testuser", TEST_PASSWORD)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Dashboard", response.data)
         self.assertIn(b"Logout", response.data)
@@ -52,7 +52,7 @@ class AuthTestCase(BaseTestCase):
     def test_login_with_invalid_credentials(self):
         create_user(
             username="testuser_invalid",
-            password="Password123!",
+            password=TEST_PASSWORD,
             is_admin=True,
             email="testuser_invalid@example.com",
         )

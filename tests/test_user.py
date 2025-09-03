@@ -1,4 +1,4 @@
-from tests.helpers import BaseTestCase, create_user, send_friend_request
+from tests.helpers import BaseTestCase, create_user, send_friend_request, TEST_PASSWORD
 from pickaladder.models import Friend
 
 
@@ -6,11 +6,11 @@ class UserTestCase(BaseTestCase):
     def test_view_own_profile(self):
         user = create_user(
             username="testuser_profile",
-            password="Password123!",
+            password=TEST_PASSWORD,
             is_admin=True,
             email="testuser_profile@example.com",
         )
-        self.login("testuser_profile", "Password123!")
+        self.login("testuser_profile", TEST_PASSWORD)
         response = self.app.get(f"/user/profile/{user.id}")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"testuser_profile", response.data)
@@ -18,16 +18,16 @@ class UserTestCase(BaseTestCase):
     def test_view_other_user_profile(self):
         create_user(
             username="user1_view",
-            password="Password123!",
+            password=TEST_PASSWORD,
             is_admin=True,
             email="user1_view@example.com",
         )
         user2 = create_user(
             username="user2_view",
-            password="Password123!",
+            password=TEST_PASSWORD,
             email="user2_view@example.com",
         )
-        self.login("user1_view", "Password123!")
+        self.login("user1_view", TEST_PASSWORD)
         response = self.app.get(f"/user/profile/{user2.id}")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"user2_view", response.data)
@@ -35,16 +35,16 @@ class UserTestCase(BaseTestCase):
     def test_send_friend_request(self):
         user1 = create_user(
             username="user1_friend_send",
-            password="Password123!",
+            password=TEST_PASSWORD,
             is_admin=True,
             email="user1_friend_send@example.com",
         )
         user2 = create_user(
             username="user2_friend_send",
-            password="Password123!",
+            password=TEST_PASSWORD,
             email="user2_friend_send@example.com",
         )
-        self.login("user1_friend_send", "Password123!")
+        self.login("user1_friend_send", TEST_PASSWORD)
         response = self.app.post(f"/user/friend/add/{user2.id}", follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Friend request sent.", response.data)
@@ -59,17 +59,17 @@ class UserTestCase(BaseTestCase):
     def test_accept_friend_request(self):
         user1 = create_user(
             username="user1_friend_accept",
-            password="Password123!",
+            password=TEST_PASSWORD,
             is_admin=True,
             email="user1_friend_accept@example.com",
         )
         user2 = create_user(
             username="user2_friend_accept",
-            password="Password123!",
+            password=TEST_PASSWORD,
             email="user2_friend_accept@example.com",
         )
         send_friend_request(user1.id, user2.id)
-        self.login("user2_friend_accept", "Password123!")
+        self.login("user2_friend_accept", TEST_PASSWORD)
         friend_request = Friend.query.filter_by(
             user_id=user1.id, friend_id=user2.id
         ).first()
@@ -86,17 +86,17 @@ class UserTestCase(BaseTestCase):
     def test_decline_friend_request(self):
         user1 = create_user(
             username="user1_friend_decline",
-            password="Password123!",
+            password=TEST_PASSWORD,
             is_admin=True,
             email="user1_friend_decline@example.com",
         )
         user2 = create_user(
             username="user2_friend_decline",
-            password="Password123!",
+            password=TEST_PASSWORD,
             email="user2_friend_decline@example.com",
         )
         send_friend_request(user1.id, user2.id)
-        self.login("user2_friend_decline", "Password123!")
+        self.login("user2_friend_decline", TEST_PASSWORD)
         friend_request = Friend.query.filter_by(
             user_id=user1.id, friend_id=user2.id
         ).first()

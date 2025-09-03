@@ -4,9 +4,12 @@ from pickaladder.models import User, Match, Friend
 from werkzeug.security import generate_password_hash
 
 
+TEST_PASSWORD = "Password123!"  # nosec
+
+
 def create_user(
     username="testuser",
-    password="Password123!",
+    password=TEST_PASSWORD,
     email="test@example.com",
     name="Test User",
     is_admin=False,
