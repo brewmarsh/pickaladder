@@ -8,6 +8,9 @@ up:
 test:
 	docker compose -f docker-compose.yml -f docker-compose.test.yml exec web python -m unittest discover tests
 
+coverage:
+	docker compose -f docker-compose.yml -f docker-compose.test.yml exec web coverage run -m unittest discover tests
+
 reset-db:
 	docker compose exec db psql -U $$POSTGRES_USER -d $$POSTGRES_DB -c "DROP TABLE IF EXISTS friends, matches, users CASCADE;"
 
