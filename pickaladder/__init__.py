@@ -1,13 +1,13 @@
 import os
 import uuid
 from flask import Flask, session
-from flask_mail import Mail
+from flask_mail import Mail  # type: ignore
 from flask_sqlalchemy import SQLAlchemy
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect  # type: ignore
 from werkzeug.routing import BaseConverter
 from .constants import USER_ID
 
-db = SQLAlchemy()
+db: SQLAlchemy = SQLAlchemy()
 mail = Mail()
 csrf = CSRFProtect()
 

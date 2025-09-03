@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 import os
 import uuid
 from flask import url_for, current_app
-from flask_mail import Message
+from flask_mail import Message  # type: ignore
 from pickaladder import mail
 from werkzeug.security import generate_password_hash
 

@@ -7,7 +7,7 @@ from flask import (
     flash,
     current_app,
 )
-from flask_mail import Message
+from flask_mail import Message  # type: ignore
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import IntegrityError
 import uuid
