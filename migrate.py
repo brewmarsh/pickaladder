@@ -26,9 +26,11 @@ def apply_migrations():
             trans = connection.begin()
             try:
                 # Ensure the migrations table exists.
-                query = "SELECT table_name FROM information_schema.tables " \
-                    f"WHERE table_schema = 'public' " \
-                    f"AND table_name = '{MIGRATIONS_TABLE}'"  # nosec B608
+                query = (
+                    "SELECT table_name FROM information_schema.tables "
+                    f"WHERE table_schema = 'public' "
+                    f"AND table_name = '{MIGRATIONS_TABLE}'"
+                )  # nosec B608
                 result = connection.execute(text(query))
                 if result.fetchone() is None:
                     print(f"Creating '{MIGRATIONS_TABLE}' table.")
@@ -60,8 +62,10 @@ def apply_migrations():
                             connection.execute(text(sql))
 
                         # Record the migration so it doesn't run again.
-                        query = f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) " \
-                            "VALUES (:migration_file)"  # nosec B608
+                        query = (
+                            f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) "
+                            "VALUES (:migration_file)"
+                        )  # nosec B608
                         connection.execute(
                             text(query),
                             {"migration_file": migration_file},

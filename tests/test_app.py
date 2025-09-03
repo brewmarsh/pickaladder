@@ -38,9 +38,7 @@ class AppTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            b"Field must be between 3 and 25 characters long.", response.data
-        )
+        self.assertIn(b"Field must be between 3 and 25 characters long.", response.data)
 
     def test_register_validation_password_mismatch(self):
         response = self.app.post(
