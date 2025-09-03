@@ -26,13 +26,10 @@ def apply_migrations():
             trans = connection.begin()
             try:
                 # Ensure the migrations table exists.
-                result = connection.execute(
-                    text(
-                        "SELECT table_name FROM information_schema.tables "  # nosec B608
-                        f"WHERE table_schema = 'public' "
-                        f"AND table_name = '{MIGRATIONS_TABLE}'"
-                    )
-                )
+                query = "SELECT table_name FROM information_schema.tables " \
+                    f"WHERE table_schema = 'public' " \
+                    f"AND table_name = '{MIGRATIONS_TABLE}'"  # nosec B608
+                result = connection.execute(text(query))
                 if result.fetchone() is None:
                     print(f"Creating '{MIGRATIONS_TABLE}' table.")
                     connection.execute(
@@ -44,9 +41,8 @@ def apply_migrations():
                     )
 
                 # Get the set of already applied migrations.
-                result = connection.execute(
-                    text(f"SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}")  # nosec B608
-                )
+                query = f"SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}"  # nosec B608
+                result = connection.execute(text(query))
                 applied_migrations = {row[0] for row in result.fetchall()}
                 print(f"Found {len(applied_migrations)} applied migrations.")
 
@@ -64,11 +60,10 @@ def apply_migrations():
                             connection.execute(text(sql))
 
                         # Record the migration so it doesn't run again.
+                        query = f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) " \
+                            "VALUES (:migration_file)"  # nosec B608
                         connection.execute(
-                            text(
-                                f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) "  # nosec B608
-                                "VALUES (:migration_file)"
-                            ),
+                            text(query),
                             {"migration_file": migration_file},
                         )
 
