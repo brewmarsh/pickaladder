@@ -50,19 +50,6 @@ def register():
                 dupr_rating=form.dupr_rating.data,
             )
 
-            msg = Message(
-                "Verify your email",
-                sender=current_app.config["MAIL_USERNAME"],
-                recipients=[form.email.data],
-            )
-            verify_url = url_for(
-                "auth.verify_email",
-                email=form.email.data,
-                _external=True,
-            )
-            msg.body = f"Click the link to verify your email: {verify_url}"
-            mail.send(msg)
-
             db.session.commit()
 
             session[USER_ID] = str(new_user.id)
@@ -109,6 +96,7 @@ def login():
 @bp.route("/logout")
 def logout():
     session.clear()
+    flash("You have been logged out.", "success")
     return redirect(url_for("auth.login"))
 
 

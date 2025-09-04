@@ -24,6 +24,7 @@ from pickaladder.constants import USER_ID, USER_IS_ADMIN
 @bp.before_request
 def before_request():
     if not session.get(USER_IS_ADMIN):
+        flash("You are not authorized to view this page.", "danger")
         return redirect(url_for("auth.login"))
 
 

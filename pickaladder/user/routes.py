@@ -29,6 +29,7 @@ from pickaladder.constants import (
 @bp.route("/dashboard")
 def dashboard():
     if USER_ID not in session:
+        flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
 
     user_id = uuid.UUID(session[USER_ID])
@@ -43,6 +44,7 @@ def dashboard():
 @bp.route("/<uuid:user_id>")
 def view_user(user_id):
     if USER_ID not in session:
+        flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
 
     profile_user = User.query.get_or_404(user_id)
@@ -96,6 +98,7 @@ def view_user(user_id):
 @bp.route("/users")
 def users():
     if USER_ID not in session:
+        flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
 
     search_term = request.args.get("search", "")
@@ -191,6 +194,7 @@ def add_friend(friend_id):
 @bp.route("/friends")
 def friends():
     if USER_ID not in session:
+        flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
 
     user_id = uuid.UUID(session[USER_ID])
@@ -230,14 +234,17 @@ def friends():
 @bp.route("/friend/accept/<uuid:request_id>", methods=["POST"])
 def accept_friend_request(request_id):
     if USER_ID not in session:
+        flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
 
     user_id = uuid.UUID(session[USER_ID])
 
     try:
         # Find and update the incoming request
-        request_to_accept = Friend.query.get(request_id)
-        if not request_to_accept or request_to_accept.friend_id != user_id:
+        request_to_accept = Friend.query.filter_by(
+            user_id=request_id, friend_id=user_id
+        ).first()
+        if not request_to_accept:
             flash(
                 "Friend request not found or you are not authorized to accept it.",
                 "warning",
@@ -264,13 +271,16 @@ def accept_friend_request(request_id):
 @bp.route("/friend/decline/<uuid:request_id>", methods=["POST"])
 def decline_friend_request(request_id):
     if USER_ID not in session:
+        flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
 
     user_id = uuid.UUID(session[USER_ID])
 
     try:
-        request_to_decline = Friend.query.get(request_id)
-        if request_to_decline and request_to_decline.friend_id == user_id:
+        request_to_decline = Friend.query.filter_by(
+            user_id=request_id, friend_id=user_id
+        ).first()
+        if request_to_decline:
             db.session.delete(request_to_decline)
             db.session.commit()
             flash("Friend request declined.", "success")

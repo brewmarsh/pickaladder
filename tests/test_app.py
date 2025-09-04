@@ -1,13 +1,9 @@
 import unittest
 from app import app
+from tests.helpers import BaseTestCase
 
 
-class AppTestCase(unittest.TestCase):
-    def setUp(self):
-        app.config["TESTING"] = True
-        app.config["WTF_CSRF_ENABLED"] = False  # Disable CSRF for testing
-        self.app = app.test_client()
-
+class AppTestCase(BaseTestCase):
     def test_index_redirect_to_install(self):
         response = self.app.get("/")
         # The root should redirect to the install page if no admin exists

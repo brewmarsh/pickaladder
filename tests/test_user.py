@@ -11,7 +11,7 @@ class UserTestCase(BaseTestCase):
             email="testuser_profile@example.com",
         )
         self.login("testuser_profile", TEST_PASSWORD)
-        response = self.app.get(f"/user/profile/{user.id}")
+        response = self.app.get(f"/user/{user.id}")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"testuser_profile", response.data)
 
@@ -28,7 +28,7 @@ class UserTestCase(BaseTestCase):
             email="user2_view@example.com",
         )
         self.login("user1_view", TEST_PASSWORD)
-        response = self.app.get(f"/user/profile/{user2.id}")
+        response = self.app.get(f"/user/{user2.id}")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"user2_view", response.data)
 
@@ -45,7 +45,7 @@ class UserTestCase(BaseTestCase):
             email="user2_friend_send@example.com",
         )
         self.login("user1_friend_send", TEST_PASSWORD)
-        response = self.app.post(f"/user/friend/add/{user2.id}", follow_redirects=True)
+        response = self.app.post(f"/user/add_friend/{user2.id}", follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Friend request sent.", response.data)
 
@@ -54,7 +54,7 @@ class UserTestCase(BaseTestCase):
             user_id=user1.id, friend_id=user2.id
         ).first()
         self.assertIsNotNone(friend_request)
-        self.assertFalse(friend_request.is_accepted)
+        self.assertEqual(friend_request.status, "pending")
 
     def test_accept_friend_request(self):
         user1 = create_user(
@@ -70,18 +70,17 @@ class UserTestCase(BaseTestCase):
         )
         send_friend_request(user1.id, user2.id)
         self.login("user2_friend_accept", TEST_PASSWORD)
-        friend_request = Friend.query.filter_by(
-            user_id=user1.id, friend_id=user2.id
-        ).first()
         response = self.app.post(
-            f"/user/friend/accept/{friend_request.id}", follow_redirects=True
+            f"/user/friend/accept/{user1.id}", follow_redirects=True
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Friend request accepted.", response.data)
 
         # Verify the friendship is established
-        friendship = Friend.query.get(friend_request.id)
-        self.assertTrue(friendship.is_accepted)
+        friendship = Friend.query.filter_by(
+            user_id=user1.id, friend_id=user2.id
+        ).first()
+        self.assertEqual(friendship.status, "accepted")
 
     def test_decline_friend_request(self):
         user1 = create_user(
@@ -97,15 +96,14 @@ class UserTestCase(BaseTestCase):
         )
         send_friend_request(user1.id, user2.id)
         self.login("user2_friend_decline", TEST_PASSWORD)
-        friend_request = Friend.query.filter_by(
-            user_id=user1.id, friend_id=user2.id
-        ).first()
         response = self.app.post(
-            f"/user/friend/decline/{friend_request.id}", follow_redirects=True
+            f"/user/friend/decline/{user1.id}", follow_redirects=True
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Friend request declined.", response.data)
 
         # Verify the friend request is deleted
-        friend_request = Friend.query.get(friend_request.id)
+        friend_request = Friend.query.filter_by(
+            user_id=user1.id, friend_id=user2.id
+        ).first()
         self.assertIsNone(friend_request)

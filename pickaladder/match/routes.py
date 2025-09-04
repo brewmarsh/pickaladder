@@ -42,6 +42,7 @@ def get_player_record(player_id):
 @bp.route("/<uuid:match_id>")
 def view_match_page(match_id):
     if USER_ID not in session:
+        flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
 
     match = Match.query.get_or_404(match_id)
@@ -61,6 +62,7 @@ def create_match():
     if User.query.filter_by(is_admin=True).first() is None:
         return redirect(url_for("auth.install"))
     if USER_ID not in session:
+        flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
 
     user_id = uuid.UUID(session[USER_ID])
@@ -104,6 +106,7 @@ def create_match():
 @bp.route("/leaderboard")
 def leaderboard():
     if USER_ID not in session:
+        flash("Please log in to access this page.", "warning")
         return redirect(url_for("auth.login"))
 
     try:
