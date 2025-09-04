@@ -57,7 +57,6 @@ class BaseTestCase(unittest.TestCase):
     def setUp(self):
         app.config["TESTING"] = True
         app.config["WTF_CSRF_ENABLED"] = False
-        app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://user:password@db/test_db"
         self.app = app.test_client()
         with app.app_context():
             db.create_all()
