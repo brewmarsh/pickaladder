@@ -45,9 +45,9 @@ def create_app():
     )
 
     db_host = os.environ.get("DB_HOST", "db")
-    db_name = os.environ["POSTGRES_DB"]
-    db_user = os.environ["POSTGRES_USER"]
-    db_pass = os.environ["POSTGRES_PASSWORD"]
+    db_name = os.environ.get("POSTGRES_DB", "test_db")
+    db_user = os.environ.get("POSTGRES_USER", "user")
+    db_pass = os.environ.get("POSTGRES_PASSWORD", "password")
     app.config["SQLALCHEMY_DATABASE_URI"] = (
         f"postgresql://{db_user}:{db_pass}@{db_host}/{db_name}"
     )
