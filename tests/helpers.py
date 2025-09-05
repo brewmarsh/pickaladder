@@ -29,7 +29,9 @@ def create_user(
     return user
 
 
-def create_match(player1_id, player2_id, player1_score=11, player2_score=5, match_date=None):
+def create_match(
+    player1_id, player2_id, player1_score=11, player2_score=5, match_date=None
+):
     """Creates a match in the database and returns the match object."""
     match = Match(
         player1_id=player1_id,
