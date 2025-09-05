@@ -6,7 +6,6 @@ from . import bp
 from .forms import MatchForm
 from pickaladder.models import Match, User
 from pickaladder.constants import USER_ID
-from pickaladder.auth.decorators import login_required
 
 
 def get_player_record(player_id):
@@ -40,6 +39,9 @@ def get_player_record(player_id):
     return {"wins": wins, "losses": losses}
 
 
+from pickaladder.auth.decorators import login_required
+
+
 @bp.route("/<uuid:match_id>")
 @login_required
 def view_match_page(match_id):
@@ -55,12 +57,15 @@ def view_match_page(match_id):
     )
 
 
-@bp.route("/create", methods=["GET", "POST"])
-@login_required
-def create_match():
+@bp.before_request
+def before_request():
     if User.query.filter_by(is_admin=True).first() is None:
         return redirect(url_for("auth.install"))
 
+
+@bp.route("/create", methods=["GET", "POST"])
+@login_required
+def create_match():
     user_id = uuid.UUID(session[USER_ID])
     user = User.query.get(user_id)
     form = MatchForm()

@@ -1,7 +1,6 @@
 import os
 from pickaladder import create_app, db
 from sqlalchemy import text
-from sqlalchemy.sql.expression import table, column
 from pickaladder.constants import (
     MIGRATIONS_TABLE,
     MIGRATION_NAME,
@@ -30,12 +29,12 @@ def apply_migrations():
                 # NOTE: The following queries are safe from SQL injection because the
                 # table and column names are defined as constants in the codebase,
                 # not from user input.
-                query = text(
+                query = (
                     "SELECT table_name FROM information_schema.tables "
                     "WHERE table_schema = 'public' "
-                    "AND table_name = :table_name"
+                    "AND table_name = %s"
                 )
-                result = connection.execute(query, table_name=MIGRATIONS_TABLE)
+                result = connection.execute(text(query), (MIGRATIONS_TABLE,))
                 if result.fetchone() is None:
                     print(f"Creating '{MIGRATIONS_TABLE}' table.")
                     connection.execute(
@@ -47,9 +46,8 @@ def apply_migrations():
                     )
 
                 # Get the set of already applied migrations.
-                migrations_table = table(MIGRATIONS_TABLE, column(MIGRATION_NAME))
-                query = migrations_table.select()
-                result = connection.execute(query)
+                query = f"SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}"
+                result = connection.execute(text(query))
                 applied_migrations = {row[0] for row in result.fetchall()}
                 print(f"Found {len(applied_migrations)} applied migrations.")
 
@@ -67,10 +65,11 @@ def apply_migrations():
                             connection.execute(text(sql))
 
                         # Record the migration so it doesn't run again.
-                        query = migrations_table.insert().values(
-                            **{MIGRATION_NAME: migration_file}
+                        query = f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) VALUES (:migration_file)"
+                        connection.execute(
+                            text(query),
+                            {"migration_file": migration_file},
                         )
-                        connection.execute(query)
 
                 # Commit the transaction
                 trans.commit()

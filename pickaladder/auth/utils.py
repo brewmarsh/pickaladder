@@ -48,24 +48,6 @@ def send_password_reset_email(user):
     mail.send(msg)
 
 
-def send_verification_email(user):
-    """
-    Sends a verification email to the user.
-    """
-    token = user.get_verification_token()
-    verify_url = url_for("auth.verify_email", token=token, _external=True)
-    msg = Message(
-        "Verify Your Email",
-        sender=current_app.config["MAIL_USERNAME"],
-        recipients=[user.email],
-    )
-    msg.body = (
-        f"To verify your email, visit the following link:\n{verify_url}\n\n"
-        "If you did not make this request then simply ignore this email."
-    )
-    mail.send(msg)
-
-
 def generate_profile_picture(name):
     """
     Generates a profile picture with the user's initials and saves it to the filesystem.

@@ -1,10 +1,10 @@
-from tests.helpers import BaseTestCase, create_user, TEST_PASSWORD
+from tests.helpers import BaseTestCase, TEST_PASSWORD
 from pickaladder.models import User
 
 
 class AdminTestCase(BaseTestCase):
     def test_admin_panel_access_by_admin(self):
-        create_user(
+        self.create_user(
             username="admin_access",
             password=TEST_PASSWORD,
             is_admin=True,
@@ -16,12 +16,12 @@ class AdminTestCase(BaseTestCase):
         self.assertIn(b"Admin Panel", response.data)
 
     def test_admin_panel_access_by_non_admin(self):
-        create_user(
+        self.create_user(
             username="user_access",
             password=TEST_PASSWORD,
             email="user_access@example.com",
         )
-        create_user(
+        self.create_user(
             username="admin_non_access",
             password=TEST_PASSWORD,
             is_admin=True,
@@ -33,7 +33,7 @@ class AdminTestCase(BaseTestCase):
         self.assertIn(b"You are not authorized to view this page.", response.data)
 
     def test_generate_test_data(self):
-        create_user(
+        self.create_user(
             username="admin_generate",
             password=TEST_PASSWORD,
             is_admin=True,

@@ -1,21 +1,23 @@
-from tests.helpers import BaseTestCase, create_user, TEST_PASSWORD
+from unittest.mock import patch
+from tests.helpers import BaseTestCase, TEST_PASSWORD
 
 
 class AuthTestCase(BaseTestCase):
     def test_login_page_load(self):
-        create_user(is_admin=True, email="loginpage@example.com")
+        self.create_user(is_admin=True, email="loginpage@example.com")
         response = self.app.get("/auth/login")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Login", response.data)
 
     def test_register_page_load(self):
-        create_user(is_admin=True, email="registerpage@example.com")
+        self.create_user(is_admin=True, email="registerpage@example.com")
         response = self.app.get("/auth/register")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Register", response.data)
 
-    def test_successful_registration(self):
-        create_user(is_admin=True, email="successfulregistration@example.com")
+    @patch("pickaladder.auth.routes.mail.send")
+    def test_successful_registration(self, mock_mail_send):
+        self.create_user(is_admin=True, email="successfulregistration@example.com")
         response = self.app.post(
             "/auth/register",
             data={
@@ -28,10 +30,14 @@ class AuthTestCase(BaseTestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Registration successful. Please log in.", response.data)
+        self.assertIn(
+            b"Registration successful! Please check your email to verify your account.",
+            response.data,
+        )
+        mock_mail_send.assert_called_once()
 
     def test_login_logout(self):
-        create_user(
+        self.create_user(
             username="testuser",
             password=TEST_PASSWORD,
             is_admin=True,
@@ -50,7 +56,7 @@ class AuthTestCase(BaseTestCase):
         self.assertIn(b"Login", response.data)
 
     def test_login_with_invalid_credentials(self):
-        create_user(
+        self.create_user(
             username="testuser_invalid",
             password=TEST_PASSWORD,
             is_admin=True,
@@ -61,7 +67,7 @@ class AuthTestCase(BaseTestCase):
         self.assertIn(b"Invalid username or password", response.data)
 
     def test_access_protected_route_without_login(self):
-        create_user(is_admin=True, email="protectedroute@example.com")
+        self.create_user(is_admin=True, email="protectedroute@example.com")
         response = self.app.get("/user/dashboard", follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Login", response.data)

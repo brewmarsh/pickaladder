@@ -16,7 +16,7 @@
         <div class="card">
             <h3>Friends</h3>
             {% if not is_friend and not friend_request_sent and user.id != profile_user.id %}
-                <a href="{{ url_for('user.add_friend', friend_id=profile_user.id) }}" class="btn" id="addFriendBtn">Add Friend</a>
+                <a href="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}" class="btn" id="addFriendBtn">Add Friend</a>
             {% elif friend_request_sent %}
                 <button class="btn" disabled>Friend Request Sent</button>
             {% endif %}

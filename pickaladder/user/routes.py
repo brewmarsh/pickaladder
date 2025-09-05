@@ -150,13 +150,13 @@ def users():
     )
 
 
-@bp.route("/add_friend/<uuid:friend_id>", methods=["POST"])
+@bp.route("/send_friend_request/<uuid:friend_id>", methods=["POST"])
 @login_required
-def add_friend(friend_id):
+def send_friend_request(friend_id):
     user_id = uuid.UUID(session[USER_ID])
     if user_id == friend_id:
-        message = "You cannot add yourself as a friend."
-        return jsonify({"success": False, "message": message}), 400
+        flash("You cannot send a friend request to yourself.", "danger")
+        return redirect(url_for(".users"))
 
     existing_friendship = Friend.query.filter(
         or_(
@@ -166,8 +166,8 @@ def add_friend(friend_id):
     ).first()
 
     if existing_friendship:
-        message = "Friend request already sent or you are already friends."
-        return jsonify({"success": False, "message": message}), 400
+        flash("Friend request already sent or you are already friends.", "warning")
+        return redirect(url_for(".users"))
 
     try:
         new_friend_request = Friend(
@@ -175,10 +175,11 @@ def add_friend(friend_id):
         )
         db.session.add(new_friend_request)
         db.session.commit()
-        return jsonify({"success": True, "message": "Friend request sent."})
+        flash("Friend request sent.", "success")
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "message": f"An error occurred: {e}"}), 500
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".users"))
 
 
 @bp.route("/friends")
@@ -218,31 +219,24 @@ def friends():
     )
 
 
-@bp.route("/friend/accept/<uuid:user_id>", methods=["POST"])
+@bp.route("/accept_friend_request/<uuid:friend_id>", methods=["POST"])
 @login_required
-def accept_friend_request(user_id):
-    friend_id = uuid.UUID(session[USER_ID])
-
+def accept_friend_request(friend_id):
+    user_id = uuid.UUID(session[USER_ID])
     try:
-        # Find and update the incoming request
-        request_to_accept = Friend.query.get((user_id, friend_id))
+        # The friend request is from friend_id to user_id
+        request_to_accept = Friend.query.get((friend_id, user_id))
         if not request_to_accept:
-            flash(
-                "Friend request not found or you are not authorized to accept it.",
-                "warning",
-            )
+            flash("Friend request not found.", "danger")
             return redirect(url_for(".friends"))
 
         request_to_accept.status = "accepted"
 
         # Create the reciprocal friendship
         reciprocal_friendship = Friend(
-            user_id=friend_id,
-            friend_id=user_id,
-            status="accepted",
+            user_id=user_id, friend_id=friend_id, status="accepted"
         )
         db.session.add(reciprocal_friendship)
-
         db.session.commit()
         flash("Friend request accepted.", "success")
     except Exception as e:
@@ -252,22 +246,18 @@ def accept_friend_request(user_id):
     return redirect(url_for(".friends"))
 
 
-@bp.route("/friend/decline/<uuid:user_id>", methods=["POST"])
+@bp.route("/decline_friend_request/<uuid:friend_id>", methods=["POST"])
 @login_required
-def decline_friend_request(user_id):
-    friend_id = uuid.UUID(session[USER_ID])
-
+def decline_friend_request(friend_id):
+    user_id = uuid.UUID(session[USER_ID])
     try:
-        request_to_decline = Friend.query.get((user_id, friend_id))
+        request_to_decline = Friend.query.get((friend_id, user_id))
         if request_to_decline:
             db.session.delete(request_to_decline)
             db.session.commit()
             flash("Friend request declined.", "success")
         else:
-            flash(
-                "Friend request not found or you are not authorized to decline it.",
-                "warning",
-            )
+            flash("Friend request not found.", "danger")
     except Exception as e:
         db.session.rollback()
         flash(f"An error occurred: {e}", "danger")

@@ -1,8 +1,9 @@
 *.pyc
 __pycache__/
+.coverage
+instance/
 
 # Docker
 *-data/
 .test.db.data/
 pgdata-test/
-instance/uploads/

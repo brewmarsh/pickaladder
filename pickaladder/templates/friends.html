@@ -37,8 +37,8 @@
                             <tr>
                                 <td><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
                                 <td style="text-align: right;">
-                                    <a href="{{ url_for('user.accept_friend_request', user_id=request.id) }}" class="btn">Accept</a>
-                                    <a href="{{ url_for('user.decline_friend_request', user_id=request.id) }}" class="btn btn-danger">Decline</a>
+                                    <a href="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" class="btn">Accept</a>
+                                    <a href="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" class="btn btn-danger">Decline</a>
                                 </td>
                             </tr>
                         {% else %}

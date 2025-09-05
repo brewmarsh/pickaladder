@@ -16,7 +16,7 @@ from pickaladder import db, csrf
 from . import bp
 from .forms import LoginForm, RegisterForm
 from pickaladder import mail
-from .utils import send_password_reset_email, create_user, send_verification_email
+from .utils import send_password_reset_email, create_user
 from pickaladder.errors import ValidationError, DuplicateResourceError
 from pickaladder.models import User
 from pickaladder.constants import (
@@ -50,8 +50,20 @@ def register():
                 dupr_rating=form.dupr_rating.data,
             )
 
+            msg = Message(
+                "Verify your email",
+                sender=current_app.config["MAIL_USERNAME"],
+                recipients=[form.email.data],
+            )
+            verify_url = url_for(
+                "auth.verify_email",
+                email=form.email.data,
+                _external=True,
+            )
+            msg.body = f"Click the link to verify your email: {verify_url}"
+            mail.send(msg)
+
             db.session.commit()
-            send_verification_email(new_user)
 
             session[USER_ID] = str(new_user.id)
             session[USER_IS_ADMIN] = new_user.is_admin
@@ -219,9 +231,9 @@ def change_password():
     return render_template("change_password.html", user=user)
 
 
-@bp.route("/verify_email/<token>")
-def verify_email(token):
-    user = User.verify_verification_token(token)
+@bp.route(f"/verify_email/<{USER_EMAIL}>")
+def verify_email(email):
+    user = User.query.filter_by(email=email).first()
     if user:
         user.email_verified = True
         db.session.commit()
