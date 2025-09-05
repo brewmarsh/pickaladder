@@ -218,15 +218,15 @@ def friends():
     )
 
 
-@bp.route("/friend/accept/<uuid:request_id>", methods=["POST"])
+@bp.route("/friend/accept/<uuid:user_id>", methods=["POST"])
 @login_required
-def accept_friend_request(request_id):
-    user_id = uuid.UUID(session[USER_ID])
+def accept_friend_request(user_id):
+    friend_id = uuid.UUID(session[USER_ID])
 
     try:
         # Find and update the incoming request
-        request_to_accept = Friend.query.get(request_id)
-        if not request_to_accept or request_to_accept.friend_id != user_id:
+        request_to_accept = Friend.query.get((user_id, friend_id))
+        if not request_to_accept:
             flash(
                 "Friend request not found or you are not authorized to accept it.",
                 "warning",
@@ -237,7 +237,9 @@ def accept_friend_request(request_id):
 
         # Create the reciprocal friendship
         reciprocal_friendship = Friend(
-            user_id=user_id, friend_id=request_to_accept.user_id, status="accepted"
+            user_id=friend_id,
+            friend_id=user_id,
+            status="accepted",
         )
         db.session.add(reciprocal_friendship)
 
@@ -250,14 +252,14 @@ def accept_friend_request(request_id):
     return redirect(url_for(".friends"))
 
 
-@bp.route("/friend/decline/<uuid:request_id>", methods=["POST"])
+@bp.route("/friend/decline/<uuid:user_id>", methods=["POST"])
 @login_required
-def decline_friend_request(request_id):
-    user_id = uuid.UUID(session[USER_ID])
+def decline_friend_request(user_id):
+    friend_id = uuid.UUID(session[USER_ID])
 
     try:
-        request_to_decline = Friend.query.get(request_id)
-        if request_to_decline and request_to_decline.friend_id == user_id:
+        request_to_decline = Friend.query.get((user_id, friend_id))
+        if request_to_decline:
             db.session.delete(request_to_decline)
             db.session.commit()
             flash("Friend request declined.", "success")
