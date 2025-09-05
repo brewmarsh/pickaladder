@@ -1,6 +1,6 @@
 import datetime
 from tests.helpers import BaseTestCase, TEST_PASSWORD
-from pickaladder.models import User, Friend
+from pickaladder.models import Friend
 from pickaladder import db
 
 

@@ -1,6 +1,5 @@
 from tests.helpers import BaseTestCase, TEST_PASSWORD
-from pickaladder.models import Friend, User
-from pickaladder import db
+from pickaladder.models import Friend
 
 
 class UserTestCase(BaseTestCase):
