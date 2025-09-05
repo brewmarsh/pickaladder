@@ -29,13 +29,8 @@ def create_user(
     return user
 
 
-from datetime import date
-
-
 def create_match(player1_id, player2_id, player1_score=11, player2_score=5, match_date=None):
     """Creates a match in the database and returns the match object."""
-    if match_date is None:
-        match_date = date.today()
     match = Match(
         player1_id=player1_id,
         player2_id=player2_id,
@@ -51,7 +46,9 @@ def create_match(player1_id, player2_id, player1_score=11, player2_score=5, matc
 def send_friend_request(from_user_id, to_user_id):
     """Creates a friend request in the database."""
     friend_request = Friend(
-        user_id=from_user_id, friend_id=to_user_id, status="pending"
+        user_id=from_user_id,
+        friend_id=to_user_id,
+        status="pending",
     )
     db.session.add(friend_request)
     db.session.commit()
@@ -61,16 +58,15 @@ class BaseTestCase(unittest.TestCase):
     def setUp(self):
         app.config["TESTING"] = True
         app.config["WTF_CSRF_ENABLED"] = False
-        app.config["MAIL_SUPPRESS_SEND"] = True
         self.app = app.test_client()
-        self.ctx = app.app_context()  # Create and store context
-        self.ctx.push()               # Push the context
+        self.app_context = app.app_context()
+        self.app_context.push()
         db.create_all()
 
     def tearDown(self):
         db.session.remove()
         db.drop_all()
-        self.ctx.pop()                # Pop the context
+        self.app_context.pop()
 
     def login(self, username, password):
         return self.app.post(

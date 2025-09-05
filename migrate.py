@@ -29,12 +29,12 @@ def apply_migrations():
                 # NOTE: The following queries are safe from SQL injection because the
                 # table and column names are defined as constants in the codebase,
                 # not from user input.
-                query = (
+                query = text(
                     "SELECT table_name FROM information_schema.tables "
                     "WHERE table_schema = 'public' "
                     "AND table_name = :table_name"
                 )
-                result = connection.execute(text(query), {"table_name": MIGRATIONS_TABLE})
+                result = connection.execute(query, table_name=MIGRATIONS_TABLE)
                 if result.fetchone() is None:
                     print(f"Creating '{MIGRATIONS_TABLE}' table.")
                     connection.execute(
@@ -46,8 +46,8 @@ def apply_migrations():
                     )
 
                 # Get the set of already applied migrations.
-                query = f"SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}"
-                result = connection.execute(text(query))
+                query = text(f"SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}")
+                result = connection.execute(query)
                 applied_migrations = {row[0] for row in result.fetchall()}
                 print(f"Found {len(applied_migrations)} applied migrations.")
 
@@ -65,10 +65,12 @@ def apply_migrations():
                             connection.execute(text(sql))
 
                         # Record the migration so it doesn't run again.
-                        query = f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) VALUES (:migration_file)"
+                        query = text(
+                            f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) "
+                            "VALUES (:migration_file)"
+                        )
                         connection.execute(
-                            text(query),
-                            {"migration_file": migration_file},
+                            query, migration_file=migration_file
                         )
 
                 # Commit the transaction

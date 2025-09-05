@@ -1,5 +1,6 @@
+import datetime
 from tests.helpers import BaseTestCase, create_user, create_match, TEST_PASSWORD
-from pickaladder.models import User
+from pickaladder.models import User, Friend
 from pickaladder import db
 
 
@@ -28,11 +29,10 @@ class MatchTestCase(BaseTestCase):
             password=TEST_PASSWORD,
             email="loser_create@example.com",
         )
-        from pickaladder.models import Friend
-        friend_request = Friend(user_id=winner.id, friend_id=loser.id, status="accepted")
-        db.session.add(friend_request)
-        friend_request_reciprocal = Friend(user_id=loser.id, friend_id=winner.id, status="accepted")
-        db.session.add(friend_request_reciprocal)
+        # Establish friendship
+        friendship1 = Friend(user_id=winner.id, friend_id=loser.id, status="accepted")
+        friendship2 = Friend(user_id=loser.id, friend_id=winner.id, status="accepted")
+        db.session.add_all([friendship1, friendship2])
         db.session.commit()
 
         self.login("winner_create", TEST_PASSWORD)
@@ -42,13 +42,14 @@ class MatchTestCase(BaseTestCase):
                 "player2": str(loser.id),
                 "player1_score": 11,
                 "player2_score": 5,
-                "match_date": "2025-01-01",
+                "match_date": datetime.date.today().isoformat(),
             },
-            follow_redirects=False,
+            follow_redirects=True,
         )
-        self.assertEqual(response.status_code, 302)
-        response = self.app.get(response.location)
-        self.assertIn(b"Match created successfully", response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Match created successfully!", response.data)
+        self.assertIn(b"winner_create", response.data)
+        self.assertIn(b"loser_create", response.data)
 
     def test_view_match(self):
         winner = create_user(
@@ -62,8 +63,7 @@ class MatchTestCase(BaseTestCase):
             password=TEST_PASSWORD,
             email="loser_view@example.com",
         )
-        from datetime import date
-        match = create_match(player1_id=winner.id, player2_id=loser.id, match_date=date.today())
+        match = create_match(winner.id, loser.id)
         self.login("winner_view", TEST_PASSWORD)
         response = self.app.get(f"/match/{match.id}")
         self.assertEqual(response.status_code, 200)
@@ -78,20 +78,18 @@ class MatchTestCase(BaseTestCase):
             password=TEST_PASSWORD,
             is_admin=True,
             email="winner_leaderboard@example.com",
-            name="Winner Leaderboard",
         )
         loser = create_user(
             username="loser_leaderboard",
             password=TEST_PASSWORD,
             email="loser_leaderboard@example.com",
-            name="Loser Leaderboard",
         )
-        from pickaladder.models import Friend
-        friend_request = Friend(user_id=winner.id, friend_id=loser.id, status="accepted")
-        db.session.add(friend_request)
-        friend_request_reciprocal = Friend(user_id=loser.id, friend_id=winner.id, status="accepted")
-        db.session.add(friend_request_reciprocal)
+        # Establish friendship
+        friendship1 = Friend(user_id=winner.id, friend_id=loser.id, status="accepted")
+        friendship2 = Friend(user_id=loser.id, friend_id=winner.id, status="accepted")
+        db.session.add_all([friendship1, friendship2])
         db.session.commit()
+
         self.login("winner_leaderboard", TEST_PASSWORD)
         self.app.post(
             "/match/create",
@@ -99,7 +97,7 @@ class MatchTestCase(BaseTestCase):
                 "player2": str(loser.id),
                 "player1_score": 11,
                 "player2_score": 5,
-                "match_date": "2025-01-01",
+                "match_date": datetime.date.today().isoformat(),
             },
             follow_redirects=True,
         )
@@ -107,14 +105,12 @@ class MatchTestCase(BaseTestCase):
         response = self.app.get("/match/leaderboard")
         self.assertEqual(response.status_code, 200)
         # Winner should be higher on the leaderboard than the loser
-        winner_pos = response.data.find(b"Winner Leaderboard")
-        loser_pos = response.data.find(b"Loser Leaderboard")
-        self.assertTrue(winner_pos > 0)
-        self.assertTrue(loser_pos > 0)
+        winner_pos = response.data.find(b"winner_leaderboard")
+        loser_pos = response.data.find(b"loser_leaderboard")
         self.assertTrue(winner_pos < loser_pos)
 
         # Check ELO ratings
-        # winner_user = User.query.filter_by(username="winner_leaderboard").first()
-        # loser_user = User.query.filter_by(username="loser_leaderboard").first()
-        # self.assertGreater(winner_user.elo_rating, 1000)
-        # self.assertLess(loser_user.elo_rating, 1000)
+        winner_user = User.query.filter_by(username="winner_leaderboard").first()
+        loser_user = User.query.filter_by(username="loser_leaderboard").first()
+        self.assertGreater(winner_user.elo_rating, 1000)
+        self.assertLess(loser_user.elo_rating, 1000)

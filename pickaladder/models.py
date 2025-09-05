@@ -65,6 +65,10 @@ class User(db.Model):  # type: ignore
         s = Serializer(current_app.config["SECRET_KEY"])
         return s.dumps({"user_id": str(self.id)})
 
+    def get_verification_token(self, expires_sec=86400):
+        s = Serializer(current_app.config["SECRET_KEY"])
+        return s.dumps({"user_email": self.email})
+
     @staticmethod
     def verify_reset_token(token, expires_sec=1800):
         s = Serializer(current_app.config["SECRET_KEY"])
@@ -73,6 +77,15 @@ class User(db.Model):  # type: ignore
         except Exception:
             return None
         return User.query.get(user_id)
+
+    @staticmethod
+    def verify_verification_token(token, expires_sec=86400):
+        s = Serializer(current_app.config["SECRET_KEY"])
+        try:
+            email = s.loads(token, max_age=expires_sec)["user_email"]
+        except Exception:
+            return None
+        return User.query.filter_by(email=email).first()
 
     def __repr__(self):
         return f"<User {self.username}>"

@@ -1,5 +1,4 @@
 from tests.helpers import BaseTestCase, create_user, TEST_PASSWORD
-from unittest.mock import patch
 
 
 class AuthTestCase(BaseTestCase):
@@ -26,11 +25,10 @@ class AuthTestCase(BaseTestCase):
                 "email": "new@example.com",
                 "name": "New User",
             },
-            follow_redirects=False,
+            follow_redirects=True,
         )
-        self.assertEqual(response.status_code, 302)
-        response = self.app.get(response.location)
-        self.assertIn(b"Registration successful", response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Registration successful. Please log in.", response.data)
 
     def test_login_logout(self):
         create_user(
@@ -46,12 +44,10 @@ class AuthTestCase(BaseTestCase):
         self.assertIn(b"Logout", response.data)
 
         # Test successful logout
-        with self.app as c:
-            response = c.get("/auth/logout")
-            self.assertEqual(response.status_code, 302)
-            with c.session_transaction() as sess:
-                self.assertIn("_flashes", sess)
-                self.assertIn("You have been logged out.", str(sess["_flashes"]))
+        response = self.app.get("/auth/logout", follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"You have been logged out.", response.data)
+        self.assertIn(b"Login", response.data)
 
     def test_login_with_invalid_credentials(self):
         create_user(
@@ -66,8 +62,7 @@ class AuthTestCase(BaseTestCase):
 
     def test_access_protected_route_without_login(self):
         create_user(is_admin=True, email="protectedroute@example.com")
-        response = self.app.get("/user/dashboard", follow_redirects=False)
-        self.assertEqual(response.status_code, 302)
-        response = self.app.get(response.location)
+        response = self.app.get("/user/dashboard", follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
         self.assertIn(b"Login", response.data)
         self.assertIn(b"Please log in to access this page.", response.data)

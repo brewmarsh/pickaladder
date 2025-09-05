@@ -77,9 +77,7 @@ class UserTestCase(BaseTestCase):
         self.assertIn(b"Friend request accepted.", response.data)
 
         # Verify the friendship is established
-        friendship = Friend.query.filter_by(
-            user_id=user1.id, friend_id=user2.id
-        ).first()
+        friendship = Friend.query.get((user1.id, user2.id))
         self.assertEqual(friendship.status, "accepted")
 
     def test_decline_friend_request(self):
@@ -103,7 +101,5 @@ class UserTestCase(BaseTestCase):
         self.assertIn(b"Friend request declined.", response.data)
 
         # Verify the friend request is deleted
-        friend_request = Friend.query.filter_by(
-            user_id=user1.id, friend_id=user2.id
-        ).first()
+        friend_request = Friend.query.get((user1.id, user2.id))
         self.assertIsNone(friend_request)

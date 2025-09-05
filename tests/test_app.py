@@ -1,5 +1,3 @@
-import unittest
-from app import app
 from tests.helpers import BaseTestCase
 
 
