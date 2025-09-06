@@ -1,6 +1,6 @@
 import os
 from pickaladder import create_app, db
-from sqlalchemy import text
+from sqlalchemy import text, table, column, select, insert
 from pickaladder.constants import (
     MIGRATIONS_TABLE,
     MIGRATION_NAME,
@@ -46,8 +46,9 @@ def apply_migrations():
                     )
 
                 # Get the set of already applied migrations.
-                query = f"SELECT {MIGRATION_NAME} FROM {MIGRATIONS_TABLE}"
-                result = connection.execute(text(query))
+                migrations = table(MIGRATIONS_TABLE, column(MIGRATION_NAME))
+                query = select(migrations.c[MIGRATION_NAME])
+                result = connection.execute(query)
                 applied_migrations = {row[0] for row in result.fetchall()}
                 print(f"Found {len(applied_migrations)} applied migrations.")
 
@@ -65,14 +66,10 @@ def apply_migrations():
                             connection.execute(text(sql))
 
                         # Record the migration so it doesn't run again.
-                        query = (
-                            f"INSERT INTO {MIGRATIONS_TABLE} ({MIGRATION_NAME}) "
-                            "VALUES (:migration_file)"
+                        stmt = insert(migrations).values(
+                            {MIGRATION_NAME: migration_file}
                         )
-                        connection.execute(
-                            text(query),
-                            {"migration_file": migration_file},
-                        )
+                        connection.execute(stmt)
 
                 # Commit the transaction
                 trans.commit()
