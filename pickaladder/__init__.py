@@ -45,6 +45,7 @@ def create_app():
     )
 
     db_host = os.environ.get("DB_HOST", "db")
+    print(f"***** DATABASE HOST: {db_host} *****")
     db_name = os.environ.get("POSTGRES_DB", "test_db")
     db_user = os.environ.get("POSTGRES_USER", "user")
     db_pass = os.environ.get("POSTGRES_PASSWORD", "password")
