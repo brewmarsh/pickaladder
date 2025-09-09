@@ -44,16 +44,10 @@ def create_app():
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 
-    if os.environ.get("CI"):
-        db_host = "localhost"
-        db_name = "postgres"
-        db_user = "postgres"
-        db_pass = os.environ.get("POSTGRES_PASSWORD", "postgres")  # nosec
-    else:
-        db_host = os.environ.get("DB_HOST", "localhost")
-        db_name = os.environ.get("POSTGRES_DB", "test_db")
-        db_user = os.environ.get("POSTGRES_USER", "user")
-        db_pass = os.environ.get("POSTGRES_PASSWORD", "password")
+    db_host = os.environ.get("DB_HOST", "db")
+    db_name = os.environ.get("POSTGRES_DB", "test_db")
+    db_user = os.environ.get("POSTGRES_USER", "user")
+    db_pass = os.environ.get("POSTGRES_PASSWORD", "password")
     app.config["SQLALCHEMY_DATABASE_URI"] = (
         f"postgresql://{db_user}:{db_pass}@{db_host}/{db_name}"
     )
