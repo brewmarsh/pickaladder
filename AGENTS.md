@@ -4,7 +4,7 @@ This document provides instructions for agents working on this project. By follo
 
 ## 1. High-Level Architectural Overview
 
-This is a monolithic web application built with **Flask**. The frontend is rendered server-side using **Jinja2 templates**. The application uses a **PostgreSQL** database, accessed directly via the `psycopg2` library (there is no ORM).
+This is a monolithic web application built with **Flask**. The frontend is rendered server-side using **Jinja2 templates**. The application uses a **PostgreSQL** database and the **SQLAlchemy ORM** (via the `Flask-SQLAlchemy` extension).
 
 The Flask application is organized into blueprints. The main application is configured in `pickaladder/__init__.py`.
 
@@ -16,7 +16,7 @@ When getting started, it's helpful to review these key files to understand the a
 
 *   `pickaladder/__init__.py`: The main Flask application factory. This is where the app is created and configured, and blueprints are registered.
 *   `init.sql`: The database schema. This is the source of truth for the database structure.
-*   `pickaladder/db.py`: Manages the database connection pool.
+*   `pickaladder/models.py`: Defines the SQLAlchemy database models.
 *   `pickaladder/auth/routes.py`: Handles user registration, login, and authentication logic.
 *   `pickaladder/user/routes.py`: Handles user profiles, friends, and other user-centric features.
 *   `pickaladder/match/routes.py`: Handles match creation and viewing the leaderboard.
@@ -46,8 +46,8 @@ When getting started, it's helpful to review these key files to understand the a
 *   **Keep Routes Thin:** Route handlers in the `routes.py` files should be kept as "thin" as possible. Complex business logic should be encapsulated in separate utility functions or, for larger features, dedicated service classes.
 
 ### Database
-*   **Beware N+1 Queries:** When fetching lists of items that have related data, be mindful of the N+1 query problem. Use SQL `JOIN`s to fetch all necessary data in a single, efficient query.
-*   **Parameterized Queries:** Always use `psycopg2`'s parameter substitution (`%s`) for query values to prevent SQL injection. For dynamic table or column names, validate them against a whitelist.
+*   **Use the ORM:** Use the SQLAlchemy ORM for all database interactions. The models are defined in `pickaladder/models.py`.
+*   **Beware N+1 Queries:** When fetching lists of items that have related data, be mindful of the N+1 query problem. Use SQLAlchemy's relationship loading strategies (e.g., `joinedload`, `subqueryload`) to fetch all necessary data in a single, efficient query.
 
 ### Security
 *   **CSRF Protection:** All forms and endpoints that perform state-changing actions (POST, PUT, DELETE requests) must be protected against Cross-Site Request Forgery (CSRF).

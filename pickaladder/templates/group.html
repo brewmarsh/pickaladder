@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+{% block title %}{{ group.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ group.name }}</h1>
+    <p>Owned by: {{ group.owner.username }}</p>
+</div>
+
+<div class="grid-container" style="grid-template-columns: 1fr 2fr; gap: 40px;">
+    <div class="card">
+        <h3>Members</h3>
+        <div class="table-container">
+            <table class="table">
+                <tbody>
+                    {% for member in group.members %}
+                    <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=member.user.id) }}">
+                        <td>
+                            <img src="{{ url_for('user.profile_picture_thumbnail', user_id=member.user.id) }}"
+                                alt="Profile Picture" class="profile-picture-thumbnail">
+                        </td>
+                        <td>{{ member.user.username }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if group.owner_id == current_user_id %}
+        <h3 style="margin-top: 20px;">Invite Friends</h3>
+        <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.friend.label }}
+                {{ form.friend(class="form-control") }}
+            </div>
+            <input type="submit" value="Invite" class="btn">
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3>Group Leaderboard</h3>
+        <p>Only matches between group members are shown.</p>
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Average Score</th>
+                        <th>Games Played</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in leaderboard %}
+                    <tr class="{{ 'highlight-row' if player.id == current_user_id else '' }}">
+                        <td>{{ loop.index }}</td>
+                        <td><a href="{{ url_for('user.view_user', user_id=player.id) }}">{{ player.name }}</a></td>
+                        <td>{{ "%.2f"|format(player.avg_score|float) }}</td>
+                        <td>{{ player.games_played }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4">No matches have been played between members of this group yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

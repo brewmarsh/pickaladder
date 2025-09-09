@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% block title %}My Groups{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>My Friend Groups</h1>
+    <a href="{{ url_for('group.create_group') }}" class="btn">Create New Group</a>
+</div>
+
+<div class="card">
+    <h3>Your Groups</h3>
+    <div class="table-container">
+        <table class="table">
+            <tbody>
+                {% for membership in groups %}
+                <tr class="clickable-row" data-href="{{ url_for('group.view_group', group_id=membership.group.id) }}">
+                    <td>{{ membership.group.name }}</td>
+                    <td>Owned by: {{ membership.group.owner.username }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2">You are not a member of any groups.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -75,6 +75,10 @@ def create_app():
 
     app.register_blueprint(match.bp)
 
+    from . import group
+
+    app.register_blueprint(group.bp)
+
     from . import error_handlers
 
     app.register_blueprint(error_handlers.error_handlers_bp)
