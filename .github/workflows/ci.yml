@@ -1,10 +1,20 @@
-name: CI
-
-on: [push]
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v2
@@ -30,6 +40,11 @@ jobs:
           pip install mypy
           mypy .
       - name: Run tests with coverage
+        env:
+          DB_HOST: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
         run: |
           pip install coverage
           coverage run -m unittest discover tests
