@@ -48,7 +48,7 @@ def create_app():
         db_host = "localhost"
         db_name = "postgres"
         db_user = "postgres"
-        db_pass = "postgres"
+        db_pass = os.environ.get("POSTGRES_PASSWORD", "postgres")  # nosec
     else:
         db_host = os.environ.get("DB_HOST", "localhost")
         db_name = os.environ.get("POSTGRES_DB", "test_db")
