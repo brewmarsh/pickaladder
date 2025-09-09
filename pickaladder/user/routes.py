@@ -24,13 +24,12 @@ from pickaladder.match.routes import get_player_record
 from pickaladder.constants import (
     USER_ID,
 )
+from pickaladder.auth.decorators import login_required
 
 
 @bp.route("/dashboard")
+@login_required
 def dashboard():
-    if USER_ID not in session:
-        return redirect(url_for("auth.login"))
-
     user_id = uuid.UUID(session[USER_ID])
     user = User.query.get_or_404(user_id)
     form = UpdateProfileForm(obj=user)
@@ -41,10 +40,8 @@ def dashboard():
 
 
 @bp.route("/<uuid:user_id>")
+@login_required
 def view_user(user_id):
-    if USER_ID not in session:
-        return redirect(url_for("auth.login"))
-
     profile_user = User.query.get_or_404(user_id)
     current_user_id = uuid.UUID(session[USER_ID])
 
@@ -94,10 +91,8 @@ def view_user(user_id):
 
 
 @bp.route("/users")
+@login_required
 def users():
-    if USER_ID not in session:
-        return redirect(url_for("auth.login"))
-
     search_term = request.args.get("search", "")
     page = request.args.get("page", 1, type=int)
     current_user_id = uuid.UUID(session[USER_ID])
@@ -155,15 +150,13 @@ def users():
     )
 
 
-@bp.route("/add_friend/<uuid:friend_id>", methods=["POST"])
-def add_friend(friend_id):
-    if USER_ID not in session:
-        return jsonify({"success": False, "message": "Not logged in"}), 401
-
+@bp.route("/send_friend_request/<uuid:friend_id>", methods=["POST"])
+@login_required
+def send_friend_request(friend_id):
     user_id = uuid.UUID(session[USER_ID])
     if user_id == friend_id:
-        message = "You cannot add yourself as a friend."
-        return jsonify({"success": False, "message": message}), 400
+        flash("You cannot send a friend request to yourself.", "danger")
+        return redirect(url_for(".users"))
 
     existing_friendship = Friend.query.filter(
         or_(
@@ -173,8 +166,8 @@ def add_friend(friend_id):
     ).first()
 
     if existing_friendship:
-        message = "Friend request already sent or you are already friends."
-        return jsonify({"success": False, "message": message}), 400
+        flash("Friend request already sent or you are already friends.", "warning")
+        return redirect(url_for(".users"))
 
     try:
         new_friend_request = Friend(
@@ -182,17 +175,16 @@ def add_friend(friend_id):
         )
         db.session.add(new_friend_request)
         db.session.commit()
-        return jsonify({"success": True, "message": "Friend request sent."})
+        flash("Friend request sent.", "success")
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "message": f"An error occurred: {e}"}), 500
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".users"))
 
 
 @bp.route("/friends")
+@login_required
 def friends():
-    if USER_ID not in session:
-        return redirect(url_for("auth.login"))
-
     user_id = uuid.UUID(session[USER_ID])
 
     # Get accepted friends
@@ -227,31 +219,24 @@ def friends():
     )
 
 
-@bp.route("/friend/accept/<uuid:request_id>", methods=["POST"])
-def accept_friend_request(request_id):
-    if USER_ID not in session:
-        return redirect(url_for("auth.login"))
-
+@bp.route("/accept_friend_request/<uuid:friend_id>", methods=["POST"])
+@login_required
+def accept_friend_request(friend_id):
     user_id = uuid.UUID(session[USER_ID])
-
     try:
-        # Find and update the incoming request
-        request_to_accept = Friend.query.get(request_id)
-        if not request_to_accept or request_to_accept.friend_id != user_id:
-            flash(
-                "Friend request not found or you are not authorized to accept it.",
-                "warning",
-            )
+        # The friend request is from friend_id to user_id
+        request_to_accept = Friend.query.get((friend_id, user_id))
+        if not request_to_accept:
+            flash("Friend request not found.", "danger")
             return redirect(url_for(".friends"))
 
         request_to_accept.status = "accepted"
 
         # Create the reciprocal friendship
         reciprocal_friendship = Friend(
-            user_id=user_id, friend_id=request_to_accept.user_id, status="accepted"
+            user_id=user_id, friend_id=friend_id, status="accepted"
         )
         db.session.add(reciprocal_friendship)
-
         db.session.commit()
         flash("Friend request accepted.", "success")
     except Exception as e:
@@ -261,24 +246,18 @@ def accept_friend_request(request_id):
     return redirect(url_for(".friends"))
 
 
-@bp.route("/friend/decline/<uuid:request_id>", methods=["POST"])
-def decline_friend_request(request_id):
-    if USER_ID not in session:
-        return redirect(url_for("auth.login"))
-
+@bp.route("/decline_friend_request/<uuid:friend_id>", methods=["POST"])
+@login_required
+def decline_friend_request(friend_id):
     user_id = uuid.UUID(session[USER_ID])
-
     try:
-        request_to_decline = Friend.query.get(request_id)
-        if request_to_decline and request_to_decline.friend_id == user_id:
+        request_to_decline = Friend.query.get((friend_id, user_id))
+        if request_to_decline:
             db.session.delete(request_to_decline)
             db.session.commit()
             flash("Friend request declined.", "success")
         else:
-            flash(
-                "Friend request not found or you are not authorized to decline it.",
-                "warning",
-            )
+            flash("Friend request not found.", "danger")
     except Exception as e:
         db.session.rollback()
         flash(f"An error occurred: {e}", "danger")
@@ -307,10 +286,8 @@ def profile_picture_thumbnail(user_id):
 
 
 @bp.route("/update_profile", methods=["POST"])
+@login_required
 def update_profile():
-    if USER_ID not in session:
-        return redirect(url_for("auth.login"))
-
     user_id = uuid.UUID(session[USER_ID])
     user = User.query.get_or_404(user_id)
     form = UpdateProfileForm()
@@ -368,10 +345,8 @@ def update_profile():
 
 
 @bp.route("/api/dashboard")
+@login_required
 def api_dashboard():
-    if USER_ID not in session:
-        return jsonify({"error": "Not authenticated"}), 401
-
     user_id = uuid.UUID(session[USER_ID])
     user = User.query.get_or_404(user_id)
 

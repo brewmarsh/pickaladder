@@ -1,4 +1,4 @@
-# pickaladder
+# pickaladder  
 
 A simple web application for managing pickleball ladders.
 

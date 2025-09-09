@@ -1,5 +1,7 @@
 *.pyc
 __pycache__/
+.coverage
+instance/
 
 # Docker
 *-data/
