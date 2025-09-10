@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
-{% block title %}Create Group{% endblock %}
+{% block title %}Edit Group{% endblock %}
 {% block content %}
 <div class="form-container">
-    <h2>Create New Group</h2>
-    <form method="post" action="{{ url_for('group.create_group') }}" enctype="multipart/form-data">
+    <h2>Edit Group</h2>
+    <form method="post" action="{{ url_for('group.edit_group', group_id=group.id) }}" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         <div class="form-group">
             {{ form.name.label }}
@@ -21,8 +21,8 @@
             {{ form.profile_picture.label }}
             {{ form.profile_picture(class="form-control") }}
         </div>
-        <input type="submit" value="Create Group" class="btn">
-        <a href="{{ url_for('group.view_groups') }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
+        <input type="submit" value="Update Group" class="btn">
+        <a href="{{ url_for('group.view_group', group_id=group.id) }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
     </form>
 </div>
 {% endblock %}

@@ -1,13 +1,39 @@
+import os
+import uuid
+from werkzeug.utils import secure_filename
+from PIL import Image
+from flask import current_app
 from sqlalchemy import or_, case, func
 from pickaladder import db
-from pickaladder.models import User, Match, FriendGroup
+from pickaladder.models import User, Match, Group
+
+
+def save_group_picture(form_picture):
+    unique_id = uuid.uuid4().hex
+    filename = secure_filename(f"{unique_id}_group_profile.png")
+    thumbnail_filename = secure_filename(f"{unique_id}_group_thumbnail.png")
+
+    upload_folder = os.path.join(current_app.static_folder, "uploads")
+    if not os.path.exists(upload_folder):
+        os.makedirs(upload_folder)
+
+    img = Image.open(form_picture)
+    img.thumbnail((512, 512))
+    filepath = os.path.join(upload_folder, filename)
+    img.save(filepath, format="PNG")
+
+    img.thumbnail((64, 64))
+    thumbnail_filepath = os.path.join(upload_folder, thumbnail_filename)
+    img.save(thumbnail_filepath, format="PNG")
+
+    return filename, thumbnail_filename
 
 
 def get_group_leaderboard(group_id):
     """
     Calculates the leaderboard for a specific group.
     """
-    group = FriendGroup.query.get(group_id)
+    group = Group.query.get(group_id)
     if not group:
         return []
 

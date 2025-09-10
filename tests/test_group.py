@@ -1,5 +1,5 @@
 from tests.helpers import BaseTestCase, TEST_PASSWORD
-from pickaladder.models import Friend, FriendGroup, FriendGroupMember
+from pickaladder.models import Friend, Group, GroupMember
 from pickaladder import db
 
 
@@ -19,13 +19,11 @@ class GroupTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Group created successfully.", response.data)
-        group = FriendGroup.query.filter_by(name="Test Group").first()
+        group = Group.query.filter_by(name="Test Group").first()
         self.assertIsNotNone(group)
         self.assertEqual(group.owner_id, user.id)
         # Check if the creator is a member
-        member = FriendGroupMember.query.filter_by(
-            group_id=group.id, user_id=user.id
-        ).first()
+        member = GroupMember.query.filter_by(group_id=group.id, user_id=user.id).first()
         self.assertIsNotNone(member)
 
     def test_invite_to_group(self):
@@ -61,7 +59,7 @@ class GroupTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Friend invited successfully.", response.data)
-        member = FriendGroupMember.query.filter_by(
+        member = GroupMember.query.filter_by(
             group_id=group.id, user_id=friend_user.id
         ).first()
         self.assertIsNotNone(member)
@@ -136,7 +134,7 @@ class GroupTestCase(BaseTestCase):
         response = self.app.post(f"/group/{group_id}/delete", follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Group deleted successfully.", response.data)
-        deleted_group = FriendGroup.query.get(group_id)
+        deleted_group = Group.query.get(group_id)
         self.assertIsNone(deleted_group)
 
     def test_delete_group_by_non_owner(self):
@@ -162,5 +160,5 @@ class GroupTestCase(BaseTestCase):
         self.assertIn(
             b"You do not have permission to delete this group.", response.data
         )
-        not_deleted_group = FriendGroup.query.get(group_id)
+        not_deleted_group = Group.query.get(group_id)
         self.assertIsNotNone(not_deleted_group)

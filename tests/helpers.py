@@ -84,3 +84,25 @@ class BaseTestCase(unittest.TestCase):
             data={"username": username, "password": password},
             follow_redirects=True,
         )
+
+    def create_group(self, name, owner_id, description="", is_public=False):
+        """Creates a group in the database and returns the group object."""
+        from pickaladder.models import Group
+
+        group = Group(
+            name=name,
+            owner_id=owner_id,
+            description=description,
+            is_public=is_public,
+        )
+        db.session.add(group)
+        db.session.commit()
+        return group
+
+    def add_user_to_group(self, group_id, user_id):
+        """Adds a user to a group in the database."""
+        from pickaladder.models import GroupMember
+
+        member = GroupMember(group_id=group_id, user_id=user_id)
+        db.session.add(member)
+        db.session.commit()

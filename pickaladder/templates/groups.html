@@ -1,8 +1,8 @@
 {% extends "layout.html" %}
-{% block title %}My Groups{% endblock %}
+{% block title %}Groups{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>My Friend Groups</h1>
+    <h1>Groups</h1>
     <a href="{{ url_for('group.create_group') }}" class="btn">Create New Group</a>
 </div>
 
@@ -11,10 +11,15 @@
     <div class="table-container">
         <table class="table">
             <tbody>
-                {% for membership in groups %}
+                {% for membership in my_groups %}
                 <tr class="clickable-row" data-href="{{ url_for('group.view_group', group_id=membership.group.id) }}">
-                    <td>{{ membership.group.name }}</td>
-                    <td>Owned by: {{ membership.group.owner.username }}</td>
+                    <td style="width: 70px;">
+                        <img src="{{ url_for('static', filename='uploads/' + membership.group.profile_picture_thumbnail_path) if membership.group.profile_picture_thumbnail_path else url_for('static', filename='user_icon.png') }}" alt="Group Picture" class="profile-picture-thumbnail">
+                    </td>
+                    <td>
+                        <strong>{{ membership.group.name }}</strong><br>
+                        <small>Owned by: {{ membership.group.owner.username }}</small>
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
@@ -24,5 +29,41 @@
             </tbody>
         </table>
     </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h3>Discover Public Groups</h3>
+    <form method="get" action="{{ url_for('group.view_groups') }}" class="search-form" style="margin-bottom: 20px;">
+        <input type="text" name="search" placeholder="Search for public groups..." value="{{ search_term or '' }}" style="width: 300px; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+        <button type="submit" class="btn">Search</button>
+    </form>
+
+    <div class="table-container">
+        <table class="table">
+            <tbody>
+                {% for group in pagination.items %}
+                <tr class="clickable-row" data-href="{{ url_for('group.view_group', group_id=group.id) }}">
+                    <td style="width: 70px;">
+                        <img src="{{ url_for('static', filename='uploads/' + group.profile_picture_thumbnail_path) if group.profile_picture_thumbnail_path else url_for('static', filename='user_icon.png') }}" alt="Group Picture" class="profile-picture-thumbnail">
+                    </td>
+                    <td>
+                        <strong>{{ group.name }}</strong><br>
+                        <small>Owned by: {{ group.owner.username }}</small><br>
+                        <small>{{ group.description or '' }}</small>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2">No public groups found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+        {% from "_pagination.html" import render_pagination %}
+        {{ render_pagination(pagination, 'group.view_groups', search=search_term) }}
+    {% endif %}
 </div>
 {% endblock %}

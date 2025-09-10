@@ -2,11 +2,6 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-    <div class="page-header">
-        <h1>Dashboard</h1>
-        <p>Welcome, <span id="user-name">...</span>!</p>
-    </div>
-
     <div id="dashboard-content" style="display: none;">
         <div class="grid-container">
             <div class="card">
@@ -129,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function renderUserInfo(user) {
-        document.getElementById('user-name').textContent = user.name || 'User';
         document.getElementById('user-username').textContent = `@${user.username}`;
         document.getElementById('user-email').textContent = user.email;
         document.getElementById('user-dupr').textContent = user.dupr_rating || 'Not set';
