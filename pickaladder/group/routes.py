@@ -1,10 +1,10 @@
 import uuid
 from flask import render_template, redirect, url_for, session, flash
-from sqlalchemy import or_, case, func
 from pickaladder import db
 from . import bp
 from .forms import FriendGroupForm, InviteFriendForm
-from pickaladder.models import FriendGroup, FriendGroupMember, User, Match
+from .utils import get_group_leaderboard
+from pickaladder.models import FriendGroup, FriendGroupMember, User
 from pickaladder.constants import USER_ID
 from pickaladder.auth.decorators import login_required
 
@@ -52,25 +52,7 @@ def view_group(group_id):
             flash(f"An unexpected error occurred: {e}", "danger")
 
     # --- Leaderboard logic ---
-    player_score = case(
-        (Match.player1_id == User.id, Match.player1_score),
-        else_=Match.player2_score,
-    )
-    leaderboard = (
-        db.session.query(
-            User.id,
-            User.name,
-            func.avg(player_score).label("avg_score"),
-            func.count(Match.id).label("games_played"),
-        )
-        .join(Match, or_(User.id == Match.player1_id, User.id == Match.player2_id))
-        .filter(User.id.in_(member_ids))
-        .filter(Match.player1_id.in_(member_ids))
-        .filter(Match.player2_id.in_(member_ids))
-        .group_by(User.id, User.name)
-        .order_by(func.avg(player_score).desc())
-        .all()
-    )
+    leaderboard = get_group_leaderboard(group_id)
 
     return render_template(
         "group.html",
@@ -103,3 +85,23 @@ def create_group():
             db.session.rollback()
             flash(f"An unexpected error occurred: {e}", "danger")
     return render_template("create_group.html", form=form)
+
+
+@bp.route("/<uuid:group_id>/delete", methods=["POST"])
+@login_required
+def delete_group(group_id):
+    group = FriendGroup.query.get_or_404(group_id)
+    user_id = uuid.UUID(session[USER_ID])
+    if group.owner_id != user_id:
+        flash("You do not have permission to delete this group.", "danger")
+        return redirect(url_for("group.view_group", group_id=group.id))
+
+    try:
+        db.session.delete(group)
+        db.session.commit()
+        flash("Group deleted successfully.", "success")
+        return redirect(url_for("group.view_groups"))
+    except Exception as e:
+        db.session.rollback()
+        flash(f"An unexpected error occurred while deleting the group: {e}", "danger")
+        return redirect(url_for("group.view_group", group_id=group.id))

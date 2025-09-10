@@ -107,3 +107,52 @@ class UserTestCase(BaseTestCase):
         # Verify the friend request is deleted
         friend_request = Friend.query.get((user1.id, user2.id))
         self.assertIsNone(friend_request)
+
+    def test_dashboard_api_group_rankings(self):
+        # Create users
+        user = self.create_user(
+            username="dashboard_user",
+            password=TEST_PASSWORD,
+            is_admin=True,
+            email="dashboard_user@example.com",
+        )
+        member2 = self.create_user(
+            username="dashboard_member2",
+            password=TEST_PASSWORD,
+            email="dashboard_member2@example.com",
+        )
+
+        # Create groups
+        group1 = self.create_group(name="Dashboard Group 1", owner_id=user.id)
+        group2 = self.create_group(name="Dashboard Group 2", owner_id=user.id)
+        self.add_user_to_group(group1.id, user.id)
+        self.add_user_to_group(group1.id, member2.id)
+        self.add_user_to_group(group2.id, user.id)
+
+        # Create a match in group 1
+        self.create_match(user.id, member2.id, 5, 11)
+
+        # Log in and get dashboard data
+        self.login("dashboard_user", TEST_PASSWORD)
+        response = self.app.get("/user/api/dashboard")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.get_json()
+        self.assertIn("group_rankings", data)
+        self.assertEqual(len(data["group_rankings"]), 2)
+
+        # Check rankings
+        g1_found = False
+        g2_found = False
+        for ranking in data["group_rankings"]:
+            if ranking["group_name"] == "Dashboard Group 1":
+                g1_found = True
+                # user lost, so they should be rank 2
+                self.assertEqual(ranking["rank"], 2)
+            elif ranking["group_name"] == "Dashboard Group 2":
+                g2_found = True
+                # No matches in this group, so rank is N/A
+                self.assertEqual(ranking["rank"], "N/A")
+
+        self.assertTrue(g1_found)
+        self.assertTrue(g2_found)

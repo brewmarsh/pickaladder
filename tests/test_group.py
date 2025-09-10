@@ -120,3 +120,47 @@ class GroupTestCase(BaseTestCase):
         member1_pos = response.data.find(b"Leaderboard Member 1")
         member2_pos = response.data.find(b"Leaderboard Member 2")
         self.assertTrue(member1_pos < member2_pos)
+
+    def test_delete_group_by_owner(self):
+        owner = self.create_user(
+            username="group_owner_delete",
+            password=TEST_PASSWORD,
+            is_admin=True,
+            email="group_owner_delete@example.com",
+        )
+        self.login("group_owner_delete", TEST_PASSWORD)
+        group = self.create_group(name="Group to Delete", owner_id=owner.id)
+        group_id = group.id
+        self.add_user_to_group(group.id, owner.id)
+
+        response = self.app.post(f"/group/{group_id}/delete", follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Group deleted successfully.", response.data)
+        deleted_group = FriendGroup.query.get(group_id)
+        self.assertIsNone(deleted_group)
+
+    def test_delete_group_by_non_owner(self):
+        owner = self.create_user(
+            username="group_owner_nodelete",
+            password=TEST_PASSWORD,
+            is_admin=True,
+            email="group_owner_nodelete@example.com",
+        )
+        non_owner = self.create_user(
+            username="non_owner_delete_attempt",
+            password=TEST_PASSWORD,
+            email="non_owner_delete_attempt@example.com",
+        )
+        group = self.create_group(name="No Delete Group", owner_id=owner.id)
+        group_id = group.id
+        self.add_user_to_group(group.id, owner.id)
+        self.add_user_to_group(group.id, non_owner.id)
+
+        self.login("non_owner_delete_attempt", TEST_PASSWORD)
+        response = self.app.post(f"/group/{group_id}/delete", follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b"You do not have permission to delete this group.", response.data
+        )
+        not_deleted_group = FriendGroup.query.get(group_id)
+        self.assertIsNotNone(not_deleted_group)
