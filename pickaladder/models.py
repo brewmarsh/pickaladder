@@ -114,3 +114,33 @@ class Match(db.Model):  # type: ignore
 
     def __repr__(self):
         return f"<Match {self.id}>"
+
+
+class FriendGroup(db.Model):
+    __tablename__ = "friend_groups"
+    id = db.Column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
+    )
+    name = db.Column(db.String, nullable=False)
+    owner_id = db.Column(UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False)
+
+    owner = db.relationship("User", backref="owned_groups")
+    members = db.relationship(
+        "FriendGroupMember", backref="group", cascade="all, delete-orphan"
+    )
+
+
+class FriendGroupMember(db.Model):
+    __tablename__ = "friend_group_members"
+    group_id = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey("friend_groups.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id = db.Column(
+        UUID(as_uuid=True),
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+
+    user = db.relationship("User", backref="group_memberships")

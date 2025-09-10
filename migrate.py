@@ -32,9 +32,11 @@ def apply_migrations():
                 query = (
                     "SELECT table_name FROM information_schema.tables "
                     "WHERE table_schema = 'public' "
-                    "AND table_name = %s"
+                    "AND table_name = :table_name"
                 )
-                result = connection.execute(text(query), (MIGRATIONS_TABLE,))
+                result = connection.execute(
+                    text(query), {"table_name": MIGRATIONS_TABLE}
+                )
                 if result.fetchone() is None:
                     print(f"Creating '{MIGRATIONS_TABLE}' table.")
                     connection.execute(

@@ -21,6 +21,7 @@ from . import bp
 from .forms import UpdateProfileForm
 from pickaladder.models import User, Friend, Match
 from pickaladder.match.routes import get_player_record
+from pickaladder.group.utils import get_group_leaderboard
 from pickaladder.constants import (
     USER_ID,
 )
@@ -427,11 +428,30 @@ def api_dashboard():
             }
         )
 
+    # Get group rankings
+    group_rankings = []
+    for membership in user.group_memberships:
+        group = membership.group
+        leaderboard = get_group_leaderboard(group.id)
+        rank = "N/A"
+        for i, player in enumerate(leaderboard):
+            if player.id == user_id:
+                rank = i + 1
+                break
+        group_rankings.append(
+            {
+                "group_id": str(group.id),
+                "group_name": group.name,
+                "rank": rank,
+            }
+        )
+
     return jsonify(
         {
             "user": user_data,
             "friends": friends_data,
             "requests": requests_data,
             "matches": matches_data,
+            "group_rankings": group_rankings,
         }
     )

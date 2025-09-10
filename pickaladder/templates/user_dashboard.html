@@ -68,6 +68,21 @@
                         </tbody>
                     </table>
                 </div>
+
+                <h3 style="margin-top: 20px;">My Group Rankings</h3>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Group Name</th>
+                                <th>Your Rank</th>
+                            </tr>
+                        </thead>
+                        <tbody id="group-rankings-body">
+                            <!-- Group rankings will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -107,6 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // URLs that will be used in the templates
     const urls = {
         view_user: (userId) => `/user/${userId}`,
+        view_group: (groupId) => `/group/${groupId}`,
         accept_request: (friendId) => `/user/accept_friend_request/${friendId}`,
         decline_request: (friendId) => `/user/decline_friend_request/${friendId}`,
         profile_picture: (userId) => `/user/profile_picture/${userId}`
@@ -162,6 +178,13 @@ document.addEventListener('DOMContentLoaded', function() {
         </tr>
     `;
 
+    const groupRankingRowTemplate = (ranking) => `
+        <tr>
+            <td><a href="${urls.view_group(ranking.group_id)}">${ranking.group_name}</a></td>
+            <td>${ranking.rank}</td>
+        </tr>
+    `;
+
     fetch('/user/api/dashboard')
         .then(response => {
             if (!response.ok) {
@@ -174,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderTable('friend-requests-body', data.requests, requestRowTemplate, 'No pending friend requests.');
             renderTable('friends-body', data.friends, friendRowTemplate, 'You have no friends yet.');
             renderTable('matches-body', data.matches, matchRowTemplate, 'You have no match history.');
+            renderTable('group-rankings-body', data.group_rankings, groupRankingRowTemplate, 'You are not a member of any groups.');
 
             // Hide loader and show content
             loader.style.display = 'none';

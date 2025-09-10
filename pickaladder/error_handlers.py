@@ -1,4 +1,13 @@
-from flask import Blueprint, render_template, current_app
+from flask import (
+    Blueprint,
+    render_template,
+    current_app,
+    redirect,
+    url_for,
+    flash,
+    request,
+)
+from flask_wtf.csrf import CSRFError
 import psycopg2
 from .errors import AppError, ValidationError, DuplicateResourceError, NotFoundError
 
@@ -57,3 +66,14 @@ def handle_db_error(e):
         ),
         500,
     )
+
+
+@error_handlers_bp.app_errorhandler(CSRFError)
+def handle_csrf_error(e):
+    """
+    Handles CSRF errors, which usually indicate a session timeout or invalid form submission.
+    """
+    current_app.logger.warning(f"CSRF Error: {e.description}")
+    flash("Your session may have expired. Please try your action again.", "warning")
+    # Redirect to the previous page or a default page if the referrer is not available
+    return redirect(request.referrer or url_for("user.dashboard"))
