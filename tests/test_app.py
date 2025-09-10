@@ -1,5 +1,7 @@
 import unittest
-from tests.helpers import BaseTestCase
+from unittest.mock import patch
+from flask_wtf.csrf import CSRFError
+from tests.helpers import BaseTestCase, TEST_PASSWORD
 
 
 class AppTestCase(BaseTestCase):
@@ -92,6 +94,34 @@ class AppTestCase(BaseTestCase):
         response = self.app.get("/auth/reset/invalidtoken", follow_redirects=False)
         self.assertEqual(response.status_code, 302)  # Should redirect to install
         self.assertIn("/auth/install", response.location)
+
+    @patch(
+        "pickaladder.group.forms.FriendGroupForm.validate_on_submit",
+        side_effect=CSRFError("CSRF Token Missing"),
+    )
+    def test_csrf_error_handler(self, mock_validate):
+        # Create a user and log in to access the create group page
+        self.create_user(
+            username="csrf_tester",
+            password=TEST_PASSWORD,
+            is_admin=True,
+            email="csrf_tester@example.com",
+        )
+        self.login("csrf_tester", TEST_PASSWORD)
+
+        # Make a POST request to a CSRF-protected route
+        response = self.app.post(
+            "/group/create", data={"name": "some group"}, follow_redirects=False
+        )
+
+        # Check that the response is a redirect to the dashboard
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/user/dashboard", response.location)
+
+        # Check that a flash message was generated
+        with self.app.session_transaction() as session:
+            self.assertIn("_flashes", session)
+            self.assertIn("Your session may have expired.", session["_flashes"][0][1])
 
 
 if __name__ == "__main__":
