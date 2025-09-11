@@ -2,11 +2,6 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-    <div class="page-header">
-        <h1>Dashboard</h1>
-        <p>Welcome, <span id="user-name">...</span>!</p>
-    </div>
-
     <div id="dashboard-content" style="display: none;">
         <div class="grid-container">
             <div class="card">
@@ -129,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function renderUserInfo(user) {
-        document.getElementById('user-name').textContent = user.name || 'User';
         document.getElementById('user-username').textContent = `@${user.username}`;
         document.getElementById('user-email').textContent = user.email;
         document.getElementById('user-dupr').textContent = user.dupr_rating || 'Not set';
@@ -150,6 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const csrf_token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const requestRowTemplate = (request) => `
         <tr>
             <td>
@@ -157,8 +152,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 <a href="${urls.view_user(request.id)}">${request.username}</a>
             </td>
             <td style="text-align: right;">
-                <a href="${urls.accept_request(request.id)}" class="btn">Accept</a>
-                <a href="${urls.decline_request(request.id)}" class="btn btn-danger">Decline</a>
+                <form action="${urls.accept_request(request.id)}" method="post" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="${csrf_token}">
+                    <button type="submit" class="btn">Accept</button>
+                </form>
+                <form action="${urls.decline_request(request.id)}" method="post" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="${csrf_token}">
+                    <button type="submit" class="btn btn-danger">Decline</button>
+                </form>
             </td>
         </tr>
     `;

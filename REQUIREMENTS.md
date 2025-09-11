@@ -28,7 +28,7 @@ This document outlines the requirements for the pickaladder application.
 *   **Admin Panel:** Admin users have access to an admin panel.
 *   **User Management:** Admins can delete users, promote users to admins, and reset user passwords.
 *   **Database Management:** Admins can reset the database.
-*   **Data Generation:** Admins can generate random users and matches for testing purposes.
+*   **Data Generation:** Admins can generate random users, matches, and groups for testing purposes.
 
 ## Non-Functional Requirements
 
@@ -44,11 +44,12 @@ This document outlines the requirements for the pickaladder application.
 
 ### Security
 *   **UUIDs:** User and match IDs are UUIDs to enhance privacy.
-*   **Password Hashing:** Passwords are securely hashed using pbkdf2:sha256.
+*   **Password Hashing:** Passwords are securely hashed using `pbkdf2:sha256` with 150,000 iterations. The application also includes a mechanism to re-hash the passwords of existing users on the fly when they log in.
 
 ### User Interface
 *   **Modern Design:** The application has a modern, clean, and responsive user interface with a Google-inspired design.
 *   **Custom Styling:** The application uses a custom stylesheet and does not depend on any external CSS frameworks like Bootstrap.
+*   **Login Page:** The login page does not show a redundant "Please log in to access this page." message or a "LOGIN" button in the navigation bar.
 
 ### Code Quality
 *   **Linting:** The project uses `ruff` for linting and code formatting.
@@ -106,6 +107,15 @@ This document outlines the requirements for the pickaladder application.
 *   **Customizable Branding:** Allow admins to customize the branding of the admin page.
 *   **Terms of Service:** Add a terms of service page.
 *   **Data Export:** Allow users to export their data.
+
+## Known Issues
+
+This section documents some of the known issues in the application.
+
+*   **"Method Not Allowed" on root page login:** The root URL `/` is mapped to the login page, but it does not accept POST requests. This has been fixed by allowing POST requests on the root URL.
+*   **"Method Not Allowed" on friend requests:** The buttons for accepting and declining friend requests were implemented as links, which send GET requests to a POST-only route. This has been fixed by replacing the links with forms that submit POST requests.
+*   **CSRF error on friend requests:** The forms for accepting and declining friend requests were missing the CSRF token. This has been fixed by adding the CSRF token to the forms.
+*   **500 error on groups page:** The groups page was throwing a 500 error because the pagination component was not implemented as a reusable macro. This has been fixed by refactoring the pagination component into a macro and updating the templates to use it correctly.
 
 ### Deeper Feature Suggestions
 

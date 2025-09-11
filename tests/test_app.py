@@ -95,11 +95,14 @@ class AppTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 302)  # Should redirect to install
         self.assertIn("/auth/install", response.location)
 
-    @patch(
-        "pickaladder.group.forms.FriendGroupForm.validate_on_submit",
-        side_effect=CSRFError("CSRF Token Missing"),
-    )
-    def test_csrf_error_handler(self, mock_validate):
+    @patch("pickaladder.group.routes.GroupForm")
+    def test_csrf_error_handler(self, MockGroupForm):
+        # Configure the mock form instance
+        mock_form_instance = MockGroupForm.return_value
+        mock_form_instance.validate_on_submit.side_effect = CSRFError(
+            "CSRF Token Missing"
+        )
+
         # Create a user and log in to access the create group page
         self.create_user(
             username="csrf_tester",
