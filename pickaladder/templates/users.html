@@ -29,7 +29,7 @@
                         <td>{{ user.name }}</td>
                         <td>{{ user.dupr_rating }}</td>
                         <td style="text-align: right;">
-                            <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
+                            <a href="{{ url_for('user.send_friend_request', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
                         </td>
                     </tr>
                 {% endfor %}
@@ -66,12 +66,18 @@
                             {% elif received_status == 'pending' %}
                                 <a href="{{ url_for('user.friends') }}" class="btn btn-warning">Review Request</a>
                             {% else %}
-                                <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
+                                <a href="{{ url_for('user.send_friend_request', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
                             {% endif %}
 
                             {% if session['is_admin'] %}
                                 <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
                                 <a href="{{ url_for('admin.promote_user', user_id=user.id) }}" class="btn btn-warning">Promote</a>
+                                {% if not user.email_verified %}
+                                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-success">Verify</button>
+                                    </form>
+                                {% endif %}
                             {% endif %}
                         </td>
                     </tr>
@@ -91,7 +97,8 @@
     </div>
 
     {% if pagination.pages > 1 %}
-        {% include '_pagination.html' %}
+        {% from "_pagination.html" import render_pagination %}
+        {{ render_pagination(pagination, 'user.users', query_params={'search': search_term}) }}
     {% endif %}
 <script>
     document.addEventListener("DOMContentLoaded", () => {

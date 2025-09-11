@@ -139,9 +139,35 @@ def users():
         page=page, per_page=10, error_out=False
     )
 
-    # This is a complex query, let's simplify for now. Friends of friends can be a
-    # future enhancement.
+    # Find friends of friends, only if there is no search term.
     fof = []
+    if not search_term:
+        # Get the IDs of the current user's friends
+        my_friends_subquery = (
+            db.session.query(Friend.friend_id)
+            .filter(Friend.user_id == current_user_id, Friend.status == "accepted")
+            .subquery()
+        )
+
+        # Get the IDs of the friends of the current user's friends
+        fof_subquery = (
+            db.session.query(Friend.friend_id)
+            .filter(
+                Friend.user_id.in_(my_friends_subquery.select()),
+                Friend.status == "accepted",
+            )
+            .subquery()
+        )
+
+        # Get the User objects for the FoF IDs, excluding the current user and their
+        # direct friends
+        fof = (
+            User.query.filter(User.id.in_(fof_subquery.select()))
+            .filter(User.id != current_user_id)
+            .filter(~User.id.in_(my_friends_subquery.select()))
+            .limit(10)
+            .all()
+        )
 
     return render_template(
         "users.html",

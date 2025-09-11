@@ -28,10 +28,13 @@ When getting started, it's helpful to review these key files to understand the a
 ## 3. Build, Test, and Deployment
 
 *   **To build and start the application:** `make up`
-*   **To run backend tests:** `make test`
+*   **To run backend tests:** `make test`. **Important:** The application environment must be running before you can run the tests. Always run `make up` before running `make test`.
 *   **To clean the Docker environment:** `docker-compose down -v`
 
 *For more commands, see the `Makefile` and `README.md`.*
+
+**Troubleshooting:**
+*   **Docker Errors:** If you encounter Docker errors such as `permission denied` or `service "web" is not running`, try running the `make` commands with `sudo`. If you see a `429 Too Many Requests` error, it means Docker Hub is rate limiting anonymous pulls. There is no immediate workaround for this besides waiting.
 
 ## 4. Coding Standards and Contribution Guidelines
 
@@ -48,6 +51,7 @@ When getting started, it's helpful to review these key files to understand the a
 ### Database
 *   **Use the ORM:** Use the SQLAlchemy ORM for all database interactions. The models are defined in `pickaladder/models.py`.
 *   **Beware N+1 Queries:** When fetching lists of items that have related data, be mindful of the N+1 query problem. Use SQLAlchemy's relationship loading strategies (e.g., `joinedload`, `subqueryload`) to fetch all necessary data in a single, efficient query.
+*   **Subquery Best Practices:** When using a subquery in an `IN` clause, you may see a `SAWarning: Coercing Subquery object into a select()`. To resolve this, explicitly call `.select()` on the subquery object (e.g., `filter(MyModel.id.in_(my_subquery.select()))`).
 
 ### Security
 *   **CSRF Protection:** All forms and endpoints that perform state-changing actions (POST, PUT, DELETE requests) must be protected against Cross-Site Request Forgery (CSRF).
@@ -87,6 +91,15 @@ This section documents some of the issues that have been encountered in this pro
 *   **Symptom:** A `jinja2.exceptions.UndefinedError: 'pagination' is undefined` error occurs on pages with pagination.
 *   **Cause:** The pagination template is not implemented as a reusable macro.
 *   **Solution:** Refactor the pagination template into a macro that takes the `pagination` object and the `endpoint` as arguments. Update the call sites to use the macro correctly.
+
+### Jinja2 TemplateSyntaxError in Macros
+
+*   **Symptom:** A `jinja2.exceptions.TemplateSyntaxError: expected token 'name', got '**'` error occurs when defining a macro.
+*   **Cause:** The version of Jinja2 used in this environment does not support the `**kwargs` syntax for accepting arbitrary keyword arguments directly in a macro's signature.
+*   **Solution:** To create a flexible macro that accepts variable keyword arguments (e.g., for `url_for`), define the macro to accept a dictionary of parameters instead.
+    *   **Incorrect:** `{% macro my_macro(param1, **kwargs) %}`
+    *   **Correct:** `{% macro my_macro(param1, query_params={}) %}`
+    *   Then, unpack the dictionary at the call site within the macro: `{{ url_for('my.endpoint', **query_params) }}`
 
 ### Note on `replace_with_git_merge_diff`
 

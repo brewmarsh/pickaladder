@@ -18,7 +18,7 @@ from .forms import LoginForm, RegisterForm
 from pickaladder import mail
 from .utils import send_password_reset_email, create_user
 from pickaladder.errors import ValidationError, DuplicateResourceError
-from pickaladder.models import User
+from pickaladder.models import User, Setting
 from pickaladder.constants import (
     USER_ID,
     USER_USERNAME,
@@ -97,6 +97,20 @@ def login():
         user = User.query.filter_by(username=form.username.data).first()
         if user is None or not check_password_hash(user.password, form.password.data):
             flash("Invalid username or password.", "danger")
+            return redirect(url_for(".login"))
+
+        # Conditionally check for email verification
+        email_verification_setting = Setting.query.get("enforce_email_verification")
+        if (
+            email_verification_setting
+            and email_verification_setting.value == "true"
+            and not user.email_verified
+        ):
+            flash(
+                "Your email address is not verified. Please check your inbox for the "
+                "verification link.",
+                "warning",
+            )
             return redirect(url_for(".login"))
 
         session[USER_ID] = str(user.id)

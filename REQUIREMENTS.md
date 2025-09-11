@@ -6,7 +6,7 @@ This document outlines the requirements for the pickaladder application.
 
 ### User Management
 *   **User Registration:** Users can create an account with a username, password, email address, and name.
-*   **Email Verification:** Users must verify their email address before they can log in.
+*   **Email Verification:** Email verification can be enforced by an administrator. When enabled, users must verify their email address before they can log in. This setting is disabled by default.
 *   **User Login:** Users can log in with their username and password.
 *   **Password Reset:** Users can reset their password if they forget it.
 *   **Profile Updates:** Users can update their DUPR rating, password, and profile picture from their dashboard.
@@ -26,7 +26,8 @@ This document outlines the requirements for the pickaladder application.
 
 ### Admin Functionality
 *   **Admin Panel:** Admin users have access to an admin panel.
-*   **User Management:** Admins can delete users, promote users to admins, and reset user passwords.
+*   **User Management:** Admins can delete users, promote users to admins, reset user passwords, and manually verify a user's email address.
+*   **Settings Management:** Admins can enable or disable the requirement for email verification from the admin panel.
 *   **Database Management:** Admins can reset the database.
 *   **Data Generation:** Admins can generate random users, matches, and groups for testing purposes.
 
@@ -62,7 +63,6 @@ This document outlines the requirements for the pickaladder application.
 *   **Improved User Profiles:** User profiles could be enhanced to include more information, such as a user's match history, win/loss record, and a short bio.
 *   **Friend Request Notifications:** When a user receives a friend request, they should receive a notification. This could be an in-app notification or an email.
 *   **Match Confirmation:** When a match is recorded, both players should be required to confirm the score. This would help prevent disputes and ensure the accuracy of match results.
-*   **Dark Mode:** The database schema includes a `dark_mode` column, but it does not seem to be fully implemented in the frontend. This feature should be completed.
 
 ### New User Features
 *   **Match Scheduling:** Users should be able to schedule matches with other players. This would involve selecting a date, time, and location for the match.
@@ -115,7 +115,6 @@ This section documents some of the known issues in the application.
 *   **"Method Not Allowed" on root page login:** The root URL `/` is mapped to the login page, but it does not accept POST requests. This has been fixed by allowing POST requests on the root URL.
 *   **"Method Not Allowed" on friend requests:** The buttons for accepting and declining friend requests were implemented as links, which send GET requests to a POST-only route. This has been fixed by replacing the links with forms that submit POST requests.
 *   **CSRF error on friend requests:** The forms for accepting and declining friend requests were missing the CSRF token. This has been fixed by adding the CSRF token to the forms.
-*   **500 error on groups page:** The groups page was throwing a 500 error because the pagination component was not implemented as a reusable macro. This has been fixed by refactoring the pagination component into a macro and updating the templates to use it correctly.
 
 ### Deeper Feature Suggestions
 

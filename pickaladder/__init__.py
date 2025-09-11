@@ -92,11 +92,15 @@ def create_app():
     @app.context_processor
     def inject_user():
         if USER_ID in session:
-            # This will be refactored to use the ORM in a later step
             from .models import User
 
-            user = User.query.get(session[USER_ID])
-            return dict(user=user)
+            try:
+                user_id = uuid.UUID(session[USER_ID])
+                user = User.query.get(user_id)
+                return dict(user=user)
+            except (ValueError, TypeError):
+                # Handle cases where session[USER_ID] is not a valid UUID
+                return dict(user=None)
         return dict(user=None)
 
     return app
