@@ -92,7 +92,7 @@
 
     {% if pagination.pages > 1 %}
         {% from "_render_pagination_macro.html" import render_pagination %}
-        {{ render_pagination(pagination, 'user.users', search=search_term) }}
+        {{ render_pagination(pagination, 'user.users', search_term) }}
     {% endif %}
 <script>
     document.addEventListener("DOMContentLoaded", () => {

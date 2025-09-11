@@ -1,4 +1,4 @@
-{% macro render_pagination(pagination, endpoint, search_term=None) %}
+{% macro render_pagination(pagination, endpoint, search_term) %}
 <div class="pagination" style="margin-top: 20px; text-align: center;">
     {% if pagination.has_prev %}
         <a href="{{ url_for(endpoint, page=pagination.prev_num, search=search_term) }}" class="btn btn-sm">&laquo; Previous</a>
