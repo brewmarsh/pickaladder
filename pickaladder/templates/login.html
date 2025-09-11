@@ -3,7 +3,7 @@
 {% block content %}
 <div class="form-container">
     <h2>Login</h2>
-    <form method="post" action="{{ url_for('auth.login') }}">
+    <form method="post">
         {{ form.hidden_tag() }}
         <div class="form-group">
             {{ form.username.label }}

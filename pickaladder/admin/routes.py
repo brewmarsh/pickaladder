@@ -16,7 +16,7 @@ from sqlalchemy import text, or_
 
 from pickaladder import db
 from . import bp
-from pickaladder.models import User, Friend, Match, Group, GroupMember
+from pickaladder.models import User, Friend, Match
 from pickaladder.auth.utils import send_password_reset_email
 from pickaladder.constants import USER_ID, USER_IS_ADMIN
 
@@ -288,49 +288,5 @@ def generate_matches():
     except Exception as e:
         db.session.rollback()
         flash(f"An error occurred while generating matches: {e}", "danger")
-
-    return redirect(url_for(".admin"))
-
-
-@bp.route("/generate_groups")
-def generate_groups():
-    fake = Faker()
-    try:
-        users = User.query.all()
-        if len(users) < 5:
-            flash("Not enough users to generate groups. Please generate more users first.", "warning")
-            return redirect(url_for(".admin"))
-
-        for _ in range(5):
-            group_name = " ".join(fake.words(nb=random.randint(1, 2)))
-            owner = random.choice(users)
-
-            # Exclude the owner from the list of potential members
-            potential_members = [user for user in users if user.id != owner.id]
-            num_members = random.randint(3, min(5, len(potential_members)))
-            members = random.sample(potential_members, num_members)
-
-            new_group = Group(
-                name=group_name,
-                owner_id=owner.id,
-                description=fake.sentence(),
-                is_public=True,
-            )
-            db.session.add(new_group)
-            db.session.flush()  # Flush to get the new_group.id
-
-            # Add the owner as the first member
-            db.session.add(GroupMember(group_id=new_group.id, user_id=owner.id))
-
-            # Add the other members
-            for member in members:
-                db.session.add(GroupMember(group_id=new_group.id, user_id=member.id))
-
-        db.session.commit()
-        flash("5 random groups generated successfully.", "success")
-
-    except Exception as e:
-        db.session.rollback()
-        flash(f"An error occurred while generating groups: {e}", "danger")
 
     return redirect(url_for(".admin"))

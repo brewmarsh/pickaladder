@@ -144,6 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const csrf_token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const requestRowTemplate = (request) => `
         <tr>
             <td>
@@ -152,9 +153,11 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
             <td style="text-align: right;">
                 <form action="${urls.accept_request(request.id)}" method="post" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="${csrf_token}">
                     <button type="submit" class="btn">Accept</button>
                 </form>
                 <form action="${urls.decline_request(request.id)}" method="post" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="${csrf_token}">
                     <button type="submit" class="btn btn-danger">Decline</button>
                 </form>
             </td>

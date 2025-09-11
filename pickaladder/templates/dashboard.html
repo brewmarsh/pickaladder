@@ -50,11 +50,13 @@
                                 <td>{{ request[1] }}</td>
                                 <td>
                                     <form action="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}" method="post" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="button">Accept</button>
                                     </form>
                                 </td>
                                 <td>
                                     <form action="{{ url_for('user.decline_friend_request', friend_id=request[0]) }}" method="post" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="button">Decline</button>
                                     </form>
                                 </td>
