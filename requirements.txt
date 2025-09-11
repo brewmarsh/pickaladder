@@ -6,7 +6,7 @@ Werkzeug==2.2.2
 gunicorn
 Flask-Mail==0.9.1
 Faker==18.4.0
-ruff==0.0.272
+ruff==0.12.12
 Pillow
 pydantic==1.10.7
 Flask-WTF
