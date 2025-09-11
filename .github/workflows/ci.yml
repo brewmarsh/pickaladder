@@ -1,3 +1,11 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,17 +36,17 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Lint with ruff
-        run: |
-          pip install ruff
-          ruff --fix .
+        run: ruff check .
+
+      - name: Format with ruff
+        run: ruff format --check .
+
       - name: Security Analysis with Bandit
-        run: |
-          pip install bandit
-          bandit -r .
+        run: bandit -r .
+
       - name: Static Type Checking with mypy
-        run: |
-          pip install mypy
-          mypy .
+        run: mypy .
+
       - name: Run tests with coverage
         env:
           DB_HOST: localhost
