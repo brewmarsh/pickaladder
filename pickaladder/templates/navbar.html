@@ -23,7 +23,9 @@
                         </div>
                     </div>
                 {% else %}
-                    <a href="{{ url_for('auth.login') }}" class="btn">Login</a>
+                    {% if request.endpoint != 'auth.login' %}
+                        <a href="{{ url_for('auth.login') }}" class="btn">Login</a>
+                    {% endif %}
                     <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>
                 {% endif %}
             </div>
