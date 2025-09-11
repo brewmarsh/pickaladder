@@ -15,5 +15,6 @@ types-WTForms
 types-psycopg2
 types-SQLAlchemy
 types-Pillow
+types-Flask-SQLAlchemy
 bandit
 mypy
