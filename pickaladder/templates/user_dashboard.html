@@ -151,8 +151,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 <a href="${urls.view_user(request.id)}">${request.username}</a>
             </td>
             <td style="text-align: right;">
-                <a href="${urls.accept_request(request.id)}" class="btn">Accept</a>
-                <a href="${urls.decline_request(request.id)}" class="btn btn-danger">Decline</a>
+                <form action="${urls.accept_request(request.id)}" method="post" style="display: inline;">
+                    <button type="submit" class="btn">Accept</button>
+                </form>
+                <form action="${urls.decline_request(request.id)}" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Decline</button>
+                </form>
             </td>
         </tr>
     `;
