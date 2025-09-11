@@ -153,7 +153,8 @@ def users():
         fof_subquery = (
             db.session.query(Friend.friend_id)
             .filter(
-                Friend.user_id.in_(my_friends_subquery), Friend.status == "accepted"
+                Friend.user_id.in_(my_friends_subquery.select()),
+                Friend.status == "accepted",
             )
             .subquery()
         )
@@ -161,9 +162,9 @@ def users():
         # Get the User objects for the FoF IDs, excluding the current user and their
         # direct friends
         fof = (
-            User.query.filter(User.id.in_(fof_subquery))
+            User.query.filter(User.id.in_(fof_subquery.select()))
             .filter(User.id != current_user_id)
-            .filter(~User.id.in_(my_friends_subquery))
+            .filter(~User.id.in_(my_friends_subquery.select()))
             .limit(10)
             .all()
         )
