@@ -62,7 +62,7 @@
     </div>
 
     {% if pagination.pages > 1 %}
-        {% from "_pagination.html" import render_pagination %}
+        {% from "_render_pagination_macro.html" import render_pagination %}
         {{ render_pagination(pagination, 'group.view_groups', search=search_term) }}
     {% endif %}
 </div>

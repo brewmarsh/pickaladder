@@ -91,7 +91,8 @@
     </div>
 
     {% if pagination.pages > 1 %}
-        {% include '_pagination.html' %}
+        {% from "_render_pagination_macro.html" import render_pagination %}
+        {{ render_pagination(pagination, 'user.users', search=search_term) }}
     {% endif %}
 <script>
     document.addEventListener("DOMContentLoaded", () => {
