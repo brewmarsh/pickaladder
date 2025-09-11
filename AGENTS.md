@@ -59,3 +59,35 @@ When getting started, it's helpful to review these key files to understand the a
 *   **Iterative Problem Resolution:** If you encounter an issue (e.g., a security vulnerability, a bug, a confusing pattern), please look for other instances of the same problem in the codebase and address them.
 *   **Update This File:** If you discover a new development technique, a useful debugging procedure, or a common pitfall, please update this `AGENTS.md` file to help future agents.
 *   **Update Other Docs:** As you make changes, ensure that `REQUIREMENTS.md` and `DESIGN.md` (if applicable) are also updated to reflect the new state of the application.
+
+## 6. Known Issues and Solutions
+
+This section documents some of the issues that have been encountered in this project and their solutions.
+
+### "Method Not Allowed" Error
+
+*   **Symptom:** A "Method Not Allowed" error occurs when performing an action that should change the state of the application, such as accepting a friend request or logging in from the root page.
+*   **Cause:** This error is caused by using a `GET` request (e.g., an `<a>` tag) for an action that requires a `POST` request.
+*   **Solution:** Replace the `<a>` tag with a `<form>` that submits a `POST` request. Ensure that the form includes a CSRF token.
+
+### CSRF Error
+
+*   **Symptom:** A "CSRF Error: The CSRF token is missing" error occurs on form submission.
+*   **Cause:** The form is missing a CSRF token.
+*   **Solution:** Add a hidden input field with the CSRF token to the form. In this application, you can use `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">`. For Javascript-generated forms, you can retrieve the token from a meta tag in the HTML head.
+
+### Worker Timeout During Login
+
+*   **Symptom:** The login process times out, and a "WORKER TIMEOUT" error is shown in the logs.
+*   **Cause:** The password hashing function is using a very high number of iterations, which is too slow for the server.
+*   **Solution:** Reduce the number of iterations in the `generate_password_hash` function. A value of `150000` is a reasonable choice. Also, implement a mechanism to re-hash the passwords of existing users on the fly when they log in.
+
+### Pagination Error
+
+*   **Symptom:** A `jinja2.exceptions.UndefinedError: 'pagination' is undefined` error occurs on pages with pagination.
+*   **Cause:** The pagination template is not implemented as a reusable macro.
+*   **Solution:** Refactor the pagination template into a macro that takes the `pagination` object and the `endpoint` as arguments. Update the call sites to use the macro correctly.
+
+### Note on `replace_with_git_merge_diff`
+
+*   The `replace_with_git_merge_diff` tool automatically commits the changes it applies. Be mindful of this when working on multiple issues, as it can lead to a messy commit history. It's best to use this tool for a single, focused change and then submit it before moving on to the next task.
