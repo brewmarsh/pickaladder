@@ -18,9 +18,7 @@
             {% if messages %}
                 <div class="flashes">
                     {% for category, message in messages %}
-                        {% if not (message == 'Please log in to access this page.' and request.endpoint == 'auth.login') %}
-                            <div class="alert alert-{{ category }}">{{ message }}</div>
-                        {% endif %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
                     {% endfor %}
                 </div>
             {% endif %}

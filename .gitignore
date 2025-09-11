@@ -7,3 +7,12 @@ instance/
 *-data/
 .test.db.data/
 pgdata-test/
+
+# Log files
+app.log
+make_up.log
+
+# Other
+cookies.txt
+cookies2.txt
+url_map.txt
