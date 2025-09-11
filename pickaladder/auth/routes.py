@@ -99,6 +99,14 @@ def login():
             flash("Invalid username or password.", "danger")
             return redirect(url_for(".login"))
 
+        if not user.email_verified:
+            flash(
+                "Your email address is not verified. Please check your inbox for the "
+                "verification link.",
+                "warning",
+            )
+            return redirect(url_for(".login"))
+
         session[USER_ID] = str(user.id)
         session[USER_IS_ADMIN] = user.is_admin
         return redirect(url_for("user.dashboard"))

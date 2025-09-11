@@ -29,7 +29,7 @@
                         <td>{{ user.name }}</td>
                         <td>{{ user.dupr_rating }}</td>
                         <td style="text-align: right;">
-                            <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
+                            <a href="{{ url_for('user.send_friend_request', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
                         </td>
                     </tr>
                 {% endfor %}
@@ -66,7 +66,7 @@
                             {% elif received_status == 'pending' %}
                                 <a href="{{ url_for('user.friends') }}" class="btn btn-warning">Review Request</a>
                             {% else %}
-                                <a href="{{ url_for('user.add_friend', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
+                                <a href="{{ url_for('user.send_friend_request', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
                             {% endif %}
 
                             {% if session['is_admin'] %}
