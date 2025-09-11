@@ -95,13 +95,20 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
-        if user is None or not check_password_hash(user.password, form.password.data):
+        if user and check_password_hash(user.password, form.password.data):
+            # If the password hash is not using the current number of iterations, rehash it.
+            if "pbkdf2:sha256:150000" not in user.password:
+                user.password = generate_password_hash(
+                    form.password.data, method="pbkdf2:sha256:150000"
+                )
+                db.session.commit()
+
+            session[USER_ID] = str(user.id)
+            session[USER_IS_ADMIN] = user.is_admin
+            return redirect(url_for("user.dashboard"))
+        else:
             flash("Invalid username or password.", "danger")
             return redirect(url_for(".login"))
-
-        session[USER_ID] = str(user.id)
-        session[USER_IS_ADMIN] = user.is_admin
-        return redirect(url_for("user.dashboard"))
 
     return render_template("login.html", form=form)
 
@@ -222,7 +229,7 @@ def change_password():
         if not password or password != confirm_password:
             raise ValidationError("Passwords do not match.")
 
-        user.password = generate_password_hash(password, method="pbkdf2:sha256")
+        user.password = generate_password_hash(password, method="pbkdf2:sha256:150000")
         db.session.commit()
 
         flash("Password changed successfully.", "success")
