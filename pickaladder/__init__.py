@@ -87,7 +87,7 @@ def create_app():
     # in another app, you might define a separate main index here with
     # app.route, while giving the auth blueprint a url_prefix, but for
     # this app, the index is the login page
-    app.add_url_rule("/", endpoint="auth.login")
+    app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
 
     @app.context_processor
     def inject_user():
