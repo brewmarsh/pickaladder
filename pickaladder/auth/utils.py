@@ -12,9 +12,7 @@ from pickaladder.models import User
 
 def create_user(username, password, email, name, dupr_rating=None, is_admin=False):
     """Creates and prepares a new user object for database insertion."""
-    hashed_password = generate_password_hash(
-        password, method="pbkdf2:sha256:150000"
-    )
+    hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
     profile_picture_path, thumbnail_path = generate_profile_picture(name)
 
     new_user = User(
