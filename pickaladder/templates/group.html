@@ -45,9 +45,10 @@
             <input type="submit" value="Invite" class="btn">
         </form>
 
-        <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}" style="margin-top: 20px;">
+        <h3 style="margin-top: 20px;">Danger Zone</h3>
+        <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="submit" value="Delete Group" class="btn" style="background-color: #dc3545; color: white;"
+            <input type="submit" value="Delete Group" class="btn btn-danger"
                 onclick="return confirm('Are you sure you want to permanently delete this group? This action cannot be undone.')">
         </form>
         {% endif %}
