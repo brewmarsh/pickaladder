@@ -72,6 +72,12 @@
                             {% if session['is_admin'] %}
                                 <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
                                 <a href="{{ url_for('admin.promote_user', user_id=user.id) }}" class="btn btn-warning">Promote</a>
+                                {% if not user.email_verified %}
+                                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-success">Verify</button>
+                                    </form>
+                                {% endif %}
                             {% endif %}
                         </td>
                     </tr>

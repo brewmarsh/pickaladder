@@ -148,3 +148,12 @@ class GroupMember(db.Model):
     )
 
     user = db.relationship("User", backref="group_memberships")
+
+
+class Setting(db.Model):
+    __tablename__ = "settings"
+    key = db.Column(db.String(50), primary_key=True)
+    value = db.Column(db.String(255), nullable=False)
+
+    def __repr__(self):
+        return f"<Setting {self.key}={self.value}>"

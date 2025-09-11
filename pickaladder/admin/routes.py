@@ -16,7 +16,7 @@ from sqlalchemy import text, or_
 
 from pickaladder import db
 from . import bp
-from pickaladder.models import User, Friend, Match
+from pickaladder.models import User, Friend, Match, Setting
 from pickaladder.auth.utils import send_password_reset_email
 from pickaladder.constants import USER_ID, USER_IS_ADMIN
 
@@ -30,7 +30,28 @@ def before_request():
 
 @bp.route("/")
 def admin():
-    return render_template("admin.html")
+    email_verification_setting = Setting.query.get("enforce_email_verification")
+    return render_template(
+        "admin.html", email_verification_setting=email_verification_setting
+    )
+
+
+@bp.route("/toggle_email_verification", methods=["POST"])
+def toggle_email_verification():
+    try:
+        setting = Setting.query.get("enforce_email_verification")
+        if setting:
+            # Flip the boolean value represented as a string
+            setting.value = "false" if setting.value == "true" else "true"
+            db.session.commit()
+            new_status = "enabled" if setting.value == "true" else "disabled"
+            flash(f"Email verification requirement has been {new_status}.", "success")
+        else:
+            flash("Setting not found.", "danger")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin"))
 
 
 @bp.route("/matches")
@@ -164,6 +185,22 @@ def admin_reset_password(user_id):
         else:
             flash("User not found.", "danger")
     except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for("user.users"))
+
+
+@bp.route("/verify_user/<uuid:user_id>", methods=["POST"])
+def verify_user(user_id):
+    try:
+        user = User.query.get(user_id)
+        if user:
+            user.email_verified = True
+            db.session.commit()
+            flash(f"User {user.username} has been manually verified.", "success")
+        else:
+            flash("User not found.", "danger")
+    except Exception as e:
+        db.session.rollback()
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for("user.users"))
 
