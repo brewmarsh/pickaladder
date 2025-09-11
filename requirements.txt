@@ -6,7 +6,7 @@ Werkzeug==2.2.2
 gunicorn
 Flask-Mail==0.9.1
 Faker==18.4.0
-ruff==0.12.12
+ruff==0.0.272
 Pillow
 pydantic==1.10.7
 Flask-WTF
@@ -15,5 +15,6 @@ types-WTForms
 types-psycopg2
 types-SQLAlchemy
 types-Pillow
+types-Flask-SQLAlchemy
 bandit
 mypy

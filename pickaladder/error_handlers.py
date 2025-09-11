@@ -71,8 +71,7 @@ def handle_db_error(e):
 @error_handlers_bp.app_errorhandler(CSRFError)
 def handle_csrf_error(e):
     """
-    Handles CSRF errors, which usually indicate a session timeout or invalid
-    form submission.
+    Handles CSRF errors, which usually indicate a session timeout or invalid form submission.
     """
     current_app.logger.warning(f"CSRF Error: {e.description}")
     flash("Your session may have expired. Please try your action again.", "warning")
