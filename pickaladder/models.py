@@ -1,4 +1,4 @@
-from . import db
+from .extensions import db
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import func
 
@@ -6,7 +6,7 @@ from flask import current_app
 from itsdangerous import URLSafeTimedSerializer as Serializer
 
 
-class User(db.Model):  # type: ignore
+class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(
@@ -78,7 +78,7 @@ class User(db.Model):  # type: ignore
         return f"<User {self.username}>"
 
 
-class Friend(db.Model):  # type: ignore
+class Friend(db.Model):
     __tablename__ = "friends"
     user_id = db.Column(
         UUID(as_uuid=True),
@@ -96,7 +96,7 @@ class Friend(db.Model):  # type: ignore
         return f"<Friendship from {self.user_id} to {self.friend_id}>"
 
 
-class Match(db.Model):  # type: ignore
+class Match(db.Model):
     __tablename__ = "matches"
 
     id = db.Column(
