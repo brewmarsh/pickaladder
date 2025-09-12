@@ -105,7 +105,7 @@ def friend_graph_data():
     return jsonify({"nodes": nodes, "edges": edges})
 
 
-@bp.route("/reset_db")
+@bp.route("/reset_db", methods=["POST"])
 def reset_db():
     try:
         # Using raw SQL for TRUNCATE, as it's more efficient than deleting all objects.
@@ -120,22 +120,19 @@ def reset_db():
     return redirect(url_for(".admin"))
 
 
-@bp.route("/reset-admin", methods=["GET", "POST"])
+@bp.route("/reset-admin", methods=["POST"])
 def reset_admin():
-    if request.method == "POST":
-        try:
-            User.query.update({User.is_admin: False})
-            first_user = User.query.order_by(User.id).first()
-            if first_user:
-                first_user.is_admin = True
-            db.session.commit()
-            flash("Admin privileges have been reset.", "success")
-        except Exception as e:
-            db.session.rollback()
-            flash(f"An error occurred: {e}", "danger")
-        return redirect(url_for(".admin"))
-
-    return render_template("reset_admin.html")
+    try:
+        User.query.update({User.is_admin: False})
+        first_user = User.query.order_by(User.id).first()
+        if first_user:
+            first_user.is_admin = True
+        db.session.commit()
+        flash("Admin privileges have been reset.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin"))
 
 
 @bp.route("/delete_user/<uuid:user_id>")
@@ -205,7 +202,7 @@ def verify_user(user_id):
     return redirect(url_for("user.users"))
 
 
-@bp.route("/generate_users")
+@bp.route("/generate_users", methods=["POST"])
 def generate_users():
     fake = Faker()
     new_users = []
@@ -287,7 +284,7 @@ def generate_users():
     return render_template("generated_users.html", users=new_users)
 
 
-@bp.route("/generate_matches")
+@bp.route("/generate_matches", methods=["POST"])
 def generate_matches():
     try:
         friends = Friend.query.filter_by(status="accepted").all()
