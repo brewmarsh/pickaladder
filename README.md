@@ -1,64 +1,83 @@
-# pickaladder  
+# 🥒 pickaladder 🥇
 
-A simple web application for managing pickleball ladders.
+A modern web application for managing pickleball ladders, leagues, and tournaments! 🏆
 
-## Features
+## ✨ Features
 
-* User registration and login
-* Friend management
-* Match tracking
-* Admin panel for user management
+`pickaladder` is packed with features to make managing and participating in pickleball ladders a breeze.
 
-## Getting Started
+### 👤 User & Profile Management
+*   **Easy Registration:** Simple sign-up process for new players.
+*   **Email Verification:** Optional, admin-enforced email verification for new accounts.
+*   **Secure Login & Password Reset:** Standard, secure authentication with a "forgot password" flow.
+*   **Customizable Profiles:** Update your name, DUPR rating, and upload a custom profile picture.
+*   **Personalized Dashboard:** A central hub to view your stats, recent matches, and friend activity.
+*   **Dark Mode:** Switch to a sleek dark theme for comfortable viewing.
 
-To get started with the application, you will need to have Docker and Docker Compose installed.
+### 🧑‍🤝‍🧑 Social & Friends
+*   **Find Players:** Search for other users in the system.
+*   **Friend System:** Add friends to easily create matches and track your connections.
+*   **Friend Recommendations:** Discover new players with a "Friends of Friends" suggestion list.
+*   **View Profiles:** See other players' stats, match history, and friends.
 
-1. Clone the repository
-2. Run `make build` to build the Docker containers
-3. Run `make up` to start the application
-4. The application will be available at `http://localhost:27272`
+### 👨‍👩‍👧‍👦 Groups & Leagues
+*   **Create & Join Groups:** Form public or private groups for your club, league, or friends.
+*   **Group Profiles:** Give your group a name, description, and profile picture.
+*   **Invite-Only:** Invite your friends to join your private groups.
+*   **Group Leaderboards:** Each group has its own leaderboard to track rankings internally.
 
-## Build
+### 🏓 Gameplay & Matches
+*   **Record Matches:** Easily record match scores against your friends.
+*   **Detailed Match View:** See a breakdown of each match, with the winner's icon emphasized.
+*   **Player Records:** Automatically calculated win/loss records for every player.
+*   **Global Leaderboard:** See how you stack up against the top 10 players on the site.
+*   **Match History:** Your profile features a full history of your played matches.
 
-The application is built using a multi-stage Docker build. The first stage builds the React frontend, and the second stage builds the final Python application, copying the built frontend assets from the first stage. This results in a small, optimized production image.
+### 👑 Admin Panel
+*   **Full User Management:** Admins can delete users, promote new admins, reset user passwords, and manually verify emails.
+*   **Site Settings:** Toggle application-wide settings, like requiring email verification.
+*   **Test Data Generation:** Populate the site with randomly generated users and matches for testing.
+*   **Database Reset:** A one-click option to reset the development database.
 
-## Testing
+## 🚀 Getting Started
 
-To run the tests, use the following command:
+To get the application running locally, you'll need [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) installed.
 
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/pickaladder.git
+    cd pickaladder
+    ```
+
+2.  **Start the application:**
+    ```bash
+    make up
+    ```
+    This command will build the Docker containers, start the application and database, and run any necessary database migrations.
+
+3.  **Access the application:**
+    Open your web browser and navigate to `http://localhost:27272`.
+
+**Note:** The very first user to register will automatically be granted administrator privileges.
+
+## 🛠️ Development
+
+### Running Tests
+To run the backend test suite, use the following command. Make sure the application is already running with `make up`.
+```bash
 make test
 ```
 
-This will run the backend tests in a separate test database to avoid interfering with the development database.
-
-## Admin
-
-The first user to register will be an admin. The admin can access the admin panel at `/admin`.
-
-The admin can:
-
-* Reset the database
-* Generate random users
-* Reset the admin account
-* Delete users
-* Promote users to administrators
-* Reset user passwords
-
-### Database
-
-To reset the development database, run the following command:
-
-```
+### Resetting the Database
+To completely wipe the development database, run:
+```bash
 make reset-db
 ```
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
-If you are having issues with the database not being created correctly, you can try running the following command to remove the old database volume:
-
-```
+If you encounter issues with the database, you can remove the old database volume by running:
+```bash
 docker-compose down -v
 ```
-
-After running this command, you can try running `make build` and `make up` again.
+After running this, you can try starting the application again with `make up`.
