@@ -47,6 +47,11 @@ jobs:
       - name: Static Type Checking with mypy
         run: python -m mypy --no-incremental .
 
+      - name: Enable uuid-ossp extension
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+          PGPASSWORD=postgres psql -h localhost -U postgres -p 5432 -d postgres -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+
       - name: Run tests with coverage
         env:
           DB_HOST: localhost
