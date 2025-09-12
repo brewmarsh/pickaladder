@@ -1,6 +1,6 @@
 # pickaladder  
 
-A simple web application for managing pickleball ladders.
+Manage your pickleball groups! Score and rank and see who is the best!
 
 ## Features
 
