@@ -1,4 +1,4 @@
-from . import db
+from .extensions import db
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import func
 
@@ -116,7 +116,7 @@ class Match(db.Model):  # type: ignore
         return f"<Match {self.id}>"
 
 
-class Group(db.Model):
+class Group(db.Model):  # type: ignore
     __tablename__ = "groups"
     id = db.Column(
         UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
@@ -134,7 +134,7 @@ class Group(db.Model):
     )
 
 
-class GroupMember(db.Model):
+class GroupMember(db.Model):  # type: ignore
     __tablename__ = "group_members"
     group_id = db.Column(
         UUID(as_uuid=True),
@@ -150,7 +150,7 @@ class GroupMember(db.Model):
     user = db.relationship("User", backref="group_memberships")
 
 
-class Setting(db.Model):
+class Setting(db.Model):  # type: ignore
     __tablename__ = "settings"
     key = db.Column(db.String(50), primary_key=True)
     value = db.Column(db.String(255), nullable=False)

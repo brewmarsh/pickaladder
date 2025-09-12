@@ -11,5 +11,8 @@ else
 EOSQL
 fi
 
-# Run the schema
+# Add uuid-ossp extension to the template database so all new DBs have it
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "template1" -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+
+# Run the schema on the main database
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/init.sql
