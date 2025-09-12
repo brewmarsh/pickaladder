@@ -6,7 +6,7 @@ from flask import current_app
 from itsdangerous import URLSafeTimedSerializer as Serializer
 
 
-class User(db.Model):
+class User(db.Model):  # type: ignore
     __tablename__ = "users"
 
     id = db.Column(
@@ -78,7 +78,7 @@ class User(db.Model):
         return f"<User {self.username}>"
 
 
-class Friend(db.Model):
+class Friend(db.Model):  # type: ignore
     __tablename__ = "friends"
     user_id = db.Column(
         UUID(as_uuid=True),
@@ -96,7 +96,7 @@ class Friend(db.Model):
         return f"<Friendship from {self.user_id} to {self.friend_id}>"
 
 
-class Match(db.Model):
+class Match(db.Model):  # type: ignore
     __tablename__ = "matches"
 
     id = db.Column(
@@ -116,7 +116,7 @@ class Match(db.Model):
         return f"<Match {self.id}>"
 
 
-class Group(db.Model):
+class Group(db.Model):  # type: ignore
     __tablename__ = "groups"
     id = db.Column(
         UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4()
@@ -134,7 +134,7 @@ class Group(db.Model):
     )
 
 
-class GroupMember(db.Model):
+class GroupMember(db.Model):  # type: ignore
     __tablename__ = "group_members"
     group_id = db.Column(
         UUID(as_uuid=True),
@@ -150,7 +150,7 @@ class GroupMember(db.Model):
     user = db.relationship("User", backref="group_memberships")
 
 
-class Setting(db.Model):
+class Setting(db.Model):  # type: ignore
     __tablename__ = "settings"
     key = db.Column(db.String(50), primary_key=True)
     value = db.Column(db.String(255), nullable=False)
