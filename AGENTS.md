@@ -42,8 +42,24 @@ When getting started, it's helpful to review these key files to understand the a
 *   **Python:** Follow PEP 8 style guidelines. All new functions should have docstrings.
 *   **Commits:** Commit messages should follow the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/).
 
-### Linting and Formatting
-*   **Ruff:** This project uses `ruff` for both linting and formatting, replacing `flake8` and `black`. Before submitting, please run `ruff check --fix .` and `ruff format .` to ensure your code is compliant. The CI pipeline will fail if there are linting errors.
+### Code Quality Checks
+Before submitting your code, please run the following checks to ensure code quality and prevent regressions.
+
+*   **Linting and Formatting:** This project uses `ruff` for both linting and formatting. Run the following commands to automatically fix most issues:
+    ```bash
+    ruff check --fix .
+    ruff format .
+    ```
+
+*   **Type Checking:** This project uses `mypy` for static type checking. Run the following command from the root of the repository to check for type errors. Note that this must be run inside the `web` container.
+    ```bash
+    docker compose exec web mypy .
+    ```
+
+*   **Test Coverage:** This project uses `coverage` to measure test coverage. Run the following command to run the tests and generate a coverage report.
+    ```bash
+    make coverage
+    ```
 
 ### Business Logic
 *   **Keep Routes Thin:** Route handlers in the `routes.py` files should be kept as "thin" as possible. Complex business logic should be encapsulated in separate utility functions or, for larger features, dedicated service classes.
