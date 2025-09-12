@@ -45,7 +45,7 @@ jobs:
         run: bandit -r .
 
       - name: Static Type Checking with mypy
-        run: mypy .
+        run: python -m mypy --no-incremental .
 
       - name: Run tests with coverage
         env:
