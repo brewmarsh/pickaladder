@@ -1,6 +1,6 @@
 from unittest.mock import patch
 from tests.helpers import BaseTestCase, TEST_PASSWORD
-
+from pickaladder.models import User
 
 class AuthTestCase(BaseTestCase):
     def test_login_page_load(self):
@@ -37,12 +37,13 @@ class AuthTestCase(BaseTestCase):
         mock_mail_send.assert_called_once()
 
     def test_login_logout(self):
-        self.create_user(
+        user = self.create_user(
             username="testuser",
             password=TEST_PASSWORD,
             is_admin=True,
             email="testuser@example.com",
         )
+        user.email_verified = True
         # Test successful login
         response = self.login("testuser", TEST_PASSWORD)
         self.assertEqual(response.status_code, 200)
@@ -72,3 +73,37 @@ class AuthTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Login", response.data)
         self.assertIn(b"Please log in to access this page.", response.data)
+
+    @patch("pickaladder.auth.routes.mail.send")
+    def test_email_verification(self, mock_mail_send):
+        self.create_user(is_admin=True, email="verification@example.com")
+        self.app.post(
+            "/auth/register",
+            data={
+                "username": "unverified_user",
+                "password": TEST_PASSWORD,
+                "confirm_password": TEST_PASSWORD,
+                "email": "unverified@example.com",
+                "name": "Unverified User",
+            },
+            follow_redirects=True,
+        )
+
+        user = User.query.filter_by(username="unverified_user").first()
+        self.assertFalse(user.email_verified)
+
+        with self.app.app_context():
+            token = user.get_email_verification_token()
+
+        response = self.app.get(f"/auth/verify_email/{token}", follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Email verified successfully. You can now log in.", response.data)
+
+        user = User.query.filter_by(username="unverified_user").first()
+        self.assertTrue(user.email_verified)
+
+    def test_email_verification_invalid_token(self):
+        self.create_user(is_admin=True, email="invalidtoken@example.com")
+        response = self.app.get("/auth/verify_email/invalidtoken", follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"The email verification link is invalid or has expired.", response.data)
