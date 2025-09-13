@@ -30,9 +30,7 @@ def before_request():
 
 @bp.route("/")
 def admin():
-    email_verification_setting = db.session.get(
-        Setting, "enforce_email_verification"
-    )
+    email_verification_setting = db.session.get(Setting, "enforce_email_verification")
     return render_template(
         "admin.html", email_verification_setting=email_verification_setting
     )
