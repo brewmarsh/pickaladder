@@ -49,7 +49,7 @@ def get_player_record(player_id):
 @bp.route("/<uuid:match_id>")
 @login_required
 def view_match_page(match_id):
-    match = db.session.get_or_404(Match, match_id)
+    match = db.get_or_404(Match, match_id)
     player1_record = get_player_record(match.player1_id)
     player2_record = get_player_record(match.player2_id)
 

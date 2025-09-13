@@ -59,7 +59,7 @@ def view_groups():
 @bp.route("/<uuid:group_id>", methods=["GET", "POST"])
 @login_required
 def view_group(group_id):
-    group = db.session.get_or_404(Group, group_id)
+    group = db.get_or_404(Group, group_id)
     user_id = uuid.UUID(session[USER_ID])
     user = db.session.get(User, user_id)
 
@@ -141,7 +141,7 @@ def create_group():
 @bp.route("/<uuid:group_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_group(group_id):
-    group = db.session.get_or_404(Group, group_id)
+    group = db.get_or_404(Group, group_id)
     user_id = uuid.UUID(session[USER_ID])
     if group.owner_id != user_id:
         flash("You do not have permission to edit this group.", "danger")
@@ -174,7 +174,7 @@ def edit_group(group_id):
 @bp.route("/<uuid:group_id>/delete", methods=["POST"])
 @login_required
 def delete_group(group_id):
-    group = db.session.get_or_404(Group, group_id)
+    group = db.get_or_404(Group, group_id)
     user_id = uuid.UUID(session[USER_ID])
     if group.owner_id != user_id:
         flash("You do not have permission to delete this group.", "danger")

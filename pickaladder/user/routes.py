@@ -32,7 +32,7 @@ from pickaladder.auth.decorators import login_required
 @login_required
 def dashboard():
     user_id = uuid.UUID(session[USER_ID])
-    user = db.session.get_or_404(User, user_id)
+    user = db.get_or_404(User, user_id)
     form = UpdateProfileForm(obj=user)
 
     # The template is now a shell, data is fetched by client-side JS
@@ -43,7 +43,7 @@ def dashboard():
 @bp.route("/<uuid:user_id>")
 @login_required
 def view_user(user_id):
-    profile_user = db.session.get_or_404(User, user_id)
+    profile_user = db.get_or_404(User, user_id)
     current_user_id = uuid.UUID(session[USER_ID])
 
     # Get friends
@@ -294,7 +294,7 @@ def decline_friend_request(friend_id):
 
 @bp.route("/profile_picture/<uuid:user_id>")
 def profile_picture(user_id):
-    user = db.session.get_or_404(User, user_id)
+    user = db.get_or_404(User, user_id)
     if user.profile_picture_path:
         return send_from_directory(
             current_app.config["UPLOAD_FOLDER"], user.profile_picture_path
@@ -304,7 +304,7 @@ def profile_picture(user_id):
 
 @bp.route("/profile_picture_thumbnail/<uuid:user_id>")
 def profile_picture_thumbnail(user_id):
-    user = db.session.get_or_404(User, user_id)
+    user = db.get_or_404(User, user_id)
     if user.profile_picture_thumbnail_path:
         return send_from_directory(
             current_app.config["UPLOAD_FOLDER"], user.profile_picture_thumbnail_path
@@ -316,7 +316,7 @@ def profile_picture_thumbnail(user_id):
 @login_required
 def update_profile():
     user_id = uuid.UUID(session[USER_ID])
-    user = db.session.get_or_404(User, user_id)
+    user = db.get_or_404(User, user_id)
     form = UpdateProfileForm()
 
     if form.validate_on_submit():
@@ -375,7 +375,7 @@ def update_profile():
 @login_required
 def api_dashboard():
     user_id = uuid.UUID(session[USER_ID])
-    user = db.session.get_or_404(User, user_id)
+    user = db.get_or_404(User, user_id)
 
     # Get accepted friends
     friends = (
