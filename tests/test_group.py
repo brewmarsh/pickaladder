@@ -134,7 +134,7 @@ class GroupTestCase(BaseTestCase):
         response = self.app.post(f"/group/{group_id}/delete", follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Group deleted successfully.", response.data)
-        deleted_group = Group.query.get(group_id)
+        deleted_group = db.session.get(Group, group_id)
         self.assertIsNone(deleted_group)
 
     def test_delete_group_by_non_owner(self):
@@ -160,5 +160,5 @@ class GroupTestCase(BaseTestCase):
         self.assertIn(
             b"You do not have permission to delete this group.", response.data
         )
-        not_deleted_group = Group.query.get(group_id)
+        not_deleted_group = db.session.get(Group, group_id)
         self.assertIsNotNone(not_deleted_group)

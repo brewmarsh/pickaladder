@@ -33,7 +33,7 @@ def get_group_leaderboard(group_id):
     """
     Calculates the leaderboard for a specific group.
     """
-    group = Group.query.get(group_id)
+    group = db.session.get(Group, group_id)
     if not group:
         return []
 

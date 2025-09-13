@@ -30,7 +30,9 @@ def before_request():
 
 @bp.route("/")
 def admin():
-    email_verification_setting = Setting.query.get("enforce_email_verification")
+    email_verification_setting = db.session.get(
+        Setting, "enforce_email_verification"
+    )
     return render_template(
         "admin.html", email_verification_setting=email_verification_setting
     )
@@ -39,7 +41,7 @@ def admin():
 @bp.route("/toggle_email_verification", methods=["POST"])
 def toggle_email_verification():
     try:
-        setting = Setting.query.get("enforce_email_verification")
+        setting = db.session.get(Setting, "enforce_email_verification")
         if setting:
             # Flip the boolean value represented as a string
             setting.value = "false" if setting.value == "true" else "true"
@@ -79,7 +81,7 @@ def admin_matches():
 @bp.route("/delete_match/<string:match_id>")
 def admin_delete_match(match_id):
     try:
-        match = Match.query.get(match_id)
+        match = db.session.get(Match, match_id)
         if match:
             db.session.delete(match)
             db.session.commit()
@@ -138,7 +140,7 @@ def reset_admin():
 @bp.route("/delete_user/<uuid:user_id>")
 def delete_user(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user:
             db.session.delete(user)
             db.session.commit()
@@ -157,7 +159,7 @@ def delete_user(user_id):
 @bp.route("/promote_user/<uuid:user_id>")
 def promote_user(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user:
             user.is_admin = True
             db.session.commit()
@@ -173,7 +175,7 @@ def promote_user(user_id):
 @bp.route("/reset_password/<uuid:user_id>")
 def admin_reset_password(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user and user.email:
             send_password_reset_email(user)
             flash(f"Password reset link sent to {user.email}.", "success")
@@ -189,7 +191,7 @@ def admin_reset_password(user_id):
 @bp.route("/verify_user/<uuid:user_id>", methods=["POST"])
 def verify_user(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user:
             user.email_verified = True
             db.session.commit()

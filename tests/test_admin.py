@@ -40,7 +40,7 @@ class AdminTestCase(BaseTestCase):
             email="admin_generate@example.com",
         )
         self.login("admin_generate", TEST_PASSWORD)
-        response = self.app.get("/admin/generate_users", follow_redirects=True)
+        response = self.app.post("/admin/generate_users", follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Generated Users", response.data)
 

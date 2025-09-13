@@ -72,7 +72,7 @@ class User(db.Model):  # type: ignore
             user_id = s.loads(token, max_age=expires_sec)["user_id"]
         except Exception:
             return None
-        return User.query.get(user_id)
+        return db.session.get(User, user_id)
 
     def get_email_verification_token(self, expires_sec=86400):  # 24 hours
         s = Serializer(current_app.config["SECRET_KEY"])
@@ -85,7 +85,7 @@ class User(db.Model):  # type: ignore
             user_id = s.loads(token, max_age=expires_sec)["user_id"]
         except Exception:
             return None
-        return User.query.get(user_id)
+        return db.session.get(User, user_id)
 
     def __repr__(self):
         return f"<User {self.username}>"

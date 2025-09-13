@@ -49,7 +49,7 @@ def get_player_record(player_id):
 @bp.route("/<uuid:match_id>")
 @login_required
 def view_match_page(match_id):
-    match = Match.query.get_or_404(match_id)
+    match = db.session.get_or_404(Match, match_id)
     player1_record = get_player_record(match.player1_id)
     player2_record = get_player_record(match.player2_id)
 
@@ -65,7 +65,7 @@ def view_match_page(match_id):
 @login_required
 def create_match():
     user_id = uuid.UUID(session[USER_ID])
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     form = MatchForm()
 
     # Get user's accepted friends for the opponent dropdown

@@ -14,7 +14,7 @@ from pickaladder.auth.decorators import login_required
 @login_required
 def view_groups():
     user_id = uuid.UUID(session[USER_ID])
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     search_term = request.args.get("search", "")
     page = request.args.get("page", 1, type=int)
@@ -59,9 +59,9 @@ def view_groups():
 @bp.route("/<uuid:group_id>", methods=["GET", "POST"])
 @login_required
 def view_group(group_id):
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get_or_404(Group, group_id)
     user_id = uuid.UUID(session[USER_ID])
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     # --- Invite form logic ---
     form = InviteFriendForm()
@@ -141,7 +141,7 @@ def create_group():
 @bp.route("/<uuid:group_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_group(group_id):
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get_or_404(Group, group_id)
     user_id = uuid.UUID(session[USER_ID])
     if group.owner_id != user_id:
         flash("You do not have permission to edit this group.", "danger")
@@ -174,7 +174,7 @@ def edit_group(group_id):
 @bp.route("/<uuid:group_id>/delete", methods=["POST"])
 @login_required
 def delete_group(group_id):
-    group = Group.query.get_or_404(group_id)
+    group = db.session.get_or_404(Group, group_id)
     user_id = uuid.UUID(session[USER_ID])
     if group.owner_id != user_id:
         flash("You do not have permission to delete this group.", "danger")
