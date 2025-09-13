@@ -53,11 +53,12 @@ def register():
             msg = Message(
                 "Verify your email",
                 sender=current_app.config["MAIL_USERNAME"],
-                recipients=[form.email.data],
+                recipients=[new_user.email],
             )
+            token = new_user.get_email_verification_token()
             verify_url = url_for(
-                "auth.verify_email",
-                email=form.email.data,
+                "auth.verify_email_with_token",
+                token=token,
                 _external=True,
             )
             msg.body = f"Click the link to verify your email: {verify_url}"
@@ -100,7 +101,9 @@ def login():
             return redirect(url_for(".login"))
 
         # Conditionally check for email verification
-        email_verification_setting = Setting.query.get("enforce_email_verification")
+        email_verification_setting = db.session.get(
+            Setting, "enforce_email_verification"
+        )
         if (
             email_verification_setting
             and email_verification_setting.value == "true"
@@ -245,13 +248,13 @@ def change_password():
     return render_template("change_password.html", user=user)
 
 
-@bp.route(f"/verify_email/<{USER_EMAIL}>")
-def verify_email(email):
-    user = User.query.filter_by(email=email).first()
+@bp.route("/verify_email/<token>")
+def verify_email_with_token(token):
+    user = User.verify_email_verification_token(token)
     if user:
         user.email_verified = True
         db.session.commit()
-        flash("Email verified. You can now log in.", "success")
+        flash("Email verified successfully. You can now log in.", "success")
     else:
-        flash("Invalid verification link.", "danger")
+        flash("The email verification link is invalid or has expired.", "danger")
     return redirect(url_for("auth.login"))

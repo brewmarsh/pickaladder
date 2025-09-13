@@ -8,7 +8,10 @@
         <div class="card">
             <h3>Reset Database</h3>
             <p>This will delete all users, matches, and friends.</p>
-            <a href="{{ url_for('admin.reset_db') }}" class="btn btn-danger">Reset Database</a>
+            <form action="{{ url_for('admin.reset_db') }}" method="post" onsubmit="return confirm('Are you sure you want to reset the entire database?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger">Reset Database</button>
+            </form>
         </div>
         <div class="card">
             <h3>Friend Graph</h3>
@@ -20,17 +23,26 @@
         <div class="card">
             <h3>Generate Users</h3>
             <p>This will generate 10 random users.</p>
-            <a href="{{ url_for('admin.generate_users') }}" class="btn btn-primary">Generate Users</a>
+            <form action="{{ url_for('admin.generate_users') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary">Generate Users</button>
+            </form>
         </div>
         <div class="card">
             <h3>Reset Admin</h3>
             <p>This will reset the admin account to the first user in the database.</p>
-            <a href="{{ url_for('admin.reset_admin') }}" class="btn btn-warning">Reset Admin</a>
+            <form action="{{ url_for('admin.reset_admin') }}" method="post" onsubmit="return confirm('Are you sure you want to reset admin privileges?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-warning">Reset Admin</button>
+            </form>
         </div>
         <div class="card">
             <h3>Generate Matches</h3>
             <p>This will generate 10 random matches between friends.</p>
-            <a href="{{ url_for('admin.generate_matches') }}" class="btn btn-primary">Generate Matches</a>
+            <form action="{{ url_for('admin.generate_matches') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary">Generate Matches</button>
+            </form>
         </div>
         <div class="card">
             <h3>Enforce Email Verification</h3>

@@ -1,5 +1,6 @@
 from tests.helpers import BaseTestCase, TEST_PASSWORD
 from pickaladder.models import Friend
+from pickaladder import db
 
 
 class UserTestCase(BaseTestCase):
@@ -79,9 +80,9 @@ class UserTestCase(BaseTestCase):
         self.assertIn(b"Friend request accepted.", response.data)
 
         # Verify the friendship is established
-        friendship = Friend.query.get((user1.id, user2.id))
+        friendship = db.session.get(Friend, (user1.id, user2.id))
         self.assertEqual(friendship.status, "accepted")
-        friendship2 = Friend.query.get((user2.id, user1.id))
+        friendship2 = db.session.get(Friend, (user2.id, user1.id))
         self.assertEqual(friendship2.status, "accepted")
 
     def test_decline_friend_request(self):
@@ -105,7 +106,7 @@ class UserTestCase(BaseTestCase):
         self.assertIn(b"Friend request declined.", response.data)
 
         # Verify the friend request is deleted
-        friend_request = Friend.query.get((user1.id, user2.id))
+        friend_request = db.session.get(Friend, (user1.id, user2.id))
         self.assertIsNone(friend_request)
 
     def test_dashboard_api_group_rankings(self):

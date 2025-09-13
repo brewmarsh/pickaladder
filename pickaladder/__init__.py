@@ -90,7 +90,7 @@ def create_app():
 
             try:
                 user_id = uuid.UUID(session[USER_ID])
-                user = User.query.get(user_id)
+                user = db.session.get(User, user_id)
                 return dict(user=user)
             except (ValueError, TypeError):
                 # Handle cases where session[USER_ID] is not a valid UUID

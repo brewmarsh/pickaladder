@@ -30,7 +30,7 @@ def before_request():
 
 @bp.route("/")
 def admin():
-    email_verification_setting = Setting.query.get("enforce_email_verification")
+    email_verification_setting = db.session.get(Setting, "enforce_email_verification")
     return render_template(
         "admin.html", email_verification_setting=email_verification_setting
     )
@@ -39,7 +39,7 @@ def admin():
 @bp.route("/toggle_email_verification", methods=["POST"])
 def toggle_email_verification():
     try:
-        setting = Setting.query.get("enforce_email_verification")
+        setting = db.session.get(Setting, "enforce_email_verification")
         if setting:
             # Flip the boolean value represented as a string
             setting.value = "false" if setting.value == "true" else "true"
@@ -79,7 +79,7 @@ def admin_matches():
 @bp.route("/delete_match/<string:match_id>")
 def admin_delete_match(match_id):
     try:
-        match = Match.query.get(match_id)
+        match = db.session.get(Match, match_id)
         if match:
             db.session.delete(match)
             db.session.commit()
@@ -105,7 +105,7 @@ def friend_graph_data():
     return jsonify({"nodes": nodes, "edges": edges})
 
 
-@bp.route("/reset_db")
+@bp.route("/reset_db", methods=["POST"])
 def reset_db():
     try:
         # Using raw SQL for TRUNCATE, as it's more efficient than deleting all objects.
@@ -120,28 +120,25 @@ def reset_db():
     return redirect(url_for(".admin"))
 
 
-@bp.route("/reset-admin", methods=["GET", "POST"])
+@bp.route("/reset-admin", methods=["POST"])
 def reset_admin():
-    if request.method == "POST":
-        try:
-            User.query.update({User.is_admin: False})
-            first_user = User.query.order_by(User.id).first()
-            if first_user:
-                first_user.is_admin = True
-            db.session.commit()
-            flash("Admin privileges have been reset.", "success")
-        except Exception as e:
-            db.session.rollback()
-            flash(f"An error occurred: {e}", "danger")
-        return redirect(url_for(".admin"))
-
-    return render_template("reset_admin.html")
+    try:
+        User.query.update({User.is_admin: False})
+        first_user = User.query.order_by(User.id).first()
+        if first_user:
+            first_user.is_admin = True
+        db.session.commit()
+        flash("Admin privileges have been reset.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin"))
 
 
 @bp.route("/delete_user/<uuid:user_id>")
 def delete_user(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user:
             db.session.delete(user)
             db.session.commit()
@@ -160,7 +157,7 @@ def delete_user(user_id):
 @bp.route("/promote_user/<uuid:user_id>")
 def promote_user(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user:
             user.is_admin = True
             db.session.commit()
@@ -176,7 +173,7 @@ def promote_user(user_id):
 @bp.route("/reset_password/<uuid:user_id>")
 def admin_reset_password(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user and user.email:
             send_password_reset_email(user)
             flash(f"Password reset link sent to {user.email}.", "success")
@@ -192,7 +189,7 @@ def admin_reset_password(user_id):
 @bp.route("/verify_user/<uuid:user_id>", methods=["POST"])
 def verify_user(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if user:
             user.email_verified = True
             db.session.commit()
@@ -205,7 +202,7 @@ def verify_user(user_id):
     return redirect(url_for("user.users"))
 
 
-@bp.route("/generate_users")
+@bp.route("/generate_users", methods=["POST"])
 def generate_users():
     fake = Faker()
     new_users = []
@@ -287,7 +284,7 @@ def generate_users():
     return render_template("generated_users.html", users=new_users)
 
 
-@bp.route("/generate_matches")
+@bp.route("/generate_matches", methods=["POST"])
 def generate_matches():
     try:
         friends = Friend.query.filter_by(status="accepted").all()
