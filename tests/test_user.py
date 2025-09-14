@@ -4,6 +4,7 @@ from pickaladder import db
 import time
 from io import BytesIO
 
+
 class UserRoutesTestCase(BaseTestCase):
     def test_view_own_profile(self):
         user = self.create_user(

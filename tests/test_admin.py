@@ -2,6 +2,7 @@ from tests.helpers import BaseTestCase, TEST_PASSWORD
 from pickaladder.models import User, Setting, Match, Friend
 from pickaladder import db
 
+
 class AdminTestCase(BaseTestCase):
     def test_admin_panel_access_by_admin(self):
         self.create_user(
@@ -46,17 +47,25 @@ class AdminTestCase(BaseTestCase):
         db.session.add(setting)
         db.session.commit()
 
-        response = self.app.post("/admin/toggle_email_verification", follow_redirects=True)
+        response = self.app.post(
+            "/admin/toggle_email_verification", follow_redirects=True
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Email verification requirement has been disabled.", response.data)
+        self.assertIn(
+            b"Email verification requirement has been disabled.", response.data
+        )
 
         setting = db.session.get(Setting, "enforce_email_verification")
         self.assertEqual(setting.value, "false")
 
         # Toggle back
-        response = self.app.post("/admin/toggle_email_verification", follow_redirects=True)
+        response = self.app.post(
+            "/admin/toggle_email_verification", follow_redirects=True
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Email verification requirement has been enabled.", response.data)
+        self.assertIn(
+            b"Email verification requirement has been enabled.", response.data
+        )
 
         setting = db.session.get(Setting, "enforce_email_verification")
         self.assertEqual(setting.value, "true")
@@ -159,7 +168,9 @@ class AdminTestCase(BaseTestCase):
         )
         self.login("admin_verify", TEST_PASSWORD)
 
-        response = self.app.post(f"/admin/verify_user/{user_to_verify.id}", follow_redirects=True)
+        response = self.app.post(
+            f"/admin/verify_user/{user_to_verify.id}", follow_redirects=True
+        )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"User user_to_verify has been manually verified.", response.data)
 

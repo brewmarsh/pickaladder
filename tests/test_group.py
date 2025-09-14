@@ -3,6 +3,7 @@ from pickaladder.models import Friend, Group, GroupMember
 from pickaladder import db
 from unittest.mock import patch
 
+
 class GroupTestCase(BaseTestCase):
     def test_create_group(self):
         user = self.create_user(

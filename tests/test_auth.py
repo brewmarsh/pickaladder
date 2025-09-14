@@ -2,6 +2,7 @@ from unittest.mock import patch
 from tests.helpers import BaseTestCase, TEST_PASSWORD
 from pickaladder.models import User
 
+
 class AuthTestCase(BaseTestCase):
     def test_login_page_load(self):
         self.create_user(is_admin=True, email="loginpage@example.com")
@@ -97,13 +98,19 @@ class AuthTestCase(BaseTestCase):
 
         response = self.app.get(f"/auth/verify_email/{token}", follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Email verified successfully. You can now log in.", response.data)
+        self.assertIn(
+            b"Email verified successfully. You can now log in.", response.data
+        )
 
         user = User.query.filter_by(username="unverified_user").first()
         self.assertTrue(user.email_verified)
 
     def test_email_verification_invalid_token(self):
         self.create_user(is_admin=True, email="invalidtoken@example.com")
-        response = self.app.get("/auth/verify_email/invalidtoken", follow_redirects=True)
+        response = self.app.get(
+            "/auth/verify_email/invalidtoken", follow_redirects=True
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"The email verification link is invalid or has expired.", response.data)
+        self.assertIn(
+            b"The email verification link is invalid or has expired.", response.data
+        )
