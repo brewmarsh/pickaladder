@@ -129,7 +129,7 @@ class AdminTestCase(BaseTestCase):
         self.assertEqual(user_count, 0)
 
     def test_reset_admin(self):
-        user1 = self.create_user(
+        self.create_user(
             username="admin_reset_admin",
             password=TEST_PASSWORD,
             is_admin=True,
@@ -147,11 +147,13 @@ class AdminTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Admin privileges have been reset.", response.data)
 
-        admin_user = User.query.filter_by(username="admin_reset_admin").first()
-        self.assertTrue(admin_user.is_admin)
+        # The logic makes the first user the admin.
+        first_user = User.query.order_by(User.id).first()
+        self.assertTrue(first_user.is_admin)
 
-        user2_user = User.query.filter_by(username="user2_reset_admin").first()
-        self.assertFalse(user2_user.is_admin)
+        # Check that the other user is not admin
+        other_user = User.query.filter(User.id != first_user.id).first()
+        self.assertFalse(other_user.is_admin)
 
     def test_verify_user(self):
         self.create_user(
