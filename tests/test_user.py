@@ -182,7 +182,7 @@ class UserRoutesTestCase(BaseTestCase):
         self.assertEqual(updated_user.dupr_rating, 4.5)
 
     def test_update_profile_picture_too_large(self):
-        user = self.create_user(
+        self.create_user(
             username="large_picture_user",
             password=TEST_PASSWORD,
             is_admin=True,
@@ -205,7 +205,7 @@ class UserRoutesTestCase(BaseTestCase):
         self.assertIn(b"Profile picture is too large (max 10MB).", response.data)
 
     def test_update_profile_invalid_form(self):
-        user = self.create_user(
+        self.create_user(
             username="invalid_form_user",
             password=TEST_PASSWORD,
             is_admin=True,

@@ -126,7 +126,7 @@ class AdminTestCase(BaseTestCase):
             is_admin=True,
             email="admin_reset_admin@example.com",
         )
-        user2 = self.create_user(
+        self.create_user(
             username="user2_reset_admin",
             password=TEST_PASSWORD,
             is_admin=False,

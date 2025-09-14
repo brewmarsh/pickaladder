@@ -166,7 +166,7 @@ class GroupTestCase(BaseTestCase):
     @patch("pickaladder.group.routes.db.session.commit")
     def test_create_group_exception(self, mock_commit):
         mock_commit.side_effect = Exception("Database error")
-        user = self.create_user(
+        self.create_user(
             username="group_creator_exception",
             password=TEST_PASSWORD,
             is_admin=True,
