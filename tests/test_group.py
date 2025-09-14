@@ -164,9 +164,7 @@ class GroupTestCase(BaseTestCase):
         not_deleted_group = db.session.get(Group, group_id)
         self.assertIsNotNone(not_deleted_group)
 
-    @patch("pickaladder.group.routes.db.session.commit")
-    def test_create_group_exception(self, mock_commit):
-        mock_commit.side_effect = Exception("Database error")
+    def test_create_group_exception(self):
         self.create_user(
             username="group_creator_exception",
             password=TEST_PASSWORD,
@@ -174,10 +172,13 @@ class GroupTestCase(BaseTestCase):
             email="group_creator_exception@example.com",
         )
         self.login("group_creator_exception", TEST_PASSWORD)
-        response = self.app.post(
-            "/group/create",
-            data={"name": "Exception Group"},
-            follow_redirects=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"An unexpected error occurred", response.data)
+
+        with patch("pickaladder.group.routes.db.session.commit") as mock_commit:
+            mock_commit.side_effect = Exception("Database error")
+            response = self.app.post(
+                "/group/create",
+                data={"name": "Exception Group"},
+                follow_redirects=True,
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b"An unexpected error occurred", response.data)

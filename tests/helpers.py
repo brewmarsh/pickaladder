@@ -31,6 +31,7 @@ class BaseTestCase(unittest.TestCase):
         email="test@example.com",
         name="Test User",
         is_admin=False,
+        email_verified=True,
     ):
         """Creates a user in the database and returns the user object."""
         hashed_password = generate_password_hash(password)
@@ -40,6 +41,7 @@ class BaseTestCase(unittest.TestCase):
             email=email,
             name=name,
             is_admin=is_admin,
+            email_verified=email_verified,
         )
         db.session.add(user)
         db.session.commit()

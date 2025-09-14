@@ -93,8 +93,7 @@ class AuthTestCase(BaseTestCase):
         user = User.query.filter_by(username="unverified_user").first()
         self.assertFalse(user.email_verified)
 
-        with self.app.app_context():
-            token = user.get_email_verification_token()
+        token = user.get_email_verification_token()
 
         response = self.app.get(f"/auth/verify_email/{token}", follow_redirects=True)
         self.assertEqual(response.status_code, 200)

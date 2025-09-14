@@ -231,11 +231,10 @@ class UserModelTestCase(BaseTestCase):
             password=TEST_PASSWORD,
             email="test_token_user@example.com",
         )
-        with self.app.app_context():
-            token = user.get_reset_token()
-            self.assertIsInstance(token, str)
-            verified_user = User.verify_reset_token(token)
-            self.assertEqual(verified_user, user)
+        token = user.get_reset_token()
+        self.assertIsInstance(token, str)
+        verified_user = User.verify_reset_token(token)
+        self.assertEqual(verified_user, user)
 
     def test_password_reset_token_expired(self):
         user = self.create_user(
@@ -243,11 +242,10 @@ class UserModelTestCase(BaseTestCase):
             password=TEST_PASSWORD,
             email="test_token_user_expired@example.com",
         )
-        with self.app.app_context():
-            token = user.get_reset_token(expires_sec=1)
-            time.sleep(2)
-            verified_user = User.verify_reset_token(token)
-            self.assertIsNone(verified_user)
+        token = user.get_reset_token(expires_sec=1)
+        time.sleep(2)
+        verified_user = User.verify_reset_token(token)
+        self.assertIsNone(verified_user)
 
     def test_email_verification_token(self):
         user = self.create_user(
@@ -255,11 +253,10 @@ class UserModelTestCase(BaseTestCase):
             password=TEST_PASSWORD,
             email="test_email_token_user@example.com",
         )
-        with self.app.app_context():
-            token = user.get_email_verification_token()
-            self.assertIsInstance(token, str)
-            verified_user = User.verify_email_verification_token(token)
-            self.assertEqual(verified_user, user)
+        token = user.get_email_verification_token()
+        self.assertIsInstance(token, str)
+        verified_user = User.verify_email_verification_token(token)
+        self.assertEqual(verified_user, user)
 
     def test_email_verification_token_expired(self):
         user = self.create_user(
@@ -267,8 +264,7 @@ class UserModelTestCase(BaseTestCase):
             password=TEST_PASSWORD,
             email="test_email_token_user_expired@example.com",
         )
-        with self.app.app_context():
-            token = user.get_email_verification_token(expires_sec=1)
-            time.sleep(2)
-            verified_user = User.verify_email_verification_token(token)
-            self.assertIsNone(verified_user)
+        token = user.get_email_verification_token(expires_sec=1)
+        time.sleep(2)
+        verified_user = User.verify_email_verification_token(token)
+        self.assertIsNone(verified_user)
