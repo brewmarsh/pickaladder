@@ -47,6 +47,7 @@ jobs:
           script: |
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
             docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
+            docker network create app_default || true
             docker stop app-web-1 || true
             docker rm app-web-1 || true
             docker run -d --restart always \

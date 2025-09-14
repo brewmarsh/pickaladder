@@ -1,6 +1,7 @@
 from tests.helpers import BaseTestCase, TEST_PASSWORD
 from pickaladder.models import Friend, Group, GroupMember
 from pickaladder import db
+from unittest.mock import patch
 
 
 class GroupTestCase(BaseTestCase):
@@ -134,7 +135,7 @@ class GroupTestCase(BaseTestCase):
         response = self.app.post(f"/group/{group_id}/delete", follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Group deleted successfully.", response.data)
-        deleted_group = Group.query.get(group_id)
+        deleted_group = db.session.get(Group, group_id)
         self.assertIsNone(deleted_group)
 
     def test_delete_group_by_non_owner(self):
@@ -160,5 +161,24 @@ class GroupTestCase(BaseTestCase):
         self.assertIn(
             b"You do not have permission to delete this group.", response.data
         )
-        not_deleted_group = Group.query.get(group_id)
+        not_deleted_group = db.session.get(Group, group_id)
         self.assertIsNotNone(not_deleted_group)
+
+    def test_create_group_exception(self):
+        self.create_user(
+            username="group_creator_exception",
+            password=TEST_PASSWORD,
+            is_admin=True,
+            email="group_creator_exception@example.com",
+        )
+        self.login("group_creator_exception", TEST_PASSWORD)
+
+        with patch("pickaladder.group.routes.db.session.commit") as mock_commit:
+            mock_commit.side_effect = Exception("Database error")
+            response = self.app.post(
+                "/group/create",
+                data={"name": "Exception Group"},
+                follow_redirects=True,
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b"An unexpected error occurred", response.data)

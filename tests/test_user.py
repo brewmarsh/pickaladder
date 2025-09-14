@@ -1,8 +1,11 @@
 from tests.helpers import BaseTestCase, TEST_PASSWORD
-from pickaladder.models import Friend
+from pickaladder.models import Friend, User
+from pickaladder import db
+import time
+from io import BytesIO
 
 
-class UserTestCase(BaseTestCase):
+class UserRoutesTestCase(BaseTestCase):
     def test_view_own_profile(self):
         user = self.create_user(
             username="testuser_profile",
@@ -79,9 +82,9 @@ class UserTestCase(BaseTestCase):
         self.assertIn(b"Friend request accepted.", response.data)
 
         # Verify the friendship is established
-        friendship = Friend.query.get((user1.id, user2.id))
+        friendship = db.session.get(Friend, (user1.id, user2.id))
         self.assertEqual(friendship.status, "accepted")
-        friendship2 = Friend.query.get((user2.id, user1.id))
+        friendship2 = db.session.get(Friend, (user2.id, user1.id))
         self.assertEqual(friendship2.status, "accepted")
 
     def test_decline_friend_request(self):
@@ -105,7 +108,7 @@ class UserTestCase(BaseTestCase):
         self.assertIn(b"Friend request declined.", response.data)
 
         # Verify the friend request is deleted
-        friend_request = Friend.query.get((user1.id, user2.id))
+        friend_request = db.session.get(Friend, (user1.id, user2.id))
         self.assertIsNone(friend_request)
 
     def test_dashboard_api_group_rankings(self):
@@ -156,3 +159,112 @@ class UserTestCase(BaseTestCase):
 
         self.assertTrue(g1_found)
         self.assertTrue(g2_found)
+
+    def test_update_profile(self):
+        user = self.create_user(
+            username="update_profile_user",
+            password=TEST_PASSWORD,
+            is_admin=True,
+            email="update_profile_user@example.com",
+        )
+        self.login("update_profile_user", TEST_PASSWORD)
+        response = self.app.post(
+            "/user/update_profile",
+            data={
+                "dark_mode": True,
+                "dupr_rating": 4.5,
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Profile updated successfully.", response.data)
+        updated_user = db.session.get(User, user.id)
+        self.assertTrue(updated_user.dark_mode)
+        self.assertEqual(updated_user.dupr_rating, 4.5)
+
+    def test_update_profile_picture_too_large(self):
+        self.create_user(
+            username="large_picture_user",
+            password=TEST_PASSWORD,
+            is_admin=True,
+            email="large_picture_user@example.com",
+        )
+        self.login("large_picture_user", TEST_PASSWORD)
+
+        # Create a dummy file that is too large
+        large_file = BytesIO(b"a" * (11 * 1024 * 1024))
+
+        response = self.app.post(
+            "/user/update_profile",
+            data={
+                "profile_picture": (large_file, "large.png"),
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Profile picture is too large (max 10MB).", response.data)
+
+    def test_update_profile_invalid_form(self):
+        self.create_user(
+            username="invalid_form_user",
+            password=TEST_PASSWORD,
+            is_admin=True,
+            email="invalid_form_user@example.com",
+        )
+        self.login("invalid_form_user", TEST_PASSWORD)
+        response = self.app.post(
+            "/user/update_profile",
+            data={
+                "dupr_rating": "invalid",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Error in DUPR Rating:", response.data)
+
+
+class UserModelTestCase(BaseTestCase):
+    def test_password_reset_token(self):
+        user = self.create_user(
+            username="test_token_user",
+            password=TEST_PASSWORD,
+            email="test_token_user@example.com",
+        )
+        token = user.get_reset_token()
+        self.assertIsInstance(token, str)
+        verified_user = User.verify_reset_token(token)
+        self.assertEqual(verified_user, user)
+
+    def test_password_reset_token_expired(self):
+        user = self.create_user(
+            username="test_token_user_expired",
+            password=TEST_PASSWORD,
+            email="test_token_user_expired@example.com",
+        )
+        token = user.get_reset_token(expires_sec=1)
+        time.sleep(2)
+        verified_user = User.verify_reset_token(token, expires_sec=1)
+        self.assertIsNone(verified_user)
+
+    def test_email_verification_token(self):
+        user = self.create_user(
+            username="test_email_token_user",
+            password=TEST_PASSWORD,
+            email="test_email_token_user@example.com",
+        )
+        token = user.get_email_verification_token()
+        self.assertIsInstance(token, str)
+        verified_user = User.verify_email_verification_token(token)
+        self.assertEqual(verified_user, user)
+
+    def test_email_verification_token_expired(self):
+        user = self.create_user(
+            username="test_email_token_user_expired",
+            password=TEST_PASSWORD,
+            email="test_email_token_user_expired@example.com",
+        )
+        token = user.get_email_verification_token(expires_sec=1)
+        time.sleep(2)
+        verified_user = User.verify_email_verification_token(token, expires_sec=1)
+        self.assertIsNone(verified_user)
