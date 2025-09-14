@@ -129,7 +129,7 @@ class AdminTestCase(BaseTestCase):
         self.assertEqual(user_count, 0)
 
     def test_reset_admin(self):
-        self.create_user(
+        user1 = self.create_user(
             username="admin_reset_admin",
             password=TEST_PASSWORD,
             is_admin=True,

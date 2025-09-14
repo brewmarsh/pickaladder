@@ -244,7 +244,7 @@ class UserModelTestCase(BaseTestCase):
         )
         token = user.get_reset_token(expires_sec=1)
         time.sleep(2)
-        verified_user = User.verify_reset_token(token)
+        verified_user = User.verify_reset_token(token, expires_sec=1)
         self.assertIsNone(verified_user)
 
     def test_email_verification_token(self):
@@ -266,5 +266,5 @@ class UserModelTestCase(BaseTestCase):
         )
         token = user.get_email_verification_token(expires_sec=1)
         time.sleep(2)
-        verified_user = User.verify_email_verification_token(token)
+        verified_user = User.verify_email_verification_token(token, expires_sec=1)
         self.assertIsNone(verified_user)
