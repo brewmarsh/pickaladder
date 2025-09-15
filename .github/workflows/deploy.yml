@@ -43,28 +43,35 @@ jobs:
           username: ${{ secrets.HOSTINGER_USERNAME }}
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
           port: 22
-#          port: ${{ secrets.HOSTINGER_PORT }}
           script: |
+            # Login to GitHub Container Registry
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
-            docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
-            docker network create app_default || true
-            docker stop app-web-1 || true
-            docker rm app-web-1 || true
-            docker run -d --restart always \
-              --network app_default \
-              -e SECRET_KEY=${{ secrets.SECRET_KEY }} \
-              -e MAIL_SERVER=${{ secrets.MAIL_SERVER }} \
-              -e MAIL_PORT=${{ secrets.MAIL_PORT }} \
-              -e MAIL_USE_TLS=${{ secrets.MAIL_USE_TLS }} \
-              -e MAIL_USERNAME=${{ secrets.MAIL_USERNAME }} \
-              -e MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }} \
-              -e POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
-              -e POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
-              -e POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
-              -e DB_HOST=${{ secrets.DB_HOST }} \
-              --name app-web-1 \
-              -p 27272:27272 \
-              ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-            sleep 10 # Give the app time to start up before running migrations
-            docker exec app-web-1 python migrate.py
+            # Set environment variables for docker-compose
+            export IMAGE_TAG=ghcr.io/${{ github.repository }}:${{ github.sha }}
+            export SECRET_KEY='${{ secrets.SECRET_KEY }}'
+            export MAIL_SERVER='${{ secrets.MAIL_SERVER }}'
+            export MAIL_PORT='${{ secrets.MAIL_PORT }}'
+            export MAIL_USE_TLS='${{ secrets.MAIL_USE_TLS }}'
+            export MAIL_USERNAME='${{ secrets.MAIL_USERNAME }}'
+            export MAIL_PASSWORD='${{ secrets.MAIL_PASSWORD }}'
+            export POSTGRES_USER='${{ secrets.POSTGRES_USER }}'
+            export POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}'
+            export POSTGRES_DB='${{ secrets.POSTGRES_DB }}'
+
+            # Ensure docker-compose is available
+            if ! command -v docker-compose &> /dev/null
+            then
+                echo "docker-compose could not be found, installing..."
+                sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                sudo chmod +x /usr/local/bin/docker-compose
+            fi
+
+            # Pull the latest images
+            docker-compose -f docker-compose.prod.yml pull
+
+            # Start the services
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Clean up old images
+            docker image prune -f
