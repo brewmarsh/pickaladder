@@ -42,6 +42,16 @@ When getting started, it's helpful to review these key files to understand the a
 *   **Python:** Follow PEP 8 style guidelines. All new functions should have docstrings.
 *   **Commits:** Commit messages should follow the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/).
 
+### Repository Badges
+The `README.md` file should include a set of badges to provide at-a-glance information about the project. The following badges are recommended:
+
+*   **CI Status:** Shows the status of the CI build.
+*   **Code Coverage:** Shows the test coverage percentage.
+*   **License:** Displays the project's open-source license.
+*   **Python Version:** Indicates the supported Python version.
+*   **Code Style:** Shows the code formatting standard being used.
+*   **Vulnerability Scan:** Displays the status of the vulnerability scan.
+
 ### Code Quality Checks
 Before submitting your code, please run the following checks to ensure code quality and prevent regressions.
 
@@ -50,6 +60,11 @@ Before submitting your code, please run the following checks to ensure code qual
     ruff check --fix .
     ruff format .
     ```
+*   **Security Analysis:** This project uses `bandit` to find common security issues.
+    ```bash
+    bandit -r .
+    ```
+*   **Vulnerability Scanning:** This project uses `trivy` to scan for vulnerabilities in the application and its dependencies. This is run in the CI pipeline, but you can also run it locally.
 
 *   **Type Checking:** This project uses `mypy` for static type checking. Run the following command from the root of the repository to check for type errors. Note that this must be run inside the `web` container.
     ```bash
@@ -66,6 +81,7 @@ Before submitting your code, please run the following checks to ensure code qual
 
 ### Database
 *   **Use the ORM:** Use the SQLAlchemy ORM for all database interactions. The models are defined in `pickaladder/models.py`.
+*   **Database Migrations:** This project uses a simple, manual migration system. To make a change to the database schema, create a new SQL file in the `migrations/` directory. The file should be named with a number and a descriptive name, e.g., `migrations/9_add_new_feature_table.sql`. The `migrate.py` script will run these migrations in order.
 *   **Beware N+1 Queries:** When fetching lists of items that have related data, be mindful of the N+1 query problem. Use SQLAlchemy's relationship loading strategies (e.g., `joinedload`, `subqueryload`) to fetch all necessary data in a single, efficient query.
 *   **Subquery Best Practices:** When using a subquery in an `IN` clause, you may see a `SAWarning: Coercing Subquery object into a select()`. To resolve this, explicitly call `.select()` on the subquery object (e.g., `filter(MyModel.id.in_(my_subquery.select()))`).
 
