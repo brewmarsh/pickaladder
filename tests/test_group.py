@@ -1,7 +1,14 @@
+import os
+import tempfile
+import uuid
+from PIL import Image
+from flask import current_app
+from io import BytesIO
 from tests.helpers import BaseTestCase, TEST_PASSWORD
 from pickaladder.models import Friend, Group, GroupMember
 from pickaladder import db
 from unittest.mock import patch
+from pickaladder.group.utils import get_group_leaderboard, save_group_picture
 
 
 class GroupTestCase(BaseTestCase):
@@ -119,6 +126,35 @@ class GroupTestCase(BaseTestCase):
         member1_pos = response.data.find(b"Leaderboard Member 1")
         member2_pos = response.data.find(b"Leaderboard Member 2")
         self.assertTrue(member1_pos < member2_pos)
+
+    def test_get_group_leaderboard_invalid_group(self):
+        # Call the function with a non-existent group ID
+        leaderboard = get_group_leaderboard(uuid.uuid4())
+        self.assertEqual(leaderboard, [])
+
+    def test_save_group_picture(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a dummy image in memory
+            img_data = BytesIO()
+            img = Image.new("RGB", (600, 600), color="red")
+            img.save(img_data, "PNG")
+            img_data.seek(0)
+
+            original_static_folder = current_app.static_folder
+            try:
+                # Point static_folder to our temporary directory
+                current_app.static_folder = tmpdir
+                filename, thumbnail_filename = save_group_picture(img_data)
+
+                # Check that the files were created
+                upload_folder = os.path.join(tmpdir, "uploads")
+                self.assertTrue(os.path.exists(os.path.join(upload_folder, filename)))
+                self.assertTrue(
+                    os.path.exists(os.path.join(upload_folder, thumbnail_filename))
+                )
+            finally:
+                # Restore the original static_folder
+                current_app.static_folder = original_static_folder
 
     def test_delete_group_by_owner(self):
         owner = self.create_user(
