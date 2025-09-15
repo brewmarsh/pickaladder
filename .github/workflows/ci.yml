@@ -75,7 +75,7 @@ jobs:
           files: ./coverage.xml
           fail_ci_if_error: true
       - name: Run vulnerability scanner
-        uses: aquasecurity/trivy-action@v0.33.1
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: 'fs'
           scan-ref: '.'
