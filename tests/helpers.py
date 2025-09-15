@@ -2,7 +2,7 @@ import unittest
 import datetime
 from app import app
 from pickaladder import db
-from pickaladder.models import User, Match, Friend, Setting
+from pickaladder.models import User, Match, Friend
 from werkzeug.security import generate_password_hash
 from pickaladder.constants import USER_ID, USER_IS_ADMIN
 
@@ -108,10 +108,3 @@ class BaseTestCase(unittest.TestCase):
         member = GroupMember(group_id=group_id, user_id=user_id)
         db.session.add(member)
         db.session.commit()
-
-    def create_setting(self, key, value):
-        """Creates a setting in the database and returns the setting object."""
-        setting = Setting(key=key, value=value)
-        db.session.add(setting)
-        db.session.commit()
-        return setting
