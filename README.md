@@ -1,4 +1,4 @@
-[![Codified by Codify](https://codify.ai/codify-badge.svg)](https://codify.ai)
+[![codecov](https://codecov.io/gh/brewmarsh/pickaladder/branch/main/graph/badge.svg)](https://codecov.io/gh/brewmarsh/pickaladder)
 
 # 🥒 pickaladder 🥇
 
