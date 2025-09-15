@@ -1,3 +1,5 @@
+[![Codified by Codify](https://codify.ai/codify-badge.svg)](https://codify.ai)
+
 # 🥒 pickaladder 🥇
 
 A modern web application for managing pickleball ladders, leagues, and tournaments! 🏆
