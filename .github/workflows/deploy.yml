@@ -67,11 +67,14 @@ jobs:
                 sudo chmod +x /usr/local/bin/docker-compose
             fi
 
+            # TEMPORARY: The following command is to wipe the database and should be removed after one successful deployment
+            docker-compose -f docker-compose.prod.yml down -v
+
             # Pull the latest images
             docker-compose -f docker-compose.prod.yml pull
 
             # Start the services
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans --build
 
             # Clean up old images
             docker image prune -f
