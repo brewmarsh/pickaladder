@@ -5,7 +5,7 @@ psycopg2-binary==2.9.10
 gunicorn==23.0.0
 Flask-Mail==0.10.0
 Faker==37.8.0
-ruff==0.13.0
+ruff==0.13.1
 Pillow==11.3.0
 pydantic==2.11.9
 Flask-WTF==1.2.2
