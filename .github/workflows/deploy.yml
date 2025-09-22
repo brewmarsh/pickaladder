@@ -56,7 +56,7 @@ jobs:
           source: "docker-compose.prod.yml,init.sql"
           target: "~/picka-server"
 
-      - name: Deploy to Hostinger VPS
+      - name: Run Diagnostics on Hostinger VPS
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOSTINGER_HOST }}
@@ -65,31 +65,12 @@ jobs:
           port: 22
           script: |
             cd ~/picka-server
-
-            # Login to GitHub Container Registry
-            docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
-
-            # Set environment variables for docker-compose
-            export IMAGE_TAG=ghcr.io/${{ github.repository }}:${{ github.sha }}
-            export SECRET_KEY='${{ secrets.SECRET_KEY }}'
-            export MAIL_SERVER='${{ secrets.MAIL_SERVER }}'
-            export MAIL_PORT='${{ secrets.MAIL_PORT }}'
-            export MAIL_USE_TLS='${{ secrets.MAIL_USE_TLS }}'
-            export MAIL_USERNAME='${{ secrets.MAIL_USERNAME }}'
-            export MAIL_PASSWORD='${{ secrets.MAIL_PASSWORD }}'
-            export POSTGRES_USER='${{ secrets.POSTGRES_USER }}'
-            export POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}'
-            export POSTGRES_DB='${{ secrets.POSTGRES_DB }}'
-            export DB_HOST=db
-
-            # Tear down the old environment and remove the volume to ensure a clean start
-            docker-compose -f docker-compose.prod.yml down -v
-
-            # Pull the latest images
-            docker-compose -f docker-compose.prod.yml pull
-
-            # Start the services
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
-
-            # Clean up old images
-            docker image prune -f
+            echo "--- CURRENT WORKING DIRECTORY ---"
+            pwd
+            echo "--- FILE LISTING ---"
+            ls -la
+            echo "--- DOCKER-COMPOSE.PROD.YML CONTENT ---"
+            cat docker-compose.prod.yml
+            echo "--- ENVIRONMENT VARIABLES ---"
+            printenv
+            echo "--- DIAGNOSTICS COMPLETE ---"
