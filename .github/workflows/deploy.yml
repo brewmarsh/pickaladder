@@ -36,6 +36,26 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Create project directory on server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USERNAME }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: 22
+          script: |
+            mkdir -p ~/picka-server
+
+      - name: Copy config files to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USERNAME }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: 22
+          source: "docker-compose.prod.yml,init.sql"
+          target: "~/picka-server"
+
       - name: Deploy to Hostinger VPS
         uses: appleboy/ssh-action@master
         with:
@@ -44,6 +64,8 @@ jobs:
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
           port: 22
           script: |
+            cd ~/picka-server
+
             # Login to GitHub Container Registry
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
 
@@ -58,16 +80,10 @@ jobs:
             export POSTGRES_USER='${{ secrets.POSTGRES_USER }}'
             export POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}'
             export POSTGRES_DB='${{ secrets.POSTGRES_DB }}'
-
-            # Ensure docker-compose is available
-            if ! command -v docker-compose &> /dev/null
-            then
-                echo "docker-compose could not be found, installing..."
-                sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-                sudo chmod +x /usr/local/bin/docker-compose
-            fi
-
             export DB_HOST=db
+
+            # Tear down the old environment and remove the volume to ensure a clean start
+            docker-compose -f docker-compose.prod.yml down -v
 
             # Pull the latest images
             docker-compose -f docker-compose.prod.yml pull
