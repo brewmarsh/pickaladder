@@ -29,6 +29,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - pickanet
   db:
     image: postgres:13
     restart: always
@@ -44,7 +46,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - pickanet
 
 volumes:
   postgres_data:
     driver: local
+
+networks:
+  pickanet:
+    driver: bridge

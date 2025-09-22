@@ -38,7 +38,7 @@ def create_app():
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 
-    db_host = "db"
+    db_host = os.environ.get("DB_HOST", "db")
     db_name = os.environ.get("POSTGRES_DB", "test_db")
     db_user = os.environ.get("POSTGRES_USER", "user")
     db_pass = os.environ.get("POSTGRES_PASSWORD", "password")
