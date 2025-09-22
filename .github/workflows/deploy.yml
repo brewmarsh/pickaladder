@@ -86,6 +86,13 @@ jobs:
           script: |
             cd ~/picka-server
 
+            # Force stop any container using port 27272
+            CONTAINER_ID=$(docker ps -q --filter "publish=27272")
+            if [ -n "$CONTAINER_ID" ]; then
+              echo "Stopping container $CONTAINER_ID using port 27272"
+              docker stop $CONTAINER_ID
+            fi
+
             # Login to GitHub Container Registry
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
 
