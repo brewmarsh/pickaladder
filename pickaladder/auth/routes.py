@@ -90,15 +90,7 @@ def register():
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
-    try:
-        admin_user = User.query.filter_by(is_admin=True).first()
-    except Exception as e:
-        current_app.logger.error(
-            f"FATAL: Database query for admin user failed: {e}", exc_info=True
-        )
-        raise
-
-    if admin_user is None:
+    if User.query.filter_by(is_admin=True).first() is None:
         return redirect(url_for("auth.install"))
 
     form = LoginForm()
