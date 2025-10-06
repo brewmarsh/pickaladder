@@ -7,7 +7,7 @@ Flask-Mail==0.10.0
 Faker==37.8.0
 ruff==0.13.0
 Pillow==11.3.0
-pydantic==2.11.9
+pydantic==2.11.10
 Flask-WTF==1.2.2
 email-validator==2.3.0
 types-WTForms==3.2.1.20250809
