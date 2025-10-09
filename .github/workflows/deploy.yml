@@ -88,6 +88,9 @@ jobs:
             export POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}'
             export POSTGRES_DB='${{ secrets.POSTGRES_DB }}'
 
+            # Tear down the old environment and remove the volume to ensure a clean start
+            docker-compose -f docker-compose.prod.yml down -v
+
             # Pull the latest images
             docker-compose -f docker-compose.prod.yml pull
 
