@@ -53,7 +53,7 @@ jobs:
           username: ${{ secrets.HOSTINGER_USERNAME }}
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
           port: 22
-          source: "docker-compose.prod.yml,init.sql"
+          source: "docker-compose.prod.yml"
           target: "~/picka-server"
 
       - name: Deploy to Hostinger VPS
@@ -76,6 +76,9 @@ jobs:
             # Login to GitHub Container Registry
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
 
+            # Create Firebase credentials file from secret
+            echo "${{ secrets.FIREBASE_CREDENTIALS_JSON }}" > firebase-credentials.json
+
             # Set environment variables for docker-compose
             export IMAGE_TAG=ghcr.io/${{ github.repository }}:${{ github.sha }}
             export SECRET_KEY='${{ secrets.SECRET_KEY }}'
@@ -84,14 +87,12 @@ jobs:
             export MAIL_USE_TLS='${{ secrets.MAIL_USE_TLS }}'
             export MAIL_USERNAME='${{ secrets.MAIL_USERNAME }}'
             export MAIL_PASSWORD='${{ secrets.MAIL_PASSWORD }}'
-            export POSTGRES_USER='${{ secrets.POSTGRES_USER }}'
-            export POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}'
-            export POSTGRES_DB='${{ secrets.POSTGRES_DB }}'
+            export FIREBASE_PROJECT_ID='${{ secrets.FIREBASE_PROJECT_ID }}'
 
-            # Tear down the old environment and remove the volume to ensure a clean start
-            docker-compose -f docker-compose.prod.yml down -v
+            # Tear down the old environment to ensure a clean start
+            docker-compose -f docker-compose.prod.yml down
 
-            # Pull the latest images
+            # Pull the latest image
             docker-compose -f docker-compose.prod.yml pull
 
             # Start the services

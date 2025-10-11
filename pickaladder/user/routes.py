@@ -5,365 +5,287 @@ from flask import (
     request,
     redirect,
     url_for,
-    session,
     flash,
     current_app,
     jsonify,
-    send_from_directory,
+    g,
 )
-from sqlalchemy import or_, and_
-from sqlalchemy.orm import aliased
+from firebase_admin import firestore, storage
 from PIL import Image
 from werkzeug.utils import secure_filename
 
-from pickaladder import db
 from . import bp
 from .forms import UpdateProfileForm
-from pickaladder.models import User, Friend, Match
-from pickaladder.match.routes import get_player_record
-from pickaladder.group.utils import get_group_leaderboard
-from pickaladder.constants import (
-    USER_ID,
-)
 from pickaladder.auth.decorators import login_required
-
 
 @bp.route("/dashboard")
 @login_required
 def dashboard():
-    user_id = uuid.UUID(session[USER_ID])
-    user = db.get_or_404(User, user_id)
-    form = UpdateProfileForm(obj=user)
+    """
+    Renders the user dashboard. Most data is loaded asynchronously via API endpoints.
+    The profile update form is passed to the template.
+    """
+    user_data = g.user
+    form = UpdateProfileForm(data=user_data)
+    return render_template("user_dashboard.html", form=form, user=user_data)
 
-    # The template is now a shell, data is fetched by client-side JS
-    # But the form needs to be passed for the update profile section
-    return render_template("user_dashboard.html", form=form)
 
-
-@bp.route("/<uuid:user_id>")
+@bp.route("/<string:user_id>")
 @login_required
 def view_user(user_id):
-    profile_user = db.get_or_404(User, user_id)
-    current_user_id = uuid.UUID(session[USER_ID])
+    """Displays a user's public profile."""
+    db = firestore.client()
+    profile_user_ref = db.collection("users").document(user_id)
+    profile_user = profile_user_ref.get()
 
-    # Get friends
-    friends = (
-        db.session.query(User)
-        .join(Friend, User.id == Friend.friend_id)
-        .filter(Friend.user_id == user_id, Friend.status == "accepted")
-        .all()
-    )
+    if not profile_user.exists:
+        flash("User not found.", "danger")
+        return redirect(url_for(".users"))
 
-    # Get match history
-    matches = (
-        Match.query.filter(
-            or_(Match.player1_id == user_id, Match.player2_id == user_id)
+    profile_user_data = profile_user.to_dict()
+    current_user_id = g.user["uid"]
+
+    # Fetch friendship status
+    friendship_status = "not_friends"
+    friend_request_sent = False
+    is_friend = False
+
+    if current_user_id != user_id:
+        friend_ref = (
+            db.collection("users")
+            .document(current_user_id)
+            .collection("friends")
+            .document(user_id)
         )
-        .order_by(Match.match_date.desc())
-        .all()
+        friend_doc = friend_ref.get()
+        if friend_doc.exists:
+            status = friend_doc.to_dict().get("status")
+            if status == "accepted":
+                is_friend = True
+                friendship_status = "friends"
+            elif status == "pending":
+                friend_request_sent = True
+                friendship_status = "pending"
+
+    # Fetch user's friends (limited for display)
+    friends_query = (
+        profile_user_ref.collection("friends")
+        .where("status", "==", "accepted")
+        .limit(10)
+        .stream()
     )
+    friends = [db.collection("users").document(f.id).get() for f in friends_query]
 
-    # Check friendship status
-    friendship = Friend.query.filter(
-        or_(
-            (Friend.user_id == current_user_id) & (Friend.friend_id == user_id),
-            (Friend.user_id == user_id) & (Friend.friend_id == current_user_id),
-        )
-    ).first()
-
-    is_friend = friendship is not None and friendship.status == "accepted"
-    friend_request_sent = (
-        friendship is not None
-        and friendship.status == "pending"
-        and friendship.user_id == current_user_id
+    # Fetch user's match history (limited for display)
+    matches_as_p1 = (
+        db.collection("matches").where("player1Ref", "==", profile_user_ref).stream()
     )
-
-    record = get_player_record(user_id)
+    matches_as_p2 = (
+        db.collection("matches").where("player2Ref", "==", profile_user_ref).stream()
+    )
+    matches = list(matches_as_p1) + list(matches_as_p2)
+    # This is a simplified representation. A real implementation would need
+    # to fetch opponent data for each match.
 
     return render_template(
         "user_profile.html",
-        profile_user=profile_user,
+        profile_user=profile_user_data,
         friends=friends,
         matches=matches,
         is_friend=is_friend,
         friend_request_sent=friend_request_sent,
-        record=record,
     )
 
 
 @bp.route("/users")
 @login_required
 def users():
+    """Lists and allows searching for users."""
+    db = firestore.client()
     search_term = request.args.get("search", "")
-    page = request.args.get("page", 1, type=int)
-    current_user_id = uuid.UUID(session[USER_ID])
-
-    # Aliases for the friends table to distinguish between sent and received requests
-    sent_request = aliased(Friend)
-    received_request = aliased(Friend)
-
-    # Base query
-    query = (
-        db.session.query(
-            User,
-            sent_request.status.label("sent_status"),
-            received_request.status.label("received_status"),
-        )
-        .outerjoin(
-            sent_request,
-            and_(
-                sent_request.user_id == current_user_id,
-                sent_request.friend_id == User.id,
-            ),
-        )
-        .outerjoin(
-            received_request,
-            and_(
-                received_request.user_id == User.id,
-                received_request.friend_id == current_user_id,
-            ),
-        )
-        .filter(User.id != current_user_id)
-    )
+    query = db.collection("users")
 
     if search_term:
-        like_term = f"%{search_term}%"
-        query = query.filter(
-            or_(
-                User.username.ilike(like_term),
-                User.name.ilike(like_term),
-            )
+        # Firestore doesn't support case-insensitive search natively.
+        # This searches for an exact username match.
+        query = query.where("username", ">=", search_term).where(
+            "username", "<=", search_term + "\uf8ff"
         )
 
-    pagination = query.order_by(User.username).paginate(
-        page=page, per_page=10, error_out=False
-    )
+    all_users = [doc for doc in query.limit(20).stream() if doc.id != g.user["uid"]]
 
-    # Find friends of friends, only if there is no search term.
-    fof = []
-    if not search_term:
-        # Get the IDs of the current user's friends
-        my_friends_subquery = (
-            db.session.query(Friend.friend_id)
-            .filter(Friend.user_id == current_user_id, Friend.status == "accepted")
-            .subquery()
-        )
-
-        # Get the IDs of the friends of the current user's friends
-        fof_subquery = (
-            db.session.query(Friend.friend_id)
-            .filter(
-                Friend.user_id.in_(my_friends_subquery.select()),
-                Friend.status == "accepted",
-            )
-            .subquery()
-        )
-
-        # Get the User objects for the FoF IDs, excluding the current user and their
-        # direct friends
-        fof = (
-            User.query.filter(User.id.in_(fof_subquery.select()))
-            .filter(User.id != current_user_id)
-            .filter(~User.id.in_(my_friends_subquery.select()))
-            .limit(10)
-            .all()
-        )
-
-    return render_template(
-        "users.html",
-        pagination=pagination,
-        search_term=search_term,
-        fof=fof,
-    )
+    return render_template("users.html", users=all_users, search_term=search_term)
 
 
-@bp.route("/send_friend_request/<uuid:friend_id>", methods=["POST"])
+@bp.route("/send_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def send_friend_request(friend_id):
-    user_id = uuid.UUID(session[USER_ID])
-    if user_id == friend_id:
+    db = firestore.client()
+    current_user_id = g.user["uid"]
+    if current_user_id == friend_id:
         flash("You cannot send a friend request to yourself.", "danger")
         return redirect(url_for(".users"))
 
-    existing_friendship = Friend.query.filter(
-        or_(
-            and_(Friend.user_id == user_id, Friend.friend_id == friend_id),
-            and_(Friend.user_id == friend_id, Friend.friend_id == user_id),
-        )
-    ).first()
+    # Use a batch to ensure both documents are created or neither is.
+    batch = db.batch()
 
-    if existing_friendship:
-        flash("Friend request already sent or you are already friends.", "warning")
-        return redirect(url_for(".users"))
+    # Create pending request in current user's friend list
+    my_friend_ref = (
+        db.collection("users").document(current_user_id).collection("friends").document(friend_id)
+    )
+    batch.set(my_friend_ref, {"status": "pending", "initiator": True})
+
+    # Create pending request in target user's friend list
+    their_friend_ref = (
+        db.collection("users").document(friend_id).collection("friends").document(current_user_id)
+    )
+    batch.set(their_friend_ref, {"status": "pending", "initiator": False})
 
     try:
-        new_friend_request = Friend(
-            user_id=user_id, friend_id=friend_id, status="pending"
-        )
-        db.session.add(new_friend_request)
-        db.session.commit()
+        batch.commit()
         flash("Friend request sent.", "success")
     except Exception as e:
-        db.session.rollback()
-        flash(f"An error occurred: {e}", "danger")
+        current_app.logger.error(f"Error sending friend request: {e}")
+        flash("An error occurred while sending the friend request.", "danger")
+
     return redirect(url_for(".users"))
 
 
 @bp.route("/friends")
 @login_required
 def friends():
-    user_id = uuid.UUID(session[USER_ID])
+    """Displays the user's friends and pending requests."""
+    db = firestore.client()
+    current_user_id = g.user["uid"]
+    friends_ref = db.collection("users").document(current_user_id).collection("friends")
 
-    # Get accepted friends
-    friends = (
-        db.session.query(User)
-        .join(Friend, User.id == Friend.friend_id)
-        .filter(Friend.user_id == user_id, Friend.status == "accepted")
-        .all()
+    # Fetch accepted friends
+    accepted_docs = friends_ref.where("status", "==", "accepted").stream()
+    accepted_ids = [doc.id for doc in accepted_docs]
+    accepted_friends = (
+        [db.collection("users").document(uid).get() for uid in accepted_ids]
+        if accepted_ids
+        else []
     )
 
-    # Get pending friend requests received
-    requests = (
-        db.session.query(User)
-        .join(Friend, User.id == Friend.user_id)
-        .filter(Friend.friend_id == user_id, Friend.status == "pending")
-        .all()
+    # Fetch pending requests (where the other user was the initiator)
+    requests_docs = (
+        friends_ref.where("status", "==", "pending")
+        .where("initiator", "==", False)
+        .stream()
     )
-
-    # Get pending friend requests sent
-    sent_requests = (
-        db.session.query(User)
-        .join(Friend, User.id == Friend.friend_id)
-        .filter(Friend.user_id == user_id, Friend.status == "pending")
-        .all()
+    request_ids = [doc.id for doc in requests_docs]
+    pending_requests = (
+        [db.collection("users").document(uid).get() for uid in request_ids]
+        if request_ids
+        else []
     )
 
     return render_template(
-        "friends.html",
-        friends=friends,
-        requests=requests,
-        sent_requests=sent_requests,
+        "friends.html", friends=accepted_friends, requests=pending_requests
     )
 
 
-@bp.route("/accept_friend_request/<uuid:friend_id>", methods=["POST"])
+@bp.route("/accept_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def accept_friend_request(friend_id):
-    user_id = uuid.UUID(session[USER_ID])
+    db = firestore.client()
+    current_user_id = g.user["uid"]
+    batch = db.batch()
+
+    # Update status in current user's friend list
+    my_friend_ref = (
+        db.collection("users").document(current_user_id).collection("friends").document(friend_id)
+    )
+    batch.update(my_friend_ref, {"status": "accepted"})
+
+    # Update status in the other user's friend list
+    their_friend_ref = (
+        db.collection("users").document(friend_id).collection("friends").document(current_user_id)
+    )
+    batch.update(their_friend_ref, {"status": "accepted"})
+
     try:
-        # The friend request is from friend_id to user_id
-        request_to_accept = db.session.get(Friend, (friend_id, user_id))
-        if not request_to_accept:
-            flash("Friend request not found.", "danger")
-            return redirect(url_for(".friends"))
-
-        request_to_accept.status = "accepted"
-
-        # Create the reciprocal friendship
-        reciprocal_friendship = Friend(
-            user_id=user_id, friend_id=friend_id, status="accepted"
-        )
-        db.session.add(reciprocal_friendship)
-        db.session.commit()
+        batch.commit()
         flash("Friend request accepted.", "success")
     except Exception as e:
-        db.session.rollback()
-        flash(f"An error occurred: {e}", "danger")
+        current_app.logger.error(f"Error accepting friend request: {e}")
+        flash("An error occurred while accepting the request.", "danger")
 
     return redirect(url_for(".friends"))
 
 
-@bp.route("/decline_friend_request/<uuid:friend_id>", methods=["POST"])
+@bp.route("/decline_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def decline_friend_request(friend_id):
-    user_id = uuid.UUID(session[USER_ID])
+    db = firestore.client()
+    current_user_id = g.user["uid"]
+    batch = db.batch()
+
+    # Delete request from current user's list
+    my_friend_ref = (
+        db.collection("users").document(current_user_id).collection("friends").document(friend_id)
+    )
+    batch.delete(my_friend_ref)
+
+    # Delete request from the other user's list
+    their_friend_ref = (
+        db.collection("users").document(friend_id).collection("friends").document(current_user_id)
+    )
+    batch.delete(their_friend_ref)
+
     try:
-        request_to_decline = db.session.get(Friend, (friend_id, user_id))
-        if request_to_decline:
-            db.session.delete(request_to_decline)
-            db.session.commit()
-            flash("Friend request declined.", "success")
-        else:
-            flash("Friend request not found.", "danger")
+        batch.commit()
+        flash("Friend request declined.", "success")
     except Exception as e:
-        db.session.rollback()
-        flash(f"An error occurred: {e}", "danger")
+        current_app.logger.error(f"Error declining friend request: {e}")
+        flash("An error occurred while declining the request.", "danger")
 
     return redirect(url_for(".friends"))
-
-
-@bp.route("/profile_picture/<uuid:user_id>")
-def profile_picture(user_id):
-    user = db.get_or_404(User, user_id)
-    if user.profile_picture_path:
-        return send_from_directory(
-            current_app.config["UPLOAD_FOLDER"], user.profile_picture_path
-        )
-    return redirect(url_for("static", filename="user_icon.png"))
-
-
-@bp.route("/profile_picture_thumbnail/<uuid:user_id>")
-def profile_picture_thumbnail(user_id):
-    user = db.get_or_404(User, user_id)
-    if user.profile_picture_thumbnail_path:
-        return send_from_directory(
-            current_app.config["UPLOAD_FOLDER"], user.profile_picture_thumbnail_path
-        )
-    return redirect(url_for("static", filename="user_icon.png"))
 
 
 @bp.route("/update_profile", methods=["POST"])
 @login_required
 def update_profile():
-    user_id = uuid.UUID(session[USER_ID])
-    user = db.get_or_404(User, user_id)
+    db = firestore.client()
+    bucket = storage.bucket()
+    user_id = g.user["uid"]
+    user_ref = db.collection("users").document(user_id)
     form = UpdateProfileForm()
 
     if form.validate_on_submit():
         try:
-            user.dark_mode = form.dark_mode.data
-            if form.dupr_rating.data is not None:
-                user.dupr_rating = form.dupr_rating.data
+            update_data = {
+                "darkMode": form.dark_mode.data,
+                "duprRating": form.dupr_rating.data,
+            }
 
             profile_picture_file = form.profile_picture.data
             if profile_picture_file:
-                # The FileAllowed validator already checked the extension
-                if len(profile_picture_file.read()) > 10 * 1024 * 1024:  # 10MB max size
-                    flash("Profile picture is too large (max 10MB).", "danger")
-                    return redirect(url_for(".dashboard"))
+                filename = secure_filename(profile_picture_file.filename or "profile.jpg")
+                content_type = profile_picture_file.content_type
 
-                profile_picture_file.seek(0)
-                img = Image.open(profile_picture_file)
+                # Path in Firebase Storage
+                path = f"profile-pictures/{user_id}/original_{uuid.uuid4().hex}.jpg"
+                blob = bucket.blob(path)
 
-                unique_id = uuid.uuid4().hex
-                filename = secure_filename(f"{unique_id}_profile.png")
-                thumbnail_filename = secure_filename(f"{unique_id}_thumbnail.png")
+                # Upload the file
+                blob.upload_from_file(profile_picture_file, content_type=content_type)
 
-                upload_folder = current_app.config["UPLOAD_FOLDER"]
-                if not os.path.exists(upload_folder):
-                    os.makedirs(upload_folder)
+                # Make the file public and get the URL
+                blob.make_public()
+                update_data["profilePictureUrl"] = blob.public_url
 
-                img.thumbnail((512, 512))
-                filepath = os.path.join(upload_folder, filename)
-                img.save(filepath, format="PNG")
-                user.profile_picture_path = filename
+                # Note: The thumbnail URL will be set by a Cloud Function.
+                # The function should be triggered by the upload and update the
+                # 'profilePictureThumbnailUrl' field in the user's document.
 
-                img.thumbnail((64, 64))
-                thumbnail_filepath = os.path.join(upload_folder, thumbnail_filename)
-                img.save(thumbnail_filepath, format="PNG")
-                user.profile_picture_thumbnail_path = thumbnail_filename
-
-                current_app.logger.info(
-                    f"User {user_id} updated their profile picture."
-                )
-
-            db.session.commit()
+            user_ref.update(update_data)
             flash("Profile updated successfully.", "success")
         except Exception as e:
-            db.session.rollback()
+            current_app.logger.error(f"Error updating profile: {e}")
             flash(f"An error occurred: {e}", "danger")
     else:
-        # If the form is invalid, flash the errors
         for field, errors in form.errors.items():
             for error in errors:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
@@ -371,113 +293,79 @@ def update_profile():
     return redirect(url_for(".dashboard"))
 
 
+from pickaladder.group.utils import get_group_leaderboard
+
 @bp.route("/api/dashboard")
 @login_required
 def api_dashboard():
-    user_id = uuid.UUID(session[USER_ID])
-    user = db.get_or_404(User, user_id)
+    """Provides dashboard data as JSON, including matches and group rankings."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+    user_ref = db.collection("users").document(user_id)
+    user_data = user_ref.get().to_dict()
 
-    # Get accepted friends
-    friends = (
-        db.session.query(User)
-        .join(Friend, User.id == Friend.friend_id)
-        .filter(Friend.user_id == user_id, Friend.status == "accepted")
-        .all()
+    # Fetch friends
+    friends_query = user_ref.collection("friends").where("status", "==", "accepted").stream()
+    friend_ids = [doc.id for doc in friends_query]
+    friends_data = []
+    if friend_ids:
+        friend_docs = db.collection("users").where("__name__", "in", friend_ids).stream()
+        friends_data = [{"id": doc.id, **doc.to_dict()} for doc in friend_docs]
+
+    # Fetch pending friend requests
+    requests_query = (
+        user_ref.collection("friends")
+        .where("status", "==", "pending")
+        .where("initiator", "==", False)
+        .stream()
     )
-
-    # Get pending friend requests
-    requests = (
-        db.session.query(User)
-        .join(Friend, User.id == Friend.user_id)
-        .filter(Friend.friend_id == user_id, Friend.status == "pending")
-        .all()
-    )
-
-    # Get match history
-    matches = (
-        Match.query.filter(
-            or_(Match.player1_id == user_id, Match.player2_id == user_id)
-        )
-        .order_by(Match.match_date.desc())
-        .limit(10)
-        .all()
-    )
-
-    # Prepare data for JSON response
-    user_data = {
-        "id": str(user.id),
-        "name": user.name,
-        "username": user.username,
-        "email": user.email,
-        "dupr_rating": str(user.dupr_rating) if user.dupr_rating else None,
-    }
-    friends_data = [
-        {
-            "id": str(f.id),
-            "username": f.username,
-            "dupr_rating": str(f.dupr_rating) if f.dupr_rating else None,
-        }
-        for f in friends
-    ]
+    request_ids = [doc.id for doc in requests_query]
     requests_data = []
-    for r in requests:
-        requests_data.append(
-            {
-                "id": str(r.id),
-                "username": r.username,
-                "thumbnail_url": url_for(
-                    "user.profile_picture_thumbnail", user_id=r.id
-                ),
-            }
-        )
+    if request_ids:
+        request_docs = db.collection("users").where("__name__", "in", request_ids).stream()
+        requests_data = [{"id": doc.id, **doc.to_dict()} for doc in request_docs]
+
+    # Fetch recent matches
+    matches_as_p1 = db.collection("matches").where("player1Ref", "==", user_ref).limit(5).stream()
+    matches_as_p2 = db.collection("matches").where("player2Ref", "==", user_ref).limit(5).stream()
+
     matches_data = []
-    for match in matches:
-        opponent = match.player2 if match.player1_id == user_id else match.player1
-        matches_data.append(
-            {
-                "id": str(match.id),
-                "opponent_username": opponent.username,
-                "opponent_id": str(opponent.id),
-                "user_score": (
-                    match.player1_score
-                    if match.player1_id == user_id
-                    else match.player2_score
-                ),
-                "opponent_score": (
-                    match.player2_score
-                    if match.player1_id == user_id
-                    else match.player1_score
-                ),
-                "date": (
-                    match.match_date.strftime("%Y-%m-%d") if match.match_date else None
-                ),
-            }
-        )
+    for match_doc in list(matches_as_p1) + list(matches_as_p2):
+        match = match_doc.to_dict()
+        opponent_ref = match["player2Ref"] if match["player1Ref"].id == user_id else match["player1Ref"]
+        opponent = opponent_ref.get()
+        if opponent.exists:
+            opponent_data = opponent.to_dict()
+            matches_data.append({
+                "id": match_doc.id,
+                "opponent_username": opponent_data.get("username", "N/A"),
+                "opponent_id": opponent.id,
+                "user_score": match["player1Score"] if match["player1Ref"].id == user_id else match["player2Score"],
+                "opponent_score": match["player2Score"] if match["player1Ref"].id == user_id else match["player1Score"],
+                "date": match.get("matchDate", "N/A"),
+            })
 
     # Get group rankings
     group_rankings = []
-    for membership in user.group_memberships:
-        group = membership.group
-        leaderboard = get_group_leaderboard(group.id)
+    my_groups_query = db.collection("groups").where("members", "array_contains", user_ref).stream()
+    for group_doc in my_groups_query:
+        group_data = group_doc.to_dict()
+        leaderboard = get_group_leaderboard(group_doc.id)
         rank = "N/A"
         for i, player in enumerate(leaderboard):
-            if player.id == user_id:
+            if player["id"] == user_id:
                 rank = i + 1
                 break
-        group_rankings.append(
-            {
-                "group_id": str(group.id),
-                "group_name": group.name,
-                "rank": rank,
-            }
-        )
+        group_rankings.append({
+            "group_id": group_doc.id,
+            "group_name": group_data.get("name", "N/A"),
+            "rank": rank,
+        })
 
-    return jsonify(
-        {
-            "user": user_data,
-            "friends": friends_data,
-            "requests": requests_data,
-            "matches": matches_data,
-            "group_rankings": group_rankings,
-        }
-    )
+    return jsonify({
+        "user": user_data,
+        "friends": friends_data,
+        "requests": requests_data,
+        "matches": matches_data,
+        "group_rankings": group_rankings,
+    })

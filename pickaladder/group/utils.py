@@ -1,61 +1,79 @@
-import os
-import uuid
-from werkzeug.utils import secure_filename
-from PIL import Image
-from flask import current_app
-from sqlalchemy import or_, case, func
-from pickaladder import db
-from pickaladder.models import User, Match, Group
-
-
-def save_group_picture(form_picture):
-    unique_id = uuid.uuid4().hex
-    filename = secure_filename(f"{unique_id}_group_profile.png")
-    thumbnail_filename = secure_filename(f"{unique_id}_group_thumbnail.png")
-
-    upload_folder = os.path.join(current_app.static_folder, "uploads")
-    if not os.path.exists(upload_folder):
-        os.makedirs(upload_folder)
-
-    img = Image.open(form_picture)
-    img.thumbnail((512, 512))
-    filepath = os.path.join(upload_folder, filename)
-    img.save(filepath, format="PNG")
-
-    img.thumbnail((64, 64))
-    thumbnail_filepath = os.path.join(upload_folder, thumbnail_filename)
-    img.save(thumbnail_filepath, format="PNG")
-
-    return filename, thumbnail_filename
-
+from firebase_admin import firestore
 
 def get_group_leaderboard(group_id):
     """
-    Calculates the leaderboard for a specific group.
+    Calculates the leaderboard for a specific group using Firestore.
+    This is a client-side implementation of the aggregation logic.
     """
-    group = db.session.get(Group, group_id)
-    if not group:
+    db = firestore.client()
+    group_ref = db.collection("groups").document(group_id)
+    group = group_ref.get()
+    if not group.exists:
         return []
 
-    member_ids = [m.user_id for m in group.members]
+    group_data = group.to_dict()
+    member_refs = group_data.get("members", [])
+    if not member_refs:
+        return []
 
-    player_score = case(
-        (Match.player1_id == User.id, Match.player1_score),
-        else_=Match.player2_score,
-    )
-    leaderboard = (
-        db.session.query(
-            User.id,
-            User.name,
-            func.avg(player_score).label("avg_score"),
-            func.count(Match.id).label("games_played"),
-        )
-        .join(Match, or_(User.id == Match.player1_id, User.id == Match.player2_id))
-        .filter(User.id.in_(member_ids))
-        .filter(Match.player1_id.in_(member_ids))
-        .filter(Match.player2_id.in_(member_ids))
-        .group_by(User.id, User.name)
-        .order_by(func.avg(player_score).desc())
-        .all()
-    )
+    # Fetch all matches where both players are members of the group.
+    # This requires two separate queries.
+    matches_p1_in_group = db.collection("matches").where("player1Ref", "in", member_refs).stream()
+    matches_p2_in_group = db.collection("matches").where("player2Ref", "in", member_refs).stream()
+
+    # In-memory store for player stats
+    player_stats = {ref.id: {"wins": 0, "losses": 0, "games": 0, "user_data": ref.get()} for ref in member_refs}
+
+    # Process matches where at least one player is in the group
+    all_matches = list(matches_p1_in_group) + list(matches_p2_in_group)
+    processed_match_ids = set()
+
+    for match in all_matches:
+        if match.id in processed_match_ids:
+            continue
+        processed_match_ids.add(match.id)
+
+        data = match.to_dict()
+        p1_ref = data.get("player1Ref")
+        p2_ref = data.get("player2Ref")
+
+        # Ensure both players are in the group before counting the match
+        if p1_ref not in member_refs or p2_ref not in member_refs:
+            continue
+
+        p1_id = p1_ref.id
+        p2_id = p2_ref.id
+        p1_score = data.get("player1Score", 0)
+        p2_score = data.get("player2Score", 0)
+
+        # Update stats for Player 1
+        player_stats[p1_id]["games"] += 1
+        if p1_score > p2_score:
+            player_stats[p1_id]["wins"] += 1
+        else:
+            player_stats[p1_id]["losses"] += 1
+
+        # Update stats for Player 2
+        player_stats[p2_id]["games"] += 1
+        if p2_score > p1_score:
+            player_stats[p2_id]["wins"] += 1
+        else:
+            player_stats[p2_id]["losses"] += 1
+
+    # Format the leaderboard data
+    leaderboard = []
+    for user_id, stats in player_stats.items():
+        user_doc = stats["user_data"]
+        if user_doc.exists:
+            user_data = user_doc.to_dict()
+            leaderboard.append({
+                "id": user_id,
+                "name": user_data.get("name", "N/A"),
+                "wins": stats["wins"],
+                "losses": stats["losses"],
+                "games_played": stats["games"],
+            })
+
+    # Sort the leaderboard by wins
+    leaderboard.sort(key=lambda x: x["wins"], reverse=True)
     return leaderboard

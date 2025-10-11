@@ -6,14 +6,6 @@
     </div>
     <div class="card-grid">
         <div class="card">
-            <h3>Reset Database</h3>
-            <p>This will delete all users, matches, and friends.</p>
-            <form action="{{ url_for('admin.reset_db') }}" method="post" onsubmit="return confirm('Are you sure you want to reset the entire database?');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-danger">Reset Database</button>
-            </form>
-        </div>
-        <div class="card">
             <h3>Friend Graph</h3>
             <p>View a visual graph of friend connections.</p>
             <button type="button" class="btn" data-toggle="modal" data-target="#friendGraphModal">
@@ -26,14 +18,6 @@
             <form action="{{ url_for('admin.generate_users') }}" method="post">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-primary">Generate Users</button>
-            </form>
-        </div>
-        <div class="card">
-            <h3>Reset Admin</h3>
-            <p>This will reset the admin account to the first user in the database.</p>
-            <form action="{{ url_for('admin.reset_admin') }}" method="post" onsubmit="return confirm('Are you sure you want to reset admin privileges?');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-warning">Reset Admin</button>
             </form>
         </div>
         <div class="card">

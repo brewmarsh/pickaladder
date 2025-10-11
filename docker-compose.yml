@@ -5,35 +5,12 @@ services:
       - "27272:27272"
     volumes:
       - .:/app
-    command: >
-      sh -c "
-        echo 'Waiting for DB to be ready...'
-        until pg_isready -h db -p 5432 -U user; do
-          sleep 2
-        done
-        echo 'DB is ready, running migrations...'
-        python migrate.py
-        echo 'Migrations complete, starting app...'
-        gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
-      "
+    command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=pickaladder
-      - DB_HOST=db
-    depends_on:
-      db:
-        condition: service_healthy
-  db:
-    image: postgres:13
-    volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=pickaladder
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      # The FIREBASE_PROJECT_ID and GOOGLE_APPLICATION_CREDENTIALS environment
+      # variables will be needed to connect to Firebase.
+      # These should be set in a .env file or your local environment.
+      - FIREBASE_PROJECT_ID=your-firebase-project-id
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
+      - MAIL_USERNAME=
+      - MAIL_PASSWORD=

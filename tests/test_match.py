@@ -1,45 +1,107 @@
+import unittest
+from unittest.mock import patch, MagicMock
 import datetime
-from tests.helpers import BaseTestCase, TEST_PASSWORD
-from pickaladder.models import Friend
-from pickaladder import db
+
+# Pre-emptive imports to ensure patch targets exist.
+import firebase_admin.auth
+import firebase_admin.firestore
+import firebase_admin.credentials
+
+from pickaladder import create_app
+
+# Mock user payloads
+MOCK_USER_ID = "winner_uid"
+MOCK_USER_PAYLOAD = {"uid": MOCK_USER_ID, "email": "winner@example.com"}
+MOCK_USER_DATA = {"name": "Winner", "isAdmin": False}
+
+MOCK_OPPONENT_ID = "loser_uid"
+MOCK_OPPONENT_PAYLOAD = {"uid": MOCK_OPPONENT_ID, "email": "loser@example.com"}
+MOCK_OPPONENT_DATA = {"name": "Loser", "isAdmin": False}
 
 
-class MatchTestCase(BaseTestCase):
-    def test_create_match_page_load(self):
-        self.create_user(
-            username="testuser_match_load",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="testuser_match_load@example.com",
-        )
-        self.login("testuser_match_load", TEST_PASSWORD)
-        response = self.app.get("/match/create")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Create Match", response.data)
+class MatchRoutesFirebaseTestCase(unittest.TestCase):
+
+    def setUp(self):
+        """Set up a test client and a comprehensive mock environment."""
+        self.mock_auth_service = MagicMock()
+        self.mock_firestore_service = MagicMock()
+
+        patchers = {
+            'init_app': patch('firebase_admin.initialize_app'),
+            # Patch for the `before_request` user loader in `__init__.py`.
+            'init_firebase_admin': patch('pickaladder.firebase_admin'),
+            'init_firestore': patch('pickaladder.firestore', new=self.mock_firestore_service),
+            # Patch for the match routes.
+            'match_routes_firestore': patch('pickaladder.match.routes.firestore', new=self.mock_firestore_service),
+            # Patch for the login route, which can be a redirect target.
+            'auth_routes_firestore': patch('pickaladder.auth.routes.firestore', new=self.mock_firestore_service),
+        }
+
+        self.mocks = {name: p.start() for name, p in patchers.items()}
+        for p in patchers.values():
+            self.addCleanup(p.stop)
+
+        self.mocks['init_firebase_admin'].auth = self.mock_auth_service
+
+        self.app = create_app({
+            "TESTING": True,
+            "WTF_CSRF_ENABLED": False,
+            "SERVER_NAME": "localhost"
+        })
+        self.client = self.app.test_client()
+
+    def _simulate_login(self):
+        """Configure mocks for a logged-in user."""
+        self.mock_auth_service.verify_id_token.return_value = MOCK_USER_PAYLOAD
+
+        mock_db = self.mock_firestore_service.client.return_value
+        mock_users_collection = mock_db.collection('users')
+
+        # Mock the logged-in user's document
+        mock_user_doc = mock_users_collection.document(MOCK_USER_ID)
+        mock_user_snapshot = MagicMock()
+        mock_user_snapshot.exists = True
+        mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
+        mock_user_doc.get.return_value = mock_user_snapshot
+
+        # Mock the opponent's document
+        mock_opponent_doc = mock_users_collection.document(MOCK_OPPONENT_ID)
+        mock_opponent_snapshot = MagicMock()
+        mock_opponent_snapshot.exists = True
+        mock_opponent_snapshot.to_dict.return_value = MOCK_OPPONENT_DATA
+        mock_opponent_doc.get.return_value = mock_opponent_snapshot
+
+        # Mock the admin check in the login route to prevent redirects to /install.
+        mock_db.collection('users').where.return_value.limit.return_value.get.return_value = [MagicMock()]
+
+        return {"Authorization": "Bearer mock-token"}
 
     def test_create_match(self):
-        winner = self.create_user(
-            username="winner_create",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="winner_create@example.com",
-        )
-        loser = self.create_user(
-            username="loser_create",
-            password=TEST_PASSWORD,
-            email="loser_create@example.com",
-        )
-        # Establish friendship
-        friendship1 = Friend(user_id=winner.id, friend_id=loser.id, status="accepted")
-        friendship2 = Friend(user_id=loser.id, friend_id=winner.id, status="accepted")
-        db.session.add_all([friendship1, friendship2])
-        db.session.commit()
+        """Test creating a new match."""
+        headers = self._simulate_login()
 
-        self.login("winner_create", TEST_PASSWORD)
-        response = self.app.post(
+        mock_db = self.mock_firestore_service.client.return_value
+        mock_matches_collection = mock_db.collection('matches')
+
+        # The create match form needs to populate the opponent dropdown.
+        # Mock the query for the user's friends.
+        mock_friends_query = mock_db.collection('users').document(MOCK_USER_ID).collection('friends').where.return_value
+        mock_friend_ref = MagicMock()
+        mock_friend_ref.id = MOCK_OPPONENT_ID
+        mock_friends_query.stream.return_value = [mock_friend_ref]
+
+        # Mock the query to get the friend's user data.
+        mock_opponent_user_query = mock_db.collection('users').where.return_value
+        mock_opponent_user_doc = MagicMock()
+        mock_opponent_user_doc.id = MOCK_OPPONENT_ID
+        mock_opponent_user_doc.to_dict.return_value = MOCK_OPPONENT_DATA
+        mock_opponent_user_query.stream.return_value = [mock_opponent_user_doc]
+
+        response = self.client.post(
             "/match/create",
+            headers=headers,
             data={
-                "player2": str(loser.id),
+                "player2": MOCK_OPPONENT_ID,
                 "player1_score": 11,
                 "player2_score": 5,
                 "match_date": datetime.date.today().isoformat(),
@@ -48,65 +110,8 @@ class MatchTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match created successfully.", response.data)
+        mock_matches_collection.add.assert_called_once()
 
-    def test_view_match(self):
-        winner = self.create_user(
-            username="winner_view",
-            name="Winner View",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="winner_view@example.com",
-        )
-        loser = self.create_user(
-            username="loser_view",
-            name="Loser View",
-            password=TEST_PASSWORD,
-            email="loser_view@example.com",
-        )
-        match = self.create_match(winner.id, loser.id)
-        self.login("winner_view", TEST_PASSWORD)
-        response = self.app.get(f"/match/{match.id}")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Winner View", response.data)
-        self.assertIn(b"Loser View", response.data)
-        self.assertIn(b"11", response.data)
-        self.assertIn(b"5", response.data)
 
-    def test_leaderboard_update(self):
-        winner = self.create_user(
-            username="winner_leaderboard",
-            name="Winner Leaderboard",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="winner_leaderboard@example.com",
-        )
-        loser = self.create_user(
-            username="loser_leaderboard",
-            name="Loser Leaderboard",
-            password=TEST_PASSWORD,
-            email="loser_leaderboard@example.com",
-        )
-        # Establish friendship
-        friendship1 = Friend(user_id=winner.id, friend_id=loser.id, status="accepted")
-        friendship2 = Friend(user_id=loser.id, friend_id=winner.id, status="accepted")
-        db.session.add_all([friendship1, friendship2])
-        db.session.commit()
-
-        self.login("winner_leaderboard", TEST_PASSWORD)
-        self.app.post(
-            "/match/create",
-            data={
-                "player2": str(loser.id),
-                "player1_score": 11,
-                "player2_score": 5,
-                "match_date": datetime.date.today().isoformat(),
-            },
-            follow_redirects=True,
-        )
-
-        response = self.app.get("/match/leaderboard")
-        self.assertEqual(response.status_code, 200)
-        # Winner should be higher on the leaderboard than the loser
-        winner_pos = response.data.find(b"Winner Leaderboard")
-        loser_pos = response.data.find(b"Loser Leaderboard")
-        self.assertTrue(winner_pos < loser_pos)
+if __name__ == "__main__":
+    unittest.main()

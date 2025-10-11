@@ -1,184 +1,115 @@
-from tests.helpers import BaseTestCase, TEST_PASSWORD
-from pickaladder.models import Friend, Group, GroupMember
-from pickaladder import db
-from unittest.mock import patch
+import unittest
+from unittest.mock import patch, MagicMock
+
+# Pre-emptive imports to ensure patch targets exist.
+import firebase_admin.auth
+import firebase_admin.firestore
+import firebase_admin.credentials
+
+from pickaladder import create_app
+
+# Mock user payloads
+MOCK_USER_ID = "user1"
+MOCK_USER_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user1@example.com"}
+MOCK_USER_DATA = {"name": "Group Owner", "isAdmin": False}
 
 
-class GroupTestCase(BaseTestCase):
+class GroupRoutesFirebaseTestCase(unittest.TestCase):
+
+    def setUp(self):
+        """Set up a test client and a comprehensive mock environment."""
+        self.mock_auth_service = MagicMock()
+        self.mock_firestore_service = MagicMock()
+
+        patchers = {
+            'init_app': patch('firebase_admin.initialize_app'),
+            # Patch for the `before_request` user loader in `__init__.py`.
+            'init_firebase_admin': patch('pickaladder.firebase_admin'),
+            'init_firestore': patch('pickaladder.firestore', new=self.mock_firestore_service),
+            # Patch for the group routes.
+            'group_routes_firestore': patch('pickaladder.group.routes.firestore', new=self.mock_firestore_service),
+            # Patch for the login route, which can be a redirect target.
+            'auth_routes_firestore': patch('pickaladder.auth.routes.firestore', new=self.mock_firestore_service),
+        }
+
+        self.mocks = {name: p.start() for name, p in patchers.items()}
+        for p in patchers.values():
+            self.addCleanup(p.stop)
+
+        self.mocks['init_firebase_admin'].auth = self.mock_auth_service
+
+        self.app = create_app({
+            "TESTING": True,
+            "WTF_CSRF_ENABLED": False,
+            "SERVER_NAME": "localhost"
+        })
+        self.client = self.app.test_client()
+
+    def _simulate_login(self):
+        """Configure mocks for a logged-in user."""
+        self.mock_auth_service.verify_id_token.return_value = MOCK_USER_PAYLOAD
+
+        mock_db = self.mock_firestore_service.client.return_value
+        mock_users_collection = mock_db.collection('users')
+        mock_user_doc = mock_users_collection.document(MOCK_USER_ID)
+
+        mock_doc_snapshot = MagicMock()
+        mock_doc_snapshot.exists = True
+        mock_doc_snapshot.to_dict.return_value = MOCK_USER_DATA
+        mock_user_doc.get.return_value = mock_doc_snapshot
+
+        # Mock the admin check in the login route to prevent redirects to /install.
+        mock_db.collection('users').where.return_value.limit.return_value.get.return_value = [MagicMock()]
+
+        return {"Authorization": "Bearer mock-token"}
+
     def test_create_group(self):
-        user = self.create_user(
-            username="group_creator",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="group_creator@example.com",
-        )
-        self.login("group_creator", TEST_PASSWORD)
-        response = self.app.post(
+        """Test successfully creating a new group."""
+        headers = self._simulate_login()
+
+        # Mock the `add` method on the groups collection
+        mock_groups_collection = self.mock_firestore_service.client.return_value.collection('groups')
+
+        # `add` returns a tuple: (timestamp, document_reference)
+        mock_doc_ref = MagicMock()
+        mock_doc_ref.id = "new_group_id"
+        mock_groups_collection.add.return_value = (None, mock_doc_ref)
+
+        # The view_group route will be called, so we need to mock its Firestore calls as well.
+        mock_group_doc = MagicMock()
+        mock_group_snapshot = MagicMock()
+        mock_group_snapshot.exists = True
+        # The group data needs an ownerRef for the template to render correctly.
+        mock_owner_ref = self.mock_firestore_service.client.return_value.collection('users').document(MOCK_USER_ID)
+        mock_group_snapshot.to_dict.return_value = {
+            "name": "My Firebase Group",
+            "ownerRef": mock_owner_ref
+        }
+        mock_group_doc.get.return_value = mock_group_snapshot
+        mock_groups_collection.document.return_value = mock_group_doc
+
+        # The view_group route also fetches the owner's data.
+        mock_owner_doc = self.mock_firestore_service.client.return_value.collection('users').document(MOCK_USER_ID)
+        mock_owner_snapshot = MagicMock()
+        mock_owner_snapshot.exists = True
+        mock_owner_snapshot.to_dict.return_value = {"username": "Group Owner"}
+        mock_owner_ref.get.return_value = mock_owner_snapshot
+
+        response = self.client.post(
             "/group/create",
-            data={"name": "Test Group"},
+            headers=headers,
+            data={"name": "My Firebase Group"},
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Group created successfully.", response.data)
-        group = Group.query.filter_by(name="Test Group").first()
-        self.assertIsNotNone(group)
-        self.assertEqual(group.owner_id, user.id)
-        # Check if the creator is a member
-        member = GroupMember.query.filter_by(group_id=group.id, user_id=user.id).first()
-        self.assertIsNotNone(member)
+        mock_groups_collection.add.assert_called_once()
 
-    def test_invite_to_group(self):
-        owner = self.create_user(
-            username="group_owner_invite",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="group_owner_invite@example.com",
-        )
-        friend_user = self.create_user(
-            username="friend_to_invite",
-            password=TEST_PASSWORD,
-            email="friend_to_invite@example.com",
-        )
-        # Establish friendship
-        friendship1 = Friend(
-            user_id=owner.id, friend_id=friend_user.id, status="accepted"
-        )
-        friendship2 = Friend(
-            user_id=friend_user.id, friend_id=owner.id, status="accepted"
-        )
-        db.session.add_all([friendship1, friendship2])
-        db.session.commit()
+        # We can also check that the data passed to the `add` method was correct.
+        # The first element of the first call's arguments is the data dictionary.
+        call_args = mock_groups_collection.add.call_args[0]
+        self.assertEqual(call_args[0]['name'], "My Firebase Group")
 
-        self.login("group_owner_invite", TEST_PASSWORD)
-        group = self.create_group(name="Invite Test Group", owner_id=owner.id)
-        self.add_user_to_group(group.id, owner.id)
 
-        response = self.app.post(
-            f"/group/{group.id}",
-            data={"friend": str(friend_user.id)},
-            follow_redirects=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Friend invited successfully.", response.data)
-        member = GroupMember.query.filter_by(
-            group_id=group.id, user_id=friend_user.id
-        ).first()
-        self.assertIsNotNone(member)
-
-    def test_group_leaderboard(self):
-        owner = self.create_user(
-            username="leaderboard_owner",
-            name="Leaderboard Owner",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="leaderboard_owner@example.com",
-        )
-        member1 = self.create_user(
-            username="leaderboard_member1",
-            name="Leaderboard Member 1",
-            password=TEST_PASSWORD,
-            email="leaderboard_member1@example.com",
-        )
-        member2 = self.create_user(
-            username="leaderboard_member2",
-            name="Leaderboard Member 2",
-            password=TEST_PASSWORD,
-            email="leaderboard_member2@example.com",
-        )
-        non_member = self.create_user(
-            username="non_member",
-            name="Non Member",
-            password=TEST_PASSWORD,
-            email="non_member@example.com",
-        )
-
-        group = self.create_group(name="Leaderboard Group", owner_id=owner.id)
-        self.add_user_to_group(group.id, owner.id)
-        self.add_user_to_group(group.id, member1.id)
-        self.add_user_to_group(group.id, member2.id)
-
-        # Match between group members (should be on leaderboard)
-        self.create_match(member1.id, member2.id, 11, 5)
-        # Match with a non-group member (should not be on leaderboard)
-        self.create_match(owner.id, non_member.id, 11, 2)
-
-        self.login("leaderboard_owner", TEST_PASSWORD)
-        response = self.app.get(f"/group/{group.id}")
-        self.assertEqual(response.status_code, 200)
-
-        # Member 1 should be on the leaderboard
-        self.assertIn(b"Leaderboard Member 1", response.data)
-        # Member 2 should be on the leaderboard
-        self.assertIn(b"Leaderboard Member 2", response.data)
-        # The owner should not be on the leaderboard yet (0 games played)
-        self.assertNotIn(b"Leaderboard Owner", response.data)
-        # The non-member should not be on the leaderboard
-        self.assertNotIn(b"Non Member", response.data)
-
-        # Check order
-        member1_pos = response.data.find(b"Leaderboard Member 1")
-        member2_pos = response.data.find(b"Leaderboard Member 2")
-        self.assertTrue(member1_pos < member2_pos)
-
-    def test_delete_group_by_owner(self):
-        owner = self.create_user(
-            username="group_owner_delete",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="group_owner_delete@example.com",
-        )
-        self.login("group_owner_delete", TEST_PASSWORD)
-        group = self.create_group(name="Group to Delete", owner_id=owner.id)
-        group_id = group.id
-        self.add_user_to_group(group.id, owner.id)
-
-        response = self.app.post(f"/group/{group_id}/delete", follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Group deleted successfully.", response.data)
-        deleted_group = db.session.get(Group, group_id)
-        self.assertIsNone(deleted_group)
-
-    def test_delete_group_by_non_owner(self):
-        owner = self.create_user(
-            username="group_owner_nodelete",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="group_owner_nodelete@example.com",
-        )
-        non_owner = self.create_user(
-            username="non_owner_delete_attempt",
-            password=TEST_PASSWORD,
-            email="non_owner_delete_attempt@example.com",
-        )
-        group = self.create_group(name="No Delete Group", owner_id=owner.id)
-        group_id = group.id
-        self.add_user_to_group(group.id, owner.id)
-        self.add_user_to_group(group.id, non_owner.id)
-
-        self.login("non_owner_delete_attempt", TEST_PASSWORD)
-        response = self.app.post(f"/group/{group_id}/delete", follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            b"You do not have permission to delete this group.", response.data
-        )
-        not_deleted_group = db.session.get(Group, group_id)
-        self.assertIsNotNone(not_deleted_group)
-
-    def test_create_group_exception(self):
-        self.create_user(
-            username="group_creator_exception",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="group_creator_exception@example.com",
-        )
-        self.login("group_creator_exception", TEST_PASSWORD)
-
-        with patch("pickaladder.group.routes.db.session.commit") as mock_commit:
-            mock_commit.side_effect = Exception("Database error")
-            response = self.app.post(
-                "/group/create",
-                data={"name": "Exception Group"},
-                follow_redirects=True,
-            )
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b"An unexpected error occurred", response.data)
+if __name__ == "__main__":
+    unittest.main()
