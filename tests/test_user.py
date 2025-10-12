@@ -4,10 +4,6 @@ from io import BytesIO
 
 # INSIGHT #2: Explicitly import submodules to defeat lazy loading
 # and ensure patch targets exist before the test runner tries to find them.
-import firebase_admin.auth
-import firebase_admin.firestore
-import firebase_admin.storage
-import firebase_admin.credentials
 
 from pickaladder import create_app
 from pickaladder.constants import USER_ID

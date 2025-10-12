@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, g
+from flask import render_template, redirect, url_for, flash, g
 from firebase_admin import firestore
 import datetime
 

@@ -3,9 +3,6 @@ from unittest.mock import patch, MagicMock
 import datetime
 
 # Pre-emptive imports to ensure patch targets exist.
-import firebase_admin.auth
-import firebase_admin.firestore
-import firebase_admin.credentials
 
 from pickaladder import create_app
 

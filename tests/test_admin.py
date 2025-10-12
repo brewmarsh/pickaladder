@@ -2,9 +2,6 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 # Pre-emptive imports to ensure patch targets exist before the test runner looks for them.
-import firebase_admin.auth
-import firebase_admin.firestore
-import firebase_admin.credentials
 
 from pickaladder import create_app
 

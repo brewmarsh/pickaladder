@@ -1,12 +1,10 @@
 from flask import (
     render_template,
-    request,
     redirect,
     url_for,
     flash,
     jsonify,
     g,
-    current_app,
 )
 from faker import Faker
 import random
@@ -155,6 +153,7 @@ def generate_users():
 def generate_matches():
     """Generates random matches between existing users."""
     db = firestore.client()
+    fake = Faker()
     try:
         users = list(db.collection("users").limit(20).stream())
         if len(users) < 2:

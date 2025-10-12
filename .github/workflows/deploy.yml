@@ -56,26 +56,6 @@ jobs:
           source: "docker-compose.prod.yml"
           target: "~/picka-server"
 
-      - name: Create project directory on server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOSTINGER_HOST }}
-          username: ${{ secrets.HOSTINGER_USERNAME }}
-          key: ${{ secrets.HOSTINGER_SSH_KEY }}
-          port: 22
-          script: |
-            mkdir -p ~/picka-server
-
-      - name: Copy config files to server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.HOSTINGER_HOST }}
-          username: ${{ secrets.HOSTINGER_USERNAME }}
-          key: ${{ secrets.HOSTINGER_SSH_KEY }}
-          port: 22
-          source: "docker-compose.prod.yml,init.sql"
-          target: "~/picka-server"
-
       - name: Deploy to Hostinger VPS
         uses: appleboy/ssh-action@master
         with:

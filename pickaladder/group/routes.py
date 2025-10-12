@@ -1,7 +1,5 @@
 from flask import render_template, redirect, url_for, flash, request, g
 from firebase_admin import firestore
-from werkzeug.utils import secure_filename
-import uuid
 
 from . import bp
 from .forms import GroupForm, InviteFriendForm

@@ -2,9 +2,6 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 # Pre-emptive imports to ensure patch targets exist.
-import firebase_admin.auth
-import firebase_admin.firestore
-import firebase_admin.credentials
 
 from pickaladder import create_app
 
@@ -89,7 +86,6 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         mock_groups_collection.document.return_value = mock_group_doc
 
         # The view_group route also fetches the owner's data.
-        mock_owner_doc = self.mock_firestore_service.client.return_value.collection('users').document(MOCK_USER_ID)
         mock_owner_snapshot = MagicMock()
         mock_owner_snapshot.exists = True
         mock_owner_snapshot.to_dict.return_value = {"username": "Group Owner"}

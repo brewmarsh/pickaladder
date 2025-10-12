@@ -1,5 +1,4 @@
 import uuid
-import os
 from flask import (
     render_template,
     request,
@@ -11,12 +10,12 @@ from flask import (
     g,
 )
 from firebase_admin import firestore, storage
-from PIL import Image
 from werkzeug.utils import secure_filename
 
 from . import bp
 from .forms import UpdateProfileForm
 from pickaladder.auth.decorators import login_required
+from pickaladder.group.utils import get_group_leaderboard
 
 @bp.route("/dashboard")
 @login_required
@@ -46,7 +45,6 @@ def view_user(user_id):
     current_user_id = g.user["uid"]
 
     # Fetch friendship status
-    friendship_status = "not_friends"
     friend_request_sent = False
     is_friend = False
 
@@ -62,10 +60,8 @@ def view_user(user_id):
             status = friend_doc.to_dict().get("status")
             if status == "accepted":
                 is_friend = True
-                friendship_status = "friends"
             elif status == "pending":
                 friend_request_sent = True
-                friendship_status = "pending"
 
     # Fetch user's friends (limited for display)
     friends_query = (
@@ -262,7 +258,7 @@ def update_profile():
 
             profile_picture_file = form.profile_picture.data
             if profile_picture_file:
-                filename = secure_filename(profile_picture_file.filename or "profile.jpg")
+                secure_filename(profile_picture_file.filename or "profile.jpg")
                 content_type = profile_picture_file.content_type
 
                 # Path in Firebase Storage
@@ -292,8 +288,6 @@ def update_profile():
 
     return redirect(url_for(".dashboard"))
 
-
-from pickaladder.group.utils import get_group_leaderboard
 
 @bp.route("/api/dashboard")
 @login_required
