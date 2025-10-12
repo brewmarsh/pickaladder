@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright
 
+
 def run(playwright):
     browser = playwright.chromium.launch()
     page = browser.new_page()
@@ -13,6 +14,7 @@ def run(playwright):
     page.screenshot(path="jules-scratch/verification/02_dashboard.png")
 
     browser.close()
+
 
 with sync_playwright() as playwright:
     run(playwright)

@@ -16,7 +16,6 @@ MOCK_USER_DATA = {"name": "Regular User", "isAdmin": False}
 
 
 class AdminRoutesFirebaseTestCase(unittest.TestCase):
-
     def setUp(self):
         """Set up a test client and a comprehensive mock environment for the admin routes."""
         # Create shared mocks to ensure consistent state across all patched modules.
@@ -25,15 +24,23 @@ class AdminRoutesFirebaseTestCase(unittest.TestCase):
 
         # Define patchers for every location where the services are looked up.
         patchers = {
-            'init_app': patch('firebase_admin.initialize_app'),
+            "init_app": patch("firebase_admin.initialize_app"),
             # Patch for the `before_request` user loader in `__init__.py`.
-            'init_firebase_admin': patch('pickaladder.firebase_admin'),
-            'init_firestore': patch('pickaladder.firestore', new=self.mock_firestore_service),
+            "init_firebase_admin": patch("pickaladder.firebase_admin"),
+            "init_firestore": patch(
+                "pickaladder.firestore", new=self.mock_firestore_service
+            ),
             # Patch for the admin routes themselves.
-            'admin_routes_auth': patch('pickaladder.admin.routes.auth', new=self.mock_auth_service),
-            'admin_routes_firestore': patch('pickaladder.admin.routes.firestore', new=self.mock_firestore_service),
+            "admin_routes_auth": patch(
+                "pickaladder.admin.routes.auth", new=self.mock_auth_service
+            ),
+            "admin_routes_firestore": patch(
+                "pickaladder.admin.routes.firestore", new=self.mock_firestore_service
+            ),
             # Patch for the login route, which can be a redirect target.
-            'auth_routes_firestore': patch('pickaladder.auth.routes.firestore', new=self.mock_firestore_service),
+            "auth_routes_firestore": patch(
+                "pickaladder.auth.routes.firestore", new=self.mock_firestore_service
+            ),
         }
 
         # Start all patchers and register them for cleanup.
@@ -42,14 +49,12 @@ class AdminRoutesFirebaseTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         # Configure the mock `firebase_admin` module used in `__init__.py`.
-        self.mocks['init_firebase_admin'].auth = self.mock_auth_service
+        self.mocks["init_firebase_admin"].auth = self.mock_auth_service
 
         # Create the Flask app *after* all patches are active.
-        self.app = create_app({
-            "TESTING": True,
-            "WTF_CSRF_ENABLED": False,
-            "SERVER_NAME": "localhost"
-        })
+        self.app = create_app(
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+        )
         self.client = self.app.test_client()
 
     def _simulate_login(self, user_id, token_payload, firestore_data):
@@ -73,20 +78,27 @@ class AdminRoutesFirebaseTestCase(unittest.TestCase):
                 mock_user_doc = MagicMock()
                 mock_user_doc.get.return_value = mock_doc_snapshot
                 return mock_user_doc
-            return MagicMock() # Return a generic mock for other calls
+            return MagicMock()  # Return a generic mock for other calls
+
         mock_users_collection.document.side_effect = document_side_effect
 
         # Mock the admin check in the login route to prevent redirects to /install.
-        mock_users_collection.where.return_value.limit.return_value.get.return_value = [MagicMock()]
+        mock_users_collection.where.return_value.limit.return_value.get.return_value = [
+            MagicMock()
+        ]
 
         return {"Authorization": "Bearer mock-token"}
 
     def test_admin_panel_access_by_admin(self):
         """Test that an admin user can access the admin panel."""
-        headers = self._simulate_login(MOCK_ADMIN_ID, MOCK_ADMIN_PAYLOAD, MOCK_ADMIN_DATA)
+        headers = self._simulate_login(
+            MOCK_ADMIN_ID, MOCK_ADMIN_PAYLOAD, MOCK_ADMIN_DATA
+        )
 
         # The admin route also queries for the email verification setting. Mock this call.
-        mock_settings_doc = self.mock_firestore_service.client.return_value.collection('settings').document('enforceEmailVerification')
+        mock_settings_doc = self.mock_firestore_service.client.return_value.collection(
+            "settings"
+        ).document("enforceEmailVerification")
         mock_settings_doc.get.return_value.exists = False
 
         response = self.client.get("/admin/", headers=headers)

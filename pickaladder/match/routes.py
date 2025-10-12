@@ -6,6 +6,7 @@ from . import bp
 from .forms import MatchForm
 from pickaladder.auth.decorators import login_required
 
+
 def get_player_record(player_ref):
     """Calculates the win/loss record for a given player by their document reference."""
     db = firestore.client()
@@ -13,7 +14,9 @@ def get_player_record(player_ref):
     losses = 0
 
     # Matches where the user is player1
-    p1_matches_query = db.collection("matches").where("player1Ref", "==", player_ref).stream()
+    p1_matches_query = (
+        db.collection("matches").where("player1Ref", "==", player_ref).stream()
+    )
     for match in p1_matches_query:
         data = match.to_dict()
         if data.get("player1Score", 0) > data.get("player2Score", 0):
@@ -22,7 +25,9 @@ def get_player_record(player_ref):
             losses += 1
 
     # Matches where the user is player2
-    p2_matches_query = db.collection("matches").where("player2Ref", "==", player_ref).stream()
+    p2_matches_query = (
+        db.collection("matches").where("player2Ref", "==", player_ref).stream()
+    )
     for match in p2_matches_query:
         data = match.to_dict()
         if data.get("player2Score", 0) > data.get("player1Score", 0):
@@ -31,6 +36,7 @@ def get_player_record(player_ref):
             losses += 1
 
     return {"wins": wins, "losses": losses}
+
 
 @bp.route("/<string:match_id>")
 @login_required
@@ -61,6 +67,7 @@ def view_match_page(match_id):
         player2_record=player2_record,
     )
 
+
 @bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create_match():
@@ -75,7 +82,9 @@ def create_match():
 
     if friend_ids:
         friends = db.collection("users").where("__name__", "in", friend_ids).stream()
-        form.player2.choices = [(doc.id, doc.to_dict().get("name", doc.id)) for doc in friends]
+        form.player2.choices = [
+            (doc.id, doc.to_dict().get("name", doc.id)) for doc in friends
+        ]
     else:
         form.player2.choices = []
 
@@ -84,14 +93,16 @@ def create_match():
             player1_ref = db.collection("users").document(user_id)
             player2_ref = db.collection("users").document(form.player2.data)
 
-            db.collection("matches").add({
-                "player1Ref": player1_ref,
-                "player2Ref": player2_ref,
-                "player1Score": form.player1_score.data,
-                "player2Score": form.player2_score.data,
-                "matchDate": form.match_date.data or datetime.date.today(),
-                "createdAt": firestore.SERVER_TIMESTAMP,
-            })
+            db.collection("matches").add(
+                {
+                    "player1Ref": player1_ref,
+                    "player2Ref": player2_ref,
+                    "player1Score": form.player1_score.data,
+                    "player2Score": form.player2_score.data,
+                    "matchDate": form.match_date.data or datetime.date.today(),
+                    "createdAt": firestore.SERVER_TIMESTAMP,
+                }
+            )
             flash("Match created successfully.", "success")
             return redirect(url_for("user.dashboard"))
         except Exception as e:
@@ -122,14 +133,16 @@ def leaderboard():
             if games_played > 0:
                 win_percentage = (record["wins"] / games_played) * 100
 
-            players.append({
-                "id": user.id,
-                "name": user_data.get("name", "N/A"),
-                "wins": record["wins"],
-                "losses": record["losses"],
-                "games_played": games_played,
-                "win_percentage": win_percentage,
-            })
+            players.append(
+                {
+                    "id": user.id,
+                    "name": user_data.get("name", "N/A"),
+                    "wins": record["wins"],
+                    "losses": record["losses"],
+                    "games_played": games_played,
+                    "win_percentage": win_percentage,
+                }
+            )
 
         # Sort players by win percentage, then by wins
         players.sort(key=lambda p: (p["win_percentage"], p["wins"]), reverse=True)
@@ -138,4 +151,6 @@ def leaderboard():
         players = []
         flash(f"An error occurred while fetching the leaderboard: {e}", "danger")
 
-    return render_template("leaderboard.html", players=players, current_user_id=g.user["uid"])
+    return render_template(
+        "leaderboard.html", players=players, current_user_id=g.user["uid"]
+    )

@@ -7,9 +7,8 @@ from pickaladder import create_app
 
 
 class AppFirebaseTestCase(unittest.TestCase):
-
-    @patch('firebase_admin.initialize_app')
-    @patch('firebase_admin.firestore.client')
+    @patch("firebase_admin.initialize_app")
+    @patch("firebase_admin.firestore.client")
     def test_404_error_handler(self, mock_firestore_client, mock_init_app):
         """Test the custom 404 error handler."""
         # This test doesn't require authentication, but we still need to mock

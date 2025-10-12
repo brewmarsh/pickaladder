@@ -17,6 +17,7 @@ from .forms import UpdateProfileForm
 from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import get_group_leaderboard
 
+
 @bp.route("/dashboard")
 @login_required
 def dashboard():
@@ -127,13 +128,19 @@ def send_friend_request(friend_id):
 
     # Create pending request in current user's friend list
     my_friend_ref = (
-        db.collection("users").document(current_user_id).collection("friends").document(friend_id)
+        db.collection("users")
+        .document(current_user_id)
+        .collection("friends")
+        .document(friend_id)
     )
     batch.set(my_friend_ref, {"status": "pending", "initiator": True})
 
     # Create pending request in target user's friend list
     their_friend_ref = (
-        db.collection("users").document(friend_id).collection("friends").document(current_user_id)
+        db.collection("users")
+        .document(friend_id)
+        .collection("friends")
+        .document(current_user_id)
     )
     batch.set(their_friend_ref, {"status": "pending", "initiator": False})
 
@@ -191,13 +198,19 @@ def accept_friend_request(friend_id):
 
     # Update status in current user's friend list
     my_friend_ref = (
-        db.collection("users").document(current_user_id).collection("friends").document(friend_id)
+        db.collection("users")
+        .document(current_user_id)
+        .collection("friends")
+        .document(friend_id)
     )
     batch.update(my_friend_ref, {"status": "accepted"})
 
     # Update status in the other user's friend list
     their_friend_ref = (
-        db.collection("users").document(friend_id).collection("friends").document(current_user_id)
+        db.collection("users")
+        .document(friend_id)
+        .collection("friends")
+        .document(current_user_id)
     )
     batch.update(their_friend_ref, {"status": "accepted"})
 
@@ -220,13 +233,19 @@ def decline_friend_request(friend_id):
 
     # Delete request from current user's list
     my_friend_ref = (
-        db.collection("users").document(current_user_id).collection("friends").document(friend_id)
+        db.collection("users")
+        .document(current_user_id)
+        .collection("friends")
+        .document(friend_id)
     )
     batch.delete(my_friend_ref)
 
     # Delete request from the other user's list
     their_friend_ref = (
-        db.collection("users").document(friend_id).collection("friends").document(current_user_id)
+        db.collection("users")
+        .document(friend_id)
+        .collection("friends")
+        .document(current_user_id)
     )
     batch.delete(their_friend_ref)
 
@@ -299,11 +318,15 @@ def api_dashboard():
     user_data = user_ref.get().to_dict()
 
     # Fetch friends
-    friends_query = user_ref.collection("friends").where("status", "==", "accepted").stream()
+    friends_query = (
+        user_ref.collection("friends").where("status", "==", "accepted").stream()
+    )
     friend_ids = [doc.id for doc in friends_query]
     friends_data = []
     if friend_ids:
-        friend_docs = db.collection("users").where("__name__", "in", friend_ids).stream()
+        friend_docs = (
+            db.collection("users").where("__name__", "in", friend_ids).stream()
+        )
         friends_data = [{"id": doc.id, **doc.to_dict()} for doc in friend_docs]
 
     # Fetch pending friend requests
@@ -316,32 +339,50 @@ def api_dashboard():
     request_ids = [doc.id for doc in requests_query]
     requests_data = []
     if request_ids:
-        request_docs = db.collection("users").where("__name__", "in", request_ids).stream()
+        request_docs = (
+            db.collection("users").where("__name__", "in", request_ids).stream()
+        )
         requests_data = [{"id": doc.id, **doc.to_dict()} for doc in request_docs]
 
     # Fetch recent matches
-    matches_as_p1 = db.collection("matches").where("player1Ref", "==", user_ref).limit(5).stream()
-    matches_as_p2 = db.collection("matches").where("player2Ref", "==", user_ref).limit(5).stream()
+    matches_as_p1 = (
+        db.collection("matches").where("player1Ref", "==", user_ref).limit(5).stream()
+    )
+    matches_as_p2 = (
+        db.collection("matches").where("player2Ref", "==", user_ref).limit(5).stream()
+    )
 
     matches_data = []
     for match_doc in list(matches_as_p1) + list(matches_as_p2):
         match = match_doc.to_dict()
-        opponent_ref = match["player2Ref"] if match["player1Ref"].id == user_id else match["player1Ref"]
+        opponent_ref = (
+            match["player2Ref"]
+            if match["player1Ref"].id == user_id
+            else match["player1Ref"]
+        )
         opponent = opponent_ref.get()
         if opponent.exists:
             opponent_data = opponent.to_dict()
-            matches_data.append({
-                "id": match_doc.id,
-                "opponent_username": opponent_data.get("username", "N/A"),
-                "opponent_id": opponent.id,
-                "user_score": match["player1Score"] if match["player1Ref"].id == user_id else match["player2Score"],
-                "opponent_score": match["player2Score"] if match["player1Ref"].id == user_id else match["player1Score"],
-                "date": match.get("matchDate", "N/A"),
-            })
+            matches_data.append(
+                {
+                    "id": match_doc.id,
+                    "opponent_username": opponent_data.get("username", "N/A"),
+                    "opponent_id": opponent.id,
+                    "user_score": match["player1Score"]
+                    if match["player1Ref"].id == user_id
+                    else match["player2Score"],
+                    "opponent_score": match["player2Score"]
+                    if match["player1Ref"].id == user_id
+                    else match["player1Score"],
+                    "date": match.get("matchDate", "N/A"),
+                }
+            )
 
     # Get group rankings
     group_rankings = []
-    my_groups_query = db.collection("groups").where("members", "array_contains", user_ref).stream()
+    my_groups_query = (
+        db.collection("groups").where("members", "array_contains", user_ref).stream()
+    )
     for group_doc in my_groups_query:
         group_data = group_doc.to_dict()
         leaderboard = get_group_leaderboard(group_doc.id)
@@ -350,16 +391,20 @@ def api_dashboard():
             if player["id"] == user_id:
                 rank = i + 1
                 break
-        group_rankings.append({
-            "group_id": group_doc.id,
-            "group_name": group_data.get("name", "N/A"),
-            "rank": rank,
-        })
+        group_rankings.append(
+            {
+                "group_id": group_doc.id,
+                "group_name": group_data.get("name", "N/A"),
+                "rank": rank,
+            }
+        )
 
-    return jsonify({
-        "user": user_data,
-        "friends": friends_data,
-        "requests": requests_data,
-        "matches": matches_data,
-        "group_rankings": group_rankings,
-    })
+    return jsonify(
+        {
+            "user": user_data,
+            "friends": friends_data,
+            "requests": requests_data,
+            "matches": matches_data,
+            "group_rankings": group_rankings,
+        }
+    )

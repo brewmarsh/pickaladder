@@ -5,6 +5,7 @@ from . import bp
 from .forms import GroupForm, InviteFriendForm
 from pickaladder.auth.decorators import login_required
 
+
 @bp.route("/", methods=["GET"])
 @login_required
 def view_groups():
@@ -15,14 +16,16 @@ def view_groups():
     # Query for public groups
     public_groups_query = db.collection("groups").where("is_public", "==", True)
     if search_term:
-        public_groups_query = public_groups_query.where("name", ">=", search_term).where(
-            "name", "<=", search_term + "\uf8ff"
-        )
+        public_groups_query = public_groups_query.where(
+            "name", ">=", search_term
+        ).where("name", "<=", search_term + "\uf8ff")
     public_groups = public_groups_query.limit(20).stream()
 
     # Get user's groups
     user_ref = db.collection("users").document(g.user["uid"])
-    my_groups_query = db.collection("groups").where("members", "array_contains", user_ref)
+    my_groups_query = db.collection("groups").where(
+        "members", "array_contains", user_ref
+    )
     my_groups = my_groups_query.stream()
 
     return render_template(
@@ -65,7 +68,9 @@ def view_group(group_id):
     form = InviteFriendForm()
 
     # Get user's accepted friends
-    friends_query = user_ref.collection("friends").where("status", "==", "accepted").stream()
+    friends_query = (
+        user_ref.collection("friends").where("status", "==", "accepted").stream()
+    )
     friend_ids = {doc.id for doc in friends_query}
 
     # Find friends who are not already members
@@ -73,11 +78,14 @@ def view_group(group_id):
 
     eligible_friends = []
     if eligible_friend_ids:
-        eligible_friends_query = db.collection("users").where("__name__", "in", eligible_friend_ids).stream()
+        eligible_friends_query = (
+            db.collection("users").where("__name__", "in", eligible_friend_ids).stream()
+        )
         eligible_friends = [doc for doc in eligible_friends_query]
 
     form.friend.choices = [
-        (friend.id, friend.to_dict().get("name", friend.id)) for friend in eligible_friends
+        (friend.id, friend.to_dict().get("name", friend.id))
+        for friend in eligible_friends
     ]
 
     if form.validate_on_submit():
@@ -144,17 +152,21 @@ def edit_group(group_id):
     form = GroupForm(data=group_data)
     if form.validate_on_submit():
         try:
-            group_ref.update({
-                "name": form.name.data,
-                "description": form.description.data,
-                "is_public": form.is_public.data,
-            })
+            group_ref.update(
+                {
+                    "name": form.name.data,
+                    "description": form.description.data,
+                    "is_public": form.is_public.data,
+                }
+            )
             flash("Group updated successfully.", "success")
             return redirect(url_for(".view_group", group_id=group.id))
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
 
-    return render_template("edit_group.html", form=form, group=group_data, group_id=group.id)
+    return render_template(
+        "edit_group.html", form=form, group=group_data, group_id=group.id
+    )
 
 
 @bp.route("/<string:group_id>/delete", methods=["POST"])

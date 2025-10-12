@@ -13,6 +13,7 @@ from firebase_admin import firestore, auth
 from . import bp
 from pickaladder.auth.decorators import login_required
 
+
 @bp.route("/")
 @login_required
 def admin():
@@ -32,6 +33,7 @@ def admin():
         else {"value": False},
     )
 
+
 @bp.route("/toggle_email_verification", methods=["POST"])
 def toggle_email_verification():
     """Toggles the global setting for requiring email verification."""
@@ -39,7 +41,9 @@ def toggle_email_verification():
     setting_ref = db.collection("settings").document("enforceEmailVerification")
     try:
         setting = setting_ref.get()
-        current_value = setting.to_dict().get("value", False) if setting.exists else False
+        current_value = (
+            setting.to_dict().get("value", False) if setting.exists else False
+        )
         new_value = not current_value
         setting_ref.set({"value": new_value})
         new_status = "enabled" if new_value else "disabled"
@@ -48,14 +52,20 @@ def toggle_email_verification():
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for(".admin"))
 
+
 @bp.route("/matches")
 def admin_matches():
     """Displays a list of all matches."""
     db = firestore.client()
-    matches_query = db.collection("matches").order_by("createdAt", direction=firestore.Query.DESCENDING).limit(50)
+    matches_query = (
+        db.collection("matches")
+        .order_by("createdAt", direction=firestore.Query.DESCENDING)
+        .limit(50)
+    )
     matches = matches_query.stream()
     # This is a simplified view. A full view would need to resolve player refs.
     return render_template("admin_matches.html", matches=matches)
+
 
 @bp.route("/delete_match/<string:match_id>", methods=["POST"])
 def admin_delete_match(match_id):
@@ -68,6 +78,7 @@ def admin_delete_match(match_id):
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for(".admin_matches"))
 
+
 @bp.route("/friend_graph_data")
 def friend_graph_data():
     """Provides data for a network graph of users and their friendships."""
@@ -79,12 +90,19 @@ def friend_graph_data():
         user_data = user.to_dict()
         nodes.append({"id": user.id, "label": user_data.get("username", user.id)})
         # Fetch friends for this user
-        friends_query = db.collection("users").document(user.id).collection("friends").where("status", "==", "accepted").stream()
+        friends_query = (
+            db.collection("users")
+            .document(user.id)
+            .collection("friends")
+            .where("status", "==", "accepted")
+            .stream()
+        )
         for friend in friends_query:
             # Add edge only once
             if user.id < friend.id:
                 edges.append({"from": user.id, "to": friend.id})
     return jsonify({"nodes": nodes, "edges": edges})
+
 
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])
 def delete_user(user_id):
@@ -102,6 +120,7 @@ def delete_user(user_id):
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for("user.users"))
 
+
 @bp.route("/promote_user/<string:user_id>", methods=["POST"])
 def promote_user(user_id):
     """Promotes a user to admin status."""
@@ -114,6 +133,7 @@ def promote_user(user_id):
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for("user.users"))
+
 
 @bp.route("/generate_users", methods=["POST"])
 def generate_users():
@@ -149,6 +169,7 @@ def generate_users():
 
     return render_template("generated_users.html", users=new_users)
 
+
 @bp.route("/generate_matches", methods=["POST"])
 def generate_matches():
     """Generates random matches between existing users."""
@@ -163,14 +184,16 @@ def generate_matches():
         matches_to_create = 10
         for _ in range(matches_to_create):
             p1, p2 = random.sample(users, 2)
-            db.collection("matches").add({
-                "player1Ref": p1.reference,
-                "player2Ref": p2.reference,
-                "player1Score": random.randint(5, 11),
-                "player2Score": random.randint(5, 11),
-                "matchDate": fake.date_between(start_date="-1y", end_date="today"),
-                "createdAt": firestore.SERVER_TIMESTAMP,
-            })
+            db.collection("matches").add(
+                {
+                    "player1Ref": p1.reference,
+                    "player2Ref": p2.reference,
+                    "player1Score": random.randint(5, 11),
+                    "player2Score": random.randint(5, 11),
+                    "matchDate": fake.date_between(start_date="-1y", end_date="today"),
+                    "createdAt": firestore.SERVER_TIMESTAMP,
+                }
+            )
         flash(f"{matches_to_create} random matches generated.", "success")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")

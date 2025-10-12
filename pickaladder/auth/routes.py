@@ -135,9 +135,10 @@ def install():
             )
 
             # Also create the email verification setting
-            settings_ref = db.collection("settings").document("enforceEmailVerification")
+            settings_ref = db.collection("settings").document(
+                "enforceEmailVerification"
+            )
             settings_ref.set({"value": True})
-
 
             flash("Admin user created successfully. You can now log in.", "success")
             return redirect(url_for("auth.login"))
@@ -154,9 +155,11 @@ def install():
                     flash("An existing user was promoted to admin.", "info")
                     return redirect(url_for("auth.login"))
                 else:
-                     raise DuplicateResourceError("An admin user with this email already exists.")
+                    raise DuplicateResourceError(
+                        "An admin user with this email already exists."
+                    )
             except auth.UserNotFoundError:
-                 raise UnprocessableEntity("Could not create or find user.")
+                raise UnprocessableEntity("Could not create or find user.")
 
         except Exception as e:
             current_app.logger.error(f"Error during installation: {e}")

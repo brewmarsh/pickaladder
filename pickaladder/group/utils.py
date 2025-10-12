@@ -1,5 +1,6 @@
 from firebase_admin import firestore
 
+
 def get_group_leaderboard(group_id):
     """
     Calculates the leaderboard for a specific group using Firestore.
@@ -18,11 +19,18 @@ def get_group_leaderboard(group_id):
 
     # Fetch all matches where both players are members of the group.
     # This requires two separate queries.
-    matches_p1_in_group = db.collection("matches").where("player1Ref", "in", member_refs).stream()
-    matches_p2_in_group = db.collection("matches").where("player2Ref", "in", member_refs).stream()
+    matches_p1_in_group = (
+        db.collection("matches").where("player1Ref", "in", member_refs).stream()
+    )
+    matches_p2_in_group = (
+        db.collection("matches").where("player2Ref", "in", member_refs).stream()
+    )
 
     # In-memory store for player stats
-    player_stats = {ref.id: {"wins": 0, "losses": 0, "games": 0, "user_data": ref.get()} for ref in member_refs}
+    player_stats = {
+        ref.id: {"wins": 0, "losses": 0, "games": 0, "user_data": ref.get()}
+        for ref in member_refs
+    }
 
     # Process matches where at least one player is in the group
     all_matches = list(matches_p1_in_group) + list(matches_p2_in_group)
@@ -66,13 +74,15 @@ def get_group_leaderboard(group_id):
         user_doc = stats["user_data"]
         if user_doc.exists:
             user_data = user_doc.to_dict()
-            leaderboard.append({
-                "id": user_id,
-                "name": user_data.get("name", "N/A"),
-                "wins": stats["wins"],
-                "losses": stats["losses"],
-                "games_played": stats["games"],
-            })
+            leaderboard.append(
+                {
+                    "id": user_id,
+                    "name": user_data.get("name", "N/A"),
+                    "wins": stats["wins"],
+                    "losses": stats["losses"],
+                    "games_played": stats["games"],
+                }
+            )
 
     # Sort the leaderboard by wins
     leaderboard.sort(key=lambda x: x["wins"], reverse=True)

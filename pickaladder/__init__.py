@@ -71,21 +71,27 @@ def create_app(test_config=None):
 
     # Register blueprints
     from . import auth as auth_bp
+
     app.register_blueprint(auth_bp.bp)
 
     from . import admin as admin_bp
+
     app.register_blueprint(admin_bp.bp)
 
     from . import user as user_bp
+
     app.register_blueprint(user_bp.bp)
 
     from . import match as match_bp
+
     app.register_blueprint(match_bp.bp)
 
     from . import group as group_bp
+
     app.register_blueprint(group_bp.bp)
 
     from . import error_handlers
+
     app.register_blueprint(error_handlers.error_handlers_bp)
 
     # make url_for('index') == url_for('auth.login')
@@ -120,13 +126,15 @@ def create_app(test_config=None):
                 user_data = user_doc.to_dict()
                 # Set user data on the global object for use in views
                 g.user = user_data
-                g.user['uid'] = uid # Ensure uid is always present
+                g.user["uid"] = uid  # Ensure uid is always present
                 # Set user ID and admin status in the session for the decorator
                 session[USER_ID] = uid
                 session["is_admin"] = user_data.get("isAdmin", False)
             else:
                 # This can happen if a user is deleted from Firestore but not Auth.
-                current_app.logger.warning(f"User {uid} exists in Auth but not in Firestore.")
+                current_app.logger.warning(
+                    f"User {uid} exists in Auth but not in Firestore."
+                )
 
         except (firebase_admin.auth.InvalidIdTokenError, ValueError) as e:
             # Token is invalid or expired, treat as logged out.
@@ -134,6 +142,5 @@ def create_app(test_config=None):
         except Exception as e:
             # Catch any other unexpected errors during user loading.
             current_app.logger.error(f"Unexpected error loading user: {e}")
-
 
     return app
