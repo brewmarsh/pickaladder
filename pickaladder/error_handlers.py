@@ -8,7 +8,6 @@ from flask import (
     request,
 )
 from flask_wtf.csrf import CSRFError
-import psycopg2
 from .errors import AppError, ValidationError, DuplicateResourceError, NotFoundError
 
 error_handlers_bp = Blueprint("error_handlers", __name__)
@@ -53,19 +52,6 @@ def handle_500(e):
     """Handles unexpected server errors."""
     current_app.logger.error(f"Internal Server Error: {e}")
     return render_template("500.html"), 500
-
-
-@error_handlers_bp.app_errorhandler(psycopg2.Error)
-def handle_db_error(e):
-    """Handles database errors."""
-    current_app.logger.error(f"Database Error: {e}")
-    # Avoid exposing raw database error details to the user
-    return (
-        render_template(
-            "error.html", error="A database error occurred. Please try again later."
-        ),
-        500,
-    )
 
 
 @error_handlers_bp.app_errorhandler(CSRFError)

@@ -1,9 +1,11 @@
 import os
 import uuid
-from flask import Flask, session
+from flask import Flask, session, request, g, current_app
 from werkzeug.routing import BaseConverter
 from .constants import USER_ID
-from .extensions import db, mail, csrf
+from .extensions import mail, csrf
+import firebase_admin
+from firebase_admin import credentials, firestore
 
 
 class UUIDConverter(BaseConverter):
@@ -14,16 +16,10 @@ class UUIDConverter(BaseConverter):
         return str(value)
 
 
-def create_app():
+def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
     app = Flask(__name__, instance_relative_config=True)
     app.url_map.converters["uuid"] = UUIDConverter
-
-    # Ensure the instance folder exists
-    try:
-        os.makedirs(app.instance_path)
-    except OSError:
-        pass
 
     # Load configuration
     app.config.from_mapping(
@@ -38,40 +34,61 @@ def create_app():
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 
-    db_host = os.environ.get("DB_HOST", "db")
-    db_name = os.environ.get("POSTGRES_DB", "test_db")
-    db_user = os.environ.get("POSTGRES_USER", "user")
-    db_pass = os.environ.get("POSTGRES_PASSWORD", "password")
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        f"postgresql://{db_user}:{db_pass}@{db_host}/{db_name}"
-    )
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    if test_config:
+        app.config.update(test_config)
+
+    # Initialize Firebase Admin SDK only if not in testing mode
+    if not app.config.get("TESTING"):
+        # The GOOGLE_APPLICATION_CREDENTIALS environment variable should be set to the
+        # path of the service account key file.
+        try:
+            # When running in a Google Cloud environment, the credentials are
+            # automatically discovered.
+            cred = credentials.ApplicationDefault()
+        except Exception:
+            cred = None  # Handle cases where default creds are not found
+
+        try:
+            firebase_admin.initialize_app(
+                cred,
+                {
+                    "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
+                },
+            )
+        except ValueError:
+            # This can happen if the app is already initialized, which is fine.
+            app.logger.info("Firebase app already initialized.")
+
+    # Ensure the instance folder exists
+    try:
+        os.makedirs(app.instance_path)
+    except OSError:
+        pass
 
     # Initialize extensions
     mail.init_app(app)
-    db.init_app(app)
     csrf.init_app(app)
 
     # Register blueprints
-    from . import auth
+    from . import auth as auth_bp
 
-    app.register_blueprint(auth.bp)
+    app.register_blueprint(auth_bp.bp)
 
-    from . import admin
+    from . import admin as admin_bp
 
-    app.register_blueprint(admin.bp)
+    app.register_blueprint(admin_bp.bp)
 
-    from . import user
+    from . import user as user_bp
 
-    app.register_blueprint(user.bp)
+    app.register_blueprint(user_bp.bp)
 
-    from . import match
+    from . import match as match_bp
 
-    app.register_blueprint(match.bp)
+    app.register_blueprint(match_bp.bp)
 
-    from . import group
+    from . import group as group_bp
 
-    app.register_blueprint(group.bp)
+    app.register_blueprint(group_bp.bp)
 
     from . import error_handlers
 
@@ -83,18 +100,47 @@ def create_app():
     # this app, the index is the login page
     app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
 
-    @app.context_processor
-    def inject_user():
-        if USER_ID in session:
-            from .models import User
+    @app.before_request
+    def load_logged_in_user():
+        """
+        If a Firebase ID token is present, verify it, and load the user data.
+        This function is the single source of truth for authentication.
+        """
+        # Clear previous user data at the start of each request
+        g.user = None
+        session.pop(USER_ID, None)
+        session.pop("is_admin", None)
 
-            try:
-                user_id = uuid.UUID(session[USER_ID])
-                user = db.session.get(User, user_id)
-                return dict(user=user)
-            except (ValueError, TypeError):
-                # Handle cases where session[USER_ID] is not a valid UUID
-                return dict(user=None)
-        return dict(user=None)
+        id_token = request.headers.get("Authorization", "").split("Bearer ")[-1]
+        if not id_token:
+            return
+
+        try:
+            decoded_token = firebase_admin.auth.verify_id_token(id_token)
+            uid = decoded_token["uid"]
+
+            db = firestore.client()
+            user_doc = db.collection("users").document(uid).get()
+
+            if user_doc.exists:
+                user_data = user_doc.to_dict()
+                # Set user data on the global object for use in views
+                g.user = user_data
+                g.user["uid"] = uid  # Ensure uid is always present
+                # Set user ID and admin status in the session for the decorator
+                session[USER_ID] = uid
+                session["is_admin"] = user_data.get("isAdmin", False)
+            else:
+                # This can happen if a user is deleted from Firestore but not Auth.
+                current_app.logger.warning(
+                    f"User {uid} exists in Auth but not in Firestore."
+                )
+
+        except (firebase_admin.auth.InvalidIdTokenError, ValueError) as e:
+            # Token is invalid or expired, treat as logged out.
+            current_app.logger.info(f"Invalid token received: {e}")
+        except Exception as e:
+            # Catch any other unexpected errors during user loading.
+            current_app.logger.error(f"Unexpected error loading user: {e}")
 
     return app

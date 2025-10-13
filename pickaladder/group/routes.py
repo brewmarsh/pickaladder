@@ -1,103 +1,111 @@
-import uuid
-from flask import render_template, redirect, url_for, session, flash, request
-from sqlalchemy import or_, case
-from pickaladder import db
+from flask import render_template, redirect, url_for, flash, request, g
+from firebase_admin import firestore
+
 from . import bp
 from .forms import GroupForm, InviteFriendForm
-from .utils import get_group_leaderboard, save_group_picture
-from pickaladder.models import Group, GroupMember, User, Friend
-from pickaladder.constants import USER_ID
 from pickaladder.auth.decorators import login_required
 
 
 @bp.route("/", methods=["GET"])
 @login_required
 def view_groups():
-    user_id = uuid.UUID(session[USER_ID])
-    user = db.session.get(User, user_id)
-
+    """Displays a list of public groups and the user's groups."""
+    db = firestore.client()
     search_term = request.args.get("search", "")
-    page = request.args.get("page", 1, type=int)
 
-    # Get user's friends' IDs
-    friend_ids = [
-        f.friend_id
-        for f in db.session.query(Friend.friend_id)
-        .filter_by(user_id=user_id, status="accepted")
-        .all()
-    ]
-
-    # Base query for public groups
-    query = Group.query.filter(Group.is_public)
-
+    # Query for public groups
+    public_groups_query = db.collection("groups").where("is_public", "==", True)
     if search_term:
-        like_term = f"%{search_term}%"
-        query = query.filter(
-            or_(
-                Group.name.ilike(like_term),
-                Group.description.ilike(like_term),
-            )
-        )
+        public_groups_query = public_groups_query.where(
+            "name", ">=", search_term
+        ).where("name", "<=", search_term + "\uf8ff")
+    public_groups = public_groups_query.limit(20).stream()
 
-    # Prioritize friends' groups
-    query = query.order_by(
-        case((Group.owner_id.in_(friend_ids), 0), else_=1), Group.name
+    # Get user's groups
+    user_ref = db.collection("users").document(g.user["uid"])
+    my_groups_query = db.collection("groups").where(
+        "members", "array_contains", user_ref
     )
-
-    pagination = query.paginate(page=page, per_page=10, error_out=False)
-
-    my_groups = user.group_memberships
+    my_groups = my_groups_query.stream()
 
     return render_template(
         "groups.html",
         my_groups=my_groups,
-        pagination=pagination,
+        public_groups=public_groups,
         search_term=search_term,
     )
 
 
-@bp.route("/<uuid:group_id>", methods=["GET", "POST"])
+@bp.route("/<string:group_id>", methods=["GET", "POST"])
 @login_required
 def view_group(group_id):
-    group = db.get_or_404(Group, group_id)
-    user_id = uuid.UUID(session[USER_ID])
-    user = db.session.get(User, user_id)
+    """Displays a single group's page, including its members, leaderboard, and invite form."""
+    db = firestore.client()
+    group_ref = db.collection("groups").document(group_id)
+    group = group_ref.get()
+    if not group.exists:
+        flash("Group not found.", "danger")
+        return redirect(url_for(".view_groups"))
+
+    group_data = group.to_dict()
+    current_user_id = g.user["uid"]
+    user_ref = db.collection("users").document(current_user_id)
+
+    # Fetch members' data
+    member_refs = group_data.get("members", [])
+    member_ids = {ref.id for ref in member_refs}
+    members = [ref.get() for ref in member_refs]
+
+    # Fetch owner's data
+    owner = None
+    owner_ref = group_data.get("ownerRef")
+    if owner_ref:
+        owner_doc = owner_ref.get()
+        if owner_doc.exists:
+            owner = owner_doc.to_dict()
 
     # --- Invite form logic ---
     form = InviteFriendForm()
+
     # Get user's accepted friends
-    friend_ids = [
-        f.friend_id for f in user.friend_requests_sent if f.status == "accepted"
+    friends_query = (
+        user_ref.collection("friends").where("status", "==", "accepted").stream()
+    )
+    friend_ids = {doc.id for doc in friends_query}
+
+    # Find friends who are not already members
+    eligible_friend_ids = list(friend_ids - member_ids)
+
+    eligible_friends = []
+    if eligible_friend_ids:
+        eligible_friends_query = (
+            db.collection("users").where("__name__", "in", eligible_friend_ids).stream()
+        )
+        eligible_friends = [doc for doc in eligible_friends_query]
+
+    form.friend.choices = [
+        (friend.id, friend.to_dict().get("name", friend.id))
+        for friend in eligible_friends
     ]
-    # Get current group members
-    member_ids = [m.user_id for m in group.members]
-    # Friends who are not already members
-    eligible_friends = User.query.filter(
-        User.id.in_(friend_ids), User.id.notin_(member_ids)
-    ).all()
-    form.friend.choices = [(str(f.id), f.name) for f in eligible_friends]
 
     if form.validate_on_submit():
+        friend_id = form.friend.data
+        friend_ref = db.collection("users").document(friend_id)
         try:
-            friend_id = uuid.UUID(form.friend.data)
-            new_member = GroupMember(group_id=group.id, user_id=friend_id)
-            db.session.add(new_member)
-            db.session.commit()
+            group_ref.update({"members": firestore.ArrayUnion([friend_ref])})
             flash("Friend invited successfully.", "success")
-            return redirect(url_for("group.view_group", group_id=group.id))
+            return redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
-            db.session.rollback()
             flash(f"An unexpected error occurred: {e}", "danger")
-
-    # --- Leaderboard logic ---
-    leaderboard = get_group_leaderboard(group_id)
 
     return render_template(
         "group.html",
-        group=group,
-        leaderboard=leaderboard,
+        group=group_data,
+        group_id=group.id,
+        members=members,
+        owner=owner,
         form=form,
-        current_user_id=user_id,
+        current_user_id=current_user_id,
     )
 
 
@@ -106,86 +114,113 @@ def view_group(group_id):
 def create_group():
     form = GroupForm()
     if form.validate_on_submit():
-        user_id = uuid.UUID(session[USER_ID])
+        db = firestore.client()
+        user_ref = db.collection("users").document(g.user["uid"])
         try:
-            picture_filename, thumbnail_filename = None, None
-            if form.profile_picture.data:
-                picture_filename, thumbnail_filename = save_group_picture(
-                    form.profile_picture.data
-                )
-
-            new_group = Group(
-                name=form.name.data,
-                owner_id=user_id,
-                description=form.description.data,
-                is_public=form.is_public.data,
-                profile_picture_path=picture_filename,
-                profile_picture_thumbnail_path=thumbnail_filename,
-            )
-            db.session.add(new_group)
-            db.session.flush()  # Flush to get the new_group.id
-
-            # Add the owner as the first member
-            new_member = GroupMember(group_id=new_group.id, user_id=user_id)
-            db.session.add(new_member)
-
-            db.session.commit()
+            group_data = {
+                "name": form.name.data,
+                "description": form.description.data,
+                "is_public": form.is_public.data,
+                "ownerRef": user_ref,
+                "members": [user_ref],  # Owner is the first member
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
+            timestamp, new_group_ref = db.collection("groups").add(group_data)
             flash("Group created successfully.", "success")
-            return redirect(url_for("group.view_group", group_id=new_group.id))
+            return redirect(url_for(".view_group", group_id=new_group_ref.id))
         except Exception as e:
-            db.session.rollback()
             flash(f"An unexpected error occurred: {e}", "danger")
     return render_template("create_group.html", form=form)
 
 
-@bp.route("/<uuid:group_id>/edit", methods=["GET", "POST"])
+@bp.route("/<string:group_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_group(group_id):
-    group = db.get_or_404(Group, group_id)
-    user_id = uuid.UUID(session[USER_ID])
-    if group.owner_id != user_id:
-        flash("You do not have permission to edit this group.", "danger")
-        return redirect(url_for("group.view_group", group_id=group.id))
+    db = firestore.client()
+    group_ref = db.collection("groups").document(group_id)
+    group = group_ref.get()
+    if not group.exists:
+        flash("Group not found.", "danger")
+        return redirect(url_for(".view_groups"))
 
-    form = GroupForm(obj=group)
+    group_data = group.to_dict()
+    owner_ref = group_data.get("ownerRef")
+    if not owner_ref or owner_ref.id != g.user["uid"]:
+        flash("You do not have permission to edit this group.", "danger")
+        return redirect(url_for(".view_group", group_id=group.id))
+
+    form = GroupForm(data=group_data)
     if form.validate_on_submit():
         try:
-            group.name = form.name.data
-            group.description = form.description.data
-            group.is_public = form.is_public.data
-
-            if form.profile_picture.data:
-                picture_filename, thumbnail_filename = save_group_picture(
-                    form.profile_picture.data
-                )
-                group.profile_picture_path = picture_filename
-                group.profile_picture_thumbnail_path = thumbnail_filename
-
-            db.session.commit()
+            group_ref.update(
+                {
+                    "name": form.name.data,
+                    "description": form.description.data,
+                    "is_public": form.is_public.data,
+                }
+            )
             flash("Group updated successfully.", "success")
-            return redirect(url_for("group.view_group", group_id=group.id))
+            return redirect(url_for(".view_group", group_id=group.id))
         except Exception as e:
-            db.session.rollback()
             flash(f"An unexpected error occurred: {e}", "danger")
 
-    return render_template("edit_group.html", form=form, group=group)
+    return render_template(
+        "edit_group.html", form=form, group=group_data, group_id=group.id
+    )
 
 
-@bp.route("/<uuid:group_id>/delete", methods=["POST"])
+@bp.route("/<string:group_id>/delete", methods=["POST"])
 @login_required
 def delete_group(group_id):
-    group = db.get_or_404(Group, group_id)
-    user_id = uuid.UUID(session[USER_ID])
-    if group.owner_id != user_id:
+    db = firestore.client()
+    group_ref = db.collection("groups").document(group_id)
+    group = group_ref.get()
+    if not group.exists:
+        flash("Group not found.", "danger")
+        return redirect(url_for(".view_groups"))
+
+    group_data = group.to_dict()
+    owner_ref = group_data.get("ownerRef")
+    if not owner_ref or owner_ref.id != g.user["uid"]:
         flash("You do not have permission to delete this group.", "danger")
-        return redirect(url_for("group.view_group", group_id=group.id))
+        return redirect(url_for(".view_group", group_id=group.id))
 
     try:
-        db.session.delete(group)
-        db.session.commit()
+        group_ref.delete()
         flash("Group deleted successfully.", "success")
-        return redirect(url_for("group.view_groups"))
+        return redirect(url_for(".view_groups"))
     except Exception as e:
-        db.session.rollback()
-        flash(f"An unexpected error occurred while deleting the group: {e}", "danger")
-        return redirect(url_for("group.view_group", group_id=group.id))
+        flash(f"An unexpected error occurred: {e}", "danger")
+        return redirect(url_for(".view_group", group_id=group.id))
+
+
+@bp.route("/<string:group_id>/join", methods=["POST"])
+@login_required
+def join_group(group_id):
+    db = firestore.client()
+    group_ref = db.collection("groups").document(group_id)
+    user_ref = db.collection("users").document(g.user["uid"])
+
+    try:
+        group_ref.update({"members": firestore.ArrayUnion([user_ref])})
+        flash("Successfully joined the group.", "success")
+    except Exception as e:
+        flash(f"An error occurred while trying to join the group: {e}", "danger")
+
+    return redirect(url_for(".view_group", group_id=group_id))
+
+
+@bp.route("/<string:group_id>/leave", methods=["POST"])
+@login_required
+def leave_group(group_id):
+    db = firestore.client()
+    group_ref = db.collection("groups").document(group_id)
+    user_ref = db.collection("users").document(g.user["uid"])
+
+    try:
+        group_ref.update({"members": firestore.ArrayRemove([user_ref])})
+        flash("You have left the group.", "success")
+    except Exception as e:
+        flash(f"An error occurred while trying to leave the group: {e}", "danger")
+
+    return redirect(url_for(".view_group", group_id=group_id))

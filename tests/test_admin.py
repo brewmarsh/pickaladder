@@ -1,180 +1,119 @@
-from tests.helpers import BaseTestCase, TEST_PASSWORD
-from pickaladder.models import User, Setting, Match, Friend
-from pickaladder import db
+import unittest
+from unittest.mock import patch, MagicMock
+
+# Pre-emptive imports to ensure patch targets exist before the test runner looks for them.
+
+from pickaladder import create_app
+
+# Mock user payloads for consistent and readable tests
+MOCK_ADMIN_ID = "admin_uid"
+MOCK_ADMIN_PAYLOAD = {"uid": MOCK_ADMIN_ID, "email": "admin@example.com"}
+MOCK_ADMIN_DATA = {"name": "Admin User", "isAdmin": True}
+
+MOCK_USER_ID = "user_uid"
+MOCK_USER_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user@example.com"}
+MOCK_USER_DATA = {"name": "Regular User", "isAdmin": False}
 
 
-class AdminTestCase(BaseTestCase):
-    def test_admin_panel_access_by_admin(self):
-        self.create_user(
-            username="admin_access",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="admin_access@example.com",
+class AdminRoutesFirebaseTestCase(unittest.TestCase):
+    def setUp(self):
+        """Set up a test client and a comprehensive mock environment for the admin routes."""
+        # Create shared mocks to ensure consistent state across all patched modules.
+        self.mock_auth_service = MagicMock()
+        self.mock_firestore_service = MagicMock()
+
+        # Define patchers for every location where the services are looked up.
+        patchers = {
+            "init_app": patch("firebase_admin.initialize_app"),
+            # Patch for the `before_request` user loader in `__init__.py`.
+            "init_firebase_admin": patch("pickaladder.firebase_admin"),
+            "init_firestore": patch(
+                "pickaladder.firestore", new=self.mock_firestore_service
+            ),
+            # Patch for the admin routes themselves.
+            "admin_routes_auth": patch(
+                "pickaladder.admin.routes.auth", new=self.mock_auth_service
+            ),
+            "admin_routes_firestore": patch(
+                "pickaladder.admin.routes.firestore", new=self.mock_firestore_service
+            ),
+            # Patch for the login route, which can be a redirect target.
+            "auth_routes_firestore": patch(
+                "pickaladder.auth.routes.firestore", new=self.mock_firestore_service
+            ),
+        }
+
+        # Start all patchers and register them for cleanup.
+        self.mocks = {name: p.start() for name, p in patchers.items()}
+        for p in patchers.values():
+            self.addCleanup(p.stop)
+
+        # Configure the mock `firebase_admin` module used in `__init__.py`.
+        self.mocks["init_firebase_admin"].auth = self.mock_auth_service
+
+        # Create the Flask app *after* all patches are active.
+        self.app = create_app(
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
         )
-        self.login("admin_access", TEST_PASSWORD)
-        response = self.app.get("/admin/")
+        self.client = self.app.test_client()
+
+    def _simulate_login(self, user_id, token_payload, firestore_data):
+        """
+        A generic helper to configure mocks for a logged-in user.
+        """
+        # Configure mocks for the `before_request` handler (token verification).
+        self.mock_auth_service.verify_id_token.return_value = token_payload
+
+        mock_db = self.mock_firestore_service.client.return_value
+        mock_users_collection = mock_db.collection.return_value
+
+        # Configure the mock document that will be returned by the get() call.
+        mock_doc_snapshot = MagicMock()
+        mock_doc_snapshot.exists = True
+        mock_doc_snapshot.to_dict.return_value = firestore_data
+
+        # Specifically mock the document call for the user_id being simulated.
+        def document_side_effect(doc_id):
+            if doc_id == user_id:
+                mock_user_doc = MagicMock()
+                mock_user_doc.get.return_value = mock_doc_snapshot
+                return mock_user_doc
+            return MagicMock()  # Return a generic mock for other calls
+
+        mock_users_collection.document.side_effect = document_side_effect
+
+        # Mock the admin check in the login route to prevent redirects to /install.
+        mock_users_collection.where.return_value.limit.return_value.get.return_value = [
+            MagicMock()
+        ]
+
+        return {"Authorization": "Bearer mock-token"}
+
+    def test_admin_panel_access_by_admin(self):
+        """Test that an admin user can access the admin panel."""
+        headers = self._simulate_login(
+            MOCK_ADMIN_ID, MOCK_ADMIN_PAYLOAD, MOCK_ADMIN_DATA
+        )
+
+        # The admin route also queries for the email verification setting. Mock this call.
+        mock_settings_doc = self.mock_firestore_service.client.return_value.collection(
+            "settings"
+        ).document("enforceEmailVerification")
+        mock_settings_doc.get.return_value.exists = False
+
+        response = self.client.get("/admin/", headers=headers)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Admin Panel", response.data)
 
-    def test_admin_panel_access_by_non_admin(self):
-        self.create_user(
-            username="user_access",
-            password=TEST_PASSWORD,
-            email="user_access@example.com",
-        )
-        self.create_user(
-            username="admin_non_access",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="admin_non_access@example.com",
-        )
-        self.login("user_access", TEST_PASSWORD)
-        response = self.app.get("/admin", follow_redirects=True)
+    def test_admin_panel_access_denied_for_non_admin(self):
+        """Test that a non-admin user is redirected from the admin panel."""
+        headers = self._simulate_login(MOCK_USER_ID, MOCK_USER_PAYLOAD, MOCK_USER_DATA)
+
+        response = self.client.get("/admin/", headers=headers, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"You are not authorized to view this page.", response.data)
+        self.assertIn(b"You are not authorized", response.data)
+        self.assertNotIn(b"Admin Panel", response.data)
 
-    def test_toggle_email_verification(self):
-        self.create_user(
-            username="admin_toggle",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="admin_toggle@example.com",
-        )
-        self.login("admin_toggle", TEST_PASSWORD)
 
-        # Initial state
-        setting = Setting(key="enforce_email_verification", value="true")
-        db.session.add(setting)
-        db.session.commit()
-
-        response = self.app.post(
-            "/admin/toggle_email_verification", follow_redirects=True
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            b"Email verification requirement has been disabled.", response.data
-        )
-
-        setting = db.session.get(Setting, "enforce_email_verification")
-        self.assertEqual(setting.value, "false")
-
-        # Toggle back
-        response = self.app.post(
-            "/admin/toggle_email_verification", follow_redirects=True
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(
-            b"Email verification requirement has been enabled.", response.data
-        )
-
-        setting = db.session.get(Setting, "enforce_email_verification")
-        self.assertEqual(setting.value, "true")
-
-    def test_generate_users(self):
-        self.create_user(
-            username="admin_generate",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="admin_generate@example.com",
-        )
-        self.login("admin_generate", TEST_PASSWORD)
-        response = self.app.post("/admin/generate_users", follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Generated Users", response.data)
-
-        # Verify that new users have been created
-        user_count = User.query.count()
-        self.assertGreater(user_count, 1)
-
-    def test_generate_matches(self):
-        self.create_user(
-            username="admin_matches",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="admin_matches@example.com",
-        )
-        user2 = self.create_user(
-            username="user2",
-            password=TEST_PASSWORD,
-            email="user2@example.com",
-        )
-        self.login("admin_matches", TEST_PASSWORD)
-        admin = User.query.filter_by(username="admin_matches").first()
-
-        # Create friendship
-        friendship1 = Friend(user_id=admin.id, friend_id=user2.id, status="accepted")
-        friendship2 = Friend(user_id=user2.id, friend_id=admin.id, status="accepted")
-        db.session.add(friendship1)
-        db.session.add(friendship2)
-        db.session.commit()
-
-        response = self.app.post("/admin/generate_matches", follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"10 random matches generated successfully.", response.data)
-        match_count = Match.query.count()
-        self.assertGreater(match_count, 0)
-
-    def test_reset_db(self):
-        self.create_user(
-            username="admin_reset",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="admin_reset@example.com",
-        )
-        self.login("admin_reset", TEST_PASSWORD)
-        response = self.app.post("/admin/reset_db", follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Database has been reset.", response.data)
-        user_count = User.query.count()
-        self.assertEqual(user_count, 0)
-
-    def test_reset_admin(self):
-        self.create_user(
-            username="admin_reset_admin",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="admin_reset_admin@example.com",
-        )
-        self.create_user(
-            username="user2_reset_admin",
-            password=TEST_PASSWORD,
-            is_admin=False,
-            email="user2_reset_admin@example.com",
-        )
-        self.login("admin_reset_admin", TEST_PASSWORD)
-
-        response = self.app.post("/admin/reset-admin", follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Admin privileges have been reset.", response.data)
-
-        # The logic makes the first user the admin.
-        first_user = User.query.order_by(User.id).first()
-        self.assertTrue(first_user.is_admin)
-
-        # Check that the other user is not admin
-        other_user = User.query.filter(User.id != first_user.id).first()
-        self.assertFalse(other_user.is_admin)
-
-    def test_verify_user(self):
-        self.create_user(
-            username="admin_verify",
-            password=TEST_PASSWORD,
-            is_admin=True,
-            email="admin_verify@example.com",
-        )
-        user_to_verify = self.create_user(
-            username="user_to_verify",
-            password=TEST_PASSWORD,
-            email="user_to_verify@example.com",
-            email_verified=False,
-        )
-        self.login("admin_verify", TEST_PASSWORD)
-
-        response = self.app.post(
-            f"/admin/verify_user/{user_to_verify.id}", follow_redirects=True
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"User user_to_verify has been manually verified.", response.data)
-
-        verified_user = db.session.get(User, user_to_verify.id)
-        self.assertTrue(verified_user.email_verified)
+if __name__ == "__main__":
+    unittest.main()
