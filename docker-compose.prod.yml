@@ -5,6 +5,9 @@ services:
     ports:
       - "27272:27272"
     command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
+    volumes:
+      # Mount the credentials file from the host into the container
+      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
     environment:
       # These variables should be set in the production environment (e.g., GitHub Secrets)
       - SECRET_KEY=${SECRET_KEY}
