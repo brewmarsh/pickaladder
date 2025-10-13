@@ -146,7 +146,13 @@ def generate_users():
         for _ in range(users_to_create):
             username = fake.user_name()
             email = fake.email()
-            password = "password123"
+            password = fake.password(
+                length=12,
+                special_chars=True,
+                digits=True,
+                upper_case=True,
+                lower_case=True,
+            )
 
             # Create user in Auth
             user_record = auth.create_user(email=email, password=password)
@@ -156,7 +162,7 @@ def generate_users():
                 "username": username,
                 "email": email,
                 "name": fake.name(),
-                "duprRating": round(random.uniform(2.5, 7.0), 2),
+                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec
                 "isAdmin": False,
                 "createdAt": firestore.SERVER_TIMESTAMP,
             }
@@ -183,13 +189,13 @@ def generate_matches():
 
         matches_to_create = 10
         for _ in range(matches_to_create):
-            p1, p2 = random.sample(users, 2)
+            p1, p2 = random.sample(users, 2)  # nosec
             db.collection("matches").add(
                 {
                     "player1Ref": p1.reference,
                     "player2Ref": p2.reference,
-                    "player1Score": random.randint(5, 11),
-                    "player2Score": random.randint(5, 11),
+                    "player1Score": random.randint(5, 11),  # nosec
+                    "player2Score": random.randint(5, 11),  # nosec
                     "matchDate": fake.date_between(start_date="-1y", end_date="today"),
                     "createdAt": firestore.SERVER_TIMESTAMP,
                 }
