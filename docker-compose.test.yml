@@ -2,6 +2,3 @@ services:
   web:
     environment:
       - POSTGRES_DB=test_db
-  db:
-    environment:
-      - POSTGRES_DB=test_db

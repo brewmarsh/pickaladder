@@ -17,6 +17,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application code
 COPY . .
 
+# Copy the new redirecting index.html to the nginx root
+COPY index.html /var/www/html/index.html
+
+# Create the static directory in the nginx root and copy assets
+RUN mkdir -p /var/www/html/static
+COPY pickaladder/static/ /var/www/html/static/
+
 # Expose the port
 EXPOSE 27272
 

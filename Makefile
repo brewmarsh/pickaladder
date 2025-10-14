@@ -6,7 +6,7 @@ up:
 	docker compose up -d
 
 test:
-	docker compose -f docker-compose.yml -f docker-compose.test.yml exec web sh -c "until pg_isready -h db -p 5432 -U user; do sleep 2; done && python -m unittest discover tests"
+	docker compose -f docker-compose.yml -f docker-compose.test.yml exec web sh -c "python -m unittest discover tests"
 
 coverage:
 	docker compose -f docker-compose.yml -f docker-compose.test.yml exec web sh -c "until pg_isready -h db -p 5432 -U user; do sleep 2; done && coverage run -m unittest discover tests"
