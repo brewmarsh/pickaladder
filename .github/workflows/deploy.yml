@@ -76,8 +76,11 @@ jobs:
             # Login to GitHub Container Registry
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
 
-            # Create Firebase credentials file from secret
-            echo "${{ secrets.FIREBASE_CREDENTIALS_JSON }}" > firebase-credentials.json
+            # Create Firebase credentials file from secret using a here document
+            # to prevent shell quoting issues with the JSON string.
+            cat <<EOF > firebase-credentials.json
+            ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+            EOF
 
             # Set environment variables for docker-compose
             export IMAGE_TAG=ghcr.io/${{ github.repository }}:${{ github.sha }}
