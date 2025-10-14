@@ -19,3 +19,32 @@
     <p class="text-center">Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>.</p>
 </div>
 {% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        const email = form.username.value; // The form uses 'username' for the email field
+        const password = form.password.value;
+
+        firebase.auth().signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                // Signed in
+                const user = userCredential.user;
+                return user.getIdToken();
+            })
+            .then((idToken) => {
+                // Store the token and redirect
+                localStorage.setItem('firebaseIdToken', idToken);
+                window.location.href = "{{ url_for('user.dashboard') }}";
+            })
+            .catch((error) => {
+                const errorCode = error.code;
+                const errorMessage = error.message;
+                alert(`Login failed: ${errorMessage}`);
+            });
+    });
+});
+</script>
+{% endblock %}
