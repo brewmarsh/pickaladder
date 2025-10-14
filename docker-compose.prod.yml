@@ -9,6 +9,9 @@ services:
       # Mount the credentials file from the host into the container
       - ./firebase-credentials.json:/app/firebase-credentials.json:ro
     environment:
+      # GOOGLE_APPLICATION_CREDENTIALS should point to the path of the
+      # service account key file, which will be loaded into the container.
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
       # These variables should be set in the production environment (e.g., GitHub Secrets)
       - SECRET_KEY=${SECRET_KEY}
       - MAIL_SERVER=${MAIL_SERVER}
