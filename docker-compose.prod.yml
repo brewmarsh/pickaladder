@@ -20,9 +20,6 @@ services:
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
-      # GOOGLE_APPLICATION_CREDENTIALS should point to the path of the
-      # service account key file, which will be loaded into the container.
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
     networks:
       - pickanet
 
