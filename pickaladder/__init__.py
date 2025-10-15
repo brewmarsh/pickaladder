@@ -25,12 +25,12 @@ def create_app(test_config=None):
     app.config.from_mapping(
         SECRET_KEY=os.urandom(24),
         # Default mail settings, can be overridden in config.py
-        MAIL_SERVER="smtp.gmail.com",
-        MAIL_PORT=587,
-        MAIL_USE_TLS=True,
+        MAIL_SERVER=os.environ.get('MAIL_SERVER'),
+        MAIL_PORT=int(os.environ.get('MAIL_PORT', 587)),
+        MAIL_USE_TLS=os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', '1', 't'],
         MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
         MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
-        MAIL_DEFAULT_SENDER="noreply@example.com",
+        MAIL_DEFAULT_SENDER=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@pickaladder.com'),
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 
@@ -66,14 +66,6 @@ def create_app(test_config=None):
         pass
 
     # Initialize extensions
-    app.config.from_mapping(
-        MAIL_SERVER='smtp.gmail.com',
-        MAIL_PORT=587,
-        MAIL_USE_TLS=True,
-        MAIL_USERNAME=os.environ.get('MAIL_USERNAME'),
-        MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'),
-        MAIL_DEFAULT_SENDER='noreply@pickaladder.com',
-    )
     mail.init_app(app)
     csrf.init_app(app)
 
@@ -107,48 +99,5 @@ def create_app(test_config=None):
     # app.route, while giving the auth blueprint a url_prefix, but for
     # this app, the index is the login page
     app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
-
-    @app.before_request
-    def load_logged_in_user():
-        """
-        If a Firebase ID token is present, verify it, and load the user data.
-        This function is the single source of truth for authentication.
-        """
-        # Clear previous user data at the start of each request
-        g.user = None
-        session.pop(USER_ID, None)
-        session.pop("is_admin", None)
-
-        id_token = request.headers.get("Authorization", "").split("Bearer ")[-1]
-        if not id_token:
-            return
-
-        try:
-            decoded_token = firebase_admin.auth.verify_id_token(id_token)
-            uid = decoded_token["uid"]
-
-            db = firestore.client()
-            user_doc = db.collection("users").document(uid).get()
-
-            if user_doc.exists:
-                user_data = user_doc.to_dict()
-                # Set user data on the global object for use in views
-                g.user = user_data
-                g.user["uid"] = uid  # Ensure uid is always present
-                # Set user ID and admin status in the session for the decorator
-                session[USER_ID] = uid
-                session["is_admin"] = user_data.get("isAdmin", False)
-            else:
-                # This can happen if a user is deleted from Firestore but not Auth.
-                current_app.logger.warning(
-                    f"User {uid} exists in Auth but not in Firestore."
-                )
-
-        except (firebase_admin.auth.InvalidIdTokenError, ValueError) as e:
-            # Token is invalid or expired, treat as logged out.
-            current_app.logger.info(f"Invalid token received: {e}")
-        except Exception as e:
-            # Catch any other unexpected errors during user loading.
-            current_app.logger.error(f"Unexpected error loading user: {e}")
 
     return app

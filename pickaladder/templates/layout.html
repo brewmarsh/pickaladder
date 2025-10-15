@@ -46,6 +46,31 @@
     <script>
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
+
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user) {
+                user.getIdToken().then(function(idToken) {
+                    // Store the token in a secure way (e.g., in memory or a short-lived cookie)
+                    // For this app, we will use localStorage.
+                    localStorage.setItem('firebaseIdToken', idToken);
+                });
+            } else {
+                // User is signed out.
+                localStorage.removeItem('firebaseIdToken');
+            }
+        });
+
+        // Intercept fetch to add the auth token
+        const originalFetch = window.fetch;
+        window.fetch = function (url, options) {
+            const token = localStorage.getItem('firebaseIdToken');
+            if (token) {
+                options = options || {};
+                options.headers = options.headers || {};
+                options.headers['Authorization'] = 'Bearer ' + token;
+            }
+            return originalFetch(url, options);
+        };
     </script>
 
     {% block scripts %}{% endblock %}
