@@ -66,6 +66,14 @@ def create_app(test_config=None):
         pass
 
     # Initialize extensions
+    app.config.from_mapping(
+        MAIL_SERVER='smtp.gmail.com',
+        MAIL_PORT=587,
+        MAIL_USE_TLS=True,
+        MAIL_USERNAME=os.environ.get('MAIL_USERNAME'),
+        MAIL_PASSWORD=os.environ.get('MAIL_PASSWORD'),
+        MAIL_DEFAULT_SENDER='noreply@pickaladder.com',
+    )
     mail.init_app(app)
     csrf.init_app(app)
 

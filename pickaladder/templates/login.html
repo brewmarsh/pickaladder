@@ -2,6 +2,15 @@
 {% block title %}Login{% endblock %}
 {% block content %}
 <div class="form-container">
+    <div class="flashes">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    </div>
     <h2>Login</h2>
     <form method="post">
         {{ form.hidden_tag() }}
@@ -42,7 +51,15 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch((error) => {
                 const errorCode = error.code;
                 const errorMessage = error.message;
-                alert(`Login failed: ${errorMessage}`);
+                if (errorCode === 'auth/user-disabled') {
+                    const flashes = document.querySelector('.flashes');
+                    const flash = document.createElement('div');
+                    flash.className = 'alert alert-warning';
+                    flash.textContent = 'Please verify your email address before logging in.';
+                    flashes.appendChild(flash);
+                } else {
+                    alert(`Login failed: ${errorMessage}`);
+                }
             });
     });
 });

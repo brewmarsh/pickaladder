@@ -44,7 +44,8 @@ class AuthFirebaseTestCase(unittest.TestCase):
         )
         self.client = self.app.test_client()
 
-    def test_successful_registration(self):
+    @patch("pickaladder.auth.routes.send_email")
+    def test_successful_registration(self, mock_send_email):
         """Test user registration with valid data."""
         # Mock the username check to return an empty list, simulating username is available.
         mock_db = self.mock_firestore_service.client.return_value
@@ -72,6 +73,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.mock_firestore_service.client.return_value.collection("users").document(
             "new_user_uid"
         ).set.assert_called_once()
+        mock_send_email.assert_called_once()
 
     def test_login_page_loads(self):
         """Test that the login page loads correctly."""
@@ -84,6 +86,50 @@ class AuthFirebaseTestCase(unittest.TestCase):
         response = self.client.get("/auth/login")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Login", response.data)
+
+    def test_install_admin_user(self):
+        """Test the creation of the initial admin user."""
+        # Mock the admin check to simulate no admin user exists.
+        mock_db = self.mock_firestore_service.client.return_value
+        mock_users_collection = mock_db.collection("users")
+        mock_users_collection.where.return_value.limit.return_value.get.return_value = []
+
+        # Mock the return value of create_user
+        self.mock_auth_service.create_user.return_value = MagicMock(uid="admin_user_uid")
+
+        # More specific mocking for document calls
+        mock_user_doc = MagicMock()
+        mock_settings_doc = MagicMock()
+
+        def document_side_effect(doc_id):
+            if doc_id == "admin_user_uid":
+                return mock_user_doc
+            elif doc_id == "enforceEmailVerification":
+                return mock_settings_doc
+            return MagicMock()
+
+        self.mock_firestore_service.client.return_value.collection.return_value.document.side_effect = document_side_effect
+
+        response = self.client.post(
+            "/auth/install",
+            data={
+                "username": "admin",
+                "email": "admin@example.com",
+                "password": "Password123",
+                "name": "Admin User",
+                "dupr_rating": 5.0,
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Admin user created successfully.", response.data)
+        self.mock_auth_service.create_user.assert_called_once_with(
+            email="admin@example.com",
+            password="Password123",
+            email_verified=True,
+        )
+        mock_user_doc.set.assert_called_once()
+        mock_settings_doc.set.assert_called_once_with({"value": True})
 
 
 if __name__ == "__main__":

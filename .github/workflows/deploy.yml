@@ -85,9 +85,9 @@ jobs:
             # Set environment variables for docker-compose
             export IMAGE_TAG=ghcr.io/${{ github.repository }}:${{ github.sha }}
             export SECRET_KEY='${{ secrets.SECRET_KEY }}'
-            export MAIL_SERVER='${{ secrets.MAIL_SERVER }}'
-            export MAIL_PORT='${{ secrets.MAIL_PORT }}'
-            export MAIL_USE_TLS='${{ secrets.MAIL_USE_TLS }}'
+            export MAIL_SERVER='smtp.gmail.com'
+            export MAIL_PORT='587'
+            export MAIL_USE_TLS='true'
             export MAIL_USERNAME='${{ secrets.MAIL_USERNAME }}'
             export MAIL_PASSWORD='${{ secrets.MAIL_PASSWORD }}'
             export FIREBASE_PROJECT_ID='${{ secrets.FIREBASE_PROJECT_ID }}'
