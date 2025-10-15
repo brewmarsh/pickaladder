@@ -100,4 +100,25 @@ def create_app(test_config=None):
     # this app, the index is the login page
     app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
 
+    @app.before_request
+    def load_logged_in_user():
+        """If a Firebase ID token is present, verify it, and load the user data."""
+        g.user = None
+        id_token = request.headers.get("Authorization", "").split("Bearer ")[-1]
+        if not id_token:
+            return
+
+        try:
+            decoded_token = firebase_admin.auth.verify_id_token(id_token)
+            uid = decoded_token["uid"]
+            db = firestore.client()
+            user_doc = db.collection("users").document(uid).get()
+            if user_doc.exists:
+                g.user = user_doc.to_dict()
+                g.user["uid"] = uid
+        except (firebase_admin.auth.InvalidIdTokenError, ValueError) as e:
+            current_app.logger.info(f"Invalid token received: {e}")
+        except Exception as e:
+            current_app.logger.error(f"Unexpected error loading user: {e}")
+
     return app
