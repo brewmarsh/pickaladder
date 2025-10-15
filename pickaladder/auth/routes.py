@@ -47,7 +47,7 @@ def register():
                     "username": username,
                     "email": email,
                     "name": form.name.data,
-                    "duprRating": form.dupr_rating.data,
+                    "duprRating": float(form.dupr_rating.data),
                     "isAdmin": False,
                     "createdAt": firestore.SERVER_TIMESTAMP,
                 }
