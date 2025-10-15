@@ -14,61 +14,28 @@ MOCK_USER_DATA = {"name": "Group Owner", "isAdmin": False}
 class GroupRoutesFirebaseTestCase(unittest.TestCase):
     def setUp(self):
         """Set up a test client and a comprehensive mock environment."""
-        self.mock_auth_service = MagicMock()
         self.mock_firestore_service = MagicMock()
-
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            # Patch for the `before_request` user loader in `__init__.py`.
-            "init_firebase_admin": patch("pickaladder.firebase_admin"),
-            "init_firestore": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
-            ),
-            # Patch for the group routes.
-            "group_routes_firestore": patch(
-                "pickaladder.group.routes.firestore", new=self.mock_firestore_service
-            ),
-            # Patch for the login route, which can be a redirect target.
-            "auth_routes_firestore": patch(
-                "pickaladder.auth.routes.firestore", new=self.mock_firestore_service
-            ),
+            "firestore": patch("pickaladder.group.routes.firestore", new=self.mock_firestore_service),
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}
         for p in patchers.values():
             self.addCleanup(p.stop)
 
-        self.mocks["init_firebase_admin"].auth = self.mock_auth_service
-
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {
+                "TESTING": True,
+                "WTF_CSRF_ENABLED": False,
+                "SERVER_NAME": "localhost",
+                "LOGIN_DISABLED": True,
+            }
         )
         self.client = self.app.test_client()
 
-    def _simulate_login(self):
-        """Configure mocks for a logged-in user."""
-        self.mock_auth_service.verify_id_token.return_value = MOCK_USER_PAYLOAD
-
-        mock_db = self.mock_firestore_service.client.return_value
-        mock_users_collection = mock_db.collection("users")
-        mock_user_doc = mock_users_collection.document(MOCK_USER_ID)
-
-        mock_doc_snapshot = MagicMock()
-        mock_doc_snapshot.exists = True
-        mock_doc_snapshot.to_dict.return_value = MOCK_USER_DATA
-        mock_user_doc.get.return_value = mock_doc_snapshot
-
-        # Mock the admin check in the login route to prevent redirects to /install.
-        mock_db.collection(
-            "users"
-        ).where.return_value.limit.return_value.get.return_value = [MagicMock()]
-
-        return {"Authorization": "Bearer mock-token"}
-
     def test_create_group(self):
         """Test successfully creating a new group."""
-        headers = self._simulate_login()
-
         # Mock the `add` method on the groups collection
         mock_groups_collection = (
             self.mock_firestore_service.client.return_value.collection("groups")
@@ -86,7 +53,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         # The group data needs an ownerRef for the template to render correctly.
         mock_owner_ref = self.mock_firestore_service.client.return_value.collection(
             "users"
-        ).document(MOCK_USER_ID)
+        ).document("test_user_id")
         mock_group_snapshot.to_dict.return_value = {
             "name": "My Firebase Group",
             "ownerRef": mock_owner_ref,
@@ -102,7 +69,6 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/group/create",
-            headers=headers,
             data={"name": "My Firebase Group"},
             follow_redirects=True,
         )

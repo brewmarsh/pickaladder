@@ -15,7 +15,7 @@ from pickaladder.auth.decorators import login_required
 
 
 @bp.route("/")
-@login_required
+@login_required(admin_required=True)
 def admin():
     """Renders the main admin dashboard."""
     # Authorization check is now here, after g.user is guaranteed to be loaded.
