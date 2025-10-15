@@ -14,6 +14,7 @@ from werkzeug.exceptions import UnprocessableEntity
 from . import bp
 from .forms import LoginForm, RegisterForm
 from pickaladder.errors import DuplicateResourceError
+from pickaladder.utils import send_email
 
 
 @bp.route("/register", methods=["GET", "POST"])
@@ -38,7 +39,14 @@ def register():
             )
 
             # Send email verification
-            auth.generate_email_verification_link(email)
+            verification_link = auth.generate_email_verification_link(email)
+            send_email(
+                to=email,
+                subject="Verify Your Email",
+                template="email/verify_email.html",
+                user={"username": username},
+                verification_link=verification_link,
+            )
 
             # Create user document in Firestore
             user_doc_ref = db.collection("users").document(user_record.uid)

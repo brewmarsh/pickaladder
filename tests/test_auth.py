@@ -44,7 +44,8 @@ class AuthFirebaseTestCase(unittest.TestCase):
         )
         self.client = self.app.test_client()
 
-    def test_successful_registration(self):
+    @patch("pickaladder.auth.routes.send_email")
+    def test_successful_registration(self, mock_send_email):
         """Test user registration with valid data."""
         # Mock the username check to return an empty list, simulating username is available.
         mock_db = self.mock_firestore_service.client.return_value
@@ -72,6 +73,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.mock_firestore_service.client.return_value.collection("users").document(
             "new_user_uid"
         ).set.assert_called_once()
+        mock_send_email.assert_called_once()
 
     def test_login_page_loads(self):
         """Test that the login page loads correctly."""
