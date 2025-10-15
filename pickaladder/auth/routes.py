@@ -127,7 +127,9 @@ def install():
 
         try:
             # Create user in Firebase Auth
-            admin_user_record = auth.create_user(email=email, password=password)
+            admin_user_record = auth.create_user(
+                email=email, password=password, email_verified=True
+            )
 
             # Create admin user document in Firestore
             admin_doc_ref = db.collection("users").document(admin_user_record.uid)
