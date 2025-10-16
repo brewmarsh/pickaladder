@@ -47,19 +47,6 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
 
-        firebase.auth().onAuthStateChanged(function(user) {
-            if (user) {
-                user.getIdToken().then(function(idToken) {
-                    localStorage.setItem('firebaseIdToken', idToken);
-                    // If the user is on the login page and they are logged in, redirect them to the dashboard.
-                    if (window.location.pathname === '/login' || window.location.pathname === '/') {
-                        window.location.href = "{{ url_for('user.dashboard') }}";
-                    }
-                });
-            } else {
-                localStorage.removeItem('firebaseIdToken');
-            }
-        });
 
         // Intercept fetch to add the auth token
         const originalFetch = window.fetch;
