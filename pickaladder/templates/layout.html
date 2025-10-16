@@ -50,12 +50,13 @@
         firebase.auth().onAuthStateChanged(function(user) {
             if (user) {
                 user.getIdToken().then(function(idToken) {
-                    // Store the token in a secure way (e.g., in memory or a short-lived cookie)
-                    // For this app, we will use localStorage.
                     localStorage.setItem('firebaseIdToken', idToken);
+                    // If the user is on the login page and they are logged in, redirect them to the dashboard.
+                    if (window.location.pathname === '/login' || window.location.pathname === '/') {
+                        window.location.href = "{{ url_for('user.dashboard') }}";
+                    }
                 });
             } else {
-                // User is signed out.
                 localStorage.removeItem('firebaseIdToken');
             }
         });

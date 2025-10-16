@@ -44,9 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return user.getIdToken();
             })
             .then((idToken) => {
-                // Store the token and redirect
-                localStorage.setItem('firebaseIdToken', idToken);
-                window.location.href = "{{ url_for('user.dashboard') }}";
+                // The onAuthStateChanged listener in layout.html will handle the redirect.
             })
             .catch((error) => {
                 const errorCode = error.code;
