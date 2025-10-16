@@ -15,8 +15,8 @@
     <form method="post">
         {{ form.hidden_tag() }}
         <div class="form-group">
-            {{ form.username.label }}
-            {{ form.username(class="form-control") }}
+            {{ form.email.label }}
+            {{ form.email(class="form-control") }}
         </div>
         <div class="form-group">
             {{ form.password.label }}
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const form = document.querySelector('form');
     form.addEventListener('submit', function (event) {
         event.preventDefault();
-        const email = form.username.value; // The form uses 'username' for the email field
+        const email = form.email.value;
         const password = form.password.value;
 
         firebase.auth().signInWithEmailAndPassword(email, password)
