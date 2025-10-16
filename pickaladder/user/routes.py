@@ -25,6 +25,7 @@ def dashboard():
     Renders the user dashboard. Most data is loaded asynchronously via API endpoints.
     The profile update form is passed to the template.
     """
+    current_app.logger.info("Dashboard page loaded")
     user_data = g.user
     form = UpdateProfileForm(data=user_data)
     return render_template("user_dashboard.html", form=form, user=user_data)
