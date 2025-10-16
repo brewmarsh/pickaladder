@@ -86,6 +86,7 @@ def login():
     The actual login process is handled by the Firebase client-side SDK.
     The client will get an ID token and send it with subsequent requests.
     """
+    current_app.logger.info("Login page loaded")
     db = firestore.client()
     # Check if an admin user exists to determine if we should run install
     admin_query = db.collection("users").where("isAdmin", "==", True).limit(1).get()
