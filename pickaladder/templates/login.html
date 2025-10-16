@@ -37,15 +37,19 @@ document.addEventListener('DOMContentLoaded', function () {
         const email = form.email.value;
         const password = form.password.value;
 
+        console.log("Login submitted with email:", email);
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
-                // Signed in
+                console.log("Step 1: signInWithEmailAndPassword successful. User:", userCredential.user);
                 const user = userCredential.user;
                 return user.getIdToken();
             })
             .then((idToken) => {
+                console.log("Step 2: getIdToken successful. Token received.");
                 localStorage.setItem('firebaseIdToken', idToken);
+                console.log("Step 3: Token stored in localStorage.");
                 setTimeout(() => {
+                    console.log("Step 4: Redirecting to dashboard...");
                     window.location.href = "{{ url_for('user.dashboard') }}";
                 }, 100);
             })
