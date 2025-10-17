@@ -6,6 +6,7 @@ from io import BytesIO
 # and ensure patch targets exist before the test runner tries to find them.
 
 from pickaladder import create_app
+from flask import g
 from pickaladder.constants import USER_ID
 import firebase_admin.auth
 
@@ -18,106 +19,89 @@ MOCK_FIRESTORE_USER_DATA = {"name": "User One", "isAdmin": True, "uid": "user1"}
 class UserRoutesFirebaseTestCase(unittest.TestCase):
     def setUp(self):
         """Set up a test client and mock the necessary Firebase services."""
-        # Patching where the object is looked up is the correct approach.
-        # The pre-imports at the top of the file ensure these targets exist.
+        self.mock_firestore_service = MagicMock()
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            # The before_request hook looks up `auth` on the `firebase_admin` module
-            # that was imported into the `pickaladder` namespace.
-            "auth": patch("firebase_admin.auth"),
-            # It also looks up `firestore` directly.
-            "firestore_init": patch("pickaladder.firestore"),
-            # The login route also uses firestore directly.
-            "firestore_auth": patch("pickaladder.auth.routes.firestore"),
-            # The user routes file looks up `firestore`, `storage`, and `uuid`.
-            "firestore_user": patch("pickaladder.user.routes.firestore"),
+            "firestore_init": patch("pickaladder.firestore", new=self.mock_firestore_service),
+            "firestore_user": patch(
+                "pickaladder.user.routes.firestore", new=self.mock_firestore_service
+            ),
             "storage": patch("pickaladder.user.routes.storage"),
             "uuid": patch("pickaladder.user.routes.uuid"),
+            "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}
         for p in patchers.values():
             self.addCleanup(p.stop)
 
-        # To ensure all parts of the app use the same mock firestore client,
-        # we configure them to use the same MagicMock instance.
-        self.mock_firestore_client = MagicMock()
-        self.mocks["firestore_init"].client = self.mock_firestore_client
-        self.mocks["firestore_auth"].client = self.mock_firestore_client
-        self.mocks["firestore_user"].client = self.mock_firestore_client
-
         self.app = create_app(
             {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
         )
+        self.client = self.app.test_client()
+        self.app_context = self.app.app_context()
+        self.app_context.push()
 
-    def _get_logged_in_client(self):
-        """
-        Returns a test client with a fully simulated login state, satisfying both
-        the session-based decorator and the token-based user loader.
-        """
-        # Configure mocks to handle token verification and user lookup.
-        self.mocks["auth"].verify_id_token.return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
+    def tearDown(self):
+        self.app_context.pop()
 
-        mock_db = self.mock_firestore_client.return_value
-        mock_users_collection = mock_db.collection.return_value
-        mock_user_doc = MagicMock()
-        mock_user_doc.exists = True
-        mock_user_doc.to_dict.return_value = MOCK_FIRESTORE_USER_DATA
-        mock_users_collection.document.return_value.get.return_value = mock_user_doc
+    def _set_session_user(self):
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = MOCK_USER_ID
+            sess["is_admin"] = False
+        self.mocks["verify_id_token"].return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
 
-        # The login route checks for an admin, so we mock that to avoid a redirect to /install.
-        mock_db.collection.return_value.where.return_value.limit.return_value.get.return_value = [
-            MagicMock()
-        ]
-
-        client = self.app.test_client()
-        with client.session_transaction() as sess:
-            # INSIGHT #1: Satisfy the @login_required decorator's session check.
-            sess[USER_ID] = MOCK_USER_ID
-
-        return client
+    def _mock_firestore_user(self):
+        mock_db = self.mock_firestore_service.client.return_value
+        mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
+        mock_user_snapshot = MagicMock()
+        mock_user_snapshot.exists = True
+        mock_user_snapshot.to_dict.return_value = MOCK_FIRESTORE_USER_DATA
+        mock_user_doc.get.return_value = mock_user_snapshot
+        return mock_user_doc
 
     def test_dashboard_loads(self):
         """Test that the dashboard loads for an authenticated user."""
-        client = self._get_logged_in_client()
-        headers = {"Authorization": "Bearer mock-token"}
-        response = client.get("/user/dashboard", headers=headers)
+        self._set_session_user()
+        self._mock_firestore_user()
+
+        response = self.client.get("/user/dashboard")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Dashboard", response.data)
 
+    def _get_auth_headers(self):
+        return {"Authorization": "Bearer mock-token"}
+
     def test_update_profile_data(self):
         """Test updating user profile data."""
-        client = self._get_logged_in_client()
-        headers = {"Authorization": "Bearer mock-token"}
+        self._set_session_user()
+        mock_user_doc = self._mock_firestore_user()
 
-        response = client.post(
+        response = self.client.post(
             "/user/update_profile",
-            headers=headers,
             data={"dark_mode": "y", "duprRating": 5.5},
+            headers=self._get_auth_headers(),
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Profile updated successfully.", response.data)
-        self.mock_firestore_client.return_value.collection("users").document(
-            MOCK_USER_ID
-        ).update.assert_called_once()
+        mock_user_doc.update.assert_called_once()
 
     def test_update_profile_picture_upload(self):
         """Test successfully uploading a profile picture."""
-        client = self._get_logged_in_client()
-        headers = {"Authorization": "Bearer mock-token"}
-
+        self._set_session_user()
+        mock_user_doc = self._mock_firestore_user()
         mock_storage = self.mocks["storage"]
         mock_bucket = mock_storage.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
         self.mocks["uuid"].uuid4.return_value.hex = "test-uuid"
 
         data = {"profile_picture": (BytesIO(b"test_image_data"), "test.png")}
-        response = client.post(
+        response = self.client.post(
             "/user/update_profile",
-            headers=headers,
             data=data,
             content_type="multipart/form-data",
+            headers=self._get_auth_headers(),
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -126,9 +110,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             f"profile-pictures/{MOCK_USER_ID}/original_test-uuid.jpg"
         )
         mock_blob.upload_from_file.assert_called_once()
-        self.mock_firestore_client.return_value.collection("users").document(
-            MOCK_USER_ID
-        ).update.assert_called_once()
+        mock_user_doc.update.assert_called_once()
 
 
 if __name__ == "__main__":
