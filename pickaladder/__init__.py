@@ -53,6 +53,7 @@ def create_app(test_config=None):
                 cred,
                 {
                     "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
+                    "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET"),
                 },
             )
         except ValueError:
