@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
+import re
 
 # Pre-emptive imports to ensure patch targets exist.
 
@@ -31,9 +32,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         for p in patchers.values():
             self.addCleanup(p.stop)
 
-        self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
-        )
+        self.app = create_app({"TESTING": True, "SERVER_NAME": "localhost"})
         self.client = self.app.test_client()
 
     @patch("pickaladder.auth.routes.send_email")
@@ -47,9 +46,19 @@ class AuthFirebaseTestCase(unittest.TestCase):
         # Mock the return value of create_user
         self.mock_auth_service.create_user.return_value = MagicMock(uid="new_user_uid")
 
+        # First, get the register page to get a valid CSRF token
+        register_page_response = self.client.get("/auth/register")
+        csrf_token_match = re.search(
+            r'<input id="csrf_token" name="csrf_token" type="hidden" value="([^"]+)">',
+            register_page_response.data.decode(),
+        )
+        self.assertIsNotNone(csrf_token_match)
+        csrf_token = csrf_token_match.group(1)
+
         response = self.client.post(
             "/auth/register",
             data={
+                "csrf_token": csrf_token,
                 "username": "newuser",
                 "email": "new@example.com",
                 "password": "Password123",
@@ -93,9 +102,18 @@ class AuthFirebaseTestCase(unittest.TestCase):
         mock_doc_snapshot.to_dict.return_value = MOCK_USER_DATA
         mock_user_doc.get.return_value = mock_doc_snapshot
 
+        # First, get the login page to get a valid CSRF token
+        login_page_response = self.client.get("/auth/login")
+        csrf_token_match = re.search(
+            r'name="csrf-token" content="([^"]+)"', login_page_response.data.decode()
+        )
+        self.assertIsNotNone(csrf_token_match)
+        csrf_token = csrf_token_match.group(1)
+
         response = self.client.post(
             "/auth/session_login",
             json={"idToken": "test_token"},
+            headers={"X-CSRFToken": csrf_token},
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json, {"status": "success"})
@@ -126,9 +144,18 @@ class AuthFirebaseTestCase(unittest.TestCase):
 
         self.mock_firestore_service.client.return_value.collection.return_value.document.side_effect = document_side_effect
 
+        # First, get the install page to get a valid CSRF token
+        install_page_response = self.client.get("/auth/install")
+        csrf_token_match = re.search(
+            r'name="csrf_token" value="([^"]+)"', install_page_response.data.decode()
+        )
+        self.assertIsNotNone(csrf_token_match)
+        csrf_token = csrf_token_match.group(1)
+
         response = self.client.post(
             "/auth/install",
             data={
+                "csrf_token": csrf_token,
                 "username": "admin",
                 "email": "admin@example.com",
                 "password": "Password123",
