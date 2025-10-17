@@ -37,21 +37,25 @@ document.addEventListener('DOMContentLoaded', function () {
         const email = form.email.value;
         const password = form.password.value;
 
-        console.log("Login submitted with email:", email);
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
-                console.log("Step 1: signInWithEmailAndPassword successful. User:", userCredential.user);
-                const user = userCredential.user;
-                return user.getIdToken();
+                return userCredential.user.getIdToken();
             })
             .then((idToken) => {
-                console.log("Step 2: getIdToken successful. Token received.");
-                localStorage.setItem('firebaseIdToken', idToken);
-                console.log("Step 3: Token stored in localStorage.");
-                setTimeout(() => {
-                    console.log("Step 4: Redirecting to dashboard...");
+                return fetch("{{ url_for('auth.session_login') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ idToken: idToken }),
+                });
+            })
+            .then(response => {
+                if (response.ok) {
                     window.location.href = "{{ url_for('user.dashboard') }}";
-                }, 100);
+                } else {
+                    throw new Error("Server-side session creation failed.");
+                }
             })
             .catch((error) => {
                 const errorCode = error.code;

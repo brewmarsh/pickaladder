@@ -19,12 +19,6 @@ class AuthFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            # Patch for the `before_request` user loader in `__init__.py`.
-            "init_firebase_admin": patch("pickaladder.firebase_admin"),
-            "init_firestore": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
-            ),
-            # Patch for the auth routes.
             "auth_routes_auth": patch(
                 "pickaladder.auth.routes.auth", new=self.mock_auth_service
             ),
@@ -36,8 +30,6 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.mocks = {name: p.start() for name, p in patchers.items()}
         for p in patchers.values():
             self.addCleanup(p.stop)
-
-        self.mocks["init_firebase_admin"].auth = self.mock_auth_service
 
         self.app = create_app(
             {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
@@ -86,6 +78,30 @@ class AuthFirebaseTestCase(unittest.TestCase):
         response = self.client.get("/auth/login")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Login", response.data)
+
+    def test_session_login(self):
+        """Test the session login endpoint."""
+        # Mock the return value of verify_id_token
+        self.mock_auth_service.verify_id_token.return_value = MOCK_USER_PAYLOAD
+
+        # Mock the Firestore document
+        mock_db = self.mock_firestore_service.client.return_value
+        mock_users_collection = mock_db.collection("users")
+        mock_user_doc = mock_users_collection.document(MOCK_USER_ID)
+        mock_doc_snapshot = MagicMock()
+        mock_doc_snapshot.exists = True
+        mock_doc_snapshot.to_dict.return_value = MOCK_USER_DATA
+        mock_user_doc.get.return_value = mock_doc_snapshot
+
+        response = self.client.post(
+            "/auth/session_login",
+            json={"idToken": "test_token"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {"status": "success"})
+        with self.client.session_transaction() as sess:
+            self.assertEqual(sess["user_id"], MOCK_USER_ID)
+            self.assertEqual(sess["is_admin"], False)
 
     def test_install_admin_user(self):
         """Test the creation of the initial admin user."""

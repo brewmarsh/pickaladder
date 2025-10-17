@@ -102,23 +102,26 @@ def create_app(test_config=None):
 
     @app.before_request
     def load_logged_in_user():
-        """If a Firebase ID token is present, verify it, and load the user data."""
+        """If a user_id is in the session, load the user data from Firestore and store it in g."""
+        user_id = session.get("user_id")
         g.user = None
-        id_token = request.headers.get("Authorization", "").split("Bearer ")[-1]
-        if not id_token:
+        if user_id is None:
             return
 
         try:
-            decoded_token = firebase_admin.auth.verify_id_token(id_token)
-            uid = decoded_token["uid"]
             db = firestore.client()
-            user_doc = db.collection("users").document(uid).get()
+            user_doc = db.collection("users").document(user_id).get()
             if user_doc.exists:
                 g.user = user_doc.to_dict()
-                g.user["uid"] = uid
-        except (firebase_admin.auth.InvalidIdTokenError, ValueError) as e:
-            current_app.logger.info(f"Invalid token received: {e}")
+                g.user["uid"] = user_id  # Ensure uid is in the user object
+            else:
+                # User ID in session but no user in DB. Clear the session.
+                session.clear()
+                current_app.logger.warning(
+                    f"User {user_id} in session but not found in Firestore."
+                )
         except Exception as e:
-            current_app.logger.error(f"Unexpected error loading user: {e}")
+            current_app.logger.error(f"Error loading user from session: {e}")
+            session.clear()  # Clear session on error to be safe
 
     return app

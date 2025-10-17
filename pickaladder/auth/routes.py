@@ -7,6 +7,7 @@ from flask import (
     flash,
     current_app,
     g,
+    jsonify,
 )
 from firebase_admin import auth, firestore
 from werkzeug.exceptions import UnprocessableEntity
@@ -96,6 +97,30 @@ def login():
     form = LoginForm()
     # The form is now just for presentation, validation is on the client
     return render_template("login.html", form=form)
+
+
+@bp.route("/session_login", methods=["POST"])
+def session_login():
+    """
+    This endpoint is called from the client-side after a successful Firebase login.
+    It receives the ID token, verifies it, and creates a server-side session.
+    """
+    id_token = request.json.get("idToken")
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token["uid"]
+        db = firestore.client()
+        user_doc = db.collection("users").document(uid).get()
+        if user_doc.exists:
+            user_info = user_doc.to_dict()
+            session["user_id"] = uid
+            session["is_admin"] = user_info.get("isAdmin", False)
+            return jsonify({"status": "success"})
+        else:
+            return jsonify({"status": "error", "message": "User not found in Firestore."}), 404
+    except Exception as e:
+        current_app.logger.error(f"Error during session login: {e}")
+        return jsonify({"status": "error", "message": "Invalid token or server error."}), 401
 
 
 @bp.route("/logout")
