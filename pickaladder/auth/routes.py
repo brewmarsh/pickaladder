@@ -219,7 +219,6 @@ def change_password():
 
 @bp.route('/firebase-config.js')
 def firebase_config():
-<<<<<<< HEAD
     api_key = os.environ.get("FIREBASE_API_KEY")
     if not api_key:
         current_app.logger.error("FIREBASE_API_KEY is not set. Frontend will not be able to connect to Firebase.")
@@ -233,7 +232,6 @@ const firebaseConfig = {{
     config = f"""
 const firebaseConfig = {{
   apiKey: "{os.environ.get("FIREBASE_API_KEY")}",
->>>>>>> main
   authDomain: "pickaladder.firebaseapp.com",
   projectId: "pickaladder",
   storageBucket: "pickaladder.appspot.com",
