@@ -1,4 +1,5 @@
 import uuid
+import os
 from flask import (
     render_template,
     request,
@@ -264,7 +265,7 @@ def decline_friend_request(friend_id):
 @login_required
 def update_profile():
     db = firestore.client()
-    bucket = storage.bucket()
+    bucket = storage.bucket(os.environ.get("FIREBASE_STORAGE_BUCKET"))
     user_id = g.user["uid"]
     user_ref = db.collection("users").document(user_id)
     form = UpdateProfileForm()
