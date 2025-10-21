@@ -1,3 +1,4 @@
+import os
 from flask import (
     render_template,
     request,
@@ -8,6 +9,7 @@ from flask import (
     current_app,
     g,
     jsonify,
+    Response,
 )
 from firebase_admin import auth, firestore
 from werkzeug.exceptions import UnprocessableEntity
@@ -213,3 +215,19 @@ def change_password():
     if not g.get("user"):
         return redirect(url_for("auth.login"))
     return render_template("change_password.html", user=g.user)
+
+
+@bp.route('/firebase-config.js')
+def firebase_config():
+    config = f"""
+const firebaseConfig = {{
+  apiKey: "{os.environ.get("FIREBASE_API_KEY")}",
+  authDomain: "pickaladder.firebaseapp.com",
+  projectId: "pickaladder",
+  storageBucket: "pickaladder.appspot.com",
+  messagingSenderId: "402457219675",
+  appId: "1:402457219675:web:a346e2dc0dfa732d31e57e",
+  measurementId: "G-E28CXCXTSK"
+}};
+"""
+    return Response(config, mimetype='application/javascript')

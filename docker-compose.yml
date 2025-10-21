@@ -10,6 +10,7 @@ services:
       # The FIREBASE_PROJECT_ID and GOOGLE_APPLICATION_CREDENTIALS environment
       # variables will be needed to connect to Firebase.
       # These should be set in a .env file or your local environment.
+      - FIREBASE_API_KEY=your-firebase-api-key
       - FIREBASE_PROJECT_ID=your-firebase-project-id
       - FIREBASE_STORAGE_BUCKET=your-firebase-storage-bucket
       - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
