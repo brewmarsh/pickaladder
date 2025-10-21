@@ -272,8 +272,8 @@ def update_profile():
     if form.validate_on_submit():
         try:
             update_data = {
-                "darkMode": form.dark_mode.data,
-                "duprRating": form.dupr_rating.data,
+                "darkMode": bool(form.dark_mode.data),
+                "duprRating": float(form.dupr_rating.data),
             }
 
             profile_picture_file = form.profile_picture.data
