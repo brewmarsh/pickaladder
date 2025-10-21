@@ -6,9 +6,6 @@ from io import BytesIO
 # and ensure patch targets exist before the test runner tries to find them.
 
 from pickaladder import create_app
-from flask import g
-from pickaladder.constants import USER_ID
-import firebase_admin.auth
 
 # Mock user payloads for consistent test data
 MOCK_USER_ID = "user1"

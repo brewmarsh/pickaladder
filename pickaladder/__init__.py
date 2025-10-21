@@ -1,8 +1,7 @@
 import os
 import uuid
-from flask import Flask, session, request, g, current_app
+from flask import Flask, session, g, current_app
 from werkzeug.routing import BaseConverter
-from .constants import USER_ID
 from .extensions import mail, csrf
 import firebase_admin
 from firebase_admin import credentials, firestore
