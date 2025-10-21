@@ -1,5 +1,5 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyDqAACKfZJ2AzZvcl-sqbaW5Qk9r-OwwtA",
+  apiKey: "",
   authDomain: "pickaladder.firebaseapp.com",
   projectId: "pickaladder",
   storageBucket: "pickaladder.appspot.com",
