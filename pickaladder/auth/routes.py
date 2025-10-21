@@ -1,4 +1,5 @@
 import os
+import json
 from flask import (
     render_template,
     request,
@@ -225,10 +226,20 @@ def firebase_config():
         error_script = 'console.error("Firebase API key is missing. Please set the FIREBASE_API_KEY environment variable.");'
         return Response(error_script, mimetype='application/javascript')
 
+    config = {
+        "apiKey": api_key,
+        "authDomain": "pickaladder.firebaseapp.com",
+        "projectId": "pickaladder",
+        "storageBucket": "pickaladder.appspot.com",
+        "messagingSenderId": "402457219675",
+        "appId": "1:402457219675:web:a346e2dc0dfa732d31e57e",
+        "measurementId": "G-E28CXCXTSK"
+    }
+    js_config = f"const firebaseConfig = {json.dumps(config)};"
+    return Response(js_config, mimetype='application/javascript')
     config = f"""
 const firebaseConfig = {{
   apiKey: "{api_key}",
-=======
     config = f"""
 const firebaseConfig = {{
   apiKey: "{os.environ.get("FIREBASE_API_KEY")}",
