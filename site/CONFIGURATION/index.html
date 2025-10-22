@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Application Configuration - Pickaladder</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script>
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">Pickaladder</a>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+
+            <li class="nav-item" data-bs-level="1"><a href="#application-configuration" class="nav-link">Application Configuration</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#firebase-credentials-setup" class="nav-link">Firebase Credentials Setup</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="application-configuration">Application Configuration</h1>
+<p>This document outlines the steps required to configure the Pick-a-Ladder application to run with your own Firebase project.</p>
+<h2 id="firebase-credentials-setup">Firebase Credentials Setup</h2>
+<p>To connect the application to your Firebase project, you need to provide it with a service account credentials file and your project ID.</p>
+<p>There are two main scenarios for running the app:</p>
+<h3 id="1-for-local-development-using-docker">1. For Local Development (using Docker)</h3>
+<p>You will use your downloaded Firebase service account key (a JSON file).</p>
+<ol>
+<li>
+<p><strong>Get Your Credentials File:</strong></p>
+<ul>
+<li>Go to your project in the <a href="https://console.firebase.google.com/">Firebase Console</a>.</li>
+<li>Click the gear icon next to "Project Overview" and go to <strong>Project settings</strong>.</li>
+<li>Go to the <strong>Service accounts</strong> tab.</li>
+<li>Click the <strong>"Generate new private key"</strong> button. This will download a JSON file containing your credentials.</li>
+</ul>
+</li>
+<li>
+<p><strong>Place the File in the Project:</strong></p>
+<ul>
+<li>Rename the downloaded file to <code>firebase-credentials.json</code>.</li>
+<li>Move this file into the root directory of the project (the same folder where <code>docker-compose.yml</code> is located). The <code>.gitignore</code> file is already set up to ignore this file, so it won't be committed to your repository.</li>
+</ul>
+</li>
+<li>
+<p><strong>Set Your Project ID:</strong></p>
+<ul>
+<li>Open the <code>docker-compose.yml</code> file.</li>
+<li>In the <code>environment</code> section for the <code>web</code> service, find the line that says <code>FIREBASE_PROJECT_ID=your-firebase-project-id</code>.</li>
+<li>Replace <code>your-firebase-project-id</code> with your actual Firebase Project ID.</li>
+</ul>
+</li>
+</ol>
+<p>Now, when you run <code>docker compose up</code>, the application will have the necessary credentials to connect to your Firebase project.</p>
+<h3 id="2-for-production-deployment-using-github-actions">2. For Production Deployment (using GitHub Actions)</h3>
+<p>For deployment, you should use GitHub Secrets to store your credentials securely.</p>
+<ol>
+<li>
+<p><strong>Go to Your Repository Settings on GitHub:</strong></p>
+<ul>
+<li>Navigate to your repository's page on GitHub.</li>
+<li>Click on <strong>Settings</strong> &gt; <strong>Secrets and variables</strong> &gt; <strong>Actions</strong>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Create the Credentials Secret:</strong></p>
+<ul>
+<li>Click the <strong>"New repository secret"</strong> button.</li>
+<li>For the <strong>Name</strong>, enter <code>FIREBASE_CREDENTIALS_JSON</code>.</li>
+<li>For the <strong>Value</strong>, open the <code>firebase-credentials.json</code> file you downloaded earlier, copy its entire content, and paste it into this field.</li>
+</ul>
+</li>
+<li>
+<p><strong>Create the Project ID Secret:</strong></p>
+<ul>
+<li>Click <strong>"New repository secret"</strong> again.</li>
+<li>For the <strong>Name</strong>, enter <code>FIREBASE_PROJECT_ID</code>.</li>
+<li>For the <strong>Value</strong>, enter your Firebase Project ID.</li>
+</ul>
+</li>
+</ol>
+<p>Once these secrets are saved, the deployment workflow defined in <code>.github/workflows/deploy.yml</code> will automatically use them to configure your application when it deploys.</p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>pickaladder API Documentation - Pickaladder</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script>
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">Pickaladder</a>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+
+            <li class="nav-item" data-bs-level="1"><a href="#pickaladder-api-documentation" class="nav-link">pickaladder API Documentation</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#1-authentication" class="nav-link">1. Authentication</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#2-endpoints" class="nav-link">2. Endpoints</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#3-data-models" class="nav-link">3. Data Models</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="pickaladder-api-documentation">pickaladder API Documentation</h1>
+<p>This document describes the API for the pickaladder application.</p>
+<h2 id="1-authentication">1. Authentication</h2>
+<p>The API uses a session-based authentication mechanism. After a user logs in, a <code>user_id</code> is stored in the session. This <code>user_id</code> is used to authenticate subsequent requests.</p>
+<h2 id="2-endpoints">2. Endpoints</h2>
+<p>The application is divided into blueprints, and the endpoints are prefixed with the blueprint name.</p>
+<h3 id="21-auth-blueprint-auth">2.1. Auth Blueprint (<code>/auth</code>)</h3>
+<h4 id="post-authregister"><code>POST /auth/register</code></h4>
+<p>Registers a new user.</p>
+<ul>
+<li><strong>Request Body:</strong> <code>username</code>, <code>password</code>, <code>email</code>, <code>name</code>, <code>dupr_rating</code></li>
+<li><strong>Response:</strong> Redirects to the dashboard on success.</li>
+</ul>
+<h4 id="post-authlogin"><code>POST /auth/login</code></h4>
+<p>Logs in a user.</p>
+<ul>
+<li><strong>Request Body:</strong> <code>username</code>, <code>password</code></li>
+<li><strong>Response:</strong> Redirects to the dashboard on success.</li>
+</ul>
+<h4 id="get-authlogout"><code>GET /auth/logout</code></h4>
+<p>Logs out a user.</p>
+<ul>
+<li><strong>Response:</strong> Redirects to the index page.</li>
+</ul>
+<h4 id="get-authverify_emailemail"><code>GET /auth/verify_email/&lt;email&gt;</code></h4>
+<p>Verifies a user's email address.</p>
+<ul>
+<li><strong>Response:</strong> Redirects to the login page.</li>
+</ul>
+<h3 id="22-user-blueprint">2.2. User Blueprint (<code>/</code>)</h3>
+<h4 id="get-dashboard"><code>GET /dashboard</code></h4>
+<p>Displays the user's dashboard.</p>
+<h4 id="get-users"><code>GET /users</code></h4>
+<p>Displays a list of all users.</p>
+<h4 id="get-usersuser_id"><code>GET /users/&lt;user_id&gt;</code></h4>
+<p>Displays a user's profile.</p>
+<h4 id="get-friends"><code>GET /friends</code></h4>
+<p>Displays the user's friends and friend requests.</p>
+<h4 id="post-useradd_friendfriend_id"><code>POST /user/add_friend/&lt;friend_id&gt;</code></h4>
+<p>Sends a friend request to another user. This endpoint is intended to be used with AJAX.</p>
+<ul>
+<li><strong>Response:</strong> A JSON object with a <code>success</code> boolean and a <code>message</code> string.</li>
+</ul>
+<h3 id="23-match-blueprint-match">2.3. Match Blueprint (<code>/match</code>)</h3>
+<h4 id="get-matchleaderboard"><code>GET /match/leaderboard</code></h4>
+<p>Returns the top 10 players by average score.</p>
+<ul>
+<li><strong>Response:</strong> A rendered HTML page with the leaderboard.</li>
+</ul>
+<h4 id="get-matchuuidmatch_id"><code>GET /match/&lt;uuid:match_id&gt;</code></h4>
+<p>Displays the details of a match.</p>
+<h3 id="24-admin-blueprint-admin">2.4. Admin Blueprint (<code>/admin</code>)</h3>
+<h4 id="get-admingenerate_matches"><code>GET /admin/generate_matches</code></h4>
+<p>Generates 10 random matches between friends.</p>
+<ul>
+<li><strong>Response:</strong> Redirects to the admin page.</li>
+</ul>
+<h4 id="get-adminfriend_graph_data"><code>GET /admin/friend_graph_data</code></h4>
+<p>Returns the data for the friend graph.</p>
+<ul>
+<li><strong>Response:</strong> A JSON object with <code>nodes</code> and <code>edges</code>.</li>
+</ul>
+<h2 id="3-data-models">3. Data Models</h2>
+<h3 id="31-user">3.1. User</h3>
+<ul>
+<li><code>id</code> (UUID)</li>
+<li><code>username</code> (string)</li>
+<li><code>password</code> (string)</li>
+<li><code>email</code> (string)</li>
+<li><code>name</code> (string)</li>
+<li><code>dupr_rating</code> (float)</li>
+<li><code>is_admin</code> (boolean)</li>
+<li><code>profile_picture</code> (bytea)</li>
+<li><code>profile_picture_thumbnail</code> (bytea)</li>
+<li><code>dark_mode</code> (boolean)</li>
+<li><code>email_verified</code> (boolean)</li>
+</ul>
+<h3 id="32-match">3.2. Match</h3>
+<ul>
+<li><code>id</code> (UUID)</li>
+<li><code>player1_id</code> (UUID)</li>
+<li><code>player2_id</code> (UUID)</li>
+<li><code>player1_score</code> (integer)</li>
+<li><code>player2_score</code> (integer)</li>
+<li><code>match_date</code> (date)</li>
+</ul>
+<h3 id="33-friend">3.3. Friend</h3>
+<ul>
+<li><code>user_id</code> (UUID)</li>
+<li><code>friend_id</code> (UUID)</li>
+<li><code>status</code> (string)</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>pickaladder Application Requirements - Pickaladder</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script>
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">Pickaladder</a>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+
+            <li class="nav-item" data-bs-level="1"><a href="#pickaladder-application-requirements" class="nav-link">pickaladder Application Requirements</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#functional-requirements" class="nav-link">Functional Requirements</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#non-functional-requirements" class="nav-link">Non-Functional Requirements</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#future-enhancements" class="nav-link">Future Enhancements</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#known-issues" class="nav-link">Known Issues</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="pickaladder-application-requirements">pickaladder Application Requirements</h1>
+<p>This document outlines the requirements for the pickaladder application.</p>
+<h2 id="functional-requirements">Functional Requirements</h2>
+<h3 id="user-management">User Management</h3>
+<ul>
+<li><strong>User Registration:</strong> Users can create an account with a username, password, email address, and name.</li>
+<li><strong>Email Verification:</strong> Email verification can be enforced by an administrator. When enabled, users must verify their email address before they can log in. This setting is disabled by default.</li>
+<li><strong>User Login:</strong> Users can log in with their username and password.</li>
+<li><strong>Password Reset:</strong> Users can reset their password if they forget it.</li>
+<li><strong>Profile Updates:</strong> Users can update their DUPR rating, password, and profile picture from their dashboard.</li>
+</ul>
+<h3 id="friend-management">Friend Management</h3>
+<ul>
+<li><strong>Find Friends:</strong> Users can find other users to be friends with.</li>
+<li><strong>Add Friends:</strong> Users can add other users as friends.</li>
+<li><strong>View Friends:</strong> Users can view a list of their friends.</li>
+<li><strong>Friends of Friends:</strong> Users can see a list of "friends of friends" to get recommendations for new friends.</li>
+<li><strong>View Friend Profile:</strong> Users can view a friend's profile.</li>
+</ul>
+<h3 id="gameplay">Gameplay</h3>
+<ul>
+<li><strong>Match Creation:</strong> Users can create matches with their friends.</li>
+<li><strong>Match Viewing:</strong> Users can view the details of a match, including an emphasized icon for the winner and each player's win/loss record. The player's icon and username are also clickable links to their profile page.</li>
+<li><strong>Leaderboard:</strong> The application has a leaderboard that shows the top 10 players by average score.</li>
+<li><strong>Match History:</strong> The user profile page displays a history of the user's matches. The winning score is bolded, and each match is a clickable link to the match details page.</li>
+</ul>
+<h3 id="admin-functionality">Admin Functionality</h3>
+<ul>
+<li><strong>Admin Panel:</strong> Admin users have access to an admin panel.</li>
+<li><strong>User Management:</strong> Admins can delete users, promote users to admins, reset user passwords, and manually verify a user's email address.</li>
+<li><strong>Settings Management:</strong> Admins can enable or disable the requirement for email verification from the admin panel.</li>
+<li><strong>Database Management:</strong> Admins can reset the database.</li>
+<li><strong>Data Generation:</strong> Admins can generate random users, matches, and groups for testing purposes.</li>
+</ul>
+<h2 id="non-functional-requirements">Non-Functional Requirements</h2>
+<h3 id="architecture">Architecture</h3>
+<ul>
+<li><strong>Monolithic Application:</strong> The application is a monolithic web application built with Flask and PostgreSQL.</li>
+<li><strong>Containerized:</strong> The application is containerized with Docker and deployed with docker-compose.</li>
+<li><strong>Blueprint-based:</strong> The Flask application is organized using a blueprint-based structure.</li>
+</ul>
+<h3 id="database">Database</h3>
+<ul>
+<li><strong>Database:</strong> The application uses a PostgreSQL database.</li>
+<li><strong>Connection Pooling:</strong> The application uses a connection pool to manage database connections.</li>
+<li><strong>Database Initialization:</strong> The database is automatically initialized and migrated when the application starts.</li>
+</ul>
+<h3 id="security">Security</h3>
+<ul>
+<li><strong>UUIDs:</strong> User and match IDs are UUIDs to enhance privacy.</li>
+<li><strong>Password Hashing:</strong> Passwords are securely hashed using <code>pbkdf2:sha256</code> with 150,000 iterations. The application also includes a mechanism to re-hash the passwords of existing users on the fly when they log in.</li>
+</ul>
+<h3 id="user-interface">User Interface</h3>
+<ul>
+<li><strong>Modern Design:</strong> The application has a modern, clean, and responsive user interface with a Google-inspired design.</li>
+<li><strong>Custom Styling:</strong> The application uses a custom stylesheet and does not depend on any external CSS frameworks like Bootstrap.</li>
+<li><strong>Login Page:</strong> The login page does not show a redundant "Please log in to access this page." message or a "LOGIN" button in the navigation bar.</li>
+</ul>
+<h3 id="code-quality">Code Quality</h3>
+<ul>
+<li><strong>Linting:</strong> The project uses <code>ruff</code> for linting and code formatting.</li>
+<li><strong>Testing:</strong> The project has a basic test suite.</li>
+</ul>
+<h2 id="future-enhancements">Future Enhancements</h2>
+<h3 id="usability-improvements">Usability Improvements</h3>
+<ul>
+<li><strong>Real-time Updates:</strong> The application currently requires a page reload to see updates. Implementing real-time updates using WebSockets would provide a much better user experience. For example, the leaderboard could update in real-time as matches are completed.</li>
+<li><strong>Improved User Profiles:</strong> User profiles could be enhanced to include more information, such as a user's match history, win/loss record, and a short bio.</li>
+<li><strong>Friend Request Notifications:</strong> When a user receives a friend request, they should receive a notification. This could be an in-app notification or an email.</li>
+<li><strong>Match Confirmation:</strong> When a match is recorded, both players should be required to confirm the score. This would help prevent disputes and ensure the accuracy of match results.</li>
+</ul>
+<h3 id="new-user-features">New User Features</h3>
+<ul>
+<li><strong>Match Scheduling:</strong> Users should be able to schedule matches with other players. This would involve selecting a date, time, and location for the match.</li>
+<li><strong>Double Matches:</strong> The current application only supports singles matches. Adding support for doubles matches would be a valuable feature for many players.</li>
+<li><strong>Player Statistics:</strong> Users should be able to view detailed statistics about their own play, such as their win/loss record against specific opponents, their performance over time, and other metrics.</li>
+<li><strong>Find a Partner:</strong> A feature that allows users to find other players of a similar skill level to play with would be a great addition.</li>
+<li><strong>Social Sharing:</strong> Users should be able to share their match results and other achievements on social media.</li>
+<li><strong>Match Location:</strong> Users should be able to optionally record the location of a match. This could be a simple text field or integrated with a mapping service. This would be useful for tracking where matches are played and for facilities to see which courts are being used.</li>
+</ul>
+<h3 id="manager-features">Manager Features</h3>
+<ul>
+<li><strong>Tournament Brackets:</strong> The application should support the creation and management of tournament brackets. This would include single-elimination, double-elimination, and round-robin formats.</li>
+<li><strong>Facility Management:</strong> Managers should be able to manage facility information, such as court availability and hours of operation.</li>
+<li><strong>Event Registration:</strong> The application should allow users to register for events and tournaments. This would include collecting registration fees and managing participant lists.</li>
+<li><strong>Announcements:</strong> Managers should be able to send announcements to all participants in an event or to all users of the application.</li>
+<li><strong>Reporting:</strong> The application should provide detailed reports on event participation, match results, and other key metrics. This would be useful for analyzing the success of events and for planning future ones.</li>
+</ul>
+<h3 id="security_1">Security</h3>
+<ul>
+<li><strong>Input Validation:</strong> Implement robust input validation on all user-supplied data.</li>
+<li><strong>Password Policies:</strong> Enforce strong password policies.</li>
+<li><strong>Session Management:</strong> Implement secure session management practices.</li>
+<li><strong>Rate Limiting:</strong> Implement rate limiting on sensitive endpoints.</li>
+</ul>
+<h3 id="quality">Quality</h3>
+<ul>
+<li><strong>Type Checking:</strong> Add static type checking with <code>mypy</code>.</li>
+<li><strong>Comprehensive Testing:</strong> Expand the test suite to include integration and end-to-end tests.</li>
+<li><strong>Code Coverage:</strong> Measure code coverage to identify untested parts of the codebase.</li>
+</ul>
+<h3 id="documentation">Documentation</h3>
+<ul>
+<li><strong>API Documentation:</strong> Generate API documentation.</li>
+<li><strong>User Guide:</strong> Create a comprehensive user guide.</li>
+</ul>
+<h3 id="cicd">CI/CD</h3>
+<ul>
+<li><strong>Automated Deployments:</strong> Implement a CI/CD pipeline for automated testing and deployment.</li>
+<li><strong>Infrastructure as Code:</strong> Use a tool like Terraform to manage infrastructure as code.</li>
+</ul>
+<h3 id="configuration">Configuration</h3>
+<ul>
+<li><strong>Configuration File:</strong> Use a configuration file instead of environment variables for all settings.</li>
+<li><strong>Logging:</strong> Implement a more robust and configurable logging system.</li>
+</ul>
+<h3 id="other-features">Other Features</h3>
+<ul>
+<li><strong>Multiple Ladder Rankings:</strong> Add support for multiple ladder ranking systems.</li>
+<li><strong>Customizable Branding:</strong> Allow admins to customize the branding of the admin page.</li>
+<li><strong>Terms of Service:</strong> Add a terms of service page.</li>
+<li><strong>Data Export:</strong> Allow users to export their data.</li>
+</ul>
+<h2 id="known-issues">Known Issues</h2>
+<p>This section documents some of the known issues in the application.</p>
+<ul>
+<li><strong>"Method Not Allowed" on root page login:</strong> The root URL <code>/</code> is mapped to the login page, but it does not accept POST requests. This has been fixed by allowing POST requests on the root URL.</li>
+<li><strong>"Method Not Allowed" on friend requests:</strong> The buttons for accepting and declining friend requests were implemented as links, which send GET requests to a POST-only route. This has been fixed by replacing the links with forms that submit POST requests.</li>
+<li><strong>CSRF error on friend requests:</strong> The forms for accepting and declining friend requests were missing the CSRF token. This has been fixed by adding the CSRF token to the forms.</li>
+</ul>
+<h3 id="deeper-feature-suggestions">Deeper Feature Suggestions</h3>
+<p>Based on a more in-depth review of the codebase, here are some more detailed feature suggestions.</p>
+<h4 id="usability-improvements_1">Usability Improvements</h4>
+<ul>
+<li><strong>Autocomplete for User Search:</strong> In the user search and "Create Match" opponent selection, implement an autocomplete feature to make it easier to find users, especially in a system with many users.</li>
+<li><strong>Interactive Leaderboard:</strong> The leaderboard could be made more interactive. For example, allowing users to see their own rank even if they are not in the top 10, and showing how many places they have moved up or down since the last time they checked.</li>
+<li><strong>Dashboard Feed:</strong> The user dashboard could be enhanced to show a "feed" of recent activity from their friends, such as recently played matches.</li>
+</ul>
+<h4 id="new-user-features_1">New User Features</h4>
+<ul>
+<li><strong>Advanced Ranking System:</strong> Implement a more advanced ranking system like Elo or Glicko-2. These systems are better at predicting match outcomes and provide a more accurate measure of a player's skill level. This would also allow for features like predicting the outcome of a match before it's played.</li>
+<li><strong>Public Profile URLs:</strong> Allow users to have a public profile URL that they can share with others, even those who are not registered on the site. This could be an optional feature that users can enable or disable.</li>
+<li><strong>Match History Charts:</strong> On a user's profile, display charts and graphs to visualize their match history, such as their win/loss ratio over time, or their performance against different opponents.</li>
+<li><strong>Achievements/Badges:</strong> Add a system of achievements or badges that users can earn for reaching certain milestones (e.g., "Played 10 matches," "First win," "On a winning streak").</li>
+</ul>
+<h4 id="manager-features_1">Manager Features</h4>
+<ul>
+<li><strong>Multiple Ladder Types:</strong> Allow facility managers to create and manage different types of ladders, such as singles, doubles, mixed doubles, age-based ladders, or skill-level-based ladders (e.g., 3.0-3.5, 4.0-4.5).</li>
+<li><strong>Court Reservation System:</strong> Integrate a court reservation system. This would allow managers to define the courts available at their facility and allow users to book courts for their matches.</li>
+<li><strong>Event-specific Leaderboards:</strong> For tournaments or leagues, create separate leaderboards that are specific to that event, in addition to the overall site-wide leaderboard.</li>
+<li><strong>Broadcast Messaging:</strong> Give managers the ability to send broadcast messages to all participants of a specific tournament or league, or to all users who have played at their facility. This could be used for announcements, updates, or promotions.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
