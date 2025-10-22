@@ -129,7 +129,9 @@ class AuthFirebaseTestCase(unittest.TestCase):
         mock_users_collection.where.return_value.limit.return_value.get.return_value = []
 
         # Mock the return value of create_user
-        self.mock_auth_service.create_user.return_value = MagicMock(uid="admin_user_uid")
+        self.mock_auth_service.create_user.return_value = MagicMock(
+            uid="admin_user_uid"
+        )
 
         # More specific mocking for document calls
         mock_user_doc = MagicMock()

@@ -19,7 +19,9 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_firestore_service = MagicMock()
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_init": patch("pickaladder.firestore", new=self.mock_firestore_service),
+            "firestore_init": patch(
+                "pickaladder.firestore", new=self.mock_firestore_service
+            ),
             "firestore_user": patch(
                 "pickaladder.user.routes.firestore", new=self.mock_firestore_service
             ),
