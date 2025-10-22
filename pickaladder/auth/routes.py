@@ -120,10 +120,14 @@ def session_login():
             session["is_admin"] = user_info.get("isAdmin", False)
             return jsonify({"status": "success"})
         else:
-            return jsonify({"status": "error", "message": "User not found in Firestore."}), 404
+            return jsonify(
+                {"status": "error", "message": "User not found in Firestore."}
+            ), 404
     except Exception as e:
         current_app.logger.error(f"Error during session login: {e}")
-        return jsonify({"status": "error", "message": "Invalid token or server error."}), 401
+        return jsonify(
+            {"status": "error", "message": "Invalid token or server error."}
+        ), 401
 
 
 @bp.route("/logout")
@@ -218,13 +222,15 @@ def change_password():
     return render_template("change_password.html", user=g.user)
 
 
-@bp.route('/firebase-config.js')
+@bp.route("/firebase-config.js")
 def firebase_config():
     api_key = os.environ.get("FIREBASE_API_KEY")
     if not api_key:
-        current_app.logger.error("FIREBASE_API_KEY is not set. Frontend will not be able to connect to Firebase.")
+        current_app.logger.error(
+            "FIREBASE_API_KEY is not set. Frontend will not be able to connect to Firebase."
+        )
         error_script = 'console.error("Firebase API key is missing. Please set the FIREBASE_API_KEY environment variable.");'
-        return Response(error_script, mimetype='application/javascript')
+        return Response(error_script, mimetype="application/javascript")
 
     config = {
         "apiKey": api_key,
@@ -233,7 +239,7 @@ def firebase_config():
         "storageBucket": "pickaladder.appspot.com",
         "messagingSenderId": "402457219675",
         "appId": "1:402457219675:web:a346e2dc0dfa732d31e57e",
-        "measurementId": "G-E28CXCXTSK"
+        "measurementId": "G-E28CXCXTSK",
     }
     js_config = f"const firebaseConfig = {json.dumps(config)};"
-    return Response(js_config, mimetype='application/javascript')
+    return Response(js_config, mimetype="application/javascript")

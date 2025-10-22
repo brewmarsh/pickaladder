@@ -10,6 +10,7 @@ from pickaladder import create_app
 MOCK_USER_ID = "user1"
 MOCK_USER_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user1@example.com"}
 MOCK_USER_DATA = {"name": "Test User", "isAdmin": False}
+MOCK_PASSWORD = "Password123"  # nosec
 
 
 class AuthFirebaseTestCase(unittest.TestCase):
@@ -61,8 +62,8 @@ class AuthFirebaseTestCase(unittest.TestCase):
                 "csrf_token": csrf_token,
                 "username": "newuser",
                 "email": "new@example.com",
-                "password": "Password123",
-                "confirm_password": "Password123",
+                "password": MOCK_PASSWORD,
+                "confirm_password": MOCK_PASSWORD,
                 "name": "New User",
                 "dupr_rating": 4.5,
             },
@@ -129,7 +130,9 @@ class AuthFirebaseTestCase(unittest.TestCase):
         mock_users_collection.where.return_value.limit.return_value.get.return_value = []
 
         # Mock the return value of create_user
-        self.mock_auth_service.create_user.return_value = MagicMock(uid="admin_user_uid")
+        self.mock_auth_service.create_user.return_value = MagicMock(
+            uid="admin_user_uid"
+        )
 
         # More specific mocking for document calls
         mock_user_doc = MagicMock()
@@ -158,7 +161,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
                 "csrf_token": csrf_token,
                 "username": "admin",
                 "email": "admin@example.com",
-                "password": "Password123",
+                "password": MOCK_PASSWORD,
                 "name": "Admin User",
                 "dupr_rating": 5.0,
             },
@@ -168,7 +171,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.assertIn(b"Admin user created successfully.", response.data)
         self.mock_auth_service.create_user.assert_called_once_with(
             email="admin@example.com",
-            password="Password123",
+            password=MOCK_PASSWORD,
             email_verified=True,
         )
         mock_user_doc.set.assert_called_once()

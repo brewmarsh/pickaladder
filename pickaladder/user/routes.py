@@ -274,8 +274,9 @@ def update_profile():
         try:
             update_data = {
                 "darkMode": bool(form.dark_mode.data),
-                "duprRating": float(form.dupr_rating.data),
             }
+            if form.dupr_rating.data is not None:
+                update_data["duprRating"] = float(form.dupr_rating.data)
 
             profile_picture_file = form.profile_picture.data
             if profile_picture_file:

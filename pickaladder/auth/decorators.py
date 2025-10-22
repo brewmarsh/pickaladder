@@ -13,6 +13,7 @@ def login_required(f=None, admin_required=False):
                 flash("You are not authorized to view this page.", "danger")
                 return redirect(url_for("user.dashboard"))
             return func(*args, **kwargs)
+
         return decorated_function
 
     if f:
