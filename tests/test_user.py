@@ -68,9 +68,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Dashboard", response.data)
 
-    def _get_auth_headers(self):
-        return {"Authorization": "Bearer mock-token"}
-
     def test_update_profile_data(self):
         """Test updating user profile data."""
         self._set_session_user()
@@ -79,7 +76,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         response = self.client.post(
             "/user/update_profile",
             data={"dark_mode": "y", "duprRating": 5.5},
-            headers=self._get_auth_headers(),
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -100,7 +96,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "/user/update_profile",
             data=data,
             content_type="multipart/form-data",
-            headers=self._get_auth_headers(),
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
