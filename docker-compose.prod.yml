@@ -5,8 +5,6 @@ services:
     ports:
       - "27272:27272"
     command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
-    env_file:
-      - .env.example
     volumes:
       # Mount the credentials file from the host into the container
       - ./firebase-credentials.json:/app/firebase-credentials.json:ro
