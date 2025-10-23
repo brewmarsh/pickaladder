@@ -11,7 +11,6 @@ from flask import (
     g,
 )
 from firebase_admin import firestore
-from werkzeug.utils import secure_filename
 from imgur_python import Imgur
 
 from . import bp
