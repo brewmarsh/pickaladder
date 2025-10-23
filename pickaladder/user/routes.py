@@ -1,5 +1,5 @@
-import uuid
 import os
+import tempfile
 from flask import (
     render_template,
     request,
@@ -10,8 +10,8 @@ from flask import (
     jsonify,
     g,
 )
-from firebase_admin import firestore, storage
-from werkzeug.utils import secure_filename
+from firebase_admin import firestore
+from imgur_python import Imgur
 
 from . import bp
 from .forms import UpdateProfileForm
@@ -265,7 +265,6 @@ def decline_friend_request(friend_id):
 @login_required
 def update_profile():
     db = firestore.client()
-    bucket = storage.bucket(os.environ.get("FIREBASE_STORAGE_BUCKET"))
     user_id = g.user["uid"]
     user_ref = db.collection("users").document(user_id)
     form = UpdateProfileForm()
@@ -280,23 +279,25 @@ def update_profile():
 
             profile_picture_file = form.profile_picture.data
             if profile_picture_file:
-                secure_filename(profile_picture_file.filename or "profile.jpg")
-                content_type = profile_picture_file.content_type
+                client_id = os.environ.get("IMGUR_CLIENT_ID")
+                if not client_id:
+                    flash("Imgur client ID is not configured.", "warning")
+                else:
+                    imgur_client = Imgur({"client_id": client_id})
+                    response = None
+                    with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
+                        profile_picture_file.save(temp_file.name)
+                        response = imgur_client.image_upload(
+                            temp_file.name, f"{user_id}'s profile picture", ""
+                        )
 
-                # Path in Firebase Storage
-                path = f"profile-pictures/{user_id}/original_{uuid.uuid4().hex}.jpg"
-                blob = bucket.blob(path)
-
-                # Upload the file
-                blob.upload_from_file(profile_picture_file, content_type=content_type)
-
-                # Make the file public and get the URL
-                blob.make_public()
-                update_data["profilePictureUrl"] = blob.public_url
-
-                # Note: The thumbnail URL will be set by a Cloud Function.
-                # The function should be triggered by the upload and update the
-                # 'profilePictureThumbnailUrl' field in the user's document.
+                    if response and response["success"]:
+                        update_data["profilePictureUrl"] = response["data"]["link"]
+                    elif response:
+                        flash(
+                            f"Imgur upload failed: {response['data']['error']}",
+                            "danger",
+                        )
 
             user_ref.update(update_data)
             flash("Profile updated successfully.", "success")
