@@ -12,6 +12,7 @@ from flask import (
 )
 from firebase_admin import firestore
 from imgur_python import Imgur
+from werkzeug.utils import secure_filename
 
 from . import bp
 from .forms import UpdateProfileForm
@@ -284,8 +285,13 @@ def update_profile():
                     flash("Imgur client ID is not configured.", "warning")
                 else:
                     imgur_client = Imgur({"client_id": client_id})
+                    filename = secure_filename(
+                        profile_picture_file.filename or "profile.jpg"
+                    )
                     response = None
-                    with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
+                    with tempfile.NamedTemporaryFile(
+                        suffix=os.path.splitext(filename)[1]
+                    ) as temp_file:
                         profile_picture_file.save(temp_file.name)
                         response = imgur_client.image_upload(
                             temp_file.name, f"{user_id}'s profile picture", ""
