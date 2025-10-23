@@ -295,7 +295,8 @@ def update_profile():
                         update_data["profilePictureUrl"] = response["data"]["link"]
                     elif response:
                         flash(
-                            f"Imgur upload failed: {response['data']['error']}", "danger"
+                            f"Imgur upload failed: {response['data']['error']}",
+                            "danger",
                         )
 
             user_ref.update(update_data)
