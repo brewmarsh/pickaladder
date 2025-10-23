@@ -22,6 +22,7 @@ services:
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
       - IMGUR_CLIENT_ID=${IMGUR_CLIENT_ID}
+      - APP_VERSION=${APP_VERSION}
     networks:
       - pickanet
 

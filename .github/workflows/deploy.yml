@@ -93,6 +93,7 @@ jobs:
             export FIREBASE_PROJECT_ID='${{ secrets.FIREBASE_PROJECT_ID }}'
             export FIREBASE_API_KEY='${{ secrets.FIREBASE_API_KEY }}'
             export IMGUR_CLIENT_ID='${{ secrets.IMGUR_CLIENT_ID }}'
+            export APP_VERSION='${{ github.sha }}'
 
             # Tear down the old environment to ensure a clean start
             docker-compose -f docker-compose.prod.yml down
