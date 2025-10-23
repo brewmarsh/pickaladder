@@ -15,7 +15,9 @@ def get_player_record(player_ref):
 
     # Matches where the user is player1
     p1_matches_query = (
-        db.collection("matches").where("player1Ref", "==", player_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player1Ref", "==", player_ref))
+        .stream()
     )
     for match in p1_matches_query:
         data = match.to_dict()
@@ -26,7 +28,9 @@ def get_player_record(player_ref):
 
     # Matches where the user is player2
     p2_matches_query = (
-        db.collection("matches").where("player2Ref", "==", player_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player2Ref", "==", player_ref))
+        .stream()
     )
     for match in p2_matches_query:
         data = match.to_dict()
@@ -77,11 +81,17 @@ def create_match():
 
     # Populate opponent choices from the user's friends
     friends_ref = db.collection("users").document(user_id).collection("friends")
-    accepted_friends_docs = friends_ref.where("status", "==", "accepted").stream()
+    accepted_friends_docs = friends_ref.where(
+        filter=firestore.FieldFilter("status", "==", "accepted")
+    ).stream()
     friend_ids = [doc.id for doc in accepted_friends_docs]
 
     if friend_ids:
-        friends = db.collection("users").where("__name__", "in", friend_ids).stream()
+        friends = (
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("__name__", "in", friend_ids))
+            .stream()
+        )
         form.player2.choices = [
             (doc.id, doc.to_dict().get("name", doc.id)) for doc in friends
         ]
