@@ -284,22 +284,29 @@ def update_profile():
                     flash("Imgur client ID is not configured.", "warning")
                 else:
                     imgur_client = Imgur({"client_id": client_id})
-                    filename = secure_filename(profile_picture_file.filename or "profile.jpg")
+                    filename = secure_filename(
+                        profile_picture_file.filename or "profile.jpg"
+                    )
 
                     # Save the file temporarily
                     temp_path = os.path.join("/tmp", filename)
                     profile_picture_file.save(temp_path)
 
                     # Upload to Imgur
-                    response = imgur_client.image_upload(temp_path, f"{user_id}'s profile picture", "")
+                    response = imgur_client.image_upload(
+                        temp_path, f"{user_id}'s profile picture", ""
+                    )
 
                     # Clean up the temporary file
                     os.remove(temp_path)
 
-                    if response['success']:
-                        update_data["profilePictureUrl"] = response['data']['link']
+                    if response["success"]:
+                        update_data["profilePictureUrl"] = response["data"]["link"]
                     else:
-                        flash(f"Imgur upload failed: {response['data']['error']}", "danger")
+                        flash(
+                            f"Imgur upload failed: {response['data']['error']}",
+                            "danger",
+                        )
 
             user_ref.update(update_data)
             flash("Profile updated successfully.", "success")
