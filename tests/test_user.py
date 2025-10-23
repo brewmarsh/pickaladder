@@ -74,7 +74,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/update_profile",
-            data={"dark_mode": "y", "duprRating": 5.5},
+            data={"dark_mode": "y", "dupr_rating": 5.5},
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -109,6 +109,22 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(
             mock_user_doc.update.call_args[0][0]["profilePictureUrl"],
             "https://i.imgur.com/test.jpg",
+        )
+
+    def test_update_dupr_and_dark_mode(self):
+        """Test updating DUPR rating and dark mode settings."""
+        self._set_session_user()
+        mock_user_doc = self._mock_firestore_user()
+
+        response = self.client.post(
+            "/user/update_profile",
+            data={"dark_mode": "y", "dupr_rating": "5.5"},
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Profile updated successfully.", response.data)
+        mock_user_doc.update.assert_called_once_with(
+            {"darkMode": True, "duprRating": 5.5}
         )
 
 

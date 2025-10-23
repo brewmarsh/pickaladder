@@ -127,4 +127,9 @@ def create_app(test_config=None):
             current_app.logger.error(f"Error loading user from session: {e}")
             session.clear()  # Clear session on error to be safe
 
+    @app.context_processor
+    def inject_version():
+        """Injects the application version into the template context."""
+        return dict(app_version=os.environ.get("APP_VERSION", "dev"))
+
     return app
