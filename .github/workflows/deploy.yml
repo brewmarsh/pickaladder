@@ -91,6 +91,7 @@ jobs:
             export MAIL_USERNAME='${{ secrets.MAIL_USERNAME }}'
             export MAIL_PASSWORD='${{ secrets.MAIL_PASSWORD }}'
             export FIREBASE_PROJECT_ID='${{ secrets.FIREBASE_PROJECT_ID }}'
+            export FIREBASE_API_KEY='${{ secrets.FIREBASE_API_KEY }}'
 
             # Tear down the old environment to ensure a clean start
             docker-compose -f docker-compose.prod.yml down
