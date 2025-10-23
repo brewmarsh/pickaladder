@@ -1,4 +1,5 @@
 import os
+import tempfile
 from flask import (
     render_template,
     request,
@@ -284,28 +285,18 @@ def update_profile():
                     flash("Imgur client ID is not configured.", "warning")
                 else:
                     imgur_client = Imgur({"client_id": client_id})
-                    filename = secure_filename(
-                        profile_picture_file.filename or "profile.jpg"
-                    )
+                    response = None
+                    with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
+                        profile_picture_file.save(temp_file.name)
+                        response = imgur_client.image_upload(
+                            temp_file.name, f"{user_id}'s profile picture", ""
+                        )
 
-                    # Save the file temporarily
-                    temp_path = os.path.join("/tmp", filename)
-                    profile_picture_file.save(temp_path)
-
-                    # Upload to Imgur
-                    response = imgur_client.image_upload(
-                        temp_path, f"{user_id}'s profile picture", ""
-                    )
-
-                    # Clean up the temporary file
-                    os.remove(temp_path)
-
-                    if response["success"]:
+                    if response and response["success"]:
                         update_data["profilePictureUrl"] = response["data"]["link"]
-                    else:
+                    elif response:
                         flash(
-                            f"Imgur upload failed: {response['data']['error']}",
-                            "danger",
+                            f"Imgur upload failed: {response['data']['error']}", "danger"
                         )
 
             user_ref.update(update_data)
