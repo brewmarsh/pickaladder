@@ -94,7 +94,7 @@ def friend_graph_data():
             db.collection("users")
             .document(user.id)
             .collection("friends")
-            .where("status", "==", "accepted")
+            .where(filter=firestore.FieldFilter("status", "==", "accepted"))
             .stream()
         )
         for friend in friends_query:

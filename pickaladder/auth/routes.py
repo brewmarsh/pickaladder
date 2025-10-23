@@ -32,7 +32,11 @@ def register():
 
         # Check if username is already taken in Firestore
         users_ref = db.collection("users")
-        if users_ref.where("username", "==", username).limit(1).get():
+        if (
+            users_ref.where(filter=firestore.FieldFilter("username", "==", username))
+            .limit(1)
+            .get()
+        ):
             flash("Username already exists. Please choose a different one.", "danger")
             return redirect(url_for(".register"))
 
@@ -93,7 +97,12 @@ def login():
     current_app.logger.info("Login page loaded")
     db = firestore.client()
     # Check if an admin user exists to determine if we should run install
-    admin_query = db.collection("users").where("isAdmin", "==", True).limit(1).get()
+    admin_query = (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("isAdmin", "==", True))
+        .limit(1)
+        .get()
+    )
     if not admin_query:
         return redirect(url_for("auth.install"))
 
@@ -145,7 +154,12 @@ def logout():
 def install():
     db = firestore.client()
     # Check if an admin user already exists
-    admin_query = db.collection("users").where("isAdmin", "==", True).limit(1).get()
+    admin_query = (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("isAdmin", "==", True))
+        .limit(1)
+        .get()
+    )
     if admin_query:
         return redirect(url_for("auth.login"))
 

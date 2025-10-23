@@ -70,7 +70,7 @@ def view_user(user_id):
     # Fetch user's friends (limited for display)
     friends_query = (
         profile_user_ref.collection("friends")
-        .where("status", "==", "accepted")
+        .where(filter=firestore.FieldFilter("status", "==", "accepted"))
         .limit(10)
         .stream()
     )
@@ -78,10 +78,14 @@ def view_user(user_id):
 
     # Fetch user's match history (limited for display)
     matches_as_p1 = (
-        db.collection("matches").where("player1Ref", "==", profile_user_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player1Ref", "==", profile_user_ref))
+        .stream()
     )
     matches_as_p2 = (
-        db.collection("matches").where("player2Ref", "==", profile_user_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player2Ref", "==", profile_user_ref))
+        .stream()
     )
     matches = list(matches_as_p1) + list(matches_as_p2)
     # This is a simplified representation. A real implementation would need
@@ -108,9 +112,9 @@ def users():
     if search_term:
         # Firestore doesn't support case-insensitive search natively.
         # This searches for an exact username match.
-        query = query.where("username", ">=", search_term).where(
-            "username", "<=", search_term + "\uf8ff"
-        )
+        query = query.where(
+            filter=firestore.FieldFilter("username", ">=", search_term)
+        ).where(filter=firestore.FieldFilter("username", "<=", search_term + "\uf8ff"))
 
     all_users = [doc for doc in query.limit(20).stream() if doc.id != g.user["uid"]]
 
@@ -166,7 +170,9 @@ def friends():
     friends_ref = db.collection("users").document(current_user_id).collection("friends")
 
     # Fetch accepted friends
-    accepted_docs = friends_ref.where("status", "==", "accepted").stream()
+    accepted_docs = friends_ref.where(
+        filter=firestore.FieldFilter("status", "==", "accepted")
+    ).stream()
     accepted_ids = [doc.id for doc in accepted_docs]
     accepted_friends = (
         [db.collection("users").document(uid).get() for uid in accepted_ids]
@@ -176,8 +182,8 @@ def friends():
 
     # Fetch pending requests (where the other user was the initiator)
     requests_docs = (
-        friends_ref.where("status", "==", "pending")
-        .where("initiator", "==", False)
+        friends_ref.where(filter=firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=firestore.FieldFilter("initiator", "==", False))
         .stream()
     )
     request_ids = [doc.id for doc in requests_docs]
@@ -329,37 +335,49 @@ def api_dashboard():
 
     # Fetch friends
     friends_query = (
-        user_ref.collection("friends").where("status", "==", "accepted").stream()
+        user_ref.collection("friends")
+        .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+        .stream()
     )
     friend_ids = [doc.id for doc in friends_query]
     friends_data = []
     if friend_ids:
         friend_docs = (
-            db.collection("users").where("__name__", "in", friend_ids).stream()
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("__name__", "in", friend_ids))
+            .stream()
         )
         friends_data = [{"id": doc.id, **doc.to_dict()} for doc in friend_docs]
 
     # Fetch pending friend requests
     requests_query = (
         user_ref.collection("friends")
-        .where("status", "==", "pending")
-        .where("initiator", "==", False)
+        .where(filter=firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=firestore.FieldFilter("initiator", "==", False))
         .stream()
     )
     request_ids = [doc.id for doc in requests_query]
     requests_data = []
     if request_ids:
         request_docs = (
-            db.collection("users").where("__name__", "in", request_ids).stream()
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("__name__", "in", request_ids))
+            .stream()
         )
         requests_data = [{"id": doc.id, **doc.to_dict()} for doc in request_docs]
 
     # Fetch recent matches
     matches_as_p1 = (
-        db.collection("matches").where("player1Ref", "==", user_ref).limit(5).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
+        .limit(5)
+        .stream()
     )
     matches_as_p2 = (
-        db.collection("matches").where("player2Ref", "==", user_ref).limit(5).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player2Ref", "==", user_ref))
+        .limit(5)
+        .stream()
     )
 
     matches_data = []
@@ -391,7 +409,9 @@ def api_dashboard():
     # Get group rankings
     group_rankings = []
     my_groups_query = (
-        db.collection("groups").where("members", "array_contains", user_ref).stream()
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
     )
     for group_doc in my_groups_query:
         group_data = group_doc.to_dict()
