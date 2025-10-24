@@ -8,8 +8,16 @@ import re
 
 
 class LoginForm(FlaskForm):
-    email = StringField("Email", validators=[DataRequired(), Email()])
-    password = PasswordField("Password", validators=[DataRequired()])
+    email = StringField(
+        "Email",
+        validators=[DataRequired(), Email()],
+        render_kw={"autocomplete": "username"},
+    )
+    password = PasswordField(
+        "Password",
+        validators=[DataRequired()],
+        render_kw={"autocomplete": "current-password"},
+    )
     submit = SubmitField("Login")
 
 
@@ -25,7 +33,11 @@ class RegisterForm(FlaskForm):
             ),
         ],
     )
-    email = StringField("Email", validators=[DataRequired(), Email()])
+    email = StringField(
+        "Email",
+        validators=[DataRequired(), Email()],
+        render_kw={"autocomplete": "email"},
+    )
     password = PasswordField(
         "Password",
         validators=[
@@ -33,8 +45,13 @@ class RegisterForm(FlaskForm):
             Length(min=8),
             EqualTo("confirm_password", message="Passwords must match."),
         ],
+        render_kw={"autocomplete": "new-password"},
     )
-    confirm_password = PasswordField("Confirm Password", validators=[DataRequired()])
+    confirm_password = PasswordField(
+        "Confirm Password",
+        validators=[DataRequired()],
+        render_kw={"autocomplete": "new-password"},
+    )
     name = StringField("Name", validators=[DataRequired()])
     dupr_rating = DecimalField("DUPR Rating", validators=[], places=2)
     submit = SubmitField("Register")
