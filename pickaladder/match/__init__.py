@@ -2,8 +2,8 @@
 
 from flask import Blueprint
 
-from . import routes
-
 bp = Blueprint("match", __name__, url_prefix="/match", template_folder="templates")
+
+from . import routes
 
 __all__ = ["routes"]
