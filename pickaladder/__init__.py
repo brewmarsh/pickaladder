@@ -1,3 +1,4 @@
+"""Initialize the Flask app and its extensions."""
 import os
 import uuid
 
@@ -10,10 +11,14 @@ from .extensions import csrf, mail
 
 
 class UUIDConverter(BaseConverter):
+    """URL converter for UUIDs."""
+
     def to_python(self, value):
+        """Convert a string to a UUID."""
         return uuid.UUID(value)
 
     def to_url(self, value):
+        """Convert a UUID to a string."""
         return str(value)
 
 

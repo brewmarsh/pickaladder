@@ -1,3 +1,4 @@
+"""Tests for the admin blueprint."""
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -14,6 +15,8 @@ MOCK_USER_DATA = {"name": "Regular User", "isAdmin": False}
 
 
 class AdminRoutesTestCase(unittest.TestCase):
+    """Test case for the admin blueprint."""
+
     def setUp(self):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_firestore_service = MagicMock()
@@ -40,6 +43,7 @@ class AdminRoutesTestCase(unittest.TestCase):
         self.app_context.push()
 
     def tearDown(self):
+        """Tear down the test client."""
         self.app_context.pop()
 
     def _login_user(self, user_id, user_data, is_admin):

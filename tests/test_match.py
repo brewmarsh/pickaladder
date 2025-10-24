@@ -1,3 +1,4 @@
+"""Tests for the match blueprint."""
 import datetime
 import unittest
 from unittest.mock import MagicMock, patch
@@ -16,6 +17,8 @@ MOCK_OPPONENT_DATA = {"name": "Loser", "isAdmin": False}
 
 
 class MatchRoutesFirebaseTestCase(unittest.TestCase):
+    """Test case for the match blueprint."""
+
     def setUp(self):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_firestore_service = MagicMock()
@@ -46,6 +49,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context.push()
 
     def tearDown(self):
+        """Tear down the test client."""
         self.app_context.pop()
 
     def _set_session_user(self):

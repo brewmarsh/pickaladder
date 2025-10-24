@@ -1,3 +1,4 @@
+"""Forms for the user blueprint."""
 from flask_wtf import FlaskForm  # type: ignore
 from flask_wtf.file import FileAllowed  # type: ignore
 from wtforms import BooleanField, DecimalField, FileField, SubmitField
@@ -5,6 +6,8 @@ from wtforms.validators import NumberRange, Optional
 
 
 class UpdateProfileForm(FlaskForm):
+    """Form for updating a user profile."""
+
     dupr_rating = DecimalField(
         "DUPR Rating",
         validators=[

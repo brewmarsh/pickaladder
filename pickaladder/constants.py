@@ -1,3 +1,5 @@
+"""Constants used throughout the application."""
+
 # Database-related constants
 DB_NAME = "pickaladder"
 

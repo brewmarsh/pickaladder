@@ -1,3 +1,4 @@
+"""Tests for the auth blueprint."""
 import re
 import unittest
 from unittest.mock import MagicMock, patch
@@ -13,6 +14,8 @@ MOCK_PASSWORD = "Password123"  # nosec
 
 
 class AuthFirebaseTestCase(unittest.TestCase):
+    """Test case for the auth blueprint."""
+
     def setUp(self):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_auth_service = MagicMock()

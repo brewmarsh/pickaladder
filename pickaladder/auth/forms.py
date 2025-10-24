@@ -1,3 +1,4 @@
+"""Forms for the auth blueprint."""
 import re
 
 from flask_wtf import FlaskForm  # type: ignore
@@ -12,6 +13,8 @@ from wtforms.validators import DataRequired, Email, EqualTo, Length, Regexp
 
 
 class LoginForm(FlaskForm):
+    """Login form."""
+
     email = StringField(
         "Email",
         validators=[DataRequired(), Email()],
@@ -26,6 +29,8 @@ class LoginForm(FlaskForm):
 
 
 class RegisterForm(FlaskForm):
+    """Registration form."""
+
     username = StringField(
         "Username",
         validators=[
@@ -61,6 +66,7 @@ class RegisterForm(FlaskForm):
     submit = SubmitField("Register")
 
     def validate_password(self, field):
+        """Validate password complexity."""
         if not re.search(r"[A-Z]", field.data):
             raise ValidationError(
                 "Password must contain at least one uppercase letter."

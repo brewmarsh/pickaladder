@@ -1,3 +1,4 @@
+"""Routes for the group blueprint."""
 from firebase_admin import firestore
 from flask import flash, g, redirect, render_template, request, url_for
 
@@ -10,7 +11,7 @@ from .forms import GroupForm, InviteFriendForm
 @bp.route("/", methods=["GET"])
 @login_required
 def view_groups():
-    """Displays a list of public groups and the user's groups."""
+    """Display a list of public groups and the user's groups."""
     db = firestore.client()
     search_term = request.args.get("search", "")
 
@@ -42,7 +43,7 @@ def view_groups():
 @bp.route("/<string:group_id>", methods=["GET", "POST"])
 @login_required
 def view_group(group_id):
-    """Displays a single group's page, including its members, leaderboard, and invite form."""
+    """Display a single group's page, including its members, leaderboard, and invite form."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
@@ -119,6 +120,7 @@ def view_group(group_id):
 @bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create_group():
+    """Create a new group."""
     form = GroupForm()
     if form.validate_on_submit():
         db = firestore.client()
@@ -143,6 +145,7 @@ def create_group():
 @bp.route("/<string:group_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_group(group_id):
+    """Edit a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
@@ -179,6 +182,7 @@ def edit_group(group_id):
 @bp.route("/<string:group_id>/delete", methods=["POST"])
 @login_required
 def delete_group(group_id):
+    """Delete a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
@@ -204,6 +208,7 @@ def delete_group(group_id):
 @bp.route("/<string:group_id>/join", methods=["POST"])
 @login_required
 def join_group(group_id):
+    """Join a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
     user_ref = db.collection("users").document(g.user["uid"])
@@ -220,6 +225,7 @@ def join_group(group_id):
 @bp.route("/<string:group_id>/leave", methods=["POST"])
 @login_required
 def leave_group(group_id):
+    """Leave a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
     user_ref = db.collection("users").document(g.user["uid"])

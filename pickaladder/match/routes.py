@@ -1,3 +1,4 @@
+"""Routes for the match blueprint."""
 import datetime
 
 from firebase_admin import firestore
@@ -10,7 +11,7 @@ from .forms import MatchForm
 
 
 def get_player_record(player_ref):
-    """Calculates the win/loss record for a given player by their document reference."""
+    """Calculate the win/loss record for a given player by their document reference."""
     db = firestore.client()
     wins = 0
     losses = 0
@@ -47,7 +48,7 @@ def get_player_record(player_ref):
 @bp.route("/<string:match_id>")
 @login_required
 def view_match_page(match_id):
-    """Displays the details of a single match."""
+    """Display the details of a single match."""
     db = firestore.client()
     match_ref = db.collection("matches").document(match_id)
     match = match_ref.get()
@@ -77,6 +78,7 @@ def view_match_page(match_id):
 @bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create_match():
+    """Create a new match."""
     db = firestore.client()
     user_id = g.user["uid"]
     form = MatchForm()
@@ -126,7 +128,8 @@ def create_match():
 @bp.route("/leaderboard")
 @login_required
 def leaderboard():
-    """Displays a global leaderboard.
+    """Display a global leaderboard.
+
     Note: This is a simplified, non-scalable implementation. A production-ready
     leaderboard on Firestore would likely require denormalization and Cloud Functions.
     """

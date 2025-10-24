@@ -1,3 +1,4 @@
+"""Tests for the user blueprint."""
 import unittest
 from io import BytesIO
 from unittest.mock import MagicMock, patch
@@ -13,6 +14,8 @@ MOCK_FIRESTORE_USER_DATA = {"name": "User One", "isAdmin": True, "uid": "user1"}
 
 
 class UserRoutesFirebaseTestCase(unittest.TestCase):
+    """Test case for the user blueprint."""
+
     def setUp(self):
         """Set up a test client and mock the necessary Firebase services."""
         self.mock_firestore_service = MagicMock()
@@ -40,6 +43,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context.push()
 
     def tearDown(self):
+        """Tear down the test client."""
         self.app_context.pop()
 
     def _set_session_user(self):

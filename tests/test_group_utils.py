@@ -1,3 +1,4 @@
+"""Tests for the group utils."""
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -5,8 +6,11 @@ from pickaladder.group.utils import get_group_leaderboard
 
 
 class TestGroupUtils(unittest.TestCase):
+    """Test case for the group utils."""
+
     @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard(self, mock_firestore):
+        """Test the get_group_leaderboard function."""
         # Mock Firestore client
         mock_db = mock_firestore.client.return_value
 
@@ -44,13 +48,6 @@ class TestGroupUtils(unittest.TestCase):
             "player2Score": 5,
         }
 
-        # This is the key to the fix. We need to mock the return value of the `where` clause
-        # This is the key to the fix. We need to mock the return value of the `where` clause
-        # This is the key to the fix. We need to mock the return value of the `where` clause
-        # This is the key to the fix. We need to mock the return value of the `where` clause
-        # This is the key to the fix. We need to mock the return value of the `where` clause
-        # This is the key to the fix. We need to mock the return value of the `where` clause
-        # This is the key to the fix. We need to mock the return value of the `where` clause
         # This is the key to the fix. We need to mock the return value of the `where` clause
         # for both player1Ref and player2Ref.
         mock_user1_ref = MagicMock()
