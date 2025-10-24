@@ -145,7 +145,12 @@ def _generate_unique_username(db, base_username):
     """Generates a unique username by appending a number if the base username exists."""
     username = base_username
     i = 1
-    while db.collection("users").where(filter=firestore.FieldFilter("username", "==", username)).limit(1).get():
+    while (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("username", "==", username))
+        .limit(1)
+        .get()
+    ):
         username = f"{base_username}{i}"
         i += 1
     return username
