@@ -199,7 +199,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
 
         # First, get the register page to get a valid CSRF token and set the invite token in the session
         with self.client.session_transaction() as sess:
-            sess["invite_token"] = "test_invite_token"
+            sess["invite_token"] = "test_invite_token"  # nosec
         register_page_response = self.client.get(
             "/auth/register?invite_token=test_invite_token"
         )
