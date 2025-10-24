@@ -1,4 +1,5 @@
 """The auth blueprint."""
+
 from flask import Blueprint
 
 from . import routes

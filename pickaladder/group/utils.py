@@ -1,4 +1,5 @@
 """Utility functions for the group blueprint."""
+
 from firebase_admin import firestore
 
 

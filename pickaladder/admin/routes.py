@@ -1,4 +1,5 @@
 """Admin routes for the application."""
+
 import random
 
 from faker import Faker

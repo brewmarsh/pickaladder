@@ -1,4 +1,5 @@
 """Tests for the group utils."""
+
 import unittest
 from unittest.mock import MagicMock, patch
 

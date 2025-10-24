@@ -1,4 +1,5 @@
 """Forms for the user blueprint."""
+
 from flask_wtf import FlaskForm  # type: ignore
 from flask_wtf.file import FileAllowed  # type: ignore
 from wtforms import BooleanField, DecimalField, FileField, SubmitField

@@ -1,4 +1,5 @@
 """Forms for the auth blueprint."""
+
 import re
 
 from flask_wtf import FlaskForm  # type: ignore

@@ -1,4 +1,5 @@
 """Tests for the auth blueprint."""
+
 import re
 import unittest
 from unittest.mock import MagicMock, patch

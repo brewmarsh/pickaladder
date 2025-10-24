@@ -1,4 +1,5 @@
 """Routes for the group blueprint."""
+
 from firebase_admin import firestore
 from flask import flash, g, redirect, render_template, request, url_for
 

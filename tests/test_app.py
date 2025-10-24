@@ -1,4 +1,5 @@
 """Tests for the app factory."""
+
 import unittest
 from unittest.mock import patch
 

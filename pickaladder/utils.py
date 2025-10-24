@@ -1,4 +1,5 @@
 """Utility functions for the application."""
+
 from flask import current_app, render_template
 from flask_mail import Message
 

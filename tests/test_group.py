@@ -1,4 +1,5 @@
 """Tests for the group blueprint."""
+
 import unittest
 from unittest.mock import MagicMock, patch
 

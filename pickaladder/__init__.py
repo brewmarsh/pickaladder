@@ -1,4 +1,5 @@
 """Initialize the Flask app and its extensions."""
+
 import os
 import uuid
 

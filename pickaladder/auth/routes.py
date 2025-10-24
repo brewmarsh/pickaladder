@@ -1,4 +1,5 @@
 """Routes for authentication."""
+
 import json
 import os
 import re

@@ -1,4 +1,5 @@
 """Main entry point for the application."""
+
 from pickaladder import create_app
 
 app = create_app()

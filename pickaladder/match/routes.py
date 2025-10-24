@@ -1,4 +1,5 @@
 """Routes for the match blueprint."""
+
 import datetime
 
 from firebase_admin import firestore
