@@ -79,6 +79,49 @@
         </div>
         {{ form.submit(class="btn") }}
     </form>
+    <div class="or-separator">OR</div>
+    <button id="google-signin-btn" class="btn btn-google">Sign up with Google</button>
     <p class="text-center" style="margin-top: 20px;">Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>.</p>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const googleSignInButton = document.getElementById('google-signin-btn');
+
+    googleSignInButton.addEventListener('click', function() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth().signInWithPopup(provider)
+            .then((result) => {
+                return result.user.getIdToken();
+            })
+            .then((idToken) => {
+                return fetch("{{ url_for('auth.session_login') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ idToken: idToken }),
+                });
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = "{{ url_for('user.dashboard') }}";
+                } else {
+                    throw new Error("Server-side session creation failed.");
+                }
+            })
+            .catch((error) => {
+                const errorMessage = error.message;
+                const flashes = document.querySelector('.flashes');
+                flashes.innerHTML = ''; // Clear previous messages
+                const flash = document.createElement('div');
+                flash.className = 'alert alert-danger';
+                flash.textContent = `Google Sign-in failed: ${errorMessage}`;
+                flashes.appendChild(flash);
+            });
+    });
+});
+</script>
 {% endblock %}
