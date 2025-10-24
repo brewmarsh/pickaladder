@@ -1,10 +1,12 @@
-from flask import render_template, redirect, url_for, flash, g
-from firebase_admin import firestore
 import datetime
+
+from firebase_admin import firestore
+from flask import flash, g, redirect, render_template, url_for
+
+from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import MatchForm
-from pickaladder.auth.decorators import login_required
 
 
 def get_player_record(player_ref):
@@ -124,8 +126,7 @@ def create_match():
 @bp.route("/leaderboard")
 @login_required
 def leaderboard():
-    """
-    Displays a global leaderboard.
+    """Displays a global leaderboard.
     Note: This is a simplified, non-scalable implementation. A production-ready
     leaderboard on Firestore would likely require denormalization and Cloud Functions.
     """

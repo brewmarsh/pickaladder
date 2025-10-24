@@ -1,17 +1,19 @@
-from flask import (
-    render_template,
-    redirect,
-    url_for,
-    flash,
-    jsonify,
-    g,
-)
-from faker import Faker
 import random
-from firebase_admin import firestore, auth
+
+from faker import Faker
+from firebase_admin import auth, firestore
+from flask import (
+    flash,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    url_for,
+)
+
+from pickaladder.auth.decorators import login_required
 
 from . import bp
-from pickaladder.auth.decorators import login_required
 
 
 @bp.route("/")

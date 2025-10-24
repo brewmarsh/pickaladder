@@ -1,14 +1,15 @@
 from flask import (
     Blueprint,
-    render_template,
     current_app,
-    redirect,
-    url_for,
     flash,
+    redirect,
+    render_template,
     request,
+    url_for,
 )
 from flask_wtf.csrf import CSRFError
-from .errors import AppError, ValidationError, DuplicateResourceError, NotFoundError
+
+from .errors import AppError, DuplicateResourceError, NotFoundError, ValidationError
 
 error_handlers_bp = Blueprint("error_handlers", __name__)
 
@@ -56,9 +57,7 @@ def handle_500(e):
 
 @error_handlers_bp.app_errorhandler(CSRFError)
 def handle_csrf_error(e):
-    """
-    Handles CSRF errors, which usually indicate a session timeout or invalid form submission.
-    """
+    """Handles CSRF errors, which usually indicate a session timeout or invalid form submission."""
     current_app.logger.warning(f"CSRF Error: {e.description}")
     flash("Your session may have expired. Please try your action again.", "warning")
     # Redirect to the previous page or a default page if the referrer is not available

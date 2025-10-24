@@ -1,9 +1,10 @@
-from flask import render_template, redirect, url_for, flash, request, g
 from firebase_admin import firestore
+from flask import flash, g, redirect, render_template, request, url_for
+
+from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import GroupForm, InviteFriendForm
-from pickaladder.auth.decorators import login_required
 
 
 @bp.route("/", methods=["GET"])

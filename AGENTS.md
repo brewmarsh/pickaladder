@@ -42,6 +42,11 @@ When getting started, it's helpful to review these key files to understand the a
 *   **Python:** Follow PEP 8 style guidelines. All new functions should have docstrings.
 *   **Commits:** Commit messages should follow the [conventional commit format](https://www.conventionalcommits.org/en/v1.0.0/).
 
+### Version Control
+*   **Branching:** Create a new branch for each new feature or fix. Use the following naming conventions:
+    *   `feature/<branch-description>` for new features (e.g., `feature/add-user-profile`)
+    *   `fix/<branch-description>` for bug fixes (e.g., `fix/login-form-validation`)
+
 ### Repository Badges
 The `README.md` file should include a set of badges to provide at-a-glance information about the project. The following badges are recommended:
 

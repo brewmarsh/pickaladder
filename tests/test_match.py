@@ -1,9 +1,8 @@
-import unittest
-from unittest.mock import patch, MagicMock
 import datetime
+import unittest
+from unittest.mock import MagicMock, patch
 
 # Pre-emptive imports to ensure patch targets exist.
-
 from pickaladder import create_app
 
 # Mock user payloads

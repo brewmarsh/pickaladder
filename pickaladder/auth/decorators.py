@@ -1,5 +1,6 @@
 from functools import wraps
-from flask import flash, redirect, url_for, session
+
+from flask import flash, redirect, session, url_for
 
 
 def login_required(f=None, admin_required=False):

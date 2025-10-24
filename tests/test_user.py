@@ -1,10 +1,9 @@
 import unittest
-from unittest.mock import patch, MagicMock
 from io import BytesIO
+from unittest.mock import MagicMock, patch
 
 # INSIGHT #2: Explicitly import submodules to defeat lazy loading
 # and ensure patch targets exist before the test runner tries to find them.
-
 from pickaladder import create_app
 
 # Mock user payloads for consistent test data
