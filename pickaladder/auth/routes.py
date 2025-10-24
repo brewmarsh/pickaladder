@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from flask import (
     render_template,
     request,
@@ -140,6 +141,21 @@ def login():
     return render_template("login.html", form=form)
 
 
+def _generate_unique_username(db, base_username):
+    """Generates a unique username by appending a number if the base username exists."""
+    username = base_username
+    i = 1
+    while (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("username", "==", username))
+        .limit(1)
+        .get()
+    ):
+        username = f"{base_username}{i}"
+        i += 1
+    return username
+
+
 @bp.route("/session_login", methods=["POST"])
 def session_login():
     """
@@ -151,16 +167,33 @@ def session_login():
         decoded_token = auth.verify_id_token(id_token)
         uid = decoded_token["uid"]
         db = firestore.client()
-        user_doc = db.collection("users").document(uid).get()
+        user_doc_ref = db.collection("users").document(uid)
+        user_doc = user_doc_ref.get()
+
         if user_doc.exists:
             user_info = user_doc.to_dict()
-            session["user_id"] = uid
-            session["is_admin"] = user_info.get("isAdmin", False)
-            return jsonify({"status": "success"})
         else:
-            return jsonify(
-                {"status": "error", "message": "User not found in Firestore."}
-            ), 404
+            # User doesn't exist, so create a new profile
+            user_record = auth.get_user(uid)
+            email = user_record.email
+            name = user_record.display_name or email.split("@")[0]
+            base_username = re.sub(r"[^a-zA-Z0-9_.]", "", name.lower())
+            username = _generate_unique_username(db, base_username)
+
+            user_info = {
+                "username": username,
+                "email": email,
+                "name": name,
+                "duprRating": None,
+                "isAdmin": False,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
+            user_doc_ref.set(user_info)
+
+        session["user_id"] = uid
+        session["is_admin"] = user_info.get("isAdmin", False)
+        return jsonify({"status": "success"})
+
     except Exception as e:
         current_app.logger.error(f"Error during session login: {e}")
         return jsonify(

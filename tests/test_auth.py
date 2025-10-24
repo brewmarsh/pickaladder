@@ -106,7 +106,8 @@ class AuthFirebaseTestCase(unittest.TestCase):
         # First, get the login page to get a valid CSRF token
         login_page_response = self.client.get("/auth/login")
         csrf_token_match = re.search(
-            r'name="csrf-token" content="([^"]+)"', login_page_response.data.decode()
+            r'<input id="csrf_token" name="csrf_token" type="hidden" value="([^"]+)">',
+            login_page_response.data.decode(),
         )
         self.assertIsNotNone(csrf_token_match)
         csrf_token = csrf_token_match.group(1)
@@ -198,7 +199,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
 
         # First, get the register page to get a valid CSRF token and set the invite token in the session
         with self.client.session_transaction() as sess:
-            sess["invite_token"] = "test_invite_token"
+            sess["invite_token"] = "test_invite_token"  # nosec
         register_page_response = self.client.get(
             "/auth/register?invite_token=test_invite_token"
         )
@@ -230,6 +231,59 @@ class AuthFirebaseTestCase(unittest.TestCase):
         mock_db.collection("invites").document(
             "test_invite_token"
         ).update.assert_called_once_with({"used": True})
+
+    def test_google_signin_new_user(self):
+        """Test that a new user signing in with Google has their account created."""
+        # Mock the return value of verify_id_token
+        self.mock_auth_service.verify_id_token.return_value = MOCK_USER_PAYLOAD
+
+        # Mock the Firestore document to simulate a new user
+        mock_db = self.mock_firestore_service.client.return_value
+        mock_users_collection = mock_db.collection("users")
+        mock_user_doc = mock_users_collection.document(MOCK_USER_ID)
+        mock_doc_snapshot = MagicMock()
+        mock_doc_snapshot.exists = False
+        mock_user_doc.get.return_value = mock_doc_snapshot
+
+        # Mock get_user to return a user record
+        mock_user_record = MagicMock()
+        mock_user_record.email = "new@example.com"
+        mock_user_record.display_name = "New User"
+        self.mock_auth_service.get_user.return_value = mock_user_record
+
+        # Mock the where calls for both the admin check and the username check
+        admin_check_query = MagicMock()
+        admin_check_query.limit.return_value.get.return_value = [MagicMock()]
+        username_check_query = MagicMock()
+        username_check_query.limit.return_value.get.return_value = []
+
+        def where_side_effect(*args, **kwargs):
+            field_filter = kwargs.get("filter")
+            if field_filter and field_filter.field_path == "isAdmin":
+                return admin_check_query
+            elif field_filter and field_filter.field_path == "username":
+                return username_check_query
+            return MagicMock()
+
+        mock_users_collection.where.side_effect = where_side_effect
+
+        # First, get the login page to get a valid CSRF token
+        login_page_response = self.client.get("/auth/login")
+        csrf_token_match = re.search(
+            r'<input id="csrf_token" name="csrf_token" type="hidden" value="([^"]+)">',
+            login_page_response.data.decode(),
+        )
+        self.assertIsNotNone(csrf_token_match)
+        csrf_token = csrf_token_match.group(1)
+
+        response = self.client.post(
+            "/auth/session_login",
+            json={"idToken": "test_token"},
+            headers={"X-CSRFToken": csrf_token},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {"status": "success"})
+        mock_user_doc.set.assert_called_once()
 
 
 if __name__ == "__main__":
