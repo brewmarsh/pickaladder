@@ -1,5 +1,10 @@
+"""The match blueprint."""
 from flask import Blueprint
 
-bp = Blueprint("match", __name__, url_prefix="/match")
+from . import routes
 
-from . import routes  # noqa: E402, F401
+bp = Blueprint(
+    "match", __name__, url_prefix="/match", template_folder="templates"
+)
+
+__all__ = ["routes"]

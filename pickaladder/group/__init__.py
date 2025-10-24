@@ -1,5 +1,10 @@
+"""The group blueprint."""
 from flask import Blueprint
 
-bp = Blueprint("group", __name__, url_prefix="/group")
+from . import routes
 
-from . import routes  # noqa: E402, F401
+bp = Blueprint(
+    "group", __name__, url_prefix="/group", template_folder="templates"
+)
+
+__all__ = ["routes"]

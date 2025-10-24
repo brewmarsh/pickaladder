@@ -1,3 +1,4 @@
+"""Admin routes for the application."""
 import random
 
 from faker import Faker
@@ -19,7 +20,7 @@ from . import bp
 @bp.route("/")
 @login_required(admin_required=True)
 def admin():
-    """Renders the main admin dashboard."""
+    """Render the main admin dashboard."""
     # Authorization check is now here, after g.user is guaranteed to be loaded.
     if not g.user or not g.user.get("isAdmin"):
         flash("You are not authorized to view this page.", "danger")
@@ -38,7 +39,7 @@ def admin():
 
 @bp.route("/toggle_email_verification", methods=["POST"])
 def toggle_email_verification():
-    """Toggles the global setting for requiring email verification."""
+    """Toggle the global setting for requiring email verification."""
     db = firestore.client()
     setting_ref = db.collection("settings").document("enforceEmailVerification")
     try:
@@ -57,7 +58,7 @@ def toggle_email_verification():
 
 @bp.route("/matches")
 def admin_matches():
-    """Displays a list of all matches."""
+    """Display a list of all matches."""
     db = firestore.client()
     matches_query = (
         db.collection("matches")
@@ -71,7 +72,7 @@ def admin_matches():
 
 @bp.route("/delete_match/<string:match_id>", methods=["POST"])
 def admin_delete_match(match_id):
-    """Deletes a match document from Firestore."""
+    """Delete a match document from Firestore."""
     db = firestore.client()
     try:
         db.collection("matches").document(match_id).delete()
@@ -83,7 +84,7 @@ def admin_delete_match(match_id):
 
 @bp.route("/friend_graph_data")
 def friend_graph_data():
-    """Provides data for a network graph of users and their friendships."""
+    """Provide data for a network graph of users and their friendships."""
     db = firestore.client()
     users = db.collection("users").stream()
     nodes = []
@@ -108,7 +109,7 @@ def friend_graph_data():
 
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])
 def delete_user(user_id):
-    """Deletes a user from Firebase Auth and Firestore."""
+    """Delete a user from Firebase Auth and Firestore."""
     db = firestore.client()
     try:
         # Delete from Firebase Auth
@@ -125,7 +126,7 @@ def delete_user(user_id):
 
 @bp.route("/promote_user/<string:user_id>", methods=["POST"])
 def promote_user(user_id):
-    """Promotes a user to admin status."""
+    """Promote a user to admin status."""
     db = firestore.client()
     try:
         user_ref = db.collection("users").document(user_id)
@@ -139,7 +140,7 @@ def promote_user(user_id):
 
 @bp.route("/generate_users", methods=["POST"])
 def generate_users():
-    """Generates a number of fake users for testing."""
+    """Generate a number of fake users for testing."""
     db = firestore.client()
     fake = Faker()
     users_to_create = 10
@@ -180,7 +181,7 @@ def generate_users():
 
 @bp.route("/generate_matches", methods=["POST"])
 def generate_matches():
-    """Generates random matches between existing users."""
+    """Generate random matches between existing users."""
     db = firestore.client()
     fake = Faker()
     try:

@@ -1,9 +1,22 @@
+"""Decorators for the auth blueprint."""
 from functools import wraps
 
 from flask import flash, redirect, session, url_for
 
 
 def login_required(f=None, admin_required=False):
+    """Redirect to the login page if the user is not logged in.
+
+    Usage:
+    @login_required
+    def protected_view():
+        ...
+
+    @login_required(admin_required=True)
+    def admin_view():
+        ...
+    """
+
     def decorator(func):
         @wraps(func)
         def decorated_function(*args, **kwargs):

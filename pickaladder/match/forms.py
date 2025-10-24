@@ -1,19 +1,24 @@
+"""Forms for the match blueprint."""
 from flask_wtf import FlaskForm  # type: ignore
 from wtforms import DateField, IntegerField, SelectField, ValidationError
 from wtforms.validators import DataRequired
 
 
 class MatchForm(FlaskForm):
+    """Form for creating a new match."""
+
     player2 = SelectField("Opponent", validators=[DataRequired()])
     player1_score = IntegerField("Your Score", validators=[DataRequired()])
     player2_score = IntegerField("Opponent's Score", validators=[DataRequired()])
     match_date = DateField("Date", validators=[DataRequired()])
 
     def validate_player1_score(self, field):
+        """Validate that the score is not negative."""
         if field.data < 0:
             raise ValidationError("Scores cannot be negative.")
 
     def validate_player2_score(self, field):
+        """Validate that the score is not negative."""
         if field.data < 0:
             raise ValidationError("Scores cannot be negative.")
 

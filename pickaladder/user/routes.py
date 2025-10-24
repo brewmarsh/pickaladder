@@ -1,3 +1,4 @@
+"""Routes for the user blueprint."""
 import os
 import secrets
 import tempfile
@@ -26,7 +27,9 @@ from .forms import UpdateProfileForm
 @bp.route("/dashboard")
 @login_required
 def dashboard():
-    """Renders the user dashboard. Most data is loaded asynchronously via API endpoints.
+    """Render the user dashboard.
+
+    Most data is loaded asynchronously via API endpoints.
     The profile update form is passed to the template.
     """
     current_app.logger.info("Dashboard page loaded")
@@ -38,7 +41,7 @@ def dashboard():
 @bp.route("/<string:user_id>")
 @login_required
 def view_user(user_id):
-    """Displays a user's public profile."""
+    """Display a user's public profile."""
     db = firestore.client()
     profile_user_ref = db.collection("users").document(user_id)
     profile_user = profile_user_ref.get()
@@ -106,7 +109,7 @@ def view_user(user_id):
 @bp.route("/users")
 @login_required
 def users():
-    """Lists and allows searching for users."""
+    """List and allows searching for users."""
     db = firestore.client()
     search_term = request.args.get("search", "")
     query = db.collection("users")
@@ -126,6 +129,7 @@ def users():
 @bp.route("/send_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def send_friend_request(friend_id):
+    """Send a friend request to another user."""
     db = firestore.client()
     current_user_id = g.user["uid"]
     if current_user_id == friend_id:
@@ -166,7 +170,7 @@ def send_friend_request(friend_id):
 @bp.route("/friends")
 @login_required
 def friends():
-    """Displays the user's friends and pending requests."""
+    """Display the user's friends and pending requests."""
     db = firestore.client()
     current_user_id = g.user["uid"]
     friends_ref = db.collection("users").document(current_user_id).collection("friends")
@@ -203,6 +207,7 @@ def friends():
 @bp.route("/accept_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def accept_friend_request(friend_id):
+    """Accept a friend request."""
     db = firestore.client()
     current_user_id = g.user["uid"]
     batch = db.batch()
@@ -238,6 +243,7 @@ def accept_friend_request(friend_id):
 @bp.route("/decline_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def decline_friend_request(friend_id):
+    """Decline a friend request."""
     db = firestore.client()
     current_user_id = g.user["uid"]
     batch = db.batch()
@@ -273,6 +279,7 @@ def decline_friend_request(friend_id):
 @bp.route("/update_profile", methods=["POST"])
 @login_required
 def update_profile():
+    """Update a user's profile."""
     db = firestore.client()
     user_id = g.user["uid"]
     user_ref = db.collection("users").document(user_id)
@@ -329,7 +336,7 @@ def update_profile():
 @bp.route("/api/dashboard")
 @login_required
 def api_dashboard():
-    """Provides dashboard data as JSON, including matches and group rankings."""
+    """Provide dashboard data as JSON, including matches and group rankings."""
     db = firestore.client()
     user_id = g.user["uid"]
     user_ref = db.collection("users").document(user_id)
@@ -445,7 +452,7 @@ def api_dashboard():
 @bp.route("/api/create_invite", methods=["POST"])
 @login_required
 def create_invite():
-    """Generates a unique invite token and stores it in Firestore."""
+    """Generate a unique invite token and stores it in Firestore."""
     db = firestore.client()
     user_id = g.user["uid"]
     token = secrets.token_urlsafe(16)

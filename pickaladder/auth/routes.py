@@ -1,3 +1,4 @@
+"""Routes for authentication."""
 import json
 import os
 import re
@@ -26,6 +27,7 @@ from .forms import LoginForm, RegisterForm
 
 @bp.route("/register", methods=["GET", "POST"])
 def register():
+    """Register a new user."""
     invite_token = request.args.get("invite_token")
     if invite_token:
         session["invite_token"] = invite_token
@@ -121,7 +123,8 @@ def register():
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
-    """Renders the login page.
+    """Render the login page.
+
     The actual login process is handled by the Firebase client-side SDK.
     The client will get an ID token and send it with subsequent requests.
     """
@@ -143,7 +146,7 @@ def login():
 
 
 def _generate_unique_username(db, base_username):
-    """Generates a unique username by appending a number if the base username exists."""
+    """Generate a unique username by appending a number if the base username exists."""
     username = base_username
     i = 1
     while (
@@ -159,7 +162,9 @@ def _generate_unique_username(db, base_username):
 
 @bp.route("/session_login", methods=["POST"])
 def session_login():
-    """This endpoint is called from the client-side after a successful Firebase login.
+    """Handle session login.
+
+    This endpoint is called from the client-side after a successful Firebase login.
     It receives the ID token, verifies it, and creates a server-side session.
     """
     id_token = request.json.get("idToken")
@@ -203,7 +208,9 @@ def session_login():
 
 @bp.route("/logout")
 def logout():
-    """The actual logout is handled by the Firebase client-side SDK.
+    """Log the user out.
+
+    The actual logout is handled by the Firebase client-side SDK.
     This route is for clearing any server-side session info if needed.
     """
     session.clear()
@@ -213,6 +220,7 @@ def logout():
 
 @bp.route("/install", methods=["GET", "POST"])
 def install():
+    """Install the application by creating an admin user."""
     db = firestore.client()
     # Check if an admin user already exists
     admin_query = (
@@ -288,7 +296,8 @@ def install():
 
 @bp.route("/change_password", methods=["GET"])
 def change_password():
-    """Renders the change password page.
+    """Render the change password page.
+
     The actual password change is handled by the Firebase client-side SDK.
     """
     if not g.get("user"):
@@ -298,6 +307,7 @@ def change_password():
 
 @bp.route("/firebase-config.js")
 def firebase_config():
+    """Return the Firebase config as a JavaScript file."""
     api_key = os.environ.get("FIREBASE_API_KEY")
     if not api_key:
         current_app.logger.error(

@@ -1,8 +1,10 @@
+"""Utility functions for the group blueprint."""
 from firebase_admin import firestore
 
 
 def get_group_leaderboard(group_id):
-    """Calculates the leaderboard for a specific group using Firestore.
+    """Calculate the leaderboard for a specific group using Firestore.
+
     This is a client-side implementation of the aggregation logic.
     """
     db = firestore.client()

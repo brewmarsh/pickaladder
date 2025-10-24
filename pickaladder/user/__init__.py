@@ -1,5 +1,8 @@
+"""The user blueprint."""
 from flask import Blueprint
 
-bp = Blueprint("user", __name__, url_prefix="/user")
+from . import routes
 
-from . import routes  # noqa: E402, F401
+bp = Blueprint("user", __name__, url_prefix="/user", template_folder="templates")
+
+__all__ = ["routes"]
