@@ -39,7 +39,10 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install git+https://github.com/pypa/pip.git@f2b92314da012b9fffa36b3f3e67748a37ef464a
+          pip install setuptools==78.1.1
+          pip install -r requirements.txt
 
       - name: Scan for vulnerabilities
         run: |
