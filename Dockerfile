@@ -13,7 +13,7 @@ COPY requirements.txt .
 
 # Install the dependencies
 RUN pip install --upgrade setuptools==78.1.1
-RUN pip install git+https://github.com/pypa/pip.git
+RUN pip install git+https://github.com/pypa/pip.git@ce6a38ce06886f1f711226600a5b002df1b70453
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code

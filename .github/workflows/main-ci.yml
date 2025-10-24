@@ -30,6 +30,10 @@ jobs:
         with:
           python-version: 3.9
 
+      - name: Upgrade pip and setuptools
+        run: |
+          pip install --upgrade setuptools==78.1.1
+          pip install git+https://github.com/pypa/pip.git@ce6a38ce06886f1f711226600a5b002df1b70453
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
