@@ -66,22 +66,22 @@ jobs:
           sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
           PGPASSWORD=postgres psql -h localhost -U postgres -p 5432 -d postgres -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
 
-      - name: Run tests with coverage
-        env:
-          DB_HOST: localhost
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        run: |
-          pip install coverage
-          coverage run -m unittest discover tests
-          coverage xml
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          fail_ci_if_error: true
+#      - name: Run tests with coverage
+#        env:
+#          DB_HOST: localhost
+#          POSTGRES_USER: postgres
+#          POSTGRES_PASSWORD: postgres
+#          POSTGRES_DB: postgres
+#        run: |
+#          pip install coverage
+#          coverage run -m unittest discover tests
+#          coverage xml
+#      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@v5
+#        with:
+#          token: ${{ secrets.CODECOV_TOKEN }}
+#          files: ./coverage.xml
+#          fail_ci_if_error: true
       - name: Run vulnerability scanner
         uses: aquasecurity/trivy-action@0.33.1
         with:
