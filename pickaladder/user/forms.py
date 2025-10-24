@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm  # type: ignore
-from wtforms import DecimalField, FileField, BooleanField, SubmitField
-from wtforms.validators import Optional, NumberRange
 from flask_wtf.file import FileAllowed  # type: ignore
+from wtforms import BooleanField, DecimalField, FileField, SubmitField
+from wtforms.validators import NumberRange, Optional
 
 
 class UpdateProfileForm(FlaskForm):

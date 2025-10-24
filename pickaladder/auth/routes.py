@@ -1,25 +1,27 @@
-import os
 import json
+import os
 import re
+
+from firebase_admin import auth, firestore
 from flask import (
-    render_template,
-    request,
-    redirect,
-    url_for,
-    session,
-    flash,
+    Response,
     current_app,
+    flash,
     g,
     jsonify,
-    Response,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
 )
-from firebase_admin import auth, firestore
 from werkzeug.exceptions import UnprocessableEntity
+
+from pickaladder.errors import DuplicateResourceError
+from pickaladder.utils import send_email
 
 from . import bp
 from .forms import LoginForm, RegisterForm
-from pickaladder.errors import DuplicateResourceError
-from pickaladder.utils import send_email
 
 
 @bp.route("/register", methods=["GET", "POST"])
@@ -119,8 +121,7 @@ def register():
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
-    """
-    Renders the login page.
+    """Renders the login page.
     The actual login process is handled by the Firebase client-side SDK.
     The client will get an ID token and send it with subsequent requests.
     """
@@ -158,8 +159,7 @@ def _generate_unique_username(db, base_username):
 
 @bp.route("/session_login", methods=["POST"])
 def session_login():
-    """
-    This endpoint is called from the client-side after a successful Firebase login.
+    """This endpoint is called from the client-side after a successful Firebase login.
     It receives the ID token, verifies it, and creates a server-side session.
     """
     id_token = request.json.get("idToken")
@@ -203,8 +203,7 @@ def session_login():
 
 @bp.route("/logout")
 def logout():
-    """
-    The actual logout is handled by the Firebase client-side SDK.
+    """The actual logout is handled by the Firebase client-side SDK.
     This route is for clearing any server-side session info if needed.
     """
     session.clear()
@@ -289,8 +288,7 @@ def install():
 
 @bp.route("/change_password", methods=["GET"])
 def change_password():
-    """
-    Renders the change password page.
+    """Renders the change password page.
     The actual password change is handled by the Firebase client-side SDK.
     """
     if not g.get("user"):

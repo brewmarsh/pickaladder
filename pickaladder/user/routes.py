@@ -1,31 +1,32 @@
 import os
 import secrets
 import tempfile
+
+from firebase_admin import firestore
 from flask import (
+    current_app,
+    flash,
+    g,
+    jsonify,
+    redirect,
     render_template,
     request,
-    redirect,
     url_for,
-    flash,
-    current_app,
-    jsonify,
-    g,
 )
-from firebase_admin import firestore
 from imgur_python import Imgur
 from werkzeug.utils import secure_filename
 
-from . import bp
-from .forms import UpdateProfileForm
 from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import get_group_leaderboard
+
+from . import bp
+from .forms import UpdateProfileForm
 
 
 @bp.route("/dashboard")
 @login_required
 def dashboard():
-    """
-    Renders the user dashboard. Most data is loaded asynchronously via API endpoints.
+    """Renders the user dashboard. Most data is loaded asynchronously via API endpoints.
     The profile update form is passed to the template.
     """
     current_app.logger.info("Dashboard page loaded")

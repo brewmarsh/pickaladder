@@ -2,7 +2,6 @@ import unittest
 from unittest.mock import patch
 
 # Pre-emptive imports to ensure patch targets exist.
-
 from pickaladder import create_app
 
 

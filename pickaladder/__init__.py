@@ -1,10 +1,12 @@
 import os
 import uuid
-from flask import Flask, session, g, current_app
-from werkzeug.routing import BaseConverter
-from .extensions import mail, csrf
+
 import firebase_admin
 from firebase_admin import credentials, firestore
+from flask import Flask, current_app, g, session
+from werkzeug.routing import BaseConverter
+
+from .extensions import csrf, mail
 
 
 class UUIDConverter(BaseConverter):

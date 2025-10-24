@@ -1,14 +1,11 @@
-from flask import render_template
+from flask import current_app, render_template
 from flask_mail import Message
-from .extensions import mail
 
-from flask import current_app
+from .extensions import mail
 
 
 def send_email(to, subject, template, **kwargs):
-    """
-    Sends an email to a recipient.
-    """
+    """Sends an email to a recipient."""
     msg = Message(
         subject,
         recipients=[to],
