@@ -1,4 +1,5 @@
 import os
+import secrets
 import tempfile
 from flask import (
     render_template,
@@ -438,3 +439,21 @@ def api_dashboard():
             "group_rankings": group_rankings,
         }
     )
+
+
+@bp.route("/api/create_invite", methods=["POST"])
+@login_required
+def create_invite():
+    """Generates a unique invite token and stores it in Firestore."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+    token = secrets.token_urlsafe(16)
+    invite_ref = db.collection("invites").document(token)
+    invite_ref.set(
+        {
+            "userId": user_id,
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "used": False,
+        }
+    )
+    return jsonify({"token": token})
