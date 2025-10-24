@@ -189,7 +189,9 @@ class AuthFirebaseTestCase(unittest.TestCase):
         mock_invite_doc = MagicMock()
         mock_invite_doc.exists = True
         mock_invite_doc.to_dict.return_value = {"userId": "inviter_uid", "used": False}
-        mock_db.collection("invites").document.return_value.get.return_value = mock_invite_doc
+        mock_db.collection(
+            "invites"
+        ).document.return_value.get.return_value = mock_invite_doc
 
         # Mock the return value of create_user
         self.mock_auth_service.create_user.return_value = MagicMock(uid="new_user_uid")
@@ -197,7 +199,9 @@ class AuthFirebaseTestCase(unittest.TestCase):
         # First, get the register page to get a valid CSRF token and set the invite token in the session
         with self.client.session_transaction() as sess:
             sess["invite_token"] = "test_invite_token"
-        register_page_response = self.client.get("/auth/register?invite_token=test_invite_token")
+        register_page_response = self.client.get(
+            "/auth/register?invite_token=test_invite_token"
+        )
         csrf_token_match = re.search(
             r'<input id="csrf_token" name="csrf_token" type="hidden" value="([^"]+)">',
             register_page_response.data.decode(),
@@ -223,7 +227,9 @@ class AuthFirebaseTestCase(unittest.TestCase):
 
         # Check that the friendship was created
         mock_db.batch.assert_called_once()
-        mock_db.collection("invites").document("test_invite_token").update.assert_called_once_with({"used": True})
+        mock_db.collection("invites").document(
+            "test_invite_token"
+        ).update.assert_called_once_with({"used": True})
 
 
 if __name__ == "__main__":
