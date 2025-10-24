@@ -23,6 +23,9 @@ from pickaladder.utils import send_email
 
 @bp.route("/register", methods=["GET", "POST"])
 def register():
+    invite_token = request.args.get("invite_token")
+    if invite_token:
+        session["invite_token"] = invite_token
     form = RegisterForm()
     if form.validate_on_submit():
         db = firestore.client()
@@ -68,6 +71,32 @@ def register():
                     "createdAt": firestore.SERVER_TIMESTAMP,
                 }
             )
+
+            # Handle invite token
+            invite_token = session.pop("invite_token", None)
+            if invite_token:
+                invite_ref = db.collection("invites").document(invite_token)
+                invite = invite_ref.get()
+                if invite.exists and not invite.to_dict().get("used"):
+                    inviter_id = invite.to_dict()["userId"]
+                    # Create friendship
+                    batch = db.batch()
+                    batch.set(
+                        db.collection("users")
+                        .document(user_record.uid)
+                        .collection("friends")
+                        .document(inviter_id),
+                        {"status": "accepted"},
+                    )
+                    batch.set(
+                        db.collection("users")
+                        .document(inviter_id)
+                        .collection("friends")
+                        .document(user_record.uid),
+                        {"status": "accepted"},
+                    )
+                    batch.commit()
+                    invite_ref.update({"used": True})
 
             flash(
                 "Registration successful! Please check your email to verify your account.",

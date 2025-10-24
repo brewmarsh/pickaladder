@@ -3,8 +3,12 @@
 {% block content %}
     <div class="page-header">
         <h1>Friends</h1>
-        <a href="{{ url_for('user.users') }}" class="btn">Find New Friends</a>
+        <div>
+            <button id="invite-friend-btn" class="btn">Invite a Friend</button>
+            <a href="{{ url_for('user.users') }}" class="btn">Find New Friends</a>
+        </div>
     </div>
+    <div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
 
     <div class="grid-container" style="grid-template-columns: 1fr 1fr; gap: 40px;">
         <div class="card">
@@ -70,4 +74,49 @@
             </div>
         </div>
     </div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inviteButton = document.getElementById('invite-friend-btn');
+    const successMessage = document.getElementById('invite-success-message');
+
+    const cannedMessages = [
+        "Tired of losing? Me too. Join me on pickaladder and let's lose together!",
+        "I found this cool app called pickaladder. It's like a ladder for pickleball, but with more losing.",
+        "You've been officially challenged to a pickleball match. First, you have to join me on pickaladder.",
+        "Let's settle this on the court. Join me on pickaladder.",
+    ];
+
+    inviteButton.addEventListener('click', function() {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        fetch("{{ url_for('user.create_invite') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            const token = data.token;
+            const inviteUrl = new URL("{{ url_for('auth.register', _external=True) }}");
+            inviteUrl.searchParams.set('invite_token', token);
+
+            const randomMessage = cannedMessages[Math.floor(Math.random() * cannedMessages.length)];
+            const inviteText = `${randomMessage} ${inviteUrl.href}`;
+
+            navigator.clipboard.writeText(inviteText).then(function() {
+                successMessage.textContent = 'Invite message copied to clipboard!';
+                successMessage.style.display = 'block';
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 3000);
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        });
+    });
+});
+</script>
 {% endblock %}
