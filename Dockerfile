@@ -1,5 +1,5 @@
 # Stage 1: Build the final image
-FROM python:3.9-bullseye
+FROM python:3.9.18-bullseye
 
 WORKDIR /app
 
@@ -12,6 +12,7 @@ RUN apt-get update && \
 COPY requirements.txt .
 
 # Install the dependencies
+RUN pip install --upgrade pip setuptools
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code
