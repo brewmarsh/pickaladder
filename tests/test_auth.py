@@ -255,20 +255,14 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.mock_auth_service.get_user.return_value = mock_user_record
 
         # Mock the where calls for both the admin check and the username check
-        admin_check_query = MagicMock()
-        admin_check_query.limit.return_value.get.return_value = [MagicMock()]
-        username_check_query = MagicMock()
-        username_check_query.limit.return_value.get.return_value = []
-
-        def where_side_effect(*args, **kwargs):
-            field_filter = kwargs.get("filter")
-            if field_filter and field_filter.field_path == "isAdmin":
-                return admin_check_query
-            elif field_filter and field_filter.field_path == "username":
-                return username_check_query
-            return MagicMock()
-
-        mock_users_collection.where.side_effect = where_side_effect
+        mock_admin_check = MagicMock()
+        mock_admin_check.limit.return_value.get.return_value = [MagicMock()]
+        mock_username_check = MagicMock()
+        mock_username_check.limit.return_value.get.return_value = []
+        mock_users_collection.where.side_effect = [
+            mock_admin_check,
+            mock_username_check,
+        ]
 
         # First, get the login page to get a valid CSRF token
         login_page_response = self.client.get("/auth/login")
