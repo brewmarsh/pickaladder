@@ -1,4 +1,5 @@
 """Error handlers for the application."""
+
 from flask import (
     Blueprint,
     current_app,

@@ -14,6 +14,10 @@ select = ["E", "F", "W", "D", "I"]
 # Never enforce `E501` (line-too-long), handled by `format`.
 ignore = ["E501"]
 
+[lint.pydocstyle]
+# Use the PEP 257 convention for docstring formatting.
+convention = "pep257"
+
 [format]
 # Like Black, use double quotes for strings.
 quote-style = "double"

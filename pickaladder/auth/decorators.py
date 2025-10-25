@@ -1,4 +1,5 @@
 """Decorators for the auth blueprint."""
+
 from functools import wraps
 
 from flask import flash, redirect, session, url_for

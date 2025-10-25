@@ -1,4 +1,5 @@
 """Forms for the match blueprint."""
+
 from flask_wtf import FlaskForm  # type: ignore
 from wtforms import DateField, IntegerField, SelectField, ValidationError
 from wtforms.validators import DataRequired

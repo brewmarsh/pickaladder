@@ -1,4 +1,5 @@
 """Tests for the match blueprint."""
+
 import datetime
 import unittest
 from unittest.mock import MagicMock, patch

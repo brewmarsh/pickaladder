@@ -1,4 +1,5 @@
 """Tests for the user blueprint."""
+
 import unittest
 from io import BytesIO
 from unittest.mock import MagicMock, patch
