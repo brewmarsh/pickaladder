@@ -10,3 +10,6 @@ jobs:
     uses: ./.github/workflows/reusable-version-update.yml
     with:
       branch: main
+    permissions:
+      contents: write
+      pull-requests: write
