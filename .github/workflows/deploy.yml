@@ -95,14 +95,8 @@ jobs:
             export IMGUR_CLIENT_ID='${{ secrets.IMGUR_CLIENT_ID }}'
             export APP_VERSION='${{ github.sha }}'
 
-            # Tear down the old environment to ensure a clean start
-            docker-compose -f docker-compose.prod.yml down
-
-            # Pull the latest image
-            docker-compose -f docker-compose.prod.yml pull
-
-            # Start the services
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            # Recreate the services, pulling the latest image
+            docker-compose -f docker-compose.prod.yml up -d --pull --remove-orphans
 
             # Clean up old images
             docker image prune -f
