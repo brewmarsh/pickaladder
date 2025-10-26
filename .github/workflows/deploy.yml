@@ -99,4 +99,5 @@ jobs:
             docker-compose -f docker-compose.prod.yml up -d --pull --remove-orphans
 
             # Clean up old images
+            # This helps to free up disk space on the server.
             docker image prune -f
