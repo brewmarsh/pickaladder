@@ -1,5 +1,6 @@
-import uuid
 import os
+import secrets
+import tempfile
 from flask import (
     render_template,
     request,
@@ -10,7 +11,8 @@ from flask import (
     jsonify,
     g,
 )
-from firebase_admin import firestore, storage
+from firebase_admin import firestore
+from imgur_python import Imgur
 from werkzeug.utils import secure_filename
 
 from . import bp
@@ -69,7 +71,7 @@ def view_user(user_id):
     # Fetch user's friends (limited for display)
     friends_query = (
         profile_user_ref.collection("friends")
-        .where("status", "==", "accepted")
+        .where(filter=firestore.FieldFilter("status", "==", "accepted"))
         .limit(10)
         .stream()
     )
@@ -77,10 +79,14 @@ def view_user(user_id):
 
     # Fetch user's match history (limited for display)
     matches_as_p1 = (
-        db.collection("matches").where("player1Ref", "==", profile_user_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player1Ref", "==", profile_user_ref))
+        .stream()
     )
     matches_as_p2 = (
-        db.collection("matches").where("player2Ref", "==", profile_user_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player2Ref", "==", profile_user_ref))
+        .stream()
     )
     matches = list(matches_as_p1) + list(matches_as_p2)
     # This is a simplified representation. A real implementation would need
@@ -107,9 +113,9 @@ def users():
     if search_term:
         # Firestore doesn't support case-insensitive search natively.
         # This searches for an exact username match.
-        query = query.where("username", ">=", search_term).where(
-            "username", "<=", search_term + "\uf8ff"
-        )
+        query = query.where(
+            filter=firestore.FieldFilter("username", ">=", search_term)
+        ).where(filter=firestore.FieldFilter("username", "<=", search_term + "\uf8ff"))
 
     all_users = [doc for doc in query.limit(20).stream() if doc.id != g.user["uid"]]
 
@@ -165,7 +171,9 @@ def friends():
     friends_ref = db.collection("users").document(current_user_id).collection("friends")
 
     # Fetch accepted friends
-    accepted_docs = friends_ref.where("status", "==", "accepted").stream()
+    accepted_docs = friends_ref.where(
+        filter=firestore.FieldFilter("status", "==", "accepted")
+    ).stream()
     accepted_ids = [doc.id for doc in accepted_docs]
     accepted_friends = (
         [db.collection("users").document(uid).get() for uid in accepted_ids]
@@ -175,8 +183,8 @@ def friends():
 
     # Fetch pending requests (where the other user was the initiator)
     requests_docs = (
-        friends_ref.where("status", "==", "pending")
-        .where("initiator", "==", False)
+        friends_ref.where(filter=firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=firestore.FieldFilter("initiator", "==", False))
         .stream()
     )
     request_ids = [doc.id for doc in requests_docs]
@@ -265,7 +273,6 @@ def decline_friend_request(friend_id):
 @login_required
 def update_profile():
     db = firestore.client()
-    bucket = storage.bucket(os.environ.get("FIREBASE_STORAGE_BUCKET"))
     user_id = g.user["uid"]
     user_ref = db.collection("users").document(user_id)
     form = UpdateProfileForm()
@@ -280,23 +287,30 @@ def update_profile():
 
             profile_picture_file = form.profile_picture.data
             if profile_picture_file:
-                secure_filename(profile_picture_file.filename or "profile.jpg")
-                content_type = profile_picture_file.content_type
+                client_id = os.environ.get("IMGUR_CLIENT_ID")
+                if not client_id:
+                    flash("Imgur client ID is not configured.", "warning")
+                else:
+                    imgur_client = Imgur({"client_id": client_id})
+                    filename = secure_filename(
+                        profile_picture_file.filename or "profile.jpg"
+                    )
+                    response = None
+                    with tempfile.NamedTemporaryFile(
+                        suffix=os.path.splitext(filename)[1]
+                    ) as temp_file:
+                        profile_picture_file.save(temp_file.name)
+                        response = imgur_client.image_upload(
+                            temp_file.name, f"{user_id}'s profile picture", ""
+                        )
 
-                # Path in Firebase Storage
-                path = f"profile-pictures/{user_id}/original_{uuid.uuid4().hex}.jpg"
-                blob = bucket.blob(path)
-
-                # Upload the file
-                blob.upload_from_file(profile_picture_file, content_type=content_type)
-
-                # Make the file public and get the URL
-                blob.make_public()
-                update_data["profilePictureUrl"] = blob.public_url
-
-                # Note: The thumbnail URL will be set by a Cloud Function.
-                # The function should be triggered by the upload and update the
-                # 'profilePictureThumbnailUrl' field in the user's document.
+                    if response and response["success"]:
+                        update_data["profilePictureUrl"] = response["data"]["link"]
+                    elif response:
+                        flash(
+                            f"Imgur upload failed: {response['data']['error']}",
+                            "danger",
+                        )
 
             user_ref.update(update_data)
             flash("Profile updated successfully.", "success")
@@ -322,37 +336,49 @@ def api_dashboard():
 
     # Fetch friends
     friends_query = (
-        user_ref.collection("friends").where("status", "==", "accepted").stream()
+        user_ref.collection("friends")
+        .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+        .stream()
     )
     friend_ids = [doc.id for doc in friends_query]
     friends_data = []
     if friend_ids:
         friend_docs = (
-            db.collection("users").where("__name__", "in", friend_ids).stream()
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("__name__", "in", friend_ids))
+            .stream()
         )
         friends_data = [{"id": doc.id, **doc.to_dict()} for doc in friend_docs]
 
     # Fetch pending friend requests
     requests_query = (
         user_ref.collection("friends")
-        .where("status", "==", "pending")
-        .where("initiator", "==", False)
+        .where(filter=firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=firestore.FieldFilter("initiator", "==", False))
         .stream()
     )
     request_ids = [doc.id for doc in requests_query]
     requests_data = []
     if request_ids:
         request_docs = (
-            db.collection("users").where("__name__", "in", request_ids).stream()
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("__name__", "in", request_ids))
+            .stream()
         )
         requests_data = [{"id": doc.id, **doc.to_dict()} for doc in request_docs]
 
     # Fetch recent matches
     matches_as_p1 = (
-        db.collection("matches").where("player1Ref", "==", user_ref).limit(5).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
+        .limit(5)
+        .stream()
     )
     matches_as_p2 = (
-        db.collection("matches").where("player2Ref", "==", user_ref).limit(5).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player2Ref", "==", user_ref))
+        .limit(5)
+        .stream()
     )
 
     matches_data = []
@@ -384,7 +410,9 @@ def api_dashboard():
     # Get group rankings
     group_rankings = []
     my_groups_query = (
-        db.collection("groups").where("members", "array_contains", user_ref).stream()
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
     )
     for group_doc in my_groups_query:
         group_data = group_doc.to_dict()
@@ -411,3 +439,21 @@ def api_dashboard():
             "group_rankings": group_rankings,
         }
     )
+
+
+@bp.route("/api/create_invite", methods=["POST"])
+@login_required
+def create_invite():
+    """Generates a unique invite token and stores it in Firestore."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+    token = secrets.token_urlsafe(16)
+    invite_ref = db.collection("invites").document(token)
+    invite_ref.set(
+        {
+            "userId": user_id,
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "used": False,
+        }
+    )
+    return jsonify({"token": token})

@@ -5,8 +5,6 @@ services:
     ports:
       - "27272:27272"
     command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
-    env_file:
-      - .env.example
     volumes:
       # Mount the credentials file from the host into the container
       - ./firebase-credentials.json:/app/firebase-credentials.json:ro
@@ -22,6 +20,9 @@ services:
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - IMGUR_CLIENT_ID=${IMGUR_CLIENT_ID}
+      - APP_VERSION=${APP_VERSION}
     networks:
       - pickanet
 

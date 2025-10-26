@@ -14,17 +14,19 @@ def view_groups():
     search_term = request.args.get("search", "")
 
     # Query for public groups
-    public_groups_query = db.collection("groups").where("is_public", "==", True)
+    public_groups_query = db.collection("groups").where(
+        filter=firestore.FieldFilter("is_public", "==", True)
+    )
     if search_term:
         public_groups_query = public_groups_query.where(
-            "name", ">=", search_term
-        ).where("name", "<=", search_term + "\uf8ff")
+            filter=firestore.FieldFilter("name", ">=", search_term)
+        ).where(filter=firestore.FieldFilter("name", "<=", search_term + "\uf8ff"))
     public_groups = public_groups_query.limit(20).stream()
 
     # Get user's groups
     user_ref = db.collection("users").document(g.user["uid"])
     my_groups_query = db.collection("groups").where(
-        "members", "array_contains", user_ref
+        filter=firestore.FieldFilter("members", "array_contains", user_ref)
     )
     my_groups = my_groups_query.stream()
 
@@ -69,7 +71,9 @@ def view_group(group_id):
 
     # Get user's accepted friends
     friends_query = (
-        user_ref.collection("friends").where("status", "==", "accepted").stream()
+        user_ref.collection("friends")
+        .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+        .stream()
     )
     friend_ids = {doc.id for doc in friends_query}
 
@@ -79,7 +83,9 @@ def view_group(group_id):
     eligible_friends = []
     if eligible_friend_ids:
         eligible_friends_query = (
-            db.collection("users").where("__name__", "in", eligible_friend_ids).stream()
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("__name__", "in", eligible_friend_ids))
+            .stream()
         )
         eligible_friends = [doc for doc in eligible_friends_query]
 

@@ -1,6 +1,7 @@
+---
 name: Deploy to Hostinger
 
-on:
+"on":
   push:
     branches:
       - main
@@ -74,7 +75,8 @@ jobs:
             fi
 
             # Login to GitHub Container Registry
-            docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
+            docker login ghcr.io -u ${{ github.repository_owner }} \
+              -p ${{ secrets.GITHUB_TOKEN }}
 
             # Create Firebase credentials file from secret using a here document
             # to prevent shell quoting issues with the JSON string.
@@ -91,15 +93,19 @@ jobs:
             export MAIL_USERNAME='${{ secrets.MAIL_USERNAME }}'
             export MAIL_PASSWORD='${{ secrets.MAIL_PASSWORD }}'
             export FIREBASE_PROJECT_ID='${{ secrets.FIREBASE_PROJECT_ID }}'
+            export FIREBASE_API_KEY='${{ secrets.FIREBASE_API_KEY }}'
+            export IMGUR_CLIENT_ID='${{ secrets.IMGUR_CLIENT_ID }}'
+            export APP_VERSION='${{ github.sha }}'
 
             # Tear down the old environment to ensure a clean start
-            docker-compose -f docker-compose.prod.yml down
+            docker compose -f docker-compose.prod.yml down
 
             # Pull the latest image
-            docker-compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml pull
 
             # Start the services
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # Clean up old images
+            # This helps to free up disk space on the server.
             docker image prune -f

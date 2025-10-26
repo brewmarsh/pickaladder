@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from flask import (
     render_template,
     request,
@@ -23,6 +24,9 @@ from pickaladder.utils import send_email
 
 @bp.route("/register", methods=["GET", "POST"])
 def register():
+    invite_token = request.args.get("invite_token")
+    if invite_token:
+        session["invite_token"] = invite_token
     form = RegisterForm()
     if form.validate_on_submit():
         db = firestore.client()
@@ -32,7 +36,11 @@ def register():
 
         # Check if username is already taken in Firestore
         users_ref = db.collection("users")
-        if users_ref.where("username", "==", username).limit(1).get():
+        if (
+            users_ref.where(filter=firestore.FieldFilter("username", "==", username))
+            .limit(1)
+            .get()
+        ):
             flash("Username already exists. Please choose a different one.", "danger")
             return redirect(url_for(".register"))
 
@@ -65,6 +73,32 @@ def register():
                 }
             )
 
+            # Handle invite token
+            invite_token = session.pop("invite_token", None)
+            if invite_token:
+                invite_ref = db.collection("invites").document(invite_token)
+                invite = invite_ref.get()
+                if invite.exists and not invite.to_dict().get("used"):
+                    inviter_id = invite.to_dict()["userId"]
+                    # Create friendship
+                    batch = db.batch()
+                    batch.set(
+                        db.collection("users")
+                        .document(user_record.uid)
+                        .collection("friends")
+                        .document(inviter_id),
+                        {"status": "accepted"},
+                    )
+                    batch.set(
+                        db.collection("users")
+                        .document(inviter_id)
+                        .collection("friends")
+                        .document(user_record.uid),
+                        {"status": "accepted"},
+                    )
+                    batch.commit()
+                    invite_ref.update({"used": True})
+
             flash(
                 "Registration successful! Please check your email to verify your account.",
                 "success",
@@ -93,13 +127,33 @@ def login():
     current_app.logger.info("Login page loaded")
     db = firestore.client()
     # Check if an admin user exists to determine if we should run install
-    admin_query = db.collection("users").where("isAdmin", "==", True).limit(1).get()
+    admin_query = (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("isAdmin", "==", True))
+        .limit(1)
+        .get()
+    )
     if not admin_query:
         return redirect(url_for("auth.install"))
 
     form = LoginForm()
     # The form is now just for presentation, validation is on the client
     return render_template("login.html", form=form)
+
+
+def _generate_unique_username(db, base_username):
+    """Generates a unique username by appending a number if the base username exists."""
+    username = base_username
+    i = 1
+    while (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("username", "==", username))
+        .limit(1)
+        .get()
+    ):
+        username = f"{base_username}{i}"
+        i += 1
+    return username
 
 
 @bp.route("/session_login", methods=["POST"])
@@ -113,16 +167,33 @@ def session_login():
         decoded_token = auth.verify_id_token(id_token)
         uid = decoded_token["uid"]
         db = firestore.client()
-        user_doc = db.collection("users").document(uid).get()
+        user_doc_ref = db.collection("users").document(uid)
+        user_doc = user_doc_ref.get()
+
         if user_doc.exists:
             user_info = user_doc.to_dict()
-            session["user_id"] = uid
-            session["is_admin"] = user_info.get("isAdmin", False)
-            return jsonify({"status": "success"})
         else:
-            return jsonify(
-                {"status": "error", "message": "User not found in Firestore."}
-            ), 404
+            # User doesn't exist, so create a new profile
+            user_record = auth.get_user(uid)
+            email = user_record.email
+            name = user_record.display_name or email.split("@")[0]
+            base_username = re.sub(r"[^a-zA-Z0-9_.]", "", name.lower())
+            username = _generate_unique_username(db, base_username)
+
+            user_info = {
+                "username": username,
+                "email": email,
+                "name": name,
+                "duprRating": None,
+                "isAdmin": False,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
+            user_doc_ref.set(user_info)
+
+        session["user_id"] = uid
+        session["is_admin"] = user_info.get("isAdmin", False)
+        return jsonify({"status": "success"})
+
     except Exception as e:
         current_app.logger.error(f"Error during session login: {e}")
         return jsonify(
@@ -145,7 +216,12 @@ def logout():
 def install():
     db = firestore.client()
     # Check if an admin user already exists
-    admin_query = db.collection("users").where("isAdmin", "==", True).limit(1).get()
+    admin_query = (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("isAdmin", "==", True))
+        .limit(1)
+        .get()
+    )
     if admin_query:
         return redirect(url_for("auth.login"))
 

@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 from pickaladder.group.utils import get_group_leaderboard
 
+
 class TestGroupUtils(unittest.TestCase):
     @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard(self, mock_firestore):
@@ -17,7 +18,9 @@ class TestGroupUtils(unittest.TestCase):
                 mock_db.collection("users").document("user2"),
             ]
         }
-        mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
+        mock_db.collection("groups").document(
+            "group1"
+        ).get.return_value = mock_group_doc
 
         # Mock user data
         mock_user1_doc = MagicMock()
@@ -59,8 +62,13 @@ class TestGroupUtils(unittest.TestCase):
         mock_group_doc.to_dict.return_value["members"] = member_refs
         mock_match1.to_dict.return_value["player1Ref"] = mock_user1_ref
         mock_match1.to_dict.return_value["player2Ref"] = mock_user2_ref
-        mock_db.collection.return_value.document.return_value.get.return_value = mock_group_doc
-        mock_db.collection.return_value.where.return_value.stream.side_effect = [[mock_match1], [mock_match1]]
+        mock_db.collection.return_value.document.return_value.get.return_value = (
+            mock_group_doc
+        )
+        mock_db.collection.return_value.where.return_value.stream.side_effect = [
+            [mock_match1],
+            [mock_match1],
+        ]
 
         # Call the function
         leaderboard = get_group_leaderboard("group1")
@@ -73,6 +81,7 @@ class TestGroupUtils(unittest.TestCase):
         self.assertEqual(leaderboard[1]["name"], "User 2")
         self.assertEqual(leaderboard[1]["wins"], 0)
         self.assertEqual(leaderboard[1]["losses"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
