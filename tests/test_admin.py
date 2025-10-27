@@ -30,6 +30,9 @@ class AdminRoutesTestCase(unittest.TestCase):
             "admin_routes_firestore": patch(
                 "pickaladder.admin.routes.firestore", new=self.mock_firestore_service
             ),
+            "user_routes_firestore": patch(
+                "pickaladder.user.routes.firestore", new=self.mock_firestore_service
+            ),
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}

@@ -35,6 +35,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             "auth_routes_firestore": patch(
                 "pickaladder.auth.routes.firestore", new=self.mock_firestore_service
             ),
+            "user_routes_firestore": patch(
+                "pickaladder.user.routes.firestore", new=self.mock_firestore_service
+            ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
 

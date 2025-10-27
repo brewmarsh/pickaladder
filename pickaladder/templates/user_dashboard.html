@@ -15,7 +15,7 @@
 
                 <hr>
                 <h4 style="margin-top: 20px;">Update Profile</h4>
-                <form method="post" action="{{ url_for('user.update_profile') }}" enctype="multipart/form-data">
+                <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
                     <div class="form-group">
                         {{ form.dupr_rating.label }}
