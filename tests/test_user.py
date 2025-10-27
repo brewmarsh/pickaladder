@@ -77,7 +77,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         mock_user_doc = self._mock_firestore_user()
 
         response = self.client.post(
-            "/user/update_profile",
+            "/user/dashboard",
             data={"dark_mode": "y", "dupr_rating": 5.5},
             follow_redirects=True,
         )
@@ -101,7 +101,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         data = {"profile_picture": (BytesIO(b"test_image_data"), "test.png")}
         response = self.client.post(
-            "/user/update_profile",
+            "/user/dashboard",
             data=data,
             content_type="multipart/form-data",
             follow_redirects=True,
@@ -121,7 +121,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         mock_user_doc = self._mock_firestore_user()
 
         response = self.client.post(
-            "/user/update_profile",
+            "/user/dashboard",
             data={"dark_mode": "y", "dupr_rating": "5.5"},
             follow_redirects=True,
         )

@@ -25,17 +25,67 @@ from . import bp
 from .forms import UpdateProfileForm
 
 
-@bp.route("/dashboard")
+@bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard():
-    """Render the user dashboard.
+    """Render the user dashboard and handles profile updates.
 
-    Most data is loaded asynchronously via API endpoints.
-    The profile update form is passed to the template.
+    On GET, it displays the dashboard with the profile form.
+    On POST, it processes the profile update form.
     """
-    current_app.logger.info("Dashboard page loaded")
+    db = firestore.client()
+    user_id = g.user["uid"]
+    user_ref = db.collection("users").document(user_id)
     user_data = g.user
+
     form = UpdateProfileForm(data=user_data)
+
+    if form.validate_on_submit():
+        try:
+            update_data = {
+                "darkMode": bool(form.dark_mode.data),
+            }
+            if form.dupr_rating.data is not None:
+                update_data["duprRating"] = float(form.dupr_rating.data)
+
+            profile_picture_file = form.profile_picture.data
+            if profile_picture_file:
+                client_id = os.environ.get("IMGUR_CLIENT_ID")
+                if not client_id:
+                    flash("Imgur client ID is not configured.", "warning")
+                else:
+                    imgur_client = Imgur({"client_id": client_id})
+                    filename = secure_filename(
+                        profile_picture_file.filename or "profile.jpg"
+                    )
+                    response = None
+                    with tempfile.NamedTemporaryFile(
+                        suffix=os.path.splitext(filename)[1]
+                    ) as temp_file:
+                        profile_picture_file.save(temp_file.name)
+                        response = imgur_client.image_upload(
+                            temp_file.name, f"{user_id}'s profile picture", ""
+                        )
+
+                    if response and response["success"]:
+                        update_data["profilePictureUrl"] = response["data"]["link"]
+                    elif response:
+                        flash(
+                            f"Imgur upload failed: {response['data']['error']}",
+                            "danger",
+                        )
+
+            user_ref.update(update_data)
+            flash("Profile updated successfully.", "success")
+            return redirect(url_for(".dashboard"))
+        except Exception as e:
+            current_app.logger.error(f"Error updating profile: {e}")
+            flash(f"An error occurred: {e}", "danger")
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
+
     return render_template("user_dashboard.html", form=form, user=user_data)
 
 
@@ -275,63 +325,6 @@ def decline_friend_request(friend_id):
         flash("An error occurred while declining the request.", "danger")
 
     return redirect(url_for(".friends"))
-
-
-@bp.route("/update_profile", methods=["POST"])
-@login_required
-def update_profile():
-    """Update a user's profile."""
-    db = firestore.client()
-    user_id = g.user["uid"]
-    user_ref = db.collection("users").document(user_id)
-    form = UpdateProfileForm()
-
-    if form.validate_on_submit():
-        try:
-            update_data = {
-                "darkMode": bool(form.dark_mode.data),
-            }
-            if form.dupr_rating.data is not None:
-                update_data["duprRating"] = float(form.dupr_rating.data)
-
-            profile_picture_file = form.profile_picture.data
-            if profile_picture_file:
-                client_id = os.environ.get("IMGUR_CLIENT_ID")
-                if not client_id:
-                    flash("Imgur client ID is not configured.", "warning")
-                else:
-                    imgur_client = Imgur({"client_id": client_id})
-                    filename = secure_filename(
-                        profile_picture_file.filename or "profile.jpg"
-                    )
-                    response = None
-                    with tempfile.NamedTemporaryFile(
-                        suffix=os.path.splitext(filename)[1]
-                    ) as temp_file:
-                        profile_picture_file.save(temp_file.name)
-                        response = imgur_client.image_upload(
-                            temp_file.name, f"{user_id}'s profile picture", ""
-                        )
-
-                    if response and response["success"]:
-                        update_data["profilePictureUrl"] = response["data"]["link"]
-                    elif response:
-                        flash(
-                            f"Imgur upload failed: {response['data']['error']}",
-                            "danger",
-                        )
-
-            user_ref.update(update_data)
-            flash("Profile updated successfully.", "success")
-        except Exception as e:
-            current_app.logger.error(f"Error updating profile: {e}")
-            flash(f"An error occurred: {e}", "danger")
-    else:
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
-
-    return redirect(url_for(".dashboard"))
 
 
 @bp.route("/api/dashboard")
