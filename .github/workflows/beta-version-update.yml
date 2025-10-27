@@ -1,4 +1,4 @@
-name: Production Version Update
+name: Beta Version Update
 
 on:
   push:
@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -23,14 +24,19 @@ jobs:
         id: version
         run: |
           # Simple versioning: use the commit SHA for now
-          echo "::set-output name=version::${{ github.sha }}"
+          echo "VERSION=${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Update version file
-        run: echo ${{ steps.version.outputs.version }} > VERSION
+        run: echo ${{ steps.version.outputs.VERSION }} > VERSION
 
-      - name: Commit and push version update
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
         with:
-          commit_message: "chore: update version to ${{ steps.version.outputs.version }}"
-          branch: beta
-          file_pattern: VERSION
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update version to ${{ steps.version.outputs.VERSION }}"
+          title: "chore: update version to ${{ steps.version.outputs.VERSION }}"
+          body: "Automated version bump to ${{ steps.version.outputs.VERSION }}"
+          branch: "chore/version-update-${{ steps.version.outputs.VERSION }}"
+          base: beta
+          labels: automerge
+          add-paths: VERSION
