@@ -1,0 +1,35 @@
+name: Reusable Versioning
+
+on:
+  workflow_call:
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          # We need to fetch all history and branches to be able to push
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get next version
+        id: version
+        run: |
+          # Simple versioning: use the commit SHA for now
+          echo "VERSION=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Update version file
+        run: |
+          echo ${{ steps.version.outputs.VERSION }} > VERSION
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add VERSION
+          git commit -m "chore: update version to ${{ steps.version.outputs.VERSION }} [skip ci]"
+          git push

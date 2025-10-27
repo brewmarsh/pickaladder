@@ -1,9 +1,0 @@
-name: CI
-
-on:
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  call-reusable-ci:
-    uses: ./.github/workflows/reusable-ci.yml
