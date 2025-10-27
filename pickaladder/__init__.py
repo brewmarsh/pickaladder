@@ -49,26 +49,32 @@ def create_app(test_config=None):
 
     # Initialize Firebase Admin SDK only if not in testing mode
     if not app.config.get("TESTING"):
-        # The GOOGLE_APPLICATION_CREDENTIALS environment variable should be set to the
-        # path of the service account key file.
-        try:
-            # When running in a Google Cloud environment, the credentials are
-            # automatically discovered.
-            cred = credentials.ApplicationDefault()
-        except Exception:
-            cred = None  # Handle cases where default creds are not found
+        cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+        if cred_json:
+            import json
+            cred_info = json.loads(cred_json)
+            cred = credentials.Certificate(cred_info)
+        else:
+            # Fallback to default credentials if the env var is not set
+            try:
+                cred = credentials.ApplicationDefault()
+            except Exception as e:
+                app.logger.error(f"Could not find default credentials: {e}")
+                cred = None
 
-        try:
-            firebase_admin.initialize_app(
-                cred,
-                {
-                    "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
-                    "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET"),
-                },
-            )
-        except ValueError:
-            # This can happen if the app is already initialized, which is fine.
-            app.logger.info("Firebase app already initialized.")
+        # Initialize the app if credentials were found
+        if cred and not firebase_admin._apps:
+            try:
+                firebase_admin.initialize_app(
+                    cred,
+                    {
+                        "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
+                        "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET"),
+                    },
+                )
+            except ValueError:
+                # This can happen if the app is already initialized, which is fine.
+                app.logger.info("Firebase app already initialized.")
 
     # Ensure the instance folder exists
     try:

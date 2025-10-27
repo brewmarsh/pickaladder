@@ -72,8 +72,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
-        const email = form.email.value;
-        const password = form.password.value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
