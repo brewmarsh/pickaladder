@@ -7,9 +7,30 @@ on:
 
 jobs:
   update-version:
-    uses: ./.github/workflows/reusable-version-update.yml
-    with:
-      branch: main
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.9'
+
+      - name: Get next version
+        id: version
+        run: |
+          # Simple versioning: use the commit SHA for now
+          echo "::set-output name=version::${{ github.sha }}"
+
+      - name: Update version file
+        run: echo ${{ steps.version.outputs.version }} > VERSION
+
+      - name: Commit and push version update
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update version to ${{ steps.version.outputs.version }}"
+          branch: main
+          file_pattern: VERSION
