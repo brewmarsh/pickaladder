@@ -1,0 +1,38 @@
+name: Main Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger_check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check_commit.outputs.should_run }}
+    steps:
+      - id: check_commit
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"[skip ci]"* ]]; then
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          fi
+  ci:
+    needs: trigger_check
+    if: needs.trigger_check.outputs.should_run == 'true'
+    uses: ./.github/workflows/reusable-ci.yml
+
+  versioning:
+    needs: [trigger_check, ci]
+    if: needs.trigger_check.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@vv5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update version
+        uses: ./.github/workflows/reusable-versioning.yml
