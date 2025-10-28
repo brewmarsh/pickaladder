@@ -107,7 +107,10 @@ def dashboard():
     user_ref = db.collection("users").document(user_id)
     user_data = g.user
 
-    form = UpdateProfileForm(data=user_data)
+    form = UpdateProfileForm()
+    if request.method == "GET":
+        form.dupr_rating.data = user_data.get("duprRating")
+        form.dark_mode.data = user_data.get("darkMode")
 
     if form.validate_on_submit():
         try:
