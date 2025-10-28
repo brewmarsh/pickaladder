@@ -26,13 +26,8 @@ jobs:
   versioning:
     needs: [trigger_check, ci]
     if: needs.trigger_check.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
     permissions:
       contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@vv5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Update version
-        uses: ./.github/workflows/reusable-versioning.yml
+      pull-requests: write
+    uses: ./.github/workflows/reusable-versioning.yml
+    secrets: inherit
