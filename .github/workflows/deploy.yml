@@ -1,9 +1,7 @@
 name: Deploy to Hostinger
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 jobs:
   build-and-deploy:
@@ -94,7 +92,8 @@ jobs:
             export APP_VERSION='${{ github.sha }}'
 
             # Recreate the services, pulling the latest image
-            docker compose -f docker-compose.prod.yml up -d --pull --remove-orphans
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # Clean up old images
             # This helps to free up disk space on the server.

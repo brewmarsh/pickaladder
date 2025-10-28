@@ -9,25 +9,35 @@ jobs:
   trigger_check:
     runs-on: ubuntu-latest
     outputs:
-      should_run: ${{ steps.check_commit.outputs.should_run }}
+      should_run_ci: ${{ steps.check_commit.outputs.should_run_ci }}
+      should_deploy: ${{ steps.check_commit.outputs.should_deploy }}
     steps:
       - id: check_commit
         run: |
-          if [[ "${{ github.event.head_commit.message }}" == *"[skip ci]"* ]]; then
-            echo "should_run=false" >> $GITHUB_OUTPUT
+          if [[ "${{ github.event.head_commit.message }}" == *"chore(version):"* ]]; then
+            echo "should_run_ci=false" >> $GITHUB_OUTPUT
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
           else
-            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "should_run_ci=true" >> $GITHUB_OUTPUT
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
           fi
+
   ci:
     needs: trigger_check
-    if: needs.trigger_check.outputs.should_run == 'true'
+    if: needs.trigger_check.outputs.should_run_ci == 'true'
     uses: ./.github/workflows/reusable-ci.yml
 
   versioning:
     needs: [trigger_check, ci]
-    if: needs.trigger_check.outputs.should_run == 'true'
+    if: needs.trigger_check.outputs.should_run_ci == 'true'
     permissions:
       contents: write
       pull-requests: write
     uses: ./.github/workflows/reusable-versioning.yml
+    secrets: inherit
+
+  deploy:
+    needs: trigger_check
+    if: needs.trigger_check.outputs.should_deploy == 'true'
+    uses: ./.github/workflows/deploy.yml
     secrets: inherit
