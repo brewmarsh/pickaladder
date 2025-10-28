@@ -9,18 +9,11 @@ from wtforms.validators import DataRequired, Email, Length, NumberRange, Optiona
 class UpdateUserForm(FlaskForm):
     """Form for updating user's name, username, and email."""
 
-    name = StringField(
-        "Full Name",
-        validators=[DataRequired(), Length(min=2, max=50)]
-    )
+    name = StringField("Full Name", validators=[DataRequired(), Length(min=2, max=50)])
     username = StringField(
-        "Username",
-        validators=[DataRequired(), Length(min=2, max=20)]
+        "Username", validators=[DataRequired(), Length(min=2, max=20)]
     )
-    email = StringField(
-        "Email",
-        validators=[DataRequired(), Email()]
-    )
+    email = StringField("Email", validators=[DataRequired(), Email()])
     submit = SubmitField("Update Account")
 
 

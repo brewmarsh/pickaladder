@@ -48,12 +48,16 @@ def edit_profile():
         if new_username != user_data.get("username"):
             users_ref = db.collection("users")
             existing_user = (
-                users_ref.where(filter=firestore.FieldFilter("username", "==", new_username))
+                users_ref.where(
+                    filter=firestore.FieldFilter("username", "==", new_username)
+                )
                 .limit(1)
                 .stream()
             )
             if len(list(existing_user)) > 0:
-                flash("Username already exists. Please choose a different one.", "danger")
+                flash(
+                    "Username already exists. Please choose a different one.", "danger"
+                )
                 return render_template("edit_profile.html", form=form, user=user_data)
 
         # Handle email change
