@@ -13,6 +13,7 @@
                 <p><strong>Email:</strong> <span id="user-email"></span></p>
                 <p><strong>DUPR Rating:</strong> <span id="user-dupr"></span></p>
 
+                <a href="{{ url_for('user.edit_profile') }}" class="btn">Edit Profile</a>
                 <hr>
                 <h4 style="margin-top: 20px;">Update Profile</h4>
                 <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data">
