@@ -28,5 +28,6 @@ jobs:
     if: needs.trigger_check.outputs.should_run == 'true'
     permissions:
       contents: write
+      pull-requests: write
     uses: ./.github/workflows/reusable-versioning.yml
     secrets: inherit

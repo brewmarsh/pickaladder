@@ -26,10 +26,12 @@ jobs:
         run: |
           echo ${{ steps.version.outputs.VERSION }} > VERSION
 
-      - name: Commit and push changes
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add VERSION
-          git commit -m "chore: update version to ${{ steps.version.outputs.VERSION }} [skip ci]"
-          git push
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(version): update to ${{ steps.version.outputs.VERSION }}"
+          title: "Update version to ${{ steps.version.outputs.VERSION }}"
+          body: "This PR updates the application version to `${{ steps.version.outputs.VERSION }}`."
+          branch: "chore/version-update-${{ steps.version.outputs.VERSION }}"
+          base: "${{ github.ref_name }}"
