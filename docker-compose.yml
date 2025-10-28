@@ -5,7 +5,6 @@ services:
       - "27272:27272"
     volumes:
       - .:/app
-      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
     command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
     env_file:
       - .env
