@@ -128,7 +128,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Profile updated successfully.", response.data)
         mock_user_doc.update.assert_called_once_with(
-            {"darkMode": True, "duprRating": 5.5}
+            {"dark_mode": True, "duprRating": 5.5}
         )
 
 
