@@ -41,6 +41,6 @@ jobs:
       - name: Merge Pull Request
         if: steps.cpr.outputs.pull-request-number
         run: |
-          gh pr merge ${{ steps.cpr.outputs.pull-request-number }} --auto --rebase
+          gh pr merge ${{ steps.cpr.outputs.pull-request-number }} --admin --rebase
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
