@@ -52,6 +52,7 @@ def create_app(test_config=None):
         cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
         if cred_json:
             import json
+
             cred_info = json.loads(cred_json)
             cred = credentials.Certificate(cred_info)
         else:

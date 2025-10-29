@@ -83,6 +83,7 @@ Before submitting your code, please run the following checks to ensure code qual
 
 ### Business Logic
 *   **Keep Routes Thin:** Route handlers in the `routes.py` files should be kept as "thin" as possible. Complex business logic should be encapsulated in separate utility functions or, for larger features, dedicated service classes.
+*   **Separation of Concerns:** Ensure that code is organized according to its purpose. For example, database interaction logic should be in a data access layer, business logic in a service layer, and presentation logic in the routes and templates. Refactor code that violates this principle.
 
 ### Database
 *   **Use the ORM:** Use the SQLAlchemy ORM for all database interactions. The models are defined in `pickaladder/models.py`.

@@ -4,7 +4,7 @@ import os
 import secrets
 import tempfile
 
-from firebase_admin import firestore
+from firebase_admin import auth, firestore
 from flask import (
     current_app,
     flash,
@@ -20,9 +20,78 @@ from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import get_group_leaderboard
+from pickaladder.utils import send_email
 
 from . import bp
-from .forms import UpdateProfileForm
+from .forms import UpdateProfileForm, UpdateUserForm
+
+
+@bp.route("/edit_profile", methods=["GET", "POST"])
+@login_required
+def edit_profile():
+    """Handle user profile updates for name, username, and email."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+    user_ref = db.collection("users").document(user_id)
+    user_data = g.user
+    form = UpdateUserForm(data=user_data)
+
+    if form.validate_on_submit():
+        new_email = form.email.data
+        new_username = form.username.data
+        update_data = {
+            "name": form.name.data,
+            "username": new_username,
+        }
+
+        # Handle username change
+        if new_username != user_data.get("username"):
+            users_ref = db.collection("users")
+            existing_user = (
+                users_ref.where(
+                    filter=firestore.FieldFilter("username", "==", new_username)
+                )
+                .limit(1)
+                .stream()
+            )
+            if len(list(existing_user)) > 0:
+                flash(
+                    "Username already exists. Please choose a different one.", "danger"
+                )
+                return render_template("edit_profile.html", form=form, user=user_data)
+
+        # Handle email change
+        if new_email != user_data.get("email"):
+            try:
+                auth.update_user(user_id, email=new_email, email_verified=False)
+                verification_link = auth.generate_email_verification_link(new_email)
+                send_email(
+                    to=new_email,
+                    subject="Verify Your New Email Address",
+                    template="email/verify_email.html",
+                    user={"username": new_username},
+                    verification_link=verification_link,
+                )
+                update_data["email"] = new_email
+                update_data["email_verified"] = False
+                flash(
+                    "Your email has been updated. Please check your new email address to verify it.",
+                    "info",
+                )
+            except auth.EmailAlreadyExistsError:
+                flash("That email address is already in use.", "danger")
+                return render_template("edit_profile.html", form=form, user=user_data)
+            except Exception as e:
+                current_app.logger.error(f"Error updating email: {e}")
+                flash("An error occurred while updating your email.", "danger")
+                return render_template("edit_profile.html", form=form, user=user_data)
+
+        if update_data:
+            user_ref.update(update_data)
+            flash("Account updated successfully.", "success")
+        return redirect(url_for(".edit_profile"))
+
+    return render_template("edit_profile.html", form=form, user=user_data)
 
 
 @bp.route("/dashboard", methods=["GET", "POST"])
@@ -38,7 +107,10 @@ def dashboard():
     user_ref = db.collection("users").document(user_id)
     user_data = g.user
 
-    form = UpdateProfileForm(data=user_data)
+    form = UpdateProfileForm()
+    if request.method == "GET":
+        form.dupr_rating.data = user_data.get("duprRating")
+        form.dark_mode.data = user_data.get("darkMode")
 
     if form.validate_on_submit():
         try:

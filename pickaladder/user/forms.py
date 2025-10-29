@@ -2,8 +2,19 @@
 
 from flask_wtf import FlaskForm  # type: ignore
 from flask_wtf.file import FileAllowed  # type: ignore
-from wtforms import BooleanField, DecimalField, FileField, SubmitField
-from wtforms.validators import NumberRange, Optional
+from wtforms import BooleanField, DecimalField, FileField, StringField, SubmitField
+from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional
+
+
+class UpdateUserForm(FlaskForm):
+    """Form for updating user's name, username, and email."""
+
+    name = StringField("Full Name", validators=[DataRequired(), Length(min=2, max=50)])
+    username = StringField(
+        "Username", validators=[DataRequired(), Length(min=2, max=20)]
+    )
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    submit = SubmitField("Update Account")
 
 
 class UpdateProfileForm(FlaskForm):

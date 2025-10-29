@@ -1,9 +1,7 @@
 name: Deploy to Hostinger
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 jobs:
   build-and-deploy:
@@ -15,6 +13,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -78,10 +78,6 @@ jobs:
 
             # Create Firebase credentials file from secret using a here document
             # to prevent shell quoting issues with the JSON string.
-            cat <<EOF > firebase-credentials.json
-            ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
-            EOF
-
             # Set environment variables for docker-compose
             export IMAGE_TAG=ghcr.io/${{ github.repository }}:${{ github.sha }}
             export SECRET_KEY='${{ secrets.SECRET_KEY }}'
@@ -90,13 +86,16 @@ jobs:
             export MAIL_USE_TLS='${{ secrets.MAIL_USE_TLS }}'
             export MAIL_USERNAME='${{ secrets.MAIL_USERNAME }}'
             export MAIL_PASSWORD='${{ secrets.MAIL_PASSWORD }}'
+            export FIREBASE_CREDENTIALS_JSON='${{ secrets.FIREBASE_CREDENTIALS_JSON }}'
             export FIREBASE_PROJECT_ID='${{ secrets.FIREBASE_PROJECT_ID }}'
+            export FIREBASE_STORAGE_BUCKET='${{ secrets.FIREBASE_STORAGE_BUCKET }}'
             export FIREBASE_API_KEY='${{ secrets.FIREBASE_API_KEY }}'
             export IMGUR_CLIENT_ID='${{ secrets.IMGUR_CLIENT_ID }}'
             export APP_VERSION='${{ github.sha }}'
 
             # Recreate the services, pulling the latest image
-            docker-compose -f docker-compose.prod.yml up -d --pull --remove-orphans
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # Clean up old images
             # This helps to free up disk space on the server.
