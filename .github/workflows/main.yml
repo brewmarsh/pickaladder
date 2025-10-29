@@ -4,32 +4,15 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  trigger_check:
-    runs-on: ubuntu-latest
-    outputs:
-      should_run_ci: ${{ steps.check_commit.outputs.should_run_ci }}
-      should_deploy: ${{ steps.check_commit.outputs.should_deploy }}
-    steps:
-      - id: check_commit
-        run: |
-          if [[ "${{ github.event.head_commit.message }}" == *"chore(version):"* ]]; then
-            echo "should_run_ci=false" >> $GITHUB_OUTPUT
-            echo "should_deploy=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_run_ci=true" >> $GITHUB_OUTPUT
-            echo "should_deploy=false" >> $GITHUB_OUTPUT
-          fi
-
   ci:
-    needs: trigger_check
-    if: needs.trigger_check.outputs.should_run_ci == 'true'
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     uses: ./.github/workflows/reusable-ci.yml
 
   versioning:
-    needs: [trigger_check, ci]
-    if: needs.trigger_check.outputs.should_run_ci == 'true'
+    needs: ci
     permissions:
       contents: write
       pull-requests: write
@@ -37,7 +20,6 @@ jobs:
     secrets: inherit
 
   deploy:
-    needs: trigger_check
-    if: needs.trigger_check.outputs.should_deploy == 'true'
+    needs: versioning
     uses: ./.github/workflows/deploy.yml
     secrets: inherit

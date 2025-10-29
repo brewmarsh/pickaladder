@@ -32,7 +32,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore(version): update to ${{ steps.version.outputs.VERSION }}"
+          commit-message: "chore(version): update to ${{ steps.version.outputs.VERSION }} [skip ci]"
           title: "Update version to ${{ steps.version.outputs.VERSION }}"
           body: "This PR updates the application version to `${{ steps.version.outputs.VERSION }}`."
           branch: "chore/version-update-${{ steps.version.outputs.VERSION }}"
