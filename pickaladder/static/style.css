@@ -132,6 +132,7 @@ select {
     box-sizing: border-box;
     font-size: 16px;
     background-color: var(--background-color);
+    color: var(--on-surface-color);
 }
 
 input[type="text"]:focus,
@@ -447,10 +448,10 @@ input[type="submit"], .btn {
 }
 
 .modal-content {
-    background-color: #fefefe;
+    background-color: var(--surface-color);
     margin: 15% auto;
     padding: 20px;
-    border: 1px solid #888;
+    border: 1px solid var(--border-color);
     width: 80%;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
@@ -470,7 +471,7 @@ input[type="submit"], .btn {
 }
 
 .close {
-    color: #aaa;
+    color: var(--on-surface-variant-color);
     float: right;
     font-size: 28px;
     font-weight: bold;
@@ -478,7 +479,7 @@ input[type="submit"], .btn {
 
 .close:hover,
 .close:focus {
-    color: black;
+    color: var(--on-surface-color);
     text-decoration: none;
     cursor: pointer;
 }

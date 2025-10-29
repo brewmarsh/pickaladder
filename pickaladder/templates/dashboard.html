@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - pickaladder</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='dark.css') }}">
 </head>
-<body class="{{ 'dark-mode' if user and user.dark_mode else '' }}">
+<body>
     {% include 'navbar.html' %}
     <div class="content">
         <div class="container">
