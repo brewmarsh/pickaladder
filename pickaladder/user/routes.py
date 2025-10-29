@@ -504,18 +504,9 @@ def api_dashboard():
             }
         )
 
-    # Prepare user data, ensuring consistent naming
-    user_display_data = {
-        "id": user_id,
-        "username": user_data.get("username"),
-        "email": user_data.get("email"),
-        "dupr_rating": user_data.get("dupr_rating"),
-        "dark_mode": user_data.get("dark_mode", False),
-    }
-
     return jsonify(
         {
-            "user": user_display_data,
+            "user": user_data,
             "friends": friends_data,
             "requests": requests_data,
             "matches": matches_data,
