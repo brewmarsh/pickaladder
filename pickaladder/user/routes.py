@@ -109,7 +109,7 @@ def dashboard():
 
     form = UpdateProfileForm()
     if request.method == "GET":
-        form.dupr_rating.data = user_data.get("dupr_rating")
+        form.dupr_rating.data = user_data.get("duprRating")
         form.dark_mode.data = user_data.get("dark_mode")
 
     if form.validate_on_submit():
@@ -118,7 +118,7 @@ def dashboard():
                 "dark_mode": bool(form.dark_mode.data),
             }
             if form.dupr_rating.data is not None:
-                update_data["dupr_rating"] = float(form.dupr_rating.data)
+                update_data["duprRating"] = float(form.dupr_rating.data)
 
             profile_picture_file = form.profile_picture.data
             if profile_picture_file:
