@@ -109,16 +109,16 @@ def dashboard():
 
     form = UpdateProfileForm()
     if request.method == "GET":
-        form.dupr_rating.data = user_data.get("duprRating")
-        form.dark_mode.data = user_data.get("darkMode")
+        form.dupr_rating.data = user_data.get("dupr_rating")
+        form.dark_mode.data = user_data.get("dark_mode")
 
     if form.validate_on_submit():
         try:
             update_data = {
-                "darkMode": bool(form.dark_mode.data),
+                "dark_mode": bool(form.dark_mode.data),
             }
             if form.dupr_rating.data is not None:
-                update_data["duprRating"] = float(form.dupr_rating.data)
+                update_data["dupr_rating"] = float(form.dupr_rating.data)
 
             profile_picture_file = form.profile_picture.data
             if profile_picture_file:
@@ -504,9 +504,18 @@ def api_dashboard():
             }
         )
 
+    # Prepare user data, ensuring consistent naming
+    user_display_data = {
+        "id": user_id,
+        "username": user_data.get("username"),
+        "email": user_data.get("email"),
+        "dupr_rating": user_data.get("dupr_rating"),
+        "dark_mode": user_data.get("dark_mode", False),
+    }
+
     return jsonify(
         {
-            "user": user_data,
+            "user": user_display_data,
             "friends": friends_data,
             "requests": requests_data,
             "matches": matches_data,
