@@ -234,6 +234,7 @@ def view_user(user_id):
 def users():
     """List and allows searching for users."""
     db = firestore.client()
+    current_user_id = g.user["uid"]
     search_term = request.args.get("search", "")
     query = db.collection("users")
 
@@ -244,9 +245,48 @@ def users():
             filter=firestore.FieldFilter("username", ">=", search_term)
         ).where(filter=firestore.FieldFilter("username", "<=", search_term + "\uf8ff"))
 
-    all_users = [doc for doc in query.limit(20).stream() if doc.id != g.user["uid"]]
+    all_users_docs = [
+        doc for doc in query.limit(20).stream() if doc.id != current_user_id
+    ]
 
-    return render_template("users.html", users=all_users, search_term=search_term)
+    # Get all friend relationships for the current user to check status efficiently
+    friends_ref = db.collection("users").document(current_user_id).collection("friends")
+    friends_docs = friends_ref.stream()
+    friend_statuses = {doc.id: doc.to_dict() for doc in friends_docs}
+
+    user_items = []
+    for user_doc in all_users_docs:
+        user_data = user_doc.to_dict()
+        user_data["id"] = user_doc.id  # Add document ID to the dictionary
+
+        sent_status = None
+        received_status = None
+
+        friend_data = friend_statuses.get(user_doc.id)
+        if friend_data:
+            status = friend_data.get("status")
+            initiator = friend_data.get("initiator")
+
+            if initiator:
+                sent_status = status
+            else:
+                received_status = status
+
+        user_items.append((user_data, sent_status, received_status))
+
+    # The template expects a pagination object with an 'items' attribute.
+    # We are not implementing full pagination, just adapting to the template.
+    pagination = {
+        "items": user_items,
+        "pages": 1,  # Assume a single page for now
+    }
+
+    # The template also iterates over 'fof' (friends of friends)
+    fof = []
+
+    return render_template(
+        "users.html", pagination=pagination, search_term=search_term, fof=fof
+    )
 
 
 @bp.route("/send_friend_request/<string:friend_id>", methods=["POST"])

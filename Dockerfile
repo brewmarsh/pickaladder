@@ -1,5 +1,5 @@
 # Stage 1: Build the final image
-FROM python:3.9-bullseye
+FROM python:3.11-bullseye
 
 WORKDIR /app
 
