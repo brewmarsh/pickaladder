@@ -28,8 +28,8 @@ def create_app(test_config=None):
     app = Flask(
         __name__,
         instance_relative_config=True,
-        static_folder='static',
-        static_url_path='/static'
+        static_folder="static",
+        static_url_path="/static",
     )
     app.url_map.converters["uuid"] = UUIDConverter
 
