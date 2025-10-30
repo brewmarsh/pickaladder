@@ -25,7 +25,12 @@ class UUIDConverter(BaseConverter):
 
 def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
-    app = Flask(__name__, instance_relative_config=True)
+    app = Flask(
+        __name__,
+        instance_relative_config=True,
+        static_folder='static',
+        static_url_path='/static'
+    )
     app.url_map.converters["uuid"] = UUIDConverter
 
     # Load configuration
