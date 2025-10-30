@@ -53,11 +53,12 @@
                 {% for user, sent_status, received_status in pagination.items %}
                     <tr>
                         <td>
-                            <img src="{{ url_for('user.profile_picture_thumbnail', user_id=user.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
+                            <img src="{{ user.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
+                                 alt="Profile Picture" class="profile-picture-thumbnail">
                         </td>
                         <td><a href="{{ url_for('user.view_user', user_id=user.id) }}">{{ user.username }}</a></td>
                         <td>{{ user.name }}</td>
-                        <td>{{ user.dupr_rating }}</td>
+                        <td>{{ user.duprRating }}</td>
                         <td style="text-align: right;">
                             {% if sent_status == 'accepted' or received_status == 'accepted' %}
                                 <button class="btn" disabled>Friends</button>
@@ -66,7 +67,10 @@
                             {% elif received_status == 'pending' %}
                                 <a href="{{ url_for('user.friends') }}" class="btn btn-warning">Review Request</a>
                             {% else %}
-                                <a href="{{ url_for('user.send_friend_request', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
+                                <form method="post" action="{{ url_for('user.send_friend_request', friend_id=user.id) }}" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn add-friend-btn">Add Friend</button>
+                                </form>
                             {% endif %}
 
                             {% if session['is_admin'] %}
