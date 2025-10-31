@@ -1,4 +1,4 @@
 services:
   web:
-    environment:
-      - POSTGRES_DB=test_db
+    env_file:
+      - .env
