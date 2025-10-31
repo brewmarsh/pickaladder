@@ -48,7 +48,7 @@ def view_groups():
         owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
 
     def enrich_group(group_doc):
-        """Helper to attach owner data to a group dictionary."""
+        """Attach owner data to a group dictionary."""
         group_data = group_doc.to_dict()
         group_data["id"] = group_doc.id  # Add document ID
         owner_ref = group_data.get("ownerRef")
