@@ -1,0 +1,79 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - beta
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          pip install ruff
+      - name: Lint with ruff
+        run: ruff check .
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          pip install ruff
+      - name: Format with ruff
+        run: ruff format --check .
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          pip install bandit
+      - name: Security Analysis with Bandit
+        run: bandit -r .
+
+  typing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          pip install mypy
+          pip install -r requirements.txt
+      - name: Static Type Checking with mypy
+        run: python -m mypy --no-incremental .
+
+  vulnerabilities:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          pip install pip-audit
+      - name: Scan for vulnerabilities
+        run: pip-audit
