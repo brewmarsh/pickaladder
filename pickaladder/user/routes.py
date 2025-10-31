@@ -26,6 +26,15 @@ from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm
 
 
+class MockPagination:
+    """A mock pagination object."""
+
+    def __init__(self, items):
+        """Initialize the mock pagination object."""
+        self.items = items
+        self.pages = 1
+
+
 @bp.route("/edit_profile", methods=["GET", "POST"])
 @login_required
 def edit_profile():
@@ -276,10 +285,7 @@ def users():
 
     # The template expects a pagination object with an 'items' attribute.
     # We are not implementing full pagination, just adapting to the template.
-    pagination = {
-        "items": list(user_items),
-        "pages": 1,  # Assume a single page for now
-    }
+    pagination = MockPagination(user_items)
 
     # The template also iterates over 'fof' (friends of friends)
     fof = []
