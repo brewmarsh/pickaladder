@@ -33,10 +33,16 @@ def view_groups():
     )
     my_groups = my_groups_query.stream()
 
+    # The template expects a pagination object with an 'items' attribute.
+    # We are not implementing full pagination, just adapting to the template.
+    pagination = {
+        "items": public_groups,
+        "pages": 1,  # Assume a single page for now
+    }
     return render_template(
         "groups.html",
         my_groups=my_groups,
-        public_groups=public_groups,
+        pagination=pagination,
         search_term=search_term,
     )
 
