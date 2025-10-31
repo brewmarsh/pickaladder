@@ -78,3 +78,36 @@ class RegisterForm(FlaskForm):
             )
         if not re.search(r"\d", field.data):
             raise ValidationError("Password must contain at least one number.")
+
+
+class ChangePasswordForm(FlaskForm):
+    """Form for changing password."""
+
+    password = PasswordField(
+        "New Password",
+        validators=[
+            DataRequired(),
+            Length(min=8),
+            EqualTo("confirm_password", message="Passwords must match."),
+        ],
+        render_kw={"autocomplete": "new-password"},
+    )
+    confirm_password = PasswordField(
+        "Confirm New Password",
+        validators=[DataRequired()],
+        render_kw={"autocomplete": "new-password"},
+    )
+    submit = SubmitField("Change Password")
+
+    def validate_password(self, field):
+        """Validate password complexity."""
+        if not re.search(r"[A-Z]", field.data):
+            raise ValidationError(
+                "Password must contain at least one uppercase letter."
+            )
+        if not re.search(r"[a-z]", field.data):
+            raise ValidationError(
+                "Password must contain at least one lowercase letter."
+            )
+        if not re.search(r"\d", field.data):
+            raise ValidationError("Password must contain at least one number.")

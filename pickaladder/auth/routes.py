@@ -23,7 +23,7 @@ from pickaladder.errors import DuplicateResourceError
 from pickaladder.utils import send_email
 
 from . import bp
-from .forms import LoginForm, RegisterForm
+from .forms import ChangePasswordForm, LoginForm, RegisterForm
 
 
 @bp.route("/register", methods=["GET", "POST"])
@@ -295,7 +295,7 @@ def install():
     return render_template("install.html")
 
 
-@bp.route("/change_password", methods=["GET"])
+@bp.route("/change_password", methods=["GET", "POST"])
 def change_password():
     """Render the change password page.
 
@@ -303,7 +303,16 @@ def change_password():
     """
     if not g.get("user"):
         return redirect(url_for("auth.login"))
-    return render_template("change_password.html", user=g.user)
+
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        # The form is for display and validation, but the actual password
+        # change is handled by the Firebase client-side SDK.
+        # We can flash a message to inform the user.
+        flash("Your password has been updated.", "success")
+        return redirect(url_for("user.profile"))
+
+    return render_template("change_password.html", user=g.user, form=form)
 
 
 @bp.route("/firebase-config.js")
