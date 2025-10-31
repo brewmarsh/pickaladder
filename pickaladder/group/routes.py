@@ -24,24 +24,51 @@ def view_groups():
         public_groups_query = public_groups_query.where(
             filter=firestore.FieldFilter("name", ">=", search_term)
         ).where(filter=firestore.FieldFilter("name", "<=", search_term + "\uf8ff"))
-    public_groups = public_groups_query.limit(20).stream()
+    public_group_docs = list(public_groups_query.limit(20).stream())
 
     # Get user's groups
     user_ref = db.collection("users").document(g.user["uid"])
     my_groups_query = db.collection("groups").where(
         filter=firestore.FieldFilter("members", "array_contains", user_ref)
     )
-    my_groups = my_groups_query.stream()
+    my_group_docs = list(my_groups_query.stream())
+
+    # --- Enrich groups with owner data ---
+    all_groups = public_group_docs + my_group_docs
+    owner_refs = [
+        group.to_dict().get("ownerRef")
+        for group in all_groups
+        if group.to_dict().get("ownerRef")
+    ]
+    unique_owner_refs = list({ref for ref in owner_refs if ref})
+
+    owners_data = {}
+    if unique_owner_refs:
+        owner_docs = db.get_all(unique_owner_refs)
+        owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
+
+    def enrich_group(group_doc):
+        """Attach owner data to a group dictionary."""
+        group_data = group_doc.to_dict()
+        group_data["id"] = group_doc.id  # Add document ID
+        owner_ref = group_data.get("ownerRef")
+        if owner_ref and owner_ref.id in owners_data:
+            group_data["owner"] = owners_data[owner_ref.id]
+        else:
+            group_data["owner"] = {"username": "Unknown"}
+        return group_data
+
+    enriched_public_groups = [enrich_group(doc) for doc in public_group_docs]
+    enriched_my_groups = [{"group": enrich_group(doc)} for doc in my_group_docs]
 
     # The template expects a pagination object with an 'items' attribute.
-    # We are not implementing full pagination, just adapting to the template.
     pagination = {
-        "items": list(public_groups),
+        "items": enriched_public_groups,
         "pages": 1,  # Assume a single page for now
     }
     return render_template(
         "groups.html",
-        my_groups=my_groups,
+        my_groups=enriched_my_groups,
         pagination=pagination,
         search_term=search_term,
     )
