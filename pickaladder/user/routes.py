@@ -277,7 +277,7 @@ def users():
     # The template expects a pagination object with an 'items' attribute.
     # We are not implementing full pagination, just adapting to the template.
     pagination = {
-        "items": user_items,
+        "items": list(user_items),
         "pages": 1,  # Assume a single page for now
     }
 

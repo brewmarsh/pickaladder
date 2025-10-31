@@ -36,7 +36,7 @@ def view_groups():
     # The template expects a pagination object with an 'items' attribute.
     # We are not implementing full pagination, just adapting to the template.
     pagination = {
-        "items": public_groups,
+        "items": list(public_groups),
         "pages": 1,  # Assume a single page for now
     }
     return render_template(
