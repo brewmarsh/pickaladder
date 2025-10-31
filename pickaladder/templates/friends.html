@@ -4,7 +4,7 @@
     <div class="page-header">
         <h1>Friends</h1>
         <div>
-            <button id="invite-friend-btn" class="btn">Invite a Friend</button>
+            <button id="invite-friend-btn" class="btn" data-csrf="{{ csrf_token() }}">Invite a Friend</button>
             <a href="{{ url_for('user.users') }}" class="btn">Find New Friends</a>
         </div>
     </div>
@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ];
 
     inviteButton.addEventListener('click', function() {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken = this.getAttribute('data-csrf');
         fetch("{{ url_for('user.create_invite') }}", {
             method: "POST",
             headers: {
