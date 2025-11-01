@@ -39,7 +39,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install git+https://github.com/pypa/pip.git@f2b92314da012b9fffa36b3f3e67748a37ef464a
+          pip install git+https://github.com/pypa/pip.git@7daeda1cb53546615a8c75161028b8121321119e
           pip install setuptools==78.1.1
           pip install -r requirements.txt
 

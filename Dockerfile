@@ -12,7 +12,7 @@ RUN apt-get update && \
 COPY requirements.txt .
 
 # Install the dependencies
-RUN pip install git+https://github.com/pypa/pip.git@f2b92314da012b9fffa36b3f3e67748a37ef464a
+RUN pip install git+https://github.com/pypa/pip.git@7daeda1cb53546615a8c75161028b8121321119e
 RUN pip install --no-cache-dir setuptools==78.1.1
 RUN pip install --no-cache-dir -r requirements.txt
 
