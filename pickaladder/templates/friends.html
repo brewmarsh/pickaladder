@@ -14,17 +14,17 @@
         <div class="card">
             <h3>Your Friends</h3>
             <div class="table-container">
-                <table class="table">
+                <table class="table responsive-table">
                     <tbody>
                         {% for friend in friends %}
                             <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=friend.id) }}">
-                                <td>
+                                <td data-label="Avatar">
                                     <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
                                 </td>
-                                <td>
+                                <td data-label="Username">
                                     {{ friend.username }}
                                 </td>
-                                <td>{{ friend.dupr_rating }}</td>
+                                <td data-label="DUPR Rating">{{ friend.dupr_rating }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -35,12 +35,12 @@
             <h3>Friend Requests</h3>
             <h4>Received</h4>
             <div class="table-container">
-                <table class="table">
+                <table class="table responsive-table">
                     <tbody>
                         {% for request in requests %}
                             <tr>
-                                <td><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
-                                <td style="text-align: right;">
+                                <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
+                                <td data-label="Actions" style="text-align: right;">
                                     <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn">Accept</button>
@@ -59,12 +59,12 @@
             </div>
             <h4 style="margin-top: 20px;">Sent</h4>
             <div class="table-container">
-                <table class="table">
+                <table class="table responsive-table">
                     <tbody>
                         {% for request in sent_requests %}
                             <tr>
-                                <td><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
-                                <td>Pending</td>
+                                <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
+                                <td data-label="Status">Pending</td>
                             </tr>
                         {% else %}
                              <tr><td>No outgoing requests.</td></tr>
