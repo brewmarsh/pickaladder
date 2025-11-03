@@ -84,6 +84,15 @@
         border-bottom: none;
     }
 
+    .responsive-table td[data-label="Avatar"] {
+        padding-left: 10px;
+        text-align: center;
+    }
+
+    .responsive-table td[data-label="Avatar"]::before {
+        display: none;
+    }
+
     .responsive-table td::before {
         content: attr(data-label);
         position: absolute;
