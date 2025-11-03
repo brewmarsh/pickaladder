@@ -16,9 +16,22 @@
         display: flex;
     }
 
+    .navbar-right {
+        display: flex;
+        align-items: center;
+    }
+
     .hamburger-menu {
         display: block;
         cursor: pointer;
+    }
+
+    .navbar .dropdown {
+        display: none;
+    }
+
+    .navbar-right .dropdown {
+        display: block;
     }
 
     .hamburger-menu span {
@@ -29,6 +42,9 @@
         background-color: var(--on-surface-color);
     }
 
+    .grid-container {
+        grid-template-columns: 1fr;
+    }
     .responsive-table {
         width: 100%;
         border-collapse: collapse;
@@ -43,25 +59,36 @@
     .responsive-table td {
         display: block;
         width: 100%;
+        box-sizing: border-box;
     }
 
     .responsive-table tr {
         margin-bottom: 15px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 0 10px;
     }
 
     .responsive-table td {
-        text-align: right;
         padding-left: 50%;
         position: relative;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .responsive-table tr td:last-child {
+        border-bottom: none;
     }
 
     .responsive-table td::before {
         content: attr(data-label);
         position: absolute;
-        left: 0;
+        left: 10px;
         width: 45%;
-        padding-left: 15px;
+        padding-right: 10px;
         font-weight: bold;
         text-align: left;
+        white-space: nowrap;
     }
 }

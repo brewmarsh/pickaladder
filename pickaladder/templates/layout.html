@@ -41,11 +41,13 @@
                 });
             });
         });
-    </script>
-    <script>
-        document.querySelector('.hamburger-menu').addEventListener('click', function() {
-            document.querySelector('.navbar-menu').classList.toggle('active');
-        });
+
+        const hamburger = document.querySelector('.hamburger-menu');
+        if (hamburger) {
+            hamburger.addEventListener('click', function() {
+                document.querySelector('.navbar-menu').classList.toggle('active');
+            });
+        }
     </script>
 
     <!-- Firebase SDKs -->
