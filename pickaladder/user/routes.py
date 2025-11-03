@@ -183,6 +183,7 @@ def view_user(user_id):
         return redirect(url_for(".users"))
 
     profile_user_data = profile_user.to_dict()
+    profile_user_data["id"] = user_id
     current_user_id = g.user["uid"]
 
     # Fetch friendship status
@@ -225,8 +226,28 @@ def view_user(user_id):
         .stream()
     )
     matches = list(matches_as_p1) + list(matches_as_p2)
-    # This is a simplified representation. A real implementation would need
-    # to fetch opponent data for each match.
+
+    # Calculate win/loss record
+    wins = 0
+    losses = 0
+    for match_doc in matches:
+        match_data = match_doc.to_dict()
+        is_player1 = match_data.get("player1Ref") == profile_user_ref
+
+        player1_score = match_data.get("player1Score", 0)
+        player2_score = match_data.get("player2Score", 0)
+
+        if is_player1:
+            if player1_score > player2_score:
+                wins += 1
+            else:
+                losses += 1
+        else:  # is_player2
+            if player2_score > player1_score:
+                wins += 1
+            else:
+                losses += 1
+    record = {"wins": wins, "losses": losses}
 
     return render_template(
         "user_profile.html",
@@ -235,6 +256,8 @@ def view_user(user_id):
         matches=matches,
         is_friend=is_friend,
         friend_request_sent=friend_request_sent,
+        record=record,
+        user=g.user,
     )
 
 

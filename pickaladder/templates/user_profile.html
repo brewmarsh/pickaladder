@@ -2,7 +2,7 @@
 {% block title %}{{ profile_user.username }}'s Profile{% endblock %}
 {% block content %}
     <div class="profile-header">
-        <img src="{{ url_for('user.profile_picture', user_id=profile_user.id) }}" alt="Profile Picture" class="profile-picture">
+        <img src="{{ profile_user.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture">
         <h1>{{ profile_user.name }}</h1>
         <p>@{{ profile_user.username }}</p>
         <p><strong>DUPR Rating:</strong> {{ profile_user.dupr_rating }}</p>
@@ -26,7 +26,7 @@
                         {% for friend in friends %}
                             <tr>
                                 <td data-label="Avatar">
-                                    <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
+                                    <img src="{{ friend.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture-thumbnail">
                                 </td>
                                 <td data-label="Username">
                                     <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
