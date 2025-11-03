@@ -3,11 +3,6 @@ FROM python:3.11-bullseye
 
 WORKDIR /app
 
-# Install PostgreSQL client
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends postgresql-client && \
-    rm -rf /var/lib/apt/lists/*
-
 # Copy the requirements file
 COPY requirements.txt .
 
