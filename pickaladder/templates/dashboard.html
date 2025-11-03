@@ -37,7 +37,7 @@
         <h3>Friend Requests</h3>
         <div class="friend-requests-list">
             {% if requests %}
-                <table>
+                <table class="responsive-table">
                     <thead>
                         <tr>
                             <th>Username</th>
@@ -48,8 +48,8 @@
                     <tbody>
                         {% for request in requests %}
                             <tr>
-                                <td>{{ request[1] }}</td>
-                                <td>
+                                <td data-label="Username">{{ request[1] }}</td>
+                                <td data-label="Actions">
                                     <form action="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}" method="post" style="display: inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="button">Accept</button>
@@ -75,7 +75,7 @@
         </div>
         <div class="matches-list">
             {% if matches %}
-                <table>
+                <table class="responsive-table">
                     <thead>
                         <tr>
                             <th>Date</th>
@@ -87,10 +87,10 @@
                     <tbody>
                         {% for match in matches %}
                             <tr>
-                                <td>{{ match[5] }}</td>
-                                <td>{{ match[7] }}</td>
-                                <td>{{ match[3] }} - {{ match[4] }}</td>
-                                <td><a href="{{ url_for('match.view_match_page', match_id=match[0]) }}">View</a></td>
+                                <td data-label="Date">{{ match[5] }}</td>
+                                <td data-label="Opponent">{{ match[7] }}</td>
+                                <td data-label="Score">{{ match[3] }} - {{ match[4] }}</td>
+                                <td data-label="Link"><a href="{{ url_for('match.view_match_page', match_id=match[0]) }}">View</a></td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -102,7 +102,7 @@
         <h3>Your Friends</h3>
         <div class="friends-list">
             {% if friends %}
-                <table>
+                <table class="responsive-table">
                     <thead>
                         <tr>
                             <th></th>
@@ -113,15 +113,15 @@
                     <tbody>
                         {% for friend in friends %}
                             <tr>
-                                <td>
+                                <td data-label="Avatar">
                                     {% if friend[4] %}
                                         <img src="{{ url_for('static', filename='uploads/' + friend[4]) }}" alt="Profile Picture" width="30" height="30" style="border-radius: 50%;">
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td data-label="Username">
                                     {{ friend[1] }}
                                 </td>
-                                <td>{{ friend[3] }}</td>
+                                <td data-label="DUPR Rating">{{ friend[3] }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
