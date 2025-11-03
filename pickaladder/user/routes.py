@@ -183,6 +183,7 @@ def view_user(user_id):
         return redirect(url_for(".users"))
 
     profile_user_data = profile_user.to_dict()
+    profile_user_data["id"] = user_id
     current_user_id = g.user["uid"]
 
     # Fetch friendship status
@@ -256,6 +257,7 @@ def view_user(user_id):
         is_friend=is_friend,
         friend_request_sent=friend_request_sent,
         record=record,
+        user=g.user,
     )
 
 
