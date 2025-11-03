@@ -84,9 +84,22 @@ body {
 .navbar-menu {
     display: flex;
     align-items: center;
+    gap: 20px; /* spacing between menu items */
 }
 
-.hamburger-menu, .navbar-right {
+.navbar-menu a {
+    text-decoration: none;
+    color: var(--on-surface-color);
+}
+
+
+.navbar-user-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.hamburger-menu {
     display: none;
 }
 

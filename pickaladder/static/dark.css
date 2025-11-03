@@ -57,3 +57,7 @@ body.dark-mode .loader {
     border: 5px solid var(--surface-color);
     border-top: 5px solid var(--primary-color);
 }
+
+body.dark-mode a {
+    color: #8ab4f8; /* A light, high-contrast blue */
+}

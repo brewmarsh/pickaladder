@@ -1,8 +1,29 @@
 /* Mobile-specific styles */
 @media (max-width: 768px) {
     .navbar-menu {
+        display: none; /* Hide the main menu on mobile */
+    }
+
+    .desktop-auth-buttons {
+        display: none; /* Hide desktop login/register buttons on mobile */
+    }
+
+    .hamburger-menu {
+        display: block;
+        cursor: pointer;
+    }
+
+    /* Repurpose the dropdown as the mobile menu */
+    .dropdown {
+        position: static;
+    }
+
+    .dropbtn {
+        display: none; /* Hide the user icon image on mobile */
+    }
+
+    .dropdown-content {
         display: none;
-        flex-direction: column;
         position: absolute;
         top: 60px;
         left: 0;
@@ -12,25 +33,7 @@
         z-index: 100;
     }
 
-    .navbar-menu.active {
-        display: flex;
-    }
-
-    .navbar-right {
-        display: flex;
-        align-items: center;
-    }
-
-    .hamburger-menu {
-        display: block;
-        cursor: pointer;
-    }
-
-    .navbar .dropdown {
-        display: none;
-    }
-
-    .navbar-right .dropdown {
+    .dropdown-content.active {
         display: block;
     }
 

@@ -5,7 +5,16 @@
                 <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" alt="pickaladder logo" style="height: 24px; margin-right: 8px;">
                 pickaladder
             </a>
-            <div class="navbar-right">
+            <div class="navbar-menu">
+                {% if g.user %}
+                    <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
+                    <a href="{{ url_for('user.users') }}">👥 Users</a>
+                    <a href="{{ url_for('user.friends') }}">🧑‍🤝‍🧑 Friends</a>
+                    <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
+                    <a href="{{ url_for('match.leaderboard') }}">🏆 Leaderboard</a>
+                {% endif %}
+            </div>
+            <div class="navbar-user-controls">
                 {% if g.user %}
                     <div class="dropdown">
                         <button class="dropbtn">
@@ -17,6 +26,7 @@
                             <a href="{{ url_for('user.friends') }}">🧑‍🤝‍🧑 Friends</a>
                             <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
                             <a href="{{ url_for('match.leaderboard') }}">🏆 Leaderboard</a>
+                            <hr>
                             <a href="{{ url_for('auth.change_password') }}">🔑 Change Password</a>
                             <a href="{{ url_for('auth.logout') }}">🚪 Logout</a>
                             {% if session.get('is_admin') %}
@@ -25,32 +35,19 @@
                             {% endif %}
                         </div>
                     </div>
+                {% else %}
+                    <div class="desktop-auth-buttons">
+                        {% if request.endpoint != 'auth.login' %}
+                            <a href="{{ url_for('auth.login') }}" class="btn">Login</a>
+                        {% endif %}
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>
+                    </div>
                 {% endif %}
                 <button class="hamburger-menu">
                     <span></span>
                     <span></span>
                     <span></span>
                 </button>
-            </div>
-            <div class="navbar-menu">
-                {% if g.user %}
-                    <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
-                    <a href="{{ url_for('user.users') }}">👥 Users</a>
-                    <a href="{{ url_for('user.friends') }}">🧑‍🤝‍🧑 Friends</a>
-                    <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
-                    <a href="{{ url_for('match.leaderboard') }}">🏆 Leaderboard</a>
-                    <a href="{{ url_for('auth.change_password') }}">🔑 Change Password</a>
-                    <a href="{{ url_for('auth.logout') }}">🚪 Logout</a>
-                    {% if session.get('is_admin') %}
-                        <hr>
-                        <a href="{{ url_for('admin.admin') }}">👑 Admin</a>
-                    {% endif %}
-                {% else %}
-                    {% if request.endpoint != 'auth.login' %}
-                        <a href="{{ url_for('auth.login') }}" class="btn">Login</a>
-                    {% endif %}
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>
-                {% endif %}
             </div>
         </nav>
     </div>
