@@ -103,6 +103,10 @@ body {
     display: none;
 }
 
+.hamburger-menu, .navbar-right {
+    display: none;
+}
+
 .profile-picture-thumbnail {
     width: 40px;
     height: 40px;

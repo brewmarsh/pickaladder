@@ -37,6 +37,14 @@
         display: block;
     }
 
+    .navbar .dropdown {
+        display: none;
+    }
+
+    .navbar-right .dropdown {
+        display: block;
+    }
+
     .hamburger-menu span {
         display: block;
         width: 25px;
