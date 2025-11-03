@@ -1,5 +1,7 @@
 """Routes for the group blueprint."""
 
+from dataclasses import dataclass
+
 from firebase_admin import firestore
 from flask import flash, g, redirect, render_template, request, url_for
 
@@ -7,6 +9,14 @@ from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import GroupForm, InviteFriendForm
+
+
+@dataclass
+class Pagination:
+    """A simple data class to hold pagination data."""
+
+    items: list
+    pages: int
 
 
 @bp.route("/", methods=["GET"])
@@ -62,14 +72,14 @@ def view_groups():
     enriched_my_groups = [{"group": enrich_group(doc)} for doc in my_group_docs]
 
     # The template expects a pagination object with an 'items' attribute.
-    pagination = {
-        "items": enriched_public_groups,
-        "pages": 1,  # Assume a single page for now
-    }
+    pagination_obj = Pagination(
+        items=enriched_public_groups,
+        pages=1,  # Assume a single page for now
+    )
     return render_template(
         "groups.html",
         my_groups=enriched_my_groups,
-        pagination=pagination,
+        pagination=pagination_obj,
         search_term=search_term,
     )
 
