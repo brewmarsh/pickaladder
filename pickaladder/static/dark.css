@@ -61,3 +61,7 @@ body.dark-mode .loader {
 body.dark-mode a {
     color: #8ab4f8; /* A light, high-contrast blue */
 }
+
+body.dark-mode .dropbtn {
+    background-color: var(--surface-color);
+}
