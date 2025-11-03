@@ -13,9 +13,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          # We need to fetch all history and branches to be able to push
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Get next version
         id: version
@@ -31,7 +30,7 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}
           commit-message: "chore(version): update to ${{ steps.version.outputs.VERSION }} [skip ci]"
           title: "Update version to ${{ steps.version.outputs.VERSION }}"
           body: "This PR updates the application version to `${{ steps.version.outputs.VERSION }}`."
@@ -43,4 +42,4 @@ jobs:
         run: |
           gh pr merge ${{ steps.cpr.outputs.pull-request-number }} --admin --rebase
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
