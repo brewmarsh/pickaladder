@@ -65,3 +65,7 @@ body.dark-mode a {
 body.dark-mode .dropbtn {
     background-color: var(--surface-color);
 }
+
+body.dark-mode .hamburger-menu {
+    background-color: transparent;
+}
