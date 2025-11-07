@@ -106,7 +106,17 @@ Before submitting your code, please run the following checks. These are also enf
 * **Password Security:** Never handle passwords in plaintext. Use `werkzeug.security` functions for hashing and checking passwords.
 * **Input Validation:** All user-provided input **must** be validated on the server side.
 
-## 5. Known Issues & Solutions
+## 5. Versioning
+
+This project uses semantic versioning, which is automated based on the prefixes of merge commit messages. Please use one of the following prefixes in your merge commit message to indicate the type of change:
+
+*   `major:`: For breaking changes that are not backwards-compatible.
+*   `minor:`: For new features that are backwards-compatible.
+*   `patch:`: For bug fixes that are backwards-compatible.
+
+For more details on the commit message format, please refer to the `AGENTS.md` file.
+
+## 6. Known Issues & Solutions
 
 This section documents common bugs and their required solutions.
 

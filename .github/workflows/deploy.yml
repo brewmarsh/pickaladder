@@ -2,6 +2,11 @@ name: Deploy to Hostinger
 
 on:
   workflow_call:
+    inputs:
+      app_version:
+        description: 'The application version'
+        required: true
+        type: string
 
 jobs:
   build-and-deploy:
@@ -91,7 +96,7 @@ jobs:
             export FIREBASE_STORAGE_BUCKET='${{ secrets.FIREBASE_STORAGE_BUCKET }}'
             export FIREBASE_API_KEY='${{ secrets.FIREBASE_API_KEY }}'
             export IMGUR_CLIENT_ID='${{ secrets.IMGUR_CLIENT_ID }}'
-            export APP_VERSION='${{ github.sha }}'
+            export APP_VERSION='${{ inputs.app_version }}'
 
             # Recreate the services, pulling the latest image
             docker compose -f docker-compose.prod.yml pull
