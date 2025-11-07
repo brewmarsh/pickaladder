@@ -2,12 +2,18 @@ name: Reusable Versioning
 
 on:
   workflow_call:
+    outputs:
+      version:
+        description: "The new version number"
+        value: ${{ jobs.update-version.outputs.version }}
 
 jobs:
   update-version:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -17,28 +23,23 @@ jobs:
 
       - name: Get next version
         id: version
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          major_pattern: "major:"
+          minor_pattern: "minor:"
+          version_format: "${major}.${minor}.${patch}"
+
+      - name: Configure git
         run: |
-          # Simple versioning: use the commit SHA for now
-          echo "VERSION=${{ github.sha }}" >> $GITHUB_OUTPUT
+          git config --global user.name "picka-bot"
+          git config --global user.email "picka-bot@users.noreply.github.com"
 
       - name: Update version file
         run: |
-          echo ${{ steps.version.outputs.VERSION }} > VERSION
+          echo ${{ steps.version.outputs.version }} > VERSION
 
-      - name: Create Pull Request
-        id: cpr
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-          commit-message: "chore(version): update to ${{ steps.version.outputs.VERSION }} [skip ci]"
-          title: "Update version to ${{ steps.version.outputs.VERSION }}"
-          body: "This PR updates the application version to `${{ steps.version.outputs.VERSION }}`."
-          branch: "chore/version-update-${{ steps.version.outputs.VERSION }}"
-          base: "${{ github.ref_name }}"
-
-      - name: Merge Pull Request
-        if: steps.cpr.outputs.pull-request-number
+      - name: Commit new version
         run: |
-          gh pr merge ${{ steps.cpr.outputs.pull-request-number }} --admin --rebase
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          git add VERSION
+          git commit -m "chore(version): update to ${{ steps.version.outputs.version }} [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
