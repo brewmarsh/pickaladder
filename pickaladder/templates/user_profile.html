@@ -2,7 +2,7 @@
 {% block title %}{{ profile_user.username }}'s Profile{% endblock %}
 {% block content %}
     <div class="profile-header">
-        <img src="{{ url_for('user.profile_picture', user_id=profile_user.id) }}" alt="Profile Picture" class="profile-picture">
+        <img src="{{ profile_user.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture">
         <h1>{{ profile_user.name }}</h1>
         <p>@{{ profile_user.username }}</p>
         <p><strong>DUPR Rating:</strong> {{ profile_user.dupr_rating }}</p>
@@ -16,22 +16,22 @@
         <div class="card">
             <h3>Friends</h3>
             {% if not is_friend and not friend_request_sent and user.id != profile_user.id %}
-                <a href="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}" class="btn" id="addFriendBtn">Add Friend</a>
+                <a href="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}" class="btn" id="addFriendBtn" data-csrf="{{ csrf_token() }}">Add Friend</a>
             {% elif friend_request_sent %}
                 <button class="btn" disabled>Friend Request Sent</button>
             {% endif %}
             <div class="table-container">
-                <table class="table">
+                <table class="table responsive-table">
                     <tbody>
                         {% for friend in friends %}
                             <tr>
-                                <td>
-                                    <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
+                                <td data-label="Avatar">
+                                    <img src="{{ friend.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture-thumbnail">
                                 </td>
-                                <td>
+                                <td data-label="Username">
                                     <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
                                 </td>
-                                <td>{{ friend.dupr_rating }}</td>
+                                <td data-label="DUPR Rating">{{ friend.dupr_rating }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -41,7 +41,7 @@
         <div class="card">
             <h3>Match History</h3>
             <div class="table-container">
-                <table class="table">
+                <table class="table responsive-table">
                     <thead>
                         <tr>
                             <th>Date</th>
@@ -52,8 +52,8 @@
                     <tbody>
                         {% for match in matches %}
                             <tr class="clickable-row" data-href="{{ url_for('match.view_match_page', match_id=match.id) }}">
-                                <td>{{ match.match_date.strftime('%Y-%m-%d') if match.match_date else 'N/A' }}</td>
-                                <td>
+                                <td data-label="Date">{{ match.match_date.strftime('%Y-%m-%d') if match.match_date else 'N/A' }}</td>
+                                <td data-label="Opponent">
                                     {% if match.player1_id == profile_user.id %}
                                         <a href="{{ url_for('user.view_user', user_id=match.player2.id) }}">{{ match.player2.username }}</a>
                                     {% else %}
@@ -80,11 +80,13 @@
             addFriendBtn.addEventListener("click", (e) => {
                 e.preventDefault();
                 const url = addFriendBtn.href;
+                const csrfToken = addFriendBtn.dataset.csrf;
                 fetch(url, {
                     method: "POST",
                     headers: {
                         "X-Requested-With": "XMLHttpRequest",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
                     },
                     body: JSON.stringify({})
                 })

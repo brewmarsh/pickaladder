@@ -1,0 +1,35 @@
+# .pre-commit-config.yaml
+repos:
+  # 1. Ruff: A fast Python linter and formatter.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.4 # Use the latest stable version
+    hooks:
+      # Run the linter against all staged Python files.
+      - id: ruff
+        args: [--fix] # Automatically fix fixable errors
+
+      # Run the formatter against all staged Python files.
+      - id: ruff-format
+
+  # 2. MyPy: Static type checker for Python.
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.9.0 # Use the latest stable version
+    hooks:
+      - id: mypy
+        # You may need to specify paths or use a configuration file 
+        # (e.g., mypy.ini) for complex projects.
+        # This hook runs mypy against all staged files.
+        args: [] 
+
+  # 3. Bandit (Optional but recommended for security)
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7 # Use the latest stable version
+    hooks:
+      - id: bandit
+        args: ['-r', '.'] # Recursively check the entire project directory
+        # Exclude common non-source directories like tests and documentation
+        exclude: |
+          (?x)^(
+              tests/.*|
+              docs/.*
+          )$

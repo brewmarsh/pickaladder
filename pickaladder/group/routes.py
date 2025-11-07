@@ -1,37 +1,85 @@
-from flask import render_template, redirect, url_for, flash, request, g
+"""Routes for the group blueprint."""
+
+from dataclasses import dataclass
+
 from firebase_admin import firestore
+from flask import flash, g, redirect, render_template, request, url_for
+
+from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import GroupForm, InviteFriendForm
-from pickaladder.auth.decorators import login_required
+
+
+@dataclass
+class Pagination:
+    """A simple data class to hold pagination data."""
+
+    items: list
+    pages: int
 
 
 @bp.route("/", methods=["GET"])
 @login_required
 def view_groups():
-    """Displays a list of public groups and the user's groups."""
+    """Display a list of public groups and the user's groups."""
     db = firestore.client()
     search_term = request.args.get("search", "")
 
     # Query for public groups
-    public_groups_query = db.collection("groups").where("is_public", "==", True)
+    public_groups_query = db.collection("groups").where(
+        filter=firestore.FieldFilter("is_public", "==", True)
+    )
     if search_term:
         public_groups_query = public_groups_query.where(
-            "name", ">=", search_term
-        ).where("name", "<=", search_term + "\uf8ff")
-    public_groups = public_groups_query.limit(20).stream()
+            filter=firestore.FieldFilter("name", ">=", search_term)
+        ).where(filter=firestore.FieldFilter("name", "<=", search_term + "\uf8ff"))
+    public_group_docs = list(public_groups_query.limit(20).stream())
 
     # Get user's groups
     user_ref = db.collection("users").document(g.user["uid"])
     my_groups_query = db.collection("groups").where(
-        "members", "array_contains", user_ref
+        filter=firestore.FieldFilter("members", "array_contains", user_ref)
     )
-    my_groups = my_groups_query.stream()
+    my_group_docs = list(my_groups_query.stream())
 
+    # --- Enrich groups with owner data ---
+    all_groups = public_group_docs + my_group_docs
+    owner_refs = [
+        group.to_dict().get("ownerRef")
+        for group in all_groups
+        if group.to_dict().get("ownerRef")
+    ]
+    unique_owner_refs = list({ref for ref in owner_refs if ref})
+
+    owners_data = {}
+    if unique_owner_refs:
+        owner_docs = db.get_all(unique_owner_refs)
+        owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
+
+    def enrich_group(group_doc):
+        """Attach owner data to a group dictionary."""
+        group_data = group_doc.to_dict()
+        group_data["id"] = group_doc.id  # Add document ID
+        owner_ref = group_data.get("ownerRef")
+        if owner_ref and owner_ref.id in owners_data:
+            group_data["owner"] = owners_data[owner_ref.id]
+        else:
+            group_data["owner"] = {"username": "Unknown"}
+        return group_data
+
+    enriched_public_groups = [enrich_group(doc) for doc in public_group_docs]
+    enriched_my_groups = [{"group": enrich_group(doc)} for doc in my_group_docs]
+
+    # The template expects a pagination object with an 'items' attribute.
+    pagination_obj = Pagination(
+        items=enriched_public_groups,
+        pages=1,  # Assume a single page for now
+    )
     return render_template(
         "groups.html",
-        my_groups=my_groups,
-        public_groups=public_groups,
+        my_groups=enriched_my_groups,
+        pagination=pagination_obj,
         search_term=search_term,
     )
 
@@ -39,7 +87,7 @@ def view_groups():
 @bp.route("/<string:group_id>", methods=["GET", "POST"])
 @login_required
 def view_group(group_id):
-    """Displays a single group's page, including its members, leaderboard, and invite form."""
+    """Display a single group's page, including its members, leaderboard, and invite form."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
@@ -69,7 +117,9 @@ def view_group(group_id):
 
     # Get user's accepted friends
     friends_query = (
-        user_ref.collection("friends").where("status", "==", "accepted").stream()
+        user_ref.collection("friends")
+        .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+        .stream()
     )
     friend_ids = {doc.id for doc in friends_query}
 
@@ -79,7 +129,9 @@ def view_group(group_id):
     eligible_friends = []
     if eligible_friend_ids:
         eligible_friends_query = (
-            db.collection("users").where("__name__", "in", eligible_friend_ids).stream()
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("__name__", "in", eligible_friend_ids))
+            .stream()
         )
         eligible_friends = [doc for doc in eligible_friends_query]
 
@@ -112,6 +164,7 @@ def view_group(group_id):
 @bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create_group():
+    """Create a new group."""
     form = GroupForm()
     if form.validate_on_submit():
         db = firestore.client()
@@ -136,6 +189,7 @@ def create_group():
 @bp.route("/<string:group_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_group(group_id):
+    """Edit a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
@@ -172,6 +226,7 @@ def edit_group(group_id):
 @bp.route("/<string:group_id>/delete", methods=["POST"])
 @login_required
 def delete_group(group_id):
+    """Delete a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
@@ -197,6 +252,7 @@ def delete_group(group_id):
 @bp.route("/<string:group_id>/join", methods=["POST"])
 @login_required
 def join_group(group_id):
+    """Join a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
     user_ref = db.collection("users").document(g.user["uid"])
@@ -213,6 +269,7 @@ def join_group(group_id):
 @bp.route("/<string:group_id>/leave", methods=["POST"])
 @login_required
 def leave_group(group_id):
+    """Leave a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
     user_ref = db.collection("users").document(g.user["uid"])

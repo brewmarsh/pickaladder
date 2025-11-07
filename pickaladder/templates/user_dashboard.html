@@ -13,9 +13,10 @@
                 <p><strong>Email:</strong> <span id="user-email"></span></p>
                 <p><strong>DUPR Rating:</strong> <span id="user-dupr"></span></p>
 
+                <a href="{{ url_for('user.edit_profile') }}" class="btn">Edit Profile</a>
                 <hr>
                 <h4 style="margin-top: 20px;">Update Profile</h4>
-                <form method="post" action="{{ url_for('user.update_profile') }}" enctype="multipart/form-data">
+                <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
                     <div class="form-group">
                         {{ form.dupr_rating.label }}
@@ -36,7 +37,7 @@
             <div class="card">
                 <h3>Friend Requests</h3>
                 <div class="table-container">
-                    <table class="table">
+                    <table class="table responsive-table">
                         <thead>
                             <tr>
                                 <th>Username</th>
@@ -51,7 +52,7 @@
 
                 <h3 style="margin-top: 20px;">Your Friends</h3>
                 <div class="table-container">
-                    <table class="table">
+                    <table class="table responsive-table">
                         <thead>
                             <tr>
                                 <th>Username</th>
@@ -66,7 +67,7 @@
 
                 <h3 style="margin-top: 20px;">My Group Rankings</h3>
                 <div class="table-container">
-                    <table class="table">
+                    <table class="table responsive-table">
                         <thead>
                             <tr>
                                 <th>Group Name</th>
@@ -87,7 +88,7 @@
                 <a href="{{ url_for('match.create_match') }}" class="btn">Record a Match</a>
             </div>
             <div class="table-container">
-                <table class="table">
+                <table class="table responsive-table">
                     <thead>
                         <tr>
                             <th>Date</th>
@@ -126,10 +127,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderUserInfo(user) {
         document.getElementById('user-username').textContent = `@${user.username}`;
         document.getElementById('user-email').textContent = user.email;
-        document.getElementById('user-dupr').textContent = user.dupr_rating || 'Not set';
+        document.getElementById('user-dupr').textContent = user.duprRating || 'Not set';
         document.getElementById('profile-picture-img').src = urls.profile_picture(user.id);
         // Also populate the value in the update form
-        document.getElementById('dupr_rating_input').value = user.dupr_rating || '';
+        document.getElementById('dupr_rating_input').value = user.duprRating || '';
+        document.querySelector('input[name="dark_mode"]').checked = user.dark_mode;
     }
 
     function renderTable(tbodyId, items, rowTemplate, noDataMessage) {
@@ -147,11 +149,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const csrf_token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const requestRowTemplate = (request) => `
         <tr>
-            <td>
+            <td data-label="Username">
                 <img src="${request.thumbnail_url}" alt="${request.username}'s thumbnail" class="profile-picture-thumbnail" style="vertical-align: middle; margin-right: 10px;">
                 <a href="${urls.view_user(request.id)}">${request.username}</a>
             </td>
-            <td style="text-align: right;">
+            <td data-label="Actions" style="text-align: right;">
                 <form action="${urls.accept_request(request.id)}" method="post" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="${csrf_token}">
                     <button type="submit" class="btn">Accept</button>
@@ -166,23 +168,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const friendRowTemplate = (friend) => `
         <tr>
-            <td><a href="${urls.view_user(friend.id)}">${friend.username}</a></td>
-            <td>${friend.dupr_rating || 'N/A'}</td>
+            <td data-label="Username"><a href="${urls.view_user(friend.id)}">${friend.username}</a></td>
+            <td data-label="DUPR Rating">${friend.dupr_rating || 'N/A'}</td>
         </tr>
     `;
 
     const matchRowTemplate = (match) => `
         <tr class="clickable-row" data-href="/match/${match.id}">
-            <td>${match.date || 'N/A'}</td>
-            <td><a href="${urls.view_user(match.opponent_id)}">${match.opponent_username}</a></td>
-            <td>${match.user_score} - ${match.opponent_score}</td>
+            <td data-label="Date">${match.date || 'N/A'}</td>
+            <td data-label="Opponent"><a href="${urls.view_user(match.opponent_id)}">${match.opponent_username}</a></td>
+            <td data-label="Score">${match.user_score} - ${match.opponent_score}</td>
         </tr>
     `;
 
     const groupRankingRowTemplate = (ranking) => `
         <tr>
-            <td><a href="${urls.view_group(ranking.group_id)}">${ranking.group_name}</a></td>
-            <td>${ranking.rank}</td>
+            <td data-label="Group Name"><a href="${urls.view_group(ranking.group_id)}">${ranking.group_name}</a></td>
+            <td data-label="Your Rank">${ranking.rank}</td>
         </tr>
     `;
 

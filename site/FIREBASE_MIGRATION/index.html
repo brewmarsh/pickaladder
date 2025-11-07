@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Requirements for Migrating Pick-a-Ladder to Firebase - Pickaladder</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script>
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">Pickaladder</a>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+
+            <li class="nav-item" data-bs-level="1"><a href="#requirements-for-migrating-pick-a-ladder-to-firebase" class="nav-link">Requirements for Migrating Pick-a-Ladder to Firebase</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#1-overview" class="nav-link">1. Overview</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#2-core-firebase-services-to-be-used" class="nav-link">2. Core Firebase Services to be Used</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#3-data-model-migration-postgresql-to-firestore" class="nav-link">3. Data Model Migration (PostgreSQL to Firestore)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#4-authentication-refactoring" class="nav-link">4. Authentication Refactoring</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#5-file-storage-refactoring" class="nav-link">5. File Storage Refactoring</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#6-application-logic-refactoring" class="nav-link">6. Application Logic Refactoring</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#7-environment-and-configuration" class="nav-link">7. Environment and Configuration</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#8-corner-cases-and-considerations" class="nav-link">8. Corner Cases and Considerations</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#9-definition-of-done" class="nav-link">9. Definition of Done</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="requirements-for-migrating-pick-a-ladder-to-firebase">Requirements for Migrating Pick-a-Ladder to Firebase</h1>
+<h2 id="1-overview">1. Overview</h2>
+<p>This document outlines the requirements for refactoring the Pick-a-Ladder web application from its current Flask and PostgreSQL architecture to a serverless backend using Google Firebase services. The primary motivation for this migration is to resolve persistent and complex server environment issues related to Docker networking, container orchestration, and database connectivity.</p>
+<p>The goal is to create a more reliable, scalable, and easier-to-manage backend while retaining all existing application functionality. The migration will involve a complete rewrite of the data access, authentication, and file storage layers.</p>
+<h2 id="2-core-firebase-services-to-be-used">2. Core Firebase Services to be Used</h2>
+<p>The new architecture will be built on the following Firebase services:</p>
+<ul>
+<li><strong>Firebase Authentication:</strong> To handle all user identity and authentication tasks (sign-up, login, password reset, email verification).</li>
+<li><strong>Cloud Firestore:</strong> A NoSQL document database that will replace PostgreSQL as the primary data store for all application data (users, matches, groups, etc.).</li>
+<li><strong>Firebase Storage:</strong> To store all user-generated content, specifically user profile pictures.</li>
+</ul>
+<h2 id="3-data-model-migration-postgresql-to-firestore">3. Data Model Migration (PostgreSQL to Firestore)</h2>
+<p>The existing SQL data models must be migrated to a NoSQL document-based structure in Firestore. The following collections and data structures are proposed. Note that Firestore document IDs will be used as the primary identifier for all resources.</p>
+<h3 id="31-users-collection">3.1. <code>users</code> Collection</h3>
+<p>A root-level collection where each document represents a single user. The document ID should be the <code>uid</code> generated by Firebase Authentication.</p>
+<ul>
+<li><strong>Document ID:</strong> <code>auth.uid</code></li>
+<li><strong>Fields:</strong><ul>
+<li><code>username</code>: (String) - Must remain unique.</li>
+<li><code>email</code>: (String) - The email used for authentication.</li>
+<li><code>name</code>: (String) - The user's full name.</li>
+<li><code>duprRating</code>: (Number) - The user's DUPR rating.</li>
+<li><code>isAdmin</code>: (Boolean) - <code>true</code> if the user has administrative privileges.</li>
+<li><code>profilePictureUrl</code>: (String) - URL to the full-size profile picture in Firebase Storage.</li>
+<li><code>profilePictureThumbnailUrl</code>: (String) - URL to the thumbnail-size profile picture.</li>
+<li><code>darkMode</code>: (Boolean) - User's preference for dark mode.</li>
+<li><code>createdAt</code>: (Timestamp) - Server-side timestamp of account creation.</li>
+</ul>
+</li>
+</ul>
+<h3 id="32-matches-collection">3.2. <code>matches</code> Collection</h3>
+<p>A root-level collection for all matches.</p>
+<ul>
+<li><strong>Document ID:</strong> Auto-generated by Firestore.</li>
+<li><strong>Fields:</strong><ul>
+<li><code>player1Ref</code>: (DocumentReference) - A reference to the user document of player 1.</li>
+<li><code>player2Ref</code>: (DocumentReference) - A reference to the user document of player 2.</li>
+<li><code>player1Score</code>: (Number)</li>
+<li><code>player2Score</code>: (Number)</li>
+<li><code>matchDate</code>: (Timestamp)</li>
+</ul>
+</li>
+</ul>
+<h3 id="33-groups-collection">3.3. <code>groups</code> Collection</h3>
+<p>A root-level collection for user-created groups.</p>
+<ul>
+<li><strong>Document ID:</strong> Auto-generated by Firestore.</li>
+<li><strong>Fields:</strong><ul>
+<li><code>name</code>: (String)</li>
+<li><code>description</code>: (String)</li>
+<li><code>ownerRef</code>: (DocumentReference) - A reference to the user document of the group's owner.</li>
+<li><code>members</code>: (Array of DocumentReference) - An array containing references to all user documents that are members of the group.</li>
+</ul>
+</li>
+</ul>
+<h3 id="34-friends-relationship">3.4. Friends Relationship</h3>
+<p>The many-to-many friends relationship will be modeled using a sub-collection on each user document. This is a robust way to handle this relationship in Firestore.</p>
+<ul>
+<li>For a user with ID <code>userA</code>, their friends will be stored in a sub-collection at: <code>/users/userA/friends</code>.</li>
+<li>Each document in the <code>friends</code> sub-collection represents a friendship. The document ID should be the <code>uid</code> of the friend.</li>
+<li><strong>Document ID:</strong> <code>friend.uid</code></li>
+<li><strong>Fields:</strong><ul>
+<li><code>status</code>: (String) - e.g., "pending", "accepted".</li>
+<li><code>createdAt</code>: (Timestamp) - When the friend request was initiated.</li>
+</ul>
+</li>
+</ul>
+<h3 id="35-settings-collection">3.5. <code>settings</code> Collection</h3>
+<p>A root-level collection to store global application settings.</p>
+<ul>
+<li><strong>Document ID:</strong> The key of the setting (e.g., "enforceEmailVerification").</li>
+<li><strong>Fields:</strong><ul>
+<li><code>value</code>: (Varies) - The value of the setting (e.g., Boolean <code>true</code>).</li>
+</ul>
+</li>
+</ul>
+<h2 id="4-authentication-refactoring">4. Authentication Refactoring</h2>
+<p>The entire authentication system must be rebuilt using Firebase Authentication.</p>
+<ul>
+<li><strong>Registration:</strong> The "Register" page will use the Firebase SDK to create a new user with an email and password. Upon successful creation, a corresponding user document must be created in the <code>users</code> collection in Firestore.</li>
+<li><strong>Login/Logout:</strong> All login and logout functionality will be handled by the Firebase SDK.</li>
+<li><strong>Session Management:</strong> Flask's session management will be replaced. The application will rely on the Firebase ID token, which should be sent from the client on each authenticated request and verified on the server-side by the Flask backend.</li>
+<li><strong>Password Reset:</strong> The "Forgot Password" flow will use the built-in Firebase Authentication "send password reset email" functionality.</li>
+<li><strong>Email Verification:</strong> The email verification flow will use the built-in Firebase Authentication functionality. The application must check the <code>email_verified</code> status from the user's Firebase token.</li>
+<li><strong>Initial Admin User:</strong> The application must still handle the "first run" scenario. If there are no documents in the <code>users</code> collection with <code>isAdmin: true</code>, the application should redirect to the <code>/install</code> page to create the first administrative user.</li>
+</ul>
+<h2 id="5-file-storage-refactoring">5. File Storage Refactoring</h2>
+<p>All user profile picture functionality must be migrated to Firebase Storage.</p>
+<ul>
+<li><strong>Uploads:</strong> When a user uploads a profile picture, the file must be uploaded directly from the client (or via the server) to a private, user-specific path in Firebase Storage (e.g., <code>/profile-pictures/{user_uid}/original.jpg</code>).</li>
+<li><strong>Security Rules:</strong> Firebase Storage security rules must be implemented to ensure that users can only write to their own storage path.</li>
+<li><strong>Thumbnail Generation:</strong> The current implementation generates thumbnails on the server. This should be replaced with a more scalable solution. <strong>Requirement:</strong> Implement a <strong>Firebase Cloud Function</strong> that triggers on file upload to Firebase Storage. This function will automatically generate a thumbnail (e.g., 100x100 pixels) and save it to a different path in the user's storage bucket. The URLs for both the original and the thumbnail must then be updated in the user's document in the <code>users</code> collection.</li>
+</ul>
+<h2 id="6-application-logic-refactoring">6. Application Logic Refactoring</h2>
+<p>All application code that currently interacts with the PostgreSQL database via SQLAlchemy must be rewritten to use the Firebase Admin SDK for Python.</p>
+<ul>
+<li>A comprehensive code review must be performed to identify all instances of <code>db.session</code> usage.</li>
+<li>All routes in <code>auth</code>, <code>admin</code>, <code>user</code>, <code>match</code>, and <code>group</code> blueprints must be refactored.</li>
+<li>All forms in <code>forms.py</code> that rely on database queries for validation must be updated.</li>
+<li>All utility functions in <code>utils.py</code> that perform database operations must be rewritten.</li>
+</ul>
+<h2 id="7-environment-and-configuration">7. Environment and Configuration</h2>
+<ul>
+<li><strong>Firebase Credentials:</strong> The Firebase Admin SDK requires service account credentials. These credentials (a JSON file) must <strong>not</strong> be committed to the repository. They should be stored securely as a GitHub secret and loaded into the production environment during the deployment workflow.</li>
+<li><strong>Deployment Workflow:</strong> The <code>.github/workflows/deploy.yml</code> file must be updated. The <code>db</code> service and the <code>postgres_data</code> volume must be removed. The workflow will need a new step to securely load the Firebase service account key into the server environment for the application to use.</li>
+</ul>
+<h2 id="8-corner-cases-and-considerations">8. Corner Cases and Considerations</h2>
+<ul>
+<li><strong>Data Migration:</strong> The current user base is small or non-existent, so a complex data migration script from PostgreSQL to Firebase is not required at this stage. The new system will start fresh.</li>
+<li><strong>Error Handling:</strong> All calls to Firebase services must be wrapped in appropriate <code>try...except</code> blocks to handle potential API errors gracefully (e.g., permission denied, document not found).</li>
+<li><strong>Security Rules:</strong> This is a critical requirement. Write and test comprehensive security rules for both Firestore and Firebase Storage. The default should be to deny all access. Rules should be written to grant access only to authenticated users for their own data. Administrative access should also be handled via security rules where possible.</li>
+<li><strong>Uniqueness Constraints:</strong> Firestore does not enforce unique field values (e.g., for <code>username</code>). This must be handled by the application logic. When a user registers, the application must first query the <code>users</code> collection to ensure the chosen username is not already taken before creating the new user. This must be done in a transaction to avoid race conditions.</li>
+</ul>
+<h2 id="9-definition-of-done">9. Definition of Done</h2>
+<p>The migration will be considered complete when all of the following criteria are met:</p>
+<ol>
+<li>[ ] All PostgreSQL-related code (<code>SQLAlchemy</code>, <code>psycopg2-binary</code>) has been removed from the application.</li>
+<li>[ ] All user authentication flows (register, login, logout, password reset) are fully functional using Firebase Authentication.</li>
+<li>[ ] The initial admin user setup flow is working correctly.</li>
+<li>[ ] Users can upload and change their profile pictures, and thumbnails are generated and displayed correctly.</li>
+<li>[ ] All "friends" features (sending requests, accepting requests, viewing friends) are fully functional.</li>
+<li>[ ] All "groups" features (creating, editing, joining, viewing) are fully functional.</li>
+<li>[ ] All "match" features (creating matches, viewing leaderboard) are fully functional.</li>
+<li>[ ] All administrative functions are working correctly.</li>
+<li>[ ] The deployment workflow is updated and successfully deploys the new Firebase-backed application.</li>
+<li>[ ] Comprehensive security rules for Firestore and Firebase Storage are implemented and tested.</li>
+<li>[ ] The application is stable and the original 500 error is resolved.</li>
+</ol></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

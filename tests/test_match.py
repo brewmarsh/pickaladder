@@ -1,9 +1,10 @@
-import unittest
-from unittest.mock import patch, MagicMock
+"""Tests for the match blueprint."""
+
 import datetime
+import unittest
+from unittest.mock import MagicMock, patch
 
 # Pre-emptive imports to ensure patch targets exist.
-
 from pickaladder import create_app
 
 # Mock user payloads
@@ -17,6 +18,8 @@ MOCK_OPPONENT_DATA = {"name": "Loser", "isAdmin": False}
 
 
 class MatchRoutesFirebaseTestCase(unittest.TestCase):
+    """Test case for the match blueprint."""
+
     def setUp(self):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_firestore_service = MagicMock()
@@ -31,6 +34,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             ),
             "auth_routes_firestore": patch(
                 "pickaladder.auth.routes.firestore", new=self.mock_firestore_service
+            ),
+            "user_routes_firestore": patch(
+                "pickaladder.user.routes.firestore", new=self.mock_firestore_service
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
@@ -47,6 +53,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context.push()
 
     def tearDown(self):
+        """Tear down the test client."""
         self.app_context.pop()
 
     def _set_session_user(self):

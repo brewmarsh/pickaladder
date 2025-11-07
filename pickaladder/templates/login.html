@@ -16,14 +16,16 @@
         {{ form.hidden_tag() }}
         <div class="form-group">
             {{ form.email.label }}
-            {{ form.email(class="form-control") }}
+            {{ form.email(class="form-control", autocomplete="email") }}
         </div>
         <div class="form-group">
             {{ form.password.label }}
-            {{ form.password(class="form-control") }}
+            {{ form.password(class="form-control", autocomplete="current-password") }}
         </div>
         {{ form.submit(class="btn") }}
     </form>
+    <div class="or-separator">OR</div>
+    <button id="google-signin-btn" class="btn btn-google">Sign in with Google</button>
     <!-- The "Forgot Password" link has been removed as this functionality is now handled by the Firebase client-side SDK. -->
     <p class="text-center">Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>.</p>
 </div>
@@ -31,11 +33,47 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const googleSignInButton = document.getElementById('google-signin-btn');
     const form = document.querySelector('form');
+
+    googleSignInButton.addEventListener('click', function() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth().signInWithPopup(provider)
+            .then((result) => {
+                return result.user.getIdToken();
+            })
+            .then((idToken) => {
+                return fetch("{{ url_for('auth.session_login') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ idToken: idToken }),
+                });
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = "{{ url_for('user.dashboard') }}";
+                } else {
+                    throw new Error("Server-side session creation failed.");
+                }
+            })
+            .catch((error) => {
+                const errorMessage = error.message;
+                const flashes = document.querySelector('.flashes');
+                flashes.innerHTML = ''; // Clear previous messages
+                const flash = document.createElement('div');
+                flash.className = 'alert alert-danger';
+                flash.textContent = `Google Sign-in failed: ${errorMessage}`;
+                flashes.appendChild(flash);
+            });
+    });
+
     form.addEventListener('submit', function (event) {
         event.preventDefault();
-        const email = form.email.value;
-        const password = form.password.value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then((userCredential) => {

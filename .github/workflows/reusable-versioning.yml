@@ -1,0 +1,51 @@
+name: Reusable Versioning
+
+on:
+  workflow_call:
+    inputs:
+      namespace:
+        description: 'The version namespace (e.g., "beta")'
+        required: false
+        type: string
+    outputs:
+      version:
+        description: "The new version number"
+        value: ${{ jobs.update-version.outputs.version }}
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Get next version
+        id: version
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          major_pattern: "major:"
+          minor_pattern: "minor:"
+          namespace: ${{ inputs.namespace }}
+          version_format: "${major}.${minor}.${patch}-${namespace}${increment}"
+
+      - name: Configure git
+        run: |
+          git config --global user.name "picka-bot"
+          git config --global user.email "picka-bot@users.noreply.github.com"
+
+      - name: Update version file
+        run: |
+          echo ${{ steps.version.outputs.version }} > VERSION
+
+      - name: Commit new version
+        run: |
+          git add VERSION
+          git commit -m "chore(version): update to ${{ steps.version.outputs.version }} [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}

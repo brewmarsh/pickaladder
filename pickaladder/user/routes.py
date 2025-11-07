@@ -1,41 +1,179 @@
-import uuid
+"""Routes for the user blueprint."""
+
 import os
+import secrets
+import tempfile
+
+from firebase_admin import auth, firestore
 from flask import (
+    current_app,
+    flash,
+    g,
+    jsonify,
+    redirect,
     render_template,
     request,
-    redirect,
     url_for,
-    flash,
-    current_app,
-    jsonify,
-    g,
 )
-from firebase_admin import firestore, storage
+from imgur_python import Imgur
 from werkzeug.utils import secure_filename
 
-from . import bp
-from .forms import UpdateProfileForm
 from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import get_group_leaderboard
+from pickaladder.utils import send_email
+
+from . import bp
+from .forms import UpdateProfileForm, UpdateUserForm
 
 
-@bp.route("/dashboard")
+class MockPagination:
+    """A mock pagination object."""
+
+    def __init__(self, items):
+        """Initialize the mock pagination object."""
+        self.items = items
+        self.pages = 1
+
+
+@bp.route("/edit_profile", methods=["GET", "POST"])
+@login_required
+def edit_profile():
+    """Handle user profile updates for name, username, and email."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+    user_ref = db.collection("users").document(user_id)
+    user_data = g.user
+    form = UpdateUserForm(data=user_data)
+
+    if form.validate_on_submit():
+        new_email = form.email.data
+        new_username = form.username.data
+        update_data = {
+            "name": form.name.data,
+            "username": new_username,
+        }
+
+        # Handle username change
+        if new_username != user_data.get("username"):
+            users_ref = db.collection("users")
+            existing_user = (
+                users_ref.where(
+                    filter=firestore.FieldFilter("username", "==", new_username)
+                )
+                .limit(1)
+                .stream()
+            )
+            if len(list(existing_user)) > 0:
+                flash(
+                    "Username already exists. Please choose a different one.", "danger"
+                )
+                return render_template("edit_profile.html", form=form, user=user_data)
+
+        # Handle email change
+        if new_email != user_data.get("email"):
+            try:
+                auth.update_user(user_id, email=new_email, email_verified=False)
+                verification_link = auth.generate_email_verification_link(new_email)
+                send_email(
+                    to=new_email,
+                    subject="Verify Your New Email Address",
+                    template="email/verify_email.html",
+                    user={"username": new_username},
+                    verification_link=verification_link,
+                )
+                update_data["email"] = new_email
+                update_data["email_verified"] = False
+                flash(
+                    "Your email has been updated. Please check your new email address to verify it.",
+                    "info",
+                )
+            except auth.EmailAlreadyExistsError:
+                flash("That email address is already in use.", "danger")
+                return render_template("edit_profile.html", form=form, user=user_data)
+            except Exception as e:
+                current_app.logger.error(f"Error updating email: {e}")
+                flash("An error occurred while updating your email.", "danger")
+                return render_template("edit_profile.html", form=form, user=user_data)
+
+        if update_data:
+            user_ref.update(update_data)
+            flash("Account updated successfully.", "success")
+        return redirect(url_for(".edit_profile"))
+
+    return render_template("edit_profile.html", form=form, user=user_data)
+
+
+@bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard():
+    """Render the user dashboard and handles profile updates.
+
+    On GET, it displays the dashboard with the profile form.
+    On POST, it processes the profile update form.
     """
-    Renders the user dashboard. Most data is loaded asynchronously via API endpoints.
-    The profile update form is passed to the template.
-    """
-    current_app.logger.info("Dashboard page loaded")
+    db = firestore.client()
+    user_id = g.user["uid"]
+    user_ref = db.collection("users").document(user_id)
     user_data = g.user
-    form = UpdateProfileForm(data=user_data)
+
+    form = UpdateProfileForm()
+    if request.method == "GET":
+        form.dupr_rating.data = user_data.get("duprRating")
+        form.dark_mode.data = user_data.get("dark_mode")
+
+    if form.validate_on_submit():
+        try:
+            update_data = {
+                "dark_mode": bool(form.dark_mode.data),
+            }
+            if form.dupr_rating.data is not None:
+                update_data["duprRating"] = float(form.dupr_rating.data)
+
+            profile_picture_file = form.profile_picture.data
+            if profile_picture_file:
+                client_id = os.environ.get("IMGUR_CLIENT_ID")
+                if not client_id:
+                    flash("Imgur client ID is not configured.", "warning")
+                else:
+                    imgur_client = Imgur({"client_id": client_id})
+                    filename = secure_filename(
+                        profile_picture_file.filename or "profile.jpg"
+                    )
+                    response = None
+                    with tempfile.NamedTemporaryFile(
+                        suffix=os.path.splitext(filename)[1]
+                    ) as temp_file:
+                        profile_picture_file.save(temp_file.name)
+                        response = imgur_client.image_upload(
+                            temp_file.name, f"{user_id}'s profile picture", ""
+                        )
+
+                    if response and response["success"]:
+                        update_data["profilePictureUrl"] = response["data"]["link"]
+                    elif response:
+                        flash(
+                            f"Imgur upload failed: {response['data']['error']}",
+                            "danger",
+                        )
+
+            user_ref.update(update_data)
+            flash("Profile updated successfully.", "success")
+            return redirect(url_for(".dashboard"))
+        except Exception as e:
+            current_app.logger.error(f"Error updating profile: {e}")
+            flash(f"An error occurred: {e}", "danger")
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
+
     return render_template("user_dashboard.html", form=form, user=user_data)
 
 
 @bp.route("/<string:user_id>")
 @login_required
 def view_user(user_id):
-    """Displays a user's public profile."""
+    """Display a user's public profile."""
     db = firestore.client()
     profile_user_ref = db.collection("users").document(user_id)
     profile_user = profile_user_ref.get()
@@ -45,6 +183,7 @@ def view_user(user_id):
         return redirect(url_for(".users"))
 
     profile_user_data = profile_user.to_dict()
+    profile_user_data["id"] = user_id
     current_user_id = g.user["uid"]
 
     # Fetch friendship status
@@ -69,7 +208,7 @@ def view_user(user_id):
     # Fetch user's friends (limited for display)
     friends_query = (
         profile_user_ref.collection("friends")
-        .where("status", "==", "accepted")
+        .where(filter=firestore.FieldFilter("status", "==", "accepted"))
         .limit(10)
         .stream()
     )
@@ -77,14 +216,38 @@ def view_user(user_id):
 
     # Fetch user's match history (limited for display)
     matches_as_p1 = (
-        db.collection("matches").where("player1Ref", "==", profile_user_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player1Ref", "==", profile_user_ref))
+        .stream()
     )
     matches_as_p2 = (
-        db.collection("matches").where("player2Ref", "==", profile_user_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player2Ref", "==", profile_user_ref))
+        .stream()
     )
     matches = list(matches_as_p1) + list(matches_as_p2)
-    # This is a simplified representation. A real implementation would need
-    # to fetch opponent data for each match.
+
+    # Calculate win/loss record
+    wins = 0
+    losses = 0
+    for match_doc in matches:
+        match_data = match_doc.to_dict()
+        is_player1 = match_data.get("player1Ref") == profile_user_ref
+
+        player1_score = match_data.get("player1Score", 0)
+        player2_score = match_data.get("player2Score", 0)
+
+        if is_player1:
+            if player1_score > player2_score:
+                wins += 1
+            else:
+                losses += 1
+        else:  # is_player2
+            if player2_score > player1_score:
+                wins += 1
+            else:
+                losses += 1
+    record = {"wins": wins, "losses": losses}
 
     return render_template(
         "user_profile.html",
@@ -93,32 +256,72 @@ def view_user(user_id):
         matches=matches,
         is_friend=is_friend,
         friend_request_sent=friend_request_sent,
+        record=record,
+        user=g.user,
     )
 
 
 @bp.route("/users")
 @login_required
 def users():
-    """Lists and allows searching for users."""
+    """List and allows searching for users."""
     db = firestore.client()
+    current_user_id = g.user["uid"]
     search_term = request.args.get("search", "")
     query = db.collection("users")
 
     if search_term:
         # Firestore doesn't support case-insensitive search natively.
         # This searches for an exact username match.
-        query = query.where("username", ">=", search_term).where(
-            "username", "<=", search_term + "\uf8ff"
-        )
+        query = query.where(
+            filter=firestore.FieldFilter("username", ">=", search_term)
+        ).where(filter=firestore.FieldFilter("username", "<=", search_term + "\uf8ff"))
 
-    all_users = [doc for doc in query.limit(20).stream() if doc.id != g.user["uid"]]
+    all_users_docs = [
+        doc for doc in query.limit(20).stream() if doc.id != current_user_id
+    ]
 
-    return render_template("users.html", users=all_users, search_term=search_term)
+    # Get all friend relationships for the current user to check status efficiently
+    friends_ref = db.collection("users").document(current_user_id).collection("friends")
+    friends_docs = friends_ref.stream()
+    friend_statuses = {doc.id: doc.to_dict() for doc in friends_docs}
+
+    user_items = []
+    for user_doc in all_users_docs:
+        user_data = user_doc.to_dict()
+        user_data["id"] = user_doc.id  # Add document ID to the dictionary
+
+        sent_status = None
+        received_status = None
+
+        friend_data = friend_statuses.get(user_doc.id)
+        if friend_data:
+            status = friend_data.get("status")
+            initiator = friend_data.get("initiator")
+
+            if initiator:
+                sent_status = status
+            else:
+                received_status = status
+
+        user_items.append((user_data, sent_status, received_status))
+
+    # The template expects a pagination object with an 'items' attribute.
+    # We are not implementing full pagination, just adapting to the template.
+    pagination = MockPagination(user_items)
+
+    # The template also iterates over 'fof' (friends of friends)
+    fof = []
+
+    return render_template(
+        "users.html", pagination=pagination, search_term=search_term, fof=fof
+    )
 
 
 @bp.route("/send_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def send_friend_request(friend_id):
+    """Send a friend request to another user."""
     db = firestore.client()
     current_user_id = g.user["uid"]
     if current_user_id == friend_id:
@@ -159,13 +362,15 @@ def send_friend_request(friend_id):
 @bp.route("/friends")
 @login_required
 def friends():
-    """Displays the user's friends and pending requests."""
+    """Display the user's friends and pending requests."""
     db = firestore.client()
     current_user_id = g.user["uid"]
     friends_ref = db.collection("users").document(current_user_id).collection("friends")
 
     # Fetch accepted friends
-    accepted_docs = friends_ref.where("status", "==", "accepted").stream()
+    accepted_docs = friends_ref.where(
+        filter=firestore.FieldFilter("status", "==", "accepted")
+    ).stream()
     accepted_ids = [doc.id for doc in accepted_docs]
     accepted_friends = (
         [db.collection("users").document(uid).get() for uid in accepted_ids]
@@ -175,8 +380,8 @@ def friends():
 
     # Fetch pending requests (where the other user was the initiator)
     requests_docs = (
-        friends_ref.where("status", "==", "pending")
-        .where("initiator", "==", False)
+        friends_ref.where(filter=firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=firestore.FieldFilter("initiator", "==", False))
         .stream()
     )
     request_ids = [doc.id for doc in requests_docs]
@@ -194,6 +399,7 @@ def friends():
 @bp.route("/accept_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def accept_friend_request(friend_id):
+    """Accept a friend request."""
     db = firestore.client()
     current_user_id = g.user["uid"]
     batch = db.batch()
@@ -229,6 +435,7 @@ def accept_friend_request(friend_id):
 @bp.route("/decline_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def decline_friend_request(friend_id):
+    """Decline a friend request."""
     db = firestore.client()
     current_user_id = g.user["uid"]
     batch = db.batch()
@@ -261,59 +468,10 @@ def decline_friend_request(friend_id):
     return redirect(url_for(".friends"))
 
 
-@bp.route("/update_profile", methods=["POST"])
-@login_required
-def update_profile():
-    db = firestore.client()
-    bucket = storage.bucket(os.environ.get("FIREBASE_STORAGE_BUCKET"))
-    user_id = g.user["uid"]
-    user_ref = db.collection("users").document(user_id)
-    form = UpdateProfileForm()
-
-    if form.validate_on_submit():
-        try:
-            update_data = {
-                "darkMode": bool(form.dark_mode.data),
-                "duprRating": float(form.dupr_rating.data),
-            }
-
-            profile_picture_file = form.profile_picture.data
-            if profile_picture_file:
-                secure_filename(profile_picture_file.filename or "profile.jpg")
-                content_type = profile_picture_file.content_type
-
-                # Path in Firebase Storage
-                path = f"profile-pictures/{user_id}/original_{uuid.uuid4().hex}.jpg"
-                blob = bucket.blob(path)
-
-                # Upload the file
-                blob.upload_from_file(profile_picture_file, content_type=content_type)
-
-                # Make the file public and get the URL
-                blob.make_public()
-                update_data["profilePictureUrl"] = blob.public_url
-
-                # Note: The thumbnail URL will be set by a Cloud Function.
-                # The function should be triggered by the upload and update the
-                # 'profilePictureThumbnailUrl' field in the user's document.
-
-            user_ref.update(update_data)
-            flash("Profile updated successfully.", "success")
-        except Exception as e:
-            current_app.logger.error(f"Error updating profile: {e}")
-            flash(f"An error occurred: {e}", "danger")
-    else:
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
-
-    return redirect(url_for(".dashboard"))
-
-
 @bp.route("/api/dashboard")
 @login_required
 def api_dashboard():
-    """Provides dashboard data as JSON, including matches and group rankings."""
+    """Provide dashboard data as JSON, including matches and group rankings."""
     db = firestore.client()
     user_id = g.user["uid"]
     user_ref = db.collection("users").document(user_id)
@@ -321,37 +479,49 @@ def api_dashboard():
 
     # Fetch friends
     friends_query = (
-        user_ref.collection("friends").where("status", "==", "accepted").stream()
+        user_ref.collection("friends")
+        .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+        .stream()
     )
     friend_ids = [doc.id for doc in friends_query]
     friends_data = []
     if friend_ids:
         friend_docs = (
-            db.collection("users").where("__name__", "in", friend_ids).stream()
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("__name__", "in", friend_ids))
+            .stream()
         )
         friends_data = [{"id": doc.id, **doc.to_dict()} for doc in friend_docs]
 
     # Fetch pending friend requests
     requests_query = (
         user_ref.collection("friends")
-        .where("status", "==", "pending")
-        .where("initiator", "==", False)
+        .where(filter=firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=firestore.FieldFilter("initiator", "==", False))
         .stream()
     )
     request_ids = [doc.id for doc in requests_query]
     requests_data = []
     if request_ids:
         request_docs = (
-            db.collection("users").where("__name__", "in", request_ids).stream()
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("__name__", "in", request_ids))
+            .stream()
         )
         requests_data = [{"id": doc.id, **doc.to_dict()} for doc in request_docs]
 
     # Fetch recent matches
     matches_as_p1 = (
-        db.collection("matches").where("player1Ref", "==", user_ref).limit(5).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
+        .limit(5)
+        .stream()
     )
     matches_as_p2 = (
-        db.collection("matches").where("player2Ref", "==", user_ref).limit(5).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player2Ref", "==", user_ref))
+        .limit(5)
+        .stream()
     )
 
     matches_data = []
@@ -383,7 +553,9 @@ def api_dashboard():
     # Get group rankings
     group_rankings = []
     my_groups_query = (
-        db.collection("groups").where("members", "array_contains", user_ref).stream()
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
     )
     for group_doc in my_groups_query:
         group_data = group_doc.to_dict()
@@ -410,3 +582,21 @@ def api_dashboard():
             "group_rankings": group_rankings,
         }
     )
+
+
+@bp.route("/api/create_invite", methods=["POST"])
+@login_required
+def create_invite():
+    """Generate a unique invite token and stores it in Firestore."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+    token = secrets.token_urlsafe(16)
+    invite_ref = db.collection("invites").document(token)
+    invite_ref.set(
+        {
+            "userId": user_id,
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "used": False,
+        }
+    )
+    return jsonify({"token": token})

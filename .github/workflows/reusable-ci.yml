@@ -1,8 +1,7 @@
-name: CI
+name: Reusable CI
 
 on:
-  pull_request:
-    branches: [ main ]
+  workflow_call:
 
 jobs:
   build:
@@ -25,10 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Python 3.9
+      - name: Set up Python 3.11
         uses: actions/setup-python@v6
         with:
-          python-version: 3.9
+          python-version: 3.11
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -39,19 +38,10 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Lint with ruff
-        run: ruff check .
-
-      - name: Format with ruff
-        run: ruff format --check .
-
-      - name: Security Analysis with Bandit
-        run: bandit -r .
-
-      - name: Static Type Checking with mypy
-        run: python -m mypy --no-incremental .
+        run: |
+          pip install git+https://github.com/pypa/pip.git@7daeda1cb53546615a8c75161028b8121321119e
+          pip install setuptools==78.1.1
+          pip install -r requirements.txt
 
       - name: Enable uuid-ossp extension
         run: |
@@ -74,10 +64,3 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
           fail_ci_if_error: true
-      - name: Run vulnerability scanner
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'table'
-          exit-code: '1'

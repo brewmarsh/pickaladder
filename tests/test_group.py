@@ -1,8 +1,9 @@
+"""Tests for the group blueprint."""
+
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 # Pre-emptive imports to ensure patch targets exist.
-
 from pickaladder import create_app
 
 # Mock user payloads
@@ -12,6 +13,8 @@ MOCK_USER_DATA = {"name": "Group Owner", "isAdmin": False}
 
 
 class GroupRoutesFirebaseTestCase(unittest.TestCase):
+    """Test case for the group blueprint."""
+
     def setUp(self):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_firestore_service = MagicMock()
@@ -42,6 +45,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context.push()
 
     def tearDown(self):
+        """Tear down the test client."""
         self.app_context.pop()
 
     def _set_session_user(self):

@@ -1,9 +1,11 @@
+"""Utility functions for the group blueprint."""
+
 from firebase_admin import firestore
 
 
 def get_group_leaderboard(group_id):
-    """
-    Calculates the leaderboard for a specific group using Firestore.
+    """Calculate the leaderboard for a specific group using Firestore.
+
     This is a client-side implementation of the aggregation logic.
     """
     db = firestore.client()
@@ -20,10 +22,14 @@ def get_group_leaderboard(group_id):
     # Fetch all matches where both players are members of the group.
     # This requires two separate queries.
     matches_p1_in_group = (
-        db.collection("matches").where("player1Ref", "in", member_refs).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player1Ref", "in", member_refs))
+        .stream()
     )
     matches_p2_in_group = (
-        db.collection("matches").where("player2Ref", "in", member_refs).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player2Ref", "in", member_refs))
+        .stream()
     )
 
     # In-memory store for player stats

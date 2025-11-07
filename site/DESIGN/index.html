@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>pickaladder Design Document - Pickaladder</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script>
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">Pickaladder</a>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+
+            <li class="nav-item" data-bs-level="1"><a href="#pickaladder-design-document" class="nav-link">pickaladder Design Document</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#1-introduction" class="nav-link">1. Introduction</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#2-system-architecture" class="nav-link">2. System Architecture</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#3-database" class="nav-link">3. Database</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#4-application-logic" class="nav-link">4. Application Logic</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#5-user-interface" class="nav-link">5. User Interface</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="pickaladder-design-document">pickaladder Design Document</h1>
+<p>This document outlines the design of the pickaladder application.</p>
+<h2 id="1-introduction">1. Introduction</h2>
+<p>The pickaladder application is a web-based application that allows users to create and manage pickleball ladders.</p>
+<h2 id="2-system-architecture">2. System Architecture</h2>
+<p>The application is a monolithic web application built with Flask and PostgreSQL. It is containerized with Docker and deployed with docker-compose.</p>
+<h3 id="21-application-architecture">2.1. Application Architecture</h3>
+<p>The Flask application is organized using a blueprint-based architecture. The application is divided into the following blueprints:</p>
+<ul>
+<li><strong>auth</strong>: Handles user authentication, including registration, login, logout, and password management.</li>
+<li><strong>user</strong>: Handles user-facing features, such as the user dashboard, user profiles, and friend management.</li>
+<li><strong>admin</strong>: Handles administrative features, such as user management, database management, and data generation.</li>
+<li><strong>match</strong>: Handles match-related features, such as creating and viewing matches, and the leaderboard.</li>
+</ul>
+<h3 id="22-build-process">2.2. Build Process</h3>
+<p>The application is built using a multi-stage Docker build.
+*   <strong>Stage 1 (builder)</strong>: This stage uses a <code>node</code> base image to build the React frontend. It copies the frontend code, installs dependencies, and runs the build script.
+*   <strong>Stage 2 (final)</strong>: This stage uses a <code>python</code> base image. It copies the Python application code, installs the Python dependencies, and then copies the built frontend assets from the <code>builder</code> stage.</p>
+<p>This approach results in a small, optimized production image that does not contain any of the build-time dependencies.</p>
+<h2 id="3-database">3. Database</h2>
+<h3 id="31-database-schema">3.1. Database Schema</h3>
+<p>The database schema is defined in the <code>init.sql</code> file and is versioned with migration scripts in the <code>migrations</code> directory. The schema consists of the following tables:</p>
+<ul>
+<li><code>users</code>: Stores user information.</li>
+<li><code>friends</code>: Stores friendship information.</li>
+<li><code>matches</code>: Stores match information.</li>
+<li><code>migrations</code>: Stores information about applied migrations.</li>
+</ul>
+<p>The <code>users</code> table has the following columns:</p>
+<ul>
+<li><code>id</code>: A UUID that uniquely identifies each user.</li>
+<li><code>username</code>: The user's username.</li>
+<li><code>password</code>: The user's hashed password.</li>
+<li><code>email</code>: The user's email address.</li>
+<li><code>name</code>: The user's name.</li>
+<li><code>dupr_rating</code>: The user's DUPR rating.</li>
+<li><code>is_admin</code>: A boolean that indicates whether the user is an administrator.</li>
+<li><code>profile_picture</code>: The user's profile picture, stored as a blob.</li>
+<li><code>profile_picture_thumbnail</code>: A thumbnail of the user's profile picture, stored as a blob.</li>
+<li><code>dark_mode</code>: A boolean that indicates whether the user has enabled dark mode.</li>
+<li><code>email_verified</code>: A boolean that indicates whether the user has verified their email address.</li>
+</ul>
+<h3 id="32-database-connection-management">3.2. Database Connection Management</h3>
+<p>The application uses a <code>psycopg2</code> connection pool to manage database connections. The connection pool is initialized when the application starts, and connections are managed by the Flask application context.</p>
+<h2 id="4-application-logic">4. Application Logic</h2>
+<p>The application logic is implemented in the <code>pickaladder</code> package. The application is divided into blueprints, each with its own <code>routes.py</code> file that contains the routes for that part of the application.</p>
+<p>The application uses an application factory pattern (<code>create_app</code>) to create and configure the Flask application instance.</p>
+<h2 id="5-user-interface">5. User Interface</h2>
+<p>The user interface is implemented with HTML, CSS, and JavaScript, following a modern, clean, and responsive design aesthetic inspired by Google's Material Design. The application uses a custom stylesheet for all its styling, ensuring a lightweight and consistent look and feel across all pages.</p>
+<h3 id="51-design-philosophy">5.1. Design Philosophy</h3>
+<p>The UI design is guided by the following principles:</p>
+<ul>
+<li><strong>Clarity:</strong> The interface is designed to be intuitive and easy to navigate.</li>
+<li><strong>Efficiency:</strong> Users can accomplish tasks with a minimum number of actions.</li>
+<li><strong>Consistency:</strong> UI elements and layouts are consistent throughout the application.</li>
+<li><strong>Simplicity:</strong> The design is clean and uncluttered, with a focus on a great user experience.</li>
+</ul>
+<h3 id="52-styling">5.2. Styling</h3>
+<p>All styling is handled by a custom CSS stylesheet located at <code>pickaladder/static/style.css</code>. The stylesheet uses CSS variables for colors, fonts, and other properties to ensure consistency and maintainability. The application does not use any external CSS frameworks like Bootstrap.</p>
+<h3 id="53-templates">5.3. Templates</h3>
+<p>The application uses the Jinja2 templating engine. All pages extend a base layout template (<code>layout.html</code>) to ensure a consistent structure. The templates are located in the <code>pickaladder/templates</code> directory.</p>
+<h3 id="54-key-ui-features">5.4. Key UI Features</h3>
+<ul>
+<li><strong>Match View:</strong> The match view page provides a detailed look at a single match. It emphasizes the winner's profile picture with a border and a box-shadow, and fades the loser's icon to create a clear visual distinction. It also displays each player's win/loss record under their username. The user's icon and username are clickable links to their profile page.</li>
+<li><strong>User Profile:</strong> The user profile page includes a match history section. Each match in the history is a clickable link to the match details page, and the winning score is displayed in bold.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

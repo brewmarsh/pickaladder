@@ -1,0 +1,29 @@
+name: Beta Workflow
+
+on:
+  push:
+    branches:
+      - beta
+  workflow_dispatch:
+
+jobs:
+  ci:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    uses: ./.github/workflows/reusable-ci.yml
+
+  versioning:
+    needs: ci
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/reusable-versioning.yml
+    with:
+      namespace: "beta"
+    secrets: inherit
+
+  deploy:
+    needs: versioning
+    uses: ./.github/workflows/deploy.yml
+    with:
+      app_version: ${{ needs.versioning.outputs.version }}
+    secrets: inherit

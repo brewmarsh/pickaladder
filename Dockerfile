@@ -1,17 +1,14 @@
 # Stage 1: Build the final image
-FROM python:3.9-bullseye
+FROM python:3.11-bullseye
 
 WORKDIR /app
-
-# Install PostgreSQL client
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends postgresql-client && \
-    rm -rf /var/lib/apt/lists/*
 
 # Copy the requirements file
 COPY requirements.txt .
 
 # Install the dependencies
+RUN pip install git+https://github.com/pypa/pip.git@7daeda1cb53546615a8c75161028b8121321119e
+RUN pip install --no-cache-dir setuptools==78.1.1
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code

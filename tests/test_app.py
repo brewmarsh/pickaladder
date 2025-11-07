@@ -1,12 +1,15 @@
+"""Tests for the app factory."""
+
 import unittest
 from unittest.mock import patch
 
 # Pre-emptive imports to ensure patch targets exist.
-
 from pickaladder import create_app
 
 
 class AppFirebaseTestCase(unittest.TestCase):
+    """Test case for the app factory."""
+
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
     def test_404_error_handler(self, mock_firestore_client, mock_init_app):

@@ -5,13 +5,7 @@ services:
     ports:
       - "27272:27272"
     command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
-    volumes:
-      # Mount the credentials file from the host into the container
-      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
     environment:
-      # GOOGLE_APPLICATION_CREDENTIALS should point to the path of the
-      # service account key file, which will be loaded into the container.
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json
       # These variables should be set in the production environment (e.g., GitHub Secrets)
       - SECRET_KEY=${SECRET_KEY}
       - MAIL_SERVER=${MAIL_SERVER}
@@ -19,7 +13,12 @@ services:
       - MAIL_USE_TLS=${MAIL_USE_TLS}
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - FIREBASE_CREDENTIALS_JSON=${FIREBASE_CREDENTIALS_JSON}
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - IMGUR_CLIENT_ID=${IMGUR_CLIENT_ID}
+      - APP_VERSION=${APP_VERSION}
     networks:
       - pickanet
 

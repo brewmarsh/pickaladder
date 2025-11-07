@@ -1,35 +1,51 @@
+"""Initialize the Flask app and its extensions."""
+
 import os
 import uuid
-from flask import Flask, session, g, current_app
-from werkzeug.routing import BaseConverter
-from .extensions import mail, csrf
+
 import firebase_admin
 from firebase_admin import credentials, firestore
+from flask import Flask, current_app, g, session
+from werkzeug.routing import BaseConverter
+
+from .extensions import csrf, mail
 
 
 class UUIDConverter(BaseConverter):
+    """URL converter for UUIDs."""
+
     def to_python(self, value):
+        """Convert a string to a UUID."""
         return uuid.UUID(value)
 
     def to_url(self, value):
+        """Convert a UUID to a string."""
         return str(value)
 
 
 def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
-    app = Flask(__name__, instance_relative_config=True)
+    app = Flask(
+        __name__,
+        instance_relative_config=True,
+        static_folder="static",
+        static_url_path="/static",
+    )
     app.url_map.converters["uuid"] = UUIDConverter
 
     # Load configuration
     app.config.from_mapping(
         SECRET_KEY=os.urandom(24),
         # Default mail settings, can be overridden in config.py
-        MAIL_SERVER=os.environ.get('MAIL_SERVER', 'smtp.gmail.com'),
-        MAIL_PORT=int(os.environ.get('MAIL_PORT') or 587),
-        MAIL_USE_TLS=os.environ.get('MAIL_USE_TLS', 'true').lower() in ['true', '1', 't'],
+        MAIL_SERVER=os.environ.get("MAIL_SERVER", "smtp.gmail.com"),
+        MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
+        MAIL_USE_TLS=os.environ.get("MAIL_USE_TLS", "true").lower()
+        in ["true", "1", "t"],
         MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
         MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
-        MAIL_DEFAULT_SENDER=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@pickaladder.com'),
+        MAIL_DEFAULT_SENDER=os.environ.get(
+            "MAIL_DEFAULT_SENDER", "noreply@pickaladder.com"
+        ),
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 
@@ -38,26 +54,33 @@ def create_app(test_config=None):
 
     # Initialize Firebase Admin SDK only if not in testing mode
     if not app.config.get("TESTING"):
-        # The GOOGLE_APPLICATION_CREDENTIALS environment variable should be set to the
-        # path of the service account key file.
-        try:
-            # When running in a Google Cloud environment, the credentials are
-            # automatically discovered.
-            cred = credentials.ApplicationDefault()
-        except Exception:
-            cred = None  # Handle cases where default creds are not found
+        cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+        if cred_json:
+            import json
 
-        try:
-            firebase_admin.initialize_app(
-                cred,
-                {
-                    "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
-                    "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET"),
-                },
-            )
-        except ValueError:
-            # This can happen if the app is already initialized, which is fine.
-            app.logger.info("Firebase app already initialized.")
+            cred_info = json.loads(cred_json)
+            cred = credentials.Certificate(cred_info)
+        else:
+            # Fallback to default credentials if the env var is not set
+            try:
+                cred = credentials.ApplicationDefault()
+            except Exception as e:
+                app.logger.error(f"Could not find default credentials: {e}")
+                cred = None
+
+        # Initialize the app if credentials were found
+        if cred and not firebase_admin._apps:
+            try:
+                firebase_admin.initialize_app(
+                    cred,
+                    {
+                        "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
+                        "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET"),
+                    },
+                )
+            except ValueError:
+                # This can happen if the app is already initialized, which is fine.
+                app.logger.info("Firebase app already initialized.")
 
     # Ensure the instance folder exists
     try:
@@ -123,5 +146,10 @@ def create_app(test_config=None):
         except Exception as e:
             current_app.logger.error(f"Error loading user from session: {e}")
             session.clear()  # Clear session on error to be safe
+
+    @app.context_processor
+    def inject_version():
+        """Injects the application version into the template context."""
+        return dict(app_version=os.environ.get("APP_VERSION", "dev"))
 
     return app

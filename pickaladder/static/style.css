@@ -26,9 +26,17 @@ body {
 }
 
 .container {
-    max-width: 960px;
-    margin: 20px auto;
-    padding: 0 20px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 /* Page Header */
@@ -76,6 +84,27 @@ body {
 .navbar-menu {
     display: flex;
     align-items: center;
+    gap: 20px; /* spacing between menu items */
+}
+
+.navbar-menu a {
+    text-decoration: none;
+    color: var(--on-surface-color);
+}
+
+
+.navbar-user-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.hamburger-menu {
+    display: none;
+}
+
+.hamburger-menu, .navbar-right {
+    display: none;
 }
 
 .profile-picture-thumbnail {
@@ -132,6 +161,7 @@ select {
     box-sizing: border-box;
     font-size: 16px;
     background-color: var(--background-color);
+    color: var(--on-surface-color);
 }
 
 input[type="text"]:focus,
@@ -143,6 +173,15 @@ select:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+}
+
+input,
+textarea,
+select {
+    user-select: auto !important;
+    -webkit-user-select: auto !important;
+    -moz-user-select: auto !important;
+    -ms-user-select: auto !important;
 }
 
 input[type="submit"], .btn {
@@ -447,10 +486,10 @@ input[type="submit"], .btn {
 }
 
 .modal-content {
-    background-color: #fefefe;
+    background-color: var(--surface-color);
     margin: 15% auto;
     padding: 20px;
-    border: 1px solid #888;
+    border: 1px solid var(--border-color);
     width: 80%;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
@@ -470,7 +509,7 @@ input[type="submit"], .btn {
 }
 
 .close {
-    color: #aaa;
+    color: var(--on-surface-variant-color);
     float: right;
     font-size: 28px;
     font-weight: bold;
@@ -478,7 +517,7 @@ input[type="submit"], .btn {
 
 .close:hover,
 .close:focus {
-    color: black;
+    color: var(--on-surface-color);
     text-decoration: none;
     cursor: pointer;
 }

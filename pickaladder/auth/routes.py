@@ -1,28 +1,37 @@
-import os
+"""Routes for authentication."""
+
 import json
+import os
+import re
+
+from firebase_admin import auth, firestore
 from flask import (
-    render_template,
-    request,
-    redirect,
-    url_for,
-    session,
-    flash,
+    Response,
     current_app,
+    flash,
     g,
     jsonify,
-    Response,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
 )
-from firebase_admin import auth, firestore
 from werkzeug.exceptions import UnprocessableEntity
 
-from . import bp
-from .forms import LoginForm, RegisterForm
 from pickaladder.errors import DuplicateResourceError
 from pickaladder.utils import send_email
+
+from . import bp
+from .forms import ChangePasswordForm, LoginForm, RegisterForm
 
 
 @bp.route("/register", methods=["GET", "POST"])
 def register():
+    """Register a new user."""
+    invite_token = request.args.get("invite_token")
+    if invite_token:
+        session["invite_token"] = invite_token
     form = RegisterForm()
     if form.validate_on_submit():
         db = firestore.client()
@@ -32,7 +41,11 @@ def register():
 
         # Check if username is already taken in Firestore
         users_ref = db.collection("users")
-        if users_ref.where("username", "==", username).limit(1).get():
+        if (
+            users_ref.where(filter=firestore.FieldFilter("username", "==", username))
+            .limit(1)
+            .get()
+        ):
             flash("Username already exists. Please choose a different one.", "danger")
             return redirect(url_for(".register"))
 
@@ -65,6 +78,32 @@ def register():
                 }
             )
 
+            # Handle invite token
+            invite_token = session.pop("invite_token", None)
+            if invite_token:
+                invite_ref = db.collection("invites").document(invite_token)
+                invite = invite_ref.get()
+                if invite.exists and not invite.to_dict().get("used"):
+                    inviter_id = invite.to_dict()["userId"]
+                    # Create friendship
+                    batch = db.batch()
+                    batch.set(
+                        db.collection("users")
+                        .document(user_record.uid)
+                        .collection("friends")
+                        .document(inviter_id),
+                        {"status": "accepted"},
+                    )
+                    batch.set(
+                        db.collection("users")
+                        .document(inviter_id)
+                        .collection("friends")
+                        .document(user_record.uid),
+                        {"status": "accepted"},
+                    )
+                    batch.commit()
+                    invite_ref.update({"used": True})
+
             flash(
                 "Registration successful! Please check your email to verify your account.",
                 "success",
@@ -85,15 +124,20 @@ def register():
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
-    """
-    Renders the login page.
+    """Render the login page.
+
     The actual login process is handled by the Firebase client-side SDK.
     The client will get an ID token and send it with subsequent requests.
     """
     current_app.logger.info("Login page loaded")
     db = firestore.client()
     # Check if an admin user exists to determine if we should run install
-    admin_query = db.collection("users").where("isAdmin", "==", True).limit(1).get()
+    admin_query = (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("isAdmin", "==", True))
+        .limit(1)
+        .get()
+    )
     if not admin_query:
         return redirect(url_for("auth.install"))
 
@@ -102,9 +146,25 @@ def login():
     return render_template("login.html", form=form)
 
 
+def _generate_unique_username(db, base_username):
+    """Generate a unique username by appending a number if the base username exists."""
+    username = base_username
+    i = 1
+    while (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("username", "==", username))
+        .limit(1)
+        .get()
+    ):
+        username = f"{base_username}{i}"
+        i += 1
+    return username
+
+
 @bp.route("/session_login", methods=["POST"])
 def session_login():
-    """
+    """Handle session login.
+
     This endpoint is called from the client-side after a successful Firebase login.
     It receives the ID token, verifies it, and creates a server-side session.
     """
@@ -113,22 +173,44 @@ def session_login():
         decoded_token = auth.verify_id_token(id_token)
         uid = decoded_token["uid"]
         db = firestore.client()
-        user_doc = db.collection("users").document(uid).get()
+        user_doc_ref = db.collection("users").document(uid)
+        user_doc = user_doc_ref.get()
+
         if user_doc.exists:
             user_info = user_doc.to_dict()
-            session["user_id"] = uid
-            session["is_admin"] = user_info.get("isAdmin", False)
-            return jsonify({"status": "success"})
         else:
-            return jsonify({"status": "error", "message": "User not found in Firestore."}), 404
+            # User doesn't exist, so create a new profile
+            user_record = auth.get_user(uid)
+            email = user_record.email
+            name = user_record.display_name or email.split("@")[0]
+            base_username = re.sub(r"[^a-zA-Z0-9_.]", "", name.lower())
+            username = _generate_unique_username(db, base_username)
+
+            user_info = {
+                "username": username,
+                "email": email,
+                "name": name,
+                "duprRating": None,
+                "isAdmin": False,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
+            user_doc_ref.set(user_info)
+
+        session["user_id"] = uid
+        session["is_admin"] = user_info.get("isAdmin", False)
+        return jsonify({"status": "success"})
+
     except Exception as e:
         current_app.logger.error(f"Error during session login: {e}")
-        return jsonify({"status": "error", "message": "Invalid token or server error."}), 401
+        return jsonify(
+            {"status": "error", "message": "Invalid token or server error."}
+        ), 401
 
 
 @bp.route("/logout")
 def logout():
-    """
+    """Log the user out.
+
     The actual logout is handled by the Firebase client-side SDK.
     This route is for clearing any server-side session info if needed.
     """
@@ -139,9 +221,15 @@ def logout():
 
 @bp.route("/install", methods=["GET", "POST"])
 def install():
+    """Install the application by creating an admin user."""
     db = firestore.client()
     # Check if an admin user already exists
-    admin_query = db.collection("users").where("isAdmin", "==", True).limit(1).get()
+    admin_query = (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("isAdmin", "==", True))
+        .limit(1)
+        .get()
+    )
     if admin_query:
         return redirect(url_for("auth.login"))
 
@@ -207,24 +295,36 @@ def install():
     return render_template("install.html")
 
 
-@bp.route("/change_password", methods=["GET"])
+@bp.route("/change_password", methods=["GET", "POST"])
 def change_password():
-    """
-    Renders the change password page.
+    """Render the change password page.
+
     The actual password change is handled by the Firebase client-side SDK.
     """
     if not g.get("user"):
         return redirect(url_for("auth.login"))
-    return render_template("change_password.html", user=g.user)
+
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        # The form is for display and validation, but the actual password
+        # change is handled by the Firebase client-side SDK.
+        # We can flash a message to inform the user.
+        flash("Your password has been updated.", "success")
+        return redirect(url_for("user.profile"))
+
+    return render_template("change_password.html", user=g.user, form=form)
 
 
-@bp.route('/firebase-config.js')
+@bp.route("/firebase-config.js")
 def firebase_config():
+    """Return the Firebase config as a JavaScript file."""
     api_key = os.environ.get("FIREBASE_API_KEY")
     if not api_key:
-        current_app.logger.error("FIREBASE_API_KEY is not set. Frontend will not be able to connect to Firebase.")
+        current_app.logger.error(
+            "FIREBASE_API_KEY is not set. Frontend will not be able to connect to Firebase."
+        )
         error_script = 'console.error("Firebase API key is missing. Please set the FIREBASE_API_KEY environment variable.");'
-        return Response(error_script, mimetype='application/javascript')
+        return Response(error_script, mimetype="application/javascript")
 
     config = {
         "apiKey": api_key,
@@ -233,7 +333,7 @@ def firebase_config():
         "storageBucket": "pickaladder.appspot.com",
         "messagingSenderId": "402457219675",
         "appId": "1:402457219675:web:a346e2dc0dfa732d31e57e",
-        "measurementId": "G-E28CXCXTSK"
+        "measurementId": "G-E28CXCXTSK",
     }
     js_config = f"const firebaseConfig = {json.dumps(config)};"
-    return Response(js_config, mimetype='application/javascript')
+    return Response(js_config, mimetype="application/javascript")

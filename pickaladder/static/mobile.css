@@ -1,0 +1,106 @@
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    .navbar-menu {
+        display: none; /* Hide the main menu on mobile */
+    }
+
+    .desktop-auth-buttons {
+        display: none; /* Hide desktop login/register buttons on mobile */
+    }
+
+    .hamburger-menu {
+        display: block;
+        cursor: pointer;
+    }
+
+    /* Repurpose the dropdown as the mobile menu */
+    .dropdown {
+        position: static;
+    }
+
+    .dropbtn {
+        display: none; /* Hide the user icon image on mobile */
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        background-color: var(--surface-color);
+        box-shadow: var(--box-shadow);
+        z-index: 100;
+    }
+
+    .dropdown-content.active {
+        display: block;
+    }
+
+    .hamburger-menu span {
+        display: block;
+        width: 25px;
+        height: 3px;
+        margin: 5px;
+        background-color: var(--on-surface-color);
+    }
+
+    .grid-container {
+        grid-template-columns: 1fr;
+    }
+    .responsive-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .responsive-table thead {
+        display: none;
+    }
+
+    .responsive-table tbody,
+    .responsive-table tr,
+    .responsive-table td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .responsive-table tr {
+        margin-bottom: 15px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 0 10px;
+    }
+
+    .responsive-table td {
+        padding-left: 50%;
+        position: relative;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .responsive-table tr td:last-child {
+        border-bottom: none;
+    }
+
+    .responsive-table td[data-label="Avatar"] {
+        padding-left: 10px;
+        text-align: center;
+    }
+
+    .responsive-table td[data-label="Avatar"]::before {
+        display: none;
+    }
+
+    .responsive-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        width: 45%;
+        padding-right: 10px;
+        font-weight: bold;
+        text-align: left;
+        white-space: nowrap;
+    }
+}

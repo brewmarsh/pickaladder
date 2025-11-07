@@ -3,24 +3,28 @@
 {% block content %}
     <div class="page-header">
         <h1>Friends</h1>
-        <a href="{{ url_for('user.users') }}" class="btn">Find New Friends</a>
+        <div>
+            <button id="invite-friend-btn" class="btn" data-csrf="{{ csrf_token() }}">Invite a Friend</button>
+            <a href="{{ url_for('user.users') }}" class="btn">Find New Friends</a>
+        </div>
     </div>
+    <div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
 
     <div class="grid-container" style="grid-template-columns: 1fr 1fr; gap: 40px;">
         <div class="card">
             <h3>Your Friends</h3>
             <div class="table-container">
-                <table class="table">
+                <table class="table responsive-table">
                     <tbody>
                         {% for friend in friends %}
                             <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=friend.id) }}">
-                                <td>
+                                <td data-label="Avatar">
                                     <img src="{{ url_for('user.profile_picture_thumbnail', user_id=friend.id) }}" alt="Profile Picture" class="profile-picture-thumbnail">
                                 </td>
-                                <td>
+                                <td data-label="Username">
                                     {{ friend.username }}
                                 </td>
-                                <td>{{ friend.dupr_rating }}</td>
+                                <td data-label="DUPR Rating">{{ friend.dupr_rating }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -31,12 +35,12 @@
             <h3>Friend Requests</h3>
             <h4>Received</h4>
             <div class="table-container">
-                <table class="table">
+                <table class="table responsive-table">
                     <tbody>
                         {% for request in requests %}
                             <tr>
-                                <td><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
-                                <td style="text-align: right;">
+                                <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
+                                <td data-label="Actions" style="text-align: right;">
                                     <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn">Accept</button>
@@ -55,12 +59,12 @@
             </div>
             <h4 style="margin-top: 20px;">Sent</h4>
             <div class="table-container">
-                <table class="table">
+                <table class="table responsive-table">
                     <tbody>
                         {% for request in sent_requests %}
                             <tr>
-                                <td><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
-                                <td>Pending</td>
+                                <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
+                                <td data-label="Status">Pending</td>
                             </tr>
                         {% else %}
                              <tr><td>No outgoing requests.</td></tr>
@@ -70,4 +74,68 @@
             </div>
         </div>
     </div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inviteButton = document.getElementById('invite-friend-btn');
+    const successMessage = document.getElementById('invite-success-message');
+
+    const cannedMessages = [
+        "Tired of losing? Me too. Join me on pickaladder and let's lose together!",
+        "I found this cool app called pickaladder. It's like a ladder for pickleball, but with more losing.",
+        "You've been officially challenged to a pickleball match. First, you have to join me on pickaladder.",
+        "Let's settle this on the court. Join me on pickaladder.",
+    ];
+
+    inviteButton.addEventListener('click', function() {
+        const csrfToken = this.getAttribute('data-csrf');
+        fetch("{{ url_for('user.create_invite') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            const token = data.token;
+            const inviteUrl = new URL("{{ url_for('auth.register', _external=True) }}");
+            inviteUrl.searchParams.set('invite_token', token);
+
+            const randomMessage = cannedMessages[Math.floor(Math.random() * cannedMessages.length)];
+            const inviteText = `${randomMessage} ${inviteUrl.href}`;
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(inviteText).then(function() {
+                    successMessage.textContent = 'Invite message copied to clipboard!';
+                    successMessage.style.display = 'block';
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                    }, 3000);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = inviteText;
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    successMessage.textContent = 'Invite message copied to clipboard!';
+                    successMessage.style.display = 'block';
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                    }, 3000);
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                }
+                document.body.removeChild(textArea);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

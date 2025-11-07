@@ -5,7 +5,7 @@
         <h1>Generated Users</h1>
     </div>
     <div class="table-container">
-        <table class="table">
+        <table class="table responsive-table">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -18,11 +18,11 @@
             <tbody>
                 {% for user in users %}
                 <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>{{ user.name }}</td>
-                    <td>{{ user.dupr_rating }}</td>
+                    <td data-label="ID">{{ user.id }}</td>
+                    <td data-label="Username">{{ user.username }}</td>
+                    <td data-label="Email">{{ user.email }}</td>
+                    <td data-label="Name">{{ user.name }}</td>
+                    <td data-label="DUPR Rating">{{ user.dupr_rating }}</td>
                 </tr>
                 {% else %}
                 <tr>

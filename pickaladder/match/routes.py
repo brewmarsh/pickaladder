@@ -1,21 +1,27 @@
-from flask import render_template, redirect, url_for, flash, g
-from firebase_admin import firestore
+"""Routes for the match blueprint."""
+
 import datetime
+
+from firebase_admin import firestore
+from flask import flash, g, redirect, render_template, url_for
+
+from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import MatchForm
-from pickaladder.auth.decorators import login_required
 
 
 def get_player_record(player_ref):
-    """Calculates the win/loss record for a given player by their document reference."""
+    """Calculate the win/loss record for a given player by their document reference."""
     db = firestore.client()
     wins = 0
     losses = 0
 
     # Matches where the user is player1
     p1_matches_query = (
-        db.collection("matches").where("player1Ref", "==", player_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player1Ref", "==", player_ref))
+        .stream()
     )
     for match in p1_matches_query:
         data = match.to_dict()
@@ -26,7 +32,9 @@ def get_player_record(player_ref):
 
     # Matches where the user is player2
     p2_matches_query = (
-        db.collection("matches").where("player2Ref", "==", player_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player2Ref", "==", player_ref))
+        .stream()
     )
     for match in p2_matches_query:
         data = match.to_dict()
@@ -41,7 +49,7 @@ def get_player_record(player_ref):
 @bp.route("/<string:match_id>")
 @login_required
 def view_match_page(match_id):
-    """Displays the details of a single match."""
+    """Display the details of a single match."""
     db = firestore.client()
     match_ref = db.collection("matches").document(match_id)
     match = match_ref.get()
@@ -71,17 +79,24 @@ def view_match_page(match_id):
 @bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create_match():
+    """Create a new match."""
     db = firestore.client()
     user_id = g.user["uid"]
     form = MatchForm()
 
     # Populate opponent choices from the user's friends
     friends_ref = db.collection("users").document(user_id).collection("friends")
-    accepted_friends_docs = friends_ref.where("status", "==", "accepted").stream()
+    accepted_friends_docs = friends_ref.where(
+        filter=firestore.FieldFilter("status", "==", "accepted")
+    ).stream()
     friend_ids = [doc.id for doc in accepted_friends_docs]
 
     if friend_ids:
-        friends = db.collection("users").where("__name__", "in", friend_ids).stream()
+        friends = (
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("__name__", "in", friend_ids))
+            .stream()
+        )
         form.player2.choices = [
             (doc.id, doc.to_dict().get("name", doc.id)) for doc in friends
         ]
@@ -114,8 +129,8 @@ def create_match():
 @bp.route("/leaderboard")
 @login_required
 def leaderboard():
-    """
-    Displays a global leaderboard.
+    """Display a global leaderboard.
+
     Note: This is a simplified, non-scalable implementation. A production-ready
     leaderboard on Firestore would likely require denormalization and Cloud Functions.
     """

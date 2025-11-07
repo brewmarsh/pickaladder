@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Refactoring Opportunities - Pickaladder</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script>
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">Pickaladder</a>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+
+            <li class="nav-item" data-bs-level="1"><a href="#refactoring-opportunities" class="nav-link">Refactoring Opportunities</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#1-database-optimization" class="nav-link">1. Database Optimization</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#2-caching" class="nav-link">2. Caching</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#3-asynchronous-tasks" class="nav-link">3. Asynchronous Tasks</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#4-static-asset-management" class="nav-link">4. Static Asset Management</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#5-frontend-assets" class="nav-link">5. Frontend Assets</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#deeper-refactoring-opportunities" class="nav-link">Deeper Refactoring Opportunities</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="refactoring-opportunities">Refactoring Opportunities</h1>
+<p>This document outlines potential refactoring opportunities to improve the efficiency and scalability of the pickaladder application.</p>
+<h2 id="1-database-optimization">1. Database Optimization</h2>
+<p>The current implementation uses direct <code>psycopg2</code> calls for database interaction. While this works for a small application, it can lead to performance issues and maintainability problems as the application grows.</p>
+<ul>
+<li><strong>Introduce an ORM:</strong> Using an Object-Relational Mapper (ORM) like SQLAlchemy would provide a more robust and maintainable way to interact with the database. An ORM can help prevent SQL injection vulnerabilities, simplify queries, and improve code readability.</li>
+<li><strong>Connection Pooling:</strong> The application already uses a simple connection pool, which is good. However, for a high-traffic application, it might be beneficial to switch to a more advanced connection pooling solution like PgBouncer.</li>
+<li><strong>Optimize Queries:</strong> The <code>inject_user</code> context processor runs a query to fetch user data on every request. This could be optimized by caching user data in the session or using a more efficient caching mechanism like Redis.</li>
+</ul>
+<h2 id="2-caching">2. Caching</h2>
+<p>The application does not currently use any caching. Implementing a caching layer could significantly improve performance, especially for frequently accessed data.</p>
+<ul>
+<li><strong>Cache User Data:</strong> As mentioned above, caching user data would reduce the number of database queries.</li>
+<li><strong>Cache Leaderboard Data:</strong> The leaderboard is likely to be a frequently accessed page. Caching the leaderboard data would reduce the load on the database and improve response times.</li>
+<li><strong>Use a Caching Backend:</strong> Implementing a caching solution like Redis or Memcached would provide a centralized caching layer that can be used throughout the application.</li>
+</ul>
+<h2 id="3-asynchronous-tasks">3. Asynchronous Tasks</h2>
+<p>Some tasks, like sending emails, can be time-consuming and block the request-response cycle. These tasks should be handled asynchronously.</p>
+<ul>
+<li><strong>Use a Task Queue:</strong> A task queue like Celery could be used to handle long-running tasks in the background. This would improve the user experience by reducing response times for requests that trigger these tasks.</li>
+</ul>
+<h2 id="4-static-asset-management">4. Static Asset Management</h2>
+<p>The application currently stores profile pictures directly in the database as <code>BYTEA</code> data. This is inefficient and can lead to performance problems.</p>
+<ul>
+<li><strong>Store Files on the Filesystem:</strong> Profile pictures should be stored on the filesystem, and only the path to the file should be stored in the database.</li>
+<li><strong>Use a CDN:</strong> For a large-scale application, using a Content Delivery Network (CDN) to serve static assets like profile pictures would significantly improve performance.</li>
+</ul>
+<h2 id="5-frontend-assets">5. Frontend Assets</h2>
+<p>The <code>frontend</code> directory contains a boilerplate React application that is not currently used. The application is a traditional server-side rendered Flask application.</p>
+<ul>
+<li><strong>Remove Unused Frontend:</strong> The unused React frontend should be removed to avoid confusion and reduce the size of the codebase.</li>
+<li><strong>Modernize Frontend:</strong> If a more interactive frontend is desired, the application could be migrated to a modern JavaScript framework like React or Vue.js. This would involve creating a separate frontend application that communicates with the Flask backend via a REST API. This would also allow for a more modern and responsive user interface.</li>
+</ul>
+<h2 id="deeper-refactoring-opportunities">Deeper Refactoring Opportunities</h2>
+<p>Based on a more in-depth review of the route handlers and application logic, here are some more specific refactoring opportunities.</p>
+<h3 id="1-code-structure-and-duplication">1. Code Structure and Duplication</h3>
+<ul>
+<li><strong>Refactor User Creation Logic:</strong> The <code>auth/routes.py</code> file has duplicate code for creating a user in the <code>register</code> and <code>install</code> routes. This should be extracted into a single helper function to reduce redundancy and improve maintainability.</li>
+<li><strong>Encapsulate Business Logic:</strong> The route handlers in <code>admin/routes.py</code>, <code>user/routes.py</code>, and <code>match/routes.py</code> contain a lot of business logic (e.g., generating users, handling friendships, calculating records). This logic should be moved into separate "service" or "model" classes. This would make the code more modular, easier to test, and closer to the Single Responsibility Principle. For example, a <code>FriendshipService</code> could handle all the logic related to adding, accepting, and declining friend requests.</li>
+<li><strong>Configuration Management:</strong> The Flask app configuration in <code>pickaladder/__init__.py</code> is a mix of hardcoded values and environment variables. This should be standardized to use a configuration file (e.g., <code>config.py</code>) or a library like Dynaconf to manage different environments (development, testing, production) more effectively.</li>
+</ul>
+<h3 id="2-security-enhancements">2. Security Enhancements</h3>
+<ul>
+<li><strong>Secure Password Reset:</strong> The current password reset mechanism in <code>auth/routes.py</code> is insecure because it relies only on the user's email address. This should be replaced with a token-based system. When a user requests a password reset, a unique, single-use, and time-limited token should be generated and sent to the user's email. The user can then use this token to reset their password.</li>
+<li><strong>CSRF Protection:</strong> The admin routes that perform state-changing operations (e.g., deleting users, resetting the database) are vulnerable to Cross-Site Request Forgery (CSRF) attacks. Flask-WTF or a similar library should be used to add CSRF protection to all forms and state-changing requests.</li>
+<li><strong>Plain Text Passwords in Email:</strong> The <code>admin_reset_password</code> function in <code>admin/routes.py</code> sends a new password to the user in plain text. This is a major security risk. This feature should be changed to send a password reset link instead, allowing the user to set their own password.</li>
+</ul>
+<h3 id="3-database-and-query-optimization">3. Database and Query Optimization</h3>
+<ul>
+<li><strong>Avoid N+1 Queries:</strong> Several routes, particularly in <code>user/routes.py</code>, suffer from the N+1 query problem. For example, fetching a list of users and then fetching their friends in a loop. These queries should be optimized using SQL JOINs to fetch all the necessary data in a single query.</li>
+<li><strong>Refactor Complex Queries:</strong> The queries for calculating player records in <code>match/routes.py</code> are very complex and inefficient. These could be simplified and made more performant by creating database views or functions to handle the calculations.</li>
+<li><strong>Pagination:</strong> The <code>users</code> page fetches all users at once. This will not scale. Pagination should be implemented for all lists of data (users, matches, etc.) to ensure the application remains performant as the amount of data grows.</li>
+</ul>
+<h3 id="4-error-handling-and-input-validation">4. Error Handling and Input Validation</h3>
+<ul>
+<li><strong>Consistent Error Handling:</strong> The application's error handling is inconsistent. A global error handling strategy should be implemented. For example, creating custom exception classes and using Flask's <code>@app.errorhandler</code> to handle them consistently across the application.</li>
+<li><strong>Input Validation:</strong> There is a lack of input validation in many places, such as the match creation form. All user input should be validated on the server side to prevent invalid data from being saved to the database. Libraries like Marshmallow or Pydantic can be used to define schemas for input data and validate it automatically.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

@@ -1,12 +1,31 @@
 <header class="header">
     <div class="container">
         <nav class="navbar">
-            <a href="{{ url_for('user.dashboard') }}" class="navbar-brand">pickaladder</a>
+            <a href="{{ url_for('user.dashboard') }}" class="navbar-brand" style="display: flex; align-items: center;">
+                <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" alt="pickaladder logo" style="height: 24px; margin-right: 8px;">
+                pickaladder
+            </a>
             <div class="navbar-menu">
-                {% if user %}
+                {% if g.user %}
+                    <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
+                    <a href="{{ url_for('user.users') }}">👥 Users</a>
+                    <a href="{{ url_for('user.friends') }}">🧑‍🤝‍🧑 Friends</a>
+                    <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
+                    <a href="{{ url_for('match.leaderboard') }}">🏆 Leaderboard</a>
+                {% else %}
+                    <div class="desktop-auth-buttons">
+                        {% if request.endpoint != 'auth.login' %}
+                            <a href="{{ url_for('auth.login') }}" class="btn">Login</a>
+                        {% endif %}
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="navbar-user-controls">
+                {% if g.user %}
                     <div class="dropdown">
                         <button class="dropbtn">
-                            <img src="{{ user.profilePictureThumbnailUrl or user.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture-thumbnail" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                            <img src="{{ g.user.profilePictureThumbnailUrl or g.user.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture-thumbnail" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                         </button>
                         <div class="dropdown-content">
                             <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
@@ -14,6 +33,7 @@
                             <a href="{{ url_for('user.friends') }}">🧑‍🤝‍🧑 Friends</a>
                             <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
                             <a href="{{ url_for('match.leaderboard') }}">🏆 Leaderboard</a>
+                            <hr>
                             <a href="{{ url_for('auth.change_password') }}">🔑 Change Password</a>
                             <a href="{{ url_for('auth.logout') }}">🚪 Logout</a>
                             {% if session.get('is_admin') %}
@@ -22,12 +42,12 @@
                             {% endif %}
                         </div>
                     </div>
-                {% else %}
-                    {% if request.endpoint != 'auth.login' %}
-                        <a href="{{ url_for('auth.login') }}" class="btn">Login</a>
-                    {% endif %}
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>
                 {% endif %}
+                <button class="hamburger-menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
             </div>
         </nav>
     </div>
