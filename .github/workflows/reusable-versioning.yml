@@ -2,6 +2,11 @@ name: Reusable Versioning
 
 on:
   workflow_call:
+    inputs:
+      namespace:
+        description: 'The version namespace (e.g., "beta")'
+        required: false
+        type: string
     outputs:
       version:
         description: "The new version number"
@@ -27,7 +32,8 @@ jobs:
         with:
           major_pattern: "major:"
           minor_pattern: "minor:"
-          version_format: "${major}.${minor}.${patch}"
+          namespace: ${{ inputs.namespace }}
+          version_format: "${major}.${minor}.${patch}-${namespace}${increment}"
 
       - name: Configure git
         run: |

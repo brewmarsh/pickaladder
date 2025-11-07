@@ -17,6 +17,8 @@ jobs:
       contents: write
       pull-requests: write
     uses: ./.github/workflows/reusable-versioning.yml
+    with:
+      namespace: "beta"
     secrets: inherit
 
   deploy:
