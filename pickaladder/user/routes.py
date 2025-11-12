@@ -4,7 +4,7 @@ import os
 import secrets
 import tempfile
 
-from firebase_admin import auth, firestore
+from firebase_admin import auth, firestore, storage
 from flask import (
     current_app,
     flash,
@@ -15,7 +15,6 @@ from flask import (
     request,
     url_for,
 )
-from imgur_python import Imgur
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
@@ -131,30 +130,18 @@ def dashboard():
 
             profile_picture_file = form.profile_picture.data
             if profile_picture_file:
-                client_id = os.environ.get("IMGUR_CLIENT_ID")
-                if not client_id:
-                    flash("Imgur client ID is not configured.", "warning")
-                else:
-                    imgur_client = Imgur({"client_id": client_id})
-                    filename = secure_filename(
-                        profile_picture_file.filename or "profile.jpg"
-                    )
-                    response = None
-                    with tempfile.NamedTemporaryFile(
-                        suffix=os.path.splitext(filename)[1]
-                    ) as temp_file:
-                        profile_picture_file.save(temp_file.name)
-                        response = imgur_client.image_upload(
-                            temp_file.name, f"{user_id}'s profile picture", ""
-                        )
+                filename = secure_filename(profile_picture_file.filename or "profile.jpg")
+                bucket = storage.bucket()
+                blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
 
-                    if response and response["success"]:
-                        update_data["profilePictureUrl"] = response["data"]["link"]
-                    elif response:
-                        flash(
-                            f"Imgur upload failed: {response['data']['error']}",
-                            "danger",
-                        )
+                with tempfile.NamedTemporaryFile(
+                    suffix=os.path.splitext(filename)[1]
+                ) as temp_file:
+                    profile_picture_file.save(temp_file.name)
+                    blob.upload_from_filename(temp_file.name)
+
+                blob.make_public()
+                update_data["profilePictureUrl"] = blob.public_url
 
             user_ref.update(update_data)
             flash("Profile updated successfully.", "success")
