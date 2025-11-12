@@ -54,21 +54,37 @@ def create_app(test_config=None):
 
     # Initialize Firebase Admin SDK only if not in testing mode
     if not app.config.get("TESTING"):
-        # Path to your service account key file
-        cred_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "firebase_credentials.json"
-        )
-        if os.path.exists(cred_path):
-            cred = credentials.Certificate(cred_path)
-        else:
-            # Fallback to default credentials if the file is not found
+        cred = None
+        # First, try to load from environment variable (for production)
+        cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+        if cred_json:
+            import json
+
+            try:
+                cred_info = json.loads(cred_json)
+                cred = credentials.Certificate(cred_info)
+            except (json.JSONDecodeError, ValueError) as e:
+                app.logger.error(f"Error parsing FIREBASE_CREDENTIALS_JSON: {e}")
+
+        # If env var fails or is not present, try loading from file (for local dev)
+        if not cred:
+            cred_path = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "firebase_credentials.json"
+            )
+            if os.path.exists(cred_path):
+                try:
+                    cred = credentials.Certificate(cred_path)
+                except ValueError as e:
+                    app.logger.error(f"Error loading credentials from file: {e}")
+
+        # If both methods fail, fallback to default credentials
+        if not cred:
             try:
                 cred = credentials.ApplicationDefault()
             except Exception as e:
                 app.logger.error(
-                    f"Could not find credentials file or default credentials: {e}"
+                    f"Could not find any valid credentials (env, file, or default): {e}"
                 )
-                cred = None
 
         # Initialize the app if credentials were found
         if cred and not firebase_admin._apps:
