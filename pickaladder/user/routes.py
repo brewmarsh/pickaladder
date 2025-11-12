@@ -130,7 +130,9 @@ def dashboard():
 
             profile_picture_file = form.profile_picture.data
             if profile_picture_file:
-                filename = secure_filename(profile_picture_file.filename or "profile.jpg")
+                filename = secure_filename(
+                    profile_picture_file.filename or "profile.jpg"
+                )
                 bucket = storage.bucket()
                 blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
 

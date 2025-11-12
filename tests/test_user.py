@@ -104,7 +104,9 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Profile updated successfully.", response.data)
         mock_storage.bucket.assert_called_once()
-        mock_bucket.blob.assert_called_once_with(f"profile_pictures/{MOCK_USER_ID}/test.png")
+        mock_bucket.blob.assert_called_once_with(
+            f"profile_pictures/{MOCK_USER_ID}/test.png"
+        )
         mock_blob.upload_from_filename.assert_called_once()
         mock_blob.make_public.assert_called_once()
         self.assertEqual(
