@@ -55,7 +55,9 @@ def create_app(test_config=None):
     # Initialize Firebase Admin SDK only if not in testing mode
     if not app.config.get("TESTING"):
         # Path to your service account key file
-        cred_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'firebase_credentials.json')
+        cred_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "firebase_credentials.json"
+        )
         if os.path.exists(cred_path):
             cred = credentials.Certificate(cred_path)
         else:
@@ -63,7 +65,9 @@ def create_app(test_config=None):
             try:
                 cred = credentials.ApplicationDefault()
             except Exception as e:
-                app.logger.error(f"Could not find credentials file or default credentials: {e}")
+                app.logger.error(
+                    f"Could not find credentials file or default credentials: {e}"
+                )
                 cred = None
 
         # Initialize the app if credentials were found
