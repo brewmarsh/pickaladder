@@ -133,7 +133,7 @@ def dashboard():
                 filename = secure_filename(
                     profile_picture_file.filename or "profile.jpg"
                 )
-                bucket = storage.bucket(os.environ.get("FIREBASE_STORAGE_BUCKET"))
+                bucket = storage.bucket()
                 blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
 
                 with tempfile.NamedTemporaryFile(
