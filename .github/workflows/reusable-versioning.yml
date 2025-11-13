@@ -38,9 +38,9 @@ jobs:
         id: format-version
         run: |
           if [[ -n "${{ inputs.namespace }}" ]]; then
-            echo "version=${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}.${{ steps.version.outputs.patch }}-${{ inputs.namespace }}.${{ steps.version.outputs.increment }}" >> $GITHUB_OUTPUT
+            echo "version=v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}.${{ steps.version.outputs.patch }}-${{ inputs.namespace }}.${{ steps.version.outputs.increment }}" >> $GITHUB_OUTPUT
           else
-            echo "version=${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}.${{ steps.version.outputs.patch }}" >> $GITHUB_OUTPUT
+            echo "version=v${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}.${{ steps.version.outputs.patch }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Configure git
