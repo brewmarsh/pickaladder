@@ -19,7 +19,7 @@ from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import get_group_leaderboard
-from pickaladder.utils import send_email
+from pickaladder.utils import get_storage_bucket_name, send_email
 
 from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm
@@ -133,7 +133,7 @@ def dashboard():
                 filename = secure_filename(
                     profile_picture_file.filename or "profile.jpg"
                 )
-                bucket = storage.bucket(os.environ.get("FIREBASE_STORAGE_BUCKET"))
+                bucket = storage.bucket(get_storage_bucket_name())
                 blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
 
                 with tempfile.NamedTemporaryFile(
