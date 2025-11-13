@@ -55,6 +55,7 @@ def create_app(test_config=None):
     # Initialize Firebase Admin SDK only if not in testing mode
     if not app.config.get("TESTING"):
         cred = None
+        cred_info = None
         # First, try to load from environment variable (for production)
         cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
         if cred_json:
@@ -72,10 +73,15 @@ def create_app(test_config=None):
                 os.path.dirname(os.path.dirname(__file__)), "firebase_credentials.json"
             )
             if os.path.exists(cred_path):
+                import json
+
                 try:
+                    with open(cred_path, "r") as f:
+                        cred_info = json.load(f)
                     cred = credentials.Certificate(cred_path)
-                except ValueError as e:
+                except (ValueError, json.JSONDecodeError) as e:
                     app.logger.error(f"Error loading credentials from file: {e}")
+                    cred_info = None  # reset on error
 
         # If both methods fail, fallback to default credentials
         if not cred:
@@ -89,14 +95,21 @@ def create_app(test_config=None):
         # Initialize the app if credentials were found
         if cred and not firebase_admin._apps:
             try:
+                # Determine project ID from env var, or credentials file
+                project_id = os.environ.get("FIREBASE_PROJECT_ID")
+                if not project_id and cred_info:
+                    project_id = cred_info.get("project_id")
+
+                # Determine storage bucket from env var, or derive from project ID
                 storage_bucket = os.environ.get("FIREBASE_STORAGE_BUCKET")
-                firebase_admin.initialize_app(
-                    cred,
-                    {
-                        "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
-                        "storageBucket": storage_bucket if storage_bucket else None,
-                    },
-                )
+                if not storage_bucket and project_id:
+                    storage_bucket = f"{project_id}.appspot.com"
+
+                options = {"projectId": project_id}
+                if storage_bucket:
+                    options["storageBucket"] = storage_bucket
+
+                firebase_admin.initialize_app(cred, options)
             except ValueError:
                 # This can happen if the app is already initialized, which is fine.
                 app.logger.info("Firebase app already initialized.")
