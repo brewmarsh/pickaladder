@@ -95,10 +95,23 @@ def create_app(test_config=None):
         # Initialize the app if credentials were found
         if cred and not firebase_admin._apps:
             try:
-                # Determine project ID from env var, or credentials file
+                # Determine project ID from env var, credentials file, or default creds
                 project_id = os.environ.get("FIREBASE_PROJECT_ID")
                 if not project_id and cred_info:
                     project_id = cred_info.get("project_id")
+
+                # If project_id is still not found (e.g. using ApplicationDefault)
+                # use google-auth to discover it.
+                if not project_id:
+                    try:
+                        import google.auth
+                        from google.auth.exceptions import DefaultCredentialsError
+
+                        _, project_id = google.auth.default()
+                    except DefaultCredentialsError:
+                        app.logger.warning(
+                            "Could not determine project ID from default credentials."
+                        )
 
                 # Determine storage bucket from env var, or derive from project ID
                 storage_bucket = os.environ.get("FIREBASE_STORAGE_BUCKET")
