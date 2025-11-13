@@ -19,9 +19,3 @@ jobs:
     uses: ./.github/workflows/reusable-versioning.yml
     secrets: inherit
 
-  deploy:
-    needs: versioning
-    uses: ./.github/workflows/deploy.yml
-    with:
-      app_version: ${{ needs.versioning.outputs.version }}
-    secrets: inherit

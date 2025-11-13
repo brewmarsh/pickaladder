@@ -40,12 +40,7 @@ jobs:
           git config --global user.name "picka-bot"
           git config --global user.email "picka-bot@users.noreply.github.com"
 
-      - name: Update version file
+      - name: Tag new version
         run: |
-          echo ${{ steps.version.outputs.version }} > VERSION
-
-      - name: Commit new version
-        run: |
-          git add VERSION
-          git commit -m "chore(version): update to ${{ steps.version.outputs.version }} [skip ci]"
-          git push origin HEAD:${{ github.ref_name }}
+          git tag ${{ steps.version.outputs.version }}
+          git push origin ${{ steps.version.outputs.version }}
