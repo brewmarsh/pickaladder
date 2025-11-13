@@ -1,35 +1,39 @@
 {% extends "layout.html" %}
 {% block title %}Dashboard{% endblock %}
-
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='toggle.css') }}">
+{% endblock %}
 {% block content %}
     <div id="dashboard-content" style="display: none;">
         <div class="grid-container">
             <div class="card">
                 <h3>Profile Information</h3>
-                <div class="profile-header" style="margin-bottom: 20px;">
-                    <img src="" alt="Profile Picture" class="profile-picture" id="profile-picture-img">
-                    <h4 id="user-username"></h4>
-                </div>
-                <p><strong>Email:</strong> <span id="user-email"></span></p>
-                <p><strong>DUPR Rating:</strong> <span id="user-dupr"></span></p>
-
-                <a href="{{ url_for('user.edit_profile') }}" class="btn">Edit Profile</a>
-                <hr>
-                <h4 style="margin-top: 20px;">Update Profile</h4>
-                <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data">
+                <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data" class="profile-form">
                     {{ form.hidden_tag() }}
+                    <div class="profile-header">
+                        <img src="" alt="Profile Picture" class="profile-picture" id="profile-picture-img">
+                        <div class="form-group profile-picture-group">
+                            {{ form.profile_picture(class="form-control") }}
+                        </div>
+                    </div>
+                    <h4 id="user-username"></h4>
+                    <p><strong>Email:</strong> <span id="user-email"></span></p>
+
                     <div class="form-group">
-                        {{ form.dupr_rating.label }}
+                        {{ form.dupr_rating.label(for="dupr_rating_input") }}
                         {{ form.dupr_rating(class="form-control", id="dupr_rating_input") }}
                     </div>
-                    <div class="form-group">
-                        {{ form.profile_picture.label }}
-                        {{ form.profile_picture(class="form-control") }}
-                    </div>
-                    <div class="form-group">
+
+                    <div class="form-group dark-mode-group">
                         {{ form.dark_mode.label }}
-                        {{ form.dark_mode() }}
+                        <label class="switch">
+                            {{ form.dark_mode() }}
+                            <span class="slider round"></span>
+                        </label>
                     </div>
+
+                    <a href="{{ url_for('user.edit_profile') }}" class="btn">Edit Username and Password</a>
                     {{ form.submit(class="btn") }}
                 </form>
             </div>
@@ -127,7 +131,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderUserInfo(user) {
         document.getElementById('user-username').textContent = `@${user.username}`;
         document.getElementById('user-email').textContent = user.email;
-        document.getElementById('user-dupr').textContent = user.duprRating || 'Not set';
         document.getElementById('profile-picture-img').src = urls.profile_picture(user.id);
         // Also populate the value in the update form
         document.getElementById('dupr_rating_input').value = user.duprRating || '';
