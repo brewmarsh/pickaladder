@@ -89,11 +89,12 @@ def create_app(test_config=None):
         # Initialize the app if credentials were found
         if cred and not firebase_admin._apps:
             try:
+                storage_bucket = os.environ.get("FIREBASE_STORAGE_BUCKET")
                 firebase_admin.initialize_app(
                     cred,
                     {
                         "projectId": os.environ.get("FIREBASE_PROJECT_ID"),
-                        "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET"),
+                        "storageBucket": storage_bucket if storage_bucket else None,
                     },
                 )
             except ValueError:
