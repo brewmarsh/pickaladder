@@ -1,11 +1,14 @@
 /* Dark mode styles */
 body.dark-mode {
-    --background-color: #202124;
-    --surface-color: #303134;
-    --on-primary-color: #e8eaed;
-    --on-surface-color: #e8eaed;
-    --on-surface-variant-color: #969ba1;
-    --border-color: #5f6368;
+    --primary-color: #8ABF83; /* Light Pickle Green */
+    --primary-color-dark: #6E9C69;
+    --secondary-color: #547851;
+    --background-color: #212121; /* Dark Gray */
+    --surface-color: #333333;
+    --on-primary-color: #212121;
+    --on-surface-color: #F5F5F5; /* Off White Text */
+    --on-surface-variant-color: #BDBDBD;
+    --border-color: #616161;
 }
 
 body.dark-mode input[type="text"],
@@ -26,7 +29,7 @@ body.dark-mode input[type="number"]:focus,
 body.dark-mode input[type="date"]:focus,
 body.dark-mode select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.3);
+    box-shadow: 0 0 0 2px rgba(138, 191, 131, 0.3);
 }
 
 body.dark-mode .table th {
