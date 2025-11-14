@@ -49,14 +49,14 @@ jobs:
           script: |
             mkdir -p ~/picka-server
 
-      - name: Copy config files to server
+      - name: Copy config and deployment script to server
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOSTINGER_HOST }}
           username: ${{ secrets.HOSTINGER_USERNAME }}
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
           port: 22
-          source: "docker-compose.prod.yml,nginx"
+          source: "docker-compose.prod.yml,nginx,init-letsencrypt.sh"
           target: "~/picka-server"
 
       - name: Deploy to Hostinger VPS
@@ -68,19 +68,12 @@ jobs:
           port: 22
           script: |
             cd ~/picka-server
-
-            # NOTE: Before the first deployment, you must manually run the certbot
-            # command to generate the initial SSL certificates. Your domain's DNS
-            # must be pointing to this server's IP address.
-            #
-            # sudo docker-compose -f docker-compose.prod.yml run --rm certbot certonly --webroot \
-            #   --webroot-path /var/www/certbot --email YOUR_EMAIL@EXAMPLE.COM --agree-tos --no-eff-email \
-            #   -d pickaladder.io -d www.pickaladder.io
+            chmod +x init-letsencrypt.sh
 
             # Login to GitHub Container Registry
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
 
-            # Set environment variables for docker-compose
+            # Set environment variables for docker-compose and the deployment script
             export IMAGE_TAG=ghcr.io/${{ github.repository }}:${{ github.sha }}
             export SECRET_KEY='${{ secrets.SECRET_KEY }}'
             export MAIL_SERVER='${{ secrets.MAIL_SERVER }}'
@@ -95,12 +88,8 @@ jobs:
             export IMGUR_CLIENT_ID='${{ secrets.IMGUR_CLIENT_ID }}'
             export APP_VERSION='${{ github.ref_name }}'
 
-            # Stop existing services before starting new ones.
-            # Using older docker-compose command based on user feedback.
-            docker-compose -f docker-compose.prod.yml down
-
-            # Recreate the services, building the nginx image and pulling the web image
-            docker-compose -f docker-compose.prod.yml up --build -d
+            # Execute the deployment script
+            ./init-letsencrypt.sh
 
             # Clean up old images
             # This helps to free up disk space on the server.
