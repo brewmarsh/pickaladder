@@ -4,7 +4,6 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
-from pickaladder.admin import routes
 
 # Mock user payloads
 MOCK_ADMIN_ID = "admin_uid"
@@ -25,7 +24,15 @@ class AdminRoutesTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "db": patch("pickaladder.admin.routes.db", new=self.mock_firestore_service),
+            "firestore": patch(
+                "pickaladder.admin.routes.firestore", new=self.mock_firestore_service
+            ),
+            "firestore_app": patch(
+                "pickaladder.firestore", new=self.mock_firestore_service
+            ),
+            "user_firestore": patch(
+                "pickaladder.user.routes.firestore", new=self.mock_firestore_service
+            ),
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}
