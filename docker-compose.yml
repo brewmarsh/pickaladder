@@ -6,6 +6,8 @@ services:
     command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
     env_file:
       - .env
+    networks:
+      - pickanet
   nginx:
     build: ./nginx
     ports:
@@ -15,3 +17,9 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl
     depends_on:
       - web
+    networks:
+      - pickanet
+
+networks:
+  pickanet:
+    driver: bridge
