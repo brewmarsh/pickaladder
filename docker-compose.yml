@@ -1,10 +1,17 @@
 services:
   web:
     build: .
-    ports:
-      - "27272:27272"
     volumes:
       - .:/app
     command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
     env_file:
       - .env
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - web

@@ -18,3 +18,7 @@ cookies2.txt
 url_map.txt
 .env
 firebase_credentials.json
+
+# SSL certificates
+nginx/ssl/self-signed.crt
+nginx/ssl/self-signed.key
