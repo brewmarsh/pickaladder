@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 # Pre-emptive imports to ensure patch targets exist.
 from pickaladder import create_app
+from pickaladder.group import routes
 
 # Mock user payloads
 MOCK_USER_ID = "user1"
@@ -21,16 +22,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "init_firestore": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
-            ),
-            "group_routes_firestore": patch(
-                "pickaladder.group.routes.firestore", new=self.mock_firestore_service
-            ),
-            "auth_routes_firestore": patch(
-                "pickaladder.auth.routes.firestore", new=self.mock_firestore_service
-            ),
-            "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
+            "db": patch("pickaladder.group.routes.db", new=self.mock_firestore_service),
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}
