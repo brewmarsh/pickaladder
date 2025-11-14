@@ -12,9 +12,9 @@
                 <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data" class="profile-form">
                     {{ form.hidden_tag() }}
                     <div class="profile-header">
-                        <img src="" alt="Profile Picture" class="profile-picture" id="profile-picture-img">
+                        <img src="{{ user.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture" id="profile-picture-img">
                         <div class="form-group profile-picture-group">
-                            {{ form.profile_picture(class="form-control") }}
+                            {{ form.profile_picture(class="form-control", accept="image/*") }}
                         </div>
                     </div>
                     <h4 id="user-username"></h4>
@@ -131,7 +131,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderUserInfo(user) {
         document.getElementById('user-username').textContent = `@${user.username}`;
         document.getElementById('user-email').textContent = user.email;
-        document.getElementById('profile-picture-img').src = urls.profile_picture(user.id);
         // Also populate the value in the update form
         document.getElementById('dupr_rating_input').value = user.duprRating || '';
         document.querySelector('input[name="dark_mode"]').checked = user.dark_mode;
@@ -213,6 +212,20 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error fetching dashboard data:', error);
             loader.innerHTML = '<p class="alert alert-danger">Could not load dashboard data. Please try again later.</p>';
         });
+
+    // Preview profile picture
+    const profilePictureInput = document.querySelector('input[name="profile_picture"]');
+    const profilePictureImg = document.getElementById('profile-picture-img');
+
+    profilePictureInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                profilePictureImg.src = e.target.result;
+            }
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
 });
 </script>
 {% endblock %}
