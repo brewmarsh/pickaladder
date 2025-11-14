@@ -100,10 +100,11 @@ def create_app(test_config=None):
         if cred and not firebase_admin._apps:
             try:
                 storage_bucket = os.environ.get("FIREBASE_STORAGE_BUCKET")
-                if not storage_bucket and project_id:
-                    storage_bucket = f"{project_id}.appspot.com"
-
-                firebase_options = {"storageBucket": storage_bucket}
+                # If the storage bucket is not provided, the SDK will automatically
+                # discover it from the project's service account credentials.
+                firebase_options = {}
+                if storage_bucket:
+                    firebase_options["storageBucket"] = storage_bucket
                 if project_id:
                     firebase_options["projectId"] = project_id
 
