@@ -55,7 +55,9 @@ def create_app(test_config=None):
     # Initialize Firebase Admin SDK only if not in testing mode
     if not app.config.get("TESTING"):
         cred = None
-        cred_info = None
+        project_id = None
+        cred_info = {}
+
         # First, try to load from environment variable (for production)
         cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
         if cred_json:
@@ -63,6 +65,7 @@ def create_app(test_config=None):
 
             try:
                 cred_info = json.loads(cred_json)
+                project_id = cred_info.get("project_id")
                 cred = credentials.Certificate(cred_info)
             except (json.JSONDecodeError, ValueError) as e:
                 app.logger.error(f"Error parsing FIREBASE_CREDENTIALS_JSON: {e}")
@@ -78,15 +81,16 @@ def create_app(test_config=None):
                 try:
                     with open(cred_path, "r") as f:
                         cred_info = json.load(f)
+                    project_id = cred_info.get("project_id")
                     cred = credentials.Certificate(cred_path)
-                except (ValueError, json.JSONDecodeError) as e:
+                except (json.JSONDecodeError, ValueError) as e:
                     app.logger.error(f"Error loading credentials from file: {e}")
-                    cred_info = None  # reset on error
 
         # If both methods fail, fallback to default credentials
         if not cred:
             try:
                 cred = credentials.ApplicationDefault()
+                project_id = os.environ.get("FIREBASE_PROJECT_ID")
             except Exception as e:
                 app.logger.error(
                     f"Could not find any valid credentials (env, file, or default): {e}"
@@ -95,23 +99,15 @@ def create_app(test_config=None):
         # Initialize the app if credentials were found
         if cred and not firebase_admin._apps:
             try:
-                # First, initialize the app without storage options to get the project ID
-                app_instance = firebase_admin.initialize_app(cred)
-                project_id = app_instance.project_id
-
-                # Now that we have the definitive project_id, delete the temporary app
-                firebase_admin.delete_app(app_instance)
-
-                # Determine storage bucket from env var, or derive from project ID
                 storage_bucket = os.environ.get("FIREBASE_STORAGE_BUCKET")
                 if not storage_bucket and project_id:
                     storage_bucket = f"{project_id}.appspot.com"
 
-                # Finally, re-initialize the app with the correct storage bucket
-                firebase_admin.initialize_app(
-                    cred, {"storageBucket": storage_bucket, "projectId": project_id}
-                )
+                firebase_options = {"storageBucket": storage_bucket}
+                if project_id:
+                    firebase_options["projectId"] = project_id
 
+                firebase_admin.initialize_app(cred, firebase_options)
             except ValueError:
                 # This can happen if the app is already initialized, which is fine.
                 app.logger.info("Firebase app already initialized.")
