@@ -73,22 +73,9 @@
                                 </form>
                             {% endif %}
 
-                            {% if session['is_admin'] and user.id != session['user_id'] %}
-                                <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" style="display: inline;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-danger">Delete</button>
-                                </form>
-                                {% if user.isAdmin %}
-                                    <form action="{{ url_for('admin.toggle_admin_status', user_id=user.id, action='demote') }}" method="post" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-secondary">Demote</button>
-                                    </form>
-                                {% else %}
-                                    <form action="{{ url_for('admin.toggle_admin_status', user_id=user.id, action='promote') }}" method="post" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-warning">Promote</button>
-                                    </form>
-                                {% endif %}
+                            {% if session['is_admin'] %}
+                                <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
+                                <a href="{{ url_for('admin.promote_user', user_id=user.id) }}" class="btn btn-warning">Promote</a>
                                 {% if not user.email_verified %}
                                     <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post" style="display: inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
