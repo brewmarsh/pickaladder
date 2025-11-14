@@ -2,8 +2,6 @@ services:
   web:
     image: ${IMAGE_TAG}
     restart: always
-    ports:
-      - "27272:27272"
     command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
     environment:
       # These variables should be set in the production environment (e.g., GitHub Secrets)
@@ -21,6 +19,21 @@ services:
       - APP_VERSION=${APP_VERSION}
     networks:
       - pickanet
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile.prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot
+    networks:
+      - pickanet
+    depends_on:
+      - web
 
 networks:
   pickanet:
