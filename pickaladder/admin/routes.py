@@ -132,7 +132,7 @@ def toggle_admin_status(user_id, action):
     db = firestore.client()
     user_ref = db.collection("users").document(user_id)
 
-    if g.user['uid'] == user_id:
+    if g.user["uid"] == user_id:
         flash("You cannot change your own admin status.", "danger")
         return redirect(url_for("user.users"))
 
