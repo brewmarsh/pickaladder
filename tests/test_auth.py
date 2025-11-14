@@ -25,8 +25,12 @@ class AuthFirebaseTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "auth": patch("pickaladder.auth.routes.auth", new=self.mock_auth_service),
-            "firestore": patch("pickaladder.auth.routes.firestore", new=self.mock_firestore_service),
-            "firestore_app": patch("pickaladder.firestore", new=self.mock_firestore_service),
+            "firestore": patch(
+                "pickaladder.auth.routes.firestore", new=self.mock_firestore_service
+            ),
+            "firestore_app": patch(
+                "pickaladder.firestore", new=self.mock_firestore_service
+            ),
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}
