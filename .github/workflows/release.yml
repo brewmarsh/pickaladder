@@ -56,7 +56,7 @@ jobs:
           username: ${{ secrets.HOSTINGER_USERNAME }}
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
           port: 22
-          source: "docker-compose.prod.yml"
+          source: "docker-compose.prod.yml,nginx"
           target: "~/picka-server"
 
       - name: Deploy to Hostinger VPS
@@ -69,18 +69,17 @@ jobs:
           script: |
             cd ~/picka-server
 
-            # Force stop any container using port 27272
-            CONTAINER_ID=$(docker ps -q --filter "publish=27272")
-            if [ -n "$CONTAINER_ID" ]; then
-              echo "Stopping container $CONTAINER_ID using port 27272"
-              docker stop $CONTAINER_ID
-            fi
+            # NOTE: Before the first deployment, you must manually run the certbot
+            # command to generate the initial SSL certificates. Your domain's DNS
+            # must be pointing to this server's IP address.
+            #
+            # sudo docker-compose -f docker-compose.prod.yml run --rm certbot certonly --webroot \
+            #   --webroot-path /var/www/certbot --email YOUR_EMAIL@EXAMPLE.COM --agree-tos --no-eff-email \
+            #   -d pickaladder.io -d www.pickaladder.io
 
             # Login to GitHub Container Registry
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
 
-            # Create Firebase credentials file from secret using a here document
-            # to prevent shell quoting issues with the JSON string.
             # Set environment variables for docker-compose
             export IMAGE_TAG=ghcr.io/${{ github.repository }}:${{ github.sha }}
             export SECRET_KEY='${{ secrets.SECRET_KEY }}'
@@ -96,9 +95,12 @@ jobs:
             export IMGUR_CLIENT_ID='${{ secrets.IMGUR_CLIENT_ID }}'
             export APP_VERSION='${{ github.ref_name }}'
 
-            # Recreate the services, pulling the latest image
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            # Stop existing services before starting new ones.
+            # Using older docker-compose command based on user feedback.
+            docker-compose -f docker-compose.prod.yml down
+
+            # Recreate the services, building the nginx image and pulling the web image
+            docker-compose -f docker-compose.prod.yml up --build -d
 
             # Clean up old images
             # This helps to free up disk space on the server.
