@@ -125,42 +125,15 @@ def delete_user(user_id):
     return redirect(url_for("user.users"))
 
 
-@bp.route("/toggle_admin_status/<string:user_id>/<string:action>", methods=["POST"])
-@login_required(admin_required=True)
-def toggle_admin_status(user_id, action):
-    """Promote or demote a user."""
+@bp.route("/promote_user/<string:user_id>", methods=["POST"])
+def promote_user(user_id):
+    """Promote a user to admin status."""
     db = firestore.client()
-    user_ref = db.collection("users").document(user_id)
-
-    if g.user["uid"] == user_id:
-        flash("You cannot change your own admin status.", "danger")
-        return redirect(url_for("user.users"))
-
     try:
-        if action == "promote":
-            user_ref.update({"isAdmin": True})
-            flash("User promoted to admin.", "success")
-        elif action == "demote":
-            user_ref.update({"isAdmin": False})
-            flash("User demoted to regular user.", "success")
-        else:
-            flash("Invalid action.", "danger")
-    except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
-
-    return redirect(url_for("user.users"))
-
-
-@bp.route("/verify_user/<string:user_id>", methods=["POST"])
-@login_required(admin_required=True)
-def verify_user(user_id):
-    """Mark a user's email as verified."""
-    db = firestore.client()
-    user_ref = db.collection("users").document(user_id)
-    try:
-        auth.update_user(user_id, email_verified=True)
-        user_ref.update({"email_verified": True})
-        flash("User email verified successfully.", "success")
+        user_ref = db.collection("users").document(user_id)
+        user_ref.update({"isAdmin": True})
+        username = user_ref.get().to_dict().get("username", "user")
+        flash(f"{username} has been promoted to admin.", "success")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for("user.users"))
