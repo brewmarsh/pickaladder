@@ -76,3 +76,13 @@ body.dark-mode .dropbtn {
 body.dark-mode .hamburger-menu {
     background-color: transparent;
 }
+
+body.dark-mode .header {
+    background-color: var(--primary-color-dark);
+    border-bottom: 1px solid var(--primary-color);
+}
+
+body.dark-mode .navbar-brand,
+body.dark-mode .navbar-menu a {
+    color: var(--on-surface-color);
+}

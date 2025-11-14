@@ -62,8 +62,8 @@ body {
 
 /* Header and Navbar */
 .header {
-    background-color: var(--surface-color);
-    border-bottom: 1px solid var(--border-color);
+    background-color: var(--primary-color);
+    border-bottom: 1px solid var(--primary-color-dark);
     padding: 10px 0;
     margin-bottom: 20px;
 }
@@ -77,7 +77,7 @@ body {
 .navbar-brand {
     font-size: 1.5em;
     font-weight: 500;
-    color: var(--on-surface-color);
+    color: var(--on-primary-color);
     text-decoration: none;
 }
 
@@ -89,7 +89,7 @@ body {
 
 .navbar-menu a {
     text-decoration: none;
-    color: var(--on-surface-color);
+    color: var(--on-primary-color);
 }
 
 
