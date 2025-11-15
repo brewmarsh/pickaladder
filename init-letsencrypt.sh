@@ -26,10 +26,11 @@ else
         -out "$CERT_DIR/fullchain.pem" \
         -subj "/CN=localhost"
 
-    # 2. Start only Nginx. It needs to be running to solve the
-    # HTTP-01 challenge from Let's Encrypt.
-    echo ">>> Starting Nginx with dummy certificate..."
-    docker-compose -f docker-compose.prod.yml up -d nginx
+    # 2. Start the web and nginx services. Nginx needs the web service to be
+    # running to resolve the upstream, and it needs to be running itself
+    # to solve the HTTP-01 challenge from Let's Encrypt.
+    echo ">>> Starting web and nginx with dummy certificate..."
+    docker-compose -f docker-compose.prod.yml up -d web nginx
 
     # 3. Replace the dummy certificate with a real one from Let's Encrypt.
     # We remove the dummy files before certbot runs.
