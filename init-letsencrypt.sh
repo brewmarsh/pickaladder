@@ -26,26 +26,12 @@ else
         -out "$CERT_DIR/fullchain.pem" \
         -subj "/CN=localhost"
 
-    # 2. Start the web and nginx services. Nginx needs the web service to be
-    # running to resolve the upstream, and it needs to be running itself
-    # to solve the HTTP-01 challenge from Let's Encrypt.
+    # 2. Start the web and nginx services. The new Nginx entrypoint will
+    # automatically wait for the web service to be ready.
     echo ">>> Starting web and nginx with dummy certificate..."
     docker-compose -f docker-compose.prod.yml up -d web nginx
 
-    # 3. Give the Docker network a moment to initialize before we start polling.
-    echo ">>> Waiting for network to settle..."
-    sleep 5
-
-    # 4. Wait for the 'web' service to be discoverable by Nginx via DNS.
-    # This loop runs inside the nginx container and polls for the 'web' hostname.
-    echo ">>> Waiting for web service to be ready..."
-    until docker-compose -f docker-compose.prod.yml exec nginx sh -c 'nslookup web'; do
-        echo "Still waiting for web service..."
-        sleep 3
-    done
-    echo "Web service is ready."
-
-    # 5. Replace the dummy certificate with a real one from Let's Encrypt.
+    # 3. Replace the dummy certificate with a real one from Let's Encrypt.
     # We remove the dummy files before certbot runs.
     echo ">>> Requesting real certificate from Let's Encrypt..."
     sudo rm -rf $CERT_DIR
