@@ -2,22 +2,23 @@
 set -e
 
 # This script is the entrypoint for the Nginx container.
-# It waits until the 'web' service is reachable before starting Nginx.
+# It waits until the upstream 'web' service is not only resolvable
+# but also actively listening on its port before starting Nginx.
 
 UPSTREAM_HOST="web"
 UPSTREAM_PORT="27272"
 
-echo ">>> Nginx Entrypoint: Waiting for upstream host $UPSTREAM_HOST..."
+echo ">>> Nginx Entrypoint: Waiting for upstream service $UPSTREAM_HOST:$UPSTREAM_PORT..."
 
-# Use a loop to check if the upstream host is resolvable.
-# 'getent hosts' is a standard way to check for hostname resolution.
-until getent hosts $UPSTREAM_HOST; do
-    echo "Still waiting for upstream host $UPSTREAM_HOST..."
+# Use a loop with netcat (nc) to check if the port is open.
+# This is a more reliable check than just resolving the hostname, as it
+# ensures the application inside the 'web' container is actually running.
+while ! nc -z $UPSTREAM_HOST $UPSTREAM_PORT; do
+    echo "Still waiting for upstream service $UPSTREAM_HOST:$UPSTREAM_PORT..."
     sleep 2
 done
 
-echo ">>> Nginx Entrypoint: Upstream host found. Starting Nginx..."
+echo ">>> Nginx Entrypoint: Upstream service is ready. Starting Nginx..."
 
-# Execute the original Nginx entrypoint script.
-# This will start the Nginx process.
+# Execute the original Nginx entrypoint script to start the Nginx process.
 exec /docker-entrypoint.sh nginx -g 'daemon off;'
