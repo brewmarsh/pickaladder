@@ -32,7 +32,16 @@ else
     echo ">>> Starting web and nginx with dummy certificate..."
     docker-compose -f docker-compose.prod.yml up -d web nginx
 
-    # 3. Replace the dummy certificate with a real one from Let's Encrypt.
+    # 3. Wait for the 'web' service to be discoverable by Nginx.
+    # This loop runs inside the nginx container and polls for the 'web' hostname.
+    echo ">>> Waiting for web service to be ready..."
+    until docker-compose -f docker-compose.prod.yml exec nginx sh -c 'getent hosts web'; do
+        echo "Still waiting for web service..."
+        sleep 3
+    done
+    echo "Web service is ready."
+
+    # 4. Replace the dummy certificate with a real one from Let's Encrypt.
     # We remove the dummy files before certbot runs.
     echo ">>> Requesting real certificate from Let's Encrypt..."
     sudo rm -rf $CERT_DIR
