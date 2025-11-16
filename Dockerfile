@@ -3,6 +3,9 @@ FROM python:3.11-bullseye
 
 WORKDIR /app
 
+# Install curl, which is used by the Docker healthcheck.
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # Copy the requirements file
 COPY requirements.txt .
 
