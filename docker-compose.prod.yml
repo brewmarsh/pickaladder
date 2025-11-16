@@ -17,6 +17,11 @@ services:
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
       - IMGUR_CLIENT_ID=${IMGUR_CLIENT_ID}
       - APP_VERSION=${APP_VERSION}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:27272/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - pickanet
   nginx:
@@ -33,7 +38,8 @@ services:
     networks:
       - pickanet
     depends_on:
-      - web
+      web:
+        condition: service_healthy
   certbot:
     image: certbot/certbot
     restart: unless-stopped
