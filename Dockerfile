@@ -14,8 +14,11 @@ RUN pip install git+https://github.com/pypa/pip.git@7daeda1cb53546615a8c75161028
 RUN pip install --no-cache-dir setuptools==78.1.1
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code
-COPY . .
+# Create a non-root user
+RUN useradd -m -u 1000 appuser
+
+# Copy the application code with correct ownership
+COPY --chown=appuser:appuser . .
 
 # Copy the new redirecting index.html to the nginx root
 COPY index.html /var/www/html/index.html
@@ -26,6 +29,9 @@ COPY pickaladder/static/ /var/www/html/static/
 
 # Expose the port
 EXPOSE 27272
+
+# Switch to the non-root user
+USER appuser
 
 # Run the application
 CMD ["gunicorn", "--bind", "0.0.0.0:27272", "--timeout", "120", "app:app"]
