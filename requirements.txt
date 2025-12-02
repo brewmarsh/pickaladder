@@ -8,7 +8,7 @@ Flask-WTF==1.2.2
 types-WTForms==3.2.1.20250809
 imgur-python==0.2.4
 types-Pillow==10.2.0.20240822
-bandit==1.8.6
+bandit==1.9.2
 mypy==1.19.0
 firebase-admin==7.1.0
 mkdocs==1.6.1
