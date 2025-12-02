@@ -10,6 +10,19 @@ CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
 
 echo ">>> Checking for existing certificate at $CERT_DIR..."
 
+# Check for dummy certificate or incomplete state
+if [ -d "$CERT_DIR" ]; then
+    if [ -f "$CERT_DIR/fullchain.pem" ]; then
+        if sudo openssl x509 -in "$CERT_DIR/fullchain.pem" -text -noout | grep -q "CN.*=.*localhost"; then
+            echo ">>> Detected dummy certificate. Removing to force regeneration..."
+            sudo rm -rf "$CERT_DIR"
+        fi
+    else
+        echo ">>> Certificate directory exists but fullchain.pem is missing. Removing..."
+        sudo rm -rf "$CERT_DIR"
+    fi
+fi
+
 # The main deployment logic is wrapped in this if/else block.
 # If a certificate already exists, we just start the services.
 # If not, we run the one-time generation process.
