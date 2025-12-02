@@ -3,7 +3,7 @@ services:
     build: .
     volumes:
       - .:/app
-    command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
+    command: gunicorn --bind 0.0.0.0:27272 --workers 2 --threads 4 --worker-class gthread --timeout 120 app:app
     env_file:
       - .env
     networks:

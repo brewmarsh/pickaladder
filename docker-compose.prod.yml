@@ -2,7 +2,7 @@ services:
   web:
     image: ${IMAGE_TAG}
     restart: always
-    command: gunicorn --bind 0.0.0.0:27272 --timeout 120 app:app
+    command: gunicorn --bind 0.0.0.0:27272 --workers 2 --threads 4 --worker-class gthread --timeout 120 app:app
     environment:
       # These variables should be set in the production environment (e.g., GitHub Secrets)
       - SECRET_KEY=${SECRET_KEY}
