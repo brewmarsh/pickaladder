@@ -64,6 +64,11 @@ fi
 
 # 5. Start or restart all services with the final configuration and real certificate.
 echo ">>> Starting all services for production..."
-docker-compose -f docker-compose.prod.yml up --build -d
+
+# Cleanup legacy containers if they exist (to fix port conflicts during renaming)
+echo ">>> Removing legacy containers to prevent conflicts..."
+docker rm -f picka-server_nginx_1 picka-server_web_1 picka-server_certbot_1 2>/dev/null || true
+
+docker-compose -f docker-compose.prod.yml up --build -d --remove-orphans
 
 echo ">>> Deployment script finished successfully."
