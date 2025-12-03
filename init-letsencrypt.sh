@@ -3,8 +3,8 @@ set -e
 
 # Cleanup legacy containers if they exist (to fix port conflicts during renaming)
 echo ">>> Removing legacy containers to prevent conflicts..."
-# Remove by specific names used in docker-compose.prod.yml
-docker rm -f picka-web picka-nginx picka-certbot 2>/dev/null || true
+# Remove by specific names used in docker-compose.prod.yml (and potential old names)
+docker rm -f picka-frontend picka-server_nginx picka-certbot picka-certbot-init picka-web picka-nginx 2>/dev/null || true
 # Remove by project label to catch old containers with default names (e.g., picka-server_web_1)
 # This fixes the KeyError: 'ContainerConfig' on legacy Docker Compose
 CONTAINERS=$(docker ps -a --filter "label=com.docker.compose.project=picka-server" -q)
@@ -80,7 +80,7 @@ else
     # We remove the dummy files before certbot runs.
     echo ">>> Requesting real certificate from Let's Encrypt..."
     sudo rm -rf $CERT_DIR
-    docker-compose -f docker-compose.prod.yml run --rm certbot certonly --webroot \
+    docker-compose -f docker-compose.prod.yml run --name picka-certbot-init --rm certbot certonly --webroot \
         --webroot-path /var/www/certbot \
         --email $EMAIL \
         --agree-tos \
