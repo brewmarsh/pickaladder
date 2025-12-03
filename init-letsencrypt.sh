@@ -3,7 +3,14 @@ set -e
 
 # Cleanup legacy containers if they exist (to fix port conflicts during renaming)
 echo ">>> Removing legacy containers to prevent conflicts..."
-docker rm -f picka-server_nginx_1 picka-server_web_1 picka-server_certbot_1 2>/dev/null || true
+# Remove by specific names used in docker-compose.prod.yml
+docker rm -f picka-web picka-nginx picka-certbot 2>/dev/null || true
+# Remove by project label to catch old containers with default names (e.g., picka-server_web_1)
+# This fixes the KeyError: 'ContainerConfig' on legacy Docker Compose
+CONTAINERS=$(docker ps -a --filter "label=com.docker.compose.project=picka-server" -q)
+if [ -n "$CONTAINERS" ]; then
+    docker rm -f $CONTAINERS
+fi
 
 # This script is designed to be run by the CI/CD pipeline on the production server.
 # It handles the initial Let's Encrypt certificate generation automatically.
