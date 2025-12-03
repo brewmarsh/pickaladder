@@ -27,10 +27,14 @@ if [ -d "$CERT_DIR" ]; then
         if sudo openssl x509 -in "$CERT_DIR/fullchain.pem" -text -noout | grep -q "CN.*=.*localhost"; then
             echo ">>> Detected dummy certificate. Removing to force regeneration..."
             sudo rm -rf "$CERT_DIR"
+            sudo rm -rf "/etc/letsencrypt/archive/$DOMAIN"
+            sudo rm -rf "/etc/letsencrypt/renewal/$DOMAIN.conf"
         fi
     else
         echo ">>> Certificate directory exists but fullchain.pem is missing. Removing..."
         sudo rm -rf "$CERT_DIR"
+        sudo rm -rf "/etc/letsencrypt/archive/$DOMAIN"
+        sudo rm -rf "/etc/letsencrypt/renewal/$DOMAIN.conf"
     fi
 fi
 
@@ -41,6 +45,10 @@ if [ -d "$CERT_DIR" ]; then
     echo "Certificate found. Starting services..."
 else
     echo "Certificate not found. Starting first-time generation process..."
+
+    # Ensure clean slate
+    sudo rm -rf "/etc/letsencrypt/archive/$DOMAIN"
+    sudo rm -rf "/etc/letsencrypt/renewal/$DOMAIN.conf"
 
     # 1. Create dummy certificate files so Nginx can start
     echo ">>> Creating dummy certificate..."
@@ -54,6 +62,19 @@ else
     # automatically wait for the web service to be ready.
     echo ">>> Starting web and nginx with dummy certificate..."
     docker-compose -f docker-compose.prod.yml up -d web nginx
+
+    # Wait for Nginx to be fully up and running
+    echo ">>> Waiting for Nginx to launch on port 80..."
+    RETRIES=0
+    while ! curl -s --head http://localhost > /dev/null; do
+        RETRIES=$((RETRIES+1))
+        if [ $RETRIES -gt 60 ]; then
+             echo "Error: Nginx failed to start after 60 seconds."
+             exit 1
+        fi
+        sleep 1
+    done
+    echo ">>> Nginx is up!"
 
     # 3. Replace the dummy certificate with a real one from Let's Encrypt.
     # We remove the dummy files before certbot runs.
