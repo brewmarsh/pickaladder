@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Cleanup legacy containers if they exist (to fix port conflicts during renaming)
+echo ">>> Removing legacy containers to prevent conflicts..."
+docker rm -f picka-server_nginx_1 picka-server_web_1 picka-server_certbot_1 2>/dev/null || true
+
 # This script is designed to be run by the CI/CD pipeline on the production server.
 # It handles the initial Let's Encrypt certificate generation automatically.
 
@@ -64,11 +68,6 @@ fi
 
 # 5. Start or restart all services with the final configuration and real certificate.
 echo ">>> Starting all services for production..."
-
-# Cleanup legacy containers if they exist (to fix port conflicts during renaming)
-echo ">>> Removing legacy containers to prevent conflicts..."
-docker rm -f picka-server_nginx_1 picka-server_web_1 picka-server_certbot_1 2>/dev/null || true
-
 docker-compose -f docker-compose.prod.yml up --build -d --remove-orphans
 
 echo ">>> Deployment script finished successfully."
