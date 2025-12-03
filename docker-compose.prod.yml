@@ -1,5 +1,6 @@
 services:
   web:
+    container_name: picka-web
     image: ${IMAGE_TAG}
     restart: always
     command: gunicorn --bind 0.0.0.0:27272 --workers 2 --threads 4 --worker-class gthread --timeout 120 app:app
@@ -25,6 +26,7 @@ services:
     networks:
       - pickanet
   nginx:
+    container_name: picka-nginx
     build:
       context: ./nginx
       dockerfile: Dockerfile.prod
@@ -41,6 +43,7 @@ services:
       web:
         condition: service_healthy
   certbot:
+    container_name: picka-certbot
     image: certbot/certbot
     restart: unless-stopped
     volumes:
