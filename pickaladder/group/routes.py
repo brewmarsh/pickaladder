@@ -1,14 +1,25 @@
 """Routes for the group blueprint."""
 
+import secrets
 from dataclasses import dataclass
 
-from firebase_admin import firestore
-from flask import flash, g, redirect, render_template, request, url_for
+from firebase_admin import firestore, storage
+from flask import (
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.group.utils import get_group_leaderboard
+from pickaladder.utils import send_email
 
 from . import bp
-from .forms import GroupForm, InviteFriendForm
+from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
 
 
 @dataclass
@@ -96,6 +107,7 @@ def view_group(group_id):
         return redirect(url_for(".view_groups"))
 
     group_data = group.to_dict()
+    group_data["id"] = group.id
     current_user_id = g.user["uid"]
     user_ref = db.collection("users").document(current_user_id)
 
@@ -118,7 +130,7 @@ def view_group(group_id):
         if owner_doc.exists:
             owner = owner_doc.to_dict()
 
-    # --- Invite form logic ---
+    # --- Invite form logic (Existing Friend) ---
     form = InviteFriendForm()
 
     # Get user's accepted friends
@@ -146,7 +158,7 @@ def view_group(group_id):
         for friend in eligible_friends
     ]
 
-    if form.validate_on_submit():
+    if form.validate_on_submit() and "friend" in request.form:
         friend_id = form.friend.data
         friend_ref = db.collection("users").document(friend_id)
         try:
@@ -156,6 +168,41 @@ def view_group(group_id):
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
 
+    # --- Invite by Email Logic ---
+    invite_email_form = InviteByEmailForm()
+    if invite_email_form.validate_on_submit() and "email" in request.form:
+        try:
+            name = invite_email_form.name.data or "Friend"
+            email = invite_email_form.email.data
+            token = secrets.token_urlsafe(32)
+            invite_data = {
+                "group_id": group_id,
+                "email": email,
+                "name": name,
+                "inviter_id": current_user_id,
+                "created_at": firestore.SERVER_TIMESTAMP,
+                "used": False,
+            }
+            db.collection("group_invites").document(token).set(invite_data)
+
+            invite_url = url_for(".handle_invite", token=token, _external=True)
+
+            send_email(
+                to=email,
+                subject=f"Join {group_data.get('name')} on Pick a Ladder!",
+                template="email/group_invite.html",
+                name=name,
+                group_name=group_data.get("name"),
+                invite_url=invite_url,
+            )
+            flash(f"Invitation sent to {email}.", "success")
+            return redirect(url_for(".view_group", group_id=group_id))
+        except Exception as e:
+            flash(f"An error occurred sending the invitation: {e}", "danger")
+
+    # --- Leaderboard ---
+    leaderboard = get_group_leaderboard(group_id)
+
     return render_template(
         "group.html",
         group=group_data,
@@ -163,7 +210,9 @@ def view_group(group_id):
         members=members,
         owner=owner,
         form=form,
+        invite_email_form=invite_email_form,
         current_user_id=current_user_id,
+        leaderboard=leaderboard,
     )
 
 
@@ -179,6 +228,7 @@ def create_group():
             group_data = {
                 "name": form.name.data,
                 "description": form.description.data,
+                "location": form.location.data,
                 "is_public": form.is_public.data,
                 "ownerRef": user_ref,
                 "members": [user_ref],  # Owner is the first member
@@ -212,13 +262,27 @@ def edit_group(group_id):
     form = GroupForm(data=group_data)
     if form.validate_on_submit():
         try:
-            group_ref.update(
-                {
-                    "name": form.name.data,
-                    "description": form.description.data,
-                    "is_public": form.is_public.data,
-                }
-            )
+            update_data = {
+                "name": form.name.data,
+                "description": form.description.data,
+                "location": form.location.data,
+                "is_public": form.is_public.data,
+            }
+
+            profile_picture_file = form.profile_picture.data
+            if profile_picture_file:
+                filename = secure_filename(
+                    profile_picture_file.filename or "group_profile.jpg"
+                )
+                bucket = storage.bucket()
+                blob = bucket.blob(f"group_pictures/{group_id}/{filename}")
+
+                blob.upload_from_file(profile_picture_file)
+                blob.make_public()
+
+                update_data["profilePictureUrl"] = blob.public_url
+
+            group_ref.update(update_data)
             flash("Group updated successfully.", "success")
             return redirect(url_for(".view_group", group_id=group.id))
         except Exception as e:
@@ -227,6 +291,39 @@ def edit_group(group_id):
     return render_template(
         "edit_group.html", form=form, group=group_data, group_id=group.id
     )
+
+
+@bp.route("/invite/<token>")
+@login_required
+def handle_invite(token):
+    """Handle an invitation link."""
+    db = firestore.client()
+    invite_ref = db.collection("group_invites").document(token)
+    invite = invite_ref.get()
+
+    if not invite.exists:
+        flash("Invalid invitation link.", "danger")
+        return redirect(url_for("main.index"))
+
+    invite_data = invite.to_dict()
+    if invite_data.get("used"):
+        flash("This invitation has already been used.", "warning")
+        return redirect(url_for("main.index"))
+
+    group_id = invite_data.get("group_id")
+    group_ref = db.collection("groups").document(group_id)
+    user_ref = db.collection("users").document(g.user["uid"])
+
+    try:
+        # Add user to group
+        group_ref.update({"members": firestore.ArrayUnion([user_ref])})
+        # Mark invite as used
+        invite_ref.update({"used": True, "used_by": g.user["uid"]})
+        flash("Welcome to the team!", "success")
+        return redirect(url_for(".view_group", group_id=group_id))
+    except Exception as e:
+        flash(f"An error occurred while joining the group: {e}", "danger")
+        return redirect(url_for("main.index"))
 
 
 @bp.route("/<string:group_id>/delete", methods=["POST"])
