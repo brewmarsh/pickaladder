@@ -102,7 +102,13 @@ def view_group(group_id):
     # Fetch members' data
     member_refs = group_data.get("members", [])
     member_ids = {ref.id for ref in member_refs}
-    members = [ref.get() for ref in member_refs]
+    members_snapshots = [ref.get() for ref in member_refs]
+    members = []
+    for snapshot in members_snapshots:
+        if snapshot.exists:
+            data = snapshot.to_dict()
+            data["id"] = snapshot.id
+            members.append(data)
 
     # Fetch owner's data
     owner = None
