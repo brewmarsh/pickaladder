@@ -6,6 +6,7 @@ import uuid
 import firebase_admin
 from firebase_admin import credentials, firestore
 from flask import Flask, current_app, g, session
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
 
 from .extensions import csrf, mail
@@ -35,7 +36,7 @@ def create_app(test_config=None):
 
     # Load configuration
     app.config.from_mapping(
-        SECRET_KEY=os.urandom(24),
+        SECRET_KEY=os.environ.get("SECRET_KEY", "dev"),
         # Default mail settings, can be overridden in config.py
         MAIL_SERVER=os.environ.get("MAIL_SERVER", "smtp.gmail.com"),
         MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
@@ -181,5 +182,7 @@ def create_app(test_config=None):
     def inject_version():
         """Injects the application version into the template context."""
         return dict(app_version=os.environ.get("APP_VERSION", "dev"))
+
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     return app

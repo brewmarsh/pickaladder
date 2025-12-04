@@ -1,6 +1,6 @@
 services:
   web:
-    container_name: picka-web
+    container_name: picka-frontend
     build: .
     volumes:
       - .:/app
@@ -10,7 +10,7 @@ services:
     networks:
       - pickanet
   nginx:
-    container_name: picka-nginx
+    container_name: picka-server_nginx
     build: ./nginx
     ports:
       - "80:80"
