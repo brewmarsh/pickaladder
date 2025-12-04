@@ -36,17 +36,16 @@ def create_app(test_config=None):
 
     # Load configuration
     app.config.from_mapping(
-        SECRET_KEY=os.environ.get("SECRET_KEY", "dev"),
+        SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
         # Default mail settings, can be overridden in config.py
-        MAIL_SERVER=os.environ.get("MAIL_SERVER", "smtp.gmail.com"),
+        MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
         MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
         MAIL_USE_TLS=os.environ.get("MAIL_USE_TLS", "true").lower()
         in ["true", "1", "t"],
         MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
         MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
-        MAIL_DEFAULT_SENDER=os.environ.get(
-            "MAIL_DEFAULT_SENDER", "noreply@pickaladder.com"
-        ),
+        MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
+        or "noreply@pickaladder.com",
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 

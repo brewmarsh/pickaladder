@@ -66,6 +66,7 @@ jobs:
           username: ${{ secrets.HOSTINGER_USERNAME }}
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
           port: 22
+          timeout: 30m
           script: |
             cd ~/picka-server
             chmod +x init-letsencrypt.sh

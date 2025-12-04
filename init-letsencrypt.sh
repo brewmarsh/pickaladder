@@ -89,7 +89,7 @@ else
     # We remove the dummy files before certbot runs.
     echo ">>> Requesting real certificate from Let's Encrypt..."
     sudo rm -rf $CERT_DIR
-    docker-compose -f docker-compose.prod.yml run --name picka-certbot-init --rm certbot certonly --webroot \
+    docker-compose -f docker-compose.prod.yml run --name picka-certbot-init --rm --entrypoint certbot certbot certonly --webroot \
         --webroot-path /var/www/certbot \
         --email $EMAIL \
         --agree-tos \
