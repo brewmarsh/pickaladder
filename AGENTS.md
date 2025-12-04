@@ -4,7 +4,7 @@ This document provides instructions for agents working on this project. By follo
 
 ## 1. High-Level Architectural Overview
 
-This is a monolithic web application built with **Flask**. The frontend is rendered server-side using **Jinja2 templates**. The application uses a **PostgreSQL** database and the **SQLAlchemy ORM** (via the `Flask-SQLAlchemy` extension).
+This is a monolithic web application built with **Flask**. The frontend is rendered server-side using **Jinja2 templates**. The application uses **Google Firebase** for its backend services: **Firebase Authentication** for user management, **Cloud Firestore** as the NoSQL database, and **Firebase Storage** for file storage.
 
 The Flask application is organized into blueprints. The main application is configured in `pickaladder/__init__.py`.
 
@@ -15,8 +15,6 @@ The Flask application is organized into blueprints. The main application is conf
 When getting started, it's helpful to review these key files to understand the application's structure and logic.
 
 *   `pickaladder/__init__.py`: The main Flask application factory. This is where the app is created and configured, and blueprints are registered.
-*   `init.sql`: The database schema. This is the source of truth for the database structure.
-*   `pickaladder/models.py`: Defines the SQLAlchemy database models.
 *   `pickaladder/auth/routes.py`: Handles user registration, login, and authentication logic.
 *   `pickaladder/user/routes.py`: Handles user profiles, friends, and other user-centric features.
 *   `pickaladder/match/routes.py`: Handles match creation and viewing the leaderboard.
@@ -86,10 +84,10 @@ Before submitting your code, please run the following checks to ensure code qual
 *   **Separation of Concerns:** Ensure that code is organized according to its purpose. For example, database interaction logic should be in a data access layer, business logic in a service layer, and presentation logic in the routes and templates. Refactor code that violates this principle.
 
 ### Database
-*   **Use the ORM:** Use the SQLAlchemy ORM for all database interactions. The models are defined in `pickaladder/models.py`.
-*   **Database Migrations:** This project uses a simple, manual migration system. To make a change to the database schema, create a new SQL file in the `migrations/` directory. The file should be named with a number and a descriptive name, e.g., `migrations/9_add_new_feature_table.sql`. The `migrate.py` script will run these migrations in order.
-*   **Beware N+1 Queries:** When fetching lists of items that have related data, be mindful of the N+1 query problem. Use SQLAlchemy's relationship loading strategies (e.g., `joinedload`, `subqueryload`) to fetch all necessary data in a single, efficient query.
-*   **Subquery Best Practices:** When using a subquery in an `IN` clause, you may see a `SAWarning: Coercing Subquery object into a select()`. To resolve this, explicitly call `.select()` on the subquery object (e.g., `filter(MyModel.id.in_(my_subquery.select()))`).
+*   **Firestore:** The application uses Google Cloud Firestore as its NoSQL database.
+*   **Data Models:** While Firestore is schema-less, the application generally follows a structured data model.
+*   **Batch Operations:** Use batch writes when updating multiple documents to ensure atomicity.
+*   **Indexing:** Be mindful of query requirements. Firestore requires composite indexes for complex queries involving multiple fields or sorting orders.
 
 ### Security
 *   **CSRF Protection:** All forms and endpoints that perform state-changing actions (POST, PUT, DELETE requests) must be protected against Cross-Site Request Forgery (CSRF).

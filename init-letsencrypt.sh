@@ -3,14 +3,23 @@ set -e
 
 # Cleanup legacy containers if they exist (to fix port conflicts during renaming)
 echo ">>> Removing legacy containers to prevent conflicts..."
-# Remove by specific names used in docker-compose.prod.yml (and potential old names)
-docker rm -f picka-frontend picka-server_nginx picka-certbot picka-certbot-init picka-web picka-nginx 2>/dev/null || true
-# Remove by project label to catch old containers with default names (e.g., picka-server_web_1)
-# This fixes the KeyError: 'ContainerConfig' on legacy Docker Compose
-CONTAINERS=$(docker ps -a --filter "label=com.docker.compose.project=picka-server" -q)
-if [ -n "$CONTAINERS" ]; then
-    docker rm -f $CONTAINERS
+
+# 1. Try to take down the project gracefully
+# We ignore errors here because the state might be corrupted (hence the KeyError)
+docker-compose -f docker-compose.prod.yml down --remove-orphans || true
+
+# 2. Force remove containers by label (matches any container in the project)
+# This finds all containers belonging to 'picka-server' project
+container_ids=$(docker ps -a --filter "label=com.docker.compose.project=picka-server" -q)
+if [ -n "$container_ids" ]; then
+    echo ">>> Removing containers by label: $container_ids"
+    docker rm -f $container_ids || true
 fi
+
+# 3. Force remove by known names (legacy and new) just in case labels are missing
+# or the project name was different in the past.
+docker rm -f picka-server_nginx_1 picka-server_web_1 picka-server_certbot_1 \
+             picka-web picka-nginx picka-certbot 2>/dev/null || true
 
 # This script is designed to be run by the CI/CD pipeline on the production server.
 # It handles the initial Let's Encrypt certificate generation automatically.
