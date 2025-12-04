@@ -40,7 +40,9 @@ def create_app(test_config=None):
         # Default mail settings, can be overridden in config.py
         MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
         MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
-        MAIL_USE_TLS=os.environ.get("MAIL_USE_TLS", "true").lower()
+        MAIL_USE_TLS=(os.environ.get("MAIL_USE_TLS") or "true").lower()
+        in ["true", "1", "t"],
+        MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower()
         in ["true", "1", "t"],
         MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
         MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
