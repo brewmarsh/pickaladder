@@ -36,7 +36,7 @@ def create_app(test_config=None):
 
     # Load configuration
     app.config.from_mapping(
-        SECRET_KEY=os.urandom(24),
+        SECRET_KEY=os.environ.get("SECRET_KEY", "dev"),
         # Default mail settings, can be overridden in config.py
         MAIL_SERVER=os.environ.get("MAIL_SERVER", "smtp.gmail.com"),
         MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
