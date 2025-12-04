@@ -97,17 +97,43 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
+                console.error("Login error:", error);
                 const errorCode = error.code;
-                const errorMessage = error.message;
+                let errorMessage = error.message;
+
+                // Attempt to parse JSON error message
+                if (typeof errorMessage === 'string' && errorMessage.startsWith('{')) {
+                    try {
+                        const parsedError = JSON.parse(errorMessage);
+                        if (parsedError.error && parsedError.error.message) {
+                            errorMessage = parsedError.error.message;
+                        } else if (parsedError.message) {
+                            errorMessage = parsedError.message;
+                        }
+                    } catch (e) {
+                        // Ignore parse error
+                    }
+                }
+
                 const flashes = document.querySelector('.flashes');
                 flashes.innerHTML = ''; // Clear previous messages
                 const flash = document.createElement('div');
                 flash.className = 'alert';
 
+                const invalidCredentialsCodes = [
+                    'auth/wrong-password',
+                    'auth/user-not-found',
+                    'auth/invalid-login-credentials',
+                    'INVALID_LOGIN_CREDENTIALS'
+                ];
+
                 if (errorCode === 'auth/user-disabled') {
                     flash.classList.add('alert-warning');
                     flash.textContent = 'Please verify your email address before logging in.';
-                } else if (errorCode === 'auth/wrong-password' || errorCode === 'auth/user-not-found') {
+                } else if (
+                    invalidCredentialsCodes.includes(errorCode) ||
+                    invalidCredentialsCodes.includes(errorMessage)
+                ) {
                     flash.classList.add('alert-danger');
                     flash.textContent = 'Invalid email or password.';
                 } else {
