@@ -254,6 +254,7 @@ def edit_group(group_id):
         return redirect(url_for(".view_groups"))
 
     group_data = group.to_dict()
+    group_data["id"] = group.id
     owner_ref = group_data.get("ownerRef")
     if not owner_ref or owner_ref.id != g.user["uid"]:
         flash("You do not have permission to edit this group.", "danger")
