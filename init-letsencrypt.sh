@@ -97,6 +97,19 @@ else
     done
     echo ">>> Nginx is up!"
 
+    # Verify that Nginx can serve files from the webroot
+    echo ">>> Verifying Nginx webroot serving..."
+    mkdir -p "$DATA_PATH/www/.well-known/acme-challenge"
+    echo "success" > "$DATA_PATH/www/.well-known/acme-challenge/test-challenge"
+    if curl -s "http://localhost/.well-known/acme-challenge/test-challenge" | grep -q "success"; then
+        echo ">>> Nginx is correctly serving challenge files."
+    else
+        echo "Error: Nginx failed to serve test challenge file."
+        echo "Debug: curl output:"
+        curl -v "http://localhost/.well-known/acme-challenge/test-challenge"
+        exit 1
+    fi
+
     # 3. Replace the dummy certificate with a real one from Let's Encrypt.
     # We remove the dummy files before certbot runs.
     echo ">>> Requesting real certificate from Let's Encrypt..."
