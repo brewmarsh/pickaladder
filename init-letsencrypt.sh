@@ -33,6 +33,28 @@ if command -v lsof >/dev/null; then
     done
 fi
 
+# Verification: Check if ports are actually free
+echo ">>> Verifying ports 80 and 443 are free..."
+for port in 80 443; do
+    # Check using lsof if available
+    if command -v lsof >/dev/null; then
+        if sudo lsof -i :$port -t >/dev/null 2>&1; then
+             echo "WARNING: Port $port appears to still be in use by:"
+             sudo lsof -i :$port
+        else
+             echo ">>> Port $port is free (verified by lsof)."
+        fi
+    else
+        # Fallback check using docker (less comprehensive but better than nothing)
+        if [ -n "$(docker ps -q --filter "publish=$port")" ]; then
+             echo "WARNING: A Docker container is still holding port $port:"
+             docker ps --filter "publish=$port"
+        else
+             echo ">>> Port $port is free of Docker containers."
+        fi
+    fi
+done
+
 # 1. Try to take down the project gracefully
 # We ignore errors here because the state might be corrupted (hence the KeyError)
 docker-compose -f docker-compose.prod.yml down --remove-orphans || true
