@@ -4,6 +4,12 @@ set -e
 # Cleanup legacy containers if they exist (to fix port conflicts during renaming)
 echo ">>> Removing legacy containers to prevent conflicts..."
 
+# Stop conflicting host services (nginx/apache) that might bind to port 80/443
+echo ">>> Stopping conflicting host web services..."
+sudo systemctl stop nginx 2>/dev/null || true
+sudo systemctl stop apache2 2>/dev/null || true
+sudo systemctl stop httpd 2>/dev/null || true
+
 # 1. Try to take down the project gracefully
 # We ignore errors here because the state might be corrupted (hence the KeyError)
 docker-compose -f docker-compose.prod.yml down --remove-orphans || true
@@ -59,6 +65,11 @@ else
     # Ensure clean slate
     sudo rm -rf "$DATA_PATH/conf/archive/$DOMAIN"
     sudo rm -rf "$DATA_PATH/conf/renewal/$DOMAIN.conf"
+
+    # Create webroot directory with proper permissions
+    echo ">>> Creating webroot directory..."
+    sudo mkdir -p "$DATA_PATH/www"
+    sudo chmod -R 755 "$DATA_PATH/www"
 
     # 1. Create dummy certificate files so Nginx can start
     echo ">>> Creating dummy certificate..."
