@@ -62,6 +62,66 @@
             <input type="submit" value="Send Invite" class="btn">
         </form>
 
+        {% if pending_invites %}
+        <h3 style="margin-top: 20px;">Pending Invites</h3>
+        <div class="table-container">
+            <table class="table responsive-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invite in pending_invites %}
+                    <tr>
+                        <td data-label="Name">{{ invite.name }}</td>
+                        <td data-label="Email">{{ invite.email }}</td>
+                        <td data-label="Status">
+                            {% if invite.status == 'failed' %}
+                                <span class="badge danger" title="{{ invite.last_error }}">Failed</span>
+                            {% elif invite.status == 'sending' %}
+                                <span class="badge warning">Sending...</span>
+                            {% elif invite.status == 'sent' %}
+                                <span class="badge success">Sent</span>
+                            {% else %}
+                                <span class="badge">{{ invite.status or 'Pending' }}</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Actions">
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                <form method="post" action="{{ url_for('group.resend_invite', token=invite.token) }}" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <!-- Simple inline update for email if failed -->
+                                    {% if invite.status == 'failed' %}
+                                    <div class="input-group" style="margin-bottom: 5px;">
+                                        <input type="email" name="email" value="{{ invite.email }}" required class="form-control" style="padding: 5px; width: 150px;">
+                                    </div>
+                                    {% endif %}
+                                    <button type="submit" class="btn small">
+                                        {% if invite.status == 'failed' %}Retry{% else %}Resend{% endif %}
+                                    </button>
+                                </form>
+                                <form method="post" action="{{ url_for('group.delete_invite', token=invite.token) }}" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-danger small" onclick="return confirm('Cancel this invitation?')">Cancel</button>
+                                </form>
+                            </div>
+                            {% if invite.status == 'failed' and invite.last_error %}
+                                <div style="font-size: 0.8em; color: red; margin-top: 5px; max-width: 200px; word-wrap: break-word;">
+                                    {{ invite.last_error }}
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
         <h3 style="margin-top: 20px;">Danger Zone</h3>
         <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

@@ -26,7 +26,8 @@ docker rm -f picka-server_nginx_1 picka-server_web_1 picka-server_certbot_1 \
 
 DOMAIN="pickaladder.io"
 EMAIL="pickaladder@gmail.com"
-CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
+DATA_PATH="./certbot"
+CERT_DIR="$DATA_PATH/conf/live/$DOMAIN"
 
 echo ">>> Checking for existing certificate at $CERT_DIR..."
 
@@ -36,14 +37,14 @@ if [ -d "$CERT_DIR" ]; then
         if sudo openssl x509 -in "$CERT_DIR/fullchain.pem" -text -noout | grep -q "CN.*=.*localhost"; then
             echo ">>> Detected dummy certificate. Removing to force regeneration..."
             sudo rm -rf "$CERT_DIR"
-            sudo rm -rf "/etc/letsencrypt/archive/$DOMAIN"
-            sudo rm -rf "/etc/letsencrypt/renewal/$DOMAIN.conf"
+            sudo rm -rf "$DATA_PATH/conf/archive/$DOMAIN"
+            sudo rm -rf "$DATA_PATH/conf/renewal/$DOMAIN.conf"
         fi
     else
         echo ">>> Certificate directory exists but fullchain.pem is missing. Removing..."
         sudo rm -rf "$CERT_DIR"
-        sudo rm -rf "/etc/letsencrypt/archive/$DOMAIN"
-        sudo rm -rf "/etc/letsencrypt/renewal/$DOMAIN.conf"
+        sudo rm -rf "$DATA_PATH/conf/archive/$DOMAIN"
+        sudo rm -rf "$DATA_PATH/conf/renewal/$DOMAIN.conf"
     fi
 fi
 
@@ -56,8 +57,8 @@ else
     echo "Certificate not found. Starting first-time generation process..."
 
     # Ensure clean slate
-    sudo rm -rf "/etc/letsencrypt/archive/$DOMAIN"
-    sudo rm -rf "/etc/letsencrypt/renewal/$DOMAIN.conf"
+    sudo rm -rf "$DATA_PATH/conf/archive/$DOMAIN"
+    sudo rm -rf "$DATA_PATH/conf/renewal/$DOMAIN.conf"
 
     # 1. Create dummy certificate files so Nginx can start
     echo ">>> Creating dummy certificate..."
