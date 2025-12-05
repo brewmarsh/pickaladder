@@ -1,39 +1,62 @@
+"""Tests for email error handling logic."""
 
-import unittest
-from unittest.mock import patch, MagicMock
 import smtplib
-from pickaladder.utils import send_email, EmailError
+import unittest
+from unittest.mock import patch
+
 from pickaladder import create_app
+from pickaladder.utils import EmailError, send_email
+
 
 class TestEmailErrors(unittest.TestCase):
+    """Test cases for email sending error handling."""
+
     def setUp(self):
+        """Set up the test environment."""
         self.app = create_app({"TESTING": True, "MAIL_SUPPRESS_SEND": False})
         self.ctx = self.app.app_context()
         self.ctx.push()
 
     def tearDown(self):
+        """Tear down the test environment."""
         self.ctx.pop()
 
     @patch("pickaladder.utils.mail.send")
     def test_send_email_smtp_534(self, mock_send):
+        """Test that SMTP 534 errors are converted to friendly EmailErrors."""
         # specific 534 error
-        error_msg = b'5.7.9 Please log in with your web browser and then try again...'
+        error_msg = b"5.7.9 Please log in with your web browser and then try again..."
         mock_send.side_effect = smtplib.SMTPAuthenticationError(534, error_msg)
 
         # We expect EmailError to be raised with a friendly message
         with self.assertRaises(EmailError) as cm:
-            send_email("test@example.com", "Subject", "email/group_invite.html",
-                       name="Test", group_name="TestGroup", invite_url="http://example.com")
+            send_email(
+                "test@example.com",
+                "Subject",
+                "email/group_invite.html",
+                name="Test",
+                group_name="TestGroup",
+                invite_url="http://example.com",
+            )
 
-        self.assertIn("Google requires you to sign in via a web browser", str(cm.exception))
+        self.assertIn(
+            "Google requires you to sign in via a web browser", str(cm.exception)
+        )
 
     @patch("pickaladder.utils.mail.send")
     def test_send_email_generic_error(self, mock_send):
+        """Test that generic exceptions are wrapped in EmailError."""
         # Generic error
         mock_send.side_effect = Exception("Some other error")
 
         with self.assertRaises(EmailError) as cm:
-            send_email("test@example.com", "Subject", "email/group_invite.html",
-                       name="Test", group_name="TestGroup", invite_url="http://example.com")
+            send_email(
+                "test@example.com",
+                "Subject",
+                "email/group_invite.html",
+                name="Test",
+                group_name="TestGroup",
+                invite_url="http://example.com",
+            )
 
         self.assertIn("Failed to send email: Some other error", str(cm.exception))
