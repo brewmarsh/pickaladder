@@ -68,6 +68,7 @@ jobs:
           port: 22
           timeout: 30m
           script: |
+            set -e
             cd ~/picka-server
             chmod +x init-letsencrypt.sh
             chmod +x verify_production.sh
