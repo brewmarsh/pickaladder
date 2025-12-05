@@ -100,7 +100,14 @@ Before submitting your code, please run the following checks to ensure code qual
 *   **Update This File:** If you discover a new development technique, a useful debugging procedure, or a common pitfall, please update this `AGENTS.md` file to help future agents.
 *   **Update Other Docs:** As you make changes, ensure that `REQUIREMENTS.md` and `DESIGN.md` (if applicable) are also updated to reflect the new state of the application.
 
-## 6. Known Issues and Solutions
+## 6. Debugging Tools
+
+We have added scripts to assist with troubleshooting common issues.
+
+*   `./verify_production.sh`: Checks the status of production containers, Let's Encrypt certificates, and Nginx/Certbot logs. Run this on the production server if HTTPS fails.
+*   `./generate_local_certs.sh`: Generates self-signed SSL certificates for the local development environment (`nginx/ssl/self-signed.crt` and key). Use this if you see SSL errors when running `make up` locally.
+
+## 7. Known Issues and Solutions
 
 This section documents some of the issues that have been encountered in this project and their solutions.
 
