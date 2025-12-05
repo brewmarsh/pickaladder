@@ -56,7 +56,7 @@ jobs:
           username: ${{ secrets.HOSTINGER_USERNAME }}
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
           port: 22
-          source: "docker-compose.prod.yml,nginx,init-letsencrypt.sh"
+          source: "docker-compose.prod.yml,nginx,init-letsencrypt.sh,verify_production.sh"
           target: "~/picka-server"
 
       - name: Deploy to Hostinger VPS
@@ -70,6 +70,7 @@ jobs:
           script: |
             cd ~/picka-server
             chmod +x init-letsencrypt.sh
+            chmod +x verify_production.sh
 
             # Login to GitHub Container Registry
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
