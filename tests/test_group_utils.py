@@ -77,9 +77,11 @@ class TestGroupUtils(unittest.TestCase):
         self.assertEqual(leaderboard[0]["name"], "User 1")
         self.assertEqual(leaderboard[0]["wins"], 1)
         self.assertEqual(leaderboard[0]["losses"], 0)
+        self.assertEqual(leaderboard[0]["avg_score"], 11.0)
         self.assertEqual(leaderboard[1]["name"], "User 2")
         self.assertEqual(leaderboard[1]["wins"], 0)
         self.assertEqual(leaderboard[1]["losses"], 1)
+        self.assertEqual(leaderboard[1]["avg_score"], 5.0)
 
 
 if __name__ == "__main__":

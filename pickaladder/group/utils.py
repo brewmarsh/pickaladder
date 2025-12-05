@@ -34,7 +34,13 @@ def get_group_leaderboard(group_id):
 
     # In-memory store for player stats
     player_stats = {
-        ref.id: {"wins": 0, "losses": 0, "games": 0, "user_data": ref.get()}
+        ref.id: {
+            "wins": 0,
+            "losses": 0,
+            "games": 0,
+            "total_score": 0,
+            "user_data": ref.get(),
+        }
         for ref in member_refs
     }
 
@@ -62,6 +68,7 @@ def get_group_leaderboard(group_id):
 
         # Update stats for Player 1
         player_stats[p1_id]["games"] += 1
+        player_stats[p1_id]["total_score"] += p1_score
         if p1_score > p2_score:
             player_stats[p1_id]["wins"] += 1
         else:
@@ -69,6 +76,7 @@ def get_group_leaderboard(group_id):
 
         # Update stats for Player 2
         player_stats[p2_id]["games"] += 1
+        player_stats[p2_id]["total_score"] += p2_score
         if p2_score > p1_score:
             player_stats[p2_id]["wins"] += 1
         else:
@@ -87,6 +95,11 @@ def get_group_leaderboard(group_id):
                     "wins": stats["wins"],
                     "losses": stats["losses"],
                     "games_played": stats["games"],
+                    "avg_score": (
+                        stats["total_score"] / stats["games"]
+                        if stats["games"] > 0
+                        else 0
+                    ),
                 }
             )
 
