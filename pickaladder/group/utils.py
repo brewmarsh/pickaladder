@@ -96,8 +96,12 @@ def get_group_leaderboard(group_id):
                     "name": user_data.get("name", "N/A"),
                     "wins": stats["wins"],
                     "losses": stats["losses"],
-                    "games_played": games_played,
-                    "avg_score": avg_score,
+                    "games_played": stats["games"],
+                    "avg_score": (
+                        stats["total_score"] / stats["games"]
+                        if stats["games"] > 0
+                        else 0
+                    ),
                 }
             )
 

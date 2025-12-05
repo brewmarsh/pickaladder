@@ -1,6 +1,6 @@
 FROM nginx:1.26-alpine
 
-RUN apk add --no-cache netcat-openbsd
+RUN apk add --no-cache netcat-openbsd openssl
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY entrypoint.sh /entrypoint.sh
