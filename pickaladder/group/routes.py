@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from firebase_admin import firestore, storage
 from flask import (
+    current_app,
     flash,
     g,
     redirect,
@@ -15,7 +16,7 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.group.utils import get_group_leaderboard
+from pickaladder.group.utils import get_group_leaderboard, send_invite_email_background
 from pickaladder.utils import send_email
 
 from . import bp
@@ -130,6 +131,23 @@ def view_group(group_id):
         if owner_doc.exists:
             owner = owner_doc.to_dict()
 
+    # --- Fetch Pending Invites ---
+    pending_invites = []
+    if owner_ref and owner_ref.id == current_user_id:
+        invites_ref = db.collection("group_invites")
+        query = invites_ref.where(
+            filter=firestore.FieldFilter("group_id", "==", group_id)
+        ).where(filter=firestore.FieldFilter("used", "==", False))
+
+        pending_invites_docs = list(query.stream())
+        for doc in pending_invites_docs:
+            data = doc.to_dict()
+            data["token"] = doc.id
+            pending_invites.append(data)
+
+        # Sort in memory to avoid composite index requirement
+        pending_invites.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
+
     # --- Invite form logic (Existing Friend) ---
     form = InviteFriendForm()
 
@@ -182,23 +200,28 @@ def view_group(group_id):
                 "inviter_id": current_user_id,
                 "created_at": firestore.SERVER_TIMESTAMP,
                 "used": False,
+                "status": "sending",
             }
             db.collection("group_invites").document(token).set(invite_data)
 
             invite_url = url_for(".handle_invite", token=token, _external=True)
+            email_data = {
+                "to": email,
+                "subject": f"Join {group_data.get('name')} on Pick a Ladder!",
+                "template": "email/group_invite.html",
+                "name": name,
+                "group_name": group_data.get("name"),
+                "invite_url": invite_url,
+            }
 
-            send_email(
-                to=email,
-                subject=f"Join {group_data.get('name')} on Pick a Ladder!",
-                template="email/group_invite.html",
-                name=name,
-                group_name=group_data.get("name"),
-                invite_url=invite_url,
+            send_invite_email_background(
+                current_app._get_current_object(), token, email_data
             )
-            flash(f"Invitation sent to {email}.", "success")
+
+            flash(f"Invitation is being sent to {email}.", "info")
             return redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
-            flash(f"An error occurred sending the invitation: {e}", "danger")
+            flash(f"An error occurred creating the invitation: {e}", "danger")
 
     # --- Leaderboard ---
     leaderboard = get_group_leaderboard(group_id)
@@ -213,6 +236,7 @@ def view_group(group_id):
         invite_email_form=invite_email_form,
         current_user_id=current_user_id,
         leaderboard=leaderboard,
+        pending_invites=pending_invites,
     )
 
 
@@ -291,6 +315,85 @@ def edit_group(group_id):
     return render_template(
         "edit_group.html", form=form, group=group_data, group_id=group.id
     )
+
+
+@bp.route("/invite/<token>/resend", methods=["POST"])
+@login_required
+def resend_invite(token):
+    """Resend a group invitation."""
+    db = firestore.client()
+    invite_ref = db.collection("group_invites").document(token)
+    invite = invite_ref.get()
+
+    if not invite.exists:
+        flash("Invite not found", "danger")
+        return redirect(url_for("main.index"))
+
+    data = invite.to_dict()
+    group_id = data.get("group_id")
+
+    # Check permissions
+    group_ref = db.collection("groups").document(group_id)
+    group = group_ref.get()
+    if not group.exists:
+        flash("Group not found", "danger")
+        return redirect(url_for("main.index"))
+
+    owner_ref = group.to_dict().get("ownerRef")
+    if not owner_ref or owner_ref.id != g.user["uid"]:
+        flash("Permission denied", "danger")
+        return redirect(url_for(".view_group", group_id=group_id))
+
+    new_email = request.form.get("email")
+    if new_email:
+        data["email"] = new_email
+        invite_ref.update({"email": new_email})
+
+    invite_ref.update({"status": "sending"})
+
+    invite_url = url_for(".handle_invite", token=token, _external=True)
+    email_data = {
+        "to": data.get("email"),
+        "subject": f"Join {group.to_dict().get('name')} on Pick a Ladder!",
+        "template": "email/group_invite.html",
+        "name": data.get("name"),
+        "group_name": group.to_dict().get("name"),
+        "invite_url": invite_url,
+    }
+
+    send_invite_email_background(current_app._get_current_object(), token, email_data)
+    flash(f"Resending invitation to {data.get('email')}...", "info")
+    return redirect(url_for(".view_group", group_id=group_id))
+
+
+@bp.route("/invite/<token>/delete", methods=["POST"])
+@login_required
+def delete_invite(token):
+    """Delete a pending invitation."""
+    db = firestore.client()
+    invite_ref = db.collection("group_invites").document(token)
+    invite = invite_ref.get()
+
+    if not invite.exists:
+        flash("Invite not found", "danger")
+        return redirect(url_for("main.index"))
+
+    group_id = invite.to_dict().get("group_id")
+    group_ref = db.collection("groups").document(group_id)
+    group = group_ref.get()
+
+    if not group.exists:
+        flash("Group not found", "danger")
+        return redirect(url_for("main.index"))
+
+    owner_ref = group.to_dict().get("ownerRef")
+    if not owner_ref or owner_ref.id != g.user["uid"]:
+        flash("Permission denied", "danger")
+        return redirect(url_for(".view_group", group_id=group_id))
+
+    invite_ref.delete()
+    flash("Invitation removed.", "success")
+    return redirect(url_for(".view_group", group_id=group_id))
 
 
 @bp.route("/invite/<token>")
