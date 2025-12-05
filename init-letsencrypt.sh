@@ -60,6 +60,11 @@ else
     sudo rm -rf "$DATA_PATH/conf/archive/$DOMAIN"
     sudo rm -rf "$DATA_PATH/conf/renewal/$DOMAIN.conf"
 
+    # Create webroot directory with proper permissions
+    echo ">>> Creating webroot directory..."
+    sudo mkdir -p "$DATA_PATH/www"
+    sudo chmod -R 755 "$DATA_PATH/www"
+
     # 1. Create dummy certificate files so Nginx can start
     echo ">>> Creating dummy certificate..."
     sudo mkdir -p $CERT_DIR
