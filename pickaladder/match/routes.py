@@ -101,10 +101,7 @@ def view_match_page(match_id):
     match_data = match.to_dict()
     match_type = match_data.get("matchType", "singles")
 
-    context = {
-        "match": match_data,
-        "match_type": match_type
-    }
+    context = {"match": match_data, "match_type": match_type}
 
     if match_type == "doubles":
         # Fetch team members
@@ -114,15 +111,15 @@ def view_match_page(match_id):
 
         team1_data = []
         for ref in team1_refs:
-             p = ref.get()
-             if p.exists:
-                 team1_data.append(p.to_dict())
+            p = ref.get()
+            if p.exists:
+                team1_data.append(p.to_dict())
 
         team2_data = []
         for ref in team2_refs:
-             p = ref.get()
-             if p.exists:
-                 team2_data.append(p.to_dict())
+            p = ref.get()
+            if p.exists:
+                team2_data.append(p.to_dict())
 
         context["team1"] = team1_data
         context["team2"] = team2_data
@@ -150,12 +147,14 @@ def view_match_page(match_id):
                 player2_data = player2.to_dict()
                 player2_record = get_player_record(player2_ref)
 
-        context.update({
-            "player1": player1_data,
-            "player2": player2_data,
-            "player1_record": player1_record,
-            "player2_record": player2_record,
-        })
+        context.update(
+            {
+                "player1": player1_data,
+                "player2": player2_data,
+                "player1_record": player1_record,
+                "player2_record": player2_record,
+            }
+        )
 
     return render_template("view_match.html", **context)
 
@@ -198,7 +197,7 @@ def create_match():
                 "player2Score": form.player2_score.data,
                 "matchDate": form.match_date.data or datetime.date.today(),
                 "createdAt": firestore.SERVER_TIMESTAMP,
-                "matchType": form.match_type.data
+                "matchType": form.match_type.data,
             }
 
             if form.match_type.data == "singles":

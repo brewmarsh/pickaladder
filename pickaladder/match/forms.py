@@ -18,7 +18,9 @@ class MatchForm(FlaskForm):
     player2 = SelectField("Opponent / Opponent 1", validators=[DataRequired()])
     opponent2 = SelectField("Opponent 2", validators=[Optional()])
     player1_score = IntegerField("Your / Team 1 Score", validators=[InputRequired()])
-    player2_score = IntegerField("Opponent / Team 2 Score", validators=[InputRequired()])
+    player2_score = IntegerField(
+        "Opponent / Team 2 Score", validators=[InputRequired()]
+    )
     match_date = DateField("Date", validators=[DataRequired()])
 
     def validate_player1_score(self, field):
@@ -45,7 +47,9 @@ class MatchForm(FlaskForm):
         p2_score = field.data
 
         if max(p1_score, p2_score) < 11:
-            raise ValidationError("One team/player must have at least 11 points to win.")
+            raise ValidationError(
+                "One team/player must have at least 11 points to win."
+            )
         if abs(p1_score - p2_score) < 2:
             raise ValidationError("The winner must win by at least 2 points.")
 
