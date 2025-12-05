@@ -225,6 +225,8 @@ def view_group(group_id):
     # --- Leaderboard ---
     leaderboard = get_group_leaderboard(group_id)
 
+    is_member = current_user_id in member_ids
+
     return render_template(
         "group.html",
         group=group_data,
@@ -236,6 +238,7 @@ def view_group(group_id):
         current_user_id=current_user_id,
         leaderboard=leaderboard,
         pending_invites=pending_invites,
+        is_member=is_member,
     )
 
 
