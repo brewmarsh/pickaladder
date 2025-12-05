@@ -99,11 +99,7 @@ def get_group_leaderboard(group_id):
                     "wins": stats["wins"],
                     "losses": stats["losses"],
                     "games_played": stats["games"],
-                    "avg_score": (
-                        stats["total_score"] / stats["games"]
-                        if stats["games"] > 0
-                        else 0
-                    ),
+                    "avg_score": avg_score,
                 }
             )
 
