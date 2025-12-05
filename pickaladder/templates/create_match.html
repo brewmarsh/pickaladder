@@ -8,7 +8,7 @@
             {{ ', '.join(errors) }}
         </div>
     {% endfor %}
-    <form method="post" action="{{ url_for('match.create_match') }}">
+    <form method="post" action="{{ url_for('match.create_match', group_id=request.args.get('group_id')) }}">
         {{ form.hidden_tag() }}
 
         <div class="form-group">

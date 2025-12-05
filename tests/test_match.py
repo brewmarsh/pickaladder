@@ -83,15 +83,13 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         mock_matches_collection = mock_db.collection("matches")
 
-        mock_friends_query = (
-            mock_db.collection("users")
-            .document(MOCK_USER_ID)
-            .collection("friends")
-            .where.return_value
+        mock_friends_collection = (
+            mock_db.collection("users").document(MOCK_USER_ID).collection("friends")
         )
-        mock_friend_ref = MagicMock()
-        mock_friend_ref.id = MOCK_OPPONENT_ID
-        mock_friends_query.stream.return_value = [mock_friend_ref]
+        mock_friend_doc = MagicMock()
+        mock_friend_doc.id = MOCK_OPPONENT_ID
+        mock_friend_doc.to_dict.return_value = {"status": "accepted"}
+        mock_friends_collection.stream.return_value = [mock_friend_doc]
 
         mock_opponent_user_query = mock_db.collection("users").where.return_value
         mock_opponent_user_doc = MagicMock()

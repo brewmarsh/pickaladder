@@ -3,7 +3,7 @@
 import datetime
 
 from firebase_admin import firestore
-from flask import flash, g, redirect, render_template, url_for
+from flask import flash, g, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
 
@@ -166,29 +166,60 @@ def create_match():
     db = firestore.client()
     user_id = g.user["uid"]
     form = MatchForm()
+    group_id = request.args.get("group_id")
 
-    # Populate opponent choices from the user's friends
-    friends_ref = db.collection("users").document(user_id).collection("friends")
-    accepted_friends_docs = friends_ref.where(
-        filter=firestore.FieldFilter("status", "==", "accepted")
-    ).stream()
-    friend_ids = [doc.id for doc in accepted_friends_docs]
+    player_choices = []
 
-    friend_choices = []
-    if friend_ids:
-        friends = (
-            db.collection("users")
-            .where(filter=firestore.FieldFilter("__name__", "in", friend_ids))
-            .stream()
-        )
-        friend_choices = [
-            (doc.id, doc.to_dict().get("name", doc.id)) for doc in friends
+    if group_id:
+        group_ref = db.collection("groups").document(group_id)
+        group = group_ref.get()
+        if group.exists:
+            group_data = group.to_dict()
+            member_refs = group_data.get("members", [])
+            # Exclude current user from choices
+            member_refs = [ref for ref in member_refs if ref.id != user_id]
+
+            if member_refs:
+                # Fetch members in batches if necessary, but simple loop for now
+                members_docs = [ref.get() for ref in member_refs]
+                player_choices = [
+                    (doc.id, doc.to_dict().get("name", doc.id))
+                    for doc in members_docs
+                    if doc.exists
+                ]
+    else:
+        # Populate opponent choices from the user's friends (accepted and pending)
+        friends_ref = db.collection("users").document(user_id).collection("friends")
+        # Fetch all friends and filter in memory to include pending
+        friends_docs = friends_ref.stream()
+        friend_ids = [
+            doc.id
+            for doc in friends_docs
+            if doc.to_dict().get("status") in ["accepted", "pending"]
         ]
 
-    # Populate all select fields with friends
-    form.player2.choices = friend_choices
-    form.partner.choices = friend_choices
-    form.opponent2.choices = friend_choices
+        if friend_ids:
+            friends = (
+                db.collection("users")
+                .where(filter=firestore.FieldFilter("__name__", "in", friend_ids))
+                .stream()
+            )
+            player_choices = [
+                (doc.id, doc.to_dict().get("name", doc.id)) for doc in friends
+            ]
+
+    # Populate all select fields
+    form.player2.choices = player_choices
+    form.partner.choices = player_choices
+    form.opponent2.choices = player_choices
+
+    # Default match type logic
+    user_ref = db.collection("users").document(user_id)
+    if request.method == "GET":
+        user_data = user_ref.get().to_dict()
+        last_match_type = user_data.get("lastMatchRecordedType")
+        if last_match_type:
+            form.match_type.data = last_match_type
 
     if form.validate_on_submit():
         try:
@@ -219,7 +250,13 @@ def create_match():
                 match_data["team2"] = [t2_p1_ref, t2_p2_ref]
 
             db.collection("matches").add(match_data)
+
+            # Update last match type
+            user_ref.update({"lastMatchRecordedType": form.match_type.data})
+
             flash("Match created successfully.", "success")
+            if group_id:
+                return redirect(url_for("group.view_group", group_id=group_id))
             return redirect(url_for("user.dashboard"))
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
