@@ -10,18 +10,43 @@
     {% endfor %}
     <form method="post" action="{{ url_for('match.create_match') }}">
         {{ form.hidden_tag() }}
+
         <div class="form-group">
-            {{ form.player2.label }}
-            {{ form.player2(class="form-control") }}
+            {{ form.match_type.label }}
+            {{ form.match_type(class="form-control", onchange="toggleFields()") }}
         </div>
+
+        <!-- Team 1 / Player 1 -->
+        <div class="form-group" id="partner-group" style="display: none;">
+            {{ form.partner.label }}
+            {{ form.partner(class="form-control") }}
+        </div>
+
         <div class="form-group">
-            {{ form.player1_score.label }}
+            <label id="player1-score-label" for="player1_score">Your Score</label>
             {{ form.player1_score(class="form-control") }}
         </div>
+
+        <hr>
+
+        <!-- Team 2 / Player 2 -->
         <div class="form-group">
-            {{ form.player2_score.label }}
+            <label id="player2-label" for="player2">Opponent</label>
+            {{ form.player2(class="form-control") }}
+        </div>
+
+        <div class="form-group" id="opponent2-group" style="display: none;">
+            {{ form.opponent2.label }}
+            {{ form.opponent2(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label id="player2-score-label" for="player2_score">Opponent's Score</label>
             {{ form.player2_score(class="form-control") }}
         </div>
+
+        <hr>
+
         <div class="form-group">
             {{ form.match_date.label }}
             {{ form.match_date(class="form-control") }}
@@ -31,6 +56,33 @@
     </form>
     <script>
         document.getElementById('match_date').valueAsDate = new Date();
+
+        function toggleFields() {
+            var matchType = document.getElementById('match_type').value;
+            var partnerGroup = document.getElementById('partner-group');
+            var opponent2Group = document.getElementById('opponent2-group');
+
+            var player1ScoreLabel = document.getElementById('player1-score-label');
+            var player2Label = document.getElementById('player2-label');
+            var player2ScoreLabel = document.getElementById('player2-score-label');
+
+            if (matchType === 'doubles') {
+                partnerGroup.style.display = 'block';
+                opponent2Group.style.display = 'block';
+                player1ScoreLabel.innerText = 'Team 1 Score';
+                player2Label.innerText = 'Opponent 1';
+                player2ScoreLabel.innerText = 'Team 2 Score';
+            } else {
+                partnerGroup.style.display = 'none';
+                opponent2Group.style.display = 'none';
+                player1ScoreLabel.innerText = 'Your Score';
+                player2Label.innerText = 'Opponent';
+                player2ScoreLabel.innerText = 'Opponent\'s Score';
+            }
+        }
+
+        // Initialize state
+        toggleFields();
     </script>
 </div>
 {% endblock %}
