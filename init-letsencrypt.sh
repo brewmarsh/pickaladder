@@ -10,6 +10,29 @@ sudo systemctl stop nginx 2>/dev/null || true
 sudo systemctl stop apache2 2>/dev/null || true
 sudo systemctl stop httpd 2>/dev/null || true
 
+# Aggressively cleanup any process or container holding port 80/443
+echo ">>> checking for port conflicts on 80 and 443..."
+# 1. Kill docker containers holding these ports
+for port in 80 443; do
+    # Check for containers publishing the port
+    container_ids=$(docker ps -q --filter "publish=$port")
+    if [ -n "$container_ids" ]; then
+        echo ">>> Found containers holding port $port: $container_ids"
+        docker rm -f $container_ids || true
+    fi
+done
+
+# 2. Kill system processes holding these ports (if lsof is available)
+if command -v lsof >/dev/null; then
+    for port in 80 443; do
+        pids=$(sudo lsof -t -i :$port)
+        if [ -n "$pids" ]; then
+            echo ">>> Found processes holding port $port: $pids. Killing them..."
+            sudo kill -9 $pids || true
+        fi
+    done
+fi
+
 # 1. Try to take down the project gracefully
 # We ignore errors here because the state might be corrupted (hence the KeyError)
 docker-compose -f docker-compose.prod.yml down --remove-orphans || true
