@@ -4,6 +4,12 @@ set -e
 # Cleanup legacy containers if they exist (to fix port conflicts during renaming)
 echo ">>> Removing legacy containers to prevent conflicts..."
 
+# Stop conflicting host services (nginx/apache) that might bind to port 80/443
+echo ">>> Stopping conflicting host web services..."
+sudo systemctl stop nginx 2>/dev/null || true
+sudo systemctl stop apache2 2>/dev/null || true
+sudo systemctl stop httpd 2>/dev/null || true
+
 # 1. Try to take down the project gracefully
 # We ignore errors here because the state might be corrupted (hence the KeyError)
 docker-compose -f docker-compose.prod.yml down --remove-orphans || true
@@ -60,6 +66,11 @@ else
     sudo rm -rf "$DATA_PATH/conf/archive/$DOMAIN"
     sudo rm -rf "$DATA_PATH/conf/renewal/$DOMAIN.conf"
 
+    # Create webroot directory with proper permissions
+    echo ">>> Creating webroot directory..."
+    sudo mkdir -p "$DATA_PATH/www"
+    sudo chmod -R 755 "$DATA_PATH/www"
+
     # 1. Create dummy certificate files so Nginx can start
     echo ">>> Creating dummy certificate..."
     sudo mkdir -p $CERT_DIR
@@ -86,17 +97,43 @@ else
     done
     echo ">>> Nginx is up!"
 
+    # Verify that Nginx can serve files from the webroot
+    echo ">>> Verifying Nginx webroot serving..."
+    mkdir -p "$DATA_PATH/www/.well-known/acme-challenge"
+    echo "success" > "$DATA_PATH/www/.well-known/acme-challenge/test-challenge"
+
+    # Check 1: Localhost (IPv4 implicit)
+    if ! curl -s "http://localhost/.well-known/acme-challenge/test-challenge" | grep -q "success"; then
+        echo "Error: Nginx failed to serve test file via localhost."
+        curl -v "http://localhost/.well-known/acme-challenge/test-challenge"
+        exit 1
+    fi
+
+    # Check 2: Domain Host Header
+    if ! curl -s -H "Host: $DOMAIN" "http://localhost/.well-known/acme-challenge/test-challenge" | grep -q "success"; then
+        echo "Error: Nginx failed to serve test file with Host: $DOMAIN."
+        curl -v -H "Host: $DOMAIN" "http://localhost/.well-known/acme-challenge/test-challenge"
+        exit 1
+    fi
+    echo ">>> Nginx is correctly serving challenge files (Local & Host header verified)."
+
     # 3. Replace the dummy certificate with a real one from Let's Encrypt.
     # We remove the dummy files before certbot runs.
     echo ">>> Requesting real certificate from Let's Encrypt..."
     sudo rm -rf $CERT_DIR
-    docker-compose -f docker-compose.prod.yml run --name picka-certbot-init --rm --entrypoint certbot certbot certonly --webroot \
+
+    if ! docker-compose -f docker-compose.prod.yml run --name picka-certbot-init --rm --entrypoint certbot certbot certonly --webroot \
         --webroot-path /var/www/certbot \
         --email $EMAIL \
         --agree-tos \
         --no-eff-email \
         --force-renewal \
-        -d $DOMAIN -d www.$DOMAIN
+        -d $DOMAIN -d www.$DOMAIN; then
+            echo ">>> Certbot failed!"
+            echo ">>> Nginx Access/Error Logs:"
+            docker logs picka-server_nginx
+            exit 1
+    fi
 
     # 4. Stop the Nginx container that was using the dummy cert.
     # The next step will bring everything up with the real cert.
