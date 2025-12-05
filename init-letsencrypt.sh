@@ -4,6 +4,12 @@ set -e
 # Cleanup legacy containers if they exist (to fix port conflicts during renaming)
 echo ">>> Removing legacy containers to prevent conflicts..."
 
+# Stop conflicting host services (nginx/apache) that might bind to port 80/443
+echo ">>> Stopping conflicting host web services..."
+sudo systemctl stop nginx 2>/dev/null || true
+sudo systemctl stop apache2 2>/dev/null || true
+sudo systemctl stop httpd 2>/dev/null || true
+
 # 1. Try to take down the project gracefully
 # We ignore errors here because the state might be corrupted (hence the KeyError)
 docker-compose -f docker-compose.prod.yml down --remove-orphans || true
