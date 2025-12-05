@@ -4,26 +4,79 @@
     <div class="match-card">
         <div class="match-header">
             <h2>Match Details</h2>
-            <p class="match-date">{{ match.match_date.strftime('%Y-%m-%d') }}</p>
+            <p class="match-date">{{ match.matchDate.strftime('%Y-%m-%d') }}</p>
         </div>
+
+        {% if match_type == 'doubles' %}
+        <!-- Doubles View -->
+        <div class="match-body">
+            <!-- Team 1 -->
+            <div class="player-details team-details">
+                <div class="team-members">
+                    {% for member in team1 %}
+                    <div class="team-member">
+                        <img src="{{ member.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ member.name }}" class="profile-picture {{ 'winner-icon' if match.player1Score > match.player2Score else 'loser-icon' if match.player1Score < match.player2Score else '' }}">
+                        <h3>{{ member.name }}</h3>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="score-details">{{ match.player1Score }}</p>
+            </div>
+
+            <div class="separator">vs</div>
+
+            <!-- Team 2 -->
+            <div class="player-details team-details">
+                <div class="team-members">
+                    {% for member in team2 %}
+                    <div class="team-member">
+                        <img src="{{ member.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ member.name }}" class="profile-picture {{ 'winner-icon' if match.player2Score > match.player1Score else 'loser-icon' if match.player2Score < match.player1Score else '' }}">
+                        <h3>{{ member.name }}</h3>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="score-details">{{ match.player2Score }}</p>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Singles View -->
         <div class="match-body">
             <div class="player-details">
-                <a href="{{ url_for('user.view_user', user_id=match.player1_id) }}">
-                    <img src="{{ url_for('user.profile_picture', user_id=match.player1_id) }}" alt="{{ match.player1.username }}" class="profile-picture {{ 'winner-icon' if match.player1_score > match.player2_score else 'loser-icon' if match.player1_score < match.player2_score else '' }}">
-                    <h3>{{ match.player1.name }}</h3>
+                <a href="{{ url_for('user.view_user', user_id=match.player1Ref.id) }}">
+                    <img src="{{ player1.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ player1.name }}" class="profile-picture {{ 'winner-icon' if match.player1Score > match.player2Score else 'loser-icon' if match.player1Score < match.player2Score else '' }}">
+                    <h3>{{ player1.name }}</h3>
                 </a>
                 <p>Record: {{ player1_record.wins|int }} - {{ player1_record.losses|int }}</p>
-                <p class="score-details">{{ match.player1_score }}</p>
+                <p class="score-details">{{ match.player1Score }}</p>
             </div>
             <div class="separator">vs</div>
             <div class="player-details">
-                <a href="{{ url_for('user.view_user', user_id=match.player2_id) }}">
-                    <img src="{{ url_for('user.profile_picture', user_id=match.player2_id) }}" alt="{{ match.player2.username }}" class="profile-picture {{ 'winner-icon' if match.player2_score > match.player1_score else 'loser-icon' if match.player2_score < match.player1_score else '' }}">
-                    <h3>{{ match.player2.name }}</h3>
+                <a href="{{ url_for('user.view_user', user_id=match.player2Ref.id) }}">
+                    <img src="{{ player2.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ player2.name }}" class="profile-picture {{ 'winner-icon' if match.player2Score > match.player1Score else 'loser-icon' if match.player2Score < match.player1Score else '' }}">
+                    <h3>{{ player2.name }}</h3>
                 </a>
                 <p>Record: {{ player2_record.wins|int }} - {{ player2_record.losses|int }}</p>
-                <p class="score-details">{{ match.player2_score }}</p>
+                <p class="score-details">{{ match.player2Score }}</p>
             </div>
         </div>
+        {% endif %}
     </div>
+
+    <style>
+        .team-members {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+        .team-member {
+            text-align: center;
+        }
+        .team-member img {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 5px;
+        }
+    </style>
 {% endblock %}

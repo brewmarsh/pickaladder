@@ -1,6 +1,10 @@
 """Utility functions for the group blueprint."""
 
+import threading
+
 from firebase_admin import firestore
+
+from pickaladder.utils import send_email
 
 
 def get_group_leaderboard(group_id):
@@ -104,3 +108,25 @@ def get_group_leaderboard(group_id):
     # Sort the leaderboard by wins
     leaderboard.sort(key=lambda x: x["wins"], reverse=True)
     return leaderboard
+
+
+def send_invite_email_background(app, invite_token, email_data):
+    """Send an invite email in a background thread."""
+
+    def task():
+        with app.app_context():
+            db = firestore.client()
+            invite_ref = db.collection("group_invites").document(invite_token)
+            try:
+                # We need to render the template inside the app context if it wasn't pre-rendered.
+                # send_email takes a template name and kwargs.
+                send_email(**email_data)
+                invite_ref.update(
+                    {"status": "sent", "last_error": firestore.DELETE_FIELD}
+                )
+            except Exception as e:
+                # Store the error message
+                invite_ref.update({"status": "failed", "last_error": str(e)})
+
+    thread = threading.Thread(target=task)
+    thread.start()

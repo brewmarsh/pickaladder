@@ -1,14 +1,5 @@
 #!/bin/bash
 
-# Determine docker compose command
-if command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE="docker-compose"
-else
-    DOCKER_COMPOSE="docker compose"
-fi
-
-echo "Using command: $DOCKER_COMPOSE"
-
 echo "========================================"
 echo "      Pickaladder HTTPS Debugger        "
 echo "========================================"
@@ -37,9 +28,6 @@ if docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER}$"; then
         docker exec "$NGINX_CONTAINER" openssl x509 -in /etc/letsencrypt/live/pickaladder.io/fullchain.pem -text -noout | grep "Issuer\|Subject:\|Not After" || echo " (openssl not found in container - try redeploying to get updated image)"
     else
         echo " [FAIL] Certificate file NOT found in the Nginx container."
-        if [ -f "./certbot/conf/live/pickaladder.io/fullchain.pem" ]; then
-             echo " [WARN] File exists on host at ./certbot/conf/live/pickaladder.io/fullchain.pem. Possible volume mount issue."
-        fi
     fi
 else
     echo " [SKIP] Nginx container ($NGINX_CONTAINER) is not running. Cannot check certs inside it."
@@ -79,7 +67,6 @@ fi
 
 echo -e "\n========================================"
 echo " Troubleshooting Tips:"
-echo " 1. If containers are missing/restarting, check logs above."
-echo " 2. If certs are missing, check Certbot logs for validation errors (DNS, firewall)."
-echo " 3. If Nginx exits with 'host not found', the web container might be unhealthy."
+echo " 1. If containers are missing, ensure the deployment ran successfully."
+echo " 2. If certs are missing, check Certbot logs above for validation errors."
 echo "========================================"
