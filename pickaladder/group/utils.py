@@ -3,7 +3,6 @@
 import threading
 
 from firebase_admin import firestore
-from flask import render_template
 
 from pickaladder.utils import send_email
 
@@ -93,8 +92,6 @@ def get_group_leaderboard(group_id):
         user_doc = stats["user_data"]
         if user_doc.exists:
             user_data = user_doc.to_dict()
-            games_played = stats["games"]
-            avg_score = stats["total_score"] / games_played if games_played > 0 else 0
             leaderboard.append(
                 {
                     "id": user_id,

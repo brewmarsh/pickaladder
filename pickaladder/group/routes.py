@@ -17,7 +17,6 @@ from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import get_group_leaderboard, send_invite_email_background
-from pickaladder.utils import send_email
 
 from . import bp
 from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
