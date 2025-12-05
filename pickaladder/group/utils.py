@@ -90,20 +90,22 @@ def get_group_leaderboard(group_id):
     leaderboard = []
     for user_id, stats in player_stats.items():
         user_doc = stats["user_data"]
-        if user_doc.exists:
-            user_data = user_doc.to_dict()
-            games_played = stats["games"]
-            avg_score = stats["total_score"] / games_played if games_played > 0 else 0.0
-            leaderboard.append(
-                {
-                    "id": user_id,
-                    "name": user_data.get("name", "N/A"),
-                    "wins": stats["wins"],
-                    "losses": stats["losses"],
-                    "games_played": stats["games"],
-                    "avg_score": avg_score,
-                }
-            )
+        if not user_doc.exists:
+            continue
+
+        user_data = user_doc.to_dict()
+        games_played = stats["games"]
+        avg_score = stats["total_score"] / games_played if games_played > 0 else 0.0
+        leaderboard.append(
+            {
+                "id": user_id,
+                "name": user_data.get("name", "N/A"),
+                "wins": stats["wins"],
+                "losses": stats["losses"],
+                "games_played": stats["games"],
+                "avg_score": avg_score,
+            }
+        )
 
     # Sort the leaderboard by wins
     leaderboard.sort(key=lambda x: x["wins"], reverse=True)
