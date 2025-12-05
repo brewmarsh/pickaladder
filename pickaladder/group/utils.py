@@ -89,9 +89,7 @@ def get_group_leaderboard(group_id):
         if user_doc.exists:
             user_data = user_doc.to_dict()
             games_played = stats["games"]
-            avg_score = (
-                stats["total_score"] / games_played if games_played > 0 else 0
-            )
+            avg_score = stats["total_score"] / games_played if games_played > 0 else 0
             leaderboard.append(
                 {
                     "id": user_id,
