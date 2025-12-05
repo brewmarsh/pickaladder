@@ -168,45 +168,70 @@ def create_match():
     form = MatchForm()
     group_id = request.args.get("group_id")
 
-    player_choices = []
+    # Collect all potential player IDs
+    candidate_player_ids = set()
 
+    # 1. Group Members (if group_id is provided)
     if group_id:
         group_ref = db.collection("groups").document(group_id)
         group = group_ref.get()
         if group.exists:
             group_data = group.to_dict()
             member_refs = group_data.get("members", [])
-            # Exclude current user from choices
-            member_refs = [ref for ref in member_refs if ref.id != user_id]
+            for ref in member_refs:
+                candidate_player_ids.add(ref.id)
 
-            if member_refs:
-                # Fetch members in batches if necessary, but simple loop for now
-                members_docs = [ref.get() for ref in member_refs]
-                player_choices = [
-                    (doc.id, doc.to_dict().get("name", doc.id))
-                    for doc in members_docs
-                    if doc.exists
-                ]
-    else:
-        # Populate opponent choices from the user's friends (accepted and pending)
-        friends_ref = db.collection("users").document(user_id).collection("friends")
-        # Fetch all friends and filter in memory to include pending
-        friends_docs = friends_ref.stream()
-        friend_ids = [
-            doc.id
-            for doc in friends_docs
-            if doc.to_dict().get("status") in ["accepted", "pending"]
-        ]
-
-        if friend_ids:
-            friends = (
-                db.collection("users")
-                .where(filter=firestore.FieldFilter("__name__", "in", friend_ids))
+            # 3. Pending Group Invites (users who have been invited but haven't joined)
+            invites_query = (
+                db.collection("group_invites")
+                .where(filter=firestore.FieldFilter("group_id", "==", group_id))
+                .where(filter=firestore.FieldFilter("used", "==", False))
                 .stream()
             )
-            player_choices = [
-                (doc.id, doc.to_dict().get("name", doc.id)) for doc in friends
-            ]
+            invited_emails = [doc.to_dict().get("email") for doc in invites_query]
+
+            if invited_emails:
+                # Find users matching these emails
+                # Note: 'in' query supports up to 30 items. We batch if necessary.
+                # For simplicity, we'll take chunks of 30.
+                for i in range(0, len(invited_emails), 30):
+                    batch_emails = invited_emails[i : i + 30]
+                    users_by_email = (
+                        db.collection("users")
+                        .where(
+                            filter=firestore.FieldFilter("email", "in", batch_emails)
+                        )
+                        .stream()
+                    )
+                    for user_doc in users_by_email:
+                        candidate_player_ids.add(user_doc.id)
+
+    # 2. Friends (always include friends)
+    friends_ref = db.collection("users").document(user_id).collection("friends")
+    friends_docs = friends_ref.stream()
+    for doc in friends_docs:
+        if doc.to_dict().get("status") in ["accepted", "pending"]:
+            candidate_player_ids.add(doc.id)
+
+    # Remove current user from candidates
+    candidate_player_ids.discard(user_id)
+
+    # Fetch user details for all candidates
+    player_choices = []
+    if candidate_player_ids:
+        # Fetch users in batches of 30 (Firestore 'in' limit)
+        candidate_ids_list = list(candidate_player_ids)
+        for i in range(0, len(candidate_ids_list), 30):
+            batch_ids = candidate_ids_list[i : i + 30]
+            users_query = (
+                db.collection("users")
+                .where(filter=firestore.FieldFilter("__name__", "in", batch_ids))
+                .stream()
+            )
+            for user_doc in users_query:
+                player_choices.append(
+                    (user_doc.id, user_doc.to_dict().get("name", user_doc.id))
+                )
 
     # Populate all select fields
     form.player2.choices = player_choices
