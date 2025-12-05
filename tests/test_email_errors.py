@@ -1,4 +1,4 @@
-"""Tests for email error handling logic."""
+"""Tests for email error handling."""
 
 import smtplib
 import unittest
@@ -9,21 +9,21 @@ from pickaladder.utils import EmailError, send_email
 
 
 class TestEmailErrors(unittest.TestCase):
-    """Test cases for email sending error handling."""
+    """Test case for email errors."""
 
     def setUp(self):
-        """Set up the test environment."""
+        """Set up the test case."""
         self.app = create_app({"TESTING": True, "MAIL_SUPPRESS_SEND": False})
         self.ctx = self.app.app_context()
         self.ctx.push()
 
     def tearDown(self):
-        """Tear down the test environment."""
+        """Tear down the test case."""
         self.ctx.pop()
 
     @patch("pickaladder.utils.mail.send")
     def test_send_email_smtp_534(self, mock_send):
-        """Test that SMTP 534 errors are converted to friendly EmailErrors."""
+        """Test handling of SMTP 534 error."""
         # specific 534 error
         error_msg = b"5.7.9 Please log in with your web browser and then try again..."
         mock_send.side_effect = smtplib.SMTPAuthenticationError(534, error_msg)
@@ -45,7 +45,7 @@ class TestEmailErrors(unittest.TestCase):
 
     @patch("pickaladder.utils.mail.send")
     def test_send_email_generic_error(self, mock_send):
-        """Test that generic exceptions are wrapped in EmailError."""
+        """Test handling of generic email errors."""
         # Generic error
         mock_send.side_effect = Exception("Some other error")
 
