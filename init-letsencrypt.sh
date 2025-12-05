@@ -25,7 +25,8 @@ fi
 # 3. Force remove by known names (legacy and new) just in case labels are missing
 # or the project name was different in the past.
 docker rm -f picka-server_nginx_1 picka-server_web_1 picka-server_certbot_1 \
-             picka-web picka-nginx picka-certbot 2>/dev/null || true
+             picka-web picka-nginx picka-certbot \
+             picka-frontend picka-server_nginx picka-certbot-init 2>/dev/null || true
 
 # This script is designed to be run by the CI/CD pipeline on the production server.
 # It handles the initial Let's Encrypt certificate generation automatically.
