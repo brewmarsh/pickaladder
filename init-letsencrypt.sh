@@ -101,12 +101,24 @@ else
     echo ">>> Verifying Nginx webroot serving..."
     mkdir -p "$DATA_PATH/www/.well-known/acme-challenge"
     echo "success" > "$DATA_PATH/www/.well-known/acme-challenge/test-challenge"
+
+    # 1. Check via localhost (catches basic mount issues)
     if curl -s "http://localhost/.well-known/acme-challenge/test-challenge" | grep -q "success"; then
-        echo ">>> Nginx is correctly serving challenge files."
+        echo ">>> Nginx is correctly serving challenge files (via localhost)."
     else
-        echo "Error: Nginx failed to serve test challenge file."
+        echo "Error: Nginx failed to serve test challenge file via localhost."
         echo "Debug: curl output:"
         curl -v "http://localhost/.well-known/acme-challenge/test-challenge"
+        exit 1
+    fi
+
+    # 2. Check via Host header (catches server block config issues)
+    if curl -s -H "Host: $DOMAIN" "http://localhost/.well-known/acme-challenge/test-challenge" | grep -q "success"; then
+        echo ">>> Nginx is correctly serving challenge files (via Host: $DOMAIN)."
+    else
+        echo "Error: Nginx failed to serve test challenge file via Host header."
+        echo "Debug: curl output:"
+        curl -v -H "Host: $DOMAIN" "http://localhost/.well-known/acme-challenge/test-challenge"
         exit 1
     fi
 
