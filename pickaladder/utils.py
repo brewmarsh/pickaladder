@@ -1,17 +1,38 @@
 """Utility functions for the application."""
 
+import smtplib
+
 from flask import current_app, render_template
 from flask_mail import Message
 
 from .extensions import mail
 
 
+class EmailError(Exception):
+    """Base class for email errors."""
+
+    pass
+
+
 def send_email(to, subject, template, **kwargs):
-    """Send an email to a recipient."""
+    """Send an email to a recipient.
+
+    Raises:
+        EmailError: If sending the email fails.
+    """
     msg = Message(
         subject,
         recipients=[to],
         html=render_template(template, **kwargs),
         sender=current_app.config["MAIL_DEFAULT_SENDER"],
     )
-    mail.send(msg)
+    try:
+        mail.send(msg)
+    except smtplib.SMTPAuthenticationError as e:
+        if e.smtp_code == 534:
+            raise EmailError(
+                "Authentication failed. Google requires you to sign in via a web browser or use an App Password if 2FA is enabled."
+            ) from e
+        raise EmailError(f"SMTP Authentication failed: {e}") from e
+    except Exception as e:
+        raise EmailError(f"Failed to send email: {e}") from e

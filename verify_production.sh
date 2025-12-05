@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Determine docker compose command
+if command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+else
+    DOCKER_COMPOSE="docker compose"
+fi
+
+echo "Using command: $DOCKER_COMPOSE"
+
 echo "========================================"
 echo "      Pickaladder HTTPS Debugger        "
 echo "========================================"
@@ -70,6 +79,7 @@ fi
 
 echo -e "\n========================================"
 echo " Troubleshooting Tips:"
-echo " 1. If containers are missing, ensure the deployment ran successfully."
-echo " 2. If certs are missing, check Certbot logs above for validation errors."
+echo " 1. If containers are missing/restarting, check logs above."
+echo " 2. If certs are missing, check Certbot logs for validation errors (DNS, firewall)."
+echo " 3. If Nginx exits with 'host not found', the web container might be unhealthy."
 echo "========================================"
