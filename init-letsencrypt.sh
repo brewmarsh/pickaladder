@@ -15,7 +15,8 @@ echo ">>> checking for port conflicts on 80 and 443..."
 # 1. Kill docker containers holding these ports
 for port in 80 443; do
     # Check for containers publishing the port
-    container_ids=$(docker ps -q --filter "publish=$port")
+    # 'publish' filter is not supported by docker ps, so we parse output manually.
+    container_ids=$(docker ps --format "{{.ID}} {{.Ports}}" | grep ":$port->" | awk '{print $1}' || true)
     if [ -n "$container_ids" ]; then
         echo ">>> Found containers holding port $port: $container_ids"
         docker rm -f $container_ids || true
@@ -46,9 +47,10 @@ for port in 80 443; do
         fi
     else
         # Fallback check using docker (less comprehensive but better than nothing)
-        if [ -n "$(docker ps -q --filter "publish=$port")" ]; then
+        docker_conflict=$(docker ps --format "{{.ID}} {{.Ports}}" | grep ":$port->" || true)
+        if [ -n "$docker_conflict" ]; then
              echo "WARNING: A Docker container is still holding port $port:"
-             docker ps --filter "publish=$port"
+             echo "$docker_conflict"
         else
              echo ">>> Port $port is free of Docker containers."
         fi
