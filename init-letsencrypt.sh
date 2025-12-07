@@ -26,7 +26,7 @@ done
 # 2. Kill system processes holding these ports (if lsof is available)
 if command -v lsof >/dev/null; then
     for port in 80 443; do
-        pids=$(sudo lsof -t -i :$port)
+        pids=$(sudo lsof -t -i :$port -sTCP:LISTEN)
         if [ -n "$pids" ]; then
             echo ">>> Found processes holding port $port: $pids. Killing them..."
             sudo kill -9 $pids || true
@@ -39,9 +39,9 @@ echo ">>> Verifying ports 80 and 443 are free..."
 for port in 80 443; do
     # Check using lsof if available
     if command -v lsof >/dev/null; then
-        if sudo lsof -i :$port -t >/dev/null 2>&1; then
+        if sudo lsof -i :$port -t -sTCP:LISTEN >/dev/null 2>&1; then
              echo "WARNING: Port $port appears to still be in use by:"
-             sudo lsof -i :$port
+             sudo lsof -i :$port -sTCP:LISTEN
         else
              echo ">>> Port $port is free (verified by lsof)."
         fi
