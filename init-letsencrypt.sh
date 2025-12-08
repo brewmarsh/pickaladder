@@ -14,24 +14,33 @@ sudo systemctl stop httpd 2>/dev/null || true
 echo ">>> checking for port conflicts on 80 and 443..."
 # 1. Kill docker containers holding these ports
 for port in 80 443; do
+    echo ">>> Checking for Docker containers on port $port..."
     # Check for containers publishing the port
     # 'publish' filter is not supported by docker ps, so we parse output manually.
     container_ids=$(docker ps --format "{{.ID}} {{.Ports}}" | grep ":$port->" | awk '{print $1}' || true)
     if [ -n "$container_ids" ]; then
         echo ">>> Found containers holding port $port: $container_ids"
         docker rm -f $container_ids || true
+    else
+        echo ">>> No Docker containers found on port $port."
     fi
 done
 
 # 2. Kill system processes holding these ports (if lsof is available)
 if command -v lsof >/dev/null; then
+    echo ">>> lsof is available. Checking for system processes..."
     for port in 80 443; do
-        pids=$(sudo lsof -t -i :$port -sTCP:LISTEN)
+        echo ">>> Checking system processes on port $port..."
+        pids=$(sudo lsof -t -i :$port -sTCP:LISTEN || true)
         if [ -n "$pids" ]; then
             echo ">>> Found processes holding port $port: $pids. Killing them..."
             sudo kill -9 $pids || true
+        else
+            echo ">>> No system process found on port $port."
         fi
     done
+else
+    echo ">>> lsof not found. Skipping system process check."
 fi
 
 # Verification: Check if ports are actually free
@@ -41,7 +50,7 @@ for port in 80 443; do
     if command -v lsof >/dev/null; then
         if sudo lsof -i :$port -t -sTCP:LISTEN >/dev/null 2>&1; then
              echo "WARNING: Port $port appears to still be in use by:"
-             sudo lsof -i :$port -sTCP:LISTEN
+             sudo lsof -i :$port -sTCP:LISTEN || true
         else
              echo ">>> Port $port is free (verified by lsof)."
         fi
