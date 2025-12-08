@@ -213,6 +213,28 @@ def create_match():
         if doc.to_dict().get("status") in ["accepted", "pending"]:
             candidate_player_ids.add(doc.id)
 
+    # 3. Users invited to any group by the current user
+    my_invites_query = (
+        db.collection("group_invites")
+        .where(filter=firestore.FieldFilter("invited_by", "==", user_id))
+        .where(filter=firestore.FieldFilter("used", "==", False))
+        .stream()
+    )
+    my_invited_emails = {doc.to_dict().get("email") for doc in my_invites_query}
+
+    if my_invited_emails:
+        # Find users matching these emails
+        my_invited_emails_list = list(my_invited_emails)
+        for i in range(0, len(my_invited_emails_list), 10):
+            batch_emails = my_invited_emails_list[i : i + 10]
+            users_by_email = (
+                db.collection("users")
+                .where(filter=firestore.FieldFilter("email", "in", batch_emails))
+                .stream()
+            )
+            for user_doc in users_by_email:
+                candidate_player_ids.add(user_doc.id)
+
     # Remove current user from candidates
     candidate_player_ids.discard(user_id)
 
