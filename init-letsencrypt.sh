@@ -43,6 +43,15 @@ else
     echo ">>> lsof not found. Skipping system process check."
 fi
 
+# 3. Last resort: use fuser to kill anything on tcp ports (if available)
+if command -v fuser >/dev/null; then
+    echo ">>> fuser is available. Ensuring ports are clear..."
+    for port in 80 443; do
+        echo ">>> Clearing port $port/tcp..."
+        sudo fuser -k -n tcp $port || true
+    done
+fi
+
 # Verification: Check if ports are actually free
 echo ">>> Verifying ports 80 and 443 are free..."
 for port in 80 443; do
@@ -139,7 +148,15 @@ else
     # 2. Start the web and nginx services. The new Nginx entrypoint will
     # automatically wait for the web service to be ready.
     echo ">>> Starting web and nginx with dummy certificate..."
-    docker-compose -f docker-compose.prod.yml up -d web nginx
+    if ! docker-compose -f docker-compose.prod.yml up -d web nginx; then
+        echo "ERROR: Failed to start web and nginx."
+        echo ">>> Diagnostic info:"
+        echo "--- docker ps -a ---"
+        docker ps -a || true
+        echo "--- netstat/ss ---"
+        sudo ss -lptn || sudo netstat -tulpn || true
+        exit 1
+    fi
 
     # Wait for Nginx to be fully up and running
     echo ">>> Waiting for Nginx to launch on port 80..."
