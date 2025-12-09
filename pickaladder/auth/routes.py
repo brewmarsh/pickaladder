@@ -20,6 +20,7 @@ from flask import (
 from werkzeug.exceptions import UnprocessableEntity
 
 from pickaladder.errors import DuplicateResourceError
+from pickaladder.user.utils import merge_ghost_user
 from pickaladder.utils import send_email
 
 from . import bp
@@ -77,6 +78,9 @@ def register():
                     "createdAt": firestore.SERVER_TIMESTAMP,
                 }
             )
+
+            # Check for ghost user merge
+            merge_ghost_user(db, user_doc_ref, email)
 
             # Handle invite token
             invite_token = session.pop("invite_token", None)
@@ -195,6 +199,9 @@ def session_login():
                 "createdAt": firestore.SERVER_TIMESTAMP,
             }
             user_doc_ref.set(user_info)
+
+            # Check for ghost user merge
+            merge_ghost_user(db, user_doc_ref, email)
 
         session["user_id"] = uid
         session["is_admin"] = user_info.get("isAdmin", False)
