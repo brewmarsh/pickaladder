@@ -9,9 +9,6 @@
             {% if group.ownerRef.id == current_user_id %}
                 <a href="{{ url_for('group.edit_group', group_id=group.id) }}" class="btn">Edit Group</a>
             {% endif %}
-            {% if is_member %}
-                <a href="{{ url_for('match.create_match', group_id=group.id) }}" class="btn">Record a Match</a>
-            {% endif %}
         </div>
         <p style="margin-bottom: 5px;">Owned by: <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username }}</a></p>
         {% if group.location %}
@@ -165,7 +162,7 @@
         </div>
         {% if is_member %}
             <div style="margin-top: 20px; text-align: center;">
-                <a href="{{ url_for('match.create_match', group_id=group.id) }}" class="btn">Score a game</a>
+                <a href="{{ url_for('match.create_match', group_id=group.id) }}" class="btn">Record a Match</a>
             </div>
         {% endif %}
     </div>
