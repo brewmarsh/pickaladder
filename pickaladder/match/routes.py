@@ -216,7 +216,7 @@ def create_match():
     # 3. Users invited to any group by the current user
     my_invites_query = (
         db.collection("group_invites")
-        .where(filter=firestore.FieldFilter("invited_by", "==", user_id))
+        .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
         .where(filter=firestore.FieldFilter("used", "==", False))
         .stream()
     )
