@@ -177,6 +177,132 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             "Did not find query filtering by 'inviter_id' == user_id",
         )
 
+    def test_candidates_mixed_status(self):
+        """Test that both accepted and pending invites are included in the opponent list."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+
+        # Mocks
+        mock_users_col = MagicMock()
+        mock_group_invites_col = MagicMock()
+
+        def collection_side_effect(name):
+            if name == "users":
+                return mock_users_col
+            if name == "group_invites":
+                return mock_group_invites_col
+            return MagicMock()
+
+        mock_db.collection.side_effect = collection_side_effect
+
+        # User setup
+        mock_user_doc = mock_users_col.document(MOCK_USER_ID)
+        mock_user_doc.get.return_value.to_dict.return_value = {}
+        # No friends
+        mock_user_doc.collection.return_value.stream.return_value = []
+
+        # Invites setup
+        # 1. Accepted Invite: used=True, has used_by
+        invite_accepted = MagicMock()
+        invite_accepted.to_dict.return_value = {
+            "email": "ignored_in_favor_of_id@example.com",
+            "used": True,
+            "used_by": "user_accepted_id",
+        }
+
+        # 2. Pending Invite: used=False (or missing), has email
+        invite_pending = MagicMock()
+        invite_pending.to_dict.return_value = {
+            "email": "pending@example.com",
+            "used": False,
+        }
+
+        # Query result for invites
+        mock_query_invites = MagicMock()
+        mock_group_invites_col.where.return_value = mock_query_invites
+        mock_query_invites.stream.return_value = [invite_accepted, invite_pending]
+
+        # Users Lookup Setup
+        # We need to ensure users are returned.
+        # 1. User from 'pending' email
+        user_pending = MagicMock()
+        user_pending.id = "user_pending_id"
+        user_pending.to_dict.return_value = {"name": "User Pending"}
+
+        # 2. User from 'accepted' ID
+        user_accepted = MagicMock()
+        user_accepted.id = "user_accepted_id"
+        user_accepted.to_dict.return_value = {"name": "User Accepted"}
+
+        # The code does two things:
+        # A. Look up users by email (for pending).
+        # B. Look up users by ID (for collected IDs: from used_by AND from email lookup).
+
+        # Mock the email lookup
+        mock_query_users_by_email = MagicMock()
+        mock_users_col.where.return_value = mock_query_users_by_email
+
+        def stream_side_effect():
+            # This is complex because 'stream' is called on the result of 'where'.
+            # We need to distinguish between the 'email' query and the '__name__' query if possible,
+            # or just return everything that matches logically.
+
+            # Inspect the last call to 'where' on the collection mock
+            # Note: The code calls db.collection("users").where(...).stream()
+            # Since we return the SAME mock_query_users_by_email for all .where calls,
+            # we can inspect its parent's call args.
+
+            # However, side_effect on stream() doesn't give us access to the query params easily.
+            # A better approach is to use side_effect on .where() to return DIFFERENT query mocks.
+            pass
+
+        # Better Mocking Strategy for .where()
+        def where_side_effect(filter=None):
+            query_mock = MagicMock()
+            if filter:
+                if filter.field_path == "email" and filter.op_string == "in":
+                    # Pending user email lookup
+                    if "pending@example.com" in filter.value:
+                        query_mock.stream.return_value = [user_pending]
+                    else:
+                        query_mock.stream.return_value = []
+                elif filter.field_path == "__name__" and filter.op_string == "in":
+                    # Final ID lookup
+                    # We expect both user_pending_id and user_accepted_id to be in the list
+                    # But the 'in' operator value is a list of DocumentReferences.
+                    # We can check the IDs of these refs.
+                    requested_ids = [ref.id for ref in filter.value]
+                    results = []
+                    if "user_pending_id" in requested_ids:
+                        results.append(user_pending)
+                    if "user_accepted_id" in requested_ids:
+                        results.append(user_accepted)
+                    query_mock.stream.return_value = results
+                else:
+                    query_mock.stream.return_value = []
+            return query_mock
+
+        mock_users_col.where.side_effect = where_side_effect
+
+        # Also need to make sure db.collection("users").document(uid) returns a ref with the correct ID
+        def document_side_effect(doc_id):
+            doc_ref = MagicMock()
+            doc_ref.id = doc_id
+            return doc_ref
+
+        mock_users_col.document.side_effect = document_side_effect
+
+        response = self.client.get("/match/create", headers=self._get_auth_headers())
+        self.assertEqual(response.status_code, 200)
+        html = response.data.decode()
+
+        # Check if both users are present in the options
+        self.assertIn('value="user_accepted_id"', html)
+        self.assertIn("User Accepted", html)
+
+        self.assertIn('value="user_pending_id"', html)
+        self.assertIn("User Pending", html)
+
 
 if __name__ == "__main__":
     unittest.main()

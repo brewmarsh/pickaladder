@@ -219,7 +219,16 @@ def create_match():
         .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
         .stream()
     )
-    my_invited_emails = {doc.to_dict().get("email") for doc in my_invites_query}
+
+    my_invited_emails = set()
+    for doc in my_invites_query:
+        data = doc.to_dict()
+        # If invite is used, we can directly link to the user via used_by
+        if data.get("used") and data.get("used_by"):
+            candidate_player_ids.add(data.get("used_by"))
+        # Fallback to email if not used or used_by missing (e.g. legacy data)
+        elif data.get("email"):
+            my_invited_emails.add(data.get("email"))
 
     if my_invited_emails:
         # Find users matching these emails
