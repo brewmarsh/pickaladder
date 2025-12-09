@@ -31,7 +31,7 @@
                 <div class="toast-container">
                     {% for category, message in messages %}
                         {% if category == 'toast' %}
-                            <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000">
+                            <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000" data-autohide="true">
                                 <div class="toast-header">
                                     <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" class="rounded mr-2" alt="Logo" style="width: 20px; height: 20px;">
                                     <strong class="mr-auto">pickaladder</strong>
