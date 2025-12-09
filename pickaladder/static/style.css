@@ -636,3 +636,12 @@ input[type="submit"], .btn {
     align-items: center;
     gap: 20px;
 }
+
+/* Toasts */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    min-width: 300px;
+}
