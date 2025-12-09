@@ -602,3 +602,37 @@ input[type="submit"], .btn {
     background-color: var(--warning-color) !important;
     font-weight: bold;
 }
+
+/* Guest mobile menu hidden on desktop */
+.guest-mobile-menu {
+    display: none !important;
+}
+
+/* Match View Styles */
+.team-members {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+.team-member {
+    text-align: center;
+}
+.team-member img {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 5px;
+}
+
+/* Group View Styles */
+.group-profile-picture {
+    width: 128px;
+    height: 128px;
+    border-radius: 15px;
+    object-fit: cover;
+}
+.group-header-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
