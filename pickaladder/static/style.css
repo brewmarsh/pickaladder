@@ -645,3 +645,16 @@ input[type="submit"], .btn {
     z-index: 1050;
     min-width: 300px;
 }
+
+.toast {
+    background-color: var(--surface-color);
+    color: var(--on-surface-color);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow);
+}
+
+.toast-header {
+    background-color: var(--background-color);
+    color: var(--on-surface-color);
+    border-bottom: 1px solid var(--border-color);
+}
