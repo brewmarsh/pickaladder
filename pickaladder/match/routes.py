@@ -217,7 +217,6 @@ def create_match():
     my_invites_query = (
         db.collection("group_invites")
         .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
-        .where(filter=firestore.FieldFilter("used", "==", False))
         .stream()
     )
     my_invited_emails = {doc.to_dict().get("email") for doc in my_invites_query}
