@@ -259,7 +259,7 @@ def view_group(group_id):
                 current_app._get_current_object(), token, email_data
             )
 
-            flash(f"Invitation is being sent to {email}.", "info")
+            flash(f"Invitation is being sent to {email}.", "toast")
             return redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
             flash(f"An error occurred creating the invitation: {e}", "danger")
@@ -427,7 +427,7 @@ def resend_invite(token):
     }
 
     send_invite_email_background(current_app._get_current_object(), token, email_data)
-    flash(f"Resending invitation to {data.get('email')}...", "info")
+    flash(f"Resending invitation to {data.get('email')}...", "toast")
     return redirect(url_for(".view_group", group_id=group_id))
 
 
