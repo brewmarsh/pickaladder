@@ -153,6 +153,7 @@ input[type="password"],
 input[type="email"],
 input[type="number"],
 input[type="date"],
+textarea,
 select {
     width: 100%;
     padding: 12px;
@@ -169,10 +170,15 @@ input[type="password"]:focus,
 input[type="email"]:focus,
 input[type="number"]:focus,
 input[type="date"]:focus,
+textarea:focus,
 select:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(90, 140, 85, 0.2);
+}
+
+textarea {
+    resize: vertical;
 }
 
 input,

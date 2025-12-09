@@ -45,6 +45,12 @@
         background-color: var(--on-surface-color);
     }
 
+    .form-container {
+        width: 95%;
+        margin: 20px auto;
+        padding: 16px;
+    }
+
     .grid-container {
         grid-template-columns: 1fr;
     }
