@@ -245,9 +245,12 @@ def create_match():
         candidate_ids_list = list(candidate_player_ids)
         for i in range(0, len(candidate_ids_list), 30):
             batch_ids = candidate_ids_list[i : i + 30]
+            # Convert IDs to DocumentReferences for __name__ query
+            batch_refs = [db.collection("users").document(uid) for uid in batch_ids]
+
             users_query = (
                 db.collection("users")
-                .where(filter=firestore.FieldFilter("__name__", "in", batch_ids))
+                .where(filter=firestore.FieldFilter("__name__", "in", batch_refs))
                 .stream()
             )
             for user_doc in users_query:
