@@ -30,3 +30,21 @@
     </form>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('profile_picture');
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                const maxSize = 15 * 1024 * 1024; // 15MB
+                if (file && file.size > maxSize) {
+                    alert('File is too large. Please select an image smaller than 15MB.');
+                    this.value = ''; // Clear the input
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

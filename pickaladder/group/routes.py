@@ -261,8 +261,28 @@ def create_group():
                 "createdAt": firestore.SERVER_TIMESTAMP,
             }
             timestamp, new_group_ref = db.collection("groups").add(group_data)
+            group_id = new_group_ref.id
+
+            profile_picture_file = form.profile_picture.data
+            if profile_picture_file:
+                try:
+                    filename = secure_filename(
+                        profile_picture_file.filename or "group_profile.jpg"
+                    )
+                    bucket = storage.bucket()
+                    blob = bucket.blob(f"group_pictures/{group_id}/{filename}")
+
+                    blob.upload_from_file(profile_picture_file)
+                    blob.make_public()
+
+                    new_group_ref.update({"profilePictureUrl": blob.public_url})
+                except Exception as e:
+                    current_app.logger.error(f"Error uploading group image: {e}")
+                    flash("Group created, but failed to upload image.", "warning")
+                    return redirect(url_for(".view_group", group_id=group_id))
+
             flash("Group created successfully.", "success")
-            return redirect(url_for(".view_group", group_id=new_group_ref.id))
+            return redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
     return render_template("create_group.html", form=form)
