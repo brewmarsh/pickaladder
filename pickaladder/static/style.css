@@ -645,3 +645,50 @@ input[type="submit"], .btn {
     z-index: 1050;
     min-width: 300px;
 }
+
+.toast {
+    position: relative;
+    background-color: var(--surface-color);
+    color: var(--on-surface-color);
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 350px;
+    opacity: 0;
+    transition: opacity 0.15s linear;
+}
+
+.toast.show {
+    opacity: 1;
+}
+
+.toast.hide {
+    display: none;
+}
+
+.toast::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background-color: var(--primary-color);
+}
+
+.toast-header {
+    background-color: var(--surface-color);
+    color: var(--on-surface-color);
+    border-bottom: none;
+    padding-left: 20px;
+    padding-top: 15px;
+}
+
+.toast-body {
+    padding: 0 20px 15px;
+}
+
+.toast-header .close {
+    margin-right: 5px;
+}

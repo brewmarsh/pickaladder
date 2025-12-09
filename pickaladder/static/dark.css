@@ -87,16 +87,6 @@ body.dark-mode .navbar-menu a {
     color: var(--on-surface-color);
 }
 
-body.dark-mode .toast {
-    background-color: var(--surface-color);
-    color: var(--on-surface-color);
-    border-color: var(--border-color);
-}
-body.dark-mode .toast-header {
-    background-color: var(--background-color);
-    color: var(--on-surface-color);
-    border-bottom-color: var(--border-color);
-}
 body.dark-mode .close {
     color: var(--on-surface-variant-color);
 }
