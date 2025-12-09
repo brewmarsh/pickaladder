@@ -4,9 +4,10 @@ import datetime
 import unittest
 from unittest.mock import MagicMock, patch
 
+from firebase_admin import firestore
+
 # Pre-emptive imports to ensure patch targets exist.
 from pickaladder import create_app
-from firebase_admin import firestore
 
 # Mock user payloads
 MOCK_USER_ID = "winner_uid"
@@ -125,7 +126,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         # Configure user fetch on this mock
         mock_user_doc = mock_users_col.document(MOCK_USER_ID)
-        mock_user_doc.get.return_value.to_dict.return_value = {} # g.user will get uid added automatically
+        mock_user_doc.get.return_value.to_dict.return_value = {}  # g.user will get uid added automatically
 
         # Also configure friends on this mock (since friends query uses db.collection("users").document(...))
         mock_user_doc.collection("friends").stream.return_value = []
@@ -160,13 +161,21 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         found_inviter_query = False
         for call in calls:
-            if 'filter' in call.kwargs:
-                f = call.kwargs['filter']
-                if hasattr(f, 'field_path') and f.field_path == 'inviter_id' and f.op_string == '==' and f.value == MOCK_USER_ID:
+            if "filter" in call.kwargs:
+                f = call.kwargs["filter"]
+                if (
+                    hasattr(f, "field_path")
+                    and f.field_path == "inviter_id"
+                    and f.op_string == "=="
+                    and f.value == MOCK_USER_ID
+                ):
                     found_inviter_query = True
                     break
 
-        self.assertTrue(found_inviter_query, "Did not find query filtering by 'inviter_id' == user_id")
+        self.assertTrue(
+            found_inviter_query,
+            "Did not find query filtering by 'inviter_id' == user_id",
+        )
 
 
 if __name__ == "__main__":
