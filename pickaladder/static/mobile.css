@@ -11,6 +11,8 @@
     .hamburger-menu {
         display: block;
         cursor: pointer;
+        background: transparent;
+        border: none;
     }
 
     /* Repurpose the dropdown as the mobile menu */
@@ -108,5 +110,19 @@
         font-weight: bold;
         text-align: left;
         white-space: nowrap;
+    }
+
+    .guest-mobile-menu {
+        display: block !important;
+    }
+
+    /* Override hamburger menu color for visibility on green header */
+    .hamburger-menu span {
+        background-color: #ffffff;
+    }
+
+    .group-header-content {
+        flex-direction: column;
+        text-align: center;
     }
 }
