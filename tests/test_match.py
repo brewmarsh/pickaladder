@@ -4,6 +4,8 @@ import datetime
 import unittest
 from unittest.mock import MagicMock, patch
 
+from firebase_admin import firestore
+
 # Pre-emptive imports to ensure patch targets exist.
 from pickaladder import create_app
 
@@ -23,6 +25,8 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
     def setUp(self):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_firestore_service = MagicMock()
+        # Ensure FieldFilter is available for inspection in tests
+        self.mock_firestore_service.FieldFilter = firestore.FieldFilter
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
@@ -111,6 +115,67 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match created successfully.", response.data)
         mock_matches_collection.add.assert_called_once()
+
+    def test_pending_invites_query_uses_correct_field(self):
+        """Test that pending invites are queried using 'inviter_id'."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+
+        # Grab the default collection mock (which serves as users collection for now)
+        mock_users_col = mock_db.collection("users")
+
+        # Configure user fetch on this mock
+        mock_user_doc = mock_users_col.document(MOCK_USER_ID)
+        mock_user_doc.get.return_value.to_dict.return_value = {}  # g.user will get uid added automatically
+
+        # Also configure friends on this mock (since friends query uses db.collection("users").document(...))
+        mock_user_doc.collection("friends").stream.return_value = []
+
+        mock_group_invites_col = MagicMock()
+        mock_invite_doc = MagicMock()
+        mock_invite_doc.to_dict.return_value = {"email": "pending@example.com"}
+
+        mock_query1 = MagicMock()
+        mock_query2 = MagicMock()
+        mock_group_invites_col.where.return_value = mock_query1
+        mock_query1.where.return_value = mock_query2
+        mock_query2.stream.return_value = [mock_invite_doc]
+
+        def collection_side_effect(name):
+            if name == "group_invites":
+                return mock_group_invites_col
+            if name == "users":
+                return mock_users_col
+            return MagicMock()
+
+        mock_db.collection.side_effect = collection_side_effect
+
+        self.client.get("/match/create", headers=self._get_auth_headers())
+
+        # Verify that we queried for 'inviter_id' (not 'invited_by')
+        calls = []
+        if mock_group_invites_col.where.call_args:
+            calls.append(mock_group_invites_col.where.call_args)
+        if mock_query1.where.call_args:
+            calls.append(mock_query1.where.call_args)
+
+        found_inviter_query = False
+        for call in calls:
+            if "filter" in call.kwargs:
+                f = call.kwargs["filter"]
+                if (
+                    hasattr(f, "field_path")
+                    and f.field_path == "inviter_id"
+                    and f.op_string == "=="
+                    and f.value == MOCK_USER_ID
+                ):
+                    found_inviter_query = True
+                    break
+
+        self.assertTrue(
+            found_inviter_query,
+            "Did not find query filtering by 'inviter_id' == user_id",
+        )
 
 
 if __name__ == "__main__":
