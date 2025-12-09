@@ -35,6 +35,15 @@ def create_app(test_config=None):
     app.url_map.converters["uuid"] = UUIDConverter
 
     # Load configuration
+    mail_username = os.environ.get("MAIL_USERNAME")
+    if mail_username:
+        mail_username = mail_username.strip()
+
+    mail_password = os.environ.get("MAIL_PASSWORD")
+    if mail_password:
+        # Google App Passwords are often displayed with spaces, which smtplib/gmail doesn't like
+        mail_password = mail_password.replace(" ", "")
+
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
         # Default mail settings, can be overridden in config.py
@@ -44,8 +53,8 @@ def create_app(test_config=None):
         in ["true", "1", "t"],
         MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower()
         in ["true", "1", "t"],
-        MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
-        MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
+        MAIL_USERNAME=mail_username,
+        MAIL_PASSWORD=mail_password,
         MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
         or "noreply@pickaladder.com",
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
