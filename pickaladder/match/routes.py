@@ -287,6 +287,9 @@ def create_match():
                 "matchType": form.match_type.data,
             }
 
+            if group_id:
+                match_data["groupId"] = group_id
+
             if form.match_type.data == "singles":
                 player1_ref = db.collection("users").document(user_id)
                 player2_ref = db.collection("users").document(form.player2.data)
