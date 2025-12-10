@@ -26,7 +26,6 @@ class AppFirebaseTestCase(unittest.TestCase):
 
     def test_mail_config_sanitization(self):
         """Test that MAIL_USERNAME and MAIL_PASSWORD are sanitized correctly."""
-
         # Test case 1: Quotes and spaces in password, quotes in username
         env_vars = {
             "MAIL_USERNAME": '"user@example.com"',
@@ -46,7 +45,6 @@ class AppFirebaseTestCase(unittest.TestCase):
 
     def test_mail_config_sanitization_single_quotes(self):
         """Test that MAIL_USERNAME and MAIL_PASSWORD are sanitized correctly with single quotes."""
-
         env_vars = {
             "MAIL_USERNAME": "'user@example.com'",
             "MAIL_PASSWORD": "'xxxx xxxx xxxx'",
@@ -62,7 +60,6 @@ class AppFirebaseTestCase(unittest.TestCase):
 
     def test_mail_config_sanitization_no_quotes(self):
         """Test that MAIL_USERNAME and MAIL_PASSWORD are sanitized correctly without quotes."""
-
         env_vars = {
             "MAIL_USERNAME": "user@example.com",
             "MAIL_PASSWORD": "xxxx xxxx xxxx",
