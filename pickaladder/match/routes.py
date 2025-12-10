@@ -273,10 +273,16 @@ def create_match():
 
     if form.validate_on_submit():
         try:
+            match_date = form.match_date.data or datetime.date.today()
+            if isinstance(match_date, datetime.date) and not isinstance(
+                match_date, datetime.datetime
+            ):
+                match_date = datetime.datetime.combine(match_date, datetime.time.min)
+
             match_data = {
                 "player1Score": form.player1_score.data,
                 "player2Score": form.player2_score.data,
-                "matchDate": form.match_date.data or datetime.date.today(),
+                "matchDate": match_date,
                 "createdAt": firestore.SERVER_TIMESTAMP,
                 "matchType": form.match_type.data,
             }
