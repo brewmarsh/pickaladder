@@ -206,33 +206,34 @@ def create_match():
                     for user_doc in users_by_email:
                         candidate_player_ids.add(user_doc.id)
 
-    # 2. Friends (always include friends)
-    friends_ref = db.collection("users").document(user_id).collection("friends")
-    friends_docs = friends_ref.stream()
-    for doc in friends_docs:
-        if doc.to_dict().get("status") in ["accepted", "pending"]:
-            candidate_player_ids.add(doc.id)
+    # 2. Friends and other invites (only if not in a group context)
+    if not group_id:
+        friends_ref = db.collection("users").document(user_id).collection("friends")
+        friends_docs = friends_ref.stream()
+        for doc in friends_docs:
+            if doc.to_dict().get("status") in ["accepted", "pending"]:
+                candidate_player_ids.add(doc.id)
 
-    # 3. Users invited to any group by the current user
-    my_invites_query = (
-        db.collection("group_invites")
-        .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
-        .stream()
-    )
-    my_invited_emails = {doc.to_dict().get("email") for doc in my_invites_query}
+        # 3. Users invited to any group by the current user
+        my_invites_query = (
+            db.collection("group_invites")
+            .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
+            .stream()
+        )
+        my_invited_emails = {doc.to_dict().get("email") for doc in my_invites_query}
 
-    if my_invited_emails:
-        # Find users matching these emails
-        my_invited_emails_list = list(my_invited_emails)
-        for i in range(0, len(my_invited_emails_list), 10):
-            batch_emails = my_invited_emails_list[i : i + 10]
-            users_by_email = (
-                db.collection("users")
-                .where(filter=firestore.FieldFilter("email", "in", batch_emails))
-                .stream()
-            )
-            for user_doc in users_by_email:
-                candidate_player_ids.add(user_doc.id)
+        if my_invited_emails:
+            # Find users matching these emails
+            my_invited_emails_list = list(my_invited_emails)
+            for i in range(0, len(my_invited_emails_list), 10):
+                batch_emails = my_invited_emails_list[i : i + 10]
+                users_by_email = (
+                    db.collection("users")
+                    .where(filter=firestore.FieldFilter("email", "in", batch_emails))
+                    .stream()
+                )
+                for user_doc in users_by_email:
+                    candidate_player_ids.add(user_doc.id)
 
     # Remove current user from candidates
     candidate_player_ids.discard(user_id)
