@@ -58,6 +58,7 @@ def toggle_email_verification():
 
 
 @bp.route("/matches")
+@login_required(admin_required=True)
 def admin_matches():
     """Display a list of all matches."""
     db = firestore.client()
@@ -68,10 +69,11 @@ def admin_matches():
     )
     matches = matches_query.stream()
     # This is a simplified view. A full view would need to resolve player refs.
-    return render_template("admin_matches.html", matches=matches)
+    return render_template("admin/matches.html", matches=matches)
 
 
 @bp.route("/delete_match/<string:match_id>", methods=["POST"])
+@login_required(admin_required=True)
 def admin_delete_match(match_id):
     """Delete a match document from Firestore."""
     db = firestore.client()

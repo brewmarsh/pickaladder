@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+{% block title %}Admin - Matches{% endblock %}
+{% block content %}
+<div class="card">
+    <h3>All Matches</h3>
+    <div class="table-container">
+        <table class="table responsive-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th>P1/Team1</th>
+                    <th>P2/Team2</th>
+                    <th>Score</th>
+                    <th>Group ID</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match_doc in matches %}
+                    {% set match = match_doc.to_dict() %}
+                    <tr>
+                        <td data-label="Type">{{ match.matchType or 'singles' }}</td>
+                        <td data-label="Date">
+                            {% if match.matchDate %}
+                                {{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate.strftime is defined else match.matchDate }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td data-label="P1/Team1">
+                            {% if match.matchType == 'doubles' %}
+                                {{ match.team1|length }} players
+                            {% else %}
+                                {{ match.player1Ref.id }}
+                            {% endif %}
+                        </td>
+                        <td data-label="P2/Team2">
+                            {% if match.matchType == 'doubles' %}
+                                {{ match.team2|length }} players
+                            {% else %}
+                                {{ match.player2Ref.id }}
+                            {% endif %}
+                        </td>
+                        <td data-label="Score">{{ match.player1Score }} - {{ match.player2Score }}</td>
+                        <td data-label="Group ID">{{ match.groupId }}</td>
+                        <td data-label="Actions">
+                            <form action="{{ url_for('admin.admin_delete_match', match_id=match_doc.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this match?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7">No matches found.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
