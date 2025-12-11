@@ -499,7 +499,7 @@ def api_dashboard():
         )
         requests_data = [{"id": doc.id, **doc.to_dict()} for doc in request_docs]
 
-    # Fetch recent matches
+    # Fetch recent matches (Singles and Doubles)
     matches_as_p1 = (
         db.collection("matches")
         .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
@@ -512,32 +512,109 @@ def api_dashboard():
         .limit(5)
         .stream()
     )
+    matches_as_t1 = (
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("team1", "array_contains", user_ref))
+        .limit(5)
+        .stream()
+    )
+    matches_as_t2 = (
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("team2", "array_contains", user_ref))
+        .limit(5)
+        .stream()
+    )
+
+    all_matches = (
+        list(matches_as_p1)
+        + list(matches_as_p2)
+        + list(matches_as_t1)
+        + list(matches_as_t2)
+    )
+    # Deduplicate matches by ID
+    unique_matches = {match.id: match for match in all_matches}.values()
+    # Sort by date (assuming matchDate exists)
+    sorted_matches = sorted(
+        unique_matches,
+        key=lambda x: x.to_dict().get("matchDate") or x.create_time,
+        reverse=True,
+    )[:5]
 
     matches_data = []
-    for match_doc in list(matches_as_p1) + list(matches_as_p2):
+    for match_doc in sorted_matches:
         match = match_doc.to_dict()
-        opponent_ref = (
-            match["player2Ref"]
-            if match["player1Ref"].id == user_id
-            else match["player1Ref"]
+        match_type = match.get("matchType", "singles")
+
+        opponent_name = "N/A"
+        opponent_id = None
+        user_score = 0
+        opponent_score = 0
+
+        if match_type == "doubles":
+            # Check if user is in team 1
+            team1_refs = match.get("team1", [])
+            in_team1 = any(ref.id == user_id for ref in team1_refs)
+
+            if in_team1:
+                user_score = match.get("player1Score", 0)
+                opponent_score = match.get("player2Score", 0)
+                # Pick first opponent from team 2
+                team2_refs = match.get("team2", [])
+                if team2_refs:
+                    opp_ref = team2_refs[0]
+                    opponent_id = opp_ref.id
+                    opp_doc = opp_ref.get()
+                    if opp_doc.exists:
+                        opponent_name = opp_doc.to_dict().get("username", "Unknown")
+                    else:
+                        opponent_name = "Unknown"
+                else:
+                    opponent_name = "Unknown Team"
+            else:
+                # Must be in team 2
+                user_score = match.get("player2Score", 0)
+                opponent_score = match.get("player1Score", 0)
+                # Pick first opponent from team 1
+                if team1_refs:
+                    opp_ref = team1_refs[0]
+                    opponent_id = opp_ref.id
+                    opp_doc = opp_ref.get()
+                    if opp_doc.exists:
+                        opponent_name = opp_doc.to_dict().get("username", "Unknown")
+                    else:
+                        opponent_name = "Unknown"
+                else:
+                    opponent_name = "Unknown Team"
+
+            if len(team1_refs) > 1 or len(match.get("team2", [])) > 1:
+                opponent_name += " (Doubles)"
+
+        else:
+            # Singles logic
+            if match["player1Ref"].id == user_id:
+                user_score = match["player1Score"]
+                opponent_score = match["player2Score"]
+                opponent_ref = match["player2Ref"]
+            else:
+                user_score = match["player2Score"]
+                opponent_score = match["player1Score"]
+                opponent_ref = match["player1Ref"]
+
+            opponent_id = opponent_ref.id
+            opponent = opponent_ref.get()
+            if opponent.exists:
+                opponent_name = opponent.to_dict().get("username", "N/A")
+
+        matches_data.append(
+            {
+                "id": match_doc.id,
+                "opponent_username": opponent_name,
+                "opponent_id": opponent_id,
+                "user_score": user_score,
+                "opponent_score": opponent_score,
+                "date": match.get("matchDate", "N/A"),
+            }
         )
-        opponent = opponent_ref.get()
-        if opponent.exists:
-            opponent_data = opponent.to_dict()
-            matches_data.append(
-                {
-                    "id": match_doc.id,
-                    "opponent_username": opponent_data.get("username", "N/A"),
-                    "opponent_id": opponent.id,
-                    "user_score": match["player1Score"]
-                    if match["player1Ref"].id == user_id
-                    else match["player2Score"],
-                    "opponent_score": match["player2Score"]
-                    if match["player1Ref"].id == user_id
-                    else match["player1Score"],
-                    "date": match.get("matchDate", "N/A"),
-                }
-            )
 
     # Get group rankings
     group_rankings = []
