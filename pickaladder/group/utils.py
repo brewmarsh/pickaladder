@@ -36,6 +36,37 @@ def get_group_leaderboard(group_id):
         for ref in member_refs
     }
 
+    # Fetch pending invites and add to player_stats
+    invites_query = (
+        db.collection("group_invites")
+        .where("group_id", "==", group_id)
+        .where("used", "==", False)
+        .stream()
+    )
+    invited_emails = {
+        doc.to_dict().get("email")
+        for doc in invites_query
+        if doc.to_dict().get("email")
+    }
+
+    if invited_emails:
+        invited_emails_list = list(invited_emails)
+        # Find users matching these emails (chunks of 30)
+        for i in range(0, len(invited_emails_list), 30):
+            batch_emails = invited_emails_list[i : i + 30]
+            users_by_email = (
+                db.collection("users").where("email", "in", batch_emails).stream()
+            )
+            for user_doc in users_by_email:
+                if user_doc.id not in player_stats:
+                    player_stats[user_doc.id] = {
+                        "wins": 0,
+                        "losses": 0,
+                        "games": 0,
+                        "total_score": 0,
+                        "user_data": user_doc,
+                    }
+
     # Helper function to update stats
     def update_player_stats(player_id, score, is_winner, is_draw=False):
         if player_id in player_stats:
@@ -48,9 +79,7 @@ def get_group_leaderboard(group_id):
 
     # Fetch all matches for this group
     matches_in_group = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("groupId", "==", group_id))
-        .stream()
+        db.collection("matches").where("groupId", "==", group_id).stream()
     )
 
     for match in matches_in_group:
