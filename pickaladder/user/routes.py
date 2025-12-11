@@ -500,28 +500,26 @@ def api_dashboard():
         requests_data = [{"id": doc.id, **doc.to_dict()} for doc in request_docs]
 
     # Fetch recent matches (Singles and Doubles)
+    # Note: We fetch all matches and sort in-memory to correctly identify the most recent ones
+    # without requiring a composite index for (playerXRef, matchDate).
     matches_as_p1 = (
         db.collection("matches")
         .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
-        .limit(5)
         .stream()
     )
     matches_as_p2 = (
         db.collection("matches")
         .where(filter=firestore.FieldFilter("player2Ref", "==", user_ref))
-        .limit(5)
         .stream()
     )
     matches_as_t1 = (
         db.collection("matches")
         .where(filter=firestore.FieldFilter("team1", "array_contains", user_ref))
-        .limit(5)
         .stream()
     )
     matches_as_t2 = (
         db.collection("matches")
         .where(filter=firestore.FieldFilter("team2", "array_contains", user_ref))
-        .limit(5)
         .stream()
     )
 
@@ -613,6 +611,7 @@ def api_dashboard():
                 "user_score": user_score,
                 "opponent_score": opponent_score,
                 "date": match.get("matchDate", "N/A"),
+                "is_group_match": bool(match.get("groupId")),
             }
         )
 

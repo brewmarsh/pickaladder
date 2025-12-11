@@ -178,7 +178,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const matchRowTemplate = (match) => `
         <tr class="clickable-row" data-href="/match/${match.id}">
             <td data-label="Date">${match.date || 'N/A'}</td>
-            <td data-label="Opponent"><a href="${urls.view_user(match.opponent_id)}">${match.opponent_username}</a></td>
+            <td data-label="Opponent">
+                <a href="${urls.view_user(match.opponent_id)}">${match.opponent_username}</a>
+                ${match.is_group_match ? '<span title="Group Match" style="margin-left: 5px; cursor: help;">👥</span>' : ''}
+            </td>
             <td data-label="Score">${match.user_score} - ${match.opponent_score}</td>
         </tr>
     `;
