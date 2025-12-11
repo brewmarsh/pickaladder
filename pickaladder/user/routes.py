@@ -525,14 +525,19 @@ def api_dashboard():
         .stream()
     )
 
-    all_matches = list(matches_as_p1) + list(matches_as_p2) + list(matches_as_t1) + list(matches_as_t2)
+    all_matches = (
+        list(matches_as_p1)
+        + list(matches_as_p2)
+        + list(matches_as_t1)
+        + list(matches_as_t2)
+    )
     # Deduplicate matches by ID
     unique_matches = {match.id: match for match in all_matches}.values()
     # Sort by date (assuming matchDate exists)
     sorted_matches = sorted(
         unique_matches,
         key=lambda x: x.to_dict().get("matchDate") or x.create_time,
-        reverse=True
+        reverse=True,
     )[:5]
 
     matches_data = []
