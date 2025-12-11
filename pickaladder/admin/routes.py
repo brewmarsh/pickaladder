@@ -141,6 +141,23 @@ def promote_user(user_id):
     return redirect(url_for("user.users"))
 
 
+@bp.route("/verify_user/<string:user_id>", methods=["POST"])
+@login_required(admin_required=True)
+def verify_user(user_id):
+    """Manually verify a user's email."""
+    db = firestore.client()
+    try:
+        auth.update_user(user_id, email_verified=True)
+        user_ref = db.collection("users").document(user_id)
+        # Update the local user document to reflect the change immediately in the UI
+        # assuming the UI checks this field.
+        user_ref.update({"email_verified": True})
+        flash("User email verified successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for("user.users"))
+
+
 @bp.route("/generate_users", methods=["POST"])
 def generate_users():
     """Generate a number of fake users for testing."""
