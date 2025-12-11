@@ -130,6 +130,105 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             {"dark_mode": True, "duprRating": 5.5}
         )
 
+    def _setup_dashboard_mocks(self, mock_db):
+        """Set up specific mocks for the dashboard API tests."""
+        self.mock_users_coll = MagicMock()
+        self.mock_matches_coll = MagicMock()
+        self.mock_groups_coll = MagicMock()
+
+        def collection_side_effect(name):
+            if name == "users":
+                return self.mock_users_coll
+            if name == "matches":
+                return self.mock_matches_coll
+            if name == "groups":
+                return self.mock_groups_coll
+            return MagicMock()
+
+        mock_db.collection.side_effect = collection_side_effect
+
+        # User doc setup
+        self.mock_user_doc = MagicMock()
+        self.mock_user_doc.id = MOCK_USER_ID
+        self.mock_user_doc.get.return_value.to_dict.return_value = {"username": "user1"}
+        self.mock_users_coll.document.return_value = self.mock_user_doc
+
+        # Empty friends/requests/groups by default
+        self.mock_user_doc.collection(
+            "friends"
+        ).where.return_value.stream.return_value = []
+        self.mock_user_doc.collection(
+            "friends"
+        ).where.return_value.where.return_value.stream.return_value = []
+        self.mock_groups_coll.where.return_value.stream.return_value = []
+
+    def test_api_dashboard_fetches_all_matches_for_sorting(self):
+        """Test that all matches are fetched (no limit) to allow correct in-memory sorting."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+        self._setup_dashboard_mocks(mock_db)
+
+        mock_query_where = MagicMock()
+        self.mock_matches_coll.where.return_value = mock_query_where
+        mock_query_where.stream.return_value = []
+
+        # We also need to mock the path where limit IS called, to avoid crash if it is called
+        mock_query_limit = MagicMock()
+        mock_query_where.limit.return_value = mock_query_limit
+        mock_query_limit.stream.return_value = []
+
+        self.client.get("/user/api/dashboard")
+
+        # Assert that limit was NOT called on the query
+        self.assertFalse(
+            mock_query_where.limit.called,
+            "limit() should not be called on match queries",
+        )
+        self.assertFalse(
+            mock_query_where.order_by.called,
+            "order_by() should not be called (avoids composite index)",
+        )
+
+    def test_api_dashboard_returns_group_match_flag(self):
+        """Test that the response includes an indicator for group matches."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+        self._setup_dashboard_mocks(mock_db)
+
+        # Construct a mock match with groupId
+        mock_match = MagicMock()
+        mock_match.id = "match1"
+        mock_p2_ref = MagicMock()
+        mock_p2_ref.id = "user2"
+        mock_p2_ref.get.return_value.exists = True
+        mock_p2_ref.get.return_value.to_dict.return_value = {"username": "user2"}
+
+        mock_match.to_dict.return_value = {
+            "matchType": "singles",
+            "player1Ref": self.mock_user_doc,  # User is player 1
+            "player2Ref": mock_p2_ref,
+            "player1Score": 10,
+            "player2Score": 5,
+            "matchDate": "2023-01-01",
+            "groupId": "group123",  # This makes it a group match
+        }
+
+        mock_stream = [mock_match]
+
+        # Mock for the code path without limit (where -> stream)
+        self.mock_matches_coll.where.return_value.stream.return_value = mock_stream
+
+        response = self.client.get("/user/api/dashboard")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        matches = data["matches"]
+        self.assertEqual(len(matches), 1)
+        self.assertIn(
+            "is_group_match", matches[0], "is_group_match field missing in response"
+        )
+        self.assertTrue(matches[0]["is_group_match"], "is_group_match should be True")
+
 
 if __name__ == "__main__":
     unittest.main()
