@@ -20,7 +20,7 @@ from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import get_group_leaderboard
-from pickaladder.utils import send_email
+from pickaladder.utils import EmailError, send_email
 
 from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm
@@ -89,6 +89,10 @@ def edit_profile():
                 )
             except auth.EmailAlreadyExistsError:
                 flash("That email address is already in use.", "danger")
+                return render_template("edit_profile.html", form=form, user=user_data)
+            except EmailError as e:
+                current_app.logger.error(f"Email error updating email: {e}")
+                flash(str(e), "danger")
                 return render_template("edit_profile.html", form=form, user=user_data)
             except Exception as e:
                 current_app.logger.error(f"Error updating email: {e}")
