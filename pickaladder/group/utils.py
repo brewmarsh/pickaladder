@@ -1,10 +1,28 @@
 """Utility functions for the group blueprint."""
 
+import secrets
 import threading
 
 from firebase_admin import firestore
 
 from pickaladder.utils import send_email
+
+
+def get_random_joke():
+    """Return a random sport/dad joke."""
+    jokes = [
+        "Why did the pickleball player get arrested? Because he was caught smashing!",
+        "What do you call a girl standing in the middle of a tennis court? Annette.",
+        "Why are fish never good at tennis? Because they don't like getting close to the net.",
+        "What is a tennis player's favorite city? Volley-wood.",
+        "Why do tennis players never get married? Because love means nothing to them.",
+        "What time does a tennis player go to bed? Ten-ish.",
+        "Why did the pickleball hit the net? It wanted to see what was on the other side.",
+        "How is a pickleball game like a waiter? They both serve.",
+        "Why should you never fall in love with a tennis player? To them, 'Love' means nothing.",
+        "What do you serve but not eat? A tennis ball.",
+    ]
+    return secrets.choice(jokes)
 
 
 def get_group_leaderboard(group_id):
