@@ -21,7 +21,7 @@ from werkzeug.exceptions import UnprocessableEntity
 
 from pickaladder.errors import DuplicateResourceError
 from pickaladder.user.utils import merge_ghost_user
-from pickaladder.utils import send_email
+from pickaladder.utils import EmailError, send_email
 
 from . import bp
 from .forms import ChangePasswordForm, LoginForm, RegisterForm
@@ -117,6 +117,9 @@ def register():
 
         except auth.EmailAlreadyExistsError:
             flash("Email address is already registered.", "danger")
+        except EmailError as e:
+            current_app.logger.error(f"Email error during registration: {e}")
+            flash(str(e), "danger")
         except Exception as e:
             current_app.logger.error(f"Error during registration: {e}")
             flash("An unexpected error occurred during registration.", "danger")
