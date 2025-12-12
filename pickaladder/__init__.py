@@ -46,6 +46,14 @@ def create_app(test_config=None):
         # We also strip quotes to handle cases where users wrap the password in quotes in their env vars
         mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
 
+    if not app.config.get("TESTING"):
+        app.logger.info(
+            f"Configuring mail with user: {mail_username}, "
+            f"password length: {len(mail_password) if mail_password else 0}, "
+            f"server: {os.environ.get('MAIL_SERVER') or 'smtp.gmail.com'}, "
+            f"port: {os.environ.get('MAIL_PORT') or 587}"
+        )
+
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
         # Default mail settings, can be overridden in config.py
