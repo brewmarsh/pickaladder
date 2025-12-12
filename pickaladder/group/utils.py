@@ -157,6 +157,10 @@ def send_invite_email_background(app, invite_token, email_data):
                     {"status": "sent", "last_error": firestore.DELETE_FIELD}
                 )
             except Exception as e:
+                import sys
+
+                # Log the full exception to stderr so it shows up in Docker logs
+                print(f"ERROR: Background invite email failed: {e}", file=sys.stderr)
                 # Store the error message
                 invite_ref.update({"status": "failed", "last_error": str(e)})
 

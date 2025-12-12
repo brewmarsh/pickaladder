@@ -31,8 +31,9 @@ def send_email(to, subject, template, **kwargs):
     except smtplib.SMTPAuthenticationError as e:
         if e.smtp_code == 534:
             raise EmailError(
-                "Authentication failed. Google requires you to sign in via a web browser or use an App Password if 2FA is enabled. "
-                "See https://support.google.com/accounts/answer/185833 for instructions on how to generate an App Password."
+                "Authentication failed with code 534. This specifically means Google rejected the password because it expects an App Password. "
+                "Even if your password is 16 characters, please ensure it is a freshly generated App Password, not your regular account password. "
+                "See https://support.google.com/accounts/answer/185833"
             ) from e
         raise EmailError(f"SMTP Authentication failed: {e}") from e
     except Exception as e:
