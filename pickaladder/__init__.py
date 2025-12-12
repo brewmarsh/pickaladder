@@ -37,13 +37,22 @@ def create_app(test_config=None):
     # Load configuration
     mail_username = os.environ.get("MAIL_USERNAME")
     if mail_username:
-        mail_username = mail_username.strip().strip("'").strip('"')
+        # Emails shouldn't have spaces. Remove them to handle copy-paste errors or quotes with spaces.
+        mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
 
     mail_password = os.environ.get("MAIL_PASSWORD")
     if mail_password:
         # Google App Passwords are often displayed with spaces, which smtplib/gmail doesn't like
         # We also strip quotes to handle cases where users wrap the password in quotes in their env vars
         mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
+
+    if not app.config.get("TESTING"):
+        app.logger.info(
+            f"Configuring mail with user: {mail_username}, "
+            f"password length: {len(mail_password) if mail_password else 0}, "
+            f"server: {os.environ.get('MAIL_SERVER') or 'smtp.gmail.com'}, "
+            f"port: {os.environ.get('MAIL_PORT') or 587}"
+        )
 
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
