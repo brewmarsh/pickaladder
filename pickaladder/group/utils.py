@@ -1,6 +1,6 @@
 """Utility functions for the group blueprint."""
 
-import random
+import secrets
 import threading
 
 from firebase_admin import firestore
@@ -22,7 +22,7 @@ def get_random_joke():
         "Why should you never fall in love with a tennis player? To them, 'Love' means nothing.",
         "What do you serve but not eat? A tennis ball.",
     ]
-    return random.choice(jokes)
+    return secrets.choice(jokes)
 
 
 def get_group_leaderboard(group_id):
