@@ -1,5 +1,6 @@
 """Routes for the user blueprint."""
 
+import datetime
 import os
 import secrets
 import tempfile
@@ -203,7 +204,7 @@ def view_user(user_id):
     )
     friends = [db.collection("users").document(f.id).get() for f in friends_query]
 
-    # Fetch user's match history (limited for display)
+    # Fetch user's match history
     matches_as_p1 = (
         db.collection("matches")
         .where(filter=firestore.FieldFilter("player1Ref", "==", profile_user_ref))
@@ -214,35 +215,217 @@ def view_user(user_id):
         .where(filter=firestore.FieldFilter("player2Ref", "==", profile_user_ref))
         .stream()
     )
-    matches = list(matches_as_p1) + list(matches_as_p2)
+    matches_as_t1 = (
+        db.collection("matches")
+        .where(
+            filter=firestore.FieldFilter("team1", "array_contains", profile_user_ref)
+        )
+        .stream()
+    )
+    matches_as_t2 = (
+        db.collection("matches")
+        .where(
+            filter=firestore.FieldFilter("team2", "array_contains", profile_user_ref)
+        )
+        .stream()
+    )
 
-    # Calculate win/loss record
+    all_matches = (
+        list(matches_as_p1)
+        + list(matches_as_p2)
+        + list(matches_as_t1)
+        + list(matches_as_t2)
+    )
+    # Deduplicate matches by ID
+    unique_matches = {match.id: match for match in all_matches}.values()
+
     wins = 0
     losses = 0
-    for match_doc in matches:
+    all_processed_matches = []
+
+    for match_doc in unique_matches:
         match_data = match_doc.to_dict()
-        is_player1 = match_data.get("player1Ref") == profile_user_ref
+        match_type = match_data.get("matchType", "singles")
+        p1_score = match_data.get("player1Score", 0)
+        p2_score = match_data.get("player2Score", 0)
 
-        player1_score = match_data.get("player1Score", 0)
-        player2_score = match_data.get("player2Score", 0)
+        user_won = False
+        user_lost = False
 
-        if is_player1:
-            if player1_score > player2_score:
-                wins += 1
-            else:
-                losses += 1
-        else:  # is_player2
-            if player2_score > player1_score:
-                wins += 1
-            else:
-                losses += 1
+        if match_type == "doubles":
+            team1_refs = match_data.get("team1", [])
+            in_team1 = any(ref.id == user_id for ref in team1_refs)
+
+            if in_team1:
+                if p1_score > p2_score:
+                    user_won = True
+                else:
+                    user_lost = True
+            else:  # in team 2
+                if p2_score > p1_score:
+                    user_won = True
+                else:
+                    user_lost = True
+        else:
+            is_player1 = match_data.get("player1Ref") == profile_user_ref
+            if is_player1:
+                if p1_score > p2_score:
+                    user_won = True
+                else:
+                    user_lost = True
+            else:  # is_player2
+                if p2_score > p1_score:
+                    user_won = True
+                else:
+                    user_lost = True
+
+        if user_won:
+            wins += 1
+        elif user_lost:
+            losses += 1
+
+        all_processed_matches.append(
+            {
+                "doc": match_doc,
+                "data": match_data,
+                "date": match_data.get("matchDate") or match_doc.create_time,
+            }
+        )
+
     record = {"wins": wins, "losses": losses}
+
+    # Sort and Limit for display
+    all_processed_matches.sort(
+        key=lambda x: x["date"] or datetime.datetime.min, reverse=True
+    )
+    display_items = all_processed_matches[:20]
+
+    # Collect all user refs needed for batch fetching
+    needed_refs = set()
+    needed_refs.add(profile_user_ref)
+
+    for item in display_items:
+        data = item["data"]
+        match_type = data.get("matchType", "singles")
+        if match_type == "doubles":
+            needed_refs.update(data.get("team1", []))
+            needed_refs.update(data.get("team2", []))
+        else:
+            if data.get("player1Ref"):
+                needed_refs.add(data.get("player1Ref"))
+            if data.get("player2Ref"):
+                needed_refs.add(data.get("player2Ref"))
+
+    # Fetch all unique users in one batch
+    unique_refs_list = list(needed_refs)
+    users_map = {}
+    if unique_refs_list:
+        users_docs = db.get_all(unique_refs_list)
+        users_map = {doc.id: doc.to_dict() for doc in users_docs if doc.exists}
+
+    def get_username(ref, default="Unknown"):
+        if not ref:
+            return default
+        u_data = users_map.get(ref.id)
+        if u_data:
+            return u_data.get("username", default)
+        return default
+
+    final_matches = []
+    for item in display_items:
+        data = item["data"]
+        m_id = item["doc"].id
+        match_type = data.get("matchType", "singles")
+
+        # Construct object compatible with template
+        match_obj = {
+            "id": m_id,
+            "match_date": data.get("matchDate"),
+            "player1_score": data.get("player1Score", 0),
+            "player2_score": data.get("player2Score", 0),
+            "player1_id": "",
+            "player1": {"username": "Unknown"},
+            "player2": {"id": "", "username": "Unknown"},
+        }
+
+        if match_type == "doubles":
+            team1_refs = data.get("team1", [])
+            team2_refs = data.get("team2", [])
+            in_team1 = any(ref.id == user_id for ref in team1_refs)
+
+            if in_team1:
+                # Profile user is in Team 1 (Player 1 slot)
+                match_obj["player1_id"] = user_id
+                match_obj["player1"] = {
+                    "id": user_id,
+                    "username": profile_user_data.get("username"),
+                }
+
+                # Opponent is Team 2 (Player 2 slot)
+                opp_name = "Unknown Team"
+                opp_id = ""
+                if team2_refs:
+                    opp_ref = team2_refs[0]
+                    opp_id = opp_ref.id
+                    opp_name = get_username(opp_ref)
+                    if len(team2_refs) > 1 or len(team1_refs) > 1:
+                        opp_name += " (Doubles)"
+
+                match_obj["player2"] = {"id": opp_id, "username": opp_name}
+
+            else:
+                # Profile user is in Team 2 (Player 2 slot)
+                match_obj["player1_id"] = ""  # Not profile user
+
+                # Opponent is Team 1 (Player 1 slot)
+                opp_name = "Unknown Team"
+                opp_id = ""
+                if team1_refs:
+                    opp_ref = team1_refs[0]
+                    opp_id = opp_ref.id
+                    opp_name = get_username(opp_ref)
+                    if len(team1_refs) > 1 or len(team2_refs) > 1:
+                        opp_name += " (Doubles)"
+
+                match_obj["player1"] = {"id": opp_id, "username": opp_name}
+                match_obj["player2"] = {
+                    "id": user_id,
+                    "username": profile_user_data.get("username"),
+                }
+
+        else:
+            # Singles
+            p1_ref = data.get("player1Ref")
+            p2_ref = data.get("player2Ref")
+
+            if p1_ref and p1_ref.id == user_id:
+                match_obj["player1_id"] = user_id
+                match_obj["player1"] = {
+                    "id": user_id,
+                    "username": profile_user_data.get("username"),
+                }
+
+                opp_name = get_username(p2_ref)
+                opp_id = p2_ref.id if p2_ref else ""
+                match_obj["player2"] = {"id": opp_id, "username": opp_name}
+            else:
+                match_obj["player1_id"] = p1_ref.id if p1_ref else ""
+                opp_name = get_username(p1_ref)
+                opp_id = p1_ref.id if p1_ref else ""
+                match_obj["player1"] = {"id": opp_id, "username": opp_name}
+
+                match_obj["player2"] = {
+                    "id": user_id,
+                    "username": profile_user_data.get("username"),
+                }
+
+        final_matches.append(match_obj)
 
     return render_template(
         "user_profile.html",
         profile_user=profile_user_data,
         friends=friends,
-        matches=matches,
+        matches=final_matches,
         is_friend=is_friend,
         friend_request_sent=friend_request_sent,
         record=record,

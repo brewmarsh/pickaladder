@@ -10,6 +10,7 @@ from pickaladder import create_app
 
 # Mock user payloads for consistent test data
 MOCK_USER_ID = "user1"
+MOCK_PROFILE_USER_ID = "user2"
 MOCK_FIREBASE_TOKEN_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user1@example.com"}
 MOCK_FIRESTORE_USER_DATA = {"name": "User One", "isAdmin": True, "uid": "user1"}
 
@@ -228,6 +229,99 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "is_group_match", matches[0], "is_group_match field missing in response"
         )
         self.assertTrue(matches[0]["is_group_match"], "is_group_match should be True")
+
+    @patch("pickaladder.user.routes.render_template")
+    def test_view_user_includes_doubles_and_processes_matches(
+        self, mock_render_template
+    ):
+        """Test that view_user fetches doubles matches and processes them for the template."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+
+        # Mock profile user
+        mock_profile_user_ref = MagicMock()
+        mock_profile_user_ref.id = MOCK_PROFILE_USER_ID
+        mock_profile_user_ref.get.return_value.exists = True
+        mock_profile_user_ref.get.return_value.to_dict.return_value = {
+            "username": "profile_user"
+        }
+
+        # Use side_effect to return correct mock collection
+        mock_matches_coll = MagicMock()
+
+        def collection_side_effect(name):
+            if name == "users":
+                mock_users_coll = MagicMock()
+                mock_users_coll.document.return_value = mock_profile_user_ref
+                return mock_users_coll
+            if name == "matches":
+                return mock_matches_coll
+            return MagicMock()
+
+        mock_db.collection.side_effect = collection_side_effect
+
+        # Mock matches result
+        mock_match = MagicMock()
+        mock_match.id = "match1"
+        mock_p2_ref = MagicMock()
+        mock_p2_ref.id = "opponent_id"
+
+        mock_match.to_dict.return_value = {
+            "matchDate": "2023-01-01",
+            "player1Score": 11,
+            "player2Score": 9,
+            "player1Ref": mock_profile_user_ref,
+            "player2Ref": mock_p2_ref,
+            "matchType": "singles",
+        }
+        mock_matches_coll.where.return_value.stream.return_value = [mock_match]
+
+        # Mock batch fetch (db.get_all)
+        mock_opponent_doc = MagicMock()
+        mock_opponent_doc.id = "opponent_id"
+        mock_opponent_doc.exists = True
+        mock_opponent_doc.to_dict.return_value = {"username": "opponent_user"}
+
+        mock_profile_doc = MagicMock()
+        mock_profile_doc.id = MOCK_PROFILE_USER_ID
+        mock_profile_doc.exists = True
+        mock_profile_doc.to_dict.return_value = {"username": "profile_user"}
+
+        mock_db.get_all.return_value = [mock_profile_doc, mock_opponent_doc]
+
+        # Execute request
+        self.client.get(f"/user/{MOCK_PROFILE_USER_ID}")
+
+        # Check that team1/team2 queries were made
+        mock_field_filter = self.mock_firestore_service.FieldFilter
+        actual_calls = mock_field_filter.call_args_list
+
+        found_team1 = any(
+            c[0][0] == "team1" and c[0][1] == "array_contains" for c in actual_calls
+        )
+        found_team2 = any(
+            c[0][0] == "team2" and c[0][1] == "array_contains" for c in actual_calls
+        )
+
+        self.assertTrue(
+            found_team1, "Did not query matches where user is in team1 (doubles)"
+        )
+        self.assertTrue(
+            found_team2, "Did not query matches where user is in team2 (doubles)"
+        )
+
+        # Check template context
+        args, kwargs = mock_render_template.call_args
+        matches = kwargs.get("matches")
+        self.assertTrue(matches, "Matches not passed to template")
+
+        first_match = matches[0]
+        self.assertNotEqual(
+            first_match, mock_match, "Should not pass raw Firestore snapshots"
+        )
+        self.assertIn("match_date", first_match)
+        self.assertIn("player1", first_match)
+        self.assertIn("username", first_match["player1"])
 
 
 if __name__ == "__main__":
