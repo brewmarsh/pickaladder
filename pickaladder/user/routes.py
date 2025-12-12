@@ -217,12 +217,16 @@ def view_user(user_id):
     )
     matches_as_t1 = (
         db.collection("matches")
-        .where(filter=firestore.FieldFilter("team1", "array_contains", profile_user_ref))
+        .where(
+            filter=firestore.FieldFilter("team1", "array_contains", profile_user_ref)
+        )
         .stream()
     )
     matches_as_t2 = (
         db.collection("matches")
-        .where(filter=firestore.FieldFilter("team2", "array_contains", profile_user_ref))
+        .where(
+            filter=firestore.FieldFilter("team2", "array_contains", profile_user_ref)
+        )
         .stream()
     )
 
