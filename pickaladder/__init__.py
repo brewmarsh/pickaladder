@@ -100,6 +100,47 @@ def create_app(test_config=None):
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 
+    if not app.config.get("TESTING"):
+        import sys
+
+        print(
+            f"DEBUG: Mail Config - User: {app.config.get('MAIL_USERNAME')}",
+            file=sys.stderr,
+        )
+        print(
+            f"DEBUG: Mail Config - Server: {app.config.get('MAIL_SERVER')}",
+            file=sys.stderr,
+        )
+        print(
+            f"DEBUG: Mail Config - Port: {app.config.get('MAIL_PORT')}", file=sys.stderr
+        )
+        print(
+            f"DEBUG: Mail Config - TLS: {app.config.get('MAIL_USE_TLS')}",
+            file=sys.stderr,
+        )
+        print(
+            f"DEBUG: Mail Config - SSL: {app.config.get('MAIL_USE_SSL')}",
+            file=sys.stderr,
+        )
+        pwd = app.config.get("MAIL_PASSWORD")
+        if pwd:
+            print(
+                f"DEBUG: Mail Config - Password Length: {len(pwd)}",
+                file=sys.stderr,
+            )
+            if len(pwd) == 16:
+                print(
+                    "DEBUG: Password length matches standard App Password length (16).",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    "DEBUG: Password length DOES NOT match standard App Password length (16). Possible regular password used?",
+                    file=sys.stderr,
+                )
+        else:
+            print("DEBUG: Mail Config - No Password set!", file=sys.stderr)
+
     if test_config:
         app.config.update(test_config)
 
