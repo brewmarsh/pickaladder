@@ -47,12 +47,42 @@ def create_app(test_config=None):
         mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
 
     if not app.config.get("TESTING"):
-        app.logger.info(
-            f"Configuring mail with user: {mail_username}, "
-            f"password length: {len(mail_password) if mail_password else 0}, "
-            f"server: {os.environ.get('MAIL_SERVER') or 'smtp.gmail.com'}, "
-            f"port: {os.environ.get('MAIL_PORT') or 587}"
+        import sys
+
+        print(f"DEBUG: Mail Config - User: {mail_username}", file=sys.stderr)
+        print(
+            f"DEBUG: Mail Config - Server: {os.environ.get('MAIL_SERVER', 'smtp.gmail.com')}",
+            file=sys.stderr,
         )
+        print(
+            f"DEBUG: Mail Config - Port: {os.environ.get('MAIL_PORT', 587)}",
+            file=sys.stderr,
+        )
+        print(
+            f"DEBUG: Mail Config - TLS: {os.environ.get('MAIL_USE_TLS', 'true')}",
+            file=sys.stderr,
+        )
+        print(
+            f"DEBUG: Mail Config - SSL: {os.environ.get('MAIL_USE_SSL', 'false')}",
+            file=sys.stderr,
+        )
+        if mail_password:
+            print(
+                f"DEBUG: Mail Config - Password Length: {len(mail_password)}",
+                file=sys.stderr,
+            )
+            if len(mail_password) == 16:
+                print(
+                    "DEBUG: Password length matches standard App Password length (16).",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    "DEBUG: Password length DOES NOT match standard App Password length (16). Possible regular password used?",
+                    file=sys.stderr,
+                )
+        else:
+            print("DEBUG: Mail Config - No Password set!", file=sys.stderr)
 
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
