@@ -37,7 +37,8 @@ def create_app(test_config=None):
     # Load configuration
     mail_username = os.environ.get("MAIL_USERNAME")
     if mail_username:
-        mail_username = mail_username.strip().strip("'").strip('"')
+        # Emails shouldn't have spaces. Remove them to handle copy-paste errors or quotes with spaces.
+        mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
 
     mail_password = os.environ.get("MAIL_PASSWORD")
     if mail_password:
