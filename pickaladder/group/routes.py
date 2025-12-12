@@ -16,7 +16,11 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.group.utils import get_group_leaderboard, send_invite_email_background
+from pickaladder.group.utils import (
+    get_group_leaderboard,
+    get_random_joke,
+    send_invite_email_background,
+)
 
 from . import bp
 from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
@@ -248,11 +252,12 @@ def view_group(group_id):
             invite_url = url_for(".handle_invite", token=token, _external=True)
             email_data = {
                 "to": email,
-                "subject": f"Join {group_data.get('name')} on Pick a Ladder!",
+                "subject": f"Join {group_data.get('name')} on pickaladder!",
                 "template": "email/group_invite.html",
                 "name": name,
                 "group_name": group_data.get("name"),
                 "invite_url": invite_url,
+                "joke": get_random_joke(),
             }
 
             send_invite_email_background(
@@ -419,11 +424,12 @@ def resend_invite(token):
     invite_url = url_for(".handle_invite", token=token, _external=True)
     email_data = {
         "to": data.get("email"),
-        "subject": f"Join {group.to_dict().get('name')} on Pick a Ladder!",
+        "subject": f"Join {group.to_dict().get('name')} on pickaladder!",
         "template": "email/group_invite.html",
         "name": data.get("name"),
         "group_name": group.to_dict().get("name"),
         "invite_url": invite_url,
+        "joke": get_random_joke(),
     }
 
     send_invite_email_background(current_app._get_current_object(), token, email_data)
