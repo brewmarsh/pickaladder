@@ -135,8 +135,10 @@ def get_group_leaderboard(group_id):
             }
         )
 
-    # Sort the leaderboard by wins
-    leaderboard.sort(key=lambda x: x["wins"], reverse=True)
+    # Sort the leaderboard by avg_score, then wins, then games_played
+    leaderboard.sort(
+        key=lambda x: (x["avg_score"], x["wins"], x["games_played"]), reverse=True
+    )
     return leaderboard
 
 
