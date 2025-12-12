@@ -46,6 +46,44 @@ def create_app(test_config=None):
         # We also strip quotes to handle cases where users wrap the password in quotes in their env vars
         mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
 
+    if not app.config.get("TESTING"):
+        import sys
+
+        print(f"DEBUG: Mail Config - User: {mail_username}", file=sys.stderr)
+        print(
+            f"DEBUG: Mail Config - Server: {os.environ.get('MAIL_SERVER', 'smtp.gmail.com')}",
+            file=sys.stderr,
+        )
+        print(
+            f"DEBUG: Mail Config - Port: {os.environ.get('MAIL_PORT', 587)}",
+            file=sys.stderr,
+        )
+        print(
+            f"DEBUG: Mail Config - TLS: {os.environ.get('MAIL_USE_TLS', 'true')}",
+            file=sys.stderr,
+        )
+        print(
+            f"DEBUG: Mail Config - SSL: {os.environ.get('MAIL_USE_SSL', 'false')}",
+            file=sys.stderr,
+        )
+        if mail_password:
+            print(
+                f"DEBUG: Mail Config - Password Length: {len(mail_password)}",
+                file=sys.stderr,
+            )
+            if len(mail_password) == 16:
+                print(
+                    "DEBUG: Password length matches standard App Password length (16).",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    "DEBUG: Password length DOES NOT match standard App Password length (16). Possible regular password used?",
+                    file=sys.stderr,
+                )
+        else:
+            print("DEBUG: Mail Config - No Password set!", file=sys.stderr)
+
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
         # Default mail settings, can be overridden in config.py
