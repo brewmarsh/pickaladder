@@ -66,8 +66,8 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
     def _get_auth_headers(self):
         return {"Authorization": "Bearer mock-token"}
 
-    def test_create_match(self):
-        """Test creating a new match."""
+    def test_record_match(self):
+        """Test recording a new match."""
         self._set_session_user()
 
         mock_db = self.mock_firestore_service.client.return_value
@@ -102,7 +102,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_opponent_user_query.stream.return_value = [mock_opponent_user_doc]
 
         response = self.client.post(
-            "/match/create",
+            "/match/record",
             headers=self._get_auth_headers(),
             data={
                 "player2": MOCK_OPPONENT_ID,
@@ -113,7 +113,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Match created successfully.", response.data)
+        self.assertIn(b"Match recorded successfully.", response.data)
         mock_matches_collection.add.assert_called_once()
 
     def test_pending_invites_query_uses_correct_field(self):
@@ -150,7 +150,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         mock_db.collection.side_effect = collection_side_effect
 
-        self.client.get("/match/create", headers=self._get_auth_headers())
+        self.client.get("/match/record", headers=self._get_auth_headers())
 
         # Verify that we queried for 'inviter_id' (not 'invited_by')
         calls = []

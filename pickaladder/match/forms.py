@@ -6,7 +6,7 @@ from wtforms.validators import DataRequired, InputRequired, Optional
 
 
 class MatchForm(FlaskForm):
-    """Form for creating a new match."""
+    """Form for recording a new match."""
 
     match_type = SelectField(
         "Match Type",

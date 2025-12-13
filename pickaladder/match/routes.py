@@ -159,10 +159,10 @@ def view_match_page(match_id):
     return render_template("view_match.html", **context)
 
 
-@bp.route("/create", methods=["GET", "POST"])
+@bp.route("/record", methods=["GET", "POST"])
 @login_required
-def create_match():
-    """Create a new match."""
+def record_match():
+    """Record a new match."""
     db = firestore.client()
     user_id = g.user["uid"]
     form = MatchForm()
@@ -313,14 +313,14 @@ def create_match():
             # Update last match type
             user_ref.update({"lastMatchRecordedType": form.match_type.data})
 
-            flash("Match created successfully.", "success")
+            flash("Match recorded successfully.", "success")
             if group_id:
                 return redirect(url_for("group.view_group", group_id=group_id))
             return redirect(url_for("user.dashboard"))
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
 
-    return render_template("create_match.html", form=form)
+    return render_template("record_match.html", form=form)
 
 
 @bp.route("/leaderboard")

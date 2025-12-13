@@ -44,7 +44,7 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
 
         matches = []
 
-        def create_match(p1_ref, p1_score, p2_ref, p2_score):
+        def record_match(p1_ref, p1_score, p2_ref, p2_score):
             m = MagicMock()
             m.to_dict.return_value = {
                 "matchType": "singles",
@@ -57,15 +57,15 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
 
         # U1 wins 6 times with score 11
         for _ in range(6):
-            matches.append(create_match(u1_ref, 11, u4_ref, 0))
+            matches.append(record_match(u1_ref, 11, u4_ref, 0))
 
         # U2 wins 6 times with score 11
         for _ in range(6):
-            matches.append(create_match(u2_ref, 11, u4_ref, 0))
+            matches.append(record_match(u2_ref, 11, u4_ref, 0))
 
         # U3 loses 6 times with score 12 (against 13)
         for _ in range(6):
-            matches.append(create_match(u3_ref, 12, u4_ref, 13))
+            matches.append(record_match(u3_ref, 12, u4_ref, 13))
 
         # We also need to mock group invites stream to be empty
         mock_db.collection.return_value.where.return_value.where.return_value.stream.return_value = []
