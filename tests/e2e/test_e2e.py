@@ -1,5 +1,6 @@
 from playwright.sync_api import expect
 
+
 def test_user_journey(app_server, page_with_firebase, mock_db):
     page = page_with_firebase
     base_url = app_server

@@ -1,22 +1,26 @@
 import os
 import threading
-import pytest
 from unittest.mock import MagicMock, patch
-from werkzeug.serving import make_server
-from mockfirestore import MockFirestore, CollectionReference
-from mockfirestore.query import Query
-from mockfirestore.document import DocumentSnapshot, DocumentReference
 
+import pytest
+from mockfirestore import CollectionReference, MockFirestore
+from mockfirestore.document import DocumentReference, DocumentSnapshot
+from mockfirestore.query import Query
+from werkzeug.serving import make_server
+
+"""Test configuration and mocks for end-to-end tests."""
 # --- Mock Infrastructure & Patches ---
 
 # Fix mockfirestore Query.get to return a list instead of generator
 def query_get(self):
+    """Return a list instead of generator."""
     return list(self.stream())
 Query.get = query_get
 
 # Patch CollectionReference.where
 original_collection_where = CollectionReference.where
 def collection_where(self, field_path=None, op_string=None, value=None, filter=None):
+    """Handle FieldFilter argument in where."""
     if filter:
         return original_collection_where(self, filter.field_path, filter.op_string, filter.value)
     return original_collection_where(self, field_path, op_string, value)
@@ -25,6 +29,7 @@ CollectionReference.where = collection_where
 # Patch Query.where
 original_where = Query.where
 def query_where(self, field_path=None, op_string=None, value=None, filter=None):
+    """Handle FieldFilter argument in where."""
     if filter:
         return original_where(self, filter.field_path, filter.op_string, filter.value)
     return original_where(self, field_path, op_string, value)
@@ -33,6 +38,7 @@ Query.where = query_where
 # Patch Query._compare_func
 original_compare_func = Query._compare_func
 def query_compare_func(self, op: str):
+    """Handle document ID comparisons and array_contains."""
     if op == 'in':
         def in_op(x, y):
             normalized_y = []
@@ -58,6 +64,7 @@ Query._compare_func = query_compare_func
 # Patch DocumentSnapshot._get_by_field_path
 original_get_by_field_path = DocumentSnapshot._get_by_field_path
 def get_by_field_path(self, field_path: str):
+    """Handle __name__ field path."""
     if field_path == "__name__":
         return self.id
     return original_get_by_field_path(self, field_path)
@@ -65,27 +72,33 @@ DocumentSnapshot._get_by_field_path = get_by_field_path
 
 # Patch DocumentReference equality and hashing
 def doc_ref_eq(self, other):
+    """Equality for DocumentReference."""
     if not isinstance(other, DocumentReference):
         return False
     return self._path == other._path
 def doc_ref_hash(self):
+    """Hash for DocumentReference."""
     return hash(tuple(self._path))
 DocumentReference.__eq__ = doc_ref_eq
 DocumentReference.__hash__ = doc_ref_hash
 
 # Handle ArrayUnion/ArrayRemove
 class MockSentinel:
+    """Mock sentinel for array operations."""
     def __init__(self, values, op):
         self.values = values
         self.op = op
 
 def mock_array_union(values):
+    """Mock ArrayUnion."""
     return MockSentinel(values, 'UNION')
 
 def mock_array_remove(values):
+    """Mock ArrayRemove."""
     return MockSentinel(values, 'REMOVE')
 
 def doc_ref_update(self, data):
+    """Update document handling sentinels."""
     doc_snapshot = self.get()
     if doc_snapshot.exists:
         doc_data = doc_snapshot.to_dict()
@@ -114,22 +127,28 @@ DocumentReference.update = doc_ref_update
 # --- Mock Classes ---
 
 class MockFieldFilter:
+    """Mock for firestore.FieldFilter."""
     def __init__(self, field_path, op_string, value):
         self.field_path = field_path
         self.op_string = op_string
         self.value = value
 
 class MockBatch:
+    """Mock for firestore.WriteBatch."""
     def __init__(self, client):
         self.client = client
         self.ops = []
     def set(self, doc_ref, data, merge=False):
+        """Mock set."""
         self.ops.append(('set', doc_ref, data, merge))
     def update(self, doc_ref, data):
+        """Mock update."""
         self.ops.append(('update', doc_ref, data))
     def delete(self, doc_ref):
+        """Mock delete."""
         self.ops.append(('delete', doc_ref))
     def commit(self):
+        """Mock commit."""
         for op in self.ops:
             if op[0] == 'set':
                 op[1].set(op[2], merge=op[3])
@@ -140,54 +159,73 @@ class MockBatch:
         self.ops = []
 
 class EnhancedMockFirestore(MockFirestore):
+    """Enhanced MockFirestore with batch support."""
     def __init__(self):
         super().__init__()
     def collection(self, name):
+        """Ensure collection exists."""
         if name not in self._data:
             self._data[name] = {}
         return super().collection(name)
     def batch(self):
+        """Return MockBatch."""
         return MockBatch(self)
     def transaction(self):
+        """Return dummy transaction."""
         return MagicMock()
 
 class MockAuthService:
-    class EmailAlreadyExistsError(Exception): pass
-    class UserNotFoundError(Exception): pass
+    """Mock for firebase_admin.auth."""
+    class EmailAlreadyExistsError(Exception):
+        """Mock EmailAlreadyExistsError."""
+        pass
+    class UserNotFoundError(Exception):
+        """Mock UserNotFoundError."""
+        pass
     def verify_id_token(self, token, check_revoked=False):
+        """Mock verify_id_token."""
         if token.startswith("token_"):
             uid = token.replace("token_", "")
             return {"uid": uid, "email": f"{uid}@example.com", "name": uid}
         raise Exception("Invalid token")
     def generate_email_verification_link(self, email):
+        """Mock generate_email_verification_link."""
         return f"http://localhost/verify?email={email}"
     def create_user(self, email, password, **kwargs):
+        """Mock create_user."""
         uid = email.split('@')[0]
         m = MagicMock(uid=uid, email=email)
         m.display_name = uid
         return m
     def get_user(self, uid):
+        """Mock get_user."""
         m = MagicMock(uid=uid, email=f"{uid}@example.com")
         m.display_name = uid
         return m
     def update_user(self, uid, **kwargs):
+        """Mock update_user."""
         pass
 
 # --- Fixtures ---
 
 @pytest.fixture(scope="session")
 def mock_db():
+    """Return singleton mock DB."""
     return EnhancedMockFirestore()
 
 @pytest.fixture(scope="session")
 def mock_auth():
+    """Return singleton mock Auth service."""
     return MockAuthService()
 
 @pytest.fixture(scope="module")
 def app_server(mock_db, mock_auth):
+    """Start Flask server with mocks."""
+    # Ensure firebase_admin submodules are loaded so we can patch them
+    # We don't import them directly to avoid side effects if not needed
     try:
-        from firebase_admin import firestore
-        from firebase_admin import auth
+        import firebase_admin.auth  # noqa: F401
+        import firebase_admin.firestore  # noqa: F401
     except ImportError:
         pass
 
