@@ -184,3 +184,60 @@ def send_invite_email_background(app, invite_token, email_data):
 
     thread = threading.Thread(target=task)
     thread.start()
+
+
+def friend_group_members(db, group_id, new_member_ref):
+    """Automatically create friend relationships between the new member and existing group members."""
+    group_ref = db.collection("groups").document(group_id)
+    group_doc = group_ref.get()
+    if not group_doc.exists:
+        return
+
+    group_data = group_doc.to_dict()
+    member_refs = group_data.get("members", [])
+
+    if not member_refs:
+        return
+
+    batch = db.batch()
+    new_member_id = new_member_ref.id
+    operation_count = 0
+
+    for member_ref in member_refs:
+        if member_ref.id == new_member_id:
+            continue
+
+        # Add friend for new member
+        new_member_friend_ref = new_member_ref.collection("friends").document(
+            member_ref.id
+        )
+        # Add friend for existing member
+        existing_member_friend_ref = member_ref.collection("friends").document(
+            new_member_id
+        )
+
+        batch.set(
+            new_member_friend_ref,
+            {"status": "accepted", "initiator": True},
+            merge=True,
+        )
+        batch.set(
+            existing_member_friend_ref,
+            {"status": "accepted", "initiator": False},
+            merge=True,
+        )
+        operation_count += 2
+
+        # Commit batch if it gets too large (Firestore limit is 500)
+        if operation_count >= 400:
+            batch.commit()
+            batch = db.batch()
+            operation_count = 0
+
+    if operation_count > 0:
+        try:
+            batch.commit()
+        except Exception as e:
+            import sys
+
+            print(f"Error friending group members: {e}", file=sys.stderr)

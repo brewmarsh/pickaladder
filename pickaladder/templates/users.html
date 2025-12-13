@@ -107,15 +107,29 @@
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const addFriendBtns = document.querySelectorAll(".add-friend-btn");
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
         addFriendBtns.forEach(btn => {
             btn.addEventListener("click", (e) => {
                 e.preventDefault();
-                const url = btn.href;
+                let url = btn.getAttribute('href');
+
+                // If it's a button inside a form, use form action
+                if (!url && btn.closest('form')) {
+                    url = btn.closest('form').action;
+                }
+
+                if (!url) {
+                    console.error("No URL found for Add Friend action");
+                    return;
+                }
+
                 fetch(url, {
                     method: "POST",
                     headers: {
                         "X-Requested-With": "XMLHttpRequest",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
                     },
                     body: JSON.stringify({})
                 })
@@ -125,7 +139,7 @@
                         btn.textContent = "Friend Request Sent";
                         btn.disabled = true;
                     } else {
-                        alert(data.message);
+                        alert(data.message || "An error occurred.");
                     }
                 })
                 .catch(error => {

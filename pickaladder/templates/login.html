@@ -27,7 +27,7 @@
     <div class="or-separator">OR</div>
     <button id="google-signin-btn" class="btn btn-google">Sign in with Google</button>
     <!-- The "Forgot Password" link has been removed as this functionality is now handled by the Firebase client-side SDK. -->
-    <p class="text-center">Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>.</p>
+    <p class="text-center">Don't have an account? <a href="{{ url_for('auth.register', next=request.args.get('next')) }}">Register here</a>.</p>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -35,6 +35,16 @@
 document.addEventListener('DOMContentLoaded', function () {
     const googleSignInButton = document.getElementById('google-signin-btn');
     const form = document.querySelector('form');
+
+    function handleLoginSuccess() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const nextUrl = urlParams.get('next');
+        if (nextUrl && nextUrl.startsWith('/')) {
+            window.location.href = nextUrl;
+        } else {
+            window.location.href = "{{ url_for('user.dashboard') }}";
+        }
+    }
 
     googleSignInButton.addEventListener('click', function() {
         const provider = new firebase.auth.GoogleAuthProvider();
@@ -54,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(response => {
                 if (response.ok) {
-                    window.location.href = "{{ url_for('user.dashboard') }}";
+                    handleLoginSuccess();
                 } else {
                     throw new Error("Server-side session creation failed.");
                 }
@@ -91,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(response => {
                 if (response.ok) {
-                    window.location.href = "{{ url_for('user.dashboard') }}";
+                    handleLoginSuccess();
                 } else {
                     throw new Error("Server-side session creation failed.");
                 }
