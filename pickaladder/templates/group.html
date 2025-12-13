@@ -162,7 +162,7 @@
         </div>
         {% if is_member %}
             <div style="margin-top: 20px; text-align: center;">
-                <a href="{{ url_for('match.create_match', group_id=group.id) }}" class="btn">Record a Match</a>
+                <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn">Record a Match</a>
             </div>
         {% endif %}
     </div>
