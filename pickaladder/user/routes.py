@@ -686,12 +686,11 @@ def api_dashboard():
     friend_ids = [doc.id for doc in friends_query]
     friends_data = []
     if friend_ids:
-        friend_docs = (
-            db.collection("users")
-            .where(filter=firestore.FieldFilter("__name__", "in", friend_ids))
-            .stream()
-        )
-        friends_data = [{"id": doc.id, **doc.to_dict()} for doc in friend_docs]
+        refs = [db.collection("users").document(uid) for uid in friend_ids]
+        friend_docs = db.get_all(refs)
+        friends_data = [
+            {"id": doc.id, **doc.to_dict()} for doc in friend_docs if doc.exists
+        ]
 
     # Fetch pending friend requests
     requests_query = (
@@ -703,12 +702,11 @@ def api_dashboard():
     request_ids = [doc.id for doc in requests_query]
     requests_data = []
     if request_ids:
-        request_docs = (
-            db.collection("users")
-            .where(filter=firestore.FieldFilter("__name__", "in", request_ids))
-            .stream()
-        )
-        requests_data = [{"id": doc.id, **doc.to_dict()} for doc in request_docs]
+        refs = [db.collection("users").document(uid) for uid in request_ids]
+        request_docs = db.get_all(refs)
+        requests_data = [
+            {"id": doc.id, **doc.to_dict()} for doc in request_docs if doc.exists
+        ]
 
     # Fetch recent matches (Singles and Doubles)
     # Note: We fetch all matches and sort in-memory to correctly identify the most recent ones
