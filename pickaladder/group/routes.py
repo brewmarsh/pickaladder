@@ -17,10 +17,12 @@ from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import (
+    friend_group_members,
     get_group_leaderboard,
     get_random_joke,
     send_invite_email_background,
 )
+from pickaladder.user.utils import merge_ghost_user
 
 from . import bp
 from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
@@ -397,7 +399,7 @@ def resend_invite(token):
 
     if not invite.exists:
         flash("Invite not found", "danger")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("auth.login"))
 
     data = invite.to_dict()
     group_id = data.get("group_id")
@@ -407,7 +409,7 @@ def resend_invite(token):
     group = group_ref.get()
     if not group.exists:
         flash("Group not found", "danger")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("auth.login"))
 
     owner_ref = group.to_dict().get("ownerRef")
     if not owner_ref or owner_ref.id != g.user["uid"]:
@@ -447,7 +449,7 @@ def delete_invite(token):
 
     if not invite.exists:
         flash("Invite not found", "danger")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("auth.login"))
 
     group_id = invite.to_dict().get("group_id")
     group_ref = db.collection("groups").document(group_id)
@@ -455,7 +457,7 @@ def delete_invite(token):
 
     if not group.exists:
         flash("Group not found", "danger")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("auth.login"))
 
     owner_ref = group.to_dict().get("ownerRef")
     if not owner_ref or owner_ref.id != g.user["uid"]:
@@ -477,27 +479,36 @@ def handle_invite(token):
 
     if not invite.exists:
         flash("Invalid invitation link.", "danger")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("auth.login"))
 
     invite_data = invite.to_dict()
     if invite_data.get("used"):
         flash("This invitation has already been used.", "warning")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("auth.login"))
 
     group_id = invite_data.get("group_id")
     group_ref = db.collection("groups").document(group_id)
     user_ref = db.collection("users").document(g.user["uid"])
 
     try:
+        # Merge ghost user if exists
+        invite_email = invite_data.get("email")
+        if invite_email:
+            merge_ghost_user(db, user_ref, invite_email)
+
         # Add user to group
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
         # Mark invite as used
         invite_ref.update({"used": True, "used_by": g.user["uid"]})
+
+        # Friend other group members
+        friend_group_members(db, group_id, user_ref)
+
         flash("Welcome to the team!", "success")
         return redirect(url_for(".view_group", group_id=group_id))
     except Exception as e:
         flash(f"An error occurred while joining the group: {e}", "danger")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("auth.login"))
 
 
 @bp.route("/<string:group_id>/delete", methods=["POST"])
@@ -536,6 +547,7 @@ def join_group(group_id):
 
     try:
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
+        friend_group_members(db, group_id, user_ref)
         flash("Successfully joined the group.", "success")
     except Exception as e:
         flash(f"An error occurred while trying to join the group: {e}", "danger")

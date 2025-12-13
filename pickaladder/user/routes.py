@@ -528,9 +528,13 @@ def send_friend_request(friend_id):
     try:
         batch.commit()
         flash("Friend request sent.", "success")
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"success": True})
     except Exception as e:
         current_app.logger.error(f"Error sending friend request: {e}")
         flash("An error occurred while sending the friend request.", "danger")
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"success": False, "message": str(e)})
 
     return redirect(url_for(".users"))
 

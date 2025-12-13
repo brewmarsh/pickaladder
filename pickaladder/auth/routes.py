@@ -113,7 +113,7 @@ def register():
                 "success",
             )
             # Client-side will handle login and redirect to dashboard
-            return redirect(url_for(".login"))
+            return redirect(url_for(".login", next=request.args.get("next")))
 
         except auth.EmailAlreadyExistsError:
             flash("Email address is already registered.", "danger")
