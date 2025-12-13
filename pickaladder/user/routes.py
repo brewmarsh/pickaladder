@@ -552,11 +552,13 @@ def friends():
         filter=firestore.FieldFilter("status", "==", "accepted")
     ).stream()
     accepted_ids = [doc.id for doc in accepted_docs]
-    accepted_friends = (
-        [db.collection("users").document(uid).get() for uid in accepted_ids]
-        if accepted_ids
-        else []
-    )
+    accepted_friends = []
+    if accepted_ids:
+        refs = [db.collection("users").document(uid) for uid in accepted_ids]
+        docs = db.get_all(refs)
+        accepted_friends = [
+            {"id": doc.id, **doc.to_dict()} for doc in docs if doc.exists
+        ]
 
     # Fetch pending requests (where the other user was the initiator)
     requests_docs = (
@@ -565,14 +567,32 @@ def friends():
         .stream()
     )
     request_ids = [doc.id for doc in requests_docs]
-    pending_requests = (
-        [db.collection("users").document(uid).get() for uid in request_ids]
-        if request_ids
-        else []
+    pending_requests = []
+    if request_ids:
+        refs = [db.collection("users").document(uid) for uid in request_ids]
+        docs = db.get_all(refs)
+        pending_requests = [
+            {"id": doc.id, **doc.to_dict()} for doc in docs if doc.exists
+        ]
+
+    # Fetch sent requests (where the current user was the initiator)
+    sent_docs = (
+        friends_ref.where(filter=firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=firestore.FieldFilter("initiator", "==", True))
+        .stream()
     )
+    sent_ids = [doc.id for doc in sent_docs]
+    sent_requests = []
+    if sent_ids:
+        refs = [db.collection("users").document(uid) for uid in sent_ids]
+        docs = db.get_all(refs)
+        sent_requests = [{"id": doc.id, **doc.to_dict()} for doc in docs if doc.exists]
 
     return render_template(
-        "friends.html", friends=accepted_friends, requests=pending_requests
+        "friends.html",
+        friends=accepted_friends,
+        requests=pending_requests,
+        sent_requests=sent_requests,
     )
 
 
