@@ -12,7 +12,6 @@ from flask import (
     render_template,
     request,
     url_for,
-    jsonify,
 )
 from werkzeug.utils import secure_filename
 
