@@ -1,4 +1,5 @@
 """End-to-end test scenarios."""
+
 from playwright.sync_api import expect
 
 
@@ -25,7 +26,9 @@ def test_user_journey(app_server, page_with_firebase, mock_db):
         page.fill("input[name='password']", "password")
         page.click("input[value='Login']")
 
-    expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(timeout=10000)
+    expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(
+        timeout=10000
+    )
 
     # Logout
     page.click(".dropbtn")
@@ -49,7 +52,9 @@ def test_user_journey(app_server, page_with_firebase, mock_db):
     page.fill("input[name='password']", "MyPassword123")
     page.click("input[value='Login']")
 
-    expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(timeout=10000)
+    expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(
+        timeout=10000
+    )
 
     # 3. Add Friend (User 2 invites Admin)
     page.click("text=Friends")
@@ -60,7 +65,9 @@ def test_user_journey(app_server, page_with_firebase, mock_db):
 
     # Click Add Friend for Admin User
     page.click("button:has-text('Add Friend')")
-    expect(page.locator("button:has-text('Friend Request Sent')")).to_be_visible(timeout=5000)
+    expect(page.locator("button:has-text('Friend Request Sent')")).to_be_visible(
+        timeout=5000
+    )
 
     # Logout User 2, Login Admin
     page.click(".dropbtn")
@@ -110,7 +117,9 @@ def test_user_journey(app_server, page_with_firebase, mock_db):
     page.click("input[value='Record Match']")
 
     # Check flash message
-    expect(page.locator(".alert-success")).to_contain_text("Match recorded successfully")
+    expect(page.locator(".alert-success")).to_contain_text(
+        "Match recorded successfully"
+    )
 
     # 7. Score Group Game
     page.click("text=Groups")
@@ -122,7 +131,9 @@ def test_user_journey(app_server, page_with_firebase, mock_db):
     page.click("input[value='Record Match']")
 
     expect(page.locator("h1")).to_contain_text("Pickleballers")
-    expect(page.locator(".alert-success")).to_contain_text("Match recorded successfully")
+    expect(page.locator(".alert-success")).to_contain_text(
+        "Match recorded successfully"
+    )
 
     # Check Global Leaderboard (Req: "see the leaderboard")
     page.click("text=Leaderboard")
@@ -161,13 +172,15 @@ def test_user_journey(app_server, page_with_firebase, mock_db):
     page.fill("form[action*='group'] input[name='name']", "New Guy")
     page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
     page.click("input[value='Send Invite']")
-    expect(page.locator(".alert-toast, .alert-success, .toast-body")).to_contain_text("Invitation is being sent")
+    expect(page.locator(".alert-toast, .alert-success, .toast-body")).to_contain_text(
+        "Invitation is being sent"
+    )
 
     # Verify invite token was created
-    invites = list(mock_db.collection('group_invites').stream())
+    invites = list(mock_db.collection("group_invites").stream())
     invite_token = None
     for inv in invites:
-        if inv.to_dict().get('email') == 'newguy@example.com':
+        if inv.to_dict().get("email") == "newguy@example.com":
             invite_token = inv.id
             break
     assert invite_token is not None  # nosec
