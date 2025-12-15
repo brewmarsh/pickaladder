@@ -1,3 +1,4 @@
+"""Test configuration and mocks for end-to-end tests."""
 import os
 import threading
 from unittest.mock import MagicMock, patch
@@ -8,7 +9,6 @@ from mockfirestore.document import DocumentReference, DocumentSnapshot
 from mockfirestore.query import Query
 from werkzeug.serving import make_server
 
-"""Test configuration and mocks for end-to-end tests."""
 # --- Mock Infrastructure & Patches ---
 
 # Fix mockfirestore Query.get to return a list instead of generator
@@ -85,7 +85,9 @@ DocumentReference.__hash__ = doc_ref_hash
 # Handle ArrayUnion/ArrayRemove
 class MockSentinel:
     """Mock sentinel for array operations."""
+
     def __init__(self, values, op):
+        """Initialize mock sentinel."""
         self.values = values
         self.op = op
 
@@ -128,14 +130,18 @@ DocumentReference.update = doc_ref_update
 
 class MockFieldFilter:
     """Mock for firestore.FieldFilter."""
+
     def __init__(self, field_path, op_string, value):
+        """Initialize mock field filter."""
         self.field_path = field_path
         self.op_string = op_string
         self.value = value
 
 class MockBatch:
     """Mock for firestore.WriteBatch."""
+
     def __init__(self, client):
+        """Initialize mock batch."""
         self.client = client
         self.ops = []
     def set(self, doc_ref, data, merge=False):
@@ -160,8 +166,11 @@ class MockBatch:
 
 class EnhancedMockFirestore(MockFirestore):
     """Enhanced MockFirestore with batch support."""
+
     def __init__(self):
+        """Initialize enhanced mock firestore."""
         super().__init__()
+
     def collection(self, name):
         """Ensure collection exists."""
         if name not in self._data:
@@ -176,11 +185,14 @@ class EnhancedMockFirestore(MockFirestore):
 
 class MockAuthService:
     """Mock for firebase_admin.auth."""
+
     class EmailAlreadyExistsError(Exception):
         """Mock EmailAlreadyExistsError."""
+
         pass
     class UserNotFoundError(Exception):
         """Mock UserNotFoundError."""
+
         pass
     def verify_id_token(self, token, check_revoked=False):
         """Mock verify_id_token."""
@@ -247,9 +259,9 @@ def app_server(mock_db, mock_auth):
     p2.start()
     p3.start()
 
-    os.environ['SECRET_KEY'] = 'dev'
+    os.environ['SECRET_KEY'] = 'dev'  # nosec
     os.environ['MAIL_USERNAME'] = 'test'
-    os.environ['MAIL_PASSWORD'] = 'test'
+    os.environ['MAIL_PASSWORD'] = 'test'  # nosec
     os.environ['MAIL_SUPPRESS_SEND'] = 'True'
     os.environ['FIREBASE_API_KEY'] = 'dummy_key'
 
@@ -271,6 +283,7 @@ def app_server(mock_db, mock_auth):
 
 @pytest.fixture
 def page_with_firebase(page):
+    """Inject mock Firebase client into the page."""
     page.route("**/*firebase-app.js", lambda route: route.fulfill(body=""))
     page.route("**/*firebase-auth.js", lambda route: route.fulfill(body=""))
 

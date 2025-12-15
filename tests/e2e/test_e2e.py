@@ -1,7 +1,9 @@
+"""End-to-end test scenarios."""
 from playwright.sync_api import expect
 
 
 def test_user_journey(app_server, page_with_firebase, mock_db):
+    """Run a complete user journey test."""
     page = page_with_firebase
     base_url = app_server
 
@@ -168,4 +170,4 @@ def test_user_journey(app_server, page_with_firebase, mock_db):
         if inv.to_dict().get('email') == 'newguy@example.com':
             invite_token = inv.id
             break
-    assert invite_token is not None
+    assert invite_token is not None  # nosec
