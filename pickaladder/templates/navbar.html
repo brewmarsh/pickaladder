@@ -11,7 +11,7 @@
                     <a href="{{ url_for('user.users') }}">👥 Users</a>
                     <a href="{{ url_for('user.friends') }}">🧑‍🤝‍🧑 Friends</a>
                     <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
-                    <a href="{{ url_for('match.leaderboard') }}">🏆 Leaderboard</a>
+                    <a href="{{ url_for('match.leaderboard') }}">🏆 Global Leaderboard</a>
                 {% else %}
                     <div class="desktop-auth-buttons">
                         {% if request.endpoint != 'auth.login' %}
@@ -32,7 +32,7 @@
                             <a href="{{ url_for('user.users') }}">👥 Users</a>
                             <a href="{{ url_for('user.friends') }}">🧑‍🤝‍🧑 Friends</a>
                             <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
-                            <a href="{{ url_for('match.leaderboard') }}">🏆 Leaderboard</a>
+                            <a href="{{ url_for('match.leaderboard') }}">🏆 Global Leaderboard</a>
                             <hr>
                             <a href="{{ url_for('auth.change_password') }}">🔑 Change Password</a>
                             <a href="{{ url_for('auth.logout') }}">🚪 Logout</a>
