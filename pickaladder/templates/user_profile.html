@@ -5,7 +5,7 @@
         <img src="{{ profile_user.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture">
         <h1>{{ profile_user.name }}</h1>
         <p>@{{ profile_user.username }}</p>
-        <p><strong>DUPR Rating:</strong> {{ profile_user.dupr_rating }}</p>
+        <p><strong>DUPR Rating:</strong> {{ profile_user.duprRating }}</p>
         <p><strong>Record:</strong> {{ record.wins }} - {{ record.losses }}</p>
         {% if is_friend %}
             <a href="{{ url_for('match.record_match', opponent_id=profile_user.id) }}" class="btn">Record Match</a>
@@ -31,7 +31,7 @@
                                 <td data-label="Username">
                                     <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
                                 </td>
-                                <td data-label="DUPR Rating">{{ friend.dupr_rating }}</td>
+                                <td data-label="DUPR Rating">{{ friend.duprRating }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
