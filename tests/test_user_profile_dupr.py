@@ -1,10 +1,16 @@
+"""Test DUPR rating display on user profile."""
 
 import unittest
 from unittest.mock import MagicMock, patch
+
 from pickaladder import create_app
 
+
 class UserProfileDuprTestCase(unittest.TestCase):
+    """Test case for the DUPR rating display on the user profile."""
+
     def setUp(self):
+        """Set up the test case with mocks and app context."""
         self.mock_firestore_service = MagicMock()
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
@@ -29,9 +35,11 @@ class UserProfileDuprTestCase(unittest.TestCase):
         self.app_context.push()
 
     def tearDown(self):
+        """Tear down the test case and pop app context."""
         self.app_context.pop()
 
     def test_profile_dupr_display(self):
+        """Test that the DUPR rating is correctly displayed on the profile page."""
         # Setup logged-in user
         with self.client.session_transaction() as sess:
             sess["user_id"] = "viewer_id"
@@ -49,19 +57,25 @@ class UserProfileDuprTestCase(unittest.TestCase):
             "username": "target_user",
             "name": "Target User",
             "duprRating": 4.5,
-            "profilePictureUrl": "http://example.com/pic.jpg"
+            "profilePictureUrl": "http://example.com/pic.jpg",
         }
 
         # Setup mock db to return this user
-        mock_db.collection("users").document(target_user_id).get.return_value = mock_user_doc
+        mock_db.collection("users").document(
+            target_user_id
+        ).get.return_value = mock_user_doc
 
         # Mock friends query to avoid errors
         mock_user_ref = mock_db.collection("users").document(target_user_id)
-        mock_user_ref.collection("friends").where.return_value.limit.return_value.stream.return_value = []
+        mock_user_ref.collection(
+            "friends"
+        ).where.return_value.limit.return_value.stream.return_value = []
 
         # Mock matches queries
         mock_db.collection("matches").where.return_value.stream.return_value = []
-        mock_db.collection("matches").where.return_value.where.return_value.stream.return_value = []
+        mock_db.collection(
+            "matches"
+        ).where.return_value.where.return_value.stream.return_value = []
 
         # Make request
         response = self.client.get(f"/user/{target_user_id}")
