@@ -73,6 +73,25 @@ class AppFirebaseTestCase(unittest.TestCase):
             self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
             self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
 
+    def test_mail_config_empty_env_vars(self):
+        """Test that empty environment variables fall back to default values."""
+        env_vars = {
+            "MAIL_SERVER": "",
+            "MAIL_PORT": "",
+            "MAIL_USE_TLS": "",
+            "MAIL_USE_SSL": "",
+            "SECRET_KEY": "dev",
+            "TESTING": "True",
+        }
+
+        with patch.dict(os.environ, env_vars):
+            app = create_app({"TESTING": True})
+
+            self.assertEqual(app.config["MAIL_SERVER"], "smtp.gmail.com")
+            self.assertEqual(app.config["MAIL_PORT"], 587)
+            self.assertTrue(app.config["MAIL_USE_TLS"])
+            self.assertFalse(app.config["MAIL_USE_SSL"])
+
 
 if __name__ == "__main__":
     unittest.main()
