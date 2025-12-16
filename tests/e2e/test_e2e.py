@@ -136,8 +136,8 @@ def test_user_journey(app_server, page_with_firebase, mock_db):
     )
 
     # Check Global Leaderboard (Req: "see the leaderboard")
-    page.click("text=Leaderboard")
-    expect(page.locator("h1")).to_contain_text("Leaderboard")
+    page.click("text=Global Leaderboard")
+    expect(page.locator("h1")).to_contain_text("Global Leaderboard")
     # Verify players are listed
     expect(page.locator("td", has_text="Admin User")).to_be_visible()
     expect(page.locator("td", has_text="User Two")).to_be_visible()
