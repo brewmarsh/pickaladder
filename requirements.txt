@@ -12,6 +12,6 @@ bandit==1.9.2
 mypy==1.19.1
 firebase-admin==7.1.0
 mkdocs==1.6.1
-Faker==38.2.0
+Faker==40.1.0
 coverage==7.13.0
 email-validator==2.3.0
