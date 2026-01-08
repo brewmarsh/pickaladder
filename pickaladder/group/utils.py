@@ -163,10 +163,11 @@ def get_group_leaderboard(group_id):
 def get_leaderboard_trend_data(group_id):
     """Generate data for a leaderboard trend chart."""
     db = firestore.client()
-    matches_query = (
-        db.collection("matches").where("groupId", "==", group_id).order_by("matchDate")
-    )
-    matches = list(matches_query.stream())
+    matches_query = db.collection("matches").where("groupId", "==", group_id)
+    # Filter and sort in Python to avoid composite index requirement
+    # Use to_dict().get() to safely handle missing fields without KeyError
+    matches = [m for m in matches_query.stream() if m.to_dict().get("matchDate")]
+    matches.sort(key=lambda x: x.to_dict().get("matchDate"))
     if not matches:
         return {"labels": [], "datasets": []}
 
