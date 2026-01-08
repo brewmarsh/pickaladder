@@ -637,6 +637,11 @@ input[type="submit"], .btn {
     gap: 20px;
 }
 
+.leaderboard-trend-link {
+    margin-top: 10px;
+    text-align: center;
+}
+
 /* Toasts */
 .toast-container {
     position: fixed;

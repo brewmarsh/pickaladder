@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block title %}Leaderboard Trend{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Leaderboard Trend for {{ group.name }}</h1>
+</div>
+<div class="card">
+    <canvas id="leaderboardChart"></canvas>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ctx = document.getElementById('leaderboardChart').getContext('2d');
+        const trendData = {{ trend_data | tojson }};
+        new Chart(ctx, {
+            type: 'line',
+            data: trendData,
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Match Date'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Average Score'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
