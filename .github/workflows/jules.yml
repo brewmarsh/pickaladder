@@ -49,7 +49,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run Jules Agent
-        uses: google-labs-code/jules-invoke@v1
+        uses: google-labs-code/jules-action@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           instructions_path: "AGENTS.md"
