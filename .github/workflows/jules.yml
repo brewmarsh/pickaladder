@@ -1,14 +1,37 @@
-name: Jules Agent Workflow
+name: Jules Secure Agent Workflow
 
 on:
   issues:
     types: [labeled, commented]
   pull_request:
-    # Trigger when a PR is opened or a specific label is added
     types: [opened, labeled, synchronize]
 
 jobs:
+  security_scan:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    outputs:
+      scan_report: ${{ steps.scan.outputs.report }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Run Bandit (Python Security)
+      - name: Run Bandit
+        run: |
+          pip install bandit
+          bandit -r . -f json -o bandit-results.json || true
+          
+      # Run Trivy (Vulnerability Scan)
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'table'
+          output: 'trivy-results.txt'
+          severity: 'HIGH,CRITICAL'
+
   jules-process:
+    needs: security_scan
     if: >
       github.event.label.name == 'jules' || 
       contains(github.event.comment.body, '@jules') ||
@@ -30,5 +53,8 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           instructions_path: "AGENTS.md"
-          # This mode tells Jules to act as a reviewer for PRs
+          # We tell Jules to prioritize fixing the scan results
+          prompt: |
+            Please review the following security scan results and address any HIGH or CRITICAL issues found in the code:
+            $(cat trivy-results.txt)
           mode: ${{ github.event_name == 'pull_request' && 'review' || 'solve' }}
