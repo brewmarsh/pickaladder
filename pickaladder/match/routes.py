@@ -312,7 +312,11 @@ def record_match():
         else:
             return (
                 jsonify(
-                    {"status": "error", "message": "Validation failed", "errors": form.errors}
+                    {
+                        "status": "error",
+                        "message": "Validation failed",
+                        "errors": form.errors,
+                    }
                 ),
                 400,
             )
