@@ -184,13 +184,25 @@ def get_leaderboard_trend_data(group_id):
                 all_player_refs.add(data.get("player2Ref"))
 
     player_docs = db.get_all(list(all_player_refs))
-    player_names = {doc.id: doc.to_dict().get("name", "Unknown") for doc in player_docs}
+    players_data = {}
+    for doc in player_docs:
+        if doc.exists:
+            data = doc.to_dict()
+            players_data[doc.id] = {
+                "name": data.get("name", "Unknown"),
+                "profilePictureUrl": data.get("profilePictureUrl"),
+            }
 
     player_stats = {ref.id: {"total_score": 0, "games": 0} for ref in all_player_refs}
     trend_data = {"labels": [], "datasets": {}}
 
-    for player_id, name in player_names.items():
-        trend_data["datasets"][player_id] = {"label": name, "data": [], "fill": False}
+    for player_id, player_info in players_data.items():
+        trend_data["datasets"][player_id] = {
+            "label": player_info["name"],
+            "data": [],
+            "fill": False,
+            "profilePictureUrl": player_info["profilePictureUrl"],
+        }
 
     unique_dates = sorted(
         list({m.to_dict().get("matchDate").strftime("%Y-%m-%d") for m in matches})
@@ -250,6 +262,87 @@ def get_leaderboard_trend_data(group_id):
 
     trend_data["datasets"] = list(trend_data["datasets"].values())
     return trend_data
+
+
+def get_user_group_stats(group_id, user_id):
+    """Calculate detailed statistics for a specific user within a group."""
+    db = firestore.client()
+    stats = {
+        "rank": "N/A",
+        "wins": 0,
+        "losses": 0,
+        "win_streak": 0,
+        "longest_streak": 0,
+    }
+
+    # --- Calculate Rank ---
+    leaderboard = get_group_leaderboard(group_id)
+    for i, player in enumerate(leaderboard):
+        if player["id"] == user_id:
+            stats["rank"] = i + 1
+            stats["wins"] = player.get("wins", 0)
+            stats["losses"] = player.get("losses", 0)
+            break
+
+    # --- Calculate Win Streaks ---
+    matches_query = (
+        db.collection("matches")
+        .where("groupId", "==", group_id)
+        .order_by("matchDate", direction=firestore.Query.ASCENDING)
+    )
+    user_ref = db.collection("users").document(user_id)
+    all_matches = list(matches_query.stream())
+
+    current_streak = 0
+    longest_streak = 0
+
+    for match in all_matches:
+        data = match.to_dict()
+        match_type = data.get("matchType", "singles")
+        p1_score = data.get("player1Score", 0)
+        p2_score = data.get("player2Score", 0)
+
+        user_is_winner = False
+        user_participated = False
+
+        if match_type == "doubles":
+            team1 = data.get("team1", [])
+            team2 = data.get("team2", [])
+            if user_ref in team1:
+                user_participated = True
+                if p1_score > p2_score:
+                    user_is_winner = True
+            elif user_ref in team2:
+                user_participated = True
+                if p2_score > p1_score:
+                    user_is_winner = True
+        else:  # Singles
+            p1_ref = data.get("player1Ref")
+            p2_ref = data.get("player2Ref")
+            if user_ref == p1_ref:
+                user_participated = True
+                if p1_score > p2_score:
+                    user_is_winner = True
+            elif user_ref == p2_ref:
+                user_participated = True
+                if p2_score > p1_score:
+                    user_is_winner = True
+
+        if user_participated:
+            if user_is_winner:
+                current_streak += 1
+            else:
+                if current_streak > longest_streak:
+                    longest_streak = current_streak
+                current_streak = 0
+
+    if current_streak > longest_streak:
+        longest_streak = current_streak
+
+    stats["longest_streak"] = longest_streak
+    stats["win_streak"] = current_streak
+
+    return stats
 
 
 def send_invite_email_background(app, invite_token, email_data):

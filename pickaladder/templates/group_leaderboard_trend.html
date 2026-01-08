@@ -1,28 +1,168 @@
 {% extends "layout.html" %}
 {% block title %}Leaderboard Trend{% endblock %}
+
+{% block extra_head %}
+<style>
+    .chart-container {
+        position: relative;
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .user-stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    .stat-card {
+        background-color: var(--surface-color);
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .stat-card h3 {
+        margin: 0;
+        font-size: 1.2em;
+        color: var(--text-color-secondary);
+    }
+    .stat-card p {
+        margin: 5px 0 0;
+        font-size: 2.5em;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+    .win-loss {
+        font-size: 1.5em !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
-    <h1>Leaderboard Trend for {{ group.name }}</h1>
+    <h1>Performance Trend: {{ group.name }}</h1>
 </div>
-<div class="card">
+
+<div class="chart-container mb-4">
     <canvas id="leaderboardChart"></canvas>
 </div>
+
+<div class="page-header">
+    <h2>Your Performance Snapshot</h2>
+</div>
+<div class="user-stats-container">
+    <div class="stat-card">
+        <h3>Rank</h3>
+        <p>#{{ user_stats.rank }}</p>
+    </div>
+    <div class="stat-card">
+        <h3>Wins / Losses</h3>
+        <p class="win-loss">{{ user_stats.wins }} / {{ user_stats.losses }}</p>
+    </div>
+    <div class="stat-card">
+        <h3>Current Streak</h3>
+        <p>{{ user_stats.win_streak }} Wins</p>
+    </div>
+    <div class="stat-card">
+        <h3>Longest Streak</h3>
+        <p>{{ user_stats.longest_streak }} Wins</p>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const ctx = document.getElementById('leaderboardChart').getContext('2d');
         const trendData = {{ trend_data | tojson }};
+
+        // Modern color palette
+        const colors = [
+            '#4E79A7', '#F28E2B', '#E15759', '#76B7B2', '#59A14F',
+            '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC'
+        ];
+
+        trendData.datasets.forEach((dataset, i) => {
+            dataset.borderColor = colors[i % colors.length];
+            dataset.backgroundColor = colors[i % colors.length];
+            dataset.tension = 0.3; // Smooth curves
+            dataset.pointRadius = 5;
+            dataset.pointHoverRadius = 8;
+        });
+
+        // Plugin to draw profile pictures on the chart
+        const pointAvatars = {
+            id: 'pointAvatars',
+            afterDraw: chart => {
+                const ctx = chart.ctx;
+                chart.data.datasets.forEach((dataset, i) => {
+                    const meta = chart.getDatasetMeta(i);
+                    if (meta.hidden) return;
+                    const lastPoint = meta.data[meta.data.length - 1];
+                    if (!lastPoint) return;
+
+                    const img = new Image();
+                    img.src = dataset.profilePictureUrl || '{{ url_for('static', filename='user_icon.png') }}';
+
+                    const size = 28;
+                    const x = lastPoint.x + 10;
+                    const y = lastPoint.y - (size / 2);
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2, true);
+                    ctx.closePath();
+                    ctx.clip();
+
+                    ctx.drawImage(img, x, y, size, size);
+
+                    ctx.restore();
+                });
+            }
+        };
+
         new Chart(ctx, {
             type: 'line',
             data: trendData,
+            plugins: [pointAvatars],
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(2);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
                 scales: {
                     x: {
                         display: true,
                         title: {
                             display: true,
                             text: 'Match Date'
+                        },
+                        grid: {
+                            display: false
                         }
                     },
                     y: {
@@ -30,8 +170,14 @@
                         title: {
                             display: true,
                             text: 'Average Score'
-                        }
+                        },
+                        beginAtZero: true
                     }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
                 }
             }
         });
