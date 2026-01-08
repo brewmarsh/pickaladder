@@ -10,8 +10,6 @@ jobs:
   security_scan:
     name: Security Analysis
     runs-on: ubuntu-latest
-    outputs:
-      scan_report: ${{ steps.scan.outputs.report }}
     steps:
       - uses: actions/checkout@v4
       
@@ -29,6 +27,14 @@ jobs:
           format: 'table'
           output: 'trivy-results.txt'
           severity: 'HIGH,CRITICAL'
+
+      - name: Upload Scan Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-results.json
+            trivy-results.txt
 
   jules-process:
     needs: security_scan
@@ -48,13 +54,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Download Scan Results
+        uses: actions/download-artifact@v4
+        with:
+          name: security-reports
+
+      # This step reads the file so we can pass it to the Jules action
+      - name: Prepare Prompt
+        id: prepare_prompt
+        run: |
+          REPORT=$(cat trivy-results.txt)
+          echo "REPORT<<EOF" >> $GITHUB_ENV
+          echo "$REPORT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Run Jules Agent
         uses: google-labs-code/jules-action@main
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           instructions_path: "AGENTS.md"
-          # We tell Jules to prioritize fixing the scan results
           prompt: |
-            Please review the following security scan results and address any HIGH or CRITICAL issues found in the code:
-            $(cat trivy-results.txt)
+            Please review the following security scan results and address any HIGH or CRITICAL issues found:
+            
+            ${{ env.REPORT }}
           mode: ${{ github.event_name == 'pull_request' && 'review' || 'solve' }}
