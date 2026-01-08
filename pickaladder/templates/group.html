@@ -6,6 +6,9 @@
     <div>
         <div style="display: flex; align-items: center; gap: 10px;">
             <h1>{{ group.name }}</h1>
+            {% if is_member %}
+                <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn">Record a Match</a>
+            {% endif %}
             {% if group.ownerRef.id == current_user_id %}
                 <a href="{{ url_for('group.edit_group', group_id=group.id) }}" class="btn">Edit Group</a>
             {% endif %}
@@ -160,11 +163,6 @@
                 </tbody>
             </table>
         </div>
-        {% if is_member %}
-            <div style="margin-top: 20px; text-align: center;">
-                <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn">Record a Match</a>
-            </div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}
