@@ -19,6 +19,7 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import (
     friend_group_members,
     get_group_leaderboard,
+    get_leaderboard_trend_data,
     get_random_joke,
     send_invite_email_background,
 )
@@ -437,6 +438,29 @@ def resend_invite(token):
     send_invite_email_background(current_app._get_current_object(), token, email_data)
     flash(f"Resending invitation to {data.get('email')}...", "toast")
     return redirect(url_for(".view_group", group_id=group_id))
+
+
+@bp.route("/<string:group_id>/leaderboard-trend")
+@login_required
+def view_leaderboard_trend(group_id):
+    """Display a trend chart of the group's leaderboard."""
+    db = firestore.client()
+    group_ref = db.collection("groups").document(group_id)
+    group = group_ref.get()
+    if not group.exists:
+        flash("Group not found.", "danger")
+        return redirect(url_for(".view_groups"))
+
+    group_data = group.to_dict()
+    group_data["id"] = group.id
+
+    trend_data = get_leaderboard_trend_data(group_id)
+
+    return render_template(
+        "group_leaderboard_trend.html",
+        group=group_data,
+        trend_data=trend_data,
+    )
 
 
 @bp.route("/invite/<token>/delete", methods=["POST"])

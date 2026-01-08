@@ -160,6 +160,95 @@ def get_group_leaderboard(group_id):
     return leaderboard
 
 
+def get_leaderboard_trend_data(group_id):
+    """Generate data for a leaderboard trend chart."""
+    db = firestore.client()
+    matches_query = (
+        db.collection("matches")
+        .where("groupId", "==", group_id)
+        .order_by("matchDate")
+    )
+    matches = list(matches_query.stream())
+    if not matches:
+        return {"labels": [], "datasets": []}
+
+    all_player_refs = set()
+    for match in matches:
+        data = match.to_dict()
+        if data.get("matchType", "singles") == "doubles":
+            all_player_refs.update(data.get("team1", []))
+            all_player_refs.update(data.get("team2", []))
+        else:
+            if data.get("player1Ref"):
+                all_player_refs.add(data.get("player1Ref"))
+            if data.get("player2Ref"):
+                all_player_refs.add(data.get("player2Ref"))
+
+    player_docs = db.get_all(list(all_player_refs))
+    player_names = {doc.id: doc.to_dict().get("name", "Unknown") for doc in player_docs}
+
+    player_stats = {
+        ref.id: {"total_score": 0, "games": 0} for ref in all_player_refs
+    }
+    trend_data = {"labels": [], "datasets": {}}
+
+    for player_id, name in player_names.items():
+        trend_data["datasets"][player_id] = {"label": name, "data": [], "fill": False}
+
+    unique_dates = sorted(
+        list({m.to_dict().get("matchDate").strftime("%Y-%m-%d") for m in matches})
+    )
+    trend_data["labels"] = unique_dates
+
+    date_idx = 0
+    for i, match in enumerate(matches):
+        data = match.to_dict()
+        match_date = data.get("matchDate").strftime("%Y-%m-%d")
+
+        while date_idx < len(unique_dates) and unique_dates[date_idx] < match_date:
+            for player_id in player_stats:
+                avg_score = (
+                    player_stats[player_id]["total_score"] / player_stats[player_id]["games"]
+                    if player_stats[player_id]["games"] > 0
+                    else None
+                )
+                trend_data["datasets"][player_id]["data"].append(avg_score)
+            date_idx += 1
+
+        if data.get("matchType", "singles") == "doubles":
+            for ref in data.get("team1", []):
+                player_stats[ref.id]["total_score"] += data.get("player1Score", 0)
+                player_stats[ref.id]["games"] += 1
+            for ref in data.get("team2", []):
+                player_stats[ref.id]["total_score"] += data.get("player2Score", 0)
+                player_stats[ref.id]["games"] += 1
+        else:
+            p1_ref, p2_ref = data.get("player1Ref"), data.get("player2Ref")
+            if p1_ref:
+                player_stats[p1_ref.id]["total_score"] += data.get("player1Score", 0)
+                player_stats[p1_ref.id]["games"] += 1
+            if p2_ref:
+                player_stats[p2_ref.id]["total_score"] += data.get("player2Score", 0)
+                player_stats[p2_ref.id]["games"] += 1
+
+        if i == len(matches) - 1 or matches[i+1].to_dict().get("matchDate").strftime("%Y-%m-%d") != match_date:
+            for player_id in player_stats:
+                avg_score = (
+                    player_stats[player_id]["total_score"] / player_stats[player_id]["games"]
+                    if player_stats[player_id]["games"] > 0
+                    else None
+                )
+                trend_data["datasets"][player_id]["data"].append(avg_score)
+            date_idx += 1
+
+    for ds in trend_data["datasets"].values():
+        while len(ds["data"]) < len(unique_dates):
+            ds["data"].append(ds["data"][-1] if ds["data"] else None)
+
+    trend_data["datasets"] = list(trend_data["datasets"].values())
+    return trend_data
+
+
 def send_invite_email_background(app, invite_token, email_data):
     """Send an invite email in a background thread."""
 
