@@ -164,9 +164,7 @@ def get_leaderboard_trend_data(group_id):
     """Generate data for a leaderboard trend chart."""
     db = firestore.client()
     matches_query = (
-        db.collection("matches")
-        .where("groupId", "==", group_id)
-        .order_by("matchDate")
+        db.collection("matches").where("groupId", "==", group_id).order_by("matchDate")
     )
     matches = list(matches_query.stream())
     if not matches:
@@ -187,9 +185,7 @@ def get_leaderboard_trend_data(group_id):
     player_docs = db.get_all(list(all_player_refs))
     player_names = {doc.id: doc.to_dict().get("name", "Unknown") for doc in player_docs}
 
-    player_stats = {
-        ref.id: {"total_score": 0, "games": 0} for ref in all_player_refs
-    }
+    player_stats = {ref.id: {"total_score": 0, "games": 0} for ref in all_player_refs}
     trend_data = {"labels": [], "datasets": {}}
 
     for player_id, name in player_names.items():
@@ -208,7 +204,8 @@ def get_leaderboard_trend_data(group_id):
         while date_idx < len(unique_dates) and unique_dates[date_idx] < match_date:
             for player_id in player_stats:
                 avg_score = (
-                    player_stats[player_id]["total_score"] / player_stats[player_id]["games"]
+                    player_stats[player_id]["total_score"]
+                    / player_stats[player_id]["games"]
                     if player_stats[player_id]["games"] > 0
                     else None
                 )
@@ -231,10 +228,15 @@ def get_leaderboard_trend_data(group_id):
                 player_stats[p2_ref.id]["total_score"] += data.get("player2Score", 0)
                 player_stats[p2_ref.id]["games"] += 1
 
-        if i == len(matches) - 1 or matches[i+1].to_dict().get("matchDate").strftime("%Y-%m-%d") != match_date:
+        if (
+            i == len(matches) - 1
+            or matches[i + 1].to_dict().get("matchDate").strftime("%Y-%m-%d")
+            != match_date
+        ):
             for player_id in player_stats:
                 avg_score = (
-                    player_stats[player_id]["total_score"] / player_stats[player_id]["games"]
+                    player_stats[player_id]["total_score"]
+                    / player_stats[player_id]["games"]
                     if player_stats[player_id]["games"] > 0
                     else None
                 )
