@@ -21,6 +21,7 @@ from pickaladder.group.utils import (
     get_group_leaderboard,
     get_leaderboard_trend_data,
     get_random_joke,
+    get_user_group_stats,
     send_invite_email_background,
 )
 from pickaladder.user.utils import merge_ghost_user
@@ -455,11 +456,13 @@ def view_leaderboard_trend(group_id):
     group_data["id"] = group.id
 
     trend_data = get_leaderboard_trend_data(group_id)
+    user_stats = get_user_group_stats(group_id, g.user["uid"])
 
     return render_template(
         "group_leaderboard_trend.html",
         group=group_data,
         trend_data=trend_data,
+        user_stats=user_stats,
     )
 
 
