@@ -8,7 +8,7 @@
             {{ ', '.join(errors) }}
         </div>
     {% endfor %}
-    <form method="post" action="{{ url_for('match.record_match', group_id=request.args.get('group_id')) }}">
+    <form id="record-match-form">
         {{ form.hidden_tag() }}
 
         <div class="form-group">
@@ -51,7 +51,7 @@
             {{ form.match_date.label }}
             {{ form.match_date(class="form-control") }}
         </div>
-        <input type="submit" value="Record Match" class="btn">
+        <button type="submit" class="btn">Record Match</button>
         <a href="{{ url_for('user.dashboard') }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
     </form>
     <script>
@@ -84,5 +84,6 @@
         // Initialize state
         toggleFields();
     </script>
+    <script src="{{ url_for('static', filename='js/optimistic_submission.js') }}"></script>
 </div>
 {% endblock %}
