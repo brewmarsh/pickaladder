@@ -2,6 +2,7 @@
 
 import secrets
 import threading
+from datetime import datetime
 
 from firebase_admin import firestore
 
@@ -285,13 +286,10 @@ def get_user_group_stats(group_id, user_id):
             break
 
     # --- Calculate Win Streaks ---
-    matches_query = (
-        db.collection("matches")
-        .where("groupId", "==", group_id)
-        .order_by("matchDate", direction=firestore.Query.ASCENDING)
-    )
+    matches_query = db.collection("matches").where("groupId", "==", group_id)
     user_ref = db.collection("users").document(user_id)
     all_matches = list(matches_query.stream())
+    all_matches.sort(key=lambda x: x.to_dict().get("matchDate") or datetime.min)
 
     current_streak = 0
     longest_streak = 0
