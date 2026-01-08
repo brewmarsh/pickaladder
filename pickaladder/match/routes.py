@@ -1854,7 +1854,7 @@ def view_match_page(match_id):
     return render_template("view_match.html", **context)
 
 
-from flask import jsonify
+
 
 @bp.route("/record", methods=["GET", "POST"])
 @login_required
@@ -1875,7 +1875,6 @@ def record_match():
             if data.get("match_type") == "doubles":
                 form.partner.choices = [(data.get("partner"), "Partner")]
                 form.opponent2.choices = [(data.get("opponent2"), "Opponent 2")]
-
 
             if form.validate():
                 match_date_str = data.get("match_date")
@@ -1899,7 +1898,7 @@ def record_match():
                     p2_ref = db.collection("users").document(data.get("player2"))
                     match_data["player1Ref"] = p1_ref
                     match_data["player2Ref"] = p2_ref
-                else: # doubles
+                else:  # doubles
                     t1_p1_ref = db.collection("users").document(user_id)
                     t1_p2_ref = db.collection("users").document(data.get("partner"))
                     t2_p1_ref = db.collection("users").document(data.get("player2"))
@@ -1913,7 +1912,13 @@ def record_match():
 
                 return jsonify({"status": "success", "message": "Match recorded."}), 200
             else:
-                return jsonify({"status": "error", "message": "Validation failed", "errors": form.errors}), 400
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": "Validation failed",
+                        "errors": form.errors,
+                    }
+                ), 400
         except Exception as e:
             return jsonify({"status": "error", "message": str(e)}), 500
 
