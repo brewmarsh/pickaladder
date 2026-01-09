@@ -121,8 +121,16 @@
         background-color: #ffffff;
     }
 
+    .chart-container {
+        min-height: 300px;
+    }
+
     .group-header-content {
         flex-direction: column;
         text-align: center;
+    }
+
+    .chart-container {
+        min-height: 300px;
     }
 }
