@@ -3,12 +3,125 @@
 import datetime
 
 from firebase_admin import firestore
-from flask import flash, g, redirect, render_template, request, url_for
+from flask import flash, g, jsonify, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import MatchForm
+
+
+def _get_candidate_player_ids(user_id, group_id=None):
+    """Fetch a set of valid opponent IDs for a user, optionally within a group."""
+    db = firestore.client()
+    candidate_player_ids = set()
+
+    if group_id:
+        # If in a group context, candidates are group members and pending invitees
+        group_ref = db.collection("groups").document(group_id)
+        group = group_ref.get()
+        if group.exists:
+            group_data = group.to_dict()
+            member_refs = group_data.get("members", [])
+            for ref in member_refs:
+                candidate_player_ids.add(ref.id)
+
+        invites_query = (
+            db.collection("group_invites")
+            .where(filter=firestore.FieldFilter("group_id", "==", group_id))
+            .where(filter=firestore.FieldFilter("used", "==", False))
+            .stream()
+        )
+        invited_emails = [doc.to_dict().get("email") for doc in invites_query]
+
+        if invited_emails:
+            for i in range(0, len(invited_emails), 30):
+                batch_emails = invited_emails[i : i + 30]
+                users_by_email = (
+                    db.collection("users")
+                    .where(filter=firestore.FieldFilter("email", "in", batch_emails))
+                    .stream()
+                )
+                for user_doc in users_by_email:
+                    candidate_player_ids.add(user_doc.id)
+    else:
+        # If not in a group context, candidates are friends and user's own invitees
+        friends_ref = db.collection("users").document(user_id).collection("friends")
+        friends_docs = friends_ref.stream()
+        for doc in friends_docs:
+            if doc.to_dict().get("status") in ["accepted", "pending"]:
+                candidate_player_ids.add(doc.id)
+
+        my_invites_query = (
+            db.collection("group_invites")
+            .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
+            .stream()
+        )
+        my_invited_emails = {doc.to_dict().get("email") for doc in my_invites_query}
+
+        if my_invited_emails:
+            my_invited_emails_list = list(my_invited_emails)
+            for i in range(0, len(my_invited_emails_list), 10):
+                batch_emails = my_invited_emails_list[i : i + 10]
+                users_by_email = (
+                    db.collection("users")
+                    .where(filter=firestore.FieldFilter("email", "in", batch_emails))
+                    .stream()
+                )
+                for user_doc in users_by_email:
+                    candidate_player_ids.add(user_doc.id)
+
+    candidate_player_ids.discard(user_id)
+    return candidate_player_ids
+
+
+def _save_match_data(user_id, form_data, group_id=None):
+    """Construct and save a match document to Firestore."""
+    db = firestore.client()
+    user_ref = db.collection("users").document(user_id)
+
+    # Handle both form objects and dictionaries
+    def get_data(key):
+        if isinstance(form_data, dict):
+            return form_data.get(key)
+        return getattr(form_data, key).data
+
+    match_type = get_data("match_type")
+    match_date_input = get_data("match_date")
+
+    if isinstance(match_date_input, str) and match_date_input:
+        match_date = datetime.datetime.strptime(match_date_input, "%Y-%m-%d")
+    elif isinstance(match_date_input, datetime.date):
+        match_date = datetime.datetime.combine(match_date_input, datetime.time.min)
+    else:
+        match_date = datetime.datetime.now()
+
+    match_data = {
+        "player1Score": int(get_data("player1_score")),
+        "player2Score": int(get_data("player2_score")),
+        "matchDate": match_date,
+        "createdAt": firestore.SERVER_TIMESTAMP,
+        "matchType": match_type,
+    }
+
+    if group_id:
+        match_data["groupId"] = group_id
+
+    if match_type == "singles":
+        player1_ref = user_ref
+        player2_ref = db.collection("users").document(get_data("player2"))
+        match_data["player1Ref"] = player1_ref
+        match_data["player2Ref"] = player2_ref
+    elif match_type == "doubles":
+        t1_p1_ref = user_ref
+        t1_p2_ref = db.collection("users").document(get_data("partner"))
+        t2_p1_ref = db.collection("users").document(get_data("player2"))
+        t2_p2_ref = db.collection("users").document(get_data("opponent2"))
+        match_data["team1"] = [t1_p1_ref, t1_p2_ref]
+        match_data["team2"] = [t2_p1_ref, t2_p2_ref]
+
+    db.collection("matches").add(match_data)
+    user_ref.update({"lastMatchRecordedType": match_type})
 
 
 def get_player_record(player_ref):
@@ -162,157 +275,85 @@ def view_match_page(match_id):
 @bp.route("/record", methods=["GET", "POST"])
 @login_required
 def record_match():
-    """Record a new match."""
+    """Handle match recording for both web form and optimistic JSON submission."""
     db = firestore.client()
     user_id = g.user["uid"]
-    form = MatchForm()
     group_id = request.args.get("group_id")
+    candidate_player_ids = _get_candidate_player_ids(user_id, group_id)
 
-    # Collect all potential player IDs
-    candidate_player_ids = set()
+    if request.method == "POST" and request.is_json:
+        data = request.get_json()
+        form = MatchForm(data=data)
 
-    # 1. Group Members (if group_id is provided)
-    if group_id:
-        group_ref = db.collection("groups").document(group_id)
-        group = group_ref.get()
-        if group.exists:
-            group_data = group.to_dict()
-            member_refs = group_data.get("members", [])
-            for ref in member_refs:
-                candidate_player_ids.add(ref.id)
+        # Security check: Ensure all selected players are valid candidates
+        selected_players = {data.get("player2")}
+        if data.get("match_type") == "doubles":
+            selected_players.add(data.get("partner"))
+            selected_players.add(data.get("opponent2"))
 
-            # 3. Pending Group Invites (users who have been invited but haven't joined)
-            invites_query = (
-                db.collection("group_invites")
-                .where(filter=firestore.FieldFilter("group_id", "==", group_id))
-                .where(filter=firestore.FieldFilter("used", "==", False))
-                .stream()
+        if not selected_players.issubset(candidate_player_ids):
+            return (
+                jsonify({"status": "error", "message": "Invalid opponent selected."}),
+                403,
             )
-            invited_emails = [doc.to_dict().get("email") for doc in invites_query]
 
-            if invited_emails:
-                # Find users matching these emails
-                # Note: 'in' query supports up to 30 items. We batch if necessary.
-                # For simplicity, we'll take chunks of 30.
-                for i in range(0, len(invited_emails), 30):
-                    batch_emails = invited_emails[i : i + 30]
-                    users_by_email = (
-                        db.collection("users")
-                        .where(
-                            filter=firestore.FieldFilter("email", "in", batch_emails)
-                        )
-                        .stream()
-                    )
-                    for user_doc in users_by_email:
-                        candidate_player_ids.add(user_doc.id)
+        # Populate choices for validation to work
+        form.player2.choices = [(p_id, "") for p_id in candidate_player_ids]
+        if data.get("match_type") == "doubles":
+            form.partner.choices = form.player2.choices
+            form.opponent2.choices = form.player2.choices
 
-    # 2. Friends and other invites (only if not in a group context)
-    if not group_id:
-        friends_ref = db.collection("users").document(user_id).collection("friends")
-        friends_docs = friends_ref.stream()
-        for doc in friends_docs:
-            if doc.to_dict().get("status") in ["accepted", "pending"]:
-                candidate_player_ids.add(doc.id)
+        if form.validate():
+            try:
+                _save_match_data(user_id, data, group_id)
+                return jsonify({"status": "success", "message": "Match recorded."}), 200
+            except Exception as e:
+                return jsonify({"status": "error", "message": str(e)}), 500
+        else:
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Validation failed",
+                        "errors": form.errors,
+                    }
+                ),
+                400,
+            )
 
-        # 3. Users invited to any group by the current user
-        my_invites_query = (
-            db.collection("group_invites")
-            .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
-            .stream()
-        )
-        my_invited_emails = {doc.to_dict().get("email") for doc in my_invites_query}
+    # Standard GET request or form submission
+    form = MatchForm()
 
-        if my_invited_emails:
-            # Find users matching these emails
-            my_invited_emails_list = list(my_invited_emails)
-            for i in range(0, len(my_invited_emails_list), 10):
-                batch_emails = my_invited_emails_list[i : i + 10]
-                users_by_email = (
-                    db.collection("users")
-                    .where(filter=firestore.FieldFilter("email", "in", batch_emails))
-                    .stream()
-                )
-                for user_doc in users_by_email:
-                    candidate_player_ids.add(user_doc.id)
-
-    # Remove current user from candidates
-    candidate_player_ids.discard(user_id)
-
-    # Fetch user details for all candidates
+    # Fetch and populate player choices for the form dropdowns
     player_choices = []
     if candidate_player_ids:
-        # Fetch users in batches of 30 (Firestore 'in' limit)
-        candidate_ids_list = list(candidate_player_ids)
-        for i in range(0, len(candidate_ids_list), 30):
-            batch_ids = candidate_ids_list[i : i + 30]
-            # Convert IDs to DocumentReferences for __name__ query
-            batch_refs = [db.collection("users").document(uid) for uid in batch_ids]
-
-            users_query = (
-                db.collection("users")
-                .where(filter=firestore.FieldFilter("__name__", "in", batch_refs))
-                .stream()
-            )
-            for user_doc in users_query:
+        # Batch fetch user data for choices
+        candidate_refs = [
+            db.collection("users").document(uid) for uid in candidate_player_ids
+        ]
+        users = db.get_all(candidate_refs)
+        for user_doc in users:
+            if user_doc.exists:
                 player_choices.append(
                     (user_doc.id, user_doc.to_dict().get("name", user_doc.id))
                 )
 
-    # Populate all select fields
     form.player2.choices = player_choices
     form.partner.choices = player_choices
     form.opponent2.choices = player_choices
 
-    # Default match type logic
-    user_ref = db.collection("users").document(user_id)
     if request.method == "GET":
-        user_data = user_ref.get().to_dict()
-        last_match_type = user_data.get("lastMatchRecordedType")
-        if last_match_type:
-            form.match_type.data = last_match_type
+        user_ref = db.collection("users").document(user_id)
+        user_snapshot = user_ref.get()
+        if user_snapshot.exists:
+            user_data = user_snapshot.to_dict()
+            last_match_type = user_data.get("lastMatchRecordedType")
+            if last_match_type:
+                form.match_type.data = last_match_type
 
     if form.validate_on_submit():
         try:
-            match_date = form.match_date.data or datetime.date.today()
-            if isinstance(match_date, datetime.date) and not isinstance(
-                match_date, datetime.datetime
-            ):
-                match_date = datetime.datetime.combine(match_date, datetime.time.min)
-
-            match_data = {
-                "player1Score": form.player1_score.data,
-                "player2Score": form.player2_score.data,
-                "matchDate": match_date,
-                "createdAt": firestore.SERVER_TIMESTAMP,
-                "matchType": form.match_type.data,
-            }
-
-            if group_id:
-                match_data["groupId"] = group_id
-
-            if form.match_type.data == "singles":
-                player1_ref = db.collection("users").document(user_id)
-                player2_ref = db.collection("users").document(form.player2.data)
-                match_data["player1Ref"] = player1_ref
-                match_data["player2Ref"] = player2_ref
-
-            elif form.match_type.data == "doubles":
-                # Team 1: Current User + Partner
-                t1_p1_ref = db.collection("users").document(user_id)
-                t1_p2_ref = db.collection("users").document(form.partner.data)
-
-                # Team 2: Opponent 1 (player2 field) + Opponent 2
-                t2_p1_ref = db.collection("users").document(form.player2.data)
-                t2_p2_ref = db.collection("users").document(form.opponent2.data)
-
-                match_data["team1"] = [t1_p1_ref, t1_p2_ref]
-                match_data["team2"] = [t2_p1_ref, t2_p2_ref]
-
-            db.collection("matches").add(match_data)
-
-            # Update last match type
-            user_ref.update({"lastMatchRecordedType": form.match_type.data})
-
+            _save_match_data(user_id, form, group_id)
             flash("Match recorded successfully.", "success")
             if group_id:
                 return redirect(url_for("group.view_group", group_id=group_id))
