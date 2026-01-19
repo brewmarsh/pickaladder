@@ -28,7 +28,7 @@ jobs:
 
       - name: Get next version
         id: version
-        uses: paulhatch/semantic-version@v5.4.0
+        uses: paulhatch/semantic-version@v6.0.0
         with:
           major_pattern: "major:"
           minor_pattern: "minor:"
