@@ -320,5 +320,3 @@ def change_password():
         return redirect(url_for("user.profile"))
 
     return render_template("change_password.html", user=g.user, form=form)
-
-

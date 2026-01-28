@@ -97,7 +97,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         mock_db.collection.side_effect = collection_side_effect
 
-        response = self.client.get('/match/record', headers=self._get_auth_headers())
+        response = self.client.get("/match/record", headers=self._get_auth_headers())
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
