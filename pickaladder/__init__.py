@@ -48,6 +48,7 @@ def create_app(test_config=None):
 
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
+        FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
         # Default mail settings, can be overridden in config.py
         MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
         MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
@@ -235,6 +236,11 @@ def create_app(test_config=None):
     def inject_version():
         """Injects the application version into the template context."""
         return dict(app_version=os.environ.get("APP_VERSION", "dev"))
+
+    @app.context_processor
+    def inject_firebase_api_key():
+        """Injects the Firebase API key into the template context."""
+        return dict(firebase_api_key=current_app.config.get("FIREBASE_API_KEY"))
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 

@@ -144,8 +144,16 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="{{ url_for('auth.firebase_config') }}"></script>
     <script>
+        const firebaseConfig = {
+            apiKey: "{{ firebase_api_key }}",
+            authDomain: "pickaladder.firebaseapp.com",
+            projectId: "pickaladder",
+            storageBucket: "pickaladder.appspot.com",
+            messagingSenderId: "402457219675",
+            appId: "1:402457219675:web:a346e2dc0dfa732d31e57e",
+            measurementId: "G-E28CXCXTSK"
+        };
         // Intercept fetch to add the auth token
         const originalFetch = window.fetch;
         window.fetch = function (url, options) {

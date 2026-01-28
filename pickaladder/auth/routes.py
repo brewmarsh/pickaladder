@@ -325,25 +325,3 @@ def change_password():
     return render_template("change_password.html", user=g.user, form=form)
 
 
-@bp.route("/firebase-config.js")
-def firebase_config():
-    """Return the Firebase config as a JavaScript file."""
-    api_key = os.environ.get("FIREBASE_API_KEY")
-    if not api_key:
-        current_app.logger.error(
-            "FIREBASE_API_KEY is not set. Frontend will not be able to connect to Firebase."
-        )
-        error_script = 'console.error("Firebase API key is missing. Please set the FIREBASE_API_KEY environment variable.");'
-        return Response(error_script, mimetype="application/javascript")
-
-    config = {
-        "apiKey": api_key,
-        "authDomain": "pickaladder.firebaseapp.com",
-        "projectId": "pickaladder",
-        "storageBucket": "pickaladder.appspot.com",
-        "messagingSenderId": "402457219675",
-        "appId": "1:402457219675:web:a346e2dc0dfa732d31e57e",
-        "measurementId": "G-E28CXCXTSK",
-    }
-    js_config = f"const firebaseConfig = {json.dumps(config)};"
-    return Response(js_config, mimetype="application/javascript")

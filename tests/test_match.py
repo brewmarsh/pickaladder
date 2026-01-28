@@ -47,7 +47,12 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {
+                "TESTING": True,
+                "WTF_CSRF_ENABLED": False,
+                "SERVER_NAME": "localhost",
+                "FIREBASE_API_KEY": "dummy-test-key",
+            }
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -65,6 +70,36 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
     def _get_auth_headers(self):
         return {"Authorization": "Bearer mock-token"}
+
+    def test_record_match_page_load(self):
+        """Test that the record match page loads correctly."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+        mock_users_collection = mock_db.collection("users")
+        mock_user_doc = mock_users_collection.document(MOCK_USER_ID)
+        mock_user_snapshot = MagicMock()
+        mock_user_snapshot.exists = True
+        mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
+        mock_user_doc.get.return_value = mock_user_snapshot
+
+        mock_friends_collection = mock_user_doc.collection("friends")
+        mock_friends_collection.stream.return_value = []
+
+        mock_group_invites_col = MagicMock()
+        mock_group_invites_col.where.return_value.where.return_value.stream.return_value = []
+
+        def collection_side_effect(name):
+            if name == "group_invites":
+                return mock_group_invites_col
+            if name == "users":
+                return mock_users_collection
+            return MagicMock()
+
+        mock_db.collection.side_effect = collection_side_effect
+
+        response = self.client.get('/match/record', headers=self._get_auth_headers())
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
     def test_record_match(self):
         """Test recording a new match."""
