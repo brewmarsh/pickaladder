@@ -4,20 +4,10 @@ services:
     image: ${IMAGE_TAG}
     restart: always
     command: gunicorn --bind 0.0.0.0:27272 --workers 2 --threads 4 --worker-class gthread --timeout 120 app:app
-    environment:
-      # These variables should be set in the production environment (e.g., GitHub Secrets)
-      - SECRET_KEY=${SECRET_KEY}
-      - MAIL_SERVER=${MAIL_SERVER}
-      - MAIL_PORT=${MAIL_PORT}
-      - MAIL_USE_TLS=${MAIL_USE_TLS}
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-      - FIREBASE_CREDENTIALS_JSON=${FIREBASE_CREDENTIALS_JSON}
-      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
-      - FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}
-      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
-      - IMGUR_CLIENT_ID=${IMGUR_CLIENT_ID}
-      - APP_VERSION=${APP_VERSION}
+    # The following file must exist on the production server for the container to start.
+    # It contains all the necessary environment variables for the application.
+    env_file:
+      - /root/.env
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:27272/health"]
       interval: 30s
