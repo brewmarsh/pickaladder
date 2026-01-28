@@ -1,12 +1,9 @@
 """Routes for authentication."""
 
-import json
-import os
 import re
 
 from firebase_admin import auth, firestore
 from flask import (
-    Response,
     current_app,
     flash,
     g,
