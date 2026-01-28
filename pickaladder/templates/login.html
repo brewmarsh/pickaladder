@@ -32,6 +32,9 @@
 {% endblock %}
 {% block scripts %}
 <script>
+  window.GOOGLE_API_KEY = "{{ google_api_key|default('', true) }}";
+</script>
+<script>
 document.addEventListener('DOMContentLoaded', function () {
     const googleSignInButton = document.getElementById('google-signin-btn');
     const form = document.querySelector('form');
