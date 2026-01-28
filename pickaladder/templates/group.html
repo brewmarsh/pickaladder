@@ -136,35 +136,62 @@
 
     <div class="card">
         <h3>Group Leaderboard</h3>
-        <p>Only matches between group members are shown.</p>
-        <div class="table-container">
-            <table class="table responsive-table">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Player</th>
-                        <th>Average Score</th>
-                        <th>Games Played</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for player in leaderboard %}
-                    <tr class="{{ 'highlight-row' if player.id == current_user_id else '' }}">
-                        <td data-label="Rank">{{ loop.index }}</td>
-                        <td data-label="Player"><a href="{{ url_for('user.view_user', user_id=player.id) }}">{{ player.name }}</a></td>
-                        <td data-label="Average Score">{{ "%.2f"|format(player.avg_score|float) }}</td>
-                        <td data-label="Games Played">{{ player.games_played }}</td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="4">No matches have been played between members of this group yet.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <p>A live ranking of all group members.</p>
+        <div class="leaderboard-container">
+            <div class="leaderboard-header">
+                <div class="leaderboard-cell">Rank</div>
+                <div class="leaderboard-cell">Player</div>
+                <div class="leaderboard-cell">Avg. Score</div>
+                <div class="leaderboard-cell">Form</div>
+                <div class="leaderboard-cell">Games</div>
+            </div>
+            <div class="leaderboard-body">
+                {% for player in leaderboard %}
+                <div class="leaderboard-row {{ 'highlight-user' if player.id == g.user['uid'] else '' }}">
+                    <div class="leaderboard-cell" data-label="Rank">
+                        <div class="player-rank">
+                            <span>
+                                {% if loop.index == 1 %}🥇
+                                {% elif loop.index == 2 %}🥈
+                                {% elif loop.index == 3 %}🥉
+                                {% else %}{{ loop.index }}{% endif %}
+                            </span>
+                            <span class="rank-trend">
+                                {% if player.rank_change is number and player.rank_change > 0 %}
+                                    <span class="trend-up">▲</span>
+                                {% elif player.rank_change is number and player.rank_change < 0 %}
+                                    <span class="trend-down">▼</span>
+                                {% elif player.rank_change == 'new' %}
+                                    <span class="trend-new">●</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="leaderboard-cell" data-label="Player">
+                        <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="player-link">
+                            <img src="{{ player.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ player.name }}" class="profile-picture-thumbnail">
+                            <span class="player-name">{{ player.name }}</span>
+                        </a>
+                    </div>
+                    <div class="leaderboard-cell" data-label="Avg. Score">{{ "%.2f"|format(player.avg_score|float) }}</div>
+                    <div class="leaderboard-cell" data-label="Form">
+                        <div class="form-dots">
+                            {% for result in player.form %}
+                                <span class="form-dot {{ result }}"></span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="leaderboard-cell" data-label="Games">{{ player.games_played }}</div>
+                </div>
+                {% else %}
+                <div class="leaderboard-empty">
+                    <p>No matches have been played between members of this group yet.</p>
+                </div>
+                {% endfor %}
+            </div>
         </div>
         <div class="leaderboard-trend-link">
-            <a href="{{ url_for('group.view_leaderboard_trend', group_id=group.id) }}">View Leaderboard Trend</a>
+            <a href="{{ url_for('group.view_leaderboard_trend', group_id=group.id) }}">View Leaderboard Trend Chart</a>
         </div>
     </div>
 </div>

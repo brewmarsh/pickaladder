@@ -2,7 +2,7 @@
 
 import secrets
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from firebase_admin import firestore
 
@@ -26,24 +26,8 @@ def get_random_joke():
     return secrets.choice(jokes)
 
 
-def get_group_leaderboard(group_id):
-    """Calculate the leaderboard for a specific group using Firestore.
-
-    This implementation uses the 'groupId' field on matches.
-    It supports both singles and doubles matches.
-    """
-    db = firestore.client()
-    group_ref = db.collection("groups").document(group_id)
-    group = group_ref.get()
-    if not group.exists:
-        return []
-
-    group_data = group.to_dict()
-    member_refs = group_data.get("members", [])
-    if not member_refs:
-        return []
-
-    # In-memory store for player stats
+def _calculate_leaderboard_from_matches(member_refs, matches):
+    """Helper to calculate leaderboard from a list of matches."""
     player_stats = {
         ref.id: {
             "wins": 0,
@@ -51,40 +35,10 @@ def get_group_leaderboard(group_id):
             "games": 0,
             "total_score": 0,
             "user_data": ref.get(),
+            "last_matches": [],  # For form calculation
         }
         for ref in member_refs
     }
-
-    # Fetch pending invites and add to player_stats
-    invites_query = (
-        db.collection("group_invites")
-        .where("group_id", "==", group_id)
-        .where("used", "==", False)
-        .stream()
-    )
-    invited_emails = {
-        doc.to_dict().get("email")
-        for doc in invites_query
-        if doc.to_dict().get("email")
-    }
-
-    if invited_emails:
-        invited_emails_list = list(invited_emails)
-        # Find users matching these emails (chunks of 30)
-        for i in range(0, len(invited_emails_list), 30):
-            batch_emails = invited_emails_list[i : i + 30]
-            users_by_email = (
-                db.collection("users").where("email", "in", batch_emails).stream()
-            )
-            for user_doc in users_by_email:
-                if user_doc.id not in player_stats:
-                    player_stats[user_doc.id] = {
-                        "wins": 0,
-                        "losses": 0,
-                        "games": 0,
-                        "total_score": 0,
-                        "user_data": user_doc,
-                    }
 
     # Helper function to update stats
     def update_player_stats(player_id, score, is_winner, is_draw=False):
@@ -96,12 +50,12 @@ def get_group_leaderboard(group_id):
             elif not is_draw:
                 player_stats[player_id]["losses"] += 1
 
-    # Fetch all matches for this group
-    matches_in_group = (
-        db.collection("matches").where("groupId", "==", group_id).stream()
+    # Sort matches by date descending to get recent matches first
+    matches.sort(
+        key=lambda m: m.to_dict().get("matchDate") or datetime.min, reverse=True
     )
 
-    for match in matches_in_group:
+    for match in matches:
         data = match.to_dict()
         match_type = data.get("matchType", "singles")
         p1_score = data.get("player1Score", 0)
@@ -111,6 +65,43 @@ def get_group_leaderboard(group_id):
         p1_wins = p1_score > p2_score
         p2_wins = p2_score > p1_score
         is_draw = p1_score == p2_score
+
+        # Store match result for form calculation
+        if match_type == "doubles":
+            for ref in data.get("team1", []):
+                if (
+                    ref.id in player_stats
+                    and len(player_stats[ref.id]["last_matches"]) < 5
+                ):
+                    player_stats[ref.id]["last_matches"].append(
+                        "win" if p1_wins else "loss"
+                    )
+            for ref in data.get("team2", []):
+                if (
+                    ref.id in player_stats
+                    and len(player_stats[ref.id]["last_matches"]) < 5
+                ):
+                    player_stats[ref.id]["last_matches"].append(
+                        "win" if p2_wins else "loss"
+                    )
+        else:
+            p1_ref, p2_ref = data.get("player1Ref"), data.get("player2Ref")
+            if (
+                p1_ref
+                and p1_ref.id in player_stats
+                and len(player_stats[p1_ref.id]["last_matches"]) < 5
+            ):
+                player_stats[p1_ref.id]["last_matches"].append(
+                    "win" if p1_wins else "loss"
+                )
+            if (
+                p2_ref
+                and p2_ref.id in player_stats
+                and len(player_stats[p2_ref.id]["last_matches"]) < 5
+            ):
+                player_stats[p2_ref.id]["last_matches"].append(
+                    "win" if p2_wins else "loss"
+                )
 
         if match_type == "doubles":
             # Team 1
@@ -133,7 +124,6 @@ def get_group_leaderboard(group_id):
             if p2_ref:
                 update_player_stats(p2_ref.id, p2_score, p2_wins, is_draw)
 
-    # Format the leaderboard data
     leaderboard = []
     for user_id, stats in player_stats.items():
         user_doc = stats["user_data"]
@@ -151,14 +141,71 @@ def get_group_leaderboard(group_id):
                 "losses": stats["losses"],
                 "games_played": stats["games"],
                 "avg_score": avg_score,
+                "form": stats.get("last_matches", []),
             }
         )
-
-    # Sort the leaderboard by avg_score, then wins, then games_played
     leaderboard.sort(
         key=lambda x: (x["avg_score"], x["wins"], x["games_played"]), reverse=True
     )
     return leaderboard
+
+
+def get_group_leaderboard(group_id):
+    """Calculate the leaderboard for a specific group using Firestore.
+
+    This implementation uses the 'groupId' field on matches.
+    It supports both singles and doubles matches.
+    """
+    db = firestore.client()
+    group_ref = db.collection("groups").document(group_id)
+    group = group_ref.get()
+    if not group.exists:
+        return []
+
+    group_data = group.to_dict()
+    member_refs = group_data.get("members", [])
+    if not member_refs:
+        return []
+
+    # Fetch all matches for this group
+    all_matches_stream = (
+        db.collection("matches").where("groupId", "==", group_id).stream()
+    )
+    all_matches = list(all_matches_stream)
+
+    # Calculate current leaderboard
+    current_leaderboard = _calculate_leaderboard_from_matches(member_refs, all_matches)
+
+    # Calculate leaderboard from a week ago for rank trend
+    one_week_ago = datetime.now() - timedelta(days=7)
+    matches_last_week = [
+        m
+        for m in all_matches
+        if m.to_dict().get("matchDate")
+        and m.to_dict().get("matchDate") < one_week_ago
+    ]
+
+    last_week_leaderboard = _calculate_leaderboard_from_matches(
+        member_refs, matches_last_week
+    )
+
+    # Create a map of user_id to last week's rank
+    last_week_ranks = {
+        player["id"]: i + 1 for i, player in enumerate(last_week_leaderboard)
+    }
+
+    # Add rank change to current leaderboard
+    for i, player in enumerate(current_leaderboard):
+        current_rank = i + 1
+        last_week_rank = last_week_ranks.get(player["id"])
+        if last_week_rank is not None:
+            # Rank is inverted: lower is better. last_week_rank=1, current_rank=2 -> change is -1 (down)
+            player["rank_change"] = last_week_rank - current_rank
+        else:
+            # Player was not on the leaderboard last week, or had no rank
+            player["rank_change"] = "new"
+
+    return current_leaderboard
 
 
 def get_leaderboard_trend_data(group_id):
