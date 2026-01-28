@@ -134,3 +134,56 @@
         min-height: 300px;
     }
 }
+@media (max-width: 768px) {
+    .leaderboard-header {
+        display: none;
+    }
+
+    .leaderboard-row {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "player"
+            "stats";
+        padding: 15px;
+        margin-bottom: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+    }
+
+    .leaderboard-cell[data-label="Player"] {
+        grid-area: player;
+        font-size: 1.2em;
+        margin-bottom: 15px;
+    }
+
+    .leaderboard-cell[data-label="Rank"],
+    .leaderboard-cell[data-label="Avg. Score"],
+    .leaderboard-cell[data-label="Form"],
+    .leaderboard-cell[data-label="Games"] {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border-color);
+        width: 100%;
+    }
+
+    .leaderboard-cell:last-child {
+        border-bottom: none;
+    }
+
+    .leaderboard-cell::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--on-surface-variant-color);
+    }
+
+    .player-rank {
+        justify-content: flex-end;
+    }
+
+    .highlight-user {
+        border: 2px solid var(--primary-color);
+        border-left: none; /* Override desktop style */
+        background-color: #E8F5E9; /* A light green */
+    }
+}
