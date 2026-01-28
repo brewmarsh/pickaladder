@@ -135,7 +135,7 @@ def login():
     The client will get an ID token and send it with subsequent requests.
     """
     current_app.logger.info("Login page loaded")
-    google_api_key = current_app.config.get("GOOGLE_API_KEY")
+    google_api_key = os.environ.get("GOOGLE_API_KEY")
     if not google_api_key:
         current_app.logger.warning(
             "GOOGLE_API_KEY is not set. Frontend login will fail."
