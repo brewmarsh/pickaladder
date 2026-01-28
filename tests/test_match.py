@@ -101,40 +101,22 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
-    def test_record_match(self):
+    @patch("pickaladder.match.routes._get_candidate_player_ids")
+    def test_record_match(self, mock_get_candidate_player_ids):
         """Test recording a new match."""
+        mock_get_candidate_player_ids.return_value = {MOCK_OPPONENT_ID}
         self._set_session_user()
 
         mock_db = self.mock_firestore_service.client.return_value
-        mock_users_collection = mock_db.collection("users")
 
-        mock_user_doc = mock_users_collection.document(MOCK_USER_ID)
-        mock_user_snapshot = MagicMock()
-        mock_user_snapshot.exists = True
-        mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
-        mock_user_doc.get.return_value = mock_user_snapshot
-
-        mock_opponent_doc = mock_users_collection.document(MOCK_OPPONENT_ID)
+        # Mock the db.get_all call that populates the form choices
         mock_opponent_snapshot = MagicMock()
         mock_opponent_snapshot.exists = True
+        mock_opponent_snapshot.id = MOCK_OPPONENT_ID
         mock_opponent_snapshot.to_dict.return_value = MOCK_OPPONENT_DATA
-        mock_opponent_doc.get.return_value = mock_opponent_snapshot
+        mock_db.get_all.return_value = [mock_opponent_snapshot]
 
         mock_matches_collection = mock_db.collection("matches")
-
-        mock_friends_collection = (
-            mock_db.collection("users").document(MOCK_USER_ID).collection("friends")
-        )
-        mock_friend_doc = MagicMock()
-        mock_friend_doc.id = MOCK_OPPONENT_ID
-        mock_friend_doc.to_dict.return_value = {"status": "accepted"}
-        mock_friends_collection.stream.return_value = [mock_friend_doc]
-
-        mock_opponent_user_query = mock_db.collection("users").where.return_value
-        mock_opponent_user_doc = MagicMock()
-        mock_opponent_user_doc.id = MOCK_OPPONENT_ID
-        mock_opponent_user_doc.to_dict.return_value = MOCK_OPPONENT_DATA
-        mock_opponent_user_query.stream.return_value = [mock_opponent_user_doc]
 
         response = self.client.post(
             "/match/record",
@@ -144,6 +126,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
                 "player1_score": 11,
                 "player2_score": 5,
                 "match_date": datetime.date.today().isoformat(),
+                "match_type": "singles",
             },
             follow_redirects=True,
         )
