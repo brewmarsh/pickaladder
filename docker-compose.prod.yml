@@ -4,6 +4,10 @@ services:
     image: ${IMAGE_TAG}
     restart: always
     command: gunicorn --bind 0.0.0.0:27272 --workers 2 --threads 4 --worker-class gthread --timeout 120 app:app
+    volumes:
+      - /root/serviceAccountKey.json:/app/serviceAccountKey.json:ro
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json
     # The following file must exist on the production server for the container to start.
     # It contains all the necessary environment variables for the application.
     env_file:
