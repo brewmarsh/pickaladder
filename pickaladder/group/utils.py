@@ -27,7 +27,7 @@ def get_random_joke():
 
 
 def _calculate_leaderboard_from_matches(member_refs, matches):
-    """Helper to calculate leaderboard from a list of matches."""
+    """Calculate the leaderboard from a list of matches."""
     player_stats = {
         ref.id: {
             "wins": 0,
