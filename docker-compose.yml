@@ -4,7 +4,10 @@ services:
     build: .
     volumes:
       - .:/app
+      - ./serviceAccountKey.json:/app/serviceAccountKey.json
     command: gunicorn --bind 0.0.0.0:27272 --workers 2 --threads 4 --worker-class gthread --timeout 120 app:app
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json
     env_file:
       - .env
     networks:
