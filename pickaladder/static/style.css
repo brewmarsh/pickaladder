@@ -1,15 +1,16 @@
 /* Basic styling */
 :root {
-    --primary-color: #5A8C55; /* Darker Pickle Green */
-    --primary-color-dark: #456B42;
-    --secondary-color: #8ABF83; /* Light Pickle Green */
+    --primary-brand: #0F4C81;
+    --primary-brand-dark: #0b3a64;
+    --accent-highlight: #DFFF00;
+    --success-color: #10B981;
     --danger-color: #EA4335; /* Google Red */
     --warning-color: #FBBC05; /* Google Yellow */
-    --background-color: #F5F5F5; /* Off White */
-    --surface-color: #ffffff;
+    --text-color: #1F2937;
+    --text-secondary-color: #616161;
+    --background-color: #F3F4F6;
+    --surface-color: #FFFFFF;
     --on-primary-color: #ffffff;
-    --on-surface-color: #212121; /* Dark Text */
-    --on-surface-variant-color: #616161;
     --border-color: #E0E0E0;
     --font-family: 'Roboto', sans-serif;
     --box-shadow: 0 1px 2px 0 rgba(60,64,67,0.302), 0 1px 3px 1px rgba(60,64,67,0.149);
@@ -21,7 +22,7 @@ body {
     margin: 0;
     padding: 0;
     background-color: var(--background-color);
-    color: var(--on-surface-color);
+    color: var(--text-color);
     line-height: 1.6;
 }
 
@@ -62,8 +63,8 @@ body {
 
 /* Header and Navbar */
 .header {
-    background-color: var(--primary-color);
-    border-bottom: 1px solid var(--primary-color-dark);
+    background-color: var(--primary-brand);
+    border-bottom: 1px solid var(--primary-brand-dark);
     padding: 10px 0;
     margin-bottom: 20px;
 }
@@ -144,7 +145,7 @@ label {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
-    color: var(--on-surface-variant-color);
+    color: var(--text-secondary-color);
     font-size: 14px;
 }
 
@@ -162,7 +163,7 @@ select {
     box-sizing: border-box;
     font-size: 16px;
     background-color: var(--background-color);
-    color: var(--on-surface-color);
+    color: var(--text-color);
 }
 
 input[type="text"]:focus,
@@ -173,8 +174,8 @@ input[type="date"]:focus,
 textarea:focus,
 select:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(90, 140, 85, 0.2);
+    border-color: var(--primary-brand);
+    box-shadow: 0 0 0 2px rgba(15, 76, 129, 0.2);
 }
 
 textarea {
@@ -191,7 +192,7 @@ select {
 }
 
 input[type="submit"], .btn {
-    background-color: var(--primary-color);
+    background-color: var(--primary-brand);
     color: var(--on-primary-color);
     padding: 12px 24px;
     border: none;
@@ -211,11 +212,12 @@ input[type="submit"], .btn {
 }
 
 .btn:hover {
-    background-color: var(--primary-color-dark);
+    background-color: var(--primary-brand-dark);
 }
 
 .btn-primary {
-    background-color: var(--secondary-color);
+    background-color: var(--accent-highlight);
+    color: var(--text-color);
 }
 
 .btn-danger {
@@ -224,7 +226,7 @@ input[type="submit"], .btn {
 
 .btn-warning {
     background-color: var(--warning-color);
-    color: var(--on-surface-color);
+    color: var(--text-color);
 }
 
 /* Tables */
@@ -250,7 +252,7 @@ input[type="submit"], .btn {
 .table th {
     background-color: var(--background-color);
     font-weight: 500;
-    color: var(--on-surface-variant-color);
+    color: var(--text-secondary-color);
     font-size: 14px;
 }
 
@@ -287,7 +289,7 @@ input[type="submit"], .btn {
 }
 
 .dropdown-content a {
-    color: var(--on-surface-color);
+    color: var(--text-color);
     padding: 10px 20px;
     text-decoration: none;
     display: block;
@@ -329,7 +331,7 @@ input[type="submit"], .btn {
 /* Admin Banner */
 .admin-banner {
     background-color: var(--warning-color);
-    color: var(--on-surface-color);
+    color: var(--text-color);
     text-align: center;
     padding: 4px;
     font-size: 0.9em;
@@ -377,7 +379,7 @@ input[type="submit"], .btn {
 }
 
 .match-date {
-    color: var(--on-surface-variant-color);
+    color: var(--text-secondary-color);
     font-size: 0.9em;
 }
 
@@ -401,13 +403,13 @@ input[type="submit"], .btn {
 .score-details {
     font-size: 2.5em;
     font-weight: 500;
-    color: var(--primary-color);
+    color: var(--primary-brand);
 }
 
 .separator {
     font-size: 1.5em;
     font-weight: bold;
-    color: var(--on-surface-variant-color);
+    color: var(--text-secondary-color);
 }
 
 
@@ -473,7 +475,7 @@ input[type="submit"], .btn {
 
 .hero p {
     font-size: 1.2em;
-    color: var(--on-surface-variant-color);
+    color: var(--text-secondary-color);
     max-width: 600px;
     margin: 20px auto;
 }
@@ -515,7 +517,7 @@ input[type="submit"], .btn {
 }
 
 .close {
-    color: var(--on-surface-variant-color);
+    color: var(--text-secondary-color);
     float: right;
     font-size: 28px;
     font-weight: bold;
@@ -523,7 +525,7 @@ input[type="submit"], .btn {
 
 .close:hover,
 .close:focus {
-    color: var(--on-surface-color);
+    color: var(--text-color);
     text-decoration: none;
     cursor: pointer;
 }
@@ -538,7 +540,7 @@ input[type="submit"], .btn {
     text-align: center;
     padding: 20px 0;
     margin-top: 40px;
-    color: var(--on-surface-variant-color);
+    color: var(--text-secondary-color);
     font-size: 0.9em;
 }
 

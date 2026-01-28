@@ -1,13 +1,14 @@
 /* Dark mode styles */
 body.dark-mode {
-    --primary-color: #8ABF83; /* Light Pickle Green */
-    --primary-color-dark: #6E9C69;
-    --secondary-color: #547851;
-    --background-color: #212121; /* Dark Gray */
-    --surface-color: #333333;
-    --on-primary-color: #212121;
-    --on-surface-color: #F5F5F5; /* Off White Text */
-    --on-surface-variant-color: #BDBDBD;
+    --primary-brand: #3b82f6;
+    --primary-brand-dark: #2563eb;
+    --accent-highlight: #DFFF00;
+    --success-color: #10B981;
+    --text-color: #F3F4F6;
+    --text-secondary-color: #BDBDBD;
+    --background-color: #1F2937;
+    --surface-color: #2d3748;
+    --on-primary-color: #ffffff;
     --border-color: #616161;
 }
 
@@ -18,7 +19,7 @@ body.dark-mode input[type="number"],
 body.dark-mode input[type="date"],
 body.dark-mode select {
     background-color: var(--surface-color);
-    color: var(--on-surface-color);
+    color: var(--text-color);
     border-color: var(--border-color);
 }
 
@@ -28,8 +29,8 @@ body.dark-mode input[type="email"]:focus,
 body.dark-mode input[type="number"]:focus,
 body.dark-mode input[type="date"]:focus,
 body.dark-mode select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(138, 191, 131, 0.3);
+    border-color: var(--primary-brand);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
 }
 
 body.dark-mode .table th {
@@ -58,7 +59,7 @@ body.dark-mode .clickable-row:hover {
 
 body.dark-mode .loader {
     border: 5px solid var(--surface-color);
-    border-top: 5px solid var(--primary-color);
+    border-top: 5px solid var(--primary-brand);
 }
 
 body.dark-mode a {
@@ -67,6 +68,10 @@ body.dark-mode a {
 
 body.dark-mode .btn {
     color: var(--on-primary-color);
+}
+
+body.dark-mode .btn-primary {
+    color: var(--text-color);
 }
 
 body.dark-mode .dropbtn {
@@ -78,15 +83,15 @@ body.dark-mode .hamburger-menu {
 }
 
 body.dark-mode .header {
-    background-color: var(--primary-color-dark);
-    border-bottom: 1px solid var(--primary-color);
+    background-color: var(--primary-brand-dark);
+    border-bottom: 1px solid var(--primary-brand);
 }
 
 body.dark-mode .navbar-brand,
 body.dark-mode .navbar-menu a {
-    color: var(--on-surface-color);
+    color: var(--text-color);
 }
 
 body.dark-mode .close {
-    color: var(--on-surface-variant-color);
+    color: var(--text-secondary-color);
 }
