@@ -181,8 +181,7 @@ def get_group_leaderboard(group_id):
     matches_last_week = [
         m
         for m in all_matches
-        if m.to_dict().get("matchDate")
-        and m.to_dict().get("matchDate") < one_week_ago
+        if m.to_dict().get("matchDate") and m.to_dict().get("matchDate") < one_week_ago
     ]
 
     last_week_leaderboard = _calculate_leaderboard_from_matches(
