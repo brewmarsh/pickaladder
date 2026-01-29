@@ -1,18 +1,16 @@
 """Tests for the admin blueprint."""
-
 import unittest
 from unittest.mock import MagicMock, patch
-
 from pickaladder import create_app
 
 # Mock user payloads
 MOCK_ADMIN_ID = "admin_uid"
-MOCK_ADMIN_PAYLOAD = {"uid": MOCK_ADMIN_ID, "email": "admin@example.com"} #nosec
-MOCK_ADMIN_DATA = {"name": "Admin User", "isAdmin": True} #nosec
+MOCK_ADMIN_PAYLOAD = {"uid": MOCK_ADMIN_ID, "email": "admin@example.com"}
+MOCK_ADMIN_DATA = {"name": "Admin User", "isAdmin": True}
 
 MOCK_USER_ID = "user_uid"
-MOCK_USER_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user@example.com"} #nosec
-MOCK_USER_DATA = {"name": "Regular User", "isAdmin": False} #nosec
+MOCK_USER_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user@example.com"}
+MOCK_USER_DATA = {"name": "Regular User", "isAdmin": False}
 
 
 class AdminRoutesTestCase(unittest.TestCase):
