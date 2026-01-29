@@ -29,8 +29,8 @@ class AppFirebaseTestCase(unittest.TestCase):
         # Test case 1: Quotes and spaces in password, quotes in username
         env_vars = {
             "MAIL_USERNAME": '"user@example.com"',
-            "MAIL_PASSWORD": '"xxxx xxxx xxxx"',
-            "SECRET_KEY": "dev",
+            "MAIL_PASSWORD": '"xxxx xxxx xxxx"',  # nosec
+            "SECRET_KEY": "dev",  # nosec
             "TESTING": "True",  # To skip firebase init
         }
 
