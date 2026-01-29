@@ -146,7 +146,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script>
         const firebaseConfig = {
-            apiKey: "{{ firebase_api_key }}",
+            apiKey: "{{ firebase_api_key|default('', true) }}",
             authDomain: "pickaladder.firebaseapp.com",
             projectId: "pickaladder",
             storageBucket: "pickaladder.appspot.com",
