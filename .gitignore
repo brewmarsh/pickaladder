@@ -11,6 +11,7 @@ pgdata-test/
 # Log files
 app.log
 make_up.log
+*.log
 
 # Other
 cookies.txt
