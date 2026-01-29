@@ -364,6 +364,96 @@ def record_match():
     return render_template("record_match.html", form=form)
 
 
+def get_latest_matches(limit=10):
+    """Fetch and process the latest matches."""
+    db = firestore.client()
+    matches_query = (
+        db.collection("matches")
+        .order_by("createdAt", direction=firestore.Query.DESCENDING)
+        .limit(limit)
+    )
+    matches = list(matches_query.stream())
+
+    player_refs = set()
+    for match in matches:
+        match_data = match.to_dict()
+        if match_data.get("matchType") == "doubles":
+            player_refs.update(match_data.get("team1", []))
+            player_refs.update(match_data.get("team2", []))
+        else:
+            if match_data.get("player1Ref"):
+                player_refs.add(match_data.get("player1Ref"))
+            if match_data.get("player2Ref"):
+                player_refs.add(match_data.get("player2Ref"))
+
+    players = {}
+    if player_refs:
+        player_docs = db.get_all(list(player_refs))
+        for doc in player_docs:
+            if doc.exists:
+                players[doc.id] = doc.to_dict().get("name", "N/A")
+
+    processed_matches = []
+    for match in matches:
+        match_data = match.to_dict()
+        match_date = match_data.get("matchDate")
+        if isinstance(match_date, datetime.datetime):
+            match_date_formatted = match_date.strftime("%b %d")
+        else:
+            # Fallback if matchDate is not a datetime object
+            match_date_formatted = "N/A"
+
+        score1 = match_data.get("player1Score", 0)
+        score2 = match_data.get("player2Score", 0)
+
+        point_diff = abs(score1 - score2)
+        close_call = point_diff <= 2
+
+        processed_match = {
+            "date": match_date_formatted,
+            "point_differential": point_diff,
+            "close_call": close_call,
+        }
+
+        if match_data.get("matchType") == "doubles":
+            team1_refs = match_data.get("team1", [])
+            team2_refs = match_data.get("team2", [])
+            team1_names = " & ".join([players.get(ref.id, "N/A") for ref in team1_refs])
+            team2_names = " & ".join([players.get(ref.id, "N/A") for ref in team2_refs])
+
+            if score1 > score2:
+                processed_match["winner_name"] = team1_names
+                processed_match["loser_name"] = team2_names
+                processed_match["winner_score"] = score1
+                processed_match["loser_score"] = score2
+            else:
+                processed_match["winner_name"] = team2_names
+                processed_match["loser_name"] = team1_names
+                processed_match["winner_score"] = score2
+                processed_match["loser_score"] = score1
+        else:  # singles
+            p1_ref = match_data.get("player1Ref")
+            p2_ref = match_data.get("player2Ref")
+
+            p1_name = players.get(p1_ref.id, "N/A") if p1_ref else "N/A"
+            p2_name = players.get(p2_ref.id, "N/A") if p2_ref else "N/A"
+
+            if score1 > score2:
+                processed_match["winner_name"] = p1_name
+                processed_match["loser_name"] = p2_name
+                processed_match["winner_score"] = score1
+                processed_match["loser_score"] = score2
+            else:
+                processed_match["winner_name"] = p2_name
+                processed_match["loser_name"] = p1_name
+                processed_match["winner_score"] = score2
+                processed_match["loser_score"] = score1
+
+        processed_matches.append(processed_match)
+
+    return processed_matches
+
+
 @bp.route("/leaderboard")
 @login_required
 def leaderboard():
@@ -404,6 +494,11 @@ def leaderboard():
         players = []
         flash(f"An error occurred while fetching the leaderboard: {e}", "danger")
 
+    latest_matches = get_latest_matches()
+
     return render_template(
-        "leaderboard.html", players=players, current_user_id=g.user["uid"]
+        "leaderboard.html",
+        players=players,
+        latest_matches=latest_matches,
+        current_user_id=g.user["uid"],
     )

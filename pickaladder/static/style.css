@@ -792,3 +792,80 @@ input[type="submit"], .btn {
     border-left: 4px solid var(--primary-color);
     background-color: #E8F5E9; /* A light green */
 }
+
+/* Latest Games Section */
+.latest-games-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.game-item {
+    display: flex;
+    align-items: center;
+    background-color: var(--surface-color);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    gap: 20px;
+}
+
+.game-date {
+    font-weight: 500;
+    color: var(--text-secondary-color);
+    flex-shrink: 0; /* Prevents date from shrinking */
+    width: 60px; /* Fixed width for alignment */
+}
+
+.game-matchup {
+    flex-grow: 1;
+}
+
+.winner {
+    color: var(--success-color);
+    font-weight: bold;
+}
+
+.game-score {
+    font-size: 1.2em;
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+.game-details {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.tag {
+    background-color: var(--warning-color);
+    color: var(--text-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+.point-differential {
+    color: var(--text-secondary-color);
+    font-size: 0.9em;
+}
+
+/* Mobile Formatting */
+@media screen and (max-width: 768px) {
+    .game-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .game-date {
+        width: auto;
+        margin-bottom: 10px;
+        font-size: 0.9em;
+    }
+
+    .game-details {
+        display: none; /* Hide on mobile as requested */
+    }
+}
