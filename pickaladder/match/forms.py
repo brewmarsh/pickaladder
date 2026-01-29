@@ -14,6 +14,7 @@ class MatchForm(FlaskForm):
         default="singles",
         validators=[DataRequired()],
     )
+    player1 = SelectField("Team 1 Player 1", validators=[DataRequired()])
     partner = SelectField("Partner", validators=[Optional()])
     player2 = SelectField("Opponent / Opponent 1", validators=[DataRequired()])
     opponent2 = SelectField("Opponent 2", validators=[Optional()])
@@ -71,9 +72,15 @@ class MatchForm(FlaskForm):
                 return False
 
             # Check for duplicate players
-            players = [self.partner.data, self.player2.data, self.opponent2.data]
+            players = [
+                self.player1.data,
+                self.partner.data,
+                self.player2.data,
+                self.opponent2.data,
+            ]
             if len(players) != len(set(players)):
                 error_msg = "All players in a doubles match must be unique."
+                self.player1.errors.append(error_msg)
                 self.partner.errors.append(error_msg)
                 self.player2.errors.append(error_msg)
                 self.opponent2.errors.append(error_msg)

@@ -17,6 +17,10 @@
         </div>
 
         <!-- Team 1 / Player 1 -->
+        <div class="form-group">
+            {{ form.player1.label }}
+            {{ form.player1(class="form-control", value=g.user['uid']) }}
+        </div>
         <div class="form-group" id="partner-group" style="display: none;">
             {{ form.partner.label }}
             {{ form.partner(class="form-control") }}
@@ -83,6 +87,35 @@
 
         // Initialize state
         toggleFields();
+
+        // Mutual Exclusivity for Player Dropdowns
+        const playerDropdowns = [
+            document.getElementById('player1'),
+            document.getElementById('partner'),
+            document.getElementById('player2'),
+            document.getElementById('opponent2')
+        ];
+
+        function updateDropdowns() {
+            const selectedValues = playerDropdowns.map(dropdown => dropdown.value).filter(Boolean);
+
+            playerDropdowns.forEach(dropdown => {
+                Array.from(dropdown.options).forEach(option => {
+                    if (selectedValues.includes(option.value) && option.value !== dropdown.value) {
+                        option.disabled = true;
+                    } else {
+                        option.disabled = false;
+                    }
+                });
+            });
+        }
+
+        playerDropdowns.forEach(dropdown => {
+            dropdown.addEventListener('change', updateDropdowns);
+        });
+
+        // Initial call to set the state
+        updateDropdowns();
     </script>
     <script src="{{ url_for('static', filename='js/optimistic_submission.js') }}"></script>
 </div>
