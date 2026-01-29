@@ -23,6 +23,10 @@
                 <h3>Total Games</h3>
                 <p>{{ total_games }}</p>
             </div>
+            <div class="stat-card">
+                <h3>DUPR Rating</h3>
+                <p>{{ profile_user.dupr_rating if profile_user.dupr_rating is not none else 'N/A' }}</p>
+            </div>
         </div>
 
         {% if is_friend %}
