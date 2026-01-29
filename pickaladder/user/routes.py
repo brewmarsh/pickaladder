@@ -293,15 +293,31 @@ def view_user(user_id):
                 "doc": match_doc,
                 "data": match_data,
                 "date": match_data.get("matchDate") or match_doc.create_time,
+                "user_won": user_won,
             }
         )
 
     record = {"wins": wins, "losses": losses}
+    total_games = wins + losses
+    win_rate = (wins / total_games) * 100 if total_games > 0 else 0
+
 
     # Sort and Limit for display
     all_processed_matches.sort(
         key=lambda x: x["date"] or datetime.datetime.min, reverse=True
     )
+
+    current_streak = 0
+    streak_type = "N/A"
+    if all_processed_matches:
+        last_result = all_processed_matches[0]["user_won"]
+        streak_type = "W" if last_result else "L"
+        for match in all_processed_matches:
+            if match["user_won"] == last_result:
+                current_streak += 1
+            else:
+                break
+
     display_items = all_processed_matches[:20]
 
     # Collect all user refs needed for batch fetching
@@ -434,6 +450,10 @@ def view_user(user_id):
         friend_request_sent=friend_request_sent,
         record=record,
         user=g.user,
+        total_games=total_games,
+        win_rate=win_rate,
+        current_streak=current_streak,
+        streak_type=streak_type,
     )
 
 
