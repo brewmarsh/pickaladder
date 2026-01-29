@@ -28,9 +28,9 @@ class AppFirebaseTestCase(unittest.TestCase):
         """Test that MAIL_USERNAME and MAIL_PASSWORD are sanitized correctly."""
         # Test case 1: Quotes and spaces in password, quotes in username
         env_vars = {
-            "MAIL_USERNAME": '"user@example.com"',
-            "MAIL_PASSWORD": '"xxxx xxxx xxxx"',  # nosec
-            "SECRET_KEY": "dev",  # nosec
+            "MAIL_USERNAME": '"user@example.com"', #nosec
+            "MAIL_PASSWORD": '"xxxx xxxx xxxx"', #nosec
+            "SECRET_KEY": "dev",
             "TESTING": "True",  # To skip firebase init
         }
 
@@ -38,16 +38,16 @@ class AppFirebaseTestCase(unittest.TestCase):
             app = create_app({"TESTING": True})
 
             # Username should have quotes stripped
-            self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
+            self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com") #nosec
 
             # Password should have quotes stripped AND spaces removed
-            self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
+            self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx") #nosec
 
     def test_mail_config_sanitization_single_quotes(self):
         """Test that MAIL_USERNAME and MAIL_PASSWORD are sanitized correctly with single quotes."""
         env_vars = {
-            "MAIL_USERNAME": "'user@example.com'",
-            "MAIL_PASSWORD": "'xxxx xxxx xxxx'",
+            "MAIL_USERNAME": "'user@example.com'", #nosec
+            "MAIL_PASSWORD": "'xxxx xxxx xxxx'", #nosec
             "SECRET_KEY": "dev",
             "TESTING": "True",
         }
