@@ -67,6 +67,8 @@ def create_app(test_config=None):
     if not app.config.get("TESTING"):
         import sys
 
+        print(f"DEBUG: Mail User loaded: {bool(app.config.get('MAIL_USERNAME'))}", file=sys.stderr)
+        print(f"DEBUG: Mail Password loaded: {bool(app.config.get('MAIL_PASSWORD'))}", file=sys.stderr)
         print(
             f"DEBUG: Mail Config - User: {app.config.get('MAIL_USERNAME')}",
             file=sys.stderr,
