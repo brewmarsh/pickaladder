@@ -222,7 +222,8 @@ def create_app(test_config=None):
 
     @app.before_request
     def load_logged_in_user():
-        """
+        """Load user from session.
+
         If a user_id is in the session, load the user data from Firestore and
         store it in g.
         """

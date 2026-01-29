@@ -164,7 +164,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_groups_coll.where.return_value.stream.return_value = []
 
     def test_api_dashboard_fetches_all_matches_for_sorting(self):
-        """
+        """Test that all matches are fetched for sorting.
+
         Test that all matches are fetched (no limit) to allow correct in-memory
         sorting.
         """
@@ -238,7 +239,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def test_view_user_includes_doubles_and_processes_matches(
         self, mock_render_template
     ):
-        """
+        """Test that view_user fetches and processes doubles matches.
+
         Test that view_user fetches doubles matches and processes them for the
         template.
         """

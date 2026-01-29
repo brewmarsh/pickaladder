@@ -59,7 +59,8 @@ def handle_500(e):
 
 @error_handlers_bp.app_errorhandler(CSRFError)
 def handle_csrf_error(e):
-    """
+    """Handle CSRF errors.
+
     Handle CSRF errors, which usually indicate a session timeout or invalid form
     submission.
     """

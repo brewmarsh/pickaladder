@@ -106,7 +106,8 @@ def view_groups():
 @bp.route("/<string:group_id>", methods=["GET", "POST"])
 @login_required
 def view_group(group_id):
-    """
+    """Display a single group's page.
+
     Display a single group's page, including its members, leaderboard, and
     invite form.
     """

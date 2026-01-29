@@ -427,7 +427,8 @@ def send_invite_email_background(app, invite_token, email_data):
 
 
 def friend_group_members(db, group_id, new_member_ref):
-    """
+    """Automatically create friend relationships between group members.
+
     Automatically create friend relationships between the new member and existing
     group members.
     """
