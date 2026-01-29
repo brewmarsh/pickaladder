@@ -88,22 +88,11 @@
 
         <div class="card" style="margin-top: 20px;">
             <div class="header-with-button">
-                <h3>Your Matches</h3>
+                <h3>Latest Games</h3>
                 <a href="{{ url_for('match.record_match') }}" class="btn">Record a Match</a>
             </div>
-            <div class="table-container">
-                <table class="table responsive-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Opponent</th>
-                            <th>Score</th>
-                        </tr>
-                    </thead>
-                    <tbody id="matches-body">
-                        <!-- Matches will be inserted here by JavaScript -->
-                    </tbody>
-                </table>
+            <div id="latest-games-feed">
+                <!-- Game cards will be dynamically inserted here -->
             </div>
         </div>
     </div>
@@ -175,23 +164,51 @@ document.addEventListener('DOMContentLoaded', function() {
         </tr>
     `;
 
-    const matchRowTemplate = (match) => `
-        <tr class="clickable-row" data-href="/match/${match.id}">
-            <td data-label="Date">${match.date || 'N/A'}</td>
-            <td data-label="Opponent">
-                <a href="${urls.view_user(match.opponent_id)}">${match.opponent_username}</a>
-                ${match.is_group_match ? '<span title="Group Match" style="margin-left: 5px; cursor: help;">👥</span>' : ''}
-            </td>
-            <td data-label="Score">${match.user_score} - ${match.opponent_score}</td>
-        </tr>
-    `;
-
     const groupRankingRowTemplate = (ranking) => `
         <tr>
             <td data-label="Group Name"><a href="${urls.view_group(ranking.group_id)}">${ranking.group_name}</a></td>
             <td data-label="Your Rank">${ranking.rank}</td>
         </tr>
     `;
+
+    function renderLatestGames(matches) {
+        const feed = document.getElementById('latest-games-feed');
+        if (matches.length === 0) {
+            feed.innerHTML = '<p>No recent games to display.</p>';
+            return;
+        }
+
+        matches.forEach(match => {
+            const isCloseScore = Math.abs(match.player1_score - match.player2_score) <= 2;
+            const scoreClass = isCloseScore ? 'score-close' : '';
+
+            const p1_winner = match.winner === 'player1' ? 'winner' : '';
+            const p2_winner = match.winner === 'player2' ? 'winner' : '';
+
+            let player1Display, player2Display;
+            if (match.match_type === 'doubles') {
+                player1Display = match.player1.map(p => `<a href="${urls.view_user(p.id)}" class="${p1_winner}">${p.username}</a>`).join(' & ');
+                player2Display = match.player2.map(p => `<a href="${urls.view_user(p.id)}" class="${p2_winner}">${p.username}</a>`).join(' & ');
+            } else {
+                player1Display = `<a href="${urls.view_user(match.player1.id)}" class="${p1_winner}">${match.player1.username}</a>`;
+                player2Display = `<a href="${urls.view_user(match.player2.id)}" class="${p2_winner}">${match.player2.username}</a>`;
+            }
+
+            const card = `
+                <div class="game-card">
+                    <div class="game-card-header">
+                        <span>${match.date || 'Date N/A'}</span>
+                    </div>
+                    <div class="game-card-body">
+                        <div class="team">${player1Display}</div>
+                        <div class="score ${scoreClass}">${match.player1_score} - ${match.player2_score}</div>
+                        <div class="team">${player2Display}</div>
+                    </div>
+                </div>
+            `;
+            feed.insertAdjacentHTML('beforeend', card);
+        });
+    }
 
     fetch('/user/api/dashboard')
         .then(response => {
@@ -204,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderUserInfo(data.user);
             renderTable('friend-requests-body', data.requests, requestRowTemplate, 'No pending friend requests.');
             renderTable('friends-body', data.friends, friendRowTemplate, 'You have no friends yet.');
-            renderTable('matches-body', data.matches, matchRowTemplate, 'You have no match history.');
+            renderLatestGames(data.matches);
             renderTable('group-rankings-body', data.group_rankings, groupRankingRowTemplate, 'You are not a member of any groups.');
 
             // Hide loader and show content
