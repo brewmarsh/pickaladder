@@ -14,13 +14,22 @@ def get_random_joke():
     jokes = [
         "Why did the pickleball player get arrested? Because he was caught smashing!",
         "What do you call a girl standing in the middle of a tennis court? Annette.",
-        "Why are fish never good at tennis? Because they don't like getting close to the net.",
+        (
+            "Why are fish never good at tennis? Because they don't like getting "
+            "close to the net."
+        ),
         "What is a tennis player's favorite city? Volley-wood.",
         "Why do tennis players never get married? Because love means nothing to them.",
         "What time does a tennis player go to bed? Ten-ish.",
-        "Why did the pickleball hit the net? It wanted to see what was on the other side.",
+        (
+            "Why did the pickleball hit the net? It wanted to see what was on the "
+            "other side."
+        ),
         "How is a pickleball game like a waiter? They both serve.",
-        "Why should you never fall in love with a tennis player? To them, 'Love' means nothing.",
+        (
+            "Why should you never fall in love with a tennis player? To them, 'Love' "
+            "means nothing."
+        ),
         "What do you serve but not eat? A tennis ball.",
     ]
     return secrets.choice(jokes)
@@ -198,7 +207,8 @@ def get_group_leaderboard(group_id):
         current_rank = i + 1
         last_week_rank = last_week_ranks.get(player["id"])
         if last_week_rank is not None:
-            # Rank is inverted: lower is better. last_week_rank=1, current_rank=2 -> change is -1 (down)
+            # Rank is inverted: lower is better. last_week_rank=1, current_rank=2
+            # -> change is -1 (down)
             player["rank_change"] = last_week_rank - current_rank
         else:
             # Player was not on the leaderboard last week, or had no rank
@@ -397,8 +407,9 @@ def send_invite_email_background(app, invite_token, email_data):
             db = firestore.client()
             invite_ref = db.collection("group_invites").document(invite_token)
             try:
-                # We need to render the template inside the app context if it wasn't pre-rendered.
-                # send_email takes a template name and kwargs.
+                # We need to render the template inside the app context if it
+                # wasn't pre-rendered. send_email takes a template name and
+                # kwargs.
                 send_email(**email_data)
                 invite_ref.update(
                     {"status": "sent", "last_error": firestore.DELETE_FIELD}
@@ -416,7 +427,10 @@ def send_invite_email_background(app, invite_token, email_data):
 
 
 def friend_group_members(db, group_id, new_member_ref):
-    """Automatically create friend relationships between the new member and existing group members."""
+    """
+    Automatically create friend relationships between the new member and existing
+    group members.
+    """
     group_ref = db.collection("groups").document(group_id)
     group_doc = group_ref.get()
     if not group_doc.exists:

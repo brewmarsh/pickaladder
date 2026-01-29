@@ -139,7 +139,8 @@ def get_player_record(player_ref):
     )
     for match in p1_matches_query:
         data = match.to_dict()
-        # Skip if it's a doubles match misclassified (shouldn't happen with correct queries but safe)
+        # Skip if it's a doubles match misclassified (shouldn't happen with
+        # correct queries but safe)
         if data.get("matchType") == "doubles":
             continue
 

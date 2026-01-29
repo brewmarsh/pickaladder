@@ -49,8 +49,8 @@ class TestGroupUtils(unittest.TestCase):
             "player2Score": 5,
         }
 
-        # This is the key to the fix. We need to mock the return value of the `where` clause
-        # for both player1Ref and player2Ref.
+        # This is the key to the fix. We need to mock the return value of the
+        # `where` clause for both player1Ref and player2Ref.
         mock_user1_ref = MagicMock()
         mock_user1_ref.id = "user1"
         mock_user1_ref.get.return_value = mock_user1_doc

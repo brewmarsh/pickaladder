@@ -37,13 +37,15 @@ def create_app(test_config=None):
     # Load configuration
     mail_username = os.environ.get("MAIL_USERNAME")
     if mail_username:
-        # Emails shouldn't have spaces. Remove them to handle copy-paste errors or quotes with spaces.
+        # Emails shouldn't have spaces. Remove them to handle copy-paste
+        # errors or quotes with spaces.
         mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
 
     mail_password = os.environ.get("MAIL_PASSWORD")
     if mail_password:
-        # Google App Passwords are often displayed with spaces, which smtplib/gmail doesn't like
-        # We also strip quotes to handle cases where users wrap the password in quotes in their env vars
+        # Google App Passwords are often displayed with spaces, which smtplib/gmail
+        # doesn't like. We also strip quotes to handle cases where users wrap the
+        # password in quotes in their env vars.
         mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
 
     app.config.from_mapping(
@@ -107,7 +109,8 @@ def create_app(test_config=None):
                 )
             else:
                 print(
-                    "DEBUG: Password length DOES NOT match standard App Password length (16). Possible regular password used?",
+                    "DEBUG: Password length DOES NOT match standard App Password "
+                    "length (16). Possible regular password used?",
                     file=sys.stderr,
                 )
         else:
@@ -143,7 +146,7 @@ def create_app(test_config=None):
                 import json
 
                 try:
-                    with open(cred_path, "r") as f:
+                    with open(cred_path) as f:
                         cred_info = json.load(f)
                     project_id = cred_info.get("project_id")
                     cred = credentials.Certificate(cred_path)
@@ -219,7 +222,10 @@ def create_app(test_config=None):
 
     @app.before_request
     def load_logged_in_user():
-        """If a user_id is in the session, load the user data from Firestore and store it in g."""
+        """
+        If a user_id is in the session, load the user data from Firestore and
+        store it in g.
+        """
         user_id = session.get("user_id")
         g.user = None
         if user_id is None:

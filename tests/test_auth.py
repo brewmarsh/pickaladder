@@ -43,10 +43,13 @@ class AuthFirebaseTestCase(unittest.TestCase):
     @patch("pickaladder.auth.routes.send_email")
     def test_successful_registration(self, mock_send_email):
         """Test user registration with valid data."""
-        # Mock the username check to return an empty list, simulating username is available.
+        # Mock the username check to return an empty list, simulating username is
+        # available.
         mock_db = self.mock_firestore_service.client.return_value
         mock_users_collection = mock_db.collection("users")
-        mock_users_collection.where.return_value.limit.return_value.get.return_value = []
+        (
+            mock_users_collection.where.return_value.limit.return_value.get.return_value
+        ) = []
 
         # Mock the return value of create_user
         self.mock_auth_service.create_user.return_value = MagicMock(uid="new_user_uid")
@@ -132,7 +135,9 @@ class AuthFirebaseTestCase(unittest.TestCase):
         # Mock the admin check to simulate no admin user exists.
         mock_db = self.mock_firestore_service.client.return_value
         mock_users_collection = mock_db.collection("users")
-        mock_users_collection.where.return_value.limit.return_value.get.return_value = []
+        (
+            mock_users_collection.where.return_value.limit.return_value.get.return_value
+        ) = []
 
         # Mock the return value of create_user
         self.mock_auth_service.create_user.return_value = MagicMock(
@@ -150,7 +155,9 @@ class AuthFirebaseTestCase(unittest.TestCase):
                 return mock_settings_doc
             return MagicMock()
 
-        self.mock_firestore_service.client.return_value.collection.return_value.document.side_effect = document_side_effect
+        (
+            self.mock_firestore_service.client.return_value.collection.return_value.document.side_effect
+        ) = document_side_effect
 
         # First, get the install page to get a valid CSRF token
         install_page_response = self.client.get("/auth/install")
@@ -185,23 +192,27 @@ class AuthFirebaseTestCase(unittest.TestCase):
     @patch("pickaladder.auth.routes.send_email")
     def test_registration_with_invite_token(self, mock_send_email):
         """Test user registration with a valid invite token."""
-        # Mock the username check to return an empty list, simulating username is available.
+        # Mock the username check to return an empty list, simulating username is
+        # available.
         mock_db = self.mock_firestore_service.client.return_value
         mock_users_collection = mock_db.collection("users")
-        mock_users_collection.where.return_value.limit.return_value.get.return_value = []
+        (
+            mock_users_collection.where.return_value.limit.return_value.get.return_value
+        ) = []
 
         # Mock the invite token
         mock_invite_doc = MagicMock()
         mock_invite_doc.exists = True
         mock_invite_doc.to_dict.return_value = {"userId": "inviter_uid", "used": False}
-        mock_db.collection(
-            "invites"
-        ).document.return_value.get.return_value = mock_invite_doc
+        (
+            mock_db.collection("invites").document.return_value.get.return_value
+        ) = mock_invite_doc
 
         # Mock the return value of create_user
         self.mock_auth_service.create_user.return_value = MagicMock(uid="new_user_uid")
 
-        # First, get the register page to get a valid CSRF token and set the invite token in the session
+        # First, get the register page to get a valid CSRF token and set the
+        # invite token in the session
         with self.client.session_transaction() as sess:
             sess["invite_token"] = "test_invite_token"  # nosec
         register_page_response = self.client.get(

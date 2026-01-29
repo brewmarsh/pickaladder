@@ -84,7 +84,8 @@ def edit_profile():
                 update_data["email"] = new_email
                 update_data["email_verified"] = False
                 flash(
-                    "Your email has been updated. Please check your new email address to verify it.",
+                    "Your email has been updated. Please check your new email "
+                    "address to verify it.",
                     "info",
                 )
             except auth.EmailAlreadyExistsError:

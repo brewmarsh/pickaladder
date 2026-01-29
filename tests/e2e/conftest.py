@@ -355,7 +355,9 @@ def page_with_firebase(page):
                         return Promise.resolve({
                             user: {
                                 getIdToken: function() {
-                                    return Promise.resolve("token_" + email.split('@')[0]);
+                                    return Promise.resolve(
+                                        "token_" + email.split('@')[0]
+                                    );
                                 }
                             }
                         });
@@ -364,7 +366,9 @@ def page_with_firebase(page):
                          return Promise.resolve({
                             user: {
                                 getIdToken: function() {
-                                    return Promise.resolve("token_" + email.split('@')[0]);
+                                    return Promise.resolve(
+                                        "token_" + email.split('@')[0]
+                                    );
                                 }
                             }
                         });
