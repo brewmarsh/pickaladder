@@ -301,7 +301,6 @@ def view_user(user_id):
     total_games = wins + losses
     win_rate = (wins / total_games) * 100 if total_games > 0 else 0
 
-
     # Sort and Limit for display
     all_processed_matches.sort(
         key=lambda x: x["date"] or datetime.datetime.min, reverse=True
@@ -801,12 +800,8 @@ def api_dashboard():
         winner = "player1" if p1_score > p2_score else "player2"
 
         if match.get("matchType") == "doubles":
-            team1 = [
-                _get_player_info(ref, users_map) for ref in match.get("team1", [])
-            ]
-            team2 = [
-                _get_player_info(ref, users_map) for ref in match.get("team2", [])
-            ]
+            team1 = [_get_player_info(ref, users_map) for ref in match.get("team1", [])]
+            team2 = [_get_player_info(ref, users_map) for ref in match.get("team2", [])]
             player1_info = team1
             player2_info = team2
         else:
