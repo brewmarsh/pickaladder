@@ -250,9 +250,9 @@ input[type="submit"], .btn {
 }
 
 .table th {
-    background-color: var(--background-color);
+    background-color: var(--primary-brand);
+    color: var(--on-primary-color);
     font-weight: 500;
-    color: var(--text-secondary-color);
     font-size: 14px;
 }
 
@@ -601,7 +601,8 @@ input[type="submit"], .btn {
 }
 
 .highlight-row {
-    background-color: var(--warning-color) !important;
+    background-color: rgba(223, 255, 0, 0.1) !important;
+    border-left: 4px solid var(--accent-highlight);
     font-weight: bold;
 }
 
@@ -753,8 +754,12 @@ input[type="submit"], .btn {
     font-size: 0.8em;
 }
 
-.trend-up { color: #4CAF50; } /* Green */
-.trend-down { color: #F44336; } /* Red */
+.rank-1 { color: #FFD700; } /* Gold */
+.rank-2 { color: #C0C0C0; } /* Silver */
+.rank-3 { color: #CD7F32; } /* Bronze */
+
+.trend-up { color: var(--success-color); } /* Green */
+.trend-down { color: #EF4444; } /* Red */
 .trend-new { color: #FFC107; } /* Amber */
 
 .player-link {
