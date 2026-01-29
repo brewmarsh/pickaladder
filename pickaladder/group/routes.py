@@ -152,6 +152,28 @@ def view_group(group_id):
             data["token"] = doc.id
             pending_invites.append(data)
 
+        # Enrich invites with user data
+        invite_emails = [
+            invite.get("email") for invite in pending_invites if invite.get("email")
+        ]
+        if invite_emails:
+            user_docs = {}
+            # Chunk the email list to handle Firestore's 30-item limit for 'in' queries
+            for i in range(0, len(invite_emails), 30):
+                chunk = invite_emails[i : i + 30]
+                users_ref = db.collection("users")
+                user_query = users_ref.where(
+                    filter=firestore.FieldFilter("email", "in", chunk)
+                )
+                for doc in user_query.stream():
+                    user_docs[doc.to_dict()["email"]] = doc.to_dict()
+
+            for invite in pending_invites:
+                user_data = user_docs.get(invite.get("email"))
+                if user_data:
+                    invite["username"] = user_data.get("username", invite.get("name"))
+                    invite["profilePictureUrl"] = user_data.get("profilePictureUrl")
+
         # Sort in memory to avoid composite index requirement
         pending_invites.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
 
