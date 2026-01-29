@@ -326,11 +326,15 @@ def record_match():
     form = MatchForm()
 
     # Fetch and populate player choices for the form dropdowns
-    player1_candidate_ids = _get_candidate_player_ids(user_id, group_id, include_user=True)
+    player1_candidate_ids = _get_candidate_player_ids(
+        user_id, group_id, include_user=True
+    )
 
     player1_choices = []
     if player1_candidate_ids:
-        candidate_refs = [db.collection("users").document(uid) for uid in player1_candidate_ids]
+        candidate_refs = [
+            db.collection("users").document(uid) for uid in player1_candidate_ids
+        ]
         users = db.get_all(candidate_refs)
         for user_doc in users:
             if user_doc.exists:
