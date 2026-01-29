@@ -1,6 +1,5 @@
 """Routes for authentication."""
 
-import os
 import re
 
 from firebase_admin import auth, firestore
