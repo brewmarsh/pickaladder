@@ -23,8 +23,8 @@ class AppFirebaseTestCase(unittest.TestCase):
         """Test that MAIL_USERNAME and MAIL_PASSWORD are sanitized correctly."""
         env_vars = {
             "MAIL_USERNAME": '"user@example.com"',
-            "MAIL_PASSWORD": '"xxxx xxxx xxxx"',
-            "SECRET_KEY": "dev",
+            "MAIL_PASSWORD": '"xxxx xxxx xxxx"',  # nosec
+            "SECRET_KEY": "dev",  # nosec
             "TESTING": "True",
         }
         with patch.dict(os.environ, env_vars):
@@ -36,8 +36,8 @@ class AppFirebaseTestCase(unittest.TestCase):
         """Test sanitization with single quotes."""
         env_vars = {
             "MAIL_USERNAME": "'user@example.com'",
-            "MAIL_PASSWORD": "'xxxx xxxx xxxx'",
-            "SECRET_KEY": "dev",
+            "MAIL_PASSWORD": "'xxxx xxxx xxxx'",  # nosec
+            "SECRET_KEY": "dev",  # nosec
             "TESTING": "True",
         }
         with patch.dict(os.environ, env_vars):
@@ -54,7 +54,7 @@ class AppFirebaseTestCase(unittest.TestCase):
             "TESTING": "True",
         }
         with patch.dict(os.environ, env_vars):
-            app = create__app({"TESTING": True})
+            app = create_app({"TESTING": True})
             self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
             self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
 
