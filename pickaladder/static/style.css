@@ -857,6 +857,34 @@ input[type="submit"], .btn {
     font-size: 0.9em;
 }
 
+#latest-games-feed .game-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+#latest-games-feed .winner {
+    font-weight: bold;
+    color: #10B981;
+}
+
+#latest-games-feed .score-close {
+    color: #0F4C81;
+}
+
+#latest-games-feed .game-card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#latest-games-feed .team {
+    flex: 1;
+    text-align: center;
+}
+
 /* Mobile Formatting */
 @media screen and (max-width: 768px) {
     .game-item {
