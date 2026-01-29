@@ -11,7 +11,7 @@ from . import bp
 from .forms import MatchForm
 
 
-def _get_candidate_player_ids(user_id, group_id=None):
+def _get_candidate_player_ids(user_id, group_id=None, include_user=False):
     """Fetch a set of valid opponent IDs for a user, optionally within a group."""
     db = firestore.client()
     candidate_player_ids = set()
@@ -71,7 +71,8 @@ def _get_candidate_player_ids(user_id, group_id=None):
                 for user_doc in users_by_email:
                     candidate_player_ids.add(user_doc.id)
 
-    candidate_player_ids.discard(user_id)
+    if not include_user:
+        candidate_player_ids.discard(user_id)
     return candidate_player_ids
 
 
@@ -108,12 +109,12 @@ def _save_match_data(player_1_id, form_data, group_id=None):
         match_data["groupId"] = group_id
 
     if match_type == "singles":
-        player1_ref = user_ref
+        player1_ref = db.collection("users").document(get_data("player1"))
         player2_ref = db.collection("users").document(get_data("player2"))
         match_data["player1Ref"] = player1_ref
         match_data["player2Ref"] = player2_ref
     elif match_type == "doubles":
-        t1_p1_ref = user_ref
+        t1_p1_ref = db.collection("users").document(get_data("player1"))
         t1_p2_ref = db.collection("users").document(get_data("partner"))
         t2_p1_ref = db.collection("users").document(get_data("player2"))
         t2_p2_ref = db.collection("users").document(get_data("opponent2"))
@@ -326,6 +327,24 @@ def record_match():
     form = MatchForm()
 
     # Fetch and populate player choices for the form dropdowns
+    player1_candidate_ids = _get_candidate_player_ids(
+        user_id, group_id, include_user=True
+    )
+
+    player1_choices = []
+    if player1_candidate_ids:
+        candidate_refs = [
+            db.collection("users").document(uid) for uid in player1_candidate_ids
+        ]
+        users = db.get_all(candidate_refs)
+        for user_doc in users:
+            if user_doc.exists:
+                player1_choices.append(
+                    (user_doc.id, user_doc.to_dict().get("name", user_doc.id))
+                )
+
+    form.player1.choices = player1_choices
+
     player_choices = []
     if candidate_player_ids:
         # Batch fetch user data for choices
