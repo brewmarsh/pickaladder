@@ -241,7 +241,10 @@ def create_app(test_config=None):
     @app.context_processor
     def inject_firebase_api_key():
         """Injects the Firebase API key into the template context."""
-        return dict(firebase_api_key=current_app.config.get("FIREBASE_API_KEY"))
+        firebase_api_key = current_app.config.get(
+            "FIREBASE_API_KEY"
+        ) or current_app.config.get("GOOGLE_API_KEY")
+        return dict(firebase_api_key=firebase_api_key)
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 

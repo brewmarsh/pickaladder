@@ -135,11 +135,6 @@ def login():
     The client will get an ID token and send it with subsequent requests.
     """
     current_app.logger.info("Login page loaded")
-    google_api_key = os.environ.get("GOOGLE_API_KEY")
-    if not google_api_key:
-        current_app.logger.warning(
-            "GOOGLE_API_KEY is not set. Frontend login will fail."
-        )
     db = firestore.client()
     # Check if an admin user exists to determine if we should run install
     admin_query = (
@@ -153,7 +148,7 @@ def login():
 
     form = LoginForm()
     # The form is now just for presentation, validation is on the client
-    return render_template("login.html", form=form, google_api_key=google_api_key)
+    return render_template("login.html", form=form)
 
 
 def _generate_unique_username(db, base_username):
