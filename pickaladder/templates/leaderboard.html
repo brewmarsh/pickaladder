@@ -27,4 +27,29 @@
             </tbody>
         </table>
     </div>
+    <div class="page-header">
+        <h2>Latest Games</h2>
+    </div>
+    <div class="latest-games-container">
+        {% for match in latest_matches %}
+        <div class="game-item">
+            <div class="game-date">{{ match.date }}</div>
+            <div class="game-matchup">
+                <div>
+                    <strong class="winner">{{ match.winner_name }}</strong> defeated {{ match.loser_name }}
+                </div>
+                <div class="game-score">
+                    {{ match.winner_score }} - {{ match.loser_score }}
+                </div>
+            </div>
+            <div class="game-details">
+                {% if match.close_call %}
+                    <span class="tag">Close Call</span>
+                {% else %}
+                    <span class="point-differential">{{ match.point_differential }} pt diff</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 {% endblock %}
