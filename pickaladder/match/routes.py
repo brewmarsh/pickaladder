@@ -299,7 +299,7 @@ def record_match():
             )
 
         # Populate choices for validation to work
-        form.player_1.choices = [(p_id, "") for p_id in candidate_player_ids]
+        form.player1.choices = [(p_id, "") for p_id in candidate_player_ids]
         form.player2.choices = [(p_id, "") for p_id in candidate_player_ids]
         if data.get("match_type") == "doubles":
             form.partner.choices = form.player2.choices
@@ -358,7 +358,7 @@ def record_match():
                     (user_doc.id, user_doc.to_dict().get("name", user_doc.id))
                 )
 
-    form.player_1.choices = player_choices
+    form.player1.choices = player_choices
     form.player2.choices = player_choices
     form.partner.choices = player_choices
     form.opponent2.choices = player_choices
@@ -373,7 +373,7 @@ def record_match():
                 form.match_type.data = last_match_type
 
     if form.validate_on_submit():
-        player_1_id = request.form.get("player_1") or user_id
+        player_1_id = request.form.get("player1") or user_id
 
         # Uniqueness check
         player_ids = [player_1_id, form.player2.data]

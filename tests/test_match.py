@@ -110,11 +110,16 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_db = self.mock_firestore_service.client.return_value
 
         # Mock the db.get_all call that populates the form choices
+        mock_user_snapshot = MagicMock()
+        mock_user_snapshot.exists = True
+        mock_user_snapshot.id = MOCK_USER_ID
+        mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
+
         mock_opponent_snapshot = MagicMock()
         mock_opponent_snapshot.exists = True
         mock_opponent_snapshot.id = MOCK_OPPONENT_ID
         mock_opponent_snapshot.to_dict.return_value = MOCK_OPPONENT_DATA
-        mock_db.get_all.return_value = [mock_opponent_snapshot]
+        mock_db.get_all.return_value = [mock_user_snapshot, mock_opponent_snapshot]
 
         mock_matches_collection = mock_db.collection("matches")
 
@@ -122,6 +127,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             "/match/record",
             headers=self._get_auth_headers(),
             data={
+                "player1": MOCK_USER_ID,
                 "player2": MOCK_OPPONENT_ID,
                 "player1_score": 11,
                 "player2_score": 5,
