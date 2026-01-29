@@ -75,10 +75,10 @@ def _get_candidate_player_ids(user_id, group_id=None):
     return candidate_player_ids
 
 
-def _save_match_data(user_id, form_data, group_id=None):
+def _save_match_data(player_1_id, form_data, group_id=None):
     """Construct and save a match document to Firestore."""
     db = firestore.client()
-    user_ref = db.collection("users").document(user_id)
+    user_ref = db.collection("users").document(player_1_id)
 
     # Handle both form objects and dictionaries
     def get_data(key):
@@ -298,6 +298,7 @@ def record_match():
             )
 
         # Populate choices for validation to work
+        form.player_1.choices = [(p_id, "") for p_id in candidate_player_ids]
         form.player2.choices = [(p_id, "") for p_id in candidate_player_ids]
         if data.get("match_type") == "doubles":
             form.partner.choices = form.player2.choices
@@ -338,6 +339,7 @@ def record_match():
                     (user_doc.id, user_doc.to_dict().get("name", user_doc.id))
                 )
 
+    form.player_1.choices = player_choices
     form.player2.choices = player_choices
     form.partner.choices = player_choices
     form.opponent2.choices = player_choices
@@ -352,8 +354,21 @@ def record_match():
                 form.match_type.data = last_match_type
 
     if form.validate_on_submit():
+        player_1_id = request.form.get("player_1") or user_id
+
+        # Uniqueness check
+        player_ids = [player_1_id, form.player2.data]
+        if form.match_type.data == "doubles":
+            player_ids.extend([form.partner.data, form.opponent2.data])
+
+        # Filter out empty values and check for duplicates
+        active_players = [p for p in player_ids if p]
+        if len(active_players) != len(set(active_players)):
+            flash("All players must be unique.", "danger")
+            return render_template("record_match.html", form=form)
+
         try:
-            _save_match_data(user_id, form, group_id)
+            _save_match_data(player_1_id, form, group_id)
             flash("Match recorded successfully.", "success")
             if group_id:
                 return redirect(url_for("group.view_group", group_id=group_id))

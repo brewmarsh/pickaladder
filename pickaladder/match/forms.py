@@ -14,6 +14,7 @@ class MatchForm(FlaskForm):
         default="singles",
         validators=[DataRequired()],
     )
+    player_1 = SelectField("Player 1", validators=[Optional()])
     partner = SelectField("Partner", validators=[Optional()])
     player2 = SelectField("Opponent / Opponent 1", validators=[DataRequired()])
     opponent2 = SelectField("Opponent 2", validators=[Optional()])
