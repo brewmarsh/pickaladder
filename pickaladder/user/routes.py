@@ -781,12 +781,8 @@ def api_dashboard():
         winner = "player1" if p1_score > p2_score else "player2"
 
         if match.get("matchType") == "doubles":
-            team1 = [
-                _get_player_info(ref, users_map) for ref in match.get("team1", [])
-            ]
-            team2 = [
-                _get_player_info(ref, users_map) for ref in match.get("team2", [])
-            ]
+            team1 = [_get_player_info(ref, users_map) for ref in match.get("team1", [])]
+            team2 = [_get_player_info(ref, users_map) for ref in match.get("team2", [])]
             player1_info = team1
             player2_info = team2
         else:

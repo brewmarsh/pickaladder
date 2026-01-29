@@ -1,4 +1,5 @@
 """Tests for the admin blueprint."""
+
 import unittest
 from unittest.mock import MagicMock, patch
 from pickaladder import create_app

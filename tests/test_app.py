@@ -1,4 +1,5 @@
 """Tests for the app factory."""
+
 import os
 import unittest
 from unittest.mock import patch
@@ -65,7 +66,7 @@ class AppFirebaseTestCase(unittest.TestCase):
             "MAIL_PORT": "",
             "MAIL_USE_TLS": "",
             "MAIL_USE_SSL": "",
-            "SECRET_KEY": "dev",
+            "SECRET_KEY": "dev",  # nosec
             "TESTING": "True",
         }
         with patch.dict(os.environ, env_vars):
