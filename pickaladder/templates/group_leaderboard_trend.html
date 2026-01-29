@@ -5,6 +5,9 @@
 <style>
     .chart-container {
         position: relative;
+        height: 60vh;
+        max-height: 500px;
+        width: 100%;
         background-color: #fff;
         border-radius: 8px;
         padding: 20px;
@@ -75,7 +78,16 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const ctx = document.getElementById('leaderboardChart').getContext('2d');
-        const trendData = {{ trend_data | tojson }};
+        let trendData = {{ trend_data | tojson }};
+
+        // Limit data points on mobile for better visibility
+        if (window.innerWidth <= 768 && trendData.labels.length > 10) {
+            const sliceIndex = trendData.labels.length - 10;
+            trendData.labels = trendData.labels.slice(sliceIndex);
+            trendData.datasets.forEach(dataset => {
+                dataset.data = dataset.data.slice(sliceIndex);
+            });
+        }
 
         // Modern color palette
         const colors = [

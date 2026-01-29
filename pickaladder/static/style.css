@@ -52,6 +52,33 @@ body {
     font-weight: 400;
 }
 
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.stat-card {
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 20px;
+    text-align: center;
+}
+
+.stat-card h3 {
+    margin-top: 0;
+    font-size: 1.2em;
+    color: var(--text-secondary-color);
+}
+
+.stat-card p {
+    font-size: 2em;
+    font-weight: 500;
+    margin-bottom: 0;
+}
+
 .winner-icon {
     border: 4px solid var(--warning-color);
     box-shadow: 0 0 10px var(--warning-color);
@@ -900,5 +927,9 @@ input[type="submit"], .btn {
 
     .game-details {
         display: none; /* Hide on mobile as requested */
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
