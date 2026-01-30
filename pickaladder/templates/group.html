@@ -1,6 +1,5 @@
 {% extends "layout.html" %}
 {% block title %}{{ group.name }}{% endblock %}
-{% block content %}
 <div class="page-header group-header-content">
     <img src="{{ group.profilePictureUrl if group.profilePictureUrl else (url_for('static', filename='uploads/' + group.profile_picture_path) if group.profile_picture_path else url_for('static', filename='user_icon.png')) }}" alt="Group Picture" class="group-profile-picture">
     <div>
@@ -23,266 +22,268 @@
     </div>
 </div>
 
-<div class="grid-container">
-    <div class="card">
-        <h3>Members</h3>
-        <div class="table-container">
-            <table class="table responsive-table">
-                <tbody>
-                    {% for member in members %}
-                    <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=member.id) }}">
-                        <td data-label="Avatar">
-                            <img src="{{ member.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
-                                alt="Profile Picture" class="profile-picture-thumbnail">
-                        </td>
-                        <td data-label="Username">{{ member.username }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {% if is_member and pending_members %}
-        <h3 style="margin-top: 20px;">Pending Members</h3>
-        <div class="table-container">
-            <table class="table responsive-table">
-                <thead>
-                    <tr>
-                        <th style="width: 50px;"></th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                        {% if group.ownerRef.id == current_user_id %}
-                        <th>Actions</th>
-                        {% endif %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for invite in pending_members %}
-                    <tr>
-                        <td data-label="Avatar">
-                            <img src="{{ invite.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
-                                 alt="Profile Picture" class="profile-picture-thumbnail">
-                        </td>
-                        <td data-label="Name">{{ invite.username or invite.name }}</td>
-                        <td data-label="Email">{{ invite.email }}</td>
-                        <td data-label="Status">
-                            {% if invite.status == 'failed' %}
-                                <span class="badge danger" title="{{ invite.last_error }}">Failed</span>
-                            {% elif invite.status == 'sending' %}
-                                <span class="badge warning">Sending...</span>
-                            {% elif invite.status == 'sent' %}
-                                <span class="badge success">Sent</span>
-                            {% else %}
-                                <span class="badge">{{ invite.status or 'Pending' }}</span>
-                            {% endif %}
-                        </td>
-                        {% if group.ownerRef.id == current_user_id %}
-                        <td data-label="Actions">
-                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                <form method="post" action="{{ url_for('group.resend_invite', token=invite.token) }}" style="display: inline;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <!-- Simple inline update for email if failed -->
-                                    {% if invite.status == 'failed' %}
-                                    <div class="input-group" style="margin-bottom: 5px;">
-                                        <input type="email" name="email" value="{{ invite.email }}" required class="form-control" style="padding: 5px; width: 150px;">
-                                    </div>
+<div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+    
+    <div>
+        <div class="card">
+            <h3>Group Leaderboard</h3>
+            <p>A live ranking of all group members.</p>
+            <div class="leaderboard-container">
+                <div class="leaderboard-header">
+                    <div class="leaderboard-cell">Rank</div>
+                    <div class="leaderboard-cell">Player</div>
+                    <div class="leaderboard-cell">Avg. Score</div>
+                    <div class="leaderboard-cell">Form</div>
+                    <div class="leaderboard-cell">Games</div>
+                </div>
+                <div class="leaderboard-body">
+                    {% for player in leaderboard %}
+                    <div class="leaderboard-row {{ 'highlight-user' if player.id == g.user['uid'] else '' }}">
+                        <div class="leaderboard-cell" data-label="Rank">
+                            <div class="player-rank">
+                                <span>
+                                    {% if loop.index == 1 %}🥇
+                                    {% elif loop.index == 2 %}🥈
+                                    {% elif loop.index == 3 %}🥉
+                                    {% else %}{{ loop.index }}{% endif %}
+                                </span>
+                                <span class="rank-trend">
+                                    {% if player.rank_change is number and player.rank_change > 0 %}
+                                        <span class="trend-up">▲</span>
+                                    {% elif player.rank_change is number and player.rank_change < 0 %}
+                                        <span class="trend-down">▼</span>
+                                    {% elif player.rank_change == 'new' %}
+                                        <span class="trend-new">●</span>
                                     {% endif %}
-                                    <button type="submit" class="btn small">
-                                        {% if invite.status == 'failed' %}Retry{% else %}Resend{% endif %}
-                                    </button>
-                                </form>
-                                <form method="post" action="{{ url_for('group.delete_invite', token=invite.token) }}" style="display: inline;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-danger small" onclick="return confirm('Cancel this invitation?')">Cancel</button>
-                                </form>
+                                </span>
                             </div>
-                            {% if invite.status == 'failed' and invite.last_error %}
-                                <div style="font-size: 0.8em; color: red; margin-top: 5px; max-width: 200px; word-wrap: break-word;">
-                                    {{ invite.last_error }}
-                                </div>
-                            {% endif %}
-                        </td>
-                        {% endif %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% endif %}
-
-        {% if group.ownerRef.id == current_user_id %}
-        <h3 style="margin-top: 20px;">Invite Friends</h3>
-        <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
-            {{ form.hidden_tag() }}
-            <div class="form-group">
-                {{ form.friend.label }}
-                {{ form.friend(class="form-control") }}
-            </div>
-            <input type="submit" value="Invite Friend" class="btn">
-        </form>
-
-        <h3 style="margin-top: 20px;">Invite by Email</h3>
-        <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
-            {{ invite_email_form.hidden_tag() }}
-            <div class="form-group">
-                {{ invite_email_form.name.label }}
-                {{ invite_email_form.name(class="form-control") }}
-            </div>
-            <div class="form-group">
-                {{ invite_email_form.email.label }}
-                {{ invite_email_form.email(class="form-control") }}
-            </div>
-            <input type="submit" value="Send Invite" class="btn">
-        </form>
-
-        <h3 style="margin-top: 20px;">Danger Zone</h3>
-        <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="submit" value="Delete Group" class="btn btn-danger"
-                onclick="return confirm('Are you sure you want to permanently delete this group? This action cannot be undone.')">
-        </form>
-        {% endif %}
-    </div>
-
-    <div class="card">
-        <h3>Rivalry Check</h3>
-        <div class="rivalry-check-container">
-            <div class="rivalry-player-select">
-                <label for="player1-select">Player 1</label>
-                <select id="player1-select" class="form-control">
-                    <option value="">Select a player</option>
-                    {% for member in members %}
-                        <option value="{{ member.id }}">{{ member.username }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="rivalry-vs">VS</div>
-            <div class="rivalry-player-select">
-                <label for="player2-select">Player 2</label>
-                <select id="player2-select" class="form-control">
-                    <option value="">Select a player</option>
-                    {% for member in members %}
-                        <option value="{{ member.id }}">{{ member.username }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-        <div id="head-to-head-stats" style="margin-top: 15px;">
-            <!-- Stats will be loaded here -->
-        </div>
-    </div>
-
-    <div class="card">
-        <h3>Group Leaderboard</h3>
-        <p>A live ranking of all group members.</p>
-        <div class="leaderboard-container">
-            <div class="leaderboard-header">
-                <div class="leaderboard-cell">Rank</div>
-                <div class="leaderboard-cell">Player</div>
-                <div class="leaderboard-cell">Avg. Score</div>
-                <div class="leaderboard-cell">Form</div>
-                <div class="leaderboard-cell">Games</div>
-            </div>
-            <div class="leaderboard-body">
-                {% for player in leaderboard %}
-                <div class="leaderboard-row {{ 'highlight-user' if player.id == g.user['uid'] else '' }}">
-                    <div class="leaderboard-cell" data-label="Rank">
-                        <div class="player-rank">
-                            <span>
-                                {% if loop.index == 1 %}🥇
-                                {% elif loop.index == 2 %}🥈
-                                {% elif loop.index == 3 %}🥉
-                                {% else %}{{ loop.index }}{% endif %}
-                            </span>
-                            <span class="rank-trend">
-                                {% if player.rank_change is number and player.rank_change > 0 %}
-                                    <span class="trend-up">▲</span>
-                                {% elif player.rank_change is number and player.rank_change < 0 %}
-                                    <span class="trend-down">▼</span>
-                                {% elif player.rank_change == 'new' %}
-                                    <span class="trend-new">●</span>
-                                {% endif %}
-                            </span>
                         </div>
-                    </div>
-                    <div class="leaderboard-cell" data-label="Player">
-                        <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="player-link">
-                            <img src="{{ player.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ player.name }}" class="profile-picture-thumbnail">
-                            <span class="player-name">
-                                {{ player.name }}
-                                {% if player.is_on_fire %}
-                                    <span title="{{ player.streak }} Game Streak!">🔥</span>
-                                {% endif %}
-                            </span>
-                        </a>
-                    </div>
-                    <div class="leaderboard-cell" data-label="Avg. Score">{{ "%.2f"|format(player.avg_score|float) }}</div>
-                    <div class="leaderboard-cell" data-label="Form">
-                        <div class="form-dots">
-                            {% for result in player.form %}
-                                <span class="form-dot {{ result }}"></span>
-                            {% endfor %}
+                        <div class="leaderboard-cell" data-label="Player">
+                            <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="player-link">
+                                <img src="{{ player.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ player.name }}" class="profile-picture-thumbnail">
+                                <span class="player-name">
+                                    {{ player.name }}
+                                    {% if player.is_on_fire %}
+                                        <span title="{{ player.streak }} Game Streak!">🔥</span>
+                                    {% endif %}
+                                </span>
+                            </a>
                         </div>
+                        <div class="leaderboard-cell" data-label="Avg. Score">{{ "%.2f"|format(player.avg_score|float) }}</div>
+                        <div class="leaderboard-cell" data-label="Form">
+                            <div class="form-dots">
+                                {% for result in player.form %}
+                                    <span class="form-dot {{ result }}"></span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="leaderboard-cell" data-label="Games">{{ player.games_played }}</div>
                     </div>
-                    <div class="leaderboard-cell" data-label="Games">{{ player.games_played }}</div>
+                    {% else %}
+                    <div class="leaderboard-empty">
+                        <p>No matches have been played between members of this group yet.</p>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% else %}
-                <div class="leaderboard-empty">
-                    <p>No matches have been played between members of this group yet.</p>
-                </div>
-                {% endfor %}
             </div>
-        </div>
-        <div class="leaderboard-trend-link">
-            <a href="{{ url_for('group.view_leaderboard_trend', group_id=group.id) }}">View Leaderboard Trend Chart</a>
+            <div class="leaderboard-trend-link">
+                <a href="{{ url_for('group.view_leaderboard_trend', group_id=group.id) }}">View Leaderboard Trend Chart</a>
+            </div>
         </div>
     </div>
 
-    {% if recent_matches %}
-    <div class="card">
-        <h3>Recent Matches</h3>
-        <div class="table-container">
-            <table class="table responsive-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Player 1</th>
-                        <th>Player 2</th>
-                        <th>Score</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for match in recent_matches %}
-                    <tr>
-                        <td data-label="Date">{{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate else 'N/A' }}</td>
-                        {% if match.winner == 'team1' %}
+    <div>
+        <div class="card">
+            <h3>Rivalry Check</h3>
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex: 1;">
+                    <label for="player1-select">Player 1</label>
+                    <select id="player1-select" class="form-control">
+                        <option value="">Select a player</option>
+                        {% for member in members %}
+                            <option value="{{ member.id }}">{{ member.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="player2-select">Player 2</label>
+                    <select id="player2-select" class="form-control">
+                        <option value="">Select a player</option>
+                        {% for member in members %}
+                            <option value="{{ member.id }}">{{ member.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div id="head-to-head-stats" style="margin-top: 15px;">
+                </div>
+        </div>
+
+        {% if recent_matches %}
+        <div class="card">
+            <h3>Recent Matches</h3>
+            <div class="table-container">
+                <table class="table responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Player 1</th>
+                            <th>Player 2</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in recent_matches %}
+                        <tr>
+                            <td data-label="Date">{{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate else 'N/A' }}</td>
                             <td data-label="Player 1">
                                 {{ match.player1.username }}
-                                {% if match.is_upset %}
-                                <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
+                                {% if match.is_upset and match.winner_id == match.player1.id %}
+                                    <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
                                 {% endif %}
                             </td>
-                            <td data-label="Player 2">{{ match.player2.username }}</td>
-                        {% else %}
-                            <td data-label="Player 1">{{ match.player1.username }}</td>
                             <td data-label="Player 2">
                                 {{ match.player2.username }}
-                                {% if match.is_upset %}
-                                <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
+                                {% if match.is_upset and match.winner_id == match.player2.id %}
+                                    <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
                                 {% endif %}
                             </td>
-                        {% endif %}
-                        <td data-label="Score" {% if match.is_upset %}style="font-weight: bold; color: green;"{% endif %}>
-                            {{ match.player1Score }} - {{ match.player2Score }}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            <td data-label="Score" {% if match.is_upset %}style="font-weight: bold; color: green;"{% endif %}>
+                                {{ match.player1Score }} - {{ match.player2Score }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
+        {% endif %}
     </div>
-    {% endif %}
+</div>
+
+<div style="margin-top: 30px; margin-bottom: 50px;">
+    <details class="card" style="padding: 10px;">
+        <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; padding: 10px;">Manage Group & Members ({{ members|length }})</summary>
+        <div style="padding: 15px;">
+            <h3>Members</h3>
+            <div class="table-container">
+                <table class="table responsive-table">
+                    <tbody>
+                        {% for member in members %}
+                        <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=member.id) }}">
+                            <td data-label="Avatar">
+                                <img src="{{ member.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
+                                    alt="Profile Picture" class="profile-picture-thumbnail">
+                            </td>
+                            <td data-label="Username">{{ member.username }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if is_member and pending_members %}
+            <h3 style="margin-top: 20px;">Pending Members</h3>
+            <div class="table-container">
+                <table class="table responsive-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;"></th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            {% if group.ownerRef.id == current_user_id %}
+                            <th>Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invite in pending_members %}
+                        <tr>
+                            <td data-label="Avatar">
+                                <img src="{{ invite.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
+                                     alt="Profile Picture" class="profile-picture-thumbnail">
+                            </td>
+                            <td data-label="Name">{{ invite.username or invite.name }}</td>
+                            <td data-label="Email">{{ invite.email }}</td>
+                            <td data-label="Status">
+                                {% if invite.status == 'failed' %}
+                                    <span class="badge danger" title="{{ invite.last_error }}">Failed</span>
+                                {% elif invite.status == 'sending' %}
+                                    <span class="badge warning">Sending...</span>
+                                {% elif invite.status == 'sent' %}
+                                    <span class="badge success">Sent</span>
+                                {% else %}
+                                    <span class="badge">{{ invite.status or 'Pending' }}</span>
+                                {% endif %}
+                            </td>
+                            {% if group.ownerRef.id == current_user_id %}
+                            <td data-label="Actions">
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                    <form method="post" action="{{ url_for('group.resend_invite', token=invite.token) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        {% if invite.status == 'failed' %}
+                                        <div class="input-group" style="margin-bottom: 5px;">
+                                            <input type="email" name="email" value="{{ invite.email }}" required class="form-control" style="padding: 5px; width: 150px;">
+                                        </div>
+                                        {% endif %}
+                                        <button type="submit" class="btn small">
+                                            {% if invite.status == 'failed' %}Retry{% else %}Resend{% endif %}
+                                        </button>
+                                    </form>
+                                    <form method="post" action="{{ url_for('group.delete_invite', token=invite.token) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-danger small" onclick="return confirm('Cancel this invitation?')">Cancel</button>
+                                    </form>
+                                </div>
+                                {% if invite.status == 'failed' and invite.last_error %}
+                                    <div style="font-size: 0.8em; color: red; margin-top: 5px; max-width: 200px; word-wrap: break-word;">
+                                        {{ invite.last_error }}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            {% if group.ownerRef.id == current_user_id %}
+            <h3 style="margin-top: 20px;">Invite Friends</h3>
+            <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    {{ form.friend.label }}
+                    {{ form.friend(class="form-control") }}
+                </div>
+                <input type="submit" value="Invite Friend" class="btn">
+            </form>
+
+            <h3 style="margin-top: 20px;">Invite by Email</h3>
+            <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
+                {{ invite_email_form.hidden_tag() }}
+                <div class="form-group">
+                    {{ invite_email_form.name.label }}
+                    {{ invite_email_form.name(class="form-control") }}
+                </div>
+                <div class="form-group">
+                    {{ invite_email_form.email.label }}
+                    {{ invite_email_form.email(class="form-control") }}
+                </div>
+                <input type="submit" value="Send Invite" class="btn">
+            </form>
+
+            <h3 style="margin-top: 20px;">Danger Zone</h3>
+            <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="submit" value="Delete Group" class="btn btn-danger"
+                    onclick="return confirm('Are you sure you want to permanently delete this group? This action cannot be undone.')">
+            </form>
+            {% endif %}
+        </div>
+    </details>
 </div>
 
 <script>
@@ -317,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const player2Name = player2Select.options[player2Select.selectedIndex].text;
 
                 if (data.total_matches === 0) {
-                    statsContainer.innerHTML = '<p>These players haven\\'t played any matches together yet.</p>';
+                    statsContainer.innerHTML = '<p>These players haven\'t played any matches together yet.</p>';
                     return;
                 }
 
