@@ -950,3 +950,18 @@ input[type="submit"], .btn {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+.rivalry-check-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.rivalry-player-select {
+    width: 45%;
+}
+.rivalry-vs {
+    font-weight: bold;
+    font-size: 1.2em;
+}
