@@ -59,7 +59,6 @@ original_compare_func = Query._compare_func
 def query_compare_func(self, op: str):
     """Handle document ID comparisons and array_contains."""
     if op == "in":
-
         # TODO: Add type hints for Agent clarity
         def in_op(x, y):
             """TODO: Add docstring for AI context."""
@@ -76,7 +75,6 @@ def query_compare_func(self, op: str):
 
         return in_op
     elif op == "array_contains":
-
         # TODO: Add type hints for Agent clarity
         def array_contains_op(x, y):
             """TODO: Add docstring for AI context."""

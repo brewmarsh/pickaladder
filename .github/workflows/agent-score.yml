@@ -18,11 +18,10 @@ jobs:
       - name: Install agent-readiness-scorecard
         run: pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git
 
-      - name: Run agent-score
-        run: agent-score pickaladder/ --threshold 75 --badge > agent_readiness_badge.svg
-
-      - name: Commit badge
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "docs: update agent readiness badge"
-          file_pattern: agent_readiness_badge.svg
+      - name: Run agent-score and check threshold
+        run: |
+          SCORE=$(agent-score pickaladder/ | tee /dev/tty | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
+          if (( $(echo "$SCORE < 75" | bc -l) )); then
+            echo "Agent score of $SCORE is below the threshold of 75"
+            exit 1
+          fi
