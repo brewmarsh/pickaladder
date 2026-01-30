@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}{{ group.name }}{% endblock %}
+{% block content %}
 <div class="page-header group-header-content">
     <img src="{{ group.profilePictureUrl if group.profilePictureUrl else (url_for('static', filename='uploads/' + group.profile_picture_path) if group.profile_picture_path else url_for('static', filename='user_icon.png')) }}" alt="Group Picture" class="group-profile-picture">
     <div>
@@ -182,7 +183,47 @@
                 </table>
             </div>
 
-            {% if is_member and pending_members %}
+            {% if group.ownerRef.id == current_user_id %}
+            <h3 style="margin-top: 20px;">Invite Friends</h3>
+            <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    {{ form.friend.label }}
+                    {{ form.friend(class="form-control") }}
+                </div>
+                <input type="submit" value="Invite Friend" class="btn">
+            </form>
+
+            <h3 style="margin-top: 20px;">Invite by Email</h3>
+            <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
+                {{ invite_email_form.hidden_tag() }}
+                <div class="form-group">
+                    {{ invite_email_form.name.label }}
+                    {{ invite_email_form.name(class="form-control") }}
+                </div>
+                <div class="form-group">
+                    {{ invite_email_form.email.label }}
+                    {{ invite_email_form.email(class="form-control") }}
+                </div>
+                <input type="submit" value="Send Invite" class="btn">
+            </form>
+
+            <h3 style="margin-top: 20px;">Danger Zone</h3>
+            <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="submit" value="Delete Group" class="btn btn-danger"
+                    onclick="return confirm('Are you sure you want to permanently delete this group? This action cannot be undone.')">
+            </form>
+            {% endif %}
+        </div>
+    </details>
+</div>
+
+{% if is_member and pending_members %}
+<div style="margin-top: 30px; margin-bottom: 50px;">
+    <details class="card" style="padding: 10px;">
+        <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; padding: 10px;">Manage Pending Invites ({{ pending_members|length }})</summary>
+        <div style="padding: 15px;">
             <h3 style="margin-top: 20px;">Pending Members</h3>
             <div class="table-container">
                 <table class="table responsive-table">
@@ -248,43 +289,10 @@
                     </tbody>
                 </table>
             </div>
-            {% endif %}
-
-            {% if group.ownerRef.id == current_user_id %}
-            <h3 style="margin-top: 20px;">Invite Friends</h3>
-            <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
-                {{ form.hidden_tag() }}
-                <div class="form-group">
-                    {{ form.friend.label }}
-                    {{ form.friend(class="form-control") }}
-                </div>
-                <input type="submit" value="Invite Friend" class="btn">
-            </form>
-
-            <h3 style="margin-top: 20px;">Invite by Email</h3>
-            <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
-                {{ invite_email_form.hidden_tag() }}
-                <div class="form-group">
-                    {{ invite_email_form.name.label }}
-                    {{ invite_email_form.name(class="form-control") }}
-                </div>
-                <div class="form-group">
-                    {{ invite_email_form.email.label }}
-                    {{ invite_email_form.email(class="form-control") }}
-                </div>
-                <input type="submit" value="Send Invite" class="btn">
-            </form>
-
-            <h3 style="margin-top: 20px;">Danger Zone</h3>
-            <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="submit" value="Delete Group" class="btn btn-danger"
-                    onclick="return confirm('Are you sure you want to permanently delete this group? This action cannot be undone.')">
-            </form>
-            {% endif %}
         </div>
     </details>
 </div>
+{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
