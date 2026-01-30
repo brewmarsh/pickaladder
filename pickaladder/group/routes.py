@@ -321,7 +321,7 @@ def view_group(group_id):
 
     # --- Batch Fetch Player Details ---
     def get_id(data, possible_keys):
-        """Return the first non-None value found in the dictionary for a list of keys."""
+        """Get first non-None value for a list of possible keys."""
         for key in possible_keys:
             if key in data and data[key] is not None:
                 return data[key]
