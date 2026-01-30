@@ -180,12 +180,8 @@ def view_group(group_id):
             for invite in pending_members:
                 user_data = user_docs.get(invite.get("email"))
                 if user_data:
-                    invite["username"] = user_data.get(
-                        "username", invite.get("name")
-                    )
-                    invite["profilePictureUrl"] = user_data.get(
-                        "profilePictureUrl"
-                    )
+                    invite["username"] = user_data.get("username", invite.get("name"))
+                    invite["profilePictureUrl"] = user_data.get("profilePictureUrl")
 
         # Sort in memory to avoid composite index requirement
         pending_members.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
