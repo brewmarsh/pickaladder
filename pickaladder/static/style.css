@@ -839,12 +839,14 @@ input[type="submit"], .btn {
 
 .highlight-user {
     border-left: 4px solid var(--primary-color);
-    background-color: #2e7d32;
+    background-color: #2e7d32 !important;
+    color: #ffffff !important;
 }
 
-/* Ensure all text and links within the highlighted row are white for contrast */
-.highlight-user, .highlight-user .player-link {
-    color: #ffffff;
+.highlight-user .player-link,
+.highlight-user .player-rank,
+.highlight-user .leaderboard-cell {
+    color: #ffffff !important;
 }
 
 /* Latest Games Section */
@@ -932,6 +934,20 @@ input[type="submit"], .btn {
 #latest-games-feed .team {
     flex: 1;
     text-align: center;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 500;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.badge-close-call {
+    background-color: #ffc107;
+    color: #000000;
 }
 
 /* Mobile Formatting */

@@ -156,7 +156,10 @@
                                 {% endif %}
                             </td>
                             <td data-label="Score" {% if match.is_upset %}style="font-weight: bold; color: green;"{% endif %}>
-                                {{ match.team1Score }} - {{ match.team2Score }}
+                                {{ match.player1Score }} - {{ match.player2Score }}
+                                {% if (match.player1Score - match.player2Score)|abs == 2 %}
+                                    <span class="badge badge-close-call">Close Call</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
