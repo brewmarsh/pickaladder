@@ -309,6 +309,40 @@ def view_group(group_id):
 
     is_member = current_user_id in member_ids
 
+    # --- Fetch Recent Matches ---
+    recent_matches = []
+    matches_ref = db.collection("matches")
+    matches_query = (
+        matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
+        .order_by("matchDate", direction=firestore.Query.DESCENDING)
+        .limit(20)
+    )
+    recent_matches_docs = list(matches_query.stream())
+
+    # --- Batch Fetch Player Details ---
+    player_refs = set()
+    for match_doc in recent_matches_docs:
+        match_data = match_doc.to_dict()
+        if match_data.get("player1Ref"):
+            player_refs.add(match_data["player1Ref"])
+        if match_data.get("player2Ref"):
+            player_refs.add(match_data["player2Ref"])
+
+    users_map = {}
+    if player_refs:
+        user_docs = db.get_all(list(player_refs))
+        users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
+
+    for match_doc in recent_matches_docs:
+        match_data = match_doc.to_dict()
+        p1_ref = match_data.get("player1Ref")
+        p2_ref = match_data.get("player2Ref")
+        if p1_ref:
+            match_data["player1"] = users_map.get(p1_ref.id, {"username": "Unknown"})
+        if p2_ref:
+            match_data["player2"] = users_map.get(p2_ref.id, {"username": "Unknown"})
+        recent_matches.append(match_data)
+
     return render_template(
         "group.html",
         group=group_data,
@@ -321,6 +355,7 @@ def view_group(group_id):
         leaderboard=leaderboard,
         pending_members=pending_members,
         is_member=is_member,
+        recent_matches=recent_matches,
     )
 
 

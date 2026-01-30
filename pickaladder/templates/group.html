@@ -41,7 +41,7 @@
         </div>
 
         {% if is_member and pending_members %}
-        <h3 style="margin-top: 20px;">Pending Invites</h3>
+        <h3 style="margin-top: 20px;">Pending Members</h3>
         <div class="table-container">
             <table class="table responsive-table">
                 <thead>
@@ -203,5 +203,33 @@
             <a href="{{ url_for('group.view_leaderboard_trend', group_id=group.id) }}">View Leaderboard Trend Chart</a>
         </div>
     </div>
+
+    {% if recent_matches %}
+    <div class="card">
+        <h3>Recent Matches</h3>
+        <div class="table-container">
+            <table class="table responsive-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Player 1</th>
+                        <th>Player 2</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for match in recent_matches %}
+                    <tr>
+                        <td data-label="Date">{{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate else 'N/A' }}</td>
+                        <td data-label="Player 1">{{ match.player1.username }}</td>
+                        <td data-label="Player 2">{{ match.player2.username }}</td>
+                        <td data-label="Score">{{ match.player1Score }} - {{ match.player2Score }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
