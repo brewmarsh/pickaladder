@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}{{ group.name }}{% endblock %}
+{% block content %}
 <div class="page-header group-header-content">
     <img src="{{ group.profilePictureUrl if group.profilePictureUrl else (url_for('static', filename='uploads/' + group.profile_picture_path) if group.profile_picture_path else url_for('static', filename='user_icon.png')) }}" alt="Group Picture" class="group-profile-picture">
     <div>
