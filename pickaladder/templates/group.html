@@ -40,32 +40,7 @@
             </table>
         </div>
 
-        {% if group.ownerRef.id == current_user_id %}
-        <h3 style="margin-top: 20px;">Invite Friends</h3>
-        <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
-            {{ form.hidden_tag() }}
-            <div class="form-group">
-                {{ form.friend.label }}
-                {{ form.friend(class="form-control") }}
-            </div>
-            <input type="submit" value="Invite Friend" class="btn">
-        </form>
-
-        <h3 style="margin-top: 20px;">Invite by Email</h3>
-        <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
-            {{ invite_email_form.hidden_tag() }}
-            <div class="form-group">
-                {{ invite_email_form.name.label }}
-                {{ invite_email_form.name(class="form-control") }}
-            </div>
-            <div class="form-group">
-                {{ invite_email_form.email.label }}
-                {{ invite_email_form.email(class="form-control") }}
-            </div>
-            <input type="submit" value="Send Invite" class="btn">
-        </form>
-
-        {% if pending_invites %}
+        {% if is_member and pending_members %}
         <h3 style="margin-top: 20px;">Pending Invites</h3>
         <div class="table-container">
             <table class="table responsive-table">
@@ -75,11 +50,13 @@
                         <th>Name</th>
                         <th>Email</th>
                         <th>Status</th>
+                        {% if group.ownerRef.id == current_user_id %}
                         <th>Actions</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
-                    {% for invite in pending_invites %}
+                    {% for invite in pending_members %}
                     <tr>
                         <td data-label="Avatar">
                             <img src="{{ invite.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
@@ -98,6 +75,7 @@
                                 <span class="badge">{{ invite.status or 'Pending' }}</span>
                             {% endif %}
                         </td>
+                        {% if group.ownerRef.id == current_user_id %}
                         <td data-label="Actions">
                             <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                                 <form method="post" action="{{ url_for('group.resend_invite', token=invite.token) }}" style="display: inline;">
@@ -123,12 +101,38 @@
                                 </div>
                             {% endif %}
                         </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% endif %}
+
+        {% if group.ownerRef.id == current_user_id %}
+        <h3 style="margin-top: 20px;">Invite Friends</h3>
+        <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.friend.label }}
+                {{ form.friend(class="form-control") }}
+            </div>
+            <input type="submit" value="Invite Friend" class="btn">
+        </form>
+
+        <h3 style="margin-top: 20px;">Invite by Email</h3>
+        <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
+            {{ invite_email_form.hidden_tag() }}
+            <div class="form-group">
+                {{ invite_email_form.name.label }}
+                {{ invite_email_form.name(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ invite_email_form.email.label }}
+                {{ invite_email_form.email(class="form-control") }}
+            </div>
+            <input type="submit" value="Send Invite" class="btn">
+        </form>
 
         <h3 style="margin-top: 20px;">Danger Zone</h3>
         <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">

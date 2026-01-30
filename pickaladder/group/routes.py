@@ -142,9 +142,14 @@ def view_group(group_id):
         if owner_doc.exists:
             owner = owner_doc.to_dict()
 
+    # --- Leaderboard ---
+    leaderboard = get_group_leaderboard(group_id)
+
+    is_member = current_user_id in member_ids
+
     # --- Fetch Pending Invites ---
-    pending_invites = []
-    if owner_ref and owner_ref.id == current_user_id:
+    pending_members = []
+    if is_member:
         invites_ref = db.collection("group_invites")
         query = invites_ref.where(
             filter=firestore.FieldFilter("group_id", "==", group_id)
@@ -154,11 +159,11 @@ def view_group(group_id):
         for doc in pending_invites_docs:
             data = doc.to_dict()
             data["token"] = doc.id
-            pending_invites.append(data)
+            pending_members.append(data)
 
         # Enrich invites with user data
         invite_emails = [
-            invite.get("email") for invite in pending_invites if invite.get("email")
+            invite.get("email") for invite in pending_members if invite.get("email")
         ]
         if invite_emails:
             user_docs = {}
@@ -172,16 +177,14 @@ def view_group(group_id):
                 for doc in user_query.stream():
                     user_docs[doc.to_dict()["email"]] = doc.to_dict()
 
-            for invite in pending_invites:
+            for invite in pending_members:
                 user_data = user_docs.get(invite.get("email"))
                 if user_data:
                     invite["username"] = user_data.get("username", invite.get("name"))
                     invite["profilePictureUrl"] = user_data.get("profilePictureUrl")
 
         # Sort in memory to avoid composite index requirement
-        pending_invites.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
-
-    # --- Invite form logic (Existing Friend) ---
+        pending_members.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
     form = InviteFriendForm()
 
     # Get user's accepted friends
@@ -316,7 +319,7 @@ def view_group(group_id):
         invite_email_form=invite_email_form,
         current_user_id=current_user_id,
         leaderboard=leaderboard,
-        pending_invites=pending_invites,
+        pending_members=pending_members,
         is_member=is_member,
     )
 
