@@ -320,27 +320,45 @@ def view_group(group_id):
     recent_matches_docs = list(matches_query.stream())
 
     # --- Batch Fetch Player Details ---
-    player_refs = set()
+    player_ids = set()
     for match_doc in recent_matches_docs:
         match_data = match_doc.to_dict()
-        if match_data.get("player1Ref"):
-            player_refs.add(match_data["player1Ref"])
-        if match_data.get("player2Ref"):
-            player_refs.add(match_data["player2Ref"])
+        player_ids.add(match_data.get("player1Id"))
+        player_ids.add(match_data.get("player2Id"))
+        player_ids.add(match_data.get("partnerId"))
+        player_ids.add(match_data.get("opponent2Id"))
+    player_ids.discard(None)
 
     users_map = {}
-    if player_refs:
-        user_docs = db.get_all(list(player_refs))
-        users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
+    if player_ids:
+        # Note: Firestore 'in' queries are limited to 30 items.
+        # Chunking is required for larger sets.
+        player_id_list = list(player_ids)
+        for i in range(0, len(player_id_list), 30):
+            chunk = player_id_list[i : i + 30]
+            user_docs = (
+                db.collection("users")
+                .where(filter=firestore.FieldFilter("__name__", "in", chunk))
+                .stream()
+            )
+            for doc in user_docs:
+                users_map[doc.id] = doc.to_dict()
 
     for match_doc in recent_matches_docs:
         match_data = match_doc.to_dict()
-        p1_ref = match_data.get("player1Ref")
-        p2_ref = match_data.get("player2Ref")
-        if p1_ref:
-            match_data["player1"] = users_map.get(p1_ref.id, {"username": "Unknown"})
-        if p2_ref:
-            match_data["player2"] = users_map.get(p2_ref.id, {"username": "Unknown"})
+        match_data["id"] = match_doc.id
+        match_data["player1"] = users_map.get(
+            match_data.get("player1Id"), {"username": "Unknown"}
+        )
+        match_data["player2"] = users_map.get(
+            match_data.get("player2Id"), {"username": "Unknown"}
+        )
+        match_data["partner"] = users_map.get(
+            match_data.get("partnerId"), {"username": "Unknown"}
+        )
+        match_data["opponent2"] = users_map.get(
+            match_data.get("opponent2Id"), {"username": "Unknown"}
+        )
         recent_matches.append(match_data)
 
     return render_template(
