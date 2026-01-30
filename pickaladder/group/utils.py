@@ -217,6 +217,76 @@ def get_group_leaderboard(group_id):
             # Player was not on the leaderboard last week, or had no rank
             player["rank_change"] = "new"
 
+    # --- Calculate Winning Streaks ---
+    # Sort all matches by date once, descending to check recent matches first
+    all_matches.sort(
+        key=lambda m: m.to_dict().get("matchDate") or datetime.min, reverse=True
+    )
+
+    # Pre-process matches to map users to their matches
+    user_matches_map = {ref.id: [] for ref in member_refs}
+    for match in all_matches:
+        data = match.to_dict()
+        match_type = data.get("matchType", "singles")
+        if match_type == "doubles":
+            for ref in data.get("team1", []):
+                if ref.id in user_matches_map:
+                    user_matches_map[ref.id].append(data)
+            for ref in data.get("team2", []):
+                if ref.id in user_matches_map:
+                    user_matches_map[ref.id].append(data)
+        else:
+            p1_ref = data.get("player1Ref")
+            p2_ref = data.get("player2Ref")
+            if p1_ref and p1_ref.id in user_matches_map:
+                user_matches_map[p1_ref.id].append(data)
+            if p2_ref and p2_ref.id in user_matches_map:
+                user_matches_map[p2_ref.id].append(data)
+
+    for player in current_leaderboard:
+        streak = 0
+        user_id = player["id"]
+
+        for match_data in user_matches_map.get(user_id, []):
+            p1_score = match_data.get("player1Score", 0)
+            p2_score = match_data.get("player2Score", 0)
+            p1_wins = p1_score > p2_score
+            p2_wins = p2_score > p1_score
+            is_draw = p1_score == p2_score
+
+            if is_draw:
+                break  # Streak ends with a draw
+
+            user_won = False
+            match_type = match_data.get("matchType", "singles")
+            if match_type == "doubles":
+                team1_ids = [ref.id for ref in match_data.get("team1", [])]
+                team2_ids = [ref.id for ref in match_data.get("team2", [])]
+                if user_id in team1_ids:
+                    if p1_wins:
+                        user_won = True
+                elif user_id in team2_ids:
+                    if p2_wins:
+                        user_won = True
+            else:  # Singles
+                p1_ref = match_data.get("player1Ref")
+                p2_ref = match_data.get("player2Ref")
+                if p1_ref and p1_ref.id == user_id:
+                    if p1_wins:
+                        user_won = True
+                elif p2_ref and p2_ref.id == user_id:
+                    if p2_wins:
+                        user_won = True
+
+            if user_won:
+                streak += 1
+            else:
+                # As soon as a loss is found, the streak is broken
+                break
+
+        player["streak"] = streak
+        player["is_on_fire"] = streak >= 3
+
     return current_leaderboard
 
 
