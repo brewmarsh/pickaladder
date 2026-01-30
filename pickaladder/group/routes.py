@@ -701,9 +701,7 @@ def get_head_to_head_stats(group_id):
     # group matches and filter locally. This could be slow for very large
     # groups and might be optimized later (e.g., by adding a 'participants'
     # array to each match document).
-    query = matches_ref.where(
-        filter=firestore.FieldFilter("groupId", "==", group_id)
-    )
+    query = matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
     all_matches_in_group = list(query.stream())
 
     matches = []
@@ -731,9 +729,9 @@ def get_head_to_head_stats(group_id):
         team1 = {match.get("player1Id"), match.get("partnerId")}
         team2 = {match.get("player2Id"), match.get("opponent2Id")}
 
-        is_partner = (
-            player1_id in team1 and player2_id in team1
-        ) or (player1_id in team2 and player2_id in team2)
+        is_partner = (player1_id in team1 and player2_id in team1) or (
+            player1_id in team2 and player2_id in team2
+        )
 
         if is_partner:
             # Determine which team they were on
@@ -746,7 +744,6 @@ def get_head_to_head_stats(group_id):
             # They are opponents
             h2h_matches_count += 1
             player1_team = "team1" if player1_id in team1 else "team2"
-            player2_team = "team2" if player1_id in team1 else "team1"
 
             if match.get("winner") == player1_team:
                 h2h_player1_wins += 1
