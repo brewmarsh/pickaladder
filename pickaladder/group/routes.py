@@ -343,8 +343,8 @@ def view_group(group_id):
                 ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
             )
         )
-        player_ids.add(get_id(match_data, ["partner", "partnerId", "partner_id"]))
-        player_ids.add(get_id(match_data, ["opponent2", "opponent2Id", "opponent2_id"]))
+        player_ids.add(get_id(match_data, ["partnerId", "partner", "partner_id"]))
+        player_ids.add(get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"]))
     player_ids.discard(None)
 
     users_map = {}
@@ -377,12 +377,10 @@ def view_group(group_id):
             {"username": "Unknown"},
         )
         match_data["partner"] = users_map.get(
-            get_id(match_data, ["partner", "partnerId", "partner_id"]),
-            {"username": "Unknown"},
+            get_id(match_data, ["partnerId", "partner", "partner_id"])
         )
         match_data["opponent2"] = users_map.get(
-            get_id(match_data, ["opponent2", "opponent2Id", "opponent2_id"]),
-            {"username": "Unknown"},
+            get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"])
         )
 
         # --- Giant Slayer Logic ---
@@ -780,6 +778,7 @@ def get_head_to_head_stats(group_id):
     partnership_losses = 0
     point_differential = 0
     h2h_matches_count = 0
+    partnership_matches_count = 0
 
     for match in matches:
         team1 = {match.get("player1Id"), match.get("partnerId")}
@@ -790,6 +789,7 @@ def get_head_to_head_stats(group_id):
         )
 
         if is_partner:
+            partnership_matches_count += 1
             # Determine which team they were on
             their_team = "team1" if player1_id in team1 else "team2"
             if match.get("winner") == their_team:
@@ -820,6 +820,8 @@ def get_head_to_head_stats(group_id):
 
     return {
         "total_matches": total_matches,
+        "h2h_matches_count": h2h_matches_count,
+        "partnership_matches_count": partnership_matches_count,
         "head_to_head_record": f"{h2h_player1_wins}-{h2h_player2_wins}",
         "partnership_record": f"{partnership_wins}-{partnership_losses}",
         "avg_point_differential": round(avg_point_differential, 1),
