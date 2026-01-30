@@ -380,6 +380,27 @@ def view_group(group_id):
             get_id(match_data, ["opponent2", "opponent2Id", "opponent2_id"]),
             {"username": "Unknown"},
         )
+
+        # --- Giant Slayer Logic ---
+        winner_player = None
+        loser_player = None
+        # This logic primarily considers singles matches for now.
+        if match_data.get("winner") == "team1":
+            winner_player = match_data.get("player1")
+            loser_player = match_data.get("player2")
+        elif match_data.get("winner") == "team2":
+            winner_player = match_data.get("player2")
+            loser_player = match_data.get("player1")
+
+        if winner_player and loser_player:
+            # Ensure ratings are treated as floats, defaulting to 0.0
+            winner_rating = float(winner_player.get("dupr_rating") or 0.0)
+            loser_rating = float(loser_player.get("dupr_rating") or 0.0)
+
+            if loser_rating > 0 and winner_rating > 0:  # Both must have a rating
+                if (loser_rating - winner_rating) >= 0.25:
+                    match_data["is_upset"] = True
+
         recent_matches.append(match_data)
 
     return render_template(
