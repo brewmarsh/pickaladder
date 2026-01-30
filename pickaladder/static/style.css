@@ -244,7 +244,13 @@ input[type="submit"], .btn {
 
 .btn-primary {
     background-color: var(--accent-highlight);
-    color: var(--text-color);
+    color: #000000;
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-highlight);
+    filter: brightness(90%);
+    color: #000000;
 }
 
 .btn-danger {
