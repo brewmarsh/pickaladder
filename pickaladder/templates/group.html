@@ -251,9 +251,21 @@
                     {% for match in recent_matches %}
                     <tr>
                         <td data-label="Date">{{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate else 'N/A' }}</td>
-                        <td data-label="Player 1">{{ match.player1.username }}</td>
-                        <td data-label="Player 2">{{ match.player2.username }}</td>
-                        <td data-label="Score">{{ match.player1Score }} - {{ match.player2Score }}</td>
+                        <td data-label="Player 1">
+                            {{ match.player1.username }}
+                            {% if match.is_upset and match.winner_id == match.player1.id %}
+                                <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Player 2">
+                            {{ match.player2.username }}
+                            {% if match.is_upset and match.winner_id == match.player2.id %}
+                                <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Score" {% if match.is_upset %}style="font-weight: bold; color: green;"{% endif %}>
+                            {{ match.player1Score }} - {{ match.player2Score }}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

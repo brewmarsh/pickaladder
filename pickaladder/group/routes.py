@@ -380,6 +380,49 @@ def view_group(group_id):
             get_id(match_data, ["opponent2", "opponent2Id", "opponent2_id"]),
             {"username": "Unknown"},
         )
+        # --- Giant Slayer Logic ---
+        try:
+            winner_key = match_data.get("winner")
+            if not winner_key:
+                continue
+
+            # This assumes singles for now, as per the template display
+            p1_id = get_id(
+                match_data, ["player1", "player1Id", "player1_id", "player_1"]
+            )
+            p2_id = get_id(
+                match_data,
+                ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
+            )
+
+            winner_id = p1_id if winner_key == "team1" else p2_id
+            loser_id = p2_id if winner_key == "team1" else p1_id
+
+            if not winner_id or not loser_id:
+                continue
+
+            match_data["winner_id"] = winner_id
+
+            winner_data = users_map.get(winner_id, {})
+            loser_data = users_map.get(loser_id, {})
+
+            # Safely get DUPR ratings
+            try:
+                winner_rating = float(winner_data.get("dupr_rating", 0.0))
+            except (ValueError, TypeError):
+                winner_rating = 0.0
+            try:
+                loser_rating = float(loser_data.get("dupr_rating", 0.0))
+            except (ValueError, TypeError):
+                loser_rating = 0.0
+
+            if winner_rating > 0 and loser_rating > 0:
+                if (loser_rating - winner_rating) >= 0.25:
+                    match_data["is_upset"] = True
+        except Exception as e:
+            current_app.logger.error(
+                f"Error processing upset logic for match {match_data.get('id')}: {e}"
+            )
         recent_matches.append(match_data)
 
     return render_template(
