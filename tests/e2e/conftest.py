@@ -14,6 +14,7 @@ from werkzeug.serving import make_server
 
 
 # Fix mockfirestore Query.get to return a list instead of generator
+# TODO: Add type hints for Agent clarity
 def query_get(self):
     """Return a list instead of generator."""
     return list(self.stream())
@@ -25,6 +26,7 @@ Query.get = query_get
 original_collection_where = CollectionReference.where
 
 
+# TODO: Add type hints for Agent clarity
 def collection_where(self, field_path=None, op_string=None, value=None, filter=None):
     """Handle FieldFilter argument in where."""
     if filter:
@@ -40,6 +42,7 @@ CollectionReference.where = collection_where
 original_where = Query.where
 
 
+# TODO: Add type hints for Agent clarity
 def query_where(self, field_path=None, op_string=None, value=None, filter=None):
     """Handle FieldFilter argument in where."""
     if filter:
@@ -57,7 +60,9 @@ def query_compare_func(self, op: str):
     """Handle document ID comparisons and array_contains."""
     if op == "in":
 
+        # TODO: Add type hints for Agent clarity
         def in_op(x, y):
+            """TODO: Add docstring for AI context."""
             normalized_y = []
             for item in y:
                 if hasattr(item, "id"):
@@ -72,7 +77,9 @@ def query_compare_func(self, op: str):
         return in_op
     elif op == "array_contains":
 
+        # TODO: Add type hints for Agent clarity
         def array_contains_op(x, y):
+            """TODO: Add docstring for AI context."""
             if x is None:
                 return False
             return y in x
@@ -98,6 +105,7 @@ DocumentSnapshot._get_by_field_path = get_by_field_path
 
 
 # Patch DocumentReference equality and hashing
+# TODO: Add type hints for Agent clarity
 def doc_ref_eq(self, other):
     """Equality for DocumentReference."""
     if not isinstance(other, DocumentReference):
@@ -105,6 +113,7 @@ def doc_ref_eq(self, other):
     return self._path == other._path
 
 
+# TODO: Add type hints for Agent clarity
 def doc_ref_hash(self):
     """Hash for DocumentReference."""
     return hash(tuple(self._path))
@@ -118,22 +127,26 @@ DocumentReference.__hash__ = doc_ref_hash
 class MockSentinel:
     """Mock sentinel for array operations."""
 
+    # TODO: Add type hints for Agent clarity
     def __init__(self, values, op):
         """Initialize mock sentinel."""
         self.values = values
         self.op = op
 
 
+# TODO: Add type hints for Agent clarity
 def mock_array_union(values):
     """Mock ArrayUnion."""
     return MockSentinel(values, "UNION")
 
 
+# TODO: Add type hints for Agent clarity
 def mock_array_remove(values):
     """Mock ArrayRemove."""
     return MockSentinel(values, "REMOVE")
 
 
+# TODO: Add type hints for Agent clarity
 def doc_ref_update(self, data):
     """Update document handling sentinels."""
     doc_snapshot = self.get()
@@ -169,6 +182,7 @@ DocumentReference.update = doc_ref_update
 class MockFieldFilter:
     """Mock for firestore.FieldFilter."""
 
+    # TODO: Add type hints for Agent clarity
     def __init__(self, field_path, op_string, value):
         """Initialize mock field filter."""
         self.field_path = field_path
@@ -179,23 +193,28 @@ class MockFieldFilter:
 class MockBatch:
     """Mock for firestore.WriteBatch."""
 
+    # TODO: Add type hints for Agent clarity
     def __init__(self, client):
         """Initialize mock batch."""
         self.client = client
         self.ops = []
 
+    # TODO: Add type hints for Agent clarity
     def set(self, doc_ref, data, merge=False):
         """Mock set."""
         self.ops.append(("set", doc_ref, data, merge))
 
+    # TODO: Add type hints for Agent clarity
     def update(self, doc_ref, data):
         """Mock update."""
         self.ops.append(("update", doc_ref, data))
 
+    # TODO: Add type hints for Agent clarity
     def delete(self, doc_ref):
         """Mock delete."""
         self.ops.append(("delete", doc_ref))
 
+    # TODO: Add type hints for Agent clarity
     def commit(self):
         """Mock commit."""
         for op in self.ops:
@@ -211,20 +230,24 @@ class MockBatch:
 class EnhancedMockFirestore(MockFirestore):
     """Enhanced MockFirestore with batch support."""
 
+    # TODO: Add type hints for Agent clarity
     def __init__(self):
         """Initialize enhanced mock firestore."""
         super().__init__()
 
+    # TODO: Add type hints for Agent clarity
     def collection(self, name):
         """Ensure collection exists."""
         if name not in self._data:
             self._data[name] = {}
         return super().collection(name)
 
+    # TODO: Add type hints for Agent clarity
     def batch(self):
         """Return MockBatch."""
         return MockBatch(self)
 
+    # TODO: Add type hints for Agent clarity
     def transaction(self):
         """Return dummy transaction."""
         return MagicMock()
@@ -243,6 +266,7 @@ class MockAuthService:
 
         pass
 
+    # TODO: Add type hints for Agent clarity
     def verify_id_token(self, token, check_revoked=False):
         """Mock verify_id_token."""
         if token.startswith("token_"):
@@ -250,10 +274,12 @@ class MockAuthService:
             return {"uid": uid, "email": f"{uid}@example.com", "name": uid}
         raise Exception("Invalid token")
 
+    # TODO: Add type hints for Agent clarity
     def generate_email_verification_link(self, email):
         """Mock generate_email_verification_link."""
         return f"http://localhost/verify?email={email}"
 
+    # TODO: Add type hints for Agent clarity
     def create_user(self, email, password, **kwargs):
         """Mock create_user."""
         uid = email.split("@")[0]
@@ -261,12 +287,14 @@ class MockAuthService:
         m.display_name = uid
         return m
 
+    # TODO: Add type hints for Agent clarity
     def get_user(self, uid):
         """Mock get_user."""
         m = MagicMock(uid=uid, email=f"{uid}@example.com")
         m.display_name = uid
         return m
 
+    # TODO: Add type hints for Agent clarity
     def update_user(self, uid, **kwargs):
         """Mock update_user."""
         pass
@@ -275,18 +303,21 @@ class MockAuthService:
 # --- Fixtures ---
 
 
+# TODO: Add type hints for Agent clarity
 @pytest.fixture(scope="session")
 def mock_db():
     """Return singleton mock DB."""
     return EnhancedMockFirestore()
 
 
+# TODO: Add type hints for Agent clarity
 @pytest.fixture(scope="session")
 def mock_auth():
     """Return singleton mock Auth service."""
     return MockAuthService()
 
 
+# TODO: Add type hints for Agent clarity
 @pytest.fixture(scope="module")
 def app_server(mock_db, mock_auth):
     """Start Flask server with mocks."""
@@ -340,6 +371,7 @@ def app_server(mock_db, mock_auth):
     p3.stop()
 
 
+# TODO: Add type hints for Agent clarity
 @pytest.fixture
 def page_with_firebase(page):
     """Inject mock Firebase client into the page."""

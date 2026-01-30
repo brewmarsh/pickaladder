@@ -18,6 +18,7 @@ MOCK_FIRESTORE_USER_DATA = {"name": "User One", "isAdmin": True, "uid": "user1"}
 class UserRoutesFirebaseTestCase(unittest.TestCase):
     """Test case for the user blueprint."""
 
+    # TODO: Add type hints for Agent clarity
     def setUp(self):
         """Set up a test client and mock the necessary Firebase services."""
         self.mock_firestore_service = MagicMock()
@@ -44,17 +45,22 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
 
+    # TODO: Add type hints for Agent clarity
     def tearDown(self):
         """Tear down the test client."""
         self.app_context.pop()
 
+    # TODO: Add type hints for Agent clarity
     def _set_session_user(self):
+        """TODO: Add docstring for AI context."""
         with self.client.session_transaction() as sess:
             sess["user_id"] = MOCK_USER_ID
             sess["is_admin"] = False
         self.mocks["verify_id_token"].return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
 
+    # TODO: Add type hints for Agent clarity
     def _mock_firestore_user(self):
+        """TODO: Add docstring for AI context."""
         mock_db = self.mock_firestore_service.client.return_value
         mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
         mock_user_snapshot = MagicMock()
@@ -63,6 +69,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         mock_user_doc.get.return_value = mock_user_snapshot
         return mock_user_doc
 
+    # TODO: Add type hints for Agent clarity
     def test_dashboard_loads(self):
         """Test that the dashboard loads for an authenticated user."""
         self._set_session_user()
@@ -72,6 +79,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Dashboard", response.data)
 
+    # TODO: Add type hints for Agent clarity
     def test_update_profile_data(self):
         """Test updating user profile data."""
         self._set_session_user()
@@ -86,6 +94,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn(b"Profile updated successfully.", response.data)
         mock_user_doc.update.assert_called_once()
 
+    # TODO: Add type hints for Agent clarity
     def test_update_profile_picture_upload(self):
         """Test successfully uploading a profile picture."""
         self._set_session_user()
@@ -115,6 +124,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "https://storage.googleapis.com/test-bucket/test.jpg",
         )
 
+    # TODO: Add type hints for Agent clarity
     def test_update_dupr_and_dark_mode(self):
         """Test updating DUPR rating and dark mode settings."""
         self._set_session_user()
@@ -131,13 +141,16 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             {"dark_mode": True, "duprRating": 5.5}
         )
 
+    # TODO: Add type hints for Agent clarity
     def _setup_dashboard_mocks(self, mock_db):
         """Set up specific mocks for the dashboard API tests."""
         self.mock_users_coll = MagicMock()
         self.mock_matches_coll = MagicMock()
         self.mock_groups_coll = MagicMock()
 
+        # TODO: Add type hints for Agent clarity
         def collection_side_effect(name):
+            """TODO: Add docstring for AI context."""
             if name == "users":
                 return self.mock_users_coll
             if name == "matches":
@@ -163,6 +176,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         ).where.return_value.where.return_value.stream.return_value = []
         self.mock_groups_coll.where.return_value.stream.return_value = []
 
+    # TODO: Add type hints for Agent clarity
     def test_api_dashboard_fetches_all_matches_for_sorting(self):
         """Test that all matches are fetched for sorting.
 
@@ -195,6 +209,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "order_by() should not be called (avoids composite index)",
         )
 
+    # TODO: Add type hints for Agent clarity
     def test_api_dashboard_returns_group_match_flag(self):
         """Test that the response includes an indicator for group matches."""
         self._set_session_user()
@@ -235,6 +250,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertTrue(matches[0]["is_group_match"], "is_group_match should be True")
 
+    # TODO: Add type hints for Agent clarity
     @patch("pickaladder.user.routes.render_template")
     def test_view_user_includes_doubles_and_processes_matches(
         self, mock_render_template
@@ -258,7 +274,9 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         # Use side_effect to return correct mock collection
         mock_matches_coll = MagicMock()
 
+        # TODO: Add type hints for Agent clarity
         def collection_side_effect(name):
+            """TODO: Add docstring for AI context."""
             if name == "users":
                 mock_users_coll = MagicMock()
                 mock_users_coll.document.return_value = mock_profile_user_ref

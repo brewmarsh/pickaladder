@@ -15,6 +15,7 @@ MOCK_USER_DATA = {"name": "Group Owner", "isAdmin": False}
 class GroupRoutesFirebaseTestCase(unittest.TestCase):
     """Test case for the group blueprint."""
 
+    # TODO: Add type hints for Agent clarity
     def setUp(self):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_firestore_service = MagicMock()
@@ -45,19 +46,25 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
 
+    # TODO: Add type hints for Agent clarity
     def tearDown(self):
         """Tear down the test client."""
         self.app_context.pop()
 
+    # TODO: Add type hints for Agent clarity
     def _set_session_user(self):
+        """TODO: Add docstring for AI context."""
         with self.client.session_transaction() as sess:
             sess["user_id"] = MOCK_USER_ID
             sess["is_admin"] = False
         self.mocks["verify_id_token"].return_value = MOCK_USER_PAYLOAD
 
+    # TODO: Add type hints for Agent clarity
     def _get_auth_headers(self):
+        """TODO: Add docstring for AI context."""
         return {"Authorization": "Bearer mock-token"}
 
+    # TODO: Add type hints for Agent clarity
     def test_create_group(self):
         """Test successfully creating a new group."""
         self._set_session_user()
@@ -94,6 +101,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         call_args = mock_groups_collection.add.call_args[0]
         self.assertEqual(call_args[0]["name"], "My Firebase Group")
 
+    # TODO: Add type hints for Agent clarity
     def test_create_group_with_image(self):
         """Test successfully creating a new group with an image."""
         self._set_session_user()
@@ -158,6 +166,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             {"profilePictureUrl": "http://mock-storage-url/img.jpg"}
         )
 
+    # TODO: Add type hints for Agent clarity
     def test_get_head_to_head_stats(self):
         """Test the head-to-head stats calculation."""
         self._set_session_user()
@@ -247,6 +256,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(stats["partnership_record"], "1-1")
         self.assertEqual(stats["avg_point_differential"], 1.5)
 
+    # TODO: Add type hints for Agent clarity
     def test_get_head_to_head_stats_missing_params(self):
         """Test head-to-head stats with missing player IDs."""
         self._set_session_user()

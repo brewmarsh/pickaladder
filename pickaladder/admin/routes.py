@@ -18,6 +18,7 @@ from pickaladder.auth.decorators import login_required
 from . import bp
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/")
 @login_required(admin_required=True)
 def admin():
@@ -38,6 +39,7 @@ def admin():
     )
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/toggle_email_verification", methods=["POST"])
 def toggle_email_verification():
     """Toggle the global setting for requiring email verification."""
@@ -57,6 +59,7 @@ def toggle_email_verification():
     return redirect(url_for(".admin"))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/matches")
 @login_required(admin_required=True)
 def admin_matches():
@@ -72,6 +75,7 @@ def admin_matches():
     return render_template("admin/matches.html", matches=matches)
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/delete_match/<string:match_id>", methods=["POST"])
 @login_required(admin_required=True)
 def admin_delete_match(match_id):
@@ -85,6 +89,7 @@ def admin_delete_match(match_id):
     return redirect(url_for(".admin_matches"))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/friend_graph_data")
 def friend_graph_data():
     """Provide data for a network graph of users and their friendships."""
@@ -110,6 +115,7 @@ def friend_graph_data():
     return jsonify({"nodes": nodes, "edges": edges})
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])
 def delete_user(user_id):
     """Delete a user from Firebase Auth and Firestore."""
@@ -127,6 +133,7 @@ def delete_user(user_id):
     return redirect(url_for("user.users"))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/promote_user/<string:user_id>", methods=["POST"])
 def promote_user(user_id):
     """Promote a user to admin status."""
@@ -141,6 +148,7 @@ def promote_user(user_id):
     return redirect(url_for("user.users"))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/verify_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
 def verify_user(user_id):
@@ -158,6 +166,7 @@ def verify_user(user_id):
     return redirect(url_for("user.users"))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/generate_users", methods=["POST"])
 def generate_users():
     """Generate a number of fake users for testing."""
@@ -199,6 +208,7 @@ def generate_users():
     return render_template("generated_users.html", users=new_users)
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/generate_matches", methods=["POST"])
 def generate_matches():
     """Generate random matches between existing users."""

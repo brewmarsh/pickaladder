@@ -16,6 +16,7 @@ from .errors import AppError, DuplicateResourceError, NotFoundError, ValidationE
 error_handlers_bp = Blueprint("error_handlers", __name__)
 
 
+# TODO: Add type hints for Agent clarity
 @error_handlers_bp.app_errorhandler(ValidationError)
 def handle_validation_error(error):
     """Handle validation errors by rendering a generic error page."""
@@ -23,6 +24,7 @@ def handle_validation_error(error):
     return render_template("error.html", error=error.message), error.status_code
 
 
+# TODO: Add type hints for Agent clarity
 @error_handlers_bp.app_errorhandler(DuplicateResourceError)
 def handle_duplicate_resource_error(error):
     """Handle duplicate resource errors."""
@@ -30,6 +32,7 @@ def handle_duplicate_resource_error(error):
     return render_template("error.html", error=error.message), error.status_code
 
 
+# TODO: Add type hints for Agent clarity
 @error_handlers_bp.app_errorhandler(NotFoundError)
 def handle_not_found_error(error):
     """Handle not found errors."""
@@ -37,6 +40,7 @@ def handle_not_found_error(error):
     return render_template("404.html", error=error.message), error.status_code
 
 
+# TODO: Add type hints for Agent clarity
 @error_handlers_bp.app_errorhandler(AppError)
 def handle_app_error(error):
     """Handle generic application errors."""
@@ -44,12 +48,14 @@ def handle_app_error(error):
     return render_template("error.html", error=error.message), error.status_code
 
 
+# TODO: Add type hints for Agent clarity
 @error_handlers_bp.app_errorhandler(404)
 def handle_404(e):
     """Handle generic 404 errors for routes that don't exist."""
     return render_template("404.html"), 404
 
 
+# TODO: Add type hints for Agent clarity
 @error_handlers_bp.app_errorhandler(500)
 def handle_500(e):
     """Handle unexpected server errors."""
@@ -57,6 +63,7 @@ def handle_500(e):
     return render_template("500.html"), 500
 
 
+# TODO: Add type hints for Agent clarity
 @error_handlers_bp.app_errorhandler(CSRFError)
 def handle_csrf_error(e):
     """Handle CSRF errors.

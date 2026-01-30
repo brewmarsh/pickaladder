@@ -18,6 +18,7 @@ MOCK_USER_DATA = {"name": "Regular User", "isAdmin": False}
 class AdminRoutesTestCase(unittest.TestCase):
     """Test case for the admin blueprint."""
 
+    # TODO: Add type hints for Agent clarity
     def setUp(self):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_firestore_service = MagicMock()
@@ -46,10 +47,12 @@ class AdminRoutesTestCase(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
 
+    # TODO: Add type hints for Agent clarity
     def tearDown(self):
         """Tear down the test client."""
         self.app_context.pop()
 
+    # TODO: Add type hints for Agent clarity
     def _login_user(self, user_id, user_data, is_admin):
         """Simulate a user login by setting the session and mocking Firestore."""
         with self.client.session_transaction() as sess:
@@ -59,7 +62,9 @@ class AdminRoutesTestCase(unittest.TestCase):
         mock_db = self.mock_firestore_service.client.return_value
         mock_users_collection = mock_db.collection("users")
 
+        # TODO: Add type hints for Agent clarity
         def document_side_effect(doc_id):
+            """TODO: Add docstring for AI context."""
             if doc_id == user_id:
                 mock_user_doc = MagicMock()
                 mock_user_snapshot = MagicMock()
@@ -71,6 +76,7 @@ class AdminRoutesTestCase(unittest.TestCase):
 
         mock_users_collection.document.side_effect = document_side_effect
 
+    # TODO: Add type hints for Agent clarity
     def test_admin_panel_accessible_to_admin(self):
         """Ensure an admin user can access the admin panel."""
         self._login_user(MOCK_ADMIN_ID, MOCK_ADMIN_DATA, is_admin=True)
@@ -85,6 +91,7 @@ class AdminRoutesTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Admin Panel", response.data)
 
+    # TODO: Add type hints for Agent clarity
     def test_admin_panel_inaccessible_to_non_admin(self):
         """Ensure a non-admin user is redirected from the admin panel."""
         self._login_user(MOCK_USER_ID, MOCK_USER_DATA, is_admin=False)

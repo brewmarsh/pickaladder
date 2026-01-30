@@ -38,6 +38,7 @@ class Pagination:
     pages: int
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/", methods=["GET"])
 @login_required
 def view_groups():
@@ -76,6 +77,7 @@ def view_groups():
         owner_docs = db.get_all(unique_owner_refs)
         owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
 
+    # TODO: Add type hints for Agent clarity
     def enrich_group(group_doc):
         """Attach owner data to a group dictionary."""
         group_data = group_doc.to_dict()
@@ -103,6 +105,7 @@ def view_groups():
     )
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>", methods=["GET", "POST"])
 @login_required
 def view_group(group_id):
@@ -320,6 +323,7 @@ def view_group(group_id):
     recent_matches_docs = list(matches_query.stream())
 
     # --- Batch Fetch Player Details ---
+    # TODO: Add type hints for Agent clarity
     def get_id(data, possible_keys):
         """Get first non-None value for a list of possible keys."""
         for key in possible_keys:
@@ -419,6 +423,7 @@ def view_group(group_id):
     )
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/create", methods=["GET", "POST"])
 @login_required
 def create_group():
@@ -465,6 +470,7 @@ def create_group():
     return render_template("create_group.html", form=form)
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_group(group_id):
@@ -517,6 +523,7 @@ def edit_group(group_id):
     )
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/invite/<token>/resend", methods=["POST"])
 @login_required
 def resend_invite(token):
@@ -567,6 +574,7 @@ def resend_invite(token):
     return redirect(url_for(".view_group", group_id=group_id))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/leaderboard-trend")
 @login_required
 def view_leaderboard_trend(group_id):
@@ -592,6 +600,7 @@ def view_leaderboard_trend(group_id):
     )
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/invite/<token>/delete", methods=["POST"])
 @login_required
 def delete_invite(token):
@@ -622,6 +631,7 @@ def delete_invite(token):
     return redirect(url_for(".view_group", group_id=group_id))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/invite/<token>")
 @login_required
 def handle_invite(token):
@@ -664,6 +674,7 @@ def handle_invite(token):
         return redirect(url_for("auth.login"))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/delete", methods=["POST"])
 @login_required
 def delete_group(group_id):
@@ -690,6 +701,7 @@ def delete_group(group_id):
         return redirect(url_for(".view_group", group_id=group.id))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/join", methods=["POST"])
 @login_required
 def join_group(group_id):
@@ -708,6 +720,7 @@ def join_group(group_id):
     return redirect(url_for(".view_group", group_id=group_id))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/leave", methods=["POST"])
 @login_required
 def leave_group(group_id):
@@ -725,6 +738,7 @@ def leave_group(group_id):
     return redirect(url_for(".view_group", group_id=group_id))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/stats/head_to_head", methods=["GET"])
 @login_required
 def get_head_to_head_stats(group_id):

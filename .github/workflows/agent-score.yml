@@ -1,0 +1,28 @@
+name: Agent Readiness Scorecard
+
+on:
+  pull_request:
+
+jobs:
+  agent-score:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+
+      - name: Install agent-readiness-scorecard
+        run: pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git
+
+      - name: Run agent-score
+        run: agent-score pickaladder/ --threshold 75 --badge > agent_readiness_badge.svg
+
+      - name: Commit badge
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "docs: update agent readiness badge"
+          file_pattern: agent_readiness_badge.svg

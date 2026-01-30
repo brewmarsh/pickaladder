@@ -9,6 +9,7 @@ from pickaladder.group.utils import get_group_leaderboard
 class TestGroupUtils(unittest.TestCase):
     """Test case for the group utils."""
 
+    # TODO: Add type hints for Agent clarity
     @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard(self, mock_firestore):
         """Test the get_group_leaderboard function."""

@@ -4,6 +4,7 @@ from firebase_admin import firestore
 from flask import current_app
 
 
+# TODO: Add type hints for Agent clarity
 def merge_ghost_user(db, real_user_ref, email):
     """Check for 'ghost' user with the given email and merge their data.
 

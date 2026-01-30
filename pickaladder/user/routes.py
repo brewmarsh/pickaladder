@@ -29,12 +29,14 @@ from .forms import UpdateProfileForm, UpdateUserForm
 class MockPagination:
     """A mock pagination object."""
 
+    # TODO: Add type hints for Agent clarity
     def __init__(self, items):
         """Initialize the mock pagination object."""
         self.items = items
         self.pages = 1
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/edit_profile", methods=["GET", "POST"])
 @login_required
 def edit_profile():
@@ -108,6 +110,7 @@ def edit_profile():
     return render_template("edit_profile.html", form=form, user=user_data)
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard():
@@ -165,6 +168,7 @@ def dashboard():
     return render_template("user_dashboard.html", form=form, user=user_data)
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/<string:user_id>")
 @login_required
 def view_user(user_id):
@@ -432,7 +436,9 @@ def view_user(user_id):
         users_docs = db.get_all(unique_refs_list)
         users_map = {doc.id: doc.to_dict() for doc in users_docs if doc.exists}
 
+    # TODO: Add type hints for Agent clarity
     def get_username(ref, default="Unknown"):
+        """TODO: Add docstring for AI context."""
         if not ref:
             return default
         u_data = users_map.get(ref.id)
@@ -547,6 +553,7 @@ def view_user(user_id):
     )
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/users")
 @login_required
 def users():
@@ -604,6 +611,7 @@ def users():
     )
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/send_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def send_friend_request(friend_id):
@@ -649,6 +657,7 @@ def send_friend_request(friend_id):
     return redirect(url_for(".users"))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/friends")
 @login_required
 def friends():
@@ -706,6 +715,7 @@ def friends():
     )
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/accept_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def accept_friend_request(friend_id):
@@ -742,6 +752,7 @@ def accept_friend_request(friend_id):
     return redirect(url_for(".friends"))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/decline_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def decline_friend_request(friend_id):
@@ -778,6 +789,7 @@ def decline_friend_request(friend_id):
     return redirect(url_for(".friends"))
 
 
+# TODO: Add type hints for Agent clarity
 def _get_player_info(player_ref, users_map):
     """Return a dictionary with player info."""
     player_data = users_map.get(player_ref.id)
@@ -790,6 +802,7 @@ def _get_player_info(player_ref, users_map):
     }
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/api/dashboard")
 @login_required
 def api_dashboard():
@@ -947,6 +960,7 @@ def api_dashboard():
     )
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/api/create_invite", methods=["POST"])
 @login_required
 def create_invite():

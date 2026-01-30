@@ -24,6 +24,7 @@ from . import bp
 from .forms import ChangePasswordForm, LoginForm, RegisterForm
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     """Register a new user."""
@@ -127,6 +128,7 @@ def register():
     return render_template("register.html", form=form)
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/login", methods=["GET", "POST"])
 def login():
     """Render the login page.
@@ -151,6 +153,7 @@ def login():
     return render_template("login.html", form=form)
 
 
+# TODO: Add type hints for Agent clarity
 def _generate_unique_username(db, base_username):
     """Generate a unique username by appending a number if the base username exists."""
     username = base_username
@@ -166,6 +169,7 @@ def _generate_unique_username(db, base_username):
     return username
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/session_login", methods=["POST"])
 def session_login():
     """Handle session login.
@@ -215,6 +219,7 @@ def session_login():
         ), 401
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/logout")
 def logout():
     """Log the user out.
@@ -227,6 +232,7 @@ def logout():
     return redirect(url_for("auth.login"))
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/install", methods=["GET", "POST"])
 def install():
     """Install the application by creating an admin user."""
@@ -303,6 +309,7 @@ def install():
     return render_template("install.html")
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/change_password", methods=["GET", "POST"])
 def change_password():
     """Render the change password page.

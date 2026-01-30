@@ -4,6 +4,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.9-blue.svg)](https://www.python.org/downloads/release/python-390/)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Trivy Scan](https://img.shields.io/github/actions/workflow/status/brewmarsh/pickaladder/ci.yml?label=trivy&logo=trivy)](https://github.com/brewmarsh/pickaladder/actions/workflows/ci.yml)
+[![Agent Readiness Score](agent_readiness_badge.svg)](https://github.com/brewmarsh/agent-readiness-scorecard)
 
 # 🥒 pickaladder 🥇
 
@@ -74,3 +75,23 @@ We welcome contributions! If you'd like to help improve this integration, please
 ## 📄 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## 🤖 Agent Readiness
+
+This repository is compliant with AI-readiness standards, as enforced by the `agent-readiness-scorecard`.
+
+### Installation
+
+To install the tool, run the following command:
+
+```bash
+pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git
+```
+
+### Usage
+
+To run the scorecard locally, run the following command from the root of the repository:
+
+```bash
+agent-score .
+```

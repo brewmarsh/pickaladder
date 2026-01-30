@@ -9,6 +9,7 @@ from pickaladder import create_app
 class UserProfileDuprTestCase(unittest.TestCase):
     """Test case for the DUPR rating display on the user profile."""
 
+    # TODO: Add type hints for Agent clarity
     def setUp(self):
         """Set up the test case with mocks and app context."""
         self.mock_firestore_service = MagicMock()
@@ -34,10 +35,12 @@ class UserProfileDuprTestCase(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
 
+    # TODO: Add type hints for Agent clarity
     def tearDown(self):
         """Tear down the test case and pop app context."""
         self.app_context.pop()
 
+    # TODO: Add type hints for Agent clarity
     def test_profile_dupr_display(self):
         """Test that the DUPR rating is correctly displayed on the profile page."""
         # Setup logged-in user
