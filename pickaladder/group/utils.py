@@ -5,6 +5,7 @@ import threading
 from datetime import datetime, timedelta, timezone
 
 from firebase_admin import firestore
+from google.cloud.firestore import FieldFilter
 
 from pickaladder.utils import send_email
 
@@ -178,7 +179,9 @@ def get_group_leaderboard(group_id):
 
     # Fetch all matches for this group
     all_matches_stream = (
-        db.collection("matches").where("groupId", "==", group_id).stream()
+        db.collection("matches")
+        .where(filter=FieldFilter("groupId", "==", group_id))
+        .stream()
     )
     all_matches = list(all_matches_stream)
 
@@ -220,7 +223,9 @@ def get_group_leaderboard(group_id):
 def get_leaderboard_trend_data(group_id):
     """Generate data for a leaderboard trend chart."""
     db = firestore.client()
-    matches_query = db.collection("matches").where("groupId", "==", group_id)
+    matches_query = db.collection("matches").where(
+        filter=FieldFilter("groupId", "==", group_id)
+    )
     # Filter and sort in Python to avoid composite index requirement
     # Use to_dict().get() to safely handle missing fields without KeyError
     matches = [m for m in matches_query.stream() if m.to_dict().get("matchDate")]
@@ -342,7 +347,9 @@ def get_user_group_stats(group_id, user_id):
             break
 
     # --- Calculate Win Streaks ---
-    matches_query = db.collection("matches").where("groupId", "==", group_id)
+    matches_query = db.collection("matches").where(
+        filter=FieldFilter("groupId", "==", group_id)
+    )
     user_ref = db.collection("users").document(user_id)
     all_matches = list(matches_query.stream())
     all_matches.sort(key=lambda x: x.to_dict().get("matchDate") or datetime.min)
