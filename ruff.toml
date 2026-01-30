@@ -9,7 +9,7 @@ target-version = "py39"
 
 [lint]
 # Enable Pyflakes, pycodestyle, pydocstyle, and isort.
-select = ["E", "F", "W", "D", "I"]
+select = ["E", "F", "W", "I"]
 
 # Never enforce `E501` (line-too-long), handled by `format`.
 ignore = ["E501"]
@@ -17,6 +17,10 @@ ignore = ["E501"]
 [lint.pydocstyle]
 # Use the PEP 257 convention for docstring formatting.
 convention = "pep257"
+
+[lint.mccabe]
+# Set the maximum complexity to 10.
+max-complexity = 10
 
 [format]
 # Like Black, use double quotes for strings.

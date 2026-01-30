@@ -102,7 +102,7 @@
                     <select id="player1-select" class="form-control">
                         <option value="">Select a player</option>
                         {% for member in members %}
-                            <option value="{{ member.id }}">{{ member.username }}</option>
+                            <option value="{{ member.id }}">{{ member.username or member.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -111,7 +111,7 @@
                     <select id="player2-select" class="form-control">
                         <option value="">Select a player</option>
                         {% for member in members %}
-                            <option value="{{ member.id }}">{{ member.username }}</option>
+                            <option value="{{ member.id }}">{{ member.username or member.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -128,8 +128,8 @@
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>Player 1</th>
-                            <th>Player 2</th>
+                            <th>Team 1</th>
+                            <th>Team 2</th>
                             <th>Score</th>
                         </tr>
                     </thead>
@@ -137,15 +137,21 @@
                         {% for match in recent_matches %}
                         <tr>
                             <td data-label="Date">{{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate else 'N/A' }}</td>
-                            <td data-label="Player 1">
-                                {{ match.player1.username }}
-                                {% if match.is_upset and match.winner_id == match.player1.id %}
+                            <td data-label="Team 1">
+                                <a href="{{ url_for('user.view_user', user_id=match.player1.id) }}">{{ match.player1.username }}</a>
+                                {% if match.partner and match.partner.username != 'Unknown' %}
+                                    / <a href="{{ url_for('user.view_user', user_id=match.partner.id) }}">{{ match.partner.username }}</a>
+                                {% endif %}
+                                {% if match.is_upset and match.winner == 'team1' %}
                                     <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
                                 {% endif %}
                             </td>
-                            <td data-label="Player 2">
-                                {{ match.player2.username }}
-                                {% if match.is_upset and match.winner_id == match.player2.id %}
+                            <td data-label="Team 2">
+                                <a href="{{ url_for('user.view_user', user_id=match.player2.id) }}">{{ match.player2.username }}</a>
+                                {% if match.opponent2 and match.opponent2.username != 'Unknown' %}
+                                    / <a href="{{ url_for('user.view_user', user_id=match.opponent2.id) }}">{{ match.opponent2.username }}</a>
+                                {% endif %}
+                                {% if match.is_upset and match.winner == 'team2' %}
                                     <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
                                 {% endif %}
                             </td>
@@ -343,19 +349,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const totalPartnerGames = partnerWins + partnerLosses;
                 const partnerWinRate = totalPartnerGames > 0 ? (partnerWins / totalPartnerGames) * 100 : 0;
 
-                let leaderMessage = '';
-                if (p1H2HWins > p2H2HWins) {
-                    leaderMessage = `${player1Name} leads the rivalry.`;
-                } else if (p2H2HWins > p1H2HWins) {
-                    leaderMessage = `${player2Name} leads the rivalry.`;
-                } else if (totalH2H > 0) {
-                    leaderMessage = 'The rivalry is tied.';
-                }
-
-                const statsHtml = `
-                    <div class="stats-grid">
+                let h2hHtml = '';
+                if (data.h2h_matches_count > 0) {
+                    h2hHtml = `
                         <div class="stat-card">
-                            <h5>Head-to-Head</h5>
+                            <h5>Head-to-Head (${data.h2h_matches_count} matches)</h5>
                             <div class="h2h-scores">
                                 <span class="player-name">${player1Name}</span>
                                 <span class="score">${p1H2HWins} - ${p2H2HWins}</span>
@@ -368,14 +366,36 @@ document.addEventListener('DOMContentLoaded', function() {
                             <p class="leader-message">${leaderMessage}</p>
                         </div>
                         <div class="stat-card">
-                            <h5>As Partners</h5>
-                            <p><strong>Record:</strong> ${partnerWins}W - ${partnerLosses}L</p>
-                            <p><strong>Win Rate:</strong> ${partnerWinRate.toFixed(1)}%</p>
-                        </div>
-                        <div class="stat-card">
                             <h5>Point Differential</h5>
                             <p>Avg. <strong>${data.avg_point_differential > 0 ? '+' : ''}${data.avg_point_differential}</strong> points for ${player1Name}</p>
                         </div>
+                    `;
+                }
+
+                let partnershipHtml = '';
+                if (data.partnership_matches_count > 0) {
+                    partnershipHtml = `
+                        <div class="stat-card">
+                            <h5>As Partners (${data.partnership_matches_count} matches)</h5>
+                            <p><strong>Record:</strong> ${partnerWins}W - ${partnerLosses}L</p>
+                            <p><strong>Win Rate:</strong> ${partnerWinRate.toFixed(1)}%</p>
+                        </div>
+                    `;
+                }
+
+                let leaderMessage = '';
+                if (p1H2HWins > p2H2HWins) {
+                    leaderMessage = `${player1Name} leads the rivalry.`;
+                } else if (p2H2HWins > p1H2HWins) {
+                    leaderMessage = `${player2Name} leads the rivalry.`;
+                } else if (totalH2H > 0) {
+                    leaderMessage = 'The rivalry is tied.';
+                }
+
+                const statsHtml = `
+                    <div class="stats-grid">
+                        ${h2hHtml}
+                        ${partnershipHtml}
                     </div>
                 `;
 
