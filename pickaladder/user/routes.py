@@ -270,16 +270,16 @@ def view_user(user_id):
                         my_wins += 1
                     else:
                         my_losses += 1
-                    point_diff += (
-                        data.get("player1Score", 0) - data.get("player2Score", 0)
+                    point_diff += data.get("player1Score", 0) - data.get(
+                        "player2Score", 0
                     )
                 elif user_in_team2 and opponent_in_team1:
                     if data.get("winnerId") == "team2":
                         my_wins += 1
                     else:
                         my_losses += 1
-                    point_diff += (
-                        data.get("player2Score", 0) - data.get("player1Score", 0)
+                    point_diff += data.get("player2Score", 0) - data.get(
+                        "player1Score", 0
                     )
 
         if my_wins > 0 or my_losses > 0:
