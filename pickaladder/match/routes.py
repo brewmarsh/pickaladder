@@ -359,12 +359,12 @@ def record_match():
                     (user_doc.id, user_doc.to_dict().get("name", user_doc.id))
                 )
 
-    form.player1.choices = player_choices
     form.player2.choices = player_choices
     form.partner.choices = player_choices
     form.opponent2.choices = player_choices
 
     if request.method == "GET":
+        form.player1.data = user_id
         user_ref = db.collection("users").document(user_id)
         user_snapshot = user_ref.get()
         if user_snapshot.exists:
