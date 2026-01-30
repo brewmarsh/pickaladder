@@ -144,6 +144,31 @@
     </div>
 
     <div class="card">
+        <h3>Rivalry Check</h3>
+        <div class="form-group">
+            <label for="player1-select">Player 1</label>
+            <select id="player1-select" class="form-control">
+                <option value="">Select a player</option>
+                {% for member in members %}
+                    <option value="{{ member.id }}">{{ member.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="player2-select">Player 2</label>
+            <select id="player2-select" class="form-control">
+                <option value="">Select a player</option>
+                {% for member in members %}
+                    <option value="{{ member.id }}">{{ member.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div id="head-to-head-stats" style="margin-top: 15px;">
+            <!-- Stats will be loaded here -->
+        </div>
+    </div>
+
+    <div class="card">
         <h3>Group Leaderboard</h3>
         <p>A live ranking of all group members.</p>
         <div class="leaderboard-container">
@@ -232,4 +257,112 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const player1Select = document.getElementById('player1-select');
+    const player2Select = document.getElementById('player2-select');
+    const statsContainer = document.getElementById('head-to-head-stats');
+
+    function fetchAndDisplayStats() {
+        const player1Id = player1Select.value;
+        const player2Id = player2Select.value;
+
+        // Clear stats if players are the same or one is not selected
+        if (player1Id === player2Id || !player1Id || !player2Id) {
+            statsContainer.innerHTML = '';
+            return;
+        }
+
+        statsContainer.innerHTML = '<p>Loading...</p>';
+
+        const url = `/group/{{ group.id }}/stats/head_to_head?player1_id=${player1Id}&player2_id=${player2Id}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const player1Name = player1Select.options[player1Select.selectedIndex].text;
+                const player2Name = player2Select.options[player2Select.selectedIndex].text;
+
+                if (data.total_matches === 0) {
+                    statsContainer.innerHTML = '<p>These players haven\\'t played any matches together yet.</p>';
+                    return;
+                }
+
+                const [p1H2HWins, p2H2HWins] = data.head_to_head_record.split('-').map(Number);
+                const [partnerWins, partnerLosses] = data.partnership_record.split('-').map(Number);
+
+                const totalH2H = p1H2HWins + p2H2HWins;
+                const p1H2HPercent = totalH2H > 0 ? (p1H2HWins / totalH2H) * 100 : 50;
+                const p2H2HPercent = totalH2H > 0 ? (p2H2HWins / totalH2H) * 100 : 50;
+
+                const totalPartnerGames = partnerWins + partnerLosses;
+                const partnerWinRate = totalPartnerGames > 0 ? (partnerWins / totalPartnerGames) * 100 : 0;
+
+                let leaderMessage = '';
+                if (p1H2HWins > p2H2HWins) {
+                    leaderMessage = `${player1Name} leads the rivalry.`;
+                } else if (p2H2HWins > p1H2HWins) {
+                    leaderMessage = `${player2Name} leads the rivalry.`;
+                } else if (totalH2H > 0) {
+                    leaderMessage = 'The rivalry is tied.';
+                }
+
+                const statsHtml = `
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h5>Head-to-Head</h5>
+                            <div class="h2h-scores">
+                                <span class="player-name">${player1Name}</span>
+                                <span class="score">${p1H2HWins} - ${p2H2HWins}</span>
+                                <span class="player-name">${player2Name}</span>
+                            </div>
+                            <div class="rivalry-bar-container">
+                                <div class="rivalry-bar player1" style="width: ${p1H2HPercent}%;" title="${player1Name}: ${p1H2HWins} wins"></div>
+                                <div class="rivalry-bar player2" style="width: ${p2H2HPercent}%;" title="${player2Name}: ${p2H2HWins} wins"></div>
+                            </div>
+                            <p class="leader-message">${leaderMessage}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h5>As Partners</h5>
+                            <p><strong>Record:</strong> ${partnerWins}W - ${partnerLosses}L</p>
+                            <p><strong>Win Rate:</strong> ${partnerWinRate.toFixed(1)}%</p>
+                        </div>
+                        <div class="stat-card">
+                            <h5>Point Differential</h5>
+                            <p>Avg. <strong>${data.avg_point_differential > 0 ? '+' : ''}${data.avg_point_differential}</strong> points for ${player1Name}</p>
+                        </div>
+                    </div>
+                `;
+
+                statsContainer.innerHTML = statsHtml;
+            })
+            .catch(error => {
+                statsContainer.innerHTML = '<p class="text-danger">Error loading stats.</p>';
+                console.error('Error fetching head-to-head stats:', error);
+            });
+    }
+
+    player1Select.addEventListener('change', fetchAndDisplayStats);
+    player2Select.addEventListener('change', fetchAndDisplayStats);
+});
+</script>
+<style>
+    .stats-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+    .stat-card { border: 1px solid #ddd; padding: 15px; border-radius: 5px; text-align: center; }
+    .stat-card h5 { margin-top: 0; margin-bottom: 10px; }
+    .h2h-scores { display: flex; justify-content: space-between; align-items: center; font-size: 1.2em; margin-bottom: 10px; }
+    .h2h-scores .player-name { font-size: 0.8em; }
+    .h2h-scores .score { font-weight: bold; }
+    .rivalry-bar-container { display: flex; height: 20px; border-radius: 5px; overflow: hidden; background-color: #f0f0f0; margin-bottom: 10px; }
+    .rivalry-bar { transition: width 0.3s ease-in-out; }
+    .rivalry-bar.player1 { background-color: #4CAF50; }
+    .rivalry-bar.player2 { background-color: #F44336; }
+    .leader-message { font-style: italic; color: #555; }
+</style>
 {% endblock %}
