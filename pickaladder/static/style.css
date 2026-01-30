@@ -672,6 +672,17 @@ input[type="submit"], .btn {
     align-items: center;
     gap: 20px;
 }
+.group-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+.settings-icon {
+    text-decoration: none;
+    color: var(--text-secondary-color);
+    font-size: 1.8em;
+}
 
 .leaderboard-trend-link {
     margin-top: 10px;
@@ -938,4 +949,19 @@ input[type="submit"], .btn {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+}
+
+.rivalry-check-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.rivalry-player-select {
+    width: 45%;
+}
+.rivalry-vs {
+    font-weight: bold;
+    font-size: 1.2em;
 }
