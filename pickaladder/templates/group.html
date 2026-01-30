@@ -147,23 +147,26 @@
 
     <div class="card">
         <h3>Rivalry Check</h3>
-        <div class="form-group">
-            <label for="player1-select">Player 1</label>
-            <select id="player1-select" class="form-control">
-                <option value="">Select a player</option>
-                {% for member in members %}
-                    <option value="{{ member.id }}">{{ member.username }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="player2-select">Player 2</label>
-            <select id="player2-select" class="form-control">
-                <option value="">Select a player</option>
-                {% for member in members %}
-                    <option value="{{ member.id }}">{{ member.username }}</option>
-                {% endfor %}
-            </select>
+        <div class="rivalry-check-container">
+            <div class="rivalry-player-select">
+                <label for="player1-select">Player 1</label>
+                <select id="player1-select" class="form-control">
+                    <option value="">Select a player</option>
+                    {% for member in members %}
+                        <option value="{{ member.id }}">{{ member.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="rivalry-vs">VS</div>
+            <div class="rivalry-player-select">
+                <label for="player2-select">Player 2</label>
+                <select id="player2-select" class="form-control">
+                    <option value="">Select a player</option>
+                    {% for member in members %}
+                        <option value="{{ member.id }}">{{ member.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
         <div id="head-to-head-stats" style="margin-top: 15px;">
             <!-- Stats will be loaded here -->
