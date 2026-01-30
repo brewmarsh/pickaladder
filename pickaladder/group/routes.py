@@ -320,13 +320,27 @@ def view_group(group_id):
     recent_matches_docs = list(matches_query.stream())
 
     # --- Batch Fetch Player Details ---
+    def get_id(data, possible_keys):
+        """Return the first non-None value found in the dictionary for a list of keys."""
+        for key in possible_keys:
+            if key in data and data[key] is not None:
+                return data[key]
+        return None
+
     player_ids = set()
     for match_doc in recent_matches_docs:
         match_data = match_doc.to_dict()
-        player_ids.add(match_data.get("player1Id"))
-        player_ids.add(match_data.get("player2Id"))
-        player_ids.add(match_data.get("partnerId"))
-        player_ids.add(match_data.get("opponent2Id"))
+        player_ids.add(
+            get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"])
+        )
+        player_ids.add(
+            get_id(
+                match_data,
+                ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
+            )
+        )
+        player_ids.add(get_id(match_data, ["partner", "partnerId", "partner_id"]))
+        player_ids.add(get_id(match_data, ["opponent2", "opponent2Id", "opponent2_id"]))
     player_ids.discard(None)
 
     users_map = {}
@@ -348,16 +362,23 @@ def view_group(group_id):
         match_data = match_doc.to_dict()
         match_data["id"] = match_doc.id
         match_data["player1"] = users_map.get(
-            match_data.get("player1Id"), {"username": "Unknown"}
+            get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"]),
+            {"username": "Unknown"},
         )
         match_data["player2"] = users_map.get(
-            match_data.get("player2Id"), {"username": "Unknown"}
+            get_id(
+                match_data,
+                ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
+            ),
+            {"username": "Unknown"},
         )
         match_data["partner"] = users_map.get(
-            match_data.get("partnerId"), {"username": "Unknown"}
+            get_id(match_data, ["partner", "partnerId", "partner_id"]),
+            {"username": "Unknown"},
         )
         match_data["opponent2"] = users_map.get(
-            match_data.get("opponent2Id"), {"username": "Unknown"}
+            get_id(match_data, ["opponent2", "opponent2Id", "opponent2_id"]),
+            {"username": "Unknown"},
         )
         recent_matches.append(match_data)
 
