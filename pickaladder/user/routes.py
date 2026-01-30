@@ -207,8 +207,20 @@ def view_user(user_id):
         point_diff = 0
 
         # Singles matches
-        singles_query_1 = db.collection("matches").where(filter=firestore.FieldFilter("player1Id", "==", current_user_id)).where(filter=firestore.FieldFilter("player2Id", "==", user_id)).where(filter=firestore.FieldFilter("status", "==", "completed")).stream()
-        singles_query_2 = db.collection("matches").where(filter=firestore.FieldFilter("player1Id", "==", user_id)).where(filter=firestore.FieldFilter("player2Id", "==", current_user_id)).where(filter=firestore.FieldFilter("status", "==", "completed")).stream()
+        singles_query_1 = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("player1Id", "==", current_user_id))
+            .where(filter=firestore.FieldFilter("player2Id", "==", user_id))
+            .where(filter=firestore.FieldFilter("status", "==", "completed"))
+            .stream()
+        )
+        singles_query_2 = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("player1Id", "==", user_id))
+            .where(filter=firestore.FieldFilter("player2Id", "==", current_user_id))
+            .where(filter=firestore.FieldFilter("status", "==", "completed"))
+            .stream()
+        )
 
         for match in singles_query_1:
             data = match.to_dict()
@@ -226,9 +238,20 @@ def view_user(user_id):
                 my_losses += 1
             point_diff += data.get("player2Score", 0) - data.get("player1Score", 0)
 
-        # Doubles matches - Firestore does not support multiple array_contains on different fields.
+        # Doubles matches - Firestore does not support multiple array_contains on
+        # different fields.
         # Fetch all doubles matches for the current user and filter in Python.
-        doubles_query = db.collection("matches").where(filter=firestore.FieldFilter("participants", "array_contains", current_user_id)).where(filter=firestore.FieldFilter("matchType", "==", "doubles")).where(filter=firestore.FieldFilter("status", "==", "completed")).stream()
+        doubles_query = (
+            db.collection("matches")
+            .where(
+                filter=firestore.FieldFilter(
+                    "participants", "array_contains", current_user_id
+                )
+            )
+            .where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
+            .where(filter=firestore.FieldFilter("status", "==", "completed"))
+            .stream()
+        )
 
         for match in doubles_query:
             data = match.to_dict()
@@ -247,13 +270,17 @@ def view_user(user_id):
                         my_wins += 1
                     else:
                         my_losses += 1
-                    point_diff += data.get("player1Score", 0) - data.get("player2Score", 0)
+                    point_diff += (
+                        data.get("player1Score", 0) - data.get("player2Score", 0)
+                    )
                 elif user_in_team2 and opponent_in_team1:
                     if data.get("winnerId") == "team2":
                         my_wins += 1
                     else:
                         my_losses += 1
-                    point_diff += data.get("player2Score", 0) - data.get("player1Score", 0)
+                    point_diff += (
+                        data.get("player2Score", 0) - data.get("player1Score", 0)
+                    )
 
         if my_wins > 0 or my_losses > 0:
             h2h_stats = {
