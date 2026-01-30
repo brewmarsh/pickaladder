@@ -4,13 +4,15 @@
 <div class="page-header group-header-content">
     <img src="{{ group.profilePictureUrl if group.profilePictureUrl else (url_for('static', filename='uploads/' + group.profile_picture_path) if group.profile_picture_path else url_for('static', filename='user_icon.png')) }}" alt="Group Picture" class="group-profile-picture">
     <div>
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <h1>{{ group.name }}</h1>
-            {% if is_member %}
-                <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn">Record a Match</a>
-            {% endif %}
+        <div class="group-header-actions">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <h1>{{ group.name }}</h1>
+                {% if is_member %}
+                    <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-primary">Record a Match</a>
+                {% endif %}
+            </div>
             {% if group.ownerRef.id == current_user_id %}
-                <a href="{{ url_for('group.edit_group', group_id=group.id) }}" class="btn">Edit Group</a>
+                <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="settings-icon">⚙️</a>
             {% endif %}
         </div>
         <p style="margin-bottom: 5px;">Owned by: <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username }}</a></p>
