@@ -71,7 +71,12 @@ body.dark-mode .btn {
 }
 
 body.dark-mode .btn-primary {
-    color: var(--text-color);
+    color: #000000;
+}
+
+body.dark-mode .btn-primary:hover {
+    color: #000000;
+    filter: brightness(90%);
 }
 
 body.dark-mode .dropbtn {
