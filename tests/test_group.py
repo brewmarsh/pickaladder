@@ -158,6 +158,105 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             {"profilePictureUrl": "http://mock-storage-url/img.jpg"}
         )
 
+    def test_get_head_to_head_stats(self):
+        """Test the head-to-head stats calculation."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+
+        player1_id = "p1"
+        player2_id = "p2"
+        other_player1_id = "p3"
+        other_player2_id = "p4"
+        group_id = "test_group"
+
+        # --- Mock Data ---
+        # 1. p1/p2 are partners, they win
+        match1 = MagicMock()
+        match1.to_dict.return_value = {
+            "groupId": group_id,
+            "player1Id": player1_id,
+            "partnerId": player2_id,
+            "player2Id": other_player1_id,
+            "opponent2Id": other_player2_id,
+            "winner": "team1",
+            "team1Score": 11,
+            "team2Score": 7,
+        }
+        # 2. p1/p2 are partners, they lose
+        match2 = MagicMock()
+        match2.to_dict.return_value = {
+            "groupId": group_id,
+            "player1Id": other_player1_id,
+            "partnerId": other_player2_id,
+            "player2Id": player1_id,
+            "opponent2Id": player2_id,
+            "winner": "team1",
+            "team1Score": 11,
+            "team2Score": 9,
+        }
+        # 3. p1/p2 are opponents, p1 wins
+        match3 = MagicMock()
+        match3.to_dict.return_value = {
+            "groupId": group_id,
+            "player1Id": player1_id,
+            "partnerId": other_player1_id,
+            "player2Id": player2_id,
+            "opponent2Id": other_player2_id,
+            "winner": "team1",
+            "team1Score": 11,
+            "team2Score": 5,
+        }
+        # 4. p1/p2 are opponents, p2 wins
+        match4 = MagicMock()
+        match4.to_dict.return_value = {
+            "groupId": group_id,
+            "player1Id": player1_id,
+            "partnerId": other_player1_id,
+            "player2Id": player2_id,
+            "opponent2Id": other_player2_id,
+            "winner": "team2",
+            "team1Score": 8,
+            "team2Score": 11,
+        }
+        # 5. Match without both players (should be filtered out)
+        match5 = MagicMock()
+        match5.to_dict.return_value = {
+            "groupId": group_id,
+            "player1Id": other_player1_id,
+            "player2Id": other_player2_id,
+        }
+
+        mock_matches_query = mock_db.collection.return_value.where.return_value
+        mock_matches_query.stream.return_value = [
+            match1,
+            match2,
+            match3,
+            match4,
+            match5,
+        ]
+
+        response = self.client.get(
+            f"/group/{group_id}/stats/head_to_head?player1_id={player1_id}&player2_id={player2_id}",
+            headers=self._get_auth_headers(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        stats = response.get_json()
+        self.assertEqual(stats["total_matches"], 4)
+        self.assertEqual(stats["head_to_head_record"], "1-1")
+        self.assertEqual(stats["partnership_record"], "1-1")
+        self.assertEqual(stats["avg_point_differential"], 1.5)
+
+    def test_get_head_to_head_stats_missing_params(self):
+        """Test head-to-head stats with missing player IDs."""
+        self._set_session_user()
+        response = self.client.get(
+            "/group/some_group/stats/head_to_head?player1_id=p1",
+            headers=self._get_auth_headers(),
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.get_json())
+
 
 if __name__ == "__main__":
     unittest.main()
