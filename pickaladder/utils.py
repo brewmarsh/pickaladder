@@ -14,6 +14,7 @@ class EmailError(Exception):
     pass
 
 
+# TODO: Add type hints for Agent clarity
 def send_email(to, subject, template, **kwargs):
     """Send an email to a recipient.
 

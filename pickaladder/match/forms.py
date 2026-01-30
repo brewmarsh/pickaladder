@@ -24,6 +24,7 @@ class MatchForm(FlaskForm):
     )
     match_date = DateField("Date", validators=[DataRequired()])
 
+    # TODO: Add type hints for Agent clarity
     def validate_player1_score(self, field):
         """Validate that the score is not negative."""
         if field.data is None:
@@ -31,6 +32,7 @@ class MatchForm(FlaskForm):
         if field.data < 0:
             raise ValidationError("Scores cannot be negative.")
 
+    # TODO: Add type hints for Agent clarity
     def validate_player2_score(self, field):
         """Validate that the score is not negative."""
         if field.data is None:
@@ -54,6 +56,7 @@ class MatchForm(FlaskForm):
         if abs(p1_score - p2_score) < 2:
             raise ValidationError("The winner must win by at least 2 points.")
 
+    # TODO: Add type hints for Agent clarity
     def validate(self, extra_validators=None):
         """Validate the form for singles or doubles."""
         if not super().validate(extra_validators=extra_validators):

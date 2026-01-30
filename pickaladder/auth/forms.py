@@ -66,6 +66,7 @@ class RegisterForm(FlaskForm):
     dupr_rating = DecimalField("DUPR Rating", validators=[], places=2)
     submit = SubmitField("Register")
 
+    # TODO: Add type hints for Agent clarity
     def validate_password(self, field):
         """Validate password complexity."""
         if not re.search(r"[A-Z]", field.data):
@@ -99,6 +100,7 @@ class ChangePasswordForm(FlaskForm):
     )
     submit = SubmitField("Change Password")
 
+    # TODO: Add type hints for Agent clarity
     def validate_password(self, field):
         """Validate password complexity."""
         if not re.search(r"[A-Z]", field.data):

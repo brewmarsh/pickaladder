@@ -15,15 +15,18 @@ from .extensions import csrf, mail
 class UUIDConverter(BaseConverter):
     """URL converter for UUIDs."""
 
+    # TODO: Add type hints for Agent clarity
     def to_python(self, value):
         """Convert a string to a UUID."""
         return uuid.UUID(value)
 
+    # TODO: Add type hints for Agent clarity
     def to_url(self, value):
         """Convert a UUID to a string."""
         return str(value)
 
 
+# TODO: Add type hints for Agent clarity
 def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
     app = Flask(
@@ -220,6 +223,7 @@ def create_app(test_config=None):
     # this app, the index is the login page
     app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
 
+    # TODO: Add type hints for Agent clarity
     @app.before_request
     def load_logged_in_user():
         """Load user from session.
@@ -248,11 +252,13 @@ def create_app(test_config=None):
             current_app.logger.error(f"Error loading user from session: {e}")
             session.clear()  # Clear session on error to be safe
 
+    # TODO: Add type hints for Agent clarity
     @app.context_processor
     def inject_version():
         """Injects the application version into the template context."""
         return dict(app_version=os.environ.get("APP_VERSION", "dev"))
 
+    # TODO: Add type hints for Agent clarity
     @app.context_processor
     def inject_firebase_api_key():
         """Injects the Firebase API key into the template context."""

@@ -10,6 +10,7 @@ from pickaladder import create_app
 class AppFirebaseTestCase(unittest.TestCase):
     """Test case for the app factory."""
 
+    # TODO: Add type hints for Agent clarity
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
     def test_404_error_handler(self, mock_firestore_client, mock_init_app):
@@ -20,6 +21,7 @@ class AppFirebaseTestCase(unittest.TestCase):
             self.assertEqual(response.status_code, 404)
             self.assertIn(b"Page Not Found", response.data)
 
+    # TODO: Add type hints for Agent clarity
     def test_mail_config_sanitization(self):
         """Test that MAIL_USERNAME and MAIL_PASSWORD are sanitized correctly."""
         env_vars = {
@@ -33,6 +35,7 @@ class AppFirebaseTestCase(unittest.TestCase):
             self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
             self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
 
+    # TODO: Add type hints for Agent clarity
     def test_mail_config_sanitization_single_quotes(self):
         """Test sanitization with single quotes."""
         env_vars = {
@@ -46,6 +49,7 @@ class AppFirebaseTestCase(unittest.TestCase):
             self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
             self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
 
+    # TODO: Add type hints for Agent clarity
     def test_mail_config_sanitization_no_quotes(self):
         """Test sanitization without quotes."""
         env_vars = {
@@ -59,6 +63,7 @@ class AppFirebaseTestCase(unittest.TestCase):
             self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
             self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
 
+    # TODO: Add type hints for Agent clarity
     def test_mail_config_empty_env_vars(self):
         """Test that empty environment variables fall back to default values."""
         env_vars = {

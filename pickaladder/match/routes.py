@@ -11,6 +11,7 @@ from . import bp
 from .forms import MatchForm
 
 
+# TODO: Add type hints for Agent clarity
 def _get_candidate_player_ids(user_id, group_id=None, include_user=False):
     """Fetch a set of valid opponent IDs for a user, optionally within a group."""
     db = firestore.client()
@@ -76,13 +77,16 @@ def _get_candidate_player_ids(user_id, group_id=None, include_user=False):
     return candidate_player_ids
 
 
+# TODO: Add type hints for Agent clarity
 def _save_match_data(player_1_id, form_data, group_id=None):
     """Construct and save a match document to Firestore."""
     db = firestore.client()
     user_ref = db.collection("users").document(player_1_id)
 
     # Handle both form objects and dictionaries
+    # TODO: Add type hints for Agent clarity
     def get_data(key):
+        """TODO: Add docstring for AI context."""
         if isinstance(form_data, dict):
             return form_data.get(key)
         return getattr(form_data, key).data
@@ -125,6 +129,7 @@ def _save_match_data(player_1_id, form_data, group_id=None):
     user_ref.update({"lastMatchRecordedType": match_type})
 
 
+# TODO: Add type hints for Agent clarity
 def get_player_record(player_ref):
     """Calculate the win/loss record for a given player by their document reference."""
     db = firestore.client()
@@ -202,6 +207,7 @@ def get_player_record(player_ref):
     return {"wins": wins, "losses": losses}
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/<string:match_id>")
 @login_required
 def view_match_page(match_id):
@@ -274,6 +280,7 @@ def view_match_page(match_id):
     return render_template("view_match.html", **context)
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/record", methods=["GET", "POST"])
 @login_required
 def record_match():
@@ -399,6 +406,7 @@ def record_match():
     return render_template("record_match.html", form=form)
 
 
+# TODO: Add type hints for Agent clarity
 def get_latest_matches(limit=10):
     """Fetch and process the latest matches."""
     db = firestore.client()
@@ -489,6 +497,7 @@ def get_latest_matches(limit=10):
     return processed_matches
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/leaderboard")
 @login_required
 def leaderboard():

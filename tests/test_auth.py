@@ -17,6 +17,7 @@ MOCK_PASSWORD = "Password123"  # nosec
 class AuthFirebaseTestCase(unittest.TestCase):
     """Test case for the auth blueprint."""
 
+    # TODO: Add type hints for Agent clarity
     def setUp(self):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_auth_service = MagicMock()
@@ -40,6 +41,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.app = create_app({"TESTING": True, "SERVER_NAME": "localhost"})
         self.client = self.app.test_client()
 
+    # TODO: Add type hints for Agent clarity
     @patch("pickaladder.auth.routes.send_email")
     def test_successful_registration(self, mock_send_email):
         """Test user registration with valid data."""
@@ -84,6 +86,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         ).set.assert_called_once()
         mock_send_email.assert_called_once()
 
+    # TODO: Add type hints for Agent clarity
     def test_login_page_loads(self):
         """Test that the login page loads correctly."""
         # Mock the admin check to prevent a redirect to /install.
@@ -96,6 +99,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Login", response.data)
 
+    # TODO: Add type hints for Agent clarity
     def test_session_login(self):
         """Test the session login endpoint."""
         # Mock the return value of verify_id_token
@@ -130,6 +134,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             self.assertEqual(sess["user_id"], MOCK_USER_ID)
             self.assertEqual(sess["is_admin"], False)
 
+    # TODO: Add type hints for Agent clarity
     def test_install_admin_user(self):
         """Test the creation of the initial admin user."""
         # Mock the admin check to simulate no admin user exists.
@@ -148,7 +153,9 @@ class AuthFirebaseTestCase(unittest.TestCase):
         mock_user_doc = MagicMock()
         mock_settings_doc = MagicMock()
 
+        # TODO: Add type hints for Agent clarity
         def document_side_effect(doc_id):
+            """TODO: Add docstring for AI context."""
             if doc_id == "admin_user_uid":
                 return mock_user_doc
             elif doc_id == "enforceEmailVerification":
@@ -189,6 +196,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         mock_user_doc.set.assert_called_once()
         mock_settings_doc.set.assert_called_once_with({"value": True})
 
+    # TODO: Add type hints for Agent clarity
     @patch("pickaladder.auth.routes.send_email")
     def test_registration_with_invite_token(self, mock_send_email):
         """Test user registration with a valid invite token."""
@@ -247,6 +255,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             "test_invite_token"
         ).update.assert_called_once_with({"used": True})
 
+    # TODO: Add type hints for Agent clarity
     def test_google_signin_new_user(self):
         """Test that a new user signing in with Google has their account created."""
         # Mock the return value of verify_id_token

@@ -22,6 +22,7 @@ MOCK_OPPONENT_DATA = {"name": "Loser", "isAdmin": False}
 class MatchRoutesFirebaseTestCase(unittest.TestCase):
     """Test case for the match blueprint."""
 
+    # TODO: Add type hints for Agent clarity
     def setUp(self):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_firestore_service = MagicMock()
@@ -58,19 +59,25 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
 
+    # TODO: Add type hints for Agent clarity
     def tearDown(self):
         """Tear down the test client."""
         self.app_context.pop()
 
+    # TODO: Add type hints for Agent clarity
     def _set_session_user(self):
+        """TODO: Add docstring for AI context."""
         with self.client.session_transaction() as sess:
             sess["user_id"] = MOCK_USER_ID
             sess["is_admin"] = False
         self.mocks["verify_id_token"].return_value = MOCK_USER_PAYLOAD
 
+    # TODO: Add type hints for Agent clarity
     def _get_auth_headers(self):
+        """TODO: Add docstring for AI context."""
         return {"Authorization": "Bearer mock-token"}
 
+    # TODO: Add type hints for Agent clarity
     def test_record_match_page_load(self):
         """Test that the record match page loads correctly."""
         self._set_session_user()
@@ -90,7 +97,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             mock_group_invites_col.where.return_value.where.return_value.stream.return_value
         ) = []
 
+        # TODO: Add type hints for Agent clarity
         def collection_side_effect(name):
+            """TODO: Add docstring for AI context."""
             if name == "group_invites":
                 return mock_group_invites_col
             if name == "users":
@@ -103,6 +112,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
+    # TODO: Add type hints for Agent clarity
     @patch("pickaladder.match.routes._get_candidate_player_ids")
     def test_record_match(self, mock_get_candidate_player_ids):
         """Test recording a new match."""
@@ -142,6 +152,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn(b"Match recorded successfully.", response.data)
         mock_matches_collection.add.assert_called_once()
 
+    # TODO: Add type hints for Agent clarity
     def test_pending_invites_query_uses_correct_field(self):
         """Test that pending invites are queried using 'inviter_id'."""
         self._set_session_user()
@@ -169,7 +180,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_query1.where.return_value = mock_query2
         mock_query2.stream.return_value = [mock_invite_doc]
 
+        # TODO: Add type hints for Agent clarity
         def collection_side_effect(name):
+            """TODO: Add docstring for AI context."""
             if name == "group_invites":
                 return mock_group_invites_col
             if name == "users":

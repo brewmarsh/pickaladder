@@ -1,0 +1,62 @@
+╭──────────────────────────────╮
+│ Running Agent Scorecard      │
+│ Profile: GENERIC             │
+│ Standard cleanliness checks. │
+╰──────────────────────────────╯
+                                 File Analysis
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ File                            ┃ Score ┃ Issues                             ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ app.py                          │    80 │ Types 0% < 50% (-20)               │
+│ tests/test_match.py             │    80 │ Types 0% < 50% (-20)               │
+│ tests/test_user_profile_dupr.py │    80 │ Types 0% < 50% (-20)               │
+│ tests/__init__.py               │   100 │                                    │
+│ tests/test_user.py              │    74 │ LOC 264 > 200 (-6), Types 0% < 50% │
+│                                 │       │ (-20)                              │
+│ tests/test_proxy_fix.py         │    80 │ Types 0% < 50% (-20)               │
+│ tests/test_group_utils.py       │    80 │ Types 0% < 50% (-20)               │
+│ tests/test_auth.py              │    77 │ LOC 233 > 200 (-3), Types 0% < 50% │
+│                                 │       │ (-20)                              │
+│ tests/test_group.py             │    79 │ LOC 212 > 200 (-1), Types 0% < 50% │
+│                                 │       │ (-20)                              │
+│ tests/test_group_leaderboard.py │    80 │ Types 0% < 50% (-20)               │
+│ tests/test_admin.py             │    80 │ Types 0% < 50% (-20)               │
+│ tests/test_app.py               │    80 │ Types 0% < 50% (-20)               │
+│ tests/e2e/conftest.py           │    73 │ LOC 275 > 200 (-7), Types 6% < 50% │
+│                                 │       │ (-20)                              │
+│ tests/e2e/test_e2e.py           │    80 │ Types 0% < 50% (-20)               │
+│ pickaladder/errors.py           │    80 │ Types 0% < 50% (-20)               │
+│ pickaladder/__init__.py         │    70 │ Complexity 11.3 > 10 (-10), Types  │
+│                                 │       │ 0% < 50% (-20)                     │
+│ pickaladder/utils.py            │    80 │ Types 0% < 50% (-20)               │
+│ pickaladder/error_handlers.py   │    80 │ Types 0% < 50% (-20)               │
+│ pickaladder/extensions.py       │   100 │                                    │
+│ pickaladder/constants.py        │   100 │                                    │
+│ pickaladder/user/forms.py       │   100 │                                    │
+│ pickaladder/user/__init__.py    │   100 │                                    │
+│ pickaladder/user/utils.py       │    80 │ Types 0% < 50% (-20)               │
+│ pickaladder/user/routes.py      │    21 │ LOC 797 > 200 (-59), Types 0% <    │
+│                                 │       │ 50% (-20)                          │
+│ pickaladder/auth/forms.py       │    80 │ Types 0% < 50% (-20)               │
+│ pickaladder/auth/__init__.py    │   100 │                                    │
+│ pickaladder/auth/routes.py      │    75 │ LOC 253 > 200 (-5), Types 0% < 50% │
+│                                 │       │ (-20)                              │
+│ pickaladder/auth/decorators.py  │    80 │ Types 0% < 50% (-20)               │
+│ pickaladder/match/forms.py      │    80 │ Types 0% < 50% (-20)               │
+│ pickaladder/match/__init__.py   │   100 │                                    │
+│ pickaladder/match/routes.py     │    48 │ LOC 427 > 200 (-22), Complexity    │
+│                                 │       │ 12.3 > 10 (-10), Types 0% < 50%    │
+│                                 │       │ (-20)                              │
+│ pickaladder/admin/__init__.py   │   100 │                                    │
+│ pickaladder/admin/routes.py     │    80 │ Types 0% < 50% (-20)               │
+│ pickaladder/group/forms.py      │   100 │                                    │
+│ pickaladder/group/__init__.py   │   100 │                                    │
+│ pickaladder/group/utils.py      │    45 │ LOC 454 > 200 (-25), Complexity    │
+│                                 │       │ 14.0 > 10 (-10), Types 0% < 50%    │
+│                                 │       │ (-20)                              │
+│ pickaladder/group/routes.py     │    37 │ LOC 639 > 200 (-43), Types 0% <    │
+│                                 │       │ 50% (-20)                          │
+└─────────────────────────────────┴───────┴────────────────────────────────────┘
+
+Final Agent Score: 84.0/100
+PASSED: Agent-Ready

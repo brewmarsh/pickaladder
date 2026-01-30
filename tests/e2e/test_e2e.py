@@ -3,6 +3,7 @@
 from playwright.sync_api import expect
 
 
+# TODO: Add type hints for Agent clarity
 def test_user_journey(app_server, page_with_firebase, mock_db):
     """Run a complete user journey test."""
     page = page_with_firebase

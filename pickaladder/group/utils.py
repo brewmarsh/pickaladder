@@ -10,6 +10,7 @@ from google.cloud.firestore import FieldFilter
 from pickaladder.utils import send_email
 
 
+# TODO: Add type hints for Agent clarity
 def get_random_joke():
     """Return a random sport/dad joke."""
     jokes = [
@@ -36,6 +37,7 @@ def get_random_joke():
     return secrets.choice(jokes)
 
 
+# TODO: Add type hints for Agent clarity
 def _calculate_leaderboard_from_matches(member_refs, matches):
     """Calculate the leaderboard from a list of matches."""
     player_stats = {
@@ -51,7 +53,9 @@ def _calculate_leaderboard_from_matches(member_refs, matches):
     }
 
     # Helper function to update stats
+    # TODO: Add type hints for Agent clarity
     def update_player_stats(player_id, score, is_winner, is_draw=False):
+        """TODO: Add docstring for AI context."""
         if player_id in player_stats:
             player_stats[player_id]["games"] += 1
             player_stats[player_id]["total_score"] += score
@@ -160,6 +164,7 @@ def _calculate_leaderboard_from_matches(member_refs, matches):
     return leaderboard
 
 
+# TODO: Add type hints for Agent clarity
 def get_group_leaderboard(group_id):
     """Calculate the leaderboard for a specific group using Firestore.
 
@@ -290,6 +295,7 @@ def get_group_leaderboard(group_id):
     return current_leaderboard
 
 
+# TODO: Add type hints for Agent clarity
 def get_leaderboard_trend_data(group_id):
     """Generate data for a leaderboard trend chart."""
     db = firestore.client()
@@ -396,6 +402,7 @@ def get_leaderboard_trend_data(group_id):
     return trend_data
 
 
+# TODO: Add type hints for Agent clarity
 def get_user_group_stats(group_id, user_id):
     """Calculate detailed statistics for a specific user within a group."""
     db = firestore.client()
@@ -476,10 +483,13 @@ def get_user_group_stats(group_id, user_id):
     return stats
 
 
+# TODO: Add type hints for Agent clarity
 def send_invite_email_background(app, invite_token, email_data):
     """Send an invite email in a background thread."""
 
+    # TODO: Add type hints for Agent clarity
     def task():
+        """TODO: Add docstring for AI context."""
         with app.app_context():
             db = firestore.client()
             invite_ref = db.collection("group_invites").document(invite_token)
@@ -503,6 +513,7 @@ def send_invite_email_background(app, invite_token, email_data):
     thread.start()
 
 
+# TODO: Add type hints for Agent clarity
 def friend_group_members(db, group_id, new_member_ref):
     """Automatically create friend relationships between group members.
 

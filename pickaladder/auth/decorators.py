@@ -5,6 +5,7 @@ from functools import wraps
 from flask import flash, redirect, session, url_for
 
 
+# TODO: Add type hints for Agent clarity
 def login_required(f=None, admin_required=False):
     """Redirect to the login page if the user is not logged in.
 
@@ -18,9 +19,12 @@ def login_required(f=None, admin_required=False):
         ...
     """
 
+    # TODO: Add type hints for Agent clarity
     def decorator(func):
+        # TODO: Add type hints for Agent clarity
         @wraps(func)
         def decorated_function(*args, **kwargs):
+            """TODO: Add docstring for AI context."""
             if "user_id" not in session:
                 return redirect(url_for("auth.login"))
             if admin_required and not session.get("is_admin"):

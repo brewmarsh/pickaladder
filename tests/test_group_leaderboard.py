@@ -9,6 +9,7 @@ from pickaladder.group.utils import get_group_leaderboard
 class TestGroupLeaderboardSorting(unittest.TestCase):
     """Test case for the group leaderboard sorting."""
 
+    # TODO: Add type hints for Agent clarity
     @patch("pickaladder.group.utils.firestore")
     def test_leaderboard_sorting(self, mock_firestore):
         """Test the leaderboard is sorted by avg_score, then wins, then games_played."""
@@ -16,7 +17,9 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
         mock_db = mock_firestore.client.return_value
 
         # Create mock users
+        # TODO: Add type hints for Agent clarity
         def create_mock_user(uid, name):
+            """TODO: Add docstring for AI context."""
             doc = MagicMock()
             doc.id = uid
             doc.exists = True
@@ -44,7 +47,9 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
 
         matches = []
 
+        # TODO: Add type hints for Agent clarity
         def record_match(p1_ref, p1_score, p2_ref, p2_score):
+            """TODO: Add docstring for AI context."""
             m = MagicMock()
             m.to_dict.return_value = {
                 "matchType": "singles",
