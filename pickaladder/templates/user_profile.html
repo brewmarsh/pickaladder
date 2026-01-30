@@ -27,6 +27,17 @@
                 <h3>DUPR Rating</h3>
                 <p>{{ profile_user.dupr_rating if profile_user.dupr_rating is not none else 'N/A' }}</p>
             </div>
+            {% if h2h_stats %}
+                <div class="stat-card">
+                    <h3>Vs You</h3>
+                    <p>
+                        {{ h2h_stats.wins }}-{{ h2h_stats.losses }}
+                        <span style="font-size: 0.8em; color: {% if h2h_stats.point_diff > 0 %}green{% elif h2h_stats.point_diff < 0 %}red{% else %}grey{% endif %};">
+                            ({{ h2h_stats.point_diff }})
+                        </span>
+                    </p>
+                </div>
+            {% endif %}
         </div>
 
         {% if is_friend %}

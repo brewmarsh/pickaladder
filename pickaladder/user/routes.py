@@ -181,6 +181,7 @@ def view_user(user_id):
     profile_user_data["id"] = user_id
     current_user_id = g.user["uid"]
 
+    h2h_stats = None
     # Fetch friendship status
     friend_request_sent = False
     is_friend = False
@@ -199,6 +200,67 @@ def view_user(user_id):
                 is_friend = True
             elif status == "pending":
                 friend_request_sent = True
+
+        # H2H STATS
+        my_wins = 0
+        my_losses = 0
+        point_diff = 0
+
+        # Singles matches
+        singles_query_1 = db.collection("matches").where(filter=firestore.FieldFilter("player1Id", "==", current_user_id)).where(filter=firestore.FieldFilter("player2Id", "==", user_id)).where(filter=firestore.FieldFilter("status", "==", "completed")).stream()
+        singles_query_2 = db.collection("matches").where(filter=firestore.FieldFilter("player1Id", "==", user_id)).where(filter=firestore.FieldFilter("player2Id", "==", current_user_id)).where(filter=firestore.FieldFilter("status", "==", "completed")).stream()
+
+        for match in singles_query_1:
+            data = match.to_dict()
+            if data.get("winnerId") == current_user_id:
+                my_wins += 1
+            else:
+                my_losses += 1
+            point_diff += data.get("player1Score", 0) - data.get("player2Score", 0)
+
+        for match in singles_query_2:
+            data = match.to_dict()
+            if data.get("winnerId") == current_user_id:
+                my_wins += 1
+            else:
+                my_losses += 1
+            point_diff += data.get("player2Score", 0) - data.get("player1Score", 0)
+
+        # Doubles matches - Firestore does not support multiple array_contains on different fields.
+        # Fetch all doubles matches for the current user and filter in Python.
+        doubles_query = db.collection("matches").where(filter=firestore.FieldFilter("participants", "array_contains", current_user_id)).where(filter=firestore.FieldFilter("matchType", "==", "doubles")).where(filter=firestore.FieldFilter("status", "==", "completed")).stream()
+
+        for match in doubles_query:
+            data = match.to_dict()
+            participants = data.get("participants", [])
+            if user_id in participants:
+                team1_ids = data.get("team1Id", [])
+                team2_ids = data.get("team2Id", [])
+
+                user_in_team1 = current_user_id in team1_ids
+                opponent_in_team2 = user_id in team2_ids
+                user_in_team2 = current_user_id in team2_ids
+                opponent_in_team1 = user_id in team1_ids
+
+                if user_in_team1 and opponent_in_team2:
+                    if data.get("winnerId") == "team1":
+                        my_wins += 1
+                    else:
+                        my_losses += 1
+                    point_diff += data.get("player1Score", 0) - data.get("player2Score", 0)
+                elif user_in_team2 and opponent_in_team1:
+                    if data.get("winnerId") == "team2":
+                        my_wins += 1
+                    else:
+                        my_losses += 1
+                    point_diff += data.get("player2Score", 0) - data.get("player1Score", 0)
+
+        if my_wins > 0 or my_losses > 0:
+            h2h_stats = {
+                "wins": my_wins,
+                "losses": my_losses,
+                "point_diff": point_diff,
+            }
 
     # Fetch user's friends (limited for display)
     friends_query = (
@@ -454,6 +516,7 @@ def view_user(user_id):
         win_rate=win_rate,
         current_streak=current_streak,
         streak_type=streak_type,
+        h2h_stats=h2h_stats,
     )
 
 
