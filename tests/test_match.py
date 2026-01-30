@@ -86,7 +86,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_friends_collection.stream.return_value = []
 
         mock_group_invites_col = MagicMock()
-        mock_group_invites_col.where.return_value.where.return_value.stream.return_value = []
+        (
+            mock_group_invites_col.where.return_value.where.return_value.stream.return_value
+        ) = []
 
         def collection_side_effect(name):
             if name == "group_invites":
@@ -150,9 +152,11 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         # Configure user fetch on this mock
         mock_user_doc = mock_users_col.document(MOCK_USER_ID)
-        mock_user_doc.get.return_value.to_dict.return_value = {}  # g.user will get uid added automatically
+        # g.user will get uid added automatically
+        mock_user_doc.get.return_value.to_dict.return_value = {}
 
-        # Also configure friends on this mock (since friends query uses db.collection("users").document(...))
+        # Also configure friends on this mock (since friends query uses
+        # db.collection("users").document(...))
         mock_user_doc.collection("friends").stream.return_value = []
 
         mock_group_invites_col = MagicMock()

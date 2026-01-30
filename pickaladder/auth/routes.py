@@ -106,7 +106,8 @@ def register():
                     invite_ref.update({"used": True})
 
             flash(
-                "Registration successful! Please check your email to verify your account.",
+                "Registration successful! Please check your email to verify your "
+                "account.",
                 "success",
             )
             # Client-side will handle login and redirect to dashboard

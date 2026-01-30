@@ -68,7 +68,9 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
             matches.append(record_match(u3_ref, 12, u4_ref, 13))
 
         # We also need to mock group invites stream to be empty
-        mock_db.collection.return_value.where.return_value.where.return_value.stream.return_value = []
+        (
+            mock_db.collection.return_value.where.return_value.where.return_value.stream.return_value
+        ) = []
 
         # Matches query return value
         mock_db.collection.return_value.where.return_value.stream.return_value = matches

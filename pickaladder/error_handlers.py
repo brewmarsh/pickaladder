@@ -59,7 +59,11 @@ def handle_500(e):
 
 @error_handlers_bp.app_errorhandler(CSRFError)
 def handle_csrf_error(e):
-    """Handle CSRF errors, which usually indicate a session timeout or invalid form submission."""
+    """Handle CSRF errors.
+
+    Handle CSRF errors, which usually indicate a session timeout or invalid form
+    submission.
+    """
     current_app.logger.warning(f"CSRF Error: {e.description}")
     flash("Your session may have expired. Please try your action again.", "warning")
     # Redirect to the previous page or a default page if the referrer is not available

@@ -106,7 +106,11 @@ def view_groups():
 @bp.route("/<string:group_id>", methods=["GET", "POST"])
 @login_required
 def view_group(group_id):
-    """Display a single group's page, including its members, leaderboard, and invite form."""
+    """Display a single group's page.
+
+    Display a single group's page, including its members, leaderboard, and
+    invite form.
+    """
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
@@ -246,18 +250,20 @@ def view_group(group_id):
                         existing_user = docs[0]
 
             if existing_user:
-                # User exists, use their stored email for the invite to ensure matching works
+                # User exists, use their stored email for the invite to ensure
+                # matching works
                 invite_email = existing_user.to_dict().get("email")
             else:
-                # User does not exist, create a Ghost User
-                # This allows matches to be recorded against them before they register
+                # User does not exist, create a Ghost User This allows matches to
+                # be recorded against them before they register
                 invite_email = email
                 ghost_user_data = {
                     "email": email,
                     "name": name,
                     "is_ghost": True,
                     "createdAt": firestore.SERVER_TIMESTAMP,
-                    # Add a unique username-like field to avoid potential issues if code relies on it
+                    # Add a unique username-like field to avoid potential issues
+                    # if code relies on it
                     "username": f"ghost_{secrets.token_hex(4)}",
                 }
                 # Let Firestore auto-generate the ID

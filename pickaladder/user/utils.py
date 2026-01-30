@@ -5,11 +5,11 @@ from flask import current_app
 
 
 def merge_ghost_user(db, real_user_ref, email):
-    """
-    Check for any 'ghost' user with the given email and merge their data to the real user.
+    """Check for 'ghost' user with the given email and merge their data.
 
-    This function should be called when a user registers or logs in for the first time
-    to ensure any matches recorded against their invitation (ghost profile) are transferred.
+    This function should be called when a user registers or logs in for the first
+    time to ensure any matches recorded against their invitation (ghost profile)
+    are transferred.
     """
     try:
         users_ref = db.collection("users")
