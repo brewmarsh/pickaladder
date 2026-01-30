@@ -839,7 +839,12 @@ input[type="submit"], .btn {
 
 .highlight-user {
     border-left: 4px solid var(--primary-color);
-    background-color: #E8F5E9; /* A light green */
+    background-color: #2e7d32;
+}
+
+/* Ensure all text and links within the highlighted row are white for contrast */
+.highlight-user, .highlight-user .player-link {
+    color: #ffffff;
 }
 
 /* Latest Games Section */
