@@ -1,6 +1,7 @@
 """Routes for the group blueprint."""
 
 import secrets
+from collections import defaultdict
 from dataclasses import dataclass
 
 from firebase_admin import firestore, storage
@@ -331,6 +332,74 @@ def view_group(group_id):
                 return data[key]
         return None
 
+    # --- "Best Buds" Calculation ---
+    all_matches_query = matches_ref.where(
+        filter=firestore.FieldFilter("groupId", "==", group_id)
+    ).select(
+        [
+            "winner",
+            "player1",
+            "player1Id",
+            "player1_id",
+            "player_1",
+            "partnerId",
+            "partner",
+            "partner_id",
+            "player2",
+            "player2Id",
+            "player2_id",
+            "opponent1",
+            "opponent1Id",
+            "opponent2Id",
+            "opponent2",
+            "opponent2_id",
+        ]
+    )
+    all_matches_docs = list(all_matches_query.stream())
+    partnership_wins = defaultdict(int)
+    for match_doc in all_matches_docs:
+        match_data = match_doc.to_dict()
+
+        # Check if it's a doubles match by looking for the necessary player IDs
+        player1_id = get_id(
+            match_data, ["player1", "player1Id", "player1_id", "player_1"]
+        )
+        partner_id = get_id(match_data, ["partnerId", "partner", "partner_id"])
+        player2_id = get_id(
+            match_data,
+            ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
+        )
+        opponent2_id = get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"])
+
+        is_doubles = all([player1_id, partner_id, player2_id, opponent2_id])
+
+        if is_doubles:
+            winner = match_data.get("winner")
+            if winner == "team1":
+                winning_pair = tuple(sorted((player1_id, partner_id)))
+            elif winner == "team2":
+                winning_pair = tuple(sorted((player2_id, opponent2_id)))
+            else:
+                winning_pair = None
+
+            if winning_pair:
+                partnership_wins[winning_pair] += 1
+
+    best_buds_pair = None
+    if partnership_wins:
+        best_buds_pair = max(partnership_wins, key=partnership_wins.get)
+
+    best_buds = None
+    if best_buds_pair:
+        player1_ref = db.collection("users").document(best_buds_pair[0]).get()
+        player2_ref = db.collection("users").document(best_buds_pair[1]).get()
+        if player1_ref.exists and player2_ref.exists:
+            best_buds = {
+                "player1": player1_ref.to_dict(),
+                "player2": player2_ref.to_dict(),
+                "wins": partnership_wins[best_buds_pair],
+            }
+
     player_ids = set()
     for match_doc in recent_matches_docs:
         match_data = match_doc.to_dict()
@@ -418,6 +487,7 @@ def view_group(group_id):
         pending_members=pending_members,
         is_member=is_member,
         recent_matches=recent_matches,
+        best_buds=best_buds,
     )
 
 

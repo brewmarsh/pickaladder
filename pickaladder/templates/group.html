@@ -94,6 +94,18 @@
     </div>
 
     <div>
+        {% if best_buds %}
+        <div class="card best-buds-card">
+            <h3>👯 Best Buds</h3>
+            <div class="best-buds-container">
+                <img src="{{ best_buds.player1.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ best_buds.player1.username }}" class="profile-picture-thumbnail">
+                <span class="plus-sign">+</span>
+                <img src="{{ best_buds.player2.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ best_buds.player2.username }}" class="profile-picture-thumbnail">
+            </div>
+            <p>{{ best_buds.player1.username }} & {{ best_buds.player2.username }}: {{ best_buds.wins }} Wins Together!</p>
+        </div>
+        {% endif %}
+
         <div class="card">
             <h3>Rivalry Check</h3>
             <div style="display: flex; gap: 10px;">
@@ -423,5 +435,8 @@ document.addEventListener('DOMContentLoaded', function() {
     .rivalry-bar.player1 { background-color: #4CAF50; }
     .rivalry-bar.player2 { background-color: #F44336; }
     .leader-message { font-style: italic; color: #555; }
+    .best-buds-card { text-align: center; }
+    .best-buds-container { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .plus-sign { font-size: 24px; font-weight: bold; }
 </style>
 {% endblock %}
