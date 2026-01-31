@@ -13,7 +13,7 @@
             <tbody>
                 {% for membership in my_groups %}
                 <tr class="clickable-row" data-href="{{ url_for('group.view_group', group_id=membership.group.id) }}">
-                    <td data-label="Group">
+                    <td data-label="">
                         <img src="{{ membership.group.profilePictureUrl if membership.group.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="Group Picture" class="profile-picture-thumbnail">
                         <strong>{{ membership.group.name }}</strong><br>
                         <small>Owned by: {{ membership.group.owner.username }}</small>
@@ -41,7 +41,7 @@
             <tbody>
                 {% for group in pagination.items %}
                 <tr class="clickable-row" data-href="{{ url_for('group.view_group', group_id=group.id) }}">
-                    <td data-label="Group">
+                    <td data-label="">
                         <img src="{{ group.profilePictureUrl if group.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="Group Picture" class="profile-picture-thumbnail">
                         <strong>{{ group.name }}</strong><br>
                         <small>Owned by: {{ group.owner.username }}</small><br>

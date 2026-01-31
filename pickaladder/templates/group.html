@@ -59,7 +59,7 @@
                                 </span>
                             </div>
                         </div>
-                        <div class="leaderboard-cell" data-label="Player">
+                        <div class="leaderboard-cell" data-label="">
                             <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="player-link">
                                 <img src="{{ player.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ player.name }}" class="profile-picture-thumbnail">
                                 <span class="player-name">
