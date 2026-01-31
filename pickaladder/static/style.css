@@ -1006,7 +1006,7 @@ input[type="submit"], .btn {
         justify-content: space-between;
         align-items: center;
         grid-template-columns: none; /* Override grid layout */
-        padding: 16px 8px;
+        padding: 8px;
     }
 
     .leaderboard-row .profile-picture-thumbnail {
