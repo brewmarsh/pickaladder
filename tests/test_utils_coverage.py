@@ -41,7 +41,9 @@ class TestUtilsCoverage(unittest.TestCase):
             ref.get.return_value = user_doc
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
-        mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
+        mock_db.collection("groups").document(
+            "group1"
+        ).get.return_value = mock_group_doc
 
         mock_match = MagicMock()
         mock_match.to_dict.return_value = {
