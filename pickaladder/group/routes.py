@@ -31,6 +31,7 @@ from . import bp
 from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
 
 UPSET_THRESHOLD = 0.25
+GUEST_USER = {"username": "Guest", "id": "unknown"}
 
 
 @dataclass
@@ -89,7 +90,7 @@ def view_groups():
         if owner_ref and owner_ref.id in owners_data:
             group_data["owner"] = owners_data[owner_ref.id]
         else:
-            group_data["owner"] = {"username": "Unknown"}
+            group_data["owner"] = GUEST_USER
         return group_data
 
     enriched_public_groups = [enrich_group(doc) for doc in public_group_docs]
@@ -437,21 +438,26 @@ def view_group(group_id):
         match_data["id"] = match_doc.id
         match_data["player1"] = users_map.get(
             get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"]),
-            {"username": "Unknown"},
+            GUEST_USER,
         )
         match_data["player2"] = users_map.get(
             get_id(
                 match_data,
                 ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
             ),
-            {"username": "Unknown"},
+            GUEST_USER,
         )
-        match_data["partner"] = users_map.get(
-            get_id(match_data, ["partnerId", "partner", "partner_id"])
-        )
-        match_data["opponent2"] = users_map.get(
-            get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"])
-        )
+        partner_id = get_id(match_data, ["partnerId", "partner", "partner_id"])
+        if partner_id:
+            match_data["partner"] = users_map.get(partner_id, GUEST_USER)
+        else:
+            match_data["partner"] = None
+
+        opponent2_id = get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"])
+        if opponent2_id:
+            match_data["opponent2"] = users_map.get(opponent2_id, GUEST_USER)
+        else:
+            match_data["opponent2"] = None
 
         # --- Giant Slayer Logic ---
         winner_player = None
