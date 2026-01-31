@@ -2,6 +2,8 @@
 
 import os
 import uuid
+from contextlib import suppress
+from pathlib import Path
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -59,9 +61,9 @@ def create_app(test_config=None):
         MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
         MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
         MAIL_USE_TLS=(os.environ.get("MAIL_USE_TLS") or "true").lower()
-        in ["true", "1", "t"],
+        in ("true", "1", "t"),
         MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower()
-        in ["true", "1", "t"],
+        in ("true", "1", "t"),
         MAIL_USERNAME=mail_username,
         MAIL_PASSWORD=mail_password,
         MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
@@ -142,17 +144,15 @@ def create_app(test_config=None):
 
         # If env var fails or is not present, try loading from file (for local dev)
         if not cred:
-            cred_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "firebase_credentials.json"
-            )
-            if os.path.exists(cred_path):
+            cred_path = Path(__file__).parent.parent / "firebase_credentials.json"
+            if cred_path.exists():
                 import json
 
                 try:
-                    with open(cred_path) as f:
+                    with cred_path.open() as f:
                         cred_info = json.load(f)
                     project_id = cred_info.get("project_id")
-                    cred = credentials.Certificate(cred_path)
+                    cred = credentials.Certificate(str(cred_path))
                 except (json.JSONDecodeError, ValueError) as e:
                     app.logger.error(f"Error loading credentials from file: {e}")
 
@@ -183,10 +183,8 @@ def create_app(test_config=None):
                 app.logger.info("Firebase app already initialized.")
 
     # Ensure the instance folder exists
-    try:
-        os.makedirs(app.instance_path)
-    except OSError:
-        pass
+    with suppress(OSError):
+        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
 
     # Initialize extensions
     mail.init_app(app)

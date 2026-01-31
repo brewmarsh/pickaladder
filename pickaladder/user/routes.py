@@ -187,8 +187,7 @@ def view_user(user_id):
 
     h2h_stats = None
     # Fetch friendship status
-    friend_request_sent = False
-    is_friend = False
+    friend_request_sent = is_friend = False
 
     if current_user_id != user_id:
         friend_ref = (
