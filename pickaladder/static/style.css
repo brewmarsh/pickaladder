@@ -989,6 +989,9 @@ input[type="submit"], .btn {
 }
 
 @media (max-width: 768px) {
+    body {
+        overflow-x: hidden;
+    }
     .leaderboard-header {
         display: none;
     }
@@ -1003,12 +1006,18 @@ input[type="submit"], .btn {
         justify-content: space-between;
         align-items: center;
         grid-template-columns: none; /* Override grid layout */
-        padding: 16px 12px;
+        padding: 16px 8px;
     }
 
     .leaderboard-row .profile-picture-thumbnail {
+        width: 32px;
+        height: 32px;
         flex-shrink: 0;
         margin-right: 15px;
+    }
+
+    .player-name {
+        font-size: 0.9rem;
     }
 
     .leaderboard-cell[data-label="Player"] {
