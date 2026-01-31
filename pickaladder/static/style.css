@@ -989,6 +989,36 @@ input[type="submit"], .btn {
 }
 
 @media (max-width: 768px) {
+    .leaderboard-header {
+        display: none;
+    }
+
+    .leaderboard-cell[data-label="Form"],
+    .leaderboard-cell[data-label="Games"] {
+        display: none;
+    }
+
+    .leaderboard-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        grid-template-columns: none; /* Override grid layout */
+        padding: 16px 12px;
+    }
+
+    .leaderboard-row .profile-picture-thumbnail {
+        flex-shrink: 0;
+        margin-right: 15px;
+    }
+
+    .leaderboard-cell[data-label="Player"] {
+        flex-grow: 1;
+    }
+
+    .leaderboard-cell[data-label="Avg. Score"] {
+        font-weight: bold;
+        font-size: 1.1em;
+    }
   .grid-container {
     grid-template-columns: 1fr;
   }
