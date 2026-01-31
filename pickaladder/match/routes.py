@@ -6,6 +6,7 @@ from firebase_admin import firestore
 from flask import flash, g, jsonify, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.teams.utils import get_or_create_team
 
 from . import bp
 from .forms import MatchForm
@@ -86,9 +87,7 @@ def _save_match_data(player_1_id, form_data, group_id=None):
     user_ref = db.collection("users").document(player_1_id)
 
     # Handle both form objects and dictionaries
-    # TODO: Add type hints for Agent clarity
     def get_data(key):
-        """TODO: Add docstring for AI context."""
         if isinstance(form_data, dict):
             return form_data.get(key)
         return getattr(form_data, key).data
@@ -103,9 +102,12 @@ def _save_match_data(player_1_id, form_data, group_id=None):
     else:
         match_date = datetime.datetime.now()
 
+    player1_score = int(get_data("player1_score"))
+    player2_score = int(get_data("player2_score"))
+
     match_data = {
-        "player1Score": int(get_data("player1_score")),
-        "player2Score": int(get_data("player2_score")),
+        "player1Score": player1_score,
+        "player2Score": player2_score,
         "matchDate": match_date,
         "createdAt": firestore.SERVER_TIMESTAMP,
         "matchType": match_type,
@@ -120,12 +122,32 @@ def _save_match_data(player_1_id, form_data, group_id=None):
         match_data["player1Ref"] = player1_ref
         match_data["player2Ref"] = player2_ref
     elif match_type == "doubles":
-        t1_p1_ref = db.collection("users").document(get_data("player1"))
-        t1_p2_ref = db.collection("users").document(get_data("partner"))
-        t2_p1_ref = db.collection("users").document(get_data("player2"))
-        t2_p2_ref = db.collection("users").document(get_data("opponent2"))
+        t1_p1_id = get_data("player1")
+        t1_p2_id = get_data("partner")
+        t2_p1_id = get_data("player2")
+        t2_p2_id = get_data("opponent2")
+
+        team1_id = get_or_create_team(t1_p1_id, t1_p2_id)
+        team2_id = get_or_create_team(t2_p1_id, t2_p2_id)
+
+        t1_p1_ref = db.collection("users").document(t1_p1_id)
+        t1_p2_ref = db.collection("users").document(t1_p2_id)
+        t2_p1_ref = db.collection("users").document(t2_p1_id)
+        t2_p2_ref = db.collection("users").document(t2_p2_id)
+
         match_data["team1"] = [t1_p1_ref, t1_p2_ref]
         match_data["team2"] = [t2_p1_ref, t2_p2_ref]
+        match_data["team1Id"] = team1_id
+        match_data["team2Id"] = team2_id
+
+        team1_ref = db.collection("teams").document(team1_id)
+        team2_ref = db.collection("teams").document(team2_id)
+        if player1_score > player2_score:
+            team1_ref.update({"stats.wins": firestore.Increment(1)})
+            team2_ref.update({"stats.losses": firestore.Increment(1)})
+        elif player2_score > player1_score:
+            team1_ref.update({"stats.losses": firestore.Increment(1)})
+            team2_ref.update({"stats.wins": firestore.Increment(1)})
 
     db.collection("matches").add(match_data)
     user_ref.update({"lastMatchRecordedType": match_type})
