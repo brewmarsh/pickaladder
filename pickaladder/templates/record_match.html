@@ -8,7 +8,7 @@
             {{ ', '.join(errors) }}
         </div>
     {% endfor %}
-    <form id="record-match-form">
+    <form name="record-match-form" method="POST">
         {{ form.hidden_tag() }}
 
         <div class="form-group">
