@@ -8,19 +8,25 @@ This script migrates existing doubles matches to use the new Team data model.
   new Team documents.
 - Includes a verification step at the end to confirm the migration.
 """
+
+import json
 import os
 import sys
-import json
 from pathlib import Path
+
+import firebase_admin
+from firebase_admin import credentials, firestore
+from mockfirestore import MockFirestore
+
+from pickaladder.teams.models import create_team_document
 
 # Add the project root to the Python path to allow importing 'pickaladder'
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
-import firebase_admin
-from firebase_admin import credentials, firestore
-from mockfirestore import MockFirestore
-from pickaladder.teams.models import create_team_document
+
+TEAM_SIZE = 2
+
 
 def initialize_firebase():
     """Initializes the Firebase Admin SDK."""
@@ -52,12 +58,13 @@ def initialize_firebase():
         firebase_admin.initialize_app(cred)
     return True
 
+
 def get_or_create_team(db, team_members):
     """
     Retrieves a team if it exists, otherwise creates it.
     A team is uniquely identified by its members.
     """
-    if not team_members or len(team_members) != 2:
+    if not team_members or len(team_members) != TEAM_SIZE:
         return None
 
     sorted_member_ids = sorted([ref.id for ref in team_members])
@@ -91,18 +98,22 @@ def migrate_matches_to_teams():
         user4_ref.set({"name": "Player D"})
 
         matches_ref = db.collection("matches")
-        matches_ref.add({
-            "matchType": "doubles",
-            "team1": [user1_ref, user2_ref],
-            "team2": [user3_ref, user4_ref],
-            "player1Score": 11,
-            "player2Score": 8,
-        })
-        matches_ref.add({
-            "matchType": "singles", # Should be ignored
-            "player1Ref": user1_ref,
-            "player2Ref": user3_ref,
-        })
+        matches_ref.add(
+            {
+                "matchType": "doubles",
+                "team1": [user1_ref, user2_ref],
+                "team2": [user3_ref, user4_ref],
+                "player1Score": 11,
+                "player2Score": 8,
+            }
+        )
+        matches_ref.add(
+            {
+                "matchType": "singles",  # Should be ignored
+                "player1Ref": user1_ref,
+                "player2Ref": user3_ref,
+            }
+        )
 
     else:
         if not initialize_firebase():
@@ -175,7 +186,9 @@ def verify_migration(db, match_id):
 
     team_doc = team1_ref.get()
     if not team_doc.exists:
-        print("\nVerification failed: Team document pointed to by 'team1Ref' not found.")
+        print(
+            "\nVerification failed: Team document pointed to by 'team1Ref' not found."
+        )
         return
 
     team_data = team_doc.to_dict()

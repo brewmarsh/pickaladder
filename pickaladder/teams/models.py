@@ -16,7 +16,10 @@ def create_team_document(db, team_members):
     """
     sorted_members = sorted(team_members, key=lambda doc_ref: doc_ref.id)
     member_ids = [doc_ref.id for doc_ref in sorted_members]
-    team_name = " & ".join([doc_ref.get().to_dict().get("name", "Unknown") for doc_ref in sorted_members])
+    member_names = [
+        doc_ref.get().to_dict().get("name", "Unknown") for doc_ref in sorted_members
+    ]
+    team_name = " & ".join(member_names)
 
     team_data = {
         "members": sorted_members,
