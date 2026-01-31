@@ -18,6 +18,7 @@ from . import auth as auth_bp
 from . import error_handlers
 from . import group as group_bp
 from . import match as match_bp
+from . import teams as teams_bp
 from . import user as user_bp
 from .extensions import csrf, mail
 
@@ -201,6 +202,7 @@ def create_app(test_config=None):
     app.register_blueprint(user_bp.bp)
     app.register_blueprint(match_bp.bp)
     app.register_blueprint(group_bp.bp)
+    app.register_blueprint(teams_bp.bp)
     app.register_blueprint(error_handlers.error_handlers_bp)
 
     # make url_for('index') == url_for('auth.login')

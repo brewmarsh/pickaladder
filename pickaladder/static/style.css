@@ -1198,3 +1198,60 @@ input[type="submit"], .btn {
 .actions-cell {
     text-align: right;
 }
+
+/* Team View Specific Styles */
+.team-header-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.team-avatars {
+    display: flex;
+}
+
+.team-avatars .profile-picture {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin-left: -15px;
+    border: 2px solid var(--surface-color);
+}
+
+.team-avatars .profile-picture:first-child {
+    margin-left: 0;
+}
+
+.team-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.team-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 20px;
+    text-align: center;
+}
+
+.stat-item .stat-label {
+    font-size: 0.9em;
+    color: var(--text-secondary-color);
+    display: block;
+}
+
+.stat-item .stat-value {
+    font-size: 1.5em;
+    font-weight: 500;
+}
+
+.badge-success {
+    background-color: var(--success-color);
+    color: var(--on-primary-color);
+}
+
+.badge-danger {
+    background-color: var(--danger-color);
+    color: var(--on-primary-color);
+}
