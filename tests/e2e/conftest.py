@@ -4,11 +4,14 @@ import os
 import threading
 from unittest.mock import MagicMock, patch
 
+import firebase_admin
 import pytest
 from mockfirestore import CollectionReference, MockFirestore
 from mockfirestore.document import DocumentReference, DocumentSnapshot
 from mockfirestore.query import Query
 from werkzeug.serving import make_server
+
+from pickaladder import create_app
 
 # --- Mock Infrastructure & Patches ---
 
@@ -322,8 +325,8 @@ def app_server(mock_db, mock_auth):
     # Ensure firebase_admin submodules are loaded so we can patch them
     # We don't import them directly to avoid side effects if not needed
     try:
-        import firebase_admin.auth  # noqa: F401
-        import firebase_admin.firestore  # noqa: F401
+        firebase_admin.auth  # noqa: F401
+        firebase_admin.firestore  # noqa: F401
     except ImportError:
         pass
 
@@ -350,8 +353,6 @@ def app_server(mock_db, mock_auth):
     os.environ["MAIL_PASSWORD"] = "test"  # nosec
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
-
-    from pickaladder import create_app
 
     app = create_app({"TESTING": True})
 

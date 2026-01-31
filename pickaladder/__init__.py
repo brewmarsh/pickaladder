@@ -1,6 +1,8 @@
 """Initialize the Flask app and its extensions."""
 
+import json
 import os
+import sys
 import uuid
 from contextlib import suppress
 from pathlib import Path
@@ -11,7 +13,15 @@ from flask import Flask, current_app, g, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
 
+from . import admin as admin_bp
+from . import auth as auth_bp
+from . import error_handlers
+from . import group as group_bp
+from . import match as match_bp
+from . import user as user_bp
 from .extensions import csrf, mail
+
+APP_PASSWORD_LENGTH = 16
 
 
 class UUIDConverter(BaseConverter):
@@ -72,8 +82,6 @@ def create_app(test_config=None):
     )
 
     if not app.config.get("TESTING"):
-        import sys
-
         print(
             f"DEBUG: Mail User loaded: {bool(app.config.get('MAIL_USERNAME'))}",
             file=sys.stderr,
@@ -107,15 +115,14 @@ def create_app(test_config=None):
                 f"DEBUG: Mail Config - Password Length: {len(pwd)}",
                 file=sys.stderr,
             )
-            if len(pwd) == 16:
+            if len(pwd) == APP_PASSWORD_LENGTH:
                 print(
-                    "DEBUG: Password length matches standard App Password length (16).",
+                    f"DEBUG: Password length matches standard App Password length ({APP_PASSWORD_LENGTH}).",
                     file=sys.stderr,
                 )
             else:
                 print(
-                    "DEBUG: Password length DOES NOT match standard App Password "
-                    "length (16). Possible regular password used?",
+                    f"DEBUG: Password length DOES NOT match standard App Password length ({APP_PASSWORD_LENGTH}). Possible regular password used?",
                     file=sys.stderr,
                 )
         else:
@@ -133,8 +140,6 @@ def create_app(test_config=None):
         # First, try to load from environment variable (for production)
         cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
         if cred_json:
-            import json
-
             try:
                 cred_info = json.loads(cred_json)
                 project_id = cred_info.get("project_id")
@@ -146,8 +151,6 @@ def create_app(test_config=None):
         if not cred:
             cred_path = Path(__file__).parent.parent / "firebase_credentials.json"
             if cred_path.exists():
-                import json
-
                 try:
                     with cred_path.open() as f:
                         cred_info = json.load(f)
@@ -191,28 +194,11 @@ def create_app(test_config=None):
     csrf.init_app(app)
 
     # Register blueprints
-    from . import auth as auth_bp
-
     app.register_blueprint(auth_bp.bp)
-
-    from . import admin as admin_bp
-
     app.register_blueprint(admin_bp.bp)
-
-    from . import user as user_bp
-
     app.register_blueprint(user_bp.bp)
-
-    from . import match as match_bp
-
     app.register_blueprint(match_bp.bp)
-
-    from . import group as group_bp
-
     app.register_blueprint(group_bp.bp)
-
-    from . import error_handlers
-
     app.register_blueprint(error_handlers.error_handlers_bp)
 
     # make url_for('index') == url_for('auth.login')

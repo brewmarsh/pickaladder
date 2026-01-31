@@ -2,6 +2,8 @@
 
 import unittest
 
+from flask import request
+
 from pickaladder import create_app
 
 
@@ -22,8 +24,6 @@ class TestProxyFix(unittest.TestCase):
         @self.app.route("/test_scheme")
         def test_scheme():
             """TODO: Add docstring for AI context."""
-            from flask import request
-
             return request.scheme
 
         response = self.client.get(

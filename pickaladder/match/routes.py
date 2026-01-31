@@ -10,6 +10,8 @@ from pickaladder.auth.decorators import login_required
 from . import bp
 from .forms import MatchForm
 
+CLOSE_CALL_THRESHOLD = 2
+
 
 # TODO: Add type hints for Agent clarity
 def _get_candidate_player_ids(user_id, group_id=None, include_user=False):
@@ -450,7 +452,7 @@ def get_latest_matches(limit=10):
         score2 = match_data.get("player2Score", 0)
 
         point_diff = abs(score1 - score2)
-        close_call = point_diff <= 2
+        close_call = point_diff <= CLOSE_CALL_THRESHOLD
 
         processed_match = {
             "date": match_date_formatted,

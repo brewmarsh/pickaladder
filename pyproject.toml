@@ -1,5 +1,4 @@
-# ruff.toml
-
+[tool.ruff]
 # Same as Black.
 line-length = 88
 indent-width = 4
@@ -7,22 +6,22 @@ indent-width = 4
 # Assume Python 3.9
 target-version = "py39"
 
-[lint]
+[tool.ruff.lint]
 # Enable Pyflakes, pycodestyle, pydocstyle, and isort.
-select = ["E", "F", "W", "I"]
+select = ["E", "F", "W", "I", "UP", "PL"]
 
 # Never enforce `E501` (line-too-long), handled by `format`.
 ignore = ["E501"]
 
-[lint.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 # Use the PEP 257 convention for docstring formatting.
 convention = "pep257"
 
-[lint.mccabe]
+[tool.ruff.lint.mccabe]
 # Set the maximum complexity to 10.
 max-complexity = 10
 
-[format]
+[tool.ruff.format]
 # Like Black, use double quotes for strings.
 quote-style = "double"
 
