@@ -1,4 +1,5 @@
 """Team-related utility functions."""
+
 from firebase_admin import firestore
 
 
