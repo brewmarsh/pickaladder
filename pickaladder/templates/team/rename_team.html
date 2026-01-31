@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block title %}Rename Team{% endblock %}
+{% block content %}
+<div class="form-container">
+    <h2>Rename Team: {{ team.name }}</h2>
+    <form method="post">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            {{ form.name.label }}
+            {{ form.name(class="form-control") }}
+        </div>
+        {{ form.submit(class="btn") }}
+    </form>
+</div>
+{% endblock %}

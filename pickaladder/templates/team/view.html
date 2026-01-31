@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+{% block title %}{{ team.name }}{% endblock %}
+{% block content %}
+<div class="page-header team-header-content">
+    <div class="team-avatars">
+        {% for member in members %}
+        <img src="{{ member.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
+             alt="{{ member.username }}" class="profile-picture">
+        {% endfor %}
+    </div>
+    <div>
+        <div class="team-header-actions">
+            <div class="team-header-title">
+                <h1>{{ team.name }}</h1>
+            </div>
+            {# Assuming only team members can edit. Add more specific logic if needed. #}
+            {% if g.user['uid'] in team.member_ids %}
+            <a href="{{ url_for('teams.rename_team', team_id=team.id) }}" title="Rename Team" class="settings-icon">✏️</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div>
+        <div class="card">
+            <h3>Team Stats</h3>
+            <div class="team-stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">ELO Rating</span>
+                    <span class="stat-value">{{ team.stats.elo|round(0) }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Record</span>
+                    <span class="stat-value">{{ team.stats.wins }} - {{ team.stats.losses }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Win %</span>
+                    <span class="stat-value">{{ "%.1f"|format(win_percentage) }}%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Streak</span>
+                    <span class="stat-value">{{ streak }}{{ streak_type }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        {% if recent_matches %}
+        <div class="card">
+            <h3>Recent Matches</h3>
+            <div class="table-container">
+                <table class="table responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Opponent</th>
+                            <th>Result</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for match in recent_matches %}
+                        <tr>
+                            <td data-label="Date">{{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate else 'N/A' }}</td>
+                            <td data-label="Opponent">
+                                <a href="{{ url_for('teams.view_team', team_id=match.opponent.id) }}">{{ match.opponent.name }}</a>
+                            </td>
+                            <td data-label="Result">
+                                {% set is_team1 = match.team1Id == team.id %}
+                                {% if (match.winner == 'team1' and is_team1) or (match.winner == 'team2' and not is_team1) %}
+                                    <span class="badge badge-success">Win</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Loss</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Score">
+                                {{ match.team1Score }} - {{ match.team2Score }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <p>This team hasn't played any matches yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
