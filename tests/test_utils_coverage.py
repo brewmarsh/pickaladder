@@ -54,7 +54,9 @@ class TestUtilsCoverage(unittest.TestCase):
             "player2Score": 5,
             "matchDate": datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         }
-        mock_db.collection("matches").where.return_value.stream.return_value = [mock_match]
+        mock_db.collection(
+            "matches"
+        ).where.return_value.stream.return_value = [mock_match]
 
         leaderboard = get_group_leaderboard("group1")
 
