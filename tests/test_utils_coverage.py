@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 from pickaladder.group.utils import (
@@ -41,8 +42,6 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
-
-        from datetime import datetime, timezone
 
         mock_match = MagicMock()
         mock_match.to_dict.return_value = {
@@ -96,8 +95,6 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
-
-        from datetime import datetime, timezone
 
         mock_match = MagicMock()
         mock_match.to_dict.return_value = {
@@ -191,8 +188,6 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
 
-        from datetime import datetime, timedelta, timezone
-
         now = datetime.now(timezone.utc)
         mock_datetime.now.return_value = now
         one_week_ago = now - timedelta(days=7)
@@ -251,8 +246,6 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
 
-        from datetime import datetime, timedelta, timezone
-
         now = datetime.now(timezone.utc)
         matches = []
         for i in range(5):
@@ -295,8 +288,6 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_user1_ref.get.return_value.to_dict.return_value = {"name": "User 1"}
         mock_user2_ref.get.return_value.to_dict.return_value = {"name": "User 2"}
-
-        from datetime import datetime
 
         mock_match1 = MagicMock()
         mock_match1.to_dict.return_value = {
@@ -347,8 +338,6 @@ class TestUtilsCoverage(unittest.TestCase):
             {"id": "user1", "wins": 10, "losses": 5},
             {"id": "user2", "wins": 5, "losses": 10},
         ]
-
-        from datetime import datetime, timedelta
 
         now = datetime.now()
         mock_user1_ref = mock_db.collection("users").document("user1")
