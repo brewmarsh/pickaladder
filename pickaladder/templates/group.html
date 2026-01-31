@@ -5,7 +5,7 @@
     <img src="{{ group.profilePictureUrl if group.profilePictureUrl else (url_for('static', filename='uploads/' + group.profile_picture_path) if group.profile_picture_path else url_for('static', filename='user_icon.png')) }}" alt="Group Picture" class="group-profile-picture">
     <div>
         <div class="group-header-actions">
-            <div style="display: flex; align-items: center; gap: 20px;">
+            <div class="group-header-title">
                 <h1>{{ group.name }}</h1>
                 {% if is_member %}
                     <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-primary">Record a Match</a>
@@ -15,11 +15,13 @@
                 <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="settings-icon">⚙️</a>
             {% endif %}
         </div>
-        <p style="margin-bottom: 5px;">Owned by: <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username }}</a></p>
-        {% if group.location %}
-            <p style="margin-bottom: 5px;"><strong>Location:</strong> {{ group.location }}</p>
-        {% endif %}
-        <p style="color: #666;">{{ group.description or 'No description provided.' }}</p>
+        <div class="group-meta-info">
+            <p>Owned by: <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username }}</a></p>
+            {% if group.location %}
+                <p><strong>Location:</strong> {{ group.location }}</p>
+            {% endif %}
+        </div>
+        <p class="group-description">{{ group.description or 'No description provided.' }}</p>
     </div>
 </div>
 
@@ -108,8 +110,8 @@
 
         <div class="card">
             <h3>Rivalry Check</h3>
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex: 1;">
+            <div class="rivalry-check-form">
+                <div class="form-group">
                     <label for="player1-select">Player 1</label>
                     <select id="player1-select" class="form-control">
                         <option value="">Select a player</option>
@@ -118,7 +120,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="form-group" style="flex: 1;">
+                <div class="form-group">
                     <label for="player2-select">Player 2</label>
                     <select id="player2-select" class="form-control">
                         <option value="">Select a player</option>
@@ -128,8 +130,8 @@
                     </select>
                 </div>
             </div>
-            <div id="head-to-head-stats" style="margin-top: 15px;">
-                </div>
+            <div id="head-to-head-stats" class="rivalry-stats-container">
+            </div>
         </div>
 
         {% if recent_matches %}
@@ -185,7 +187,7 @@
                                     <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
                                 {% endif %}
                             </td>
-                            <td data-label="Score" {% if match.is_upset %}style="font-weight: bold; color: green;"{% endif %}>
+                            <td data-label="Score" class="{{ 'upset-score' if match.is_upset else '' }}">
                                 {{ match.player1Score }} - {{ match.player2Score }}
                                 {% if (match.player1Score - match.player2Score)|abs == 2 %}
                                     <span class="badge badge-close-call">Close Call</span>
@@ -201,10 +203,10 @@
     </div>
 </div>
 
-<div style="margin-top: 30px; margin-bottom: 50px;">
-    <details class="card" style="padding: 10px;">
-        <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; padding: 10px;">Manage Group & Members ({{ members|length }})</summary>
-        <div style="padding: 15px;">
+<div class="manage-group-section">
+    <details class="card manage-group-card">
+        <summary class="manage-group-summary">Manage Group & Members ({{ members|length }})</summary>
+        <div class="manage-group-content">
             <h3>Members</h3>
             <div class="table-container">
                 <table class="table responsive-table">
@@ -223,7 +225,7 @@
             </div>
 
             {% if group.ownerRef.id == current_user_id %}
-            <h3 style="margin-top: 20px;">Invite Friends</h3>
+            <h3>Invite Friends</h3>
             <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
                 {{ form.hidden_tag() }}
                 <div class="form-group">
@@ -233,7 +235,7 @@
                 <input type="submit" value="Invite Friend" class="btn">
             </form>
 
-            <h3 style="margin-top: 20px;">Invite by Email</h3>
+            <h3>Invite by Email</h3>
             <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
                 {{ invite_email_form.hidden_tag() }}
                 <div class="form-group">
@@ -247,7 +249,7 @@
                 <input type="submit" value="Send Invite" class="btn">
             </form>
 
-            <h3 style="margin-top: 20px;">Danger Zone</h3>
+            <h3>Danger Zone</h3>
             <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="submit" value="Delete Group" class="btn btn-danger"
@@ -259,16 +261,16 @@
 </div>
 
 {% if is_member and pending_members %}
-<div style="margin-top: 30px; margin-bottom: 50px;">
-    <details class="card" style="padding: 10px;">
-        <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; padding: 10px;">Manage Pending Invites ({{ pending_members|length }})</summary>
-        <div style="padding: 15px;">
-            <h3 style="margin-top: 20px;">Pending Members</h3>
+<div class="manage-group-section">
+    <details class="card manage-group-card">
+        <summary class="manage-group-summary">Manage Pending Invites ({{ pending_members|length }})</summary>
+        <div class="manage-group-content">
+            <h3>Pending Members</h3>
             <div class="table-container">
                 <table class="table responsive-table">
                     <thead>
                         <tr>
-                            <th style="width: 50px;"></th>
+                            <th class="pending-invites-avatar-header"></th>
                             <th>Name</th>
                             <th>Email</th>
                             <th>Status</th>
@@ -299,25 +301,25 @@
                             </td>
                             {% if group.ownerRef.id == current_user_id %}
                             <td data-label="Actions">
-                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                    <form method="post" action="{{ url_for('group.resend_invite', token=invite.token) }}" style="display: inline;">
+                                <div class="pending-invites-actions">
+                                    <form method="post" action="{{ url_for('group.resend_invite', token=invite.token) }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         {% if invite.status == 'failed' %}
-                                        <div class="input-group" style="margin-bottom: 5px;">
-                                            <input type="email" name="email" value="{{ invite.email }}" required class="form-control" style="padding: 5px; width: 150px;">
+                                        <div class="input-group pending-invites-email-group">
+                                            <input type="email" name="email" value="{{ invite.email }}" required class="form-control pending-invites-email-input">
                                         </div>
                                         {% endif %}
                                         <button type="submit" class="btn small">
                                             {% if invite.status == 'failed' %}Retry{% else %}Resend{% endif %}
                                         </button>
                                     </form>
-                                    <form method="post" action="{{ url_for('group.delete_invite', token=invite.token) }}" style="display: inline;">
+                                    <form method="post" action="{{ url_for('group.delete_invite', token=invite.token) }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-danger small" onclick="return confirm('Cancel this invitation?')">Cancel</button>
                                     </form>
                                 </div>
                                 {% if invite.status == 'failed' and invite.last_error %}
-                                    <div style="font-size: 0.8em; color: red; margin-top: 5px; max-width: 200px; word-wrap: break-word;">
+                                    <div class="invite-error-message">
                                         {{ invite.last_error }}
                                     </div>
                                 {% endif %}
@@ -382,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let h2hHtml = '';
                 if (data.h2h_matches_count > 0) {
                     h2hHtml = `
-                        <div class="stat-card">
+                        <div class="rivalry-stat-card">
                             <h5>Head-to-Head (${data.h2h_matches_count} matches)</h5>
                             <div class="h2h-scores">
                                 <span class="player-name">${player1Name}</span>
@@ -395,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                             <p class="leader-message">${leaderMessage}</p>
                         </div>
-                        <div class="stat-card">
+                        <div class="rivalry-stat-card">
                             <h5>Point Differential</h5>
                             <p>Avg. <strong>${data.avg_point_differential > 0 ? '+' : ''}${data.avg_point_differential}</strong> points for ${player1Name}</p>
                         </div>
@@ -405,7 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let partnershipHtml = '';
                 if (data.partnership_matches_count > 0) {
                     partnershipHtml = `
-                        <div class="stat-card">
+                        <div class="rivalry-stat-card">
                             <h5>As Partners (${data.partnership_matches_count} matches)</h5>
                             <p><strong>Record:</strong> ${partnerWins}W - ${partnerLosses}L</p>
                             <p><strong>Win Rate:</strong> ${partnerWinRate.toFixed(1)}%</p>
@@ -423,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const statsHtml = `
-                    <div class="stats-grid">
+                    <div class="rivalry-stats-grid">
                         ${h2hHtml}
                         ${partnershipHtml}
                     </div>
@@ -441,20 +443,4 @@ document.addEventListener('DOMContentLoaded', function() {
     player2Select.addEventListener('change', fetchAndDisplayStats);
 });
 </script>
-<style>
-    .stats-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
-    .stat-card { border: 1px solid #ddd; padding: 15px; border-radius: 5px; text-align: center; }
-    .stat-card h5 { margin-top: 0; margin-bottom: 10px; }
-    .h2h-scores { display: flex; justify-content: space-between; align-items: center; font-size: 1.2em; margin-bottom: 10px; }
-    .h2h-scores .player-name { font-size: 0.8em; }
-    .h2h-scores .score { font-weight: bold; }
-    .rivalry-bar-container { display: flex; height: 20px; border-radius: 5px; overflow: hidden; background-color: #f0f0f0; margin-bottom: 10px; }
-    .rivalry-bar { transition: width 0.3s ease-in-out; }
-    .rivalry-bar.player1 { background-color: #4CAF50; }
-    .rivalry-bar.player2 { background-color: #F44336; }
-    .leader-message { font-style: italic; color: #555; }
-    .best-buds-card { text-align: center; }
-    .best-buds-container { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .plus-sign { font-size: 24px; font-weight: bold; }
-</style>
 {% endblock %}
