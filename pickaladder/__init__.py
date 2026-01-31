@@ -117,12 +117,14 @@ def create_app(test_config=None):
             )
             if len(pwd) == APP_PASSWORD_LENGTH:
                 print(
-                    f"DEBUG: Password length matches standard App Password length ({APP_PASSWORD_LENGTH}).",
+                    "DEBUG: Password length matches standard App Password length "
+                    f"({APP_PASSWORD_LENGTH}).",
                     file=sys.stderr,
                 )
             else:
                 print(
-                    f"DEBUG: Password length DOES NOT match standard App Password length ({APP_PASSWORD_LENGTH}). Possible regular password used?",
+                    "DEBUG: Password length DOES NOT match standard App Password "
+                    f"length ({APP_PASSWORD_LENGTH}). Possible regular password used?",
                     file=sys.stderr,
                 )
         else:
