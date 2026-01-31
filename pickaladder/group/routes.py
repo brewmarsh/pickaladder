@@ -772,13 +772,7 @@ def get_head_to_head_stats(group_id):
 
     # --- Calculate Stats ---
     total_matches = len(matches)
-    h2h_player1_wins = 0
-    h2h_player2_wins = 0
-    partnership_wins = 0
-    partnership_losses = 0
-    point_differential = 0
-    h2h_matches_count = 0
-    partnership_matches_count = 0
+    h2h_player1_wins = h2h_player2_wins = partnership_wins = partnership_losses = point_differential = h2h_matches_count = partnership_matches_count = 0
 
     for match in matches:
         team1 = {match.get("player1Id"), match.get("partnerId")}

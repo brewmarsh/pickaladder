@@ -1,5 +1,6 @@
 """Utility functions for the group blueprint."""
 
+import operator
 import secrets
 import threading
 from datetime import datetime, timedelta, timezone
@@ -159,7 +160,7 @@ def _calculate_leaderboard_from_matches(member_refs, matches):
             }
         )
     leaderboard.sort(
-        key=lambda x: (x["avg_score"], x["wins"], x["games_played"]), reverse=True
+        key=operator.itemgetter("avg_score", "wins", "games_played"), reverse=True
     )
     return leaderboard
 
@@ -431,8 +432,7 @@ def get_user_group_stats(group_id, user_id):
     all_matches = list(matches_query.stream())
     all_matches.sort(key=lambda x: x.to_dict().get("matchDate") or datetime.min)
 
-    current_streak = 0
-    longest_streak = 0
+    current_streak = longest_streak = 0
 
     for match in all_matches:
         data = match.to_dict()
@@ -440,8 +440,7 @@ def get_user_group_stats(group_id, user_id):
         p1_score = data.get("player1Score", 0)
         p2_score = data.get("player2Score", 0)
 
-        user_is_winner = False
-        user_participated = False
+        user_is_winner = user_participated = False
 
         if match_type == "doubles":
             team1 = data.get("team1", [])
