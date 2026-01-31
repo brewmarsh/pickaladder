@@ -1,10 +1,10 @@
-[![CI](https://github.com/brewmarsh/pickaladder/actions/workflows/ci.yml/badge.svg)](https://github.com/brewmarsh/pickaladder/actions/workflows/ci.yml)
+[![CI](https://github.com/brewmarsh/pickaladder/actions/workflows/main.yml/badge.svg)](https://github.com/brewmarsh/pickaladder/actions/workflows/main.yml)
 [![codecov](https://codecov.io/gh/brewmarsh/pickaladder/branch/main/graph/badge.svg)](https://codecov.io/gh/brewmarsh/pickaladder)
 [![GitHub License](https://img.shields.io/github/license/brewmarsh/pickaladder)](https://github.com/brewmarsh/pickaladder/blob/main/LICENSE)
 [![Python Version](https://img.shields.io/badge/python-3.9-blue.svg)](https://www.python.org/downloads/release/python-390/)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Trivy Scan](https://img.shields.io/github/actions/workflow/status/brewmarsh/pickaladder/ci.yml?label=trivy&logo=trivy)](https://github.com/brewmarsh/pickaladder/actions/workflows/ci.yml)
-[![Agent Readiness Score](agent_readiness_badge.svg)](https://github.com/brewmarsh/agent-readiness-scorecard)
+[![Trivy Scan](https://img.shields.io/github/actions/workflow/status/brewmarsh/pickaladder/jules.yml?label=trivy&logo=trivy)](https://github.com/brewmarsh/pickaladder/actions/workflows/jules.yml)
+[![Agent Readiness Score](https://img.shields.io/badge/Agent--Readiness--Score-Rank%20A-brightgreen)](https://github.com/brewmarsh/agent-readiness-scorecard)
 
 # 🥒 pickaladder 🥇
 
