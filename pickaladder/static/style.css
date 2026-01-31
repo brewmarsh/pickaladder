@@ -989,9 +989,6 @@ input[type="submit"], .btn {
 }
 
 @media (max-width: 768px) {
-    body {
-        overflow-x: hidden;
-    }
     .leaderboard-header {
         display: none;
     }
@@ -1038,4 +1035,166 @@ input[type="submit"], .btn {
     width: 100%;
     margin-top: 10px;
   }
+}
+
+/* Group Page Specific Styles */
+.group-header-title {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.group-description {
+    color: #666;
+}
+
+.group-meta-info p {
+    margin-bottom: 5px;
+}
+
+.rivalry-check-form {
+    display: flex;
+    gap: 10px;
+}
+
+.rivalry-check-form .form-group {
+    flex: 1;
+}
+
+.upset-score {
+    font-weight: bold;
+    color: green;
+}
+
+.manage-group-section {
+    margin-top: 30px;
+    margin-bottom: 50px;
+}
+
+.manage-group-card {
+    padding: 10px;
+}
+
+.manage-group-summary {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.1em;
+    padding: 10px;
+}
+
+.manage-group-content {
+    padding: 15px;
+}
+
+.manage-group-content h3 {
+    margin-top: 20px;
+}
+
+.pending-invites-actions {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.pending-invites-actions form {
+    display: inline;
+}
+
+.pending-invites-email-group {
+    margin-bottom: 5px;
+}
+
+.pending-invites-email-input {
+    padding: 5px;
+    width: 150px;
+}
+
+.invite-error-message {
+    font-size: 0.8em;
+    color: red;
+    margin-top: 5px;
+    max-width: 200px;
+    word-wrap: break-word;
+}
+
+/* Rivalry Check and Stats from group.html style block */
+.rivalry-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.rivalry-stat-card {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.rivalry-stat-card h5 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.h2h-scores {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+.h2h-scores .player-name {
+    font-size: 0.8em;
+}
+
+.h2h-scores .score {
+    font-weight: bold;
+}
+
+.rivalry-bar-container {
+    display: flex;
+    height: 20px;
+    border-radius: 5px;
+    overflow: hidden;
+    background-color: #f0f0f0;
+    margin-bottom: 10px;
+}
+
+.rivalry-bar {
+    transition: width 0.3s ease-in-out;
+}
+
+.rivalry-bar.player1 {
+    background-color: #4CAF50;
+}
+
+.rivalry-bar.player2 {
+    background-color: #F44336;
+}
+
+.leader-message {
+    font-style: italic;
+    color: #555;
+}
+
+.best-buds-card {
+    text-align: center;
+}
+
+.best-buds-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.plus-sign {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.actions-cell {
+    text-align: right;
 }

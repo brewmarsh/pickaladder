@@ -28,7 +28,7 @@
                         <td data-label="Username">{{ user.username }}</td>
                         <td data-label="Name">{{ user.name }}</td>
                         <td data-label="DUPR Rating">{{ user.dupr_rating }}</td>
-                        <td data-label="Actions" style="text-align: right;">
+                        <td data-label="Actions" class="actions-cell">
                             <a href="{{ url_for('user.send_friend_request', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
                         </td>
                     </tr>
@@ -59,7 +59,7 @@
                         <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=user.id) }}">{{ user.username }}</a></td>
                         <td data-label="Name">{{ user.name }}</td>
                         <td data-label="DUPR Rating">{{ user.duprRating }}</td>
-                        <td data-label="Actions" style="text-align: right;">
+                        <td data-label="Actions" class="actions-cell">
                             {% if sent_status == 'accepted' or received_status == 'accepted' %}
                                 <button class="btn" disabled>Friends</button>
                             {% elif sent_status == 'pending' %}
