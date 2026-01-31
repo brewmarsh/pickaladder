@@ -8,4 +8,4 @@ bp = Blueprint(
     url_prefix="/team",
 )
 
-from . import routes  # noqa: F401
+from . import routes  # noqa: E402, F401
