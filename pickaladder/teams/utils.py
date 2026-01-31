@@ -12,7 +12,9 @@ def get_or_create_team(user_a_id, user_b_id):
 
     # Query for an existing team with the exact same members
     teams_ref = db.collection("teams")
-    query = teams_ref.where(filter=firestore.FieldFilter("member_ids", "==", member_ids))
+    query = teams_ref.where(
+        filter=firestore.FieldFilter("member_ids", "==", member_ids)
+    )
     docs = list(query.stream())
 
     if docs:
