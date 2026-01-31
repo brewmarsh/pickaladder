@@ -369,9 +369,7 @@ def view_group(group_id):
             match_data,
             ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
         )
-        opponent2_id = get_id(
-            match_data, ["opponent2Id", "opponent2", "opponent2_id"]
-        )
+        opponent2_id = get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"])
 
         is_doubles = all([player1_id, partner_id, player2_id, opponent2_id])
 
