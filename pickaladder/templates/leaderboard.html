@@ -10,7 +10,7 @@
             <thead>
                 <tr>
                     <th>Rank</th>
-                    <th>Player</th>
+                    <th></th>
                     <th>Win Percentage</th>
                     <th>Games Played</th>
                 </tr>
@@ -19,7 +19,7 @@
                 {% for player in players %}
                 <tr class="{{ 'highlight-row' if player.id == current_user_id else '' }}">
                     <td data-label="Rank" class="{% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">{{ loop.index }}</td>
-                    <td data-label="Player"><a href="{{ url_for('user.view_user', user_id=player.id) }}">{{ player.name }}</a></td>
+                    <td data-label=""><a href="{{ url_for('user.view_user', user_id=player.id) }}">{{ player.name }}</a></td>
                     <td data-label="Win Percentage">{{ "%.2f"|format(player.win_percentage|float) }}%</td>
                     <td data-label="Games Played">{{ player.games_played }}</td>
                 </tr>
