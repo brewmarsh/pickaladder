@@ -7,6 +7,8 @@ from flask_mail import Message
 
 from .extensions import mail
 
+SMTP_AUTH_ERROR_CODE = 534
+
 
 class EmailError(Exception):
     """Base class for email errors."""
@@ -30,13 +32,14 @@ def send_email(to, subject, template, **kwargs):
     try:
         mail.send(msg)
     except smtplib.SMTPAuthenticationError as e:
-        if e.smtp_code == 534:
+        if e.smtp_code == SMTP_AUTH_ERROR_CODE:
             error_message = (
-                "Authentication failed with code 534. This specifically means "
-                "Google rejected the password because it expects an App Password. "
-                "Even if your password is 16 characters, please ensure it is a "
-                "freshly generated App Password, not your regular account password. "
-                "See https://support.google.com/accounts/answer/185833"
+                f"Authentication failed with code {SMTP_AUTH_ERROR_CODE}. This "
+                "specifically means Google rejected the password because it expects "
+                "an App Password. Even if your password is 16 characters, please "
+                "ensure it is a freshly generated App Password, not your regular "
+                "account password. See "
+                "https://support.google.com/accounts/answer/185833"
             )
             raise EmailError(error_message) from e
         raise EmailError(f"SMTP Authentication failed: {e}") from e

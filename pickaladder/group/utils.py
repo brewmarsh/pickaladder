@@ -2,6 +2,7 @@
 
 import operator
 import secrets
+import sys
 import threading
 from datetime import datetime, timedelta, timezone
 
@@ -9,6 +10,10 @@ from firebase_admin import firestore
 from google.cloud.firestore import FieldFilter
 
 from pickaladder.utils import send_email
+
+FIRESTORE_BATCH_LIMIT = 400
+RECENT_MATCHES_LIMIT = 5
+HOT_STREAK_THRESHOLD = 3
 
 
 # TODO: Add type hints for Agent clarity
@@ -86,7 +91,7 @@ def _calculate_leaderboard_from_matches(member_refs, matches):
             for ref in data.get("team1", []):
                 if (
                     ref.id in player_stats
-                    and len(player_stats[ref.id]["last_matches"]) < 5
+                    and len(player_stats[ref.id]["last_matches"]) < RECENT_MATCHES_LIMIT
                 ):
                     player_stats[ref.id]["last_matches"].append(
                         "win" if p1_wins else "loss"
@@ -94,7 +99,7 @@ def _calculate_leaderboard_from_matches(member_refs, matches):
             for ref in data.get("team2", []):
                 if (
                     ref.id in player_stats
-                    and len(player_stats[ref.id]["last_matches"]) < 5
+                    and len(player_stats[ref.id]["last_matches"]) < RECENT_MATCHES_LIMIT
                 ):
                     player_stats[ref.id]["last_matches"].append(
                         "win" if p2_wins else "loss"
@@ -104,7 +109,7 @@ def _calculate_leaderboard_from_matches(member_refs, matches):
             if (
                 p1_ref
                 and p1_ref.id in player_stats
-                and len(player_stats[p1_ref.id]["last_matches"]) < 5
+                and len(player_stats[p1_ref.id]["last_matches"]) < RECENT_MATCHES_LIMIT
             ):
                 player_stats[p1_ref.id]["last_matches"].append(
                     "win" if p1_wins else "loss"
@@ -112,7 +117,7 @@ def _calculate_leaderboard_from_matches(member_refs, matches):
             if (
                 p2_ref
                 and p2_ref.id in player_stats
-                and len(player_stats[p2_ref.id]["last_matches"]) < 5
+                and len(player_stats[p2_ref.id]["last_matches"]) < RECENT_MATCHES_LIMIT
             ):
                 player_stats[p2_ref.id]["last_matches"].append(
                     "win" if p2_wins else "loss"
@@ -291,7 +296,7 @@ def get_group_leaderboard(group_id):
                 break
 
         player["streak"] = streak
-        player["is_on_fire"] = streak >= 3
+        player["is_on_fire"] = streak >= HOT_STREAK_THRESHOLD
 
     return current_leaderboard
 
@@ -469,12 +474,10 @@ def get_user_group_stats(group_id, user_id):
             if user_is_winner:
                 current_streak += 1
             else:
-                if current_streak > longest_streak:
-                    longest_streak = current_streak
+                longest_streak = max(longest_streak, current_streak)
                 current_streak = 0
 
-    if current_streak > longest_streak:
-        longest_streak = current_streak
+    longest_streak = max(longest_streak, current_streak)
 
     stats["longest_streak"] = longest_streak
     stats["win_streak"] = current_streak
@@ -501,8 +504,6 @@ def send_invite_email_background(app, invite_token, email_data):
                     {"status": "sent", "last_error": firestore.DELETE_FIELD}
                 )
             except Exception as e:
-                import sys
-
                 # Log the full exception to stderr so it shows up in Docker logs
                 print(f"ERROR: Background invite email failed: {e}", file=sys.stderr)
                 # Store the error message
@@ -560,7 +561,7 @@ def friend_group_members(db, group_id, new_member_ref):
         operation_count += 2
 
         # Commit batch if it gets too large (Firestore limit is 500)
-        if operation_count >= 400:
+        if operation_count >= FIRESTORE_BATCH_LIMIT:
             batch.commit()
             batch = db.batch()
             operation_count = 0
@@ -569,6 +570,4 @@ def friend_group_members(db, group_id, new_member_ref):
         try:
             batch.commit()
         except Exception as e:
-            import sys
-
             print(f"Error friending group members: {e}", file=sys.stderr)

@@ -358,11 +358,10 @@ def view_user(user_id):
                     user_won = True
                 else:
                     user_lost = True
-            else:  # in team 2
-                if p2_score > p1_score:
-                    user_won = True
-                else:
-                    user_lost = True
+            elif p2_score > p1_score:
+                user_won = True
+            else:
+                user_lost = True
         else:
             is_player1 = match_data.get("player1Ref") == profile_user_ref
             if is_player1:
@@ -370,11 +369,10 @@ def view_user(user_id):
                     user_won = True
                 else:
                     user_lost = True
-            else:  # is_player2
-                if p2_score > p1_score:
-                    user_won = True
-                else:
-                    user_lost = True
+            elif p2_score > p1_score:
+                user_won = True
+            else:
+                user_lost = True
 
         if user_won:
             wins += 1

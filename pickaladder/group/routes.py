@@ -30,6 +30,8 @@ from pickaladder.user.utils import merge_ghost_user
 from . import bp
 from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
 
+UPSET_THRESHOLD = 0.25
+
 
 @dataclass
 class Pagination:
@@ -246,15 +248,14 @@ def view_group(group_id):
 
             if docs:
                 existing_user = docs[0]
-            else:
-                # 2. Check original if different
-                if original_email != email:
-                    query_orig = users_ref.where(
-                        filter=firestore.FieldFilter("email", "==", original_email)
-                    ).limit(1)
-                    docs = list(query_orig.stream())
-                    if docs:
-                        existing_user = docs[0]
+            # 2. Check original if different
+            elif original_email != email:
+                query_orig = users_ref.where(
+                    filter=firestore.FieldFilter("email", "==", original_email)
+                ).limit(1)
+                docs = list(query_orig.stream())
+                if docs:
+                    existing_user = docs[0]
 
             if existing_user:
                 # User exists, use their stored email for the invite to ensure
@@ -469,7 +470,7 @@ def view_group(group_id):
             loser_rating = float(loser_player.get("dupr_rating") or 0.0)
 
             if loser_rating > 0 and winner_rating > 0:  # Both must have a rating
-                if (loser_rating - winner_rating) >= 0.25:
+                if (loser_rating - winner_rating) >= UPSET_THRESHOLD:
                     match_data["is_upset"] = True
 
         recent_matches.append(match_data)

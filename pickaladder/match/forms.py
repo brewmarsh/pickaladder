@@ -4,6 +4,9 @@ from flask_wtf import FlaskForm  # type: ignore
 from wtforms import DateField, IntegerField, SelectField, ValidationError
 from wtforms.validators import DataRequired, InputRequired, Optional
 
+MIN_WINNING_SCORE = 11
+MIN_WIN_MARGIN = 2
+
 
 class MatchForm(FlaskForm):
     """Form for recording a new match."""
@@ -49,12 +52,14 @@ class MatchForm(FlaskForm):
         p1_score = self.player1_score.data
         p2_score = field.data
 
-        if max(p1_score, p2_score) < 11:
+        if max(p1_score, p2_score) < MIN_WINNING_SCORE:
             raise ValidationError(
-                "One team/player must have at least 11 points to win."
+                f"One team/player must have at least {MIN_WINNING_SCORE} points to win."
             )
-        if abs(p1_score - p2_score) < 2:
-            raise ValidationError("The winner must win by at least 2 points.")
+        if abs(p1_score - p2_score) < MIN_WIN_MARGIN:
+            raise ValidationError(
+                f"The winner must win by at least {MIN_WIN_MARGIN} points."
+            )
 
     # TODO: Add type hints for Agent clarity
     def validate(self, extra_validators=None):

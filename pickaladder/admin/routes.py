@@ -17,6 +17,8 @@ from pickaladder.auth.decorators import login_required
 
 from . import bp
 
+MIN_USERS_FOR_MATCH_GENERATION = 2
+
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/")
@@ -216,7 +218,7 @@ def generate_matches():
     fake = Faker()
     try:
         users = list(db.collection("users").limit(20).stream())
-        if len(users) < 2:
+        if len(users) < MIN_USERS_FOR_MATCH_GENERATION:
             flash("Not enough users to generate matches.", "warning")
             return redirect(url_for(".admin"))
 

@@ -1,6 +1,7 @@
 """Tests for the group blueprint."""
 
 import unittest
+from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 # Pre-emptive imports to ensure patch targets exist.
@@ -136,8 +137,6 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         mock_group_doc.get.return_value = mock_group_snapshot
 
         # Create a mock file
-        from io import BytesIO
-
         data = {
             "name": "My Image Group",
             "profile_picture": (BytesIO(b"fake image data"), "test.jpg"),
