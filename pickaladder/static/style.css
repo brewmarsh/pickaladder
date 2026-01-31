@@ -387,8 +387,9 @@ input[type="submit"], .btn {
 
 .grid-container {
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
+    align-items: start;
 }
 
 /* Match Cards */
@@ -985,4 +986,17 @@ input[type="submit"], .btn {
 .rivalry-vs {
     font-weight: bold;
     font-size: 1.2em;
+}
+
+@media (max-width: 768px) {
+  .grid-container {
+    grid-template-columns: 1fr;
+  }
+  .group-header-actions {
+    flex-wrap: wrap;
+  }
+  .group-header-actions > .btn {
+    width: 100%;
+    margin-top: 10px;
+  }
 }
