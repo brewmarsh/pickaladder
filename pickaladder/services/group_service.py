@@ -255,7 +255,9 @@ def _get_group_leaderboard(
         key=lambda m: m.to_dict().get("matchDate") or datetime.min, reverse=True
     )
 
-    user_matches_map = {ref.id: [] for ref in member_refs}
+    user_matches_map: Dict[str, List[Dict[str, Any]]] = {
+        ref.id: [] for ref in member_refs
+    }
     for match in all_matches:
         data = match.to_dict()
         match_type = data.get("matchType", "singles")
@@ -356,7 +358,6 @@ def create_email_invite(
     else:
         # User does not exist, create a Ghost User This allows matches to
         # be recorded against them before they register
-        invite_email = email
         ghost_user_data = {
             "email": email,
             "name": invitee_name,
@@ -583,7 +584,7 @@ def _calculate_best_buds(
         ]
     )
     all_matches_docs = list(all_matches_query.stream())
-    partnership_wins = defaultdict(int)
+    partnership_wins: Dict[Tuple[str, str], int] = defaultdict(int)
     for match_doc in all_matches_docs:
         match_data = match_doc.to_dict()
 
