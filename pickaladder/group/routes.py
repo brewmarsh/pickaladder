@@ -1,7 +1,5 @@
 """Routes for the group blueprint."""
 
-import secrets
-from collections import defaultdict
 from dataclasses import dataclass
 
 from firebase_admin import firestore, storage
@@ -17,14 +15,6 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.group.utils import (
-    friend_group_members,
-    get_group_leaderboard,
-    get_leaderboard_trend_data,
-    get_random_joke,
-    get_user_group_stats,
-    send_invite_email_background,
-)
 from pickaladder.services import group_service
 from pickaladder.user.utils import merge_ghost_user
 
@@ -166,11 +156,11 @@ def view_group(group_id):
                 "name": invite_details["name"],
                 "group_name": group_data.get("name"),
                 "invite_url": invite_url,
-                "joke": get_random_joke(),
+                "joke": group_service.get_random_joke(),
             }
 
-            send_invite_email_background(
-                current_app._get_current_object(), invite_details["token"], email_data
+            group_service.send_invite_email_background(
+                current_app._get_current_object(), db, invite_details["token"], email_data
             )
 
             flash(f"Invitation is being sent to {invite_details['email']}.", "toast")
@@ -360,10 +350,12 @@ def resend_invite(token):
         "name": data.get("name"),
         "group_name": group.to_dict().get("name"),
         "invite_url": invite_url,
-        "joke": get_random_joke(),
+        "joke": group_service.get_random_joke(),
     }
 
-    send_invite_email_background(current_app._get_current_object(), token, email_data)
+    group_service.send_invite_email_background(
+        current_app._get_current_object(), db, token, email_data
+    )
     flash(f"Resending invitation to {data.get('email')}...", "toast")
     return redirect(url_for(".view_group", group_id=group_id))
 
@@ -383,8 +375,8 @@ def view_leaderboard_trend(group_id):
     group_data = group.to_dict()
     group_data["id"] = group.id
 
-    trend_data = get_leaderboard_trend_data(group_id)
-    user_stats = get_user_group_stats(group_id, g.user["uid"])
+    trend_data = group_service.get_leaderboard_trend_data(db, group_id)
+    user_stats = group_service.get_user_group_stats(db, group_id, g.user["uid"])
 
     return render_template(
         "group_leaderboard_trend.html",
@@ -459,7 +451,7 @@ def handle_invite(token):
         invite_ref.update({"used": True, "used_by": g.user["uid"]})
 
         # Friend other group members
-        friend_group_members(db, group_id, user_ref)
+        group_service.friend_group_members(db, group_id, user_ref)
 
         flash("Welcome to the team!", "success")
         return redirect(url_for(".view_group", group_id=group_id))
@@ -506,7 +498,7 @@ def join_group(group_id):
 
     try:
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
-        friend_group_members(db, group_id, user_ref)
+        group_service.friend_group_members(db, group_id, user_ref)
         flash("Successfully joined the group.", "success")
     except Exception as e:
         flash(f"An error occurred while trying to join the group: {e}", "danger")
