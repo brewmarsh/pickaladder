@@ -54,9 +54,9 @@ class TestUtilsCoverage(unittest.TestCase):
             "player2Score": 5,
             "matchDate": datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         }
-        mock_db.collection(
-            "matches"
-        ).where.return_value.stream.return_value = [mock_match]
+        mock_db.collection("matches").where.return_value.stream.return_value = [
+            mock_match
+        ]
 
         leaderboard = get_group_leaderboard("group1")
 
@@ -98,7 +98,9 @@ class TestUtilsCoverage(unittest.TestCase):
             ref.get.return_value = user_doc
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
-        mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
+        mock_db.collection("groups").document(
+            "group1"
+        ).get.return_value = mock_group_doc
 
         mock_match = MagicMock()
         mock_match.to_dict.return_value = {
@@ -109,7 +111,9 @@ class TestUtilsCoverage(unittest.TestCase):
             "player2Score": 10,
             "matchDate": datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         }
-        mock_db.collection("matches").where.return_value.stream.return_value = [mock_match]
+        mock_db.collection("matches").where.return_value.stream.return_value = [
+            mock_match
+        ]
 
         leaderboard = get_group_leaderboard("group1")
 
@@ -130,7 +134,9 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_group_doc = MagicMock()
         mock_group_doc.exists = True
         mock_group_doc.to_dict.return_value = {"members": []}
-        mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
+        mock_db.collection("groups").document(
+            "group1"
+        ).get.return_value = mock_group_doc
 
         leaderboard = get_group_leaderboard("group1")
         self.assertEqual(leaderboard, [])
@@ -154,7 +160,9 @@ class TestUtilsCoverage(unittest.TestCase):
             ref.get.return_value = user_doc
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
-        mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
+        mock_db.collection("groups").document(
+            "group1"
+        ).get.return_value = mock_group_doc
         mock_db.collection("matches").where.return_value.stream.return_value = []
 
         leaderboard = get_group_leaderboard("group1")
@@ -190,7 +198,9 @@ class TestUtilsCoverage(unittest.TestCase):
             ref.get.return_value = user_doc
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
-        mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
+        mock_db.collection("groups").document(
+            "group1"
+        ).get.return_value = mock_group_doc
 
         now = datetime.now(timezone.utc)
         mock_datetime.now.return_value = now
@@ -248,7 +258,9 @@ class TestUtilsCoverage(unittest.TestCase):
             ref.get.return_value = user_doc
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
-        mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
+        mock_db.collection("groups").document(
+            "group1"
+        ).get.return_value = mock_group_doc
 
         now = datetime.now(timezone.utc)
         matches = []
@@ -311,7 +323,10 @@ class TestUtilsCoverage(unittest.TestCase):
             "player2Score": 11,
             "matchDate": datetime(2023, 1, 2),
         }
-        mock_db.collection("matches").where.return_value.stream.return_value = [mock_match1, mock_match2]
+        mock_db.collection("matches").where.return_value.stream.return_value = [
+            mock_match1,
+            mock_match2,
+        ]
 
         mock_user1_doc = MagicMock()
         mock_user1_doc.id = "user1"
@@ -328,8 +343,12 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(trend_data["labels"], ["2023-01-01", "2023-01-02"])
         self.assertEqual(len(trend_data["datasets"]), 2)
 
-        user1_data = next(ds for ds in trend_data["datasets"] if ds["label"] == "User 1")
-        user2_data = next(ds for ds in trend_data["datasets"] if ds["label"] == "User 2")
+        user1_data = next(
+            ds for ds in trend_data["datasets"] if ds["label"] == "User 1"
+        )
+        user2_data = next(
+            ds for ds in trend_data["datasets"] if ds["label"] == "User 2"
+        )
 
         self.assertEqual(user1_data["data"], [11.0, 8.0])
         self.assertEqual(user2_data["data"], [5.0, 8.0])
@@ -403,7 +422,9 @@ class TestUtilsCoverage(unittest.TestCase):
 
         member_refs = [mock_user1_ref, mock_user2_ref, new_member_ref]
         mock_group_doc.to_dict.return_value = {"members": member_refs}
-        mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
+        mock_db.collection("groups").document(
+            "group1"
+        ).get.return_value = mock_group_doc
 
         mock_batch = MagicMock()
         mock_db.batch.return_value = mock_batch
@@ -427,7 +448,7 @@ class TestUtilsCoverage(unittest.TestCase):
 
         # Make the thread run synchronously
         thread = MagicMock()
-        thread.start.side_effect = lambda: mock_thread.call_args[1]['target']()
+        thread.start.side_effect = lambda: mock_thread.call_args[1]["target"]()
         mock_thread.return_value = thread
 
         send_invite_email_background(mock_app, "invite_token", email_data)
@@ -454,7 +475,7 @@ class TestUtilsCoverage(unittest.TestCase):
 
         # Make the thread run synchronously
         thread = MagicMock()
-        thread.start.side_effect = lambda: mock_thread.call_args[1]['target']()
+        thread.start.side_effect = lambda: mock_thread.call_args[1]["target"]()
         mock_thread.return_value = thread
 
         send_invite_email_background(mock_app, "invite_token", email_data)

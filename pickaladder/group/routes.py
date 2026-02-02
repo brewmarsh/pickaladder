@@ -32,6 +32,7 @@ from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
 
 UPSET_THRESHOLD = 0.25
 GUEST_USER = {"username": "Guest", "id": "unknown"}
+DOUBLES_TEAM_SIZE = 2
 
 
 @dataclass
@@ -177,7 +178,8 @@ def view_group(group_id):
             team_doc
             for team_doc in all_team_docs
             if all(
-                member_id in member_ids for member_id in team_doc.to_dict()["member_ids"]
+                member_id in member_ids
+                for member_id in team_doc.to_dict()["member_ids"]
             )
         ]
 
@@ -191,7 +193,9 @@ def view_group(group_id):
         members_map = {}
         if all_member_refs:
             # Deduplicate refs by their path
-            unique_member_refs = list({ref.path: ref for ref in all_member_refs}.values())
+            unique_member_refs = list(
+                {ref.path: ref for ref in all_member_refs}.values()
+            )
             member_docs = db.get_all(unique_member_refs)
             members_map = {doc.id: doc.to_dict() for doc in member_docs if doc.exists}
 
@@ -221,7 +225,7 @@ def view_group(group_id):
             # To handle user name changes, we regenerate the default team name.
             # This assumes that if a custom name is set, it won't follow the "A & B" pattern.
             # A more robust solution would require a database schema change (e.g., is_name_custom flag).
-            if len(team_members) == 2:
+            if len(team_members) == DOUBLES_TEAM_SIZE:
                 member_names = [
                     m.get("name") or m.get("username", "Unknown") for m in team_members
                 ]
@@ -421,7 +425,11 @@ def view_group(group_id):
         team_id_list = list(team_ids)
         # Assuming team_ids won't exceed Firestore's limit of 30 for 'in' queries for now.
         # Chunking can be added if this assumption proves false.
-        team_docs = db.collection("teams").where(filter=firestore.FieldFilter("__name__", "in", team_id_list)).stream()
+        team_docs = (
+            db.collection("teams")
+            .where(filter=firestore.FieldFilter("__name__", "in", team_id_list))
+            .stream()
+        )
         teams_map = {doc.id: doc.to_dict() for doc in team_docs}
 
     # --- Batch Fetch Player Details ---
@@ -560,7 +568,9 @@ def view_group(group_id):
                 ),
                 GUEST_USER,
             )
-            opponent2_id = get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"])
+            opponent2_id = get_id(
+                match_data, ["opponent2Id", "opponent2", "opponent2_id"]
+            )
             if opponent2_id:
                 match_data["opponent2"] = users_map.get(opponent2_id, GUEST_USER)
             else:
