@@ -987,18 +987,38 @@ def api_dashboard():
     for group_doc in my_groups_query:
         group_data = group_doc.to_dict()
         leaderboard = get_group_leaderboard(group_doc.id)
-        rank = "N/A"
+        user_ranking_data = None
         for i, player in enumerate(leaderboard):
             if player["id"] == user_id:
                 rank = i + 1
+                user_ranking_data = {
+                    "group_id": group_doc.id,
+                    "group_name": group_data.get("name", "N/A"),
+                    "rank": rank,
+                    "points": player.get("avg_score", 0),
+                    "form": player.get("form", []),
+                }
+                if i > 0:
+                    player_above = leaderboard[i - 1]
+                    user_ranking_data["player_above"] = player_above.get("name")
+                    user_ranking_data["points_to_overtake"] = player_above.get(
+                        "avg_score", 0
+                    ) - player.get("avg_score", 0)
                 break
-        group_rankings.append(
-            {
-                "group_id": group_doc.id,
-                "group_name": group_data.get("name", "N/A"),
-                "rank": rank,
-            }
-        )
+
+        if user_ranking_data:
+            group_rankings.append(user_ranking_data)
+        else:
+            # Handle case where user is in group but has played no matches
+            group_rankings.append(
+                {
+                    "group_id": group_doc.id,
+                    "group_name": group_data.get("name", "N/A"),
+                    "rank": "N/A",
+                    "points": 0,
+                    "form": [],
+                }
+            )
 
     streak_display = (
         f"{current_streak}{streak_type}" if processed_matches_for_stats else "N/A"
