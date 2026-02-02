@@ -16,7 +16,7 @@ jobs:
           python-version: '3.9'
 
       - name: Install agent-readiness-scorecard
-        run: pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git
+        run: pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git@main
 
       - name: Run agent-score and check threshold
         run: agent-score pickaladder/ --threshold 75
