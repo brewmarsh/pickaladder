@@ -25,6 +25,8 @@ from pickaladder.group.utils import (
     get_random_joke,
     get_user_group_stats,
     send_invite_email_background,
+)
+from pickaladder.group.utils import (
     get_head_to_head_stats as get_h2h_stats,
 )
 from pickaladder.user.utils import merge_ghost_user

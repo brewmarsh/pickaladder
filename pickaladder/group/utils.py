@@ -710,9 +710,9 @@ def get_head_to_head_stats(group_id, playerA_id, playerB_id):
         player_a_is_team2 = playerA_id in team2_ids
         player_b_is_team1 = playerB_id in team1_ids
 
-        if (player_a_is_team1 and player_b_is_team2) or \
-           (player_a_is_team2 and player_b_is_team1):
-
+        if (player_a_is_team1 and player_b_is_team2) or (
+            player_a_is_team2 and player_b_is_team1
+        ):
             rivalry_matches.append(match)
 
             team1_score = match.get("team1Score", 0) or 0
@@ -724,7 +724,7 @@ def get_head_to_head_stats(group_id, playerA_id, playerB_id):
                     wins += 1
                 else:
                     losses += 1
-            else: # Player A is on team 2
+            else:  # Player A is on team 2
                 point_diff += team2_score - team1_score
                 if match.get("winner") == "team2":
                     wins += 1
