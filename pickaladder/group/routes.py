@@ -18,6 +18,7 @@ from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import (
+    _get_recent_matches_and_players,
     friend_group_members,
     get_group_leaderboard,
     get_leaderboard_trend_data,
@@ -405,7 +406,6 @@ def view_group(group_id):
     is_member = current_user_id in member_ids
 
     # --- Fetch Recent Matches ---
-    recent_matches = []
     matches_ref = db.collection("matches")
     matches_query = (
         matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
@@ -413,28 +413,9 @@ def view_group(group_id):
         .limit(20)
     )
     recent_matches_docs = list(matches_query.stream())
+    recent_matches = _get_recent_matches_and_players(db, recent_matches_docs)
 
-    # --- Batch Fetch Team Details ---
-    team_refs = set()
-    for match_doc in recent_matches_docs:
-        match_data = match_doc.to_dict()
-        if match_data.get("team1Ref"):
-            team_refs.add(match_data["team1Ref"])
-        if match_data.get("team2Ref"):
-            team_refs.add(match_data["team2Ref"])
-
-    teams_map = {}
-    if team_refs:
-        # Filter out any None values that might have been added
-        valid_team_refs = [ref for ref in team_refs if ref]
-        if valid_team_refs:
-            team_snapshots = db.get_all(valid_team_refs)
-            teams_map = {
-                snap.id: snap.to_dict() for snap in team_snapshots if snap.exists
-            }
-
-    # --- Batch Fetch Player Details ---
-    # TODO: Add type hints for Agent clarity
+    # --- "Best Buds" Calculation ---
     def get_id(data, possible_keys):
         """Get first non-None value for a list of possible keys."""
         for key in possible_keys:
@@ -442,7 +423,6 @@ def view_group(group_id):
                 return data[key]
         return None
 
-    # --- "Best Buds" Calculation ---
     all_matches_query = matches_ref.where(
         filter=firestore.FieldFilter("groupId", "==", group_id)
     ).select(
@@ -510,112 +490,23 @@ def view_group(group_id):
                 "wins": partnership_wins[best_buds_pair],
             }
 
-    player_ids = set()
-    for match_doc in recent_matches_docs:
-        match_data = match_doc.to_dict()
-        player_ids.add(
-            get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"])
-        )
-        player_ids.add(
-            get_id(
-                match_data,
-                ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
-            )
-        )
-        player_ids.add(get_id(match_data, ["partnerId", "partner", "partner_id"]))
-        player_ids.add(get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"]))
-    player_ids.discard(None)
-
-    users_map = {}
-    if player_ids:
-        # Note: Firestore 'in' queries are limited to 30 items.
-        # Chunking is required for larger sets.
-        player_id_list = list(player_ids)
-        for i in range(0, len(player_id_list), 30):
-            chunk = player_id_list[i : i + 30]
-            user_docs = (
-                db.collection("users")
-                .where(filter=firestore.FieldFilter("__name__", "in", chunk))
-                .stream()
-            )
-            for doc in user_docs:
-                users_map[doc.id] = doc.to_dict()
-
-    for match_doc in recent_matches_docs:
-        match_data = match_doc.to_dict()
-        match_data["id"] = match_doc.id
-
-        # --- Team data ---
-        match_data["team1"] = teams_map.get(match_data.get("team1Id"))
-        match_data["team2"] = teams_map.get(match_data.get("team2Id"))
-
-        # --- Fallback to player data for older matches ---
-        if not match_data["team1"]:
-            match_data["player1"] = users_map.get(
-                get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"]),
-                GUEST_USER,
-            )
-            partner_id = get_id(match_data, ["partnerId", "partner", "partner_id"])
-            if partner_id:
-                match_data["partner"] = users_map.get(partner_id, GUEST_USER)
-            else:
-                match_data["partner"] = None
-
-        if not match_data["team2"]:
-            match_data["player2"] = users_map.get(
-                get_id(
-                    match_data,
-                    ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
-                ),
-                GUEST_USER,
-            )
-            opponent2_id = get_id(
-                match_data, ["opponent2Id", "opponent2", "opponent2_id"]
-            )
-            if opponent2_id:
-                match_data["opponent2"] = users_map.get(opponent2_id, GUEST_USER)
-            else:
-                match_data["opponent2"] = None
-
-        # --- Giant Slayer Logic ---
+    # --- Giant Slayer Calculation ---
+    for match_data in recent_matches:
         winner_player = None
         loser_player = None
-        # This logic primarily considers singles matches for now.
         if match_data.get("winner") == "team1":
-            winner_player = users_map.get(
-                get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"]),
-                GUEST_USER,
-            )
-            loser_player = users_map.get(
-                get_id(
-                    match_data,
-                    ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
-                ),
-                GUEST_USER,
-            )
+            winner_player = match_data.get("player1")
+            loser_player = match_data.get("player2")
         elif match_data.get("winner") == "team2":
-            winner_player = users_map.get(
-                get_id(
-                    match_data,
-                    ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
-                ),
-                GUEST_USER,
-            )
-            loser_player = users_map.get(
-                get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"]),
-                GUEST_USER,
-            )
+            winner_player = match_data.get("player2")
+            loser_player = match_data.get("player1")
 
         if winner_player and loser_player:
-            # Ensure ratings are treated as floats, defaulting to 0.0
             winner_rating = float(winner_player.get("dupr_rating") or 0.0)
             loser_rating = float(loser_player.get("dupr_rating") or 0.0)
-
-            if loser_rating > 0 and winner_rating > 0:  # Both must have a rating
+            if loser_rating > 0 and winner_rating > 0:
                 if (loser_rating - winner_rating) >= UPSET_THRESHOLD:
                     match_data["is_upset"] = True
-
-        recent_matches.append(match_data)
 
     return render_template(
         "group.html",
