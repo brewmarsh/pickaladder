@@ -572,6 +572,7 @@ def friend_group_members(db, group_id, new_member_ref):
         except Exception as e:
             print(f"Error friending group members: {e}", file=sys.stderr)
 
+
 def _get_recent_matches_and_players(db, recent_matches_docs: list) -> list:
     """
     Fetches and assembles recent match data with associated team and player details.
@@ -597,8 +598,16 @@ def _get_recent_matches_and_players(db, recent_matches_docs: list) -> list:
 
         # Collect all possible player references
         player_keys = [
-            "player1Ref", "player2Ref", "partnerRef", "opponent1Ref", "opponent2Ref",
-            "player1", "player2", "partner", "opponent1", "opponent2"
+            "player1Ref",
+            "player2Ref",
+            "partnerRef",
+            "opponent1Ref",
+            "opponent2Ref",
+            "player1",
+            "player2",
+            "partner",
+            "opponent1",
+            "opponent2",
         ]
         for key in player_keys:
             if ref := match_data.get(key):
@@ -633,19 +642,19 @@ def _get_recent_matches_and_players(db, recent_matches_docs: list) -> list:
 
         # Populate Teams
         if team1_ref := match_data.get("team1Ref"):
-            match_data['team1'] = teams_map.get(team1_ref.id)
+            match_data["team1"] = teams_map.get(team1_ref.id)
         if team2_ref := match_data.get("team2Ref"):
-            match_data['team2'] = teams_map.get(team2_ref.id)
+            match_data["team2"] = teams_map.get(team2_ref.id)
 
         # Populate Players (as fallback and for older match types)
         if p1_ref := match_data.get("player1Ref"):
-             match_data['player1'] = players_map.get(p1_ref.id, GUEST_USER)
+            match_data["player1"] = players_map.get(p1_ref.id, GUEST_USER)
         if p2_ref := match_data.get("player2Ref"):
-             match_data['player2'] = players_map.get(p2_ref.id, GUEST_USER)
+            match_data["player2"] = players_map.get(p2_ref.id, GUEST_USER)
         if partner_ref := match_data.get("partnerRef"):
-             match_data['partner'] = players_map.get(partner_ref.id, GUEST_USER)
+            match_data["partner"] = players_map.get(partner_ref.id, GUEST_USER)
         if opp2_ref := match_data.get("opponent2Ref"):
-            match_data['opponent2'] = players_map.get(opp2_ref.id, GUEST_USER)
+            match_data["opponent2"] = players_map.get(opp2_ref.id, GUEST_USER)
 
         recent_matches.append(match_data)
 
