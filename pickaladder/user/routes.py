@@ -869,15 +869,69 @@ def api_dashboard():
         + list(matches_as_t2)
     )
     unique_matches = {match.id: match for match in all_matches}.values()
-    sorted_matches = sorted(
+
+    # Calculate stats over all matches
+    wins = 0
+    losses = 0
+    processed_matches_for_stats = []
+    for match_doc in unique_matches:
+        match_data = match_doc.to_dict()
+        p1_score = match_data.get("player1Score", 0)
+        p2_score = match_data.get("player2Score", 0)
+        user_won = False
+
+        if match_data.get("matchType") == "doubles":
+            team1_refs = match_data.get("team1", [])
+            in_team1 = any(ref.id == user_id for ref in team1_refs)
+            if (in_team1 and p1_score > p2_score) or (
+                not in_team1 and p2_score > p1_score
+            ):
+                user_won = True
+        else:
+            is_player1 = (
+                match_data.get("player1Ref") and match_data["player1Ref"].id == user_id
+            )
+            if (is_player1 and p1_score > p2_score) or (
+                not is_player1 and p2_score > p1_score
+            ):
+                user_won = True
+
+        if user_won:
+            wins += 1
+        else:
+            losses += 1
+        processed_matches_for_stats.append(
+            {
+                "date": match_data.get("matchDate") or match_doc.create_time,
+                "user_won": user_won,
+            }
+        )
+
+    total_games = wins + losses
+    win_percentage = (wins / total_games) * 100 if total_games > 0 else 0
+
+    processed_matches_for_stats.sort(key=lambda x: x["date"], reverse=True)
+    current_streak = 0
+    streak_type = "N/A"
+    if processed_matches_for_stats:
+        last_result = processed_matches_for_stats[0]["user_won"]
+        streak_type = "W" if last_result else "L"
+        for match in processed_matches_for_stats:
+            if match["user_won"] == last_result:
+                current_streak += 1
+            else:
+                break
+
+    # Sort all matches by date and take the most recent 10 for the feed
+    sorted_matches_for_feed = sorted(
         unique_matches,
         key=lambda x: x.to_dict().get("matchDate") or x.create_time,
         reverse=True,
     )[:10]
 
-    # Batch fetch user data for all players in the matches
+    # Batch fetch user data for all players in the recent matches
     player_refs = set()
-    for match_doc in sorted_matches:
+    for match_doc in sorted_matches_for_feed:
         match = match_doc.to_dict()
         if match.get("player1Ref"):
             player_refs.add(match["player1Ref"])
@@ -894,7 +948,7 @@ def api_dashboard():
         users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
 
     matches_data = []
-    for match_doc in sorted_matches:
+    for match_doc in sorted_matches_for_feed:
         match = match_doc.to_dict()
         p1_score = match.get("player1Score", 0)
         p2_score = match.get("player2Score", 0)
@@ -946,6 +1000,9 @@ def api_dashboard():
             }
         )
 
+    streak_display = (
+        f"{current_streak}{streak_type}" if processed_matches_for_stats else "N/A"
+    )
     return jsonify(
         {
             "user": user_data,
@@ -953,6 +1010,11 @@ def api_dashboard():
             "requests": requests_data,
             "matches": matches_data,
             "group_rankings": group_rankings,
+            "stats": {
+                "total_matches": total_games,
+                "win_percentage": win_percentage,
+                "current_streak": streak_display,
+            },
         }
     )
 
