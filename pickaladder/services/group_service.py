@@ -97,13 +97,15 @@ def get_group_details(
         pending_members = _get_pending_invites(db, group_id)
 
     # Fetch recent matches and all players involved
-    recent_matches_docs, users_map = _get_recent_matches_and_players(db, group_id)
+    recent_matches_docs, users_map, teams_map = _get_recent_matches_and_players(
+        db, group_id
+    )
 
     # Best Buds calculation using all group matches
     best_buds = _calculate_best_buds(db, group_id)
 
     # Enrich matches with player data and upset status
-    enriched_matches = _enrich_matches(recent_matches_docs, users_map)
+    enriched_matches = _enrich_matches(recent_matches_docs, users_map, teams_map)
 
     # Singles Leaderboard
     leaderboard = get_group_leaderboard(db, group_id)
@@ -749,8 +751,12 @@ def _get_pending_invites(db: firestore.Client, group_id: str) -> List[Dict[str, 
 
 def _get_recent_matches_and_players(
     db: firestore.Client, group_id: str
-) -> Tuple[List[firestore.DocumentSnapshot], Dict[str, Dict[str, Any]]]:
-    """Fetch recent matches and a map of all players involved."""
+) -> Tuple[
+    List[firestore.DocumentSnapshot],
+    Dict[str, Dict[str, Any]],
+    Dict[str, Dict[str, Any]],
+]:
+    """Fetch recent matches and a map of all players and teams involved."""
     matches_ref = db.collection("matches")
     matches_query = (
         matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
@@ -760,6 +766,7 @@ def _get_recent_matches_and_players(
     recent_matches_docs = list(matches_query.stream())
 
     player_ids = set()
+    team_refs = set()
     for match_doc in recent_matches_docs:
         match_data = match_doc.to_dict()
         player_ids.add(
@@ -775,12 +782,16 @@ def _get_recent_matches_and_players(
         player_ids.add(
             _get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"])
         )
+        if match_data.get("team1Ref"):
+            team_refs.add(match_data.get("team1Ref"))
+        if match_data.get("team2Ref"):
+            team_refs.add(match_data.get("team2Ref"))
+
     player_ids.discard(None)
 
     users_map = {}
     if player_ids:
         player_id_list = list(player_ids)
-        # Chunking is required for larger sets
         for i in range(0, len(player_id_list), 30):
             chunk = player_id_list[i : i + 30]
             user_docs = (
@@ -791,7 +802,14 @@ def _get_recent_matches_and_players(
             for doc in user_docs:
                 users_map[doc.id] = doc.to_dict()
 
-    return recent_matches_docs, users_map
+    teams_map = {}
+    if team_refs:
+        team_docs = db.get_all(list(team_refs))
+        for doc in team_docs:
+            if doc.exists:
+                teams_map[doc.id] = doc.to_dict()
+
+    return recent_matches_docs, users_map, teams_map
 
 
 def _calculate_best_buds(
@@ -870,12 +888,23 @@ def _calculate_best_buds(
 def _enrich_matches(
     recent_matches_docs: List[firestore.DocumentSnapshot],
     users_map: Dict[str, Dict[str, Any]],
+    teams_map: Dict[str, Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
-    """Enrich match data with player details and check for upsets."""
+    """Enrich match data with player and team details and check for upsets."""
     recent_matches = []
     for match_doc in recent_matches_docs:
         match_data = match_doc.to_dict()
         match_data["id"] = match_doc.id
+
+        # Handle team-based matches
+        team1_ref = match_data.get("team1Ref")
+        if team1_ref:
+            match_data["team1"] = teams_map.get(team1_ref.id)
+        team2_ref = match_data.get("team2Ref")
+        if team2_ref:
+            match_data["team2"] = teams_map.get(team2_ref.id)
+
+        # Handle older, user-based matches as a fallback
         match_data["player1"] = users_map.get(
             _get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"]),
             GUEST_USER,

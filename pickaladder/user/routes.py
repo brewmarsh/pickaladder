@@ -19,7 +19,7 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.group.utils import get_group_leaderboard
+from pickaladder.services.group_service import get_group_leaderboard
 from pickaladder.utils import EmailError, send_email
 
 from . import bp
