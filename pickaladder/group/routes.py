@@ -415,25 +415,23 @@ def view_group(group_id):
     recent_matches_docs = list(matches_query.stream())
 
     # --- Batch Fetch Team Details ---
-    team_ids = set()
+    team_refs = set()
     for match_doc in recent_matches_docs:
         match_data = match_doc.to_dict()
-        if match_data.get("team1Id"):
-            team_ids.add(match_data["team1Id"])
-        if match_data.get("team2Id"):
-            team_ids.add(match_data["team2Id"])
+        if match_data.get("team1Ref"):
+            team_refs.add(match_data["team1Ref"])
+        if match_data.get("team2Ref"):
+            team_refs.add(match_data["team2Ref"])
 
     teams_map = {}
-    if team_ids:
-        team_id_list = list(team_ids)
-        # Assuming team_ids won't exceed Firestore's limit of 30 for 'in' queries
-        # for now. Chunking can be added if this assumption proves false.
-        team_docs = (
-            db.collection("teams")
-            .where(filter=firestore.FieldFilter("__name__", "in", team_id_list))
-            .stream()
-        )
-        teams_map = {doc.id: doc.to_dict() for doc in team_docs}
+    if team_refs:
+        # Filter out any None values that might have been added
+        valid_team_refs = [ref for ref in team_refs if ref]
+        if valid_team_refs:
+            team_snapshots = db.get_all(valid_team_refs)
+            teams_map = {
+                snap.id: snap.to_dict() for snap in team_snapshots if snap.exists
+            }
 
     # --- Batch Fetch Player Details ---
     # TODO: Add type hints for Agent clarity
