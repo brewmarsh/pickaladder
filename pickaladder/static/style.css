@@ -1334,3 +1334,82 @@ input[type="submit"], .btn {
 #rivalry-cta-container .btn {
     margin-top: 1rem;
 }
+
+/* Dashboard Layout */
+.dashboard-columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+.dashboard-column-left {
+    flex: 2;
+    min-width: 300px;
+}
+.dashboard-column-right {
+    flex: 1;
+    min-width: 300px;
+}
+
+/* Dashboard Hero Section */
+.hero-stats-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.hero-left-panel {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.profile-picture-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.hero-name-and-edit h2 {
+    margin: 0;
+    font-weight: 400;
+}
+
+.hero-name-and-edit .btn {
+    margin-top: 5px;
+    width: auto;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.hero-right-panel {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.hero-right-panel .btn {
+    width: auto;
+    margin-top: 0;
+}
+
+#vanity-stats-container {
+    display: flex;
+    gap: 30px;
+    text-align: center;
+}
+
+.vanity-stat .stat-value {
+    font-size: 1.8em;
+    font-weight: 500;
+}
+
+.vanity-stat .stat-label {
+    font-size: 0.9em;
+    color: var(--text-secondary-color);
+}

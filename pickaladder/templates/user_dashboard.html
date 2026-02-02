@@ -6,94 +6,111 @@
 {% endblock %}
 {% block content %}
     <div id="dashboard-content" style="display: none;">
-        <div class="grid-container">
-            <div class="card">
-                <h3>Profile Information</h3>
-                <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data" class="profile-form">
-                    {{ form.hidden_tag() }}
-                    <div class="profile-header">
-                        <img src="{{ user.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture" id="profile-picture-img">
-                        <div class="form-group profile-picture-group">
-                            {{ form.profile_picture(class="form-control", accept="image/*") }}
-                        </div>
-                    </div>
-                    <h4 id="user-username"></h4>
-                    <p><strong>Email:</strong> <span id="user-email"></span></p>
-
-                    <div class="form-group">
-                        {{ form.dupr_rating.label(for="dupr_rating_input") }}
-                        {{ form.dupr_rating(class="form-control", id="dupr_rating_input") }}
-                    </div>
-
-                    <div class="form-group dark-mode-group">
-                        {{ form.dark_mode.label }}
-                        <label class="switch">
-                            {{ form.dark_mode() }}
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-
-                    <a href="{{ url_for('user.edit_profile') }}" class="btn">Edit Username and Password</a>
-                    {{ form.submit(class="btn") }}
-                </form>
+        <div class="hero-stats-card">
+            <div class="hero-left-panel">
+                 <img id="hero-profile-img" src="" alt="Profile Picture" class="profile-picture-large">
+                 <div class="hero-name-and-edit">
+                    <h2 id="hero-username-text"></h2>
+                    <button id="edit-profile-toggle" class="btn btn-sm">⚙️ Edit Profile</button>
+                 </div>
             </div>
-
-            <div class="card">
-                <h3>Friend Requests</h3>
-                <div class="table-container">
-                    <table class="table responsive-table">
-                        <thead>
-                            <tr>
-                                <th>Username</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="friend-requests-body">
-                            <!-- Friend requests will be inserted here by JavaScript -->
-                        </tbody>
-                    </table>
+            <div class="hero-right-panel">
+                <div id="vanity-stats-container">
+                    <!-- Stats go here -->
                 </div>
-
-                <h3 style="margin-top: 20px;">Your Friends</h3>
-                <div class="table-container">
-                    <table class="table responsive-table">
-                        <thead>
-                            <tr>
-                                <th>Username</th>
-                                <th>DUPR Rating</th>
-                            </tr>
-                        </thead>
-                        <tbody id="friends-body">
-                            <!-- Friends will be inserted here by JavaScript -->
-                        </tbody>
-                    </table>
+                <a href="{{ url_for('match.record_match') }}" class="btn">Record a Match</a>
+            </div>
+        </div>
+        <div class="dashboard-columns">
+            <div class="dashboard-column-left">
+                <div class="card">
+                    <div class="header-with-button">
+                        <h3>Recent Activity</h3>
+                    </div>
+                    <div id="latest-games-feed">
+                        <!-- Game cards will be dynamically inserted here -->
+                    </div>
                 </div>
+            </div>
+            <div class="dashboard-column-right">
+                <div class="card">
+                    <h3>Friend Requests</h3>
+                    <div class="table-container">
+                        <table class="table responsive-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="friend-requests-body">
+                                <!-- Friend requests will be inserted here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
 
-                <h3 style="margin-top: 20px;">My Group Rankings</h3>
-                <div class="table-container">
-                    <table class="table responsive-table">
-                        <thead>
-                            <tr>
-                                <th>Group Name</th>
-                                <th>Your Rank</th>
-                            </tr>
-                        </thead>
-                        <tbody id="group-rankings-body">
-                            <!-- Group rankings will be inserted here by JavaScript -->
-                        </tbody>
-                    </table>
+                    <h3 style="margin-top: 20px;">Your Friends</h3>
+                    <div class="table-container">
+                        <table class="table responsive-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>DUPR Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody id="friends-body">
+                                <!-- Friends will be inserted here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 style="margin-top: 20px;">My Groups</h3>
+                    <div class="table-container">
+                        <table class="table responsive-table">
+                            <thead>
+                                <tr>
+                                    <th>Group Name</th>
+                                    <th>Your Rank</th>
+                                </tr>
+                            </thead>
+                            <tbody id="group-rankings-body">
+                                <!-- Group rankings will be inserted here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="card" style="margin-top: 20px;">
-            <div class="header-with-button">
-                <h3>Latest Games</h3>
-                <a href="{{ url_for('match.record_match') }}" class="btn">Record a Match</a>
-            </div>
-            <div id="latest-games-feed">
-                <!-- Game cards will be dynamically inserted here -->
-            </div>
+        <div id="profile-edit-section" class="collapsible-section card" style="display: none;">
+            <h3>Profile Information</h3>
+            <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data" class="profile-form">
+                {{ form.hidden_tag() }}
+                <div class="profile-header">
+                    <img src="{{ user.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture" id="profile-picture-img">
+                    <div class="form-group profile-picture-group">
+                        {{ form.profile_picture(class="form-control", accept="image/*") }}
+                    </div>
+                </div>
+                <h4 id="user-username"></h4>
+                <p><strong>Email:</strong> <span id="user-email"></span></p>
+
+                <div class="form-group">
+                    {{ form.dupr_rating.label(for="dupr_rating_input") }}
+                    {{ form.dupr_rating(class="form-control", id="dupr_rating_input") }}
+                </div>
+
+                <div class="form-group dark-mode-group">
+                    {{ form.dark_mode.label }}
+                    <label class="switch">
+                        {{ form.dark_mode() }}
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <a href="{{ url_for('user.edit_profile') }}" class="btn">Edit Username and Password</a>
+                {{ form.submit(class="btn") }}
+            </form>
         </div>
     </div>
 
@@ -120,9 +137,30 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderUserInfo(user) {
         document.getElementById('user-username').textContent = `@${user.username}`;
         document.getElementById('user-email').textContent = user.email;
-        // Also populate the value in the update form
         document.getElementById('dupr_rating_input').value = user.duprRating || '';
         document.querySelector('input[name="dark_mode"]').checked = user.dark_mode;
+    }
+
+    function renderHeroStats(user, stats) {
+        const defaultProfilePic = "{{ url_for('static', filename='user_icon.png') }}";
+        document.getElementById('hero-profile-img').src = user.profilePictureUrl || defaultProfilePic;
+        document.getElementById('hero-username-text').textContent = user.name || user.username;
+
+        const statsContainer = document.getElementById('vanity-stats-container');
+        statsContainer.innerHTML = `
+            <div class="vanity-stat">
+                <div class="stat-value">${stats.total_matches}</div>
+                <div class="stat-label">Total Matches</div>
+            </div>
+            <div class="vanity-stat">
+                <div class="stat-value">${stats.win_percentage.toFixed(0)}%</div>
+                <div class="stat-label">Win %</div>
+            </div>
+            <div class="vanity-stat">
+                <div class="stat-value">${stats.current_streak}</div>
+                <div class="stat-label">Current Streak</div>
+            </div>
+        `;
     }
 
     function renderTable(tbodyId, items, rowTemplate, noDataMessage) {
@@ -219,6 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(data => {
             renderUserInfo(data.user);
+            renderHeroStats(data.user, data.stats);
             renderTable('friend-requests-body', data.requests, requestRowTemplate, 'No pending friend requests.');
             renderTable('friends-body', data.friends, friendRowTemplate, 'You have no friends yet.');
             renderLatestGames(data.matches);
@@ -245,6 +284,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             reader.readAsDataURL(this.files[0]);
         }
+    });
+
+    // Toggle for the profile edit section
+    const editProfileToggle = document.getElementById('edit-profile-toggle');
+    const profileEditSection = document.getElementById('profile-edit-section');
+
+    editProfileToggle.addEventListener('click', function() {
+        const isHidden = profileEditSection.style.display === 'none';
+        profileEditSection.style.display = isHidden ? 'block' : 'none';
     });
 });
 </script>
