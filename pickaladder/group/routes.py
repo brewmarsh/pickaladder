@@ -161,7 +161,8 @@ def view_group(group_id):
         member_id_list = list(member_ids)
         team_docs_map = {}  # Use a map to prevent duplicates
 
-        # Chunk the query to handle Firestore's 30-item limit for 'in'/'array-contains-any' queries
+        # Chunk the query to handle Firestore's 30-item limit for
+        # 'in'/'array-contains-any' queries
         for i in range(0, len(member_id_list), 30):
             chunk = member_id_list[i : i + 30]
             query = teams_ref.where(
@@ -177,7 +178,8 @@ def view_group(group_id):
             team_doc
             for team_doc in all_team_docs
             if all(
-                member_id in member_ids for member_id in team_doc.to_dict()["member_ids"]
+                member_id in member_ids
+                for member_id in team_doc.to_dict()["member_ids"]
             )
         ]
 
@@ -191,7 +193,9 @@ def view_group(group_id):
         members_map = {}
         if all_member_refs:
             # Deduplicate refs by their path
-            unique_member_refs = list({ref.path: ref for ref in all_member_refs}.values())
+            unique_member_refs = list(
+                {ref.path: ref for ref in all_member_refs}.values()
+            )
             member_docs = db.get_all(unique_member_refs)
             members_map = {doc.id: doc.to_dict() for doc in member_docs if doc.exists}
 
@@ -219,15 +223,18 @@ def view_group(group_id):
             team_data["member_details"] = team_members
 
             # To handle user name changes, we regenerate the default team name.
-            # This assumes that if a custom name is set, it won't follow the "A & B" pattern.
-            # A more robust solution would require a database schema change (e.g., is_name_custom flag).
+            # This assumes that if a custom name is set, it won't follow the "A & B"
+            # pattern.
+            # A more robust solution would require a database schema change
+            # (e.g., is_name_custom flag).
             if len(team_members) == 2:
                 member_names = [
                     m.get("name") or m.get("username", "Unknown") for m in team_members
                 ]
                 generated_name = " & ".join(member_names)
 
-                # Simple heuristic: if the stored name has a " & ", it's likely a default name that needs refreshing.
+                # Simple heuristic: if the stored name has a " & ", it's likely a
+                # default name that needs refreshing.
                 if " & " in team_data.get("name", ""):
                     team_data["name"] = generated_name
 

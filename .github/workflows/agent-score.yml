@@ -19,4 +19,11 @@ jobs:
         run: pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git@main
 
       - name: Run agent-score and check threshold
-        run: agent-score pickaladder/ --threshold 75
+        run: |
+          agent-score pickaladder/ > score_output.txt
+          cat score_output.txt
+          SCORE=$(grep "Final Agent Score" score_output.txt | awk '{print $4}' | cut -d'/' -f1)
+          if (( $(echo "$SCORE < 75" | bc -l) )); then
+            echo "Agent score of $SCORE is below the threshold of 75"
+            exit 1
+          fi
