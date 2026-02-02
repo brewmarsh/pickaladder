@@ -642,9 +642,13 @@ def _get_recent_matches_and_players(db, recent_matches_docs: list) -> list:
 
         # Populate Teams
         if team1_ref := match_data.get("team1Ref"):
-            match_data["team1"] = teams_map.get(team1_ref.id)
+            if team_data := teams_map.get(team1_ref.id):
+                team_data["id"] = team1_ref.id
+                match_data["team1"] = team_data
         if team2_ref := match_data.get("team2Ref"):
-            match_data["team2"] = teams_map.get(team2_ref.id)
+            if team_data := teams_map.get(team2_ref.id):
+                team_data["id"] = team2_ref.id
+                match_data["team2"] = team_data
 
         # Populate Players (as fallback and for older match types)
         if p1_ref := match_data.get("player1Ref"):
