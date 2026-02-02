@@ -214,6 +214,9 @@
                             <td data-label="Team 1">
                                 {% if match.team1 %}
                                     {{ match.team1.name }}
+                                    {% if g.user and g.user.uid in match.team1.member_ids %}
+                                        <a href="{{ url_for('teams.edit_team', team_id=match.team1.id) }}" class="icon-link" title="Edit Team Name">✏️</a>
+                                    {% endif %}
                                 {% elif match.player1 %}
                                     {% if match.player1.id != 'unknown' %}
                                         <a href="{{ url_for('user.view_user', user_id=match.player1.id) }}">{{ match.player1.username }}</a>
@@ -238,6 +241,9 @@
                             <td data-label="Team 2">
                                 {% if match.team2 %}
                                     {{ match.team2.name }}
+                                    {% if g.user and g.user.uid in match.team2.member_ids %}
+                                        <a href="{{ url_for('teams.edit_team', team_id=match.team2.id) }}" class="icon-link" title="Edit Team Name">✏️</a>
+                                    {% endif %}
                                 {% elif match.player2 %}
                                     {% if match.player2.id != 'unknown' %}
                                         <a href="{{ url_for('user.view_user', user_id=match.player2.id) }}">{{ match.player2.username }}</a>

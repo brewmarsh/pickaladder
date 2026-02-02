@@ -6,7 +6,7 @@ from flask import flash, g, redirect, render_template, url_for
 from pickaladder.auth.decorators import login_required
 
 from . import bp
-from .forms import RenameTeamForm
+from .forms import EditTeamNameForm
 
 
 @bp.route("/<string:team_id>")
@@ -144,10 +144,10 @@ def view_team(team_id):
     )
 
 
-@bp.route("/<string:team_id>/rename", methods=["GET", "POST"])
+@bp.route("/<string:team_id>/edit", methods=["GET", "POST"])
 @login_required
-def rename_team(team_id):
-    """Rename a team."""
+def edit_team(team_id):
+    """Edit a team's name."""
     db = firestore.client()
     team_ref = db.collection("teams").document(team_id)
     team = team_ref.get()
@@ -164,7 +164,7 @@ def rename_team(team_id):
         flash("You do not have permission to rename this team.", "danger")
         return redirect(url_for(".view_team", team_id=team_id))
 
-    form = RenameTeamForm()
+    form = EditTeamNameForm()
     if form.validate_on_submit():
         try:
             team_ref.update({"name": form.name.data})
@@ -174,4 +174,4 @@ def rename_team(team_id):
             flash(f"An unexpected error occurred: {e}", "danger")
 
     form.name.data = team_data.get("name")
-    return render_template("team/rename_team.html", form=form, team=team_data)
+    return render_template("team/edit.html", form=form, team=team_data)
