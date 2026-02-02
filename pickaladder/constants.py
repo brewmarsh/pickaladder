@@ -37,9 +37,6 @@ MATCH_PLAYER1_SCORE = "player1_score"
 MATCH_PLAYER2_SCORE = "player2_score"
 MATCH_DATE = "match_date"
 
-# Game-related constants
-DOUBLES_TEAM_SIZE = 2
-
 # Columns for 'migrations' table
 MIGRATION_ID = "id"
 MIGRATION_NAME = "migration_name"
