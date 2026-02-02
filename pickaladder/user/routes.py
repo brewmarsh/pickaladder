@@ -1001,9 +1001,9 @@ def api_dashboard():
                 if i > 0:
                     player_above = leaderboard[i - 1]
                     user_ranking_data["player_above"] = player_above.get("name")
-                    user_ranking_data["points_to_overtake"] = (
-                        player_above.get("avg_score", 0) - player.get("avg_score", 0)
-                    )
+                    user_ranking_data["points_to_overtake"] = player_above.get(
+                        "avg_score", 0
+                    ) - player.get("avg_score", 0)
                 break
 
         if user_ranking_data:
