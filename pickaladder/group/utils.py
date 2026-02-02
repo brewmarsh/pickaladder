@@ -571,3 +571,78 @@ def friend_group_members(db, group_id, new_member_ref):
             batch.commit()
         except Exception as e:
             print(f"Error friending group members: {e}", file=sys.stderr)
+
+def _get_recent_matches_and_players(db, recent_matches_docs: list) -> list:
+    """
+    Fetches and assembles recent match data with associated team and player details.
+
+    Args:
+        db: The Firestore client.
+        recent_matches_docs: A list of match document snapshots.
+
+    Returns:
+        A list of dictionaries, where each dictionary represents a match
+        enriched with team and player data.
+    """
+    team_refs = set()
+    player_refs = set()
+
+    # Pass 1: Collect all unique team and player references
+    for match_doc in recent_matches_docs:
+        match_data = match_doc.to_dict()
+        if match_data.get("team1Ref"):
+            team_refs.add(match_data["team1Ref"])
+        if match_data.get("team2Ref"):
+            team_refs.add(match_data["team2Ref"])
+
+        # Collect all possible player references
+        player_keys = [
+            "player1Ref", "player2Ref", "partnerRef", "opponent1Ref", "opponent2Ref",
+            "player1", "player2", "partner", "opponent1", "opponent2"
+        ]
+        for key in player_keys:
+            if ref := match_data.get(key):
+                if isinstance(ref, firestore.DocumentReference):
+                    player_refs.add(ref)
+
+    # Batch Fetch: Get all teams and players in two calls
+    teams_map = {}
+    if team_refs:
+        valid_team_refs = [ref for ref in team_refs if ref]
+        if valid_team_refs:
+            team_snapshots = db.get_all(valid_team_refs)
+            teams_map = {snap.id: snap.to_dict() for snap in team_snapshots if snap.exists}
+
+    players_map = {}
+    if player_refs:
+        valid_player_refs = [ref for ref in player_refs if ref]
+        if valid_player_refs:
+            player_snapshots = db.get_all(valid_player_refs)
+            players_map = {snap.id: snap.to_dict() for snap in player_snapshots if snap.exists}
+
+    # Pass 2: Assemble the final list of match objects
+    recent_matches = []
+    GUEST_USER = {"username": "Guest", "id": "unknown"}
+    for match_doc in recent_matches_docs:
+        match_data = match_doc.to_dict()
+        match_data["id"] = match_doc.id
+
+        # Populate Teams
+        if team1_ref := match_data.get("team1Ref"):
+            match_data['team1'] = teams_map.get(team1_ref.id)
+        if team2_ref := match_data.get("team2Ref"):
+            match_data['team2'] = teams_map.get(team2_ref.id)
+
+        # Populate Players (as fallback and for older match types)
+        if p1_ref := match_data.get("player1Ref"):
+             match_data['player1'] = players_map.get(p1_ref.id, GUEST_USER)
+        if p2_ref := match_data.get("player2Ref"):
+             match_data['player2'] = players_map.get(p2_ref.id, GUEST_USER)
+        if partner_ref := match_data.get("partnerRef"):
+             match_data['partner'] = players_map.get(partner_ref.id, GUEST_USER)
+        if opp2_ref := match_data.get("opponent2Ref"):
+            match_data['opponent2'] = players_map.get(opp2_ref.id, GUEST_USER)
+
+        recent_matches.append(match_data)
+
+    return recent_matches
