@@ -6,7 +6,7 @@ import sys
 import threading
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from firebase_admin import firestore
 from google.cloud.firestore import (
@@ -53,10 +53,9 @@ def get_random_joke() -> str:
 
 def get_group_details(
     db: firestore.Client, group_id: str, current_user_id: str
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     """
     Fetch all details for a group page.
-
     Fetches all details for a group page, including members, leaderboards,
     matches, and invites.
     """
@@ -97,9 +96,11 @@ def get_group_details(
         pending_members = _get_pending_invites(db, group_id)
 
     # Fetch recent matches and all players involved
-    recent_matches_docs, users_map, teams_map = _get_recent_matches_and_players(
-        db, group_id
-    )
+    (
+        recent_matches_docs,
+        users_map,
+        teams_map,
+    ) = _get_recent_matches_and_players(db, group_id)
 
     # Best Buds calculation using all group matches
     best_buds = _calculate_best_buds(db, group_id)
@@ -123,7 +124,7 @@ def get_group_details(
     }
 
 
-def _get_id(data: Dict[str, Any], possible_keys: List[str]) -> Optional[str]:
+def _get_id(data: dict[str, Any], possible_keys: list[str]) -> Optional[str]:
     """Get first non-None value for a list of possible keys."""
     for key in possible_keys:
         if key in data and data[key] is not None:
@@ -132,8 +133,8 @@ def _get_id(data: Dict[str, Any], possible_keys: List[str]) -> Optional[str]:
 
 
 def _calculate_leaderboard_from_matches(
-    member_refs: List[DocumentReference], matches: List[DocumentSnapshot]
-) -> List[Dict[str, Any]]:
+    member_refs: list[DocumentReference], matches: list[DocumentSnapshot]
+) -> list[dict[str, Any]]:
     """Calculate the leaderboard from a list of matches."""
     player_stats = {
         ref.id: {
@@ -251,7 +252,7 @@ def _calculate_leaderboard_from_matches(
     return leaderboard
 
 
-def get_group_leaderboard(db: Client, group_id: str) -> List[Dict[str, Any]]:
+def get_group_leaderboard(db: Client, group_id: str) -> list[dict[str, Any]]:
     """Calculate the leaderboard for a specific group."""
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
@@ -298,7 +299,7 @@ def get_group_leaderboard(db: Client, group_id: str) -> List[Dict[str, Any]]:
         key=lambda m: m.to_dict().get("matchDate") or datetime.min, reverse=True
     )
 
-    user_matches_map: Dict[str, List[Dict[str, Any]]] = {
+    user_matches_map: dict[str, list[dict[str, Any]]] = {
         ref.id: [] for ref in member_refs
     }
     for match in all_matches:
@@ -365,7 +366,7 @@ def get_group_leaderboard(db: Client, group_id: str) -> List[Dict[str, Any]]:
     return current_leaderboard
 
 
-def get_leaderboard_trend_data(db: Client, group_id: str) -> Dict[str, Any]:
+def get_leaderboard_trend_data(db: Client, group_id: str) -> dict[str, Any]:
     """Generate data for a leaderboard trend chart."""
     matches_query = db.collection("matches").where(
         filter=FieldFilter("groupId", "==", group_id)
@@ -398,7 +399,7 @@ def get_leaderboard_trend_data(db: Client, group_id: str) -> Dict[str, Any]:
             }
 
     player_stats = {ref.id: {"total_score": 0, "games": 0} for ref in all_player_refs}
-    trend_data: Dict[str, Any] = {"labels": [], "datasets": {}}
+    trend_data: dict[str, Any] = {"labels": [], "datasets": {}}
 
     for player_id, player_info in players_data.items():
         trend_data["datasets"][player_id] = {
@@ -468,7 +469,7 @@ def get_leaderboard_trend_data(db: Client, group_id: str) -> Dict[str, Any]:
     return trend_data
 
 
-def get_user_group_stats(db: Client, group_id: str, user_id: str) -> Dict[str, Any]:
+def get_user_group_stats(db: Client, group_id: str, user_id: str) -> dict[str, Any]:
     """Calculate detailed statistics for a specific user within a group."""
     stats = {
         "rank": "N/A",
@@ -478,7 +479,7 @@ def get_user_group_stats(db: Client, group_id: str, user_id: str) -> Dict[str, A
         "longest_streak": 0,
     }
 
-    leaderboard = get_group_leaderboard(group_id)
+    leaderboard = get_group_leaderboard(db, group_id)
     for i, player in enumerate(leaderboard):
         if player["id"] == user_id:
             stats["rank"] = i + 1
@@ -542,7 +543,7 @@ def get_user_group_stats(db: Client, group_id: str, user_id: str) -> Dict[str, A
 
 
 def send_invite_email_background(
-    app, db: Client, invite_token: str, email_data: Dict[str, Any]
+    app, db: Client, invite_token: str, email_data: dict[str, Any]
 ):
     """Send an invite email in a background thread."""
 
@@ -569,7 +570,7 @@ def create_email_invite(
     inviter_id: str,
     invitee_name: str,
     invitee_email: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a group invitation and return the data for sending an email."""
     original_email = invitee_email
     email = original_email.lower()
@@ -594,7 +595,7 @@ def create_email_invite(
     if existing_user:
         # User exists, use their stored email for the invite to ensure
         # matching works
-        invite_email = existing_user.to_dict().get("email")
+        existing_user.to_dict().get("email")
     else:
         # User does not exist, create a Ghost User This allows matches to
         # be recorded against them before they register
@@ -623,8 +624,8 @@ def create_email_invite(
 
 
 def _get_team_leaderboard(
-    db: firestore.Client, member_ids: Set[str]
-) -> List[Dict[str, Any]]:
+    db: firestore.Client, member_ids: set[str]
+) -> list[dict[str, Any]]:
     """Fetch and calculate the team leaderboard for a group."""
     team_leaderboard = []
     teams_ref = db.collection("teams")
@@ -708,7 +709,7 @@ def _get_team_leaderboard(
     return team_leaderboard
 
 
-def _get_pending_invites(db: firestore.Client, group_id: str) -> List[Dict[str, Any]]:
+def _get_pending_invites(db: firestore.Client, group_id: str) -> list[dict[str, Any]]:
     """Fetch pending invites for a group."""
     pending_members = []
     invites_ref = db.collection("group_invites")
@@ -751,10 +752,10 @@ def _get_pending_invites(db: firestore.Client, group_id: str) -> List[Dict[str, 
 
 def _get_recent_matches_and_players(
     db: firestore.Client, group_id: str
-) -> Tuple[
-    List[firestore.DocumentSnapshot],
-    Dict[str, Dict[str, Any]],
-    Dict[str, Dict[str, Any]],
+) -> tuple[
+    list[firestore.DocumentSnapshot],
+    dict[str, dict[str, Any]],
+    dict[str, dict[str, Any]],
 ]:
     """Fetch recent matches and a map of all players and teams involved."""
     matches_ref = db.collection("matches")
@@ -814,7 +815,7 @@ def _get_recent_matches_and_players(
 
 def _calculate_best_buds(
     db: firestore.Client, group_id: str
-) -> Optional[Dict[str, Any]]:
+) -> Optional[dict[str, Any]]:
     """Calculate the 'best buds' (most successful partnership) in a group."""
     matches_ref = db.collection("matches")
     all_matches_query = matches_ref.where(
@@ -840,7 +841,7 @@ def _calculate_best_buds(
         ]
     )
     all_matches_docs = list(all_matches_query.stream())
-    partnership_wins: Dict[Tuple[str, str], int] = defaultdict(int)
+    partnership_wins: dict[tuple[str, str], int] = defaultdict(int)
     for match_doc in all_matches_docs:
         match_data = match_doc.to_dict()
 
@@ -857,6 +858,10 @@ def _calculate_best_buds(
         is_doubles = all([player1_id, partner_id, player2_id, opponent2_id])
 
         if is_doubles:
+            assert player1_id is not None
+            assert partner_id is not None
+            assert player2_id is not None
+            assert opponent2_id is not None
             winner = match_data.get("winner")
             if winner == "team1":
                 winning_pair = tuple(sorted((player1_id, partner_id)))
@@ -886,10 +891,10 @@ def _calculate_best_buds(
 
 
 def _enrich_matches(
-    recent_matches_docs: List[firestore.DocumentSnapshot],
-    users_map: Dict[str, Dict[str, Any]],
-    teams_map: Dict[str, Dict[str, Any]],
-) -> List[Dict[str, Any]]:
+    recent_matches_docs: list[firestore.DocumentSnapshot],
+    users_map: dict[str, dict[str, Any]],
+    teams_map: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
     """Enrich match data with player and team details and check for upsets."""
     recent_matches = []
     for match_doc in recent_matches_docs:
@@ -905,17 +910,22 @@ def _enrich_matches(
             match_data["team2"] = teams_map.get(team2_ref.id)
 
         # Handle older, user-based matches as a fallback
-        match_data["player1"] = users_map.get(
-            _get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"]),
-            GUEST_USER,
+        player1_id = _get_id(
+            match_data, ["player1", "player1Id", "player1_id", "player_1"]
         )
-        match_data["player2"] = users_map.get(
-            _get_id(
-                match_data,
-                ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
-            ),
-            GUEST_USER,
+        if player1_id:
+            match_data["player1"] = users_map.get(player1_id, GUEST_USER)
+        else:
+            match_data["player1"] = GUEST_USER
+
+        player2_id = _get_id(
+            match_data,
+            ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
         )
+        if player2_id:
+            match_data["player2"] = users_map.get(player2_id, GUEST_USER)
+        else:
+            match_data["player2"] = GUEST_USER
         partner_id = _get_id(match_data, ["partnerId", "partner", "partner_id"])
         if partner_id:
             match_data["partner"] = users_map.get(partner_id, GUEST_USER)
@@ -952,7 +962,7 @@ def _enrich_matches(
 
 def calculate_head_to_head_stats(
     db: firestore.Client, group_id: str, player1_id: str, player2_id: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Return head-to-head stats for two players in a group."""
     matches_ref = db.collection("matches")
     query = matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
@@ -1026,7 +1036,6 @@ def calculate_head_to_head_stats(
 
 def friend_group_members(db, group_id, new_member_ref):
     """Automatically create friend relationships between group members.
-
     Automatically create friend relationships between the new member and existing
     group members.
     """

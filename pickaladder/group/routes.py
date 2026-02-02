@@ -160,7 +160,10 @@ def view_group(group_id):
             }
 
             group_service.send_invite_email_background(
-                current_app._get_current_object(), db, invite_details["token"], email_data
+                current_app._get_current_object(),
+                db,
+                invite_details["token"],
+                email_data,
             )
 
             flash(f"Invitation is being sent to {invite_details['email']}.", "toast")
