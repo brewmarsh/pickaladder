@@ -172,7 +172,7 @@
                     <select id="player1-select" class="form-control">
                         <option value="">Select a player</option>
                         {% for member in members %}
-                            <option value="{{ member.id }}">{{ member.username or member.name }}</option>
+                            <option value="{{ member.id }}">{{ member.name or member.username }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -181,7 +181,7 @@
                     <select id="player2-select" class="form-control">
                         <option value="">Select a player</option>
                         {% for member in members %}
-                            <option value="{{ member.id }}">{{ member.username or member.name }}</option>
+                            <option value="{{ member.id }}">{{ member.name or member.username }}</option>
                         {% endfor %}
                     </select>
                 </div>
