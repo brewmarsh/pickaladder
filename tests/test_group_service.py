@@ -2,23 +2,83 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
-from pickaladder.group.utils import (
+from pickaladder.services.group_service import (
     friend_group_members,
     get_group_leaderboard,
     get_leaderboard_trend_data,
-    get_random_joke,
     get_user_group_stats,
     send_invite_email_background,
 )
 
 
-class TestUtilsCoverage(unittest.TestCase):
-    def test_get_random_joke(self):
-        joke = get_random_joke()
-        self.assertIsInstance(joke, str)
-        self.assertGreater(len(joke), 0)
+class TestGroupLeaderboard(unittest.TestCase):
+    """Tests for the group leaderboard functionality."""
 
-    @patch("pickaladder.group.utils.firestore")
+    @patch("pickaladder.services.group_service.firestore")
+    def test_leaderboard_sorting(self, mock_firestore):
+        """Test the leaderboard is sorted by avg_score, then wins, then games_played."""
+        mock_db = mock_firestore.client.return_value
+
+        def create_mock_user(uid, name):
+            doc = MagicMock()
+            doc.id = uid
+            doc.exists = True
+            doc.to_dict.return_value = {"name": name}
+            ref = MagicMock()
+            ref.id = uid
+            ref.get.return_value = doc
+            return ref, doc
+
+        u1_ref, u1_doc = create_mock_user("u1", "User 1")  # Avg 11, 6 wins
+        u2_ref, u2_doc = create_mock_user("u2", "User 2")  # Avg 11, 6 wins
+        u3_ref, u3_doc = create_mock_user("u3", "User 3")  # Avg 12, 0 wins
+        u4_ref, u4_doc = create_mock_user("u4", "Opponent")
+
+        mock_group_doc = MagicMock()
+        mock_group_doc.exists = True
+        mock_group_doc.to_dict.return_value = {
+            "members": [u1_ref, u2_ref, u3_ref, u4_ref]
+        }
+        mock_db.collection("groups").document(
+            "group1"
+        ).get.return_value = mock_group_doc
+
+        matches = []
+
+        def record_match(p1_ref, p1_score, p2_ref, p2_score):
+            m = MagicMock()
+            m.to_dict.return_value = {
+                "matchType": "singles",
+                "player1Ref": p1_ref,
+                "player1Score": p1_score,
+                "player2Ref": p2_ref,
+                "player2Score": p2_score,
+            }
+            return m
+
+        for _ in range(6):
+            matches.append(record_match(u1_ref, 11, u4_ref, 0))
+        for _ in range(6):
+            matches.append(record_match(u2_ref, 11, u4_ref, 0))
+        for _ in range(6):
+            matches.append(record_match(u3_ref, 12, u4_ref, 13))
+
+        (
+            mock_db.collection.return_value.where.return_value.where.return_value.stream.return_value
+        ) = []
+        mock_db.collection.return_value.where.return_value.stream.return_value = matches
+
+        leaderboard = get_group_leaderboard(mock_db, "group1")
+
+        self.assertEqual(
+            leaderboard[0]["id"], "u3", "Highest avg score (U3) should be first"
+        )
+        self.assertEqual(leaderboard[0]["avg_score"], 12.0)
+        self.assertIn(leaderboard[1]["id"], ["u1", "u2"])
+        self.assertIn(leaderboard[2]["id"], ["u1", "u2"])
+        self.assertEqual(leaderboard[1]["avg_score"], 11.0)
+
+    @patch("pickaladder.services.group_service.firestore")
     def test_get_group_leaderboard_doubles(self, mock_firestore):
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -58,7 +118,7 @@ class TestUtilsCoverage(unittest.TestCase):
             "matches"
         ).where.return_value.stream.return_value = [mock_match]
 
-        leaderboard = get_group_leaderboard("group1")
+        leaderboard = get_group_leaderboard(mock_db, "group1")
 
         self.assertEqual(len(leaderboard), 4)
         player1_stats = next(p for p in leaderboard if p["id"] == "user1")
@@ -79,7 +139,7 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(player4_stats["losses"], 1)
         self.assertEqual(player4_stats["avg_score"], 5)
 
-    @patch("pickaladder.group.utils.firestore")
+    @patch("pickaladder.services.group_service.firestore")
     def test_get_group_leaderboard_draw(self, mock_firestore):
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -111,7 +171,7 @@ class TestUtilsCoverage(unittest.TestCase):
         }
         mock_db.collection("matches").where.return_value.stream.return_value = [mock_match]
 
-        leaderboard = get_group_leaderboard("group1")
+        leaderboard = get_group_leaderboard(mock_db, "group1")
 
         self.assertEqual(len(leaderboard), 2)
         player1_stats = next(p for p in leaderboard if p["id"] == "user1")
@@ -124,7 +184,7 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(player2_stats["losses"], 0)
         self.assertEqual(player2_stats["games_played"], 1)
 
-    @patch("pickaladder.group.utils.firestore")
+    @patch("pickaladder.services.group_service.firestore")
     def test_get_group_leaderboard_no_members(self, mock_firestore):
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -132,10 +192,10 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_group_doc.to_dict.return_value = {"members": []}
         mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
 
-        leaderboard = get_group_leaderboard("group1")
+        leaderboard = get_group_leaderboard(mock_db, "group1")
         self.assertEqual(leaderboard, [])
 
-    @patch("pickaladder.group.utils.firestore")
+    @patch("pickaladder.services.group_service.firestore")
     def test_get_group_leaderboard_no_matches(self, mock_firestore):
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -157,7 +217,7 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
         mock_db.collection("matches").where.return_value.stream.return_value = []
 
-        leaderboard = get_group_leaderboard("group1")
+        leaderboard = get_group_leaderboard(mock_db, "group1")
 
         self.assertEqual(len(leaderboard), 2)
         player1_stats = next(p for p in leaderboard if p["id"] == "user1")
@@ -170,8 +230,8 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(player2_stats["losses"], 0)
         self.assertEqual(player2_stats["games_played"], 0)
 
-    @patch("pickaladder.group.utils.datetime")
-    @patch("pickaladder.group.utils.firestore")
+    @patch("pickaladder.services.group_service.datetime")
+    @patch("pickaladder.services.group_service.firestore")
     def test_get_group_leaderboard_rank_change(self, mock_firestore, mock_datetime):
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -220,7 +280,7 @@ class TestUtilsCoverage(unittest.TestCase):
             mock_match_this_week,
         ]
 
-        leaderboard = get_group_leaderboard("group1")
+        leaderboard = get_group_leaderboard(mock_db, "group1")
 
         self.assertEqual(len(leaderboard), 2)
         player1_stats = next(p for p in leaderboard if p["id"] == "user1")
@@ -229,7 +289,7 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(player1_stats["rank_change"], 1)  # Was 2nd, now 1st
         self.assertEqual(player2_stats["rank_change"], -1)  # Was 1st, now 2nd
 
-    @patch("pickaladder.group.utils.firestore")
+    @patch("pickaladder.services.group_service.firestore")
     def test_get_group_leaderboard_winning_streak(self, mock_firestore):
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -266,22 +326,24 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_db.collection("matches").where.return_value.stream.return_value = matches
 
-        leaderboard = get_group_leaderboard("group1")
+        leaderboard = get_group_leaderboard(mock_db, "group1")
         player1_stats = next(p for p in leaderboard if p["id"] == "user1")
         self.assertEqual(player1_stats["streak"], 5)
         self.assertTrue(player1_stats["is_on_fire"])
 
-    @patch("pickaladder.group.utils.firestore")
+
+class TestLeaderboardTrend(unittest.TestCase):
+    @patch("pickaladder.services.group_service.firestore")
     def test_get_leaderboard_trend_data_no_matches(self, mock_firestore):
         mock_db = mock_firestore.client.return_value
         mock_db.collection("matches").where.return_value.stream.return_value = []
 
-        trend_data = get_leaderboard_trend_data("group1")
+        trend_data = get_leaderboard_trend_data(mock_db, "group1")
 
         self.assertEqual(trend_data["labels"], [])
         self.assertEqual(trend_data["datasets"], [])
 
-    @patch("pickaladder.group.utils.firestore")
+    @patch("pickaladder.services.group_service.firestore")
     def test_get_leaderboard_trend_data_with_matches(self, mock_firestore):
         mock_db = mock_firestore.client.return_value
 
@@ -323,7 +385,7 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_user2_doc.to_dict.return_value = {"name": "User 2"}
         mock_db.get_all.return_value = [mock_user1_doc, mock_user2_doc]
 
-        trend_data = get_leaderboard_trend_data("group1")
+        trend_data = get_leaderboard_trend_data(mock_db, "group1")
 
         self.assertEqual(trend_data["labels"], ["2023-01-01", "2023-01-02"])
         self.assertEqual(len(trend_data["datasets"]), 2)
@@ -334,8 +396,10 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(user1_data["data"], [11.0, 8.0])
         self.assertEqual(user2_data["data"], [5.0, 8.0])
 
-    @patch("pickaladder.group.utils.get_group_leaderboard")
-    @patch("pickaladder.group.utils.firestore")
+
+class TestUserGroupStats(unittest.TestCase):
+    @patch("pickaladder.services.group_service.get_group_leaderboard")
+    @patch("pickaladder.services.group_service.firestore")
     def test_get_user_group_stats(self, mock_firestore, mock_get_group_leaderboard):
         mock_db = mock_firestore.client.return_value
         mock_get_group_leaderboard.return_value = [
@@ -362,7 +426,7 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_db.collection("matches").where.return_value.stream.return_value = matches
 
-        stats = get_user_group_stats("group1", "user1")
+        stats = get_user_group_stats(mock_db, "group1", "user1")
 
         self.assertEqual(stats["rank"], 1)
         self.assertEqual(stats["wins"], 10)
@@ -370,8 +434,8 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(stats["win_streak"], 3)
         self.assertEqual(stats["longest_streak"], 3)
 
-    @patch("pickaladder.group.utils.get_group_leaderboard")
-    @patch("pickaladder.group.utils.firestore")
+    @patch("pickaladder.services.group_service.get_group_leaderboard")
+    @patch("pickaladder.services.group_service.firestore")
     def test_get_user_group_stats_invalid_user(
         self, mock_firestore, mock_get_group_leaderboard
     ):
@@ -381,7 +445,7 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_db = mock_firestore.client.return_value
         mock_db.collection("matches").where.return_value.stream.return_value = []
 
-        stats = get_user_group_stats("group1", "invalid_user")
+        stats = get_user_group_stats(mock_db, "group1", "invalid_user")
 
         self.assertEqual(stats["rank"], "N/A")
         self.assertEqual(stats["wins"], 0)
@@ -389,6 +453,8 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(stats["win_streak"], 0)
         self.assertEqual(stats["longest_streak"], 0)
 
+
+class TestFriendGroupMembers(unittest.TestCase):
     def test_friend_group_members(self):
         mock_db = MagicMock()
         mock_group_doc = MagicMock()
@@ -413,9 +479,11 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(mock_batch.set.call_count, 4)
         mock_batch.commit.assert_called_once()
 
-    @patch("pickaladder.group.utils.threading.Thread")
-    @patch("pickaladder.group.utils.send_email")
-    @patch("pickaladder.group.utils.firestore")
+
+class TestSendInviteEmail(unittest.TestCase):
+    @patch("pickaladder.services.group_service.threading.Thread")
+    @patch("pickaladder.services.group_service.send_email")
+    @patch("pickaladder.services.group_service.firestore")
     def test_send_invite_email_background_success(
         self, mock_firestore, mock_send_email, mock_thread
     ):
@@ -425,23 +493,23 @@ class TestUtilsCoverage(unittest.TestCase):
 
         email_data = {"to": "test@example.com", "subject": "Test", "body": "Test"}
 
-        # Make the thread run synchronously
         thread = MagicMock()
         thread.start.side_effect = lambda: mock_thread.call_args[1]['target']()
         mock_thread.return_value = thread
+        mock_db = mock_firestore.client.return_value
 
-        send_invite_email_background(mock_app, "invite_token", email_data)
+        send_invite_email_background(mock_app, mock_db, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
-        mock_firestore.client.return_value.collection(
+        mock_db.collection(
             "group_invites"
         ).document.return_value.update.assert_called_once_with(
             {"status": "sent", "last_error": mock_firestore.DELETE_FIELD}
         )
 
-    @patch("pickaladder.group.utils.threading.Thread")
-    @patch("pickaladder.group.utils.send_email")
-    @patch("pickaladder.group.utils.firestore")
+    @patch("pickaladder.services.group_service.threading.Thread")
+    @patch("pickaladder.services.group_service.send_email")
+    @patch("pickaladder.services.group_service.firestore")
     def test_send_invite_email_background_failure(
         self, mock_firestore, mock_send_email, mock_thread
     ):
@@ -452,15 +520,15 @@ class TestUtilsCoverage(unittest.TestCase):
         email_data = {"to": "test@example.com", "subject": "Test", "body": "Test"}
         mock_send_email.side_effect = Exception("Email failed")
 
-        # Make the thread run synchronously
         thread = MagicMock()
         thread.start.side_effect = lambda: mock_thread.call_args[1]['target']()
         mock_thread.return_value = thread
+        mock_db = mock_firestore.client.return_value
 
-        send_invite_email_background(mock_app, "invite_token", email_data)
+        send_invite_email_background(mock_app, mock_db, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
-        mock_firestore.client.return_value.collection(
+        mock_db.collection(
             "group_invites"
         ).document.return_value.update.assert_called_once_with(
             {"status": "failed", "last_error": "Email failed"}
