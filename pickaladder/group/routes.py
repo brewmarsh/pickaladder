@@ -1,7 +1,5 @@
 """Routes for the group blueprint."""
 
-import secrets
-from collections import defaultdict
 from dataclasses import dataclass
 
 from firebase_admin import firestore, storage
@@ -17,14 +15,7 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.group.utils import (
-    friend_group_members,
-    get_group_leaderboard,
-    get_leaderboard_trend_data,
-    get_random_joke,
-    get_user_group_stats,
-    send_invite_email_background,
-)
+from pickaladder.services import group_service
 from pickaladder.user.utils import merge_ghost_user
 
 from . import bp
@@ -120,17 +111,17 @@ def view_group(group_id):
     invite form.
     """
     db = firestore.client()
-    group_ref = db.collection("groups").document(group_id)
-    group = group_ref.get()
-    if not group.exists:
+    current_user_id = g.user["uid"]
+
+    details = group_service.get_group_details(db, group_id, current_user_id)
+    if not details:
         flash("Group not found.", "danger")
         return redirect(url_for(".view_groups"))
 
-    group_data = group.to_dict()
-    group_data["id"] = group.id
-    current_user_id = g.user["uid"]
+    group_data = details["group_data"]
     user_ref = db.collection("users").document(current_user_id)
 
+<<<<<<< HEAD
     # Fetch members' data
     member_refs = group_data.get("members", [])
     member_ids = {ref.id for ref in member_refs}
@@ -278,26 +269,76 @@ def view_group(group_id):
 
         # Sort in memory to avoid composite index requirement
         pending_members.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
+=======
+>>>>>>> main
     form = InviteFriendForm()
+    invite_email_form = InviteByEmailForm()
 
-    # Get user's accepted friends
+    # --- Form submissions ---
+    if form.validate_on_submit() and "friend" in request.form:
+        friend_id = form.friend.data
+        friend_ref = db.collection("users").document(friend_id)
+        group_ref = db.collection("groups").document(group_id)
+        try:
+            group_ref.update({"members": firestore.ArrayUnion([friend_ref])})
+            flash("Friend invited successfully.", "success")
+        except Exception as e:
+            flash(f"An unexpected error occurred: {e}", "danger")
+        return redirect(url_for(".view_group", group_id=group_id))
+
+    if invite_email_form.validate_on_submit() and "email" in request.form:
+        try:
+            invite_details = group_service.create_email_invite(
+                db=db,
+                group_id=group_id,
+                group_name=group_data.get("name"),
+                inviter_id=current_user_id,
+                invitee_name=invite_email_form.name.data or "Friend",
+                invitee_email=invite_email_form.email.data,
+            )
+
+            invite_url = url_for(
+                ".handle_invite", token=invite_details["token"], _external=True
+            )
+            email_data = {
+                "to": invite_details["email"],
+                "subject": f"Join {group_data.get('name')} on pickaladder!",
+                "template": "email/group_invite.html",
+                "name": invite_details["name"],
+                "group_name": group_data.get("name"),
+                "invite_url": invite_url,
+                "joke": group_service.get_random_joke(),
+            }
+
+            group_service.send_invite_email_background(
+                current_app._get_current_object(),
+                db,
+                invite_details["token"],
+                email_data,
+            )
+
+            flash(f"Invitation is being sent to {invite_details['email']}.", "toast")
+        except Exception as e:
+            flash(f"An error occurred creating the invitation: {e}", "danger")
+        return redirect(url_for(".view_group", group_id=group_id))
+
+    # --- Populate form choices ---
+    member_ids = {member["id"] for member in details["members"]}
     friends_query = (
         user_ref.collection("friends")
         .where(filter=firestore.FieldFilter("status", "==", "accepted"))
         .stream()
     )
     friend_ids = {doc.id for doc in friends_query}
-
-    # Find friends who are not already members
     eligible_friend_ids = list(friend_ids - member_ids)
 
-    eligible_friends = []
     if eligible_friend_ids:
         eligible_friends_query = (
             db.collection("users")
             .where(filter=firestore.FieldFilter("__name__", "in", eligible_friend_ids))
             .stream()
         )
+<<<<<<< HEAD
         eligible_friends = [doc for doc in eligible_friends_query]
 
     form.friend.choices = [
@@ -615,22 +656,28 @@ def view_group(group_id):
                     match_data["is_upset"] = True
 
         recent_matches.append(match_data)
+=======
+        form.friend.choices = [
+            (friend.id, friend.to_dict().get("name", friend.id))
+            for friend in eligible_friends_query
+        ]
+>>>>>>> main
 
     return render_template(
         "group.html",
-        group=group_data,
-        group_id=group.id,
-        members=members,
-        owner=owner,
+        group=details["group_data"],
+        group_id=group_id,
+        members=details["members"],
+        owner=details["owner"],
         form=form,
         invite_email_form=invite_email_form,
         current_user_id=current_user_id,
-        leaderboard=leaderboard,
-        pending_members=pending_members,
-        is_member=is_member,
-        recent_matches=recent_matches,
-        best_buds=best_buds,
-        team_leaderboard=team_leaderboard,
+        leaderboard=details["leaderboard"],
+        pending_members=details["pending_members"],
+        is_member=details["is_member"],
+        recent_matches=details["recent_matches"],
+        best_buds=details["best_buds"],
+        team_leaderboard=details["team_leaderboard"],
     )
 
 
@@ -777,10 +824,12 @@ def resend_invite(token):
         "name": data.get("name"),
         "group_name": group.to_dict().get("name"),
         "invite_url": invite_url,
-        "joke": get_random_joke(),
+        "joke": group_service.get_random_joke(),
     }
 
-    send_invite_email_background(current_app._get_current_object(), token, email_data)
+    group_service.send_invite_email_background(
+        current_app._get_current_object(), db, token, email_data
+    )
     flash(f"Resending invitation to {data.get('email')}...", "toast")
     return redirect(url_for(".view_group", group_id=group_id))
 
@@ -800,8 +849,8 @@ def view_leaderboard_trend(group_id):
     group_data = group.to_dict()
     group_data["id"] = group.id
 
-    trend_data = get_leaderboard_trend_data(group_id)
-    user_stats = get_user_group_stats(group_id, g.user["uid"])
+    trend_data = group_service.get_leaderboard_trend_data(db, group_id)
+    user_stats = group_service.get_user_group_stats(db, group_id, g.user["uid"])
 
     return render_template(
         "group_leaderboard_trend.html",
@@ -876,7 +925,7 @@ def handle_invite(token):
         invite_ref.update({"used": True, "used_by": g.user["uid"]})
 
         # Friend other group members
-        friend_group_members(db, group_id, user_ref)
+        group_service.friend_group_members(db, group_id, user_ref)
 
         flash("Welcome to the team!", "success")
         return redirect(url_for(".view_group", group_id=group_id))
@@ -923,7 +972,7 @@ def join_group(group_id):
 
     try:
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
-        friend_group_members(db, group_id, user_ref)
+        group_service.friend_group_members(db, group_id, user_ref)
         flash("Successfully joined the group.", "success")
     except Exception as e:
         flash(f"An error occurred while trying to join the group: {e}", "danger")
@@ -961,81 +1010,7 @@ def get_head_to_head_stats(group_id):
         return {"error": "player1_id and player2_id are required"}, 400
 
     db = firestore.client()
-    matches_ref = db.collection("matches")
-
-    # Firestore doesn't support 'OR' or 'array-contains-all' queries on
-    # different fields efficiently. The simplest approach is to fetch all
-    # group matches and filter locally. This could be slow for very large
-    # groups and might be optimized later (e.g., by adding a 'participants'
-    # array to each match document).
-    query = matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
-    all_matches_in_group = list(query.stream())
-
-    matches = []
-    for match_doc in all_matches_in_group:
-        match_data = match_doc.to_dict()
-        participants = {
-            match_data.get("player1Id"),
-            match_data.get("player2Id"),
-            match_data.get("partnerId"),
-            match_data.get("opponent2Id"),
-        }
-        if player1_id in participants and player2_id in participants:
-            matches.append(match_data)
-
-    # --- Calculate Stats ---
-    total_matches = len(matches)
-    h2h_player1_wins = 0
-    h2h_player2_wins = 0
-    partnership_wins = 0
-    partnership_losses = 0
-    point_differential = 0
-    h2h_matches_count = 0
-    partnership_matches_count = 0
-
-    for match in matches:
-        team1 = {match.get("player1Id"), match.get("partnerId")}
-        team2 = {match.get("player2Id"), match.get("opponent2Id")}
-
-        is_partner = (player1_id in team1 and player2_id in team1) or (
-            player1_id in team2 and player2_id in team2
-        )
-
-        if is_partner:
-            partnership_matches_count += 1
-            # Determine which team they were on
-            their_team = "team1" if player1_id in team1 else "team2"
-            if match.get("winner") == their_team:
-                partnership_wins += 1
-            else:
-                partnership_losses += 1
-        else:
-            # They are opponents
-            h2h_matches_count += 1
-            player1_team = "team1" if player1_id in team1 else "team2"
-
-            if match.get("winner") == player1_team:
-                h2h_player1_wins += 1
-            else:
-                h2h_player2_wins += 1
-
-            # Calculate point differential from player1's perspective
-            team1_score = match.get("team1Score", 0) or 0
-            team2_score = match.get("team2Score", 0) or 0
-            if player1_team == "team1":
-                point_differential += team1_score - team2_score
-            else:
-                point_differential += team2_score - team1_score
-
-    avg_point_differential = (
-        point_differential / h2h_matches_count if h2h_matches_count > 0 else 0
+    stats = group_service.calculate_head_to_head_stats(
+        db, group_id, player1_id, player2_id
     )
-
-    return {
-        "total_matches": total_matches,
-        "h2h_matches_count": h2h_matches_count,
-        "partnership_matches_count": partnership_matches_count,
-        "head_to_head_record": f"{h2h_player1_wins}-{h2h_player2_wins}",
-        "partnership_record": f"{partnership_wins}-{partnership_losses}",
-        "avg_point_differential": round(avg_point_differential, 1),
-    }
+    return stats
