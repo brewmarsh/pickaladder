@@ -611,14 +611,18 @@ def _get_recent_matches_and_players(db, recent_matches_docs: list) -> list:
         valid_team_refs = [ref for ref in team_refs if ref]
         if valid_team_refs:
             team_snapshots = db.get_all(valid_team_refs)
-            teams_map = {snap.id: snap.to_dict() for snap in team_snapshots if snap.exists}
+            teams_map = {
+                snap.id: snap.to_dict() for snap in team_snapshots if snap.exists
+            }
 
     players_map = {}
     if player_refs:
         valid_player_refs = [ref for ref in player_refs if ref]
         if valid_player_refs:
             player_snapshots = db.get_all(valid_player_refs)
-            players_map = {snap.id: snap.to_dict() for snap in player_snapshots if snap.exists}
+            players_map = {
+                snap.id: snap.to_dict() for snap in player_snapshots if snap.exists
+            }
 
     # Pass 2: Assemble the final list of match objects
     recent_matches = []

@@ -18,13 +18,13 @@ from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import (
+    _get_recent_matches_and_players,
     friend_group_members,
     get_group_leaderboard,
     get_leaderboard_trend_data,
     get_random_joke,
     get_user_group_stats,
     send_invite_email_background,
-    _get_recent_matches_and_players,
 )
 from pickaladder.user.utils import merge_ghost_user
 
