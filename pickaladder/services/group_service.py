@@ -16,6 +16,7 @@ from google.cloud.firestore import (
     FieldFilter,
 )
 
+from pickaladder.constants import DOUBLES_TEAM_SIZE
 from pickaladder.utils import send_email
 
 GUEST_USER = {"username": "Guest", "id": "unknown"}
@@ -693,7 +694,7 @@ def _get_team_leaderboard(
         team_data["member_details"] = team_members
 
         # To handle user name changes, we regenerate the default team name.
-        if len(team_members) == 2:
+        if len(team_members) == DOUBLES_TEAM_SIZE:
             member_names = [
                 m.get("name") or m.get("username", "Unknown") for m in team_members
             ]
@@ -768,6 +769,7 @@ def _get_recent_matches_and_players(
 
     player_ids = set()
     team_refs = set()
+    team_ids = set()
     for match_doc in recent_matches_docs:
         match_data = match_doc.to_dict()
         player_ids.add(
@@ -787,6 +789,10 @@ def _get_recent_matches_and_players(
             team_refs.add(match_data.get("team1Ref"))
         if match_data.get("team2Ref"):
             team_refs.add(match_data.get("team2Ref"))
+        if match_data.get("team1Id"):
+            team_ids.add(match_data.get("team1Id"))
+        if match_data.get("team2Id"):
+            team_ids.add(match_data.get("team2Id"))
 
     player_ids.discard(None)
 
@@ -804,10 +810,20 @@ def _get_recent_matches_and_players(
                 users_map[doc.id] = doc.to_dict()
 
     teams_map = {}
-    if team_refs:
-        team_docs = db.get_all(list(team_refs))
-        for doc in team_docs:
-            if doc.exists:
+    # Combine team IDs from refs and explicit ID fields
+    all_team_ids = {ref.id for ref in team_refs} | {
+        tid for tid in team_ids if tid
+    }
+    if all_team_ids:
+        all_team_ids_list = list(all_team_ids)
+        for i in range(0, len(all_team_ids_list), 30):
+            chunk = all_team_ids_list[i : i + 30]
+            team_docs = (
+                db.collection("teams")
+                .where(filter=firestore.FieldFilter("__name__", "in", chunk))
+                .stream()
+            )
+            for doc in team_docs:
                 teams_map[doc.id] = doc.to_dict()
 
     return recent_matches_docs, users_map, teams_map
@@ -905,9 +921,14 @@ def _enrich_matches(
         team1_ref = match_data.get("team1Ref")
         if team1_ref:
             match_data["team1"] = teams_map.get(team1_ref.id)
+        elif match_data.get("team1Id"):
+            match_data["team1"] = teams_map.get(match_data.get("team1Id"))
+
         team2_ref = match_data.get("team2Ref")
         if team2_ref:
             match_data["team2"] = teams_map.get(team2_ref.id)
+        elif match_data.get("team2Id"):
+            match_data["team2"] = teams_map.get(match_data.get("team2Id"))
 
         # Handle older, user-based matches as a fallback
         player1_id = _get_id(
