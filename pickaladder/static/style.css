@@ -1255,3 +1255,82 @@ input[type="submit"], .btn {
     background-color: var(--danger-color);
     color: var(--on-primary-color);
 }
+
+/* Tale of the Tape */
+.tale-of-the-tape {
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    background-color: #f9f9f9;
+    margin-top: 1rem;
+}
+
+.participants {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    text-align: center;
+}
+
+.participant {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100px;
+}
+
+.participant .avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 0.5rem;
+    border: 3px solid #ddd;
+}
+
+.participant span {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.score {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0 1rem;
+    color: #333;
+}
+
+.score .separator {
+    margin: 0 0.5rem;
+}
+
+.rivalry-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+}
+
+.rivalry-badge.fresh {
+    background-color: #28a745; /* Green */
+}
+
+.rivalry-badge.hot {
+    background-color: #dc3545; /* Red */
+}
+
+.rivalry-badge.ownage {
+    background: linear-gradient(45deg, #f0ad4e, #f8d7da); /* Gold/Pink */
+    color: #4a2b2b;
+}
+
+#rivalry-cta-container .btn {
+    margin-top: 1rem;
+}
