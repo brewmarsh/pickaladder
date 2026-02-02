@@ -407,6 +407,23 @@ def view_group(group_id):
     )
     recent_matches_docs = list(matches_query.stream())
 
+    # --- Batch Fetch Team Details ---
+    team_ids = set()
+    for match_doc in recent_matches_docs:
+        match_data = match_doc.to_dict()
+        if match_data.get("team1Id"):
+            team_ids.add(match_data["team1Id"])
+        if match_data.get("team2Id"):
+            team_ids.add(match_data["team2Id"])
+
+    teams_map = {}
+    if team_ids:
+        team_id_list = list(team_ids)
+        # Assuming team_ids won't exceed Firestore's limit of 30 for 'in' queries for now.
+        # Chunking can be added if this assumption proves false.
+        team_docs = db.collection("teams").where(filter=firestore.FieldFilter("__name__", "in", team_id_list)).stream()
+        teams_map = {doc.id: doc.to_dict() for doc in team_docs}
+
     # --- Batch Fetch Player Details ---
     # TODO: Add type hints for Agent clarity
     def get_id(data, possible_keys):
@@ -518,39 +535,65 @@ def view_group(group_id):
     for match_doc in recent_matches_docs:
         match_data = match_doc.to_dict()
         match_data["id"] = match_doc.id
-        match_data["player1"] = users_map.get(
-            get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"]),
-            GUEST_USER,
-        )
-        match_data["player2"] = users_map.get(
-            get_id(
-                match_data,
-                ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
-            ),
-            GUEST_USER,
-        )
-        partner_id = get_id(match_data, ["partnerId", "partner", "partner_id"])
-        if partner_id:
-            match_data["partner"] = users_map.get(partner_id, GUEST_USER)
-        else:
-            match_data["partner"] = None
 
-        opponent2_id = get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"])
-        if opponent2_id:
-            match_data["opponent2"] = users_map.get(opponent2_id, GUEST_USER)
-        else:
-            match_data["opponent2"] = None
+        # --- Team data ---
+        match_data["team1"] = teams_map.get(match_data.get("team1Id"))
+        match_data["team2"] = teams_map.get(match_data.get("team2Id"))
+
+        # --- Fallback to player data for older matches ---
+        if not match_data["team1"]:
+            match_data["player1"] = users_map.get(
+                get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"]),
+                GUEST_USER,
+            )
+            partner_id = get_id(match_data, ["partnerId", "partner", "partner_id"])
+            if partner_id:
+                match_data["partner"] = users_map.get(partner_id, GUEST_USER)
+            else:
+                match_data["partner"] = None
+
+        if not match_data["team2"]:
+            match_data["player2"] = users_map.get(
+                get_id(
+                    match_data,
+                    ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
+                ),
+                GUEST_USER,
+            )
+            opponent2_id = get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"])
+            if opponent2_id:
+                match_data["opponent2"] = users_map.get(opponent2_id, GUEST_USER)
+            else:
+                match_data["opponent2"] = None
 
         # --- Giant Slayer Logic ---
         winner_player = None
         loser_player = None
         # This logic primarily considers singles matches for now.
         if match_data.get("winner") == "team1":
-            winner_player = match_data.get("player1")
-            loser_player = match_data.get("player2")
+            winner_player = users_map.get(
+                get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"]),
+                GUEST_USER,
+            )
+            loser_player = users_map.get(
+                get_id(
+                    match_data,
+                    ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
+                ),
+                GUEST_USER,
+            )
         elif match_data.get("winner") == "team2":
-            winner_player = match_data.get("player2")
-            loser_player = match_data.get("player1")
+            winner_player = users_map.get(
+                get_id(
+                    match_data,
+                    ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
+                ),
+                GUEST_USER,
+            )
+            loser_player = users_map.get(
+                get_id(match_data, ["player1", "player1Id", "player1_id", "player_1"]),
+                GUEST_USER,
+            )
 
         if winner_player and loser_player:
             # Ensure ratings are treated as floats, defaulting to 0.0

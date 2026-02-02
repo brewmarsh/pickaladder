@@ -208,36 +208,48 @@
                         <tr>
                             <td data-label="Date">{{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate else 'N/A' }}</td>
                             <td data-label="Team 1">
-                                {% if match.player1.id != 'unknown' %}
-                                    <a href="{{ url_for('user.view_user', user_id=match.player1.id) }}">{{ match.player1.username }}</a>
-                                {% else %}
-                                    {{ match.player1.username }}
-                                {% endif %}
-                                {% if match.partner %}
-                                    &
-                                    {% if match.partner.id != 'unknown' %}
-                                        <a href="{{ url_for('user.view_user', user_id=match.partner.id) }}">{{ match.partner.username }}</a>
+                                {% if match.team1 %}
+                                    {{ match.team1.name }}
+                                {% elif match.player1 %}
+                                    {% if match.player1.id != 'unknown' %}
+                                        <a href="{{ url_for('user.view_user', user_id=match.player1.id) }}">{{ match.player1.username }}</a>
                                     {% else %}
-                                        {{ match.partner.username }}
+                                        {{ match.player1.username }}
                                     {% endif %}
+                                    {% if match.partner %}
+                                        &
+                                        {% if match.partner.id != 'unknown' %}
+                                            <a href="{{ url_for('user.view_user', user_id=match.partner.id) }}">{{ match.partner.username }}</a>
+                                        {% else %}
+                                            {{ match.partner.username }}
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    Unknown
                                 {% endif %}
                                 {% if match.is_upset and match.winner == 'team1' %}
                                     <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
                                 {% endif %}
                             </td>
                             <td data-label="Team 2">
-                                {% if match.player2.id != 'unknown' %}
-                                    <a href="{{ url_for('user.view_user', user_id=match.player2.id) }}">{{ match.player2.username }}</a>
-                                {% else %}
-                                    {{ match.player2.username }}
-                                {% endif %}
-                                {% if match.opponent2 %}
-                                    &
-                                    {% if match.opponent2.id != 'unknown' %}
-                                        <a href="{{ url_for('user.view_user', user_id=match.opponent2.id) }}">{{ match.opponent2.username }}</a>
+                                {% if match.team2 %}
+                                    {{ match.team2.name }}
+                                {% elif match.player2 %}
+                                    {% if match.player2.id != 'unknown' %}
+                                        <a href="{{ url_for('user.view_user', user_id=match.player2.id) }}">{{ match.player2.username }}</a>
                                     {% else %}
-                                        {{ match.opponent2.username }}
+                                        {{ match.player2.username }}
                                     {% endif %}
+                                    {% if match.opponent2 %}
+                                        &
+                                        {% if match.opponent2.id != 'unknown' %}
+                                            <a href="{{ url_for('user.view_user', user_id=match.opponent2.id) }}">{{ match.opponent2.username }}</a>
+                                        {% else %}
+                                            {{ match.opponent2.username }}
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    Unknown
                                 {% endif %}
                                 {% if match.is_upset and match.winner == 'team2' %}
                                     <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
