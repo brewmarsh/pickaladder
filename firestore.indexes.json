@@ -1,0 +1,21 @@
+{
+"indexes": [
+{
+"collectionGroup": "matches",
+"queryScope": "COLLECTION",
+"fields": [
+{ "fieldPath": "team1Ref", "order": "ASCENDING" },
+{ "fieldPath": "matchDate", "order": "DESCENDING" }
+]
+},
+{
+"collectionGroup": "matches",
+"queryScope": "COLLECTION",
+"fields": [
+{ "fieldPath": "team2Ref", "order": "ASCENDING" },
+{ "fieldPath": "matchDate", "order": "DESCENDING" }
+]
+}
+],
+"fieldOverrides": []
+}
