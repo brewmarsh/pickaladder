@@ -166,13 +166,13 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         )
 
     # TODO: Add type hints for Agent clarity
-    def test_get_head_to_head_stats(self):
+    def test_get_rivalry_stats(self):
         """Test the head-to-head stats calculation."""
         self._set_session_user()
         mock_db = self.mock_firestore_service.client.return_value
 
-        player1_id = "p1"
-        player2_id = "p2"
+        playerA_id = "p1"
+        playerB_id = "p2"
         other_player1_id = "p3"
         other_player2_id = "p4"
         group_id = "test_group"
@@ -182,8 +182,8 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         match1 = MagicMock()
         match1.to_dict.return_value = {
             "groupId": group_id,
-            "player1Id": player1_id,
-            "partnerId": player2_id,
+            "player1Id": playerA_id,
+            "partnerId": playerB_id,
             "player2Id": other_player1_id,
             "opponent2Id": other_player2_id,
             "winner": "team1",
@@ -196,8 +196,8 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "groupId": group_id,
             "player1Id": other_player1_id,
             "partnerId": other_player2_id,
-            "player2Id": player1_id,
-            "opponent2Id": player2_id,
+            "player2Id": playerA_id,
+            "opponent2Id": playerB_id,
             "winner": "team1",
             "team1Score": 11,
             "team2Score": 9,
@@ -206,9 +206,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         match3 = MagicMock()
         match3.to_dict.return_value = {
             "groupId": group_id,
-            "player1Id": player1_id,
+            "player1Id": playerA_id,
             "partnerId": other_player1_id,
-            "player2Id": player2_id,
+            "player2Id": playerB_id,
             "opponent2Id": other_player2_id,
             "winner": "team1",
             "team1Score": 11,
@@ -218,9 +218,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         match4 = MagicMock()
         match4.to_dict.return_value = {
             "groupId": group_id,
-            "player1Id": player1_id,
+            "player1Id": playerA_id,
             "partnerId": other_player1_id,
-            "player2Id": player2_id,
+            "player2Id": playerB_id,
             "opponent2Id": other_player2_id,
             "winner": "team2",
             "team1Score": 8,
@@ -244,23 +244,23 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         ]
 
         response = self.client.get(
-            f"/group/{group_id}/stats/head_to_head?player1_id={player1_id}&player2_id={player2_id}",
+            f"/group/{group_id}/stats/rivalry?playerA_id={playerA_id}&playerB_id={playerB_id}",
             headers=self._get_auth_headers(),
         )
 
         self.assertEqual(response.status_code, 200)
         stats = response.get_json()
-        self.assertEqual(stats["total_matches"], 4)
-        self.assertEqual(stats["head_to_head_record"], "1-1")
-        self.assertEqual(stats["partnership_record"], "1-1")
-        self.assertEqual(stats["avg_point_differential"], 1.5)
+        self.assertEqual(stats["wins"], 1)
+        self.assertEqual(stats["losses"], 1)
+        self.assertEqual(stats["point_diff"], 3)
+        self.assertEqual(len(stats["matches"]), 2)
 
     # TODO: Add type hints for Agent clarity
-    def test_get_head_to_head_stats_missing_params(self):
+    def test_get_rivalry_stats_missing_params(self):
         """Test head-to-head stats with missing player IDs."""
         self._set_session_user()
         response = self.client.get(
-            "/group/some_group/stats/head_to_head?player1_id=p1",
+            "/group/some_group/stats/rivalry?playerA_id=p1",
             headers=self._get_auth_headers(),
         )
         self.assertEqual(response.status_code, 400)

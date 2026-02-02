@@ -663,3 +663,77 @@ def _get_recent_matches_and_players(db, recent_matches_docs: list) -> list:
         recent_matches.append(match_data)
 
     return recent_matches
+
+
+def get_head_to_head_stats(group_id, playerA_id, playerB_id):
+    """
+    Calculates head-to-head statistics for two players in doubles matches.
+
+    Args:
+        group_id: The ID of the group to search for matches in.
+        playerA_id: The ID of the first player.
+        playerB_id: The ID of the second player.
+
+    Returns:
+        A dictionary containing wins for player A, losses for player A,
+        a list of the matches played between them, and the point differential.
+    """
+    db = firestore.client()
+    matches_ref = db.collection("matches")
+
+    query = matches_ref.where(filter=FieldFilter("groupId", "==", group_id))
+    all_matches_in_group = list(query.stream())
+
+    wins = 0
+    losses = 0
+    point_diff = 0
+    rivalry_matches = []
+
+    for match_doc in all_matches_in_group:
+        match = match_doc.to_dict()
+
+        participants = {
+            match.get("player1Id"),
+            match.get("player2Id"),
+            match.get("partnerId"),
+            match.get("opponent2Id"),
+        }
+        if playerA_id not in participants or playerB_id not in participants:
+            continue
+
+        team1_ids = {match.get("player1Id"), match.get("partnerId")}
+        team2_ids = {match.get("player2Id"), match.get("opponent2Id")}
+
+        player_a_is_team1 = playerA_id in team1_ids
+        player_b_is_team2 = playerB_id in team2_ids
+
+        player_a_is_team2 = playerA_id in team2_ids
+        player_b_is_team1 = playerB_id in team1_ids
+
+        if (player_a_is_team1 and player_b_is_team2) or \
+           (player_a_is_team2 and player_b_is_team1):
+
+            rivalry_matches.append(match)
+
+            team1_score = match.get("team1Score", 0) or 0
+            team2_score = match.get("team2Score", 0) or 0
+
+            if player_a_is_team1:
+                point_diff += team1_score - team2_score
+                if match.get("winner") == "team1":
+                    wins += 1
+                else:
+                    losses += 1
+            else: # Player A is on team 2
+                point_diff += team2_score - team1_score
+                if match.get("winner") == "team2":
+                    wins += 1
+                else:
+                    losses += 1
+
+    return {
+        "wins": wins,
+        "losses": losses,
+        "matches": rivalry_matches,
+        "point_diff": point_diff,
+    }

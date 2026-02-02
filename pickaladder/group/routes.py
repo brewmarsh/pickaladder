@@ -25,6 +25,7 @@ from pickaladder.group.utils import (
     get_random_joke,
     get_user_group_stats,
     send_invite_email_background,
+    get_head_to_head_stats as get_h2h_stats,
 )
 from pickaladder.user.utils import merge_ghost_user
 
@@ -842,92 +843,21 @@ def leave_group(group_id):
 
 
 # TODO: Add type hints for Agent clarity
-@bp.route("/<string:group_id>/stats/head_to_head", methods=["GET"])
+@bp.route("/<string:group_id>/stats/rivalry", methods=["GET"])
 @login_required
-def get_head_to_head_stats(group_id):
+def get_rivalry_stats(group_id):
     """Return head-to-head stats for two players in a group."""
-    player1_id = request.args.get("player1_id")
-    player2_id = request.args.get("player2_id")
+    playerA_id = request.args.get("playerA_id")
+    playerB_id = request.args.get("playerB_id")
 
-    if not all([player1_id, player2_id]):
-        return {"error": "player1_id and player2_id are required"}, 400
+    if not all([playerA_id, playerB_id]):
+        return {"error": "playerA_id and playerB_id are required"}, 400
 
-    db = firestore.client()
-    matches_ref = db.collection("matches")
-
-    # Firestore doesn't support 'OR' or 'array-contains-all' queries on
-    # different fields efficiently. The simplest approach is to fetch all
-    # group matches and filter locally. This could be slow for very large
-    # groups and might be optimized later (e.g., by adding a 'participants'
-    # array to each match document).
-    query = matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
-    all_matches_in_group = list(query.stream())
-
-    matches = []
-    for match_doc in all_matches_in_group:
-        match_data = match_doc.to_dict()
-        participants = {
-            match_data.get("player1Id"),
-            match_data.get("player2Id"),
-            match_data.get("partnerId"),
-            match_data.get("opponent2Id"),
-        }
-        if player1_id in participants and player2_id in participants:
-            matches.append(match_data)
-
-    # --- Calculate Stats ---
-    total_matches = len(matches)
-    h2h_player1_wins = 0
-    h2h_player2_wins = 0
-    partnership_wins = 0
-    partnership_losses = 0
-    point_differential = 0
-    h2h_matches_count = 0
-    partnership_matches_count = 0
-
-    for match in matches:
-        team1 = {match.get("player1Id"), match.get("partnerId")}
-        team2 = {match.get("player2Id"), match.get("opponent2Id")}
-
-        is_partner = (player1_id in team1 and player2_id in team1) or (
-            player1_id in team2 and player2_id in team2
-        )
-
-        if is_partner:
-            partnership_matches_count += 1
-            # Determine which team they were on
-            their_team = "team1" if player1_id in team1 else "team2"
-            if match.get("winner") == their_team:
-                partnership_wins += 1
-            else:
-                partnership_losses += 1
-        else:
-            # They are opponents
-            h2h_matches_count += 1
-            player1_team = "team1" if player1_id in team1 else "team2"
-
-            if match.get("winner") == player1_team:
-                h2h_player1_wins += 1
-            else:
-                h2h_player2_wins += 1
-
-            # Calculate point differential from player1's perspective
-            team1_score = match.get("team1Score", 0) or 0
-            team2_score = match.get("team2Score", 0) or 0
-            if player1_team == "team1":
-                point_differential += team1_score - team2_score
-            else:
-                point_differential += team2_score - team1_score
-
-    avg_point_differential = (
-        point_differential / h2h_matches_count if h2h_matches_count > 0 else 0
-    )
+    stats = get_h2h_stats(group_id, playerA_id, playerB_id)
 
     return {
-        "total_matches": total_matches,
-        "h2h_matches_count": h2h_matches_count,
-        "partnership_matches_count": partnership_matches_count,
-        "head_to_head_record": f"{h2h_player1_wins}-{h2h_player2_wins}",
-        "partnership_record": f"{partnership_wins}-{partnership_losses}",
-        "avg_point_differential": round(avg_point_differential, 1),
+        "wins": stats["wins"],
+        "losses": stats["losses"],
+        "matches": stats["matches"],
+        "point_diff": stats["point_diff"],
     }
