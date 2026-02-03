@@ -3,7 +3,7 @@
 import os
 import secrets
 import tempfile
-from typing import Union
+from typing import Any, Union
 
 from firebase_admin import auth, firestore, storage
 from flask import (
@@ -38,7 +38,7 @@ class MockPagination:
 
 @bp.route("/community")
 @login_required
-def view_community() -> Union[str, any]:
+def view_community() -> Union[str, Any]:
     """Display the community hub with friends, requests, and user discovery."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -87,7 +87,7 @@ def view_community() -> Union[str, any]:
 
 @bp.route("/edit_profile", methods=["GET", "POST"])
 @login_required
-def edit_profile() -> Union[str, any]:
+def edit_profile() -> Union[str, Any]:
     """Handle user profile updates for name, username, and email."""
     db = firestore.client()
     user_id = g.user["uid"]
@@ -98,7 +98,7 @@ def edit_profile() -> Union[str, any]:
     if form.validate_on_submit():
         new_email = form.email.data
         new_username = form.username.data
-        update_data = {
+        update_data: dict[str, Any] = {
             "name": form.name.data,
             "username": new_username,
         }
@@ -160,7 +160,7 @@ def edit_profile() -> Union[str, any]:
 
 @bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
-def dashboard() -> Union[str, any]:
+def dashboard() -> Union[str, Any]:
     """Render the user dashboard and handles profile updates.
 
     On GET, it displays the dashboard with the profile form.
@@ -174,11 +174,12 @@ def dashboard() -> Union[str, any]:
     form = UpdateProfileForm()
     if request.method == "GET":
         form.dupr_rating.data = user_data.get("duprRating")
-        form.dark_mode.data = user_data.get("dark_mode")
+        if user_data.get("dark_mode") is not None:
+            form.dark_mode.data = bool(user_data.get("dark_mode"))
 
     if form.validate_on_submit():
         try:
-            update_data = {
+            update_data: dict[str, Any] = {
                 "dark_mode": bool(form.dark_mode.data),
             }
             if form.dupr_rating.data is not None:
@@ -217,7 +218,7 @@ def dashboard() -> Union[str, any]:
 
 @bp.route("/<string:user_id>")
 @login_required
-def view_user(user_id: str) -> Union[str, any]:
+def view_user(user_id: str) -> Union[str, Any]:
     """Display a user's public profile."""
     db = firestore.client()
     profile_user_data = UserService.get_user_by_id(db, user_id)
@@ -318,7 +319,7 @@ def users() -> str:
     pagination = MockPagination(user_items)
 
     # The template also iterates over 'fof' (friends of friends)
-    fof = []
+    fof: list[Any] = []
 
     return render_template(
         "users.html", pagination=pagination, search_term=search_term, fof=fof
@@ -327,7 +328,7 @@ def users() -> str:
 
 @bp.route("/send_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
-def send_friend_request(friend_id: str) -> Union[any, any]:
+def send_friend_request(friend_id: str) -> Any:
     """Send a friend request to another user."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -429,7 +430,7 @@ def friends() -> str:
 
 @bp.route("/accept_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
-def accept_friend_request(friend_id: str) -> any:
+def accept_friend_request(friend_id: str) -> Any:
     """Accept a friend request."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -465,7 +466,7 @@ def accept_friend_request(friend_id: str) -> any:
 
 @bp.route("/decline_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
-def decline_friend_request(friend_id: str) -> any:
+def decline_friend_request(friend_id: str) -> Any:
     """Decline a friend request."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -501,7 +502,7 @@ def decline_friend_request(friend_id: str) -> any:
 
 @bp.route("/api/dashboard")
 @login_required
-def api_dashboard() -> any:
+def api_dashboard() -> Any:
     """Provide dashboard data as JSON, including matches and group rankings."""
     db = firestore.client()
     user_id = g.user["uid"]
@@ -556,7 +557,7 @@ def api_dashboard() -> any:
 
 @bp.route("/api/create_invite", methods=["POST"])
 @login_required
-def create_invite() -> any:
+def create_invite() -> Any:
     """Generate a unique invite token and stores it in Firestore."""
     db = firestore.client()
     user_id = g.user["uid"]
