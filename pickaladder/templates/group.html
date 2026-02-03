@@ -172,7 +172,7 @@
                     <select id="player1-select" class="form-control">
                         <option value="">Select a player</option>
                         {% for member in members %}
-                            <option value="{{ member.id }}">{{ member.name or member.username }}</option>
+                            <option value="{{ member.id }}" {{ 'selected' if member.id == playerA_id else '' }}>{{ member.name or member.username }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -181,16 +181,63 @@
                     <select id="player2-select" class="form-control">
                         <option value="">Select a player</option>
                         {% for member in members %}
-                            <option value="{{ member.id }}">{{ member.name or member.username }}</option>
+                            <option value="{{ member.id }}" {{ 'selected' if member.id == playerB_id else '' }}>{{ member.name or member.username }}</option>
                         {% endfor %}
                     </select>
                 </div>
             </div>
             <div id="head-to-head-stats" class="rivalry-stats-container">
-                <!-- Dynamic content will be injected here -->
+                {% if rivalry_stats %}
+                    <div class="tale-of-the-tape">
+                        <h3>Tale of the Tape</h3>
+                        <div class="participants">
+                            <div class="participant">
+                                {% set p1 = members|selectattr("id", "equalto", playerA_id)|first %}
+                                <img src="{{ p1.profilePictureUrl if p1 and p1.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="{{ p1.name if p1 else 'Player 1' }}" class="avatar">
+                                <span>{{ p1.name if p1 else 'Player 1' }}</span>
+                            </div>
+                            <div class="score">
+                                {% if rivalry_stats.wins + rivalry_stats.losses > 0 and (rivalry_stats.wins - rivalry_stats.losses)|abs <= 1 %}
+                                    <div class="rivalry-badge hot">🔥 Heated</div>
+                                {% endif %}
+                                <span>{{ rivalry_stats.wins }} - {{ rivalry_stats.losses }}</span>
+                            </div>
+                            <div class="participant">
+                                {% set p2 = members|selectattr("id", "equalto", playerB_id)|first %}
+                                <img src="{{ p2.profilePictureUrl if p2 and p2.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="{{ p2.name if p2 else 'Player 2' }}" class="avatar">
+                                <span>{{ p2.name if p2 else 'Player 2' }}</span>
+                            </div>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-bar">
+                                <span>Avg Points Scored</span>
+                                <span>{{ "%.1f"|format(rivalry_stats.avg_points_scored.playerA) }} - {{ "%.1f"|format(rivalry_stats.avg_points_scored.playerB) }}</span>
+                            </div>
+                            <div class="stat-bar">
+                                <span>Partnership Record</span>
+                                <span>Chemistry: {{ rivalry_stats.partnership_record.wins }}W - {{ rivalry_stats.partnership_record.losses }}L</span>
+                            </div>
+                        </div>
+                        <div class="recent-clashes">
+                            <h4>Recent Clashes</h4>
+                            <ul>
+                            {% for match in rivalry_stats.matches %}
+                                <li>
+                                    {% set player1_wins = (playerA_id in match.team1_ids and match.player1Score > match.player2Score) or (playerA_id in match.team2_ids and match.player2Score > match.player1Score) %}
+                                    {% if player1_wins %}<strong>{% endif %}{{ p1.name if p1 else 'Player 1' }}{% if player1_wins %}</strong>{% endif %}
+                                    {% if playerA_id in match.team1_ids %}{{ match.player1Score }} - {{ match.player2Score }}{% else %}{{ match.player2Score }} - {{ match.player1Score }}{% endif %}
+                                    {% if not player1_wins %}<strong>{% endif %}{{ p2.name if p2 else 'Player 2' }}{% if not player1_wins %}</strong>{% endif %}
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
             <div id="rivalry-cta-container" style="text-align: center; margin-top: 1rem;">
-                <!-- Call to action button will be injected here -->
+                {% if rivalry_stats %}
+                    <a href="{{ url_for('match.record_match', group_id=group.id, player1_id=playerA_id, player2_id=playerB_id) }}" class="btn btn-primary">Settle the Score</a>
+                {% endif %}
             </div>
         </div>
 
@@ -480,12 +527,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 let recentClashesHtml = '<div class="recent-clashes"><h4>Recent Clashes</h4><ul>';
                 data.matches.forEach(match => {
-                    const winner = match.winner;
-                    const team1Score = match.team1Score;
-                    const team2Score = match.team2Score;
+                    const p1Score = match.player1Score || 0;
+                    const p2Score = match.player2Score || 0;
+                    const winner = p1Score > p2Score ? 'team1' : (p2Score > p1Score ? 'team2' : 'draw');
+                    const team1Score = p1Score;
+                    const team2Score = p2Score;
 
-                    const team1_ids = [match.player1Id, match.partnerId];
-                    const team2_ids = [match.player2Id, match.opponent2Id];
+                    const team1_ids = match.team1_ids || [match.player1Id, match.partnerId];
+                    const team2_ids = match.team2_ids || [match.player2Id, match.opponent2Id];
 
                     const player1_is_team1 = team1_ids.includes(player1Id);
                     const player2_is_team2 = team2_ids.includes(player2Id);

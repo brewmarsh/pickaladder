@@ -180,6 +180,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         # --- Mock Data ---
         # 1. p1/p2 are partners, they win
         match1 = MagicMock()
+        match1.id = "match1"
         match1.to_dict.return_value = {
             "groupId": group_id,
             "player1Id": playerA_id,
@@ -192,6 +193,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         }
         # 2. p1/p2 are partners, they lose
         match2 = MagicMock()
+        match2.id = "match2"
         match2.to_dict.return_value = {
             "groupId": group_id,
             "player1Id": other_player1_id,
@@ -204,6 +206,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         }
         # 3. p1/p2 are opponents, p1 wins
         match3 = MagicMock()
+        match3.id = "match3"
         match3.to_dict.return_value = {
             "groupId": group_id,
             "player1Id": playerA_id,
@@ -216,6 +219,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         }
         # 4. p1/p2 are opponents, p2 wins
         match4 = MagicMock()
+        match4.id = "match4"
         match4.to_dict.return_value = {
             "groupId": group_id,
             "player1Id": playerA_id,
@@ -228,6 +232,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         }
         # 5. Match without both players (should be filtered out)
         match5 = MagicMock()
+        match5.id = "match5"
         match5.to_dict.return_value = {
             "groupId": group_id,
             "player1Id": other_player1_id,
