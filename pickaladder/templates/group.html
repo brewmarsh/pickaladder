@@ -156,11 +156,16 @@
         <div class="card best-buds-card">
             <h3>👯 Best Buds</h3>
             <div class="best-buds-container">
-                <img src="{{ best_buds.player1 | avatar_url }}" alt="{{ best_buds.player1.username }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                <span class="plus-sign">+</span>
-                <img src="{{ best_buds.player2 | avatar_url }}" alt="{{ best_buds.player2.username }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                {% for member in best_buds.member_details %}
+                    <img src="{{ member | avatar_url }}" alt="{{ member | smart_display_name }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                    {% if not loop.last %}<span class="plus-sign">+</span>{% endif %}
+                {% endfor %}
             </div>
-            <p>{{ best_buds.player1.username }} & {{ best_buds.player2.username }}: {{ best_buds.wins }} Wins Together!</p>
+            <p>
+                {% for member in best_buds.member_details %}
+                    {{ member | smart_display_name }}{% if not loop.last %} & {% endif %}
+                {% endfor %}: {{ best_buds.stats.get('wins', 0) }} Wins Together!
+            </p>
         </div>
         {% endif %}
 
