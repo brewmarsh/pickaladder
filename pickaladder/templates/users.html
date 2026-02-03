@@ -53,8 +53,8 @@
                 {% for user, sent_status, received_status in pagination.items %}
                     <tr>
                         <td data-label="Avatar">
-                            <img src="{{ user.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
-                                 alt="Profile Picture" class="profile-picture-thumbnail">
+                            <img src="{{ user | avatar_url }}"
+                                 alt="Profile Picture" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                         </td>
                         <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=user.id) }}">{{ user.username }}</a></td>
                         <td data-label="Name">{{ user.name }}</td>

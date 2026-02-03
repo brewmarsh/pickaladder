@@ -71,7 +71,7 @@
                                 </div>
                                 <div class="leaderboard-cell" data-label="Player">
                                     <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="player-link">
-                                        <img src="{{ player.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ player.name }}" class="profile-picture-thumbnail">
+                                        <img src="{{ player | avatar_url }}" alt="{{ player.name }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                         <span class="player-name">
                                             {{ player.name }}
                                             {% if player.is_on_fire %}
@@ -125,7 +125,7 @@
                                     <div class="team-members">
                                         {% for member in team.member_details %}
                                             <a href="{{ url_for('user.view_user', user_id=member.id) }}" class="player-link">
-                                                <img src="{{ member.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ member.name }}" class="profile-picture-thumbnail">
+                                                <img src="{{ member | avatar_url }}" alt="{{ member.name }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                             </a>
                                         {% endfor %}
                                         <span class="team-name">{{ team.name }}</span>
@@ -156,9 +156,9 @@
         <div class="card best-buds-card">
             <h3>👯 Best Buds</h3>
             <div class="best-buds-container">
-                <img src="{{ best_buds.player1.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ best_buds.player1.username }}" class="profile-picture-thumbnail">
+                <img src="{{ best_buds.player1 | avatar_url }}" alt="{{ best_buds.player1.username }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                 <span class="plus-sign">+</span>
-                <img src="{{ best_buds.player2.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ best_buds.player2.username }}" class="profile-picture-thumbnail">
+                <img src="{{ best_buds.player2 | avatar_url }}" alt="{{ best_buds.player2.username }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
             </div>
             <p>{{ best_buds.player1.username }} & {{ best_buds.player2.username }}: {{ best_buds.wins }} Wins Together!</p>
         </div>
@@ -193,7 +193,7 @@
                         <div class="participants">
                             <div class="participant">
                                 {% set p1 = members|selectattr("id", "equalto", playerA_id)|first %}
-                                <img src="{{ p1.profilePictureUrl if p1 and p1.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="{{ p1.name if p1 else 'Player 1' }}" class="avatar">
+                                <img src="{{ p1 | avatar_url }}" alt="{{ p1.name if p1 else 'Player 1' }}" class="avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                 <span>{{ p1.name if p1 else 'Player 1' }}</span>
                             </div>
                             <div class="score">
@@ -204,7 +204,7 @@
                             </div>
                             <div class="participant">
                                 {% set p2 = members|selectattr("id", "equalto", playerB_id)|first %}
-                                <img src="{{ p2.profilePictureUrl if p2 and p2.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="{{ p2.name if p2 else 'Player 2' }}" class="avatar">
+                                <img src="{{ p2 | avatar_url }}" alt="{{ p2.name if p2 else 'Player 2' }}" class="avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                 <span>{{ p2.name if p2 else 'Player 2' }}</span>
                             </div>
                         </div>
@@ -339,8 +339,8 @@
                         {% for member in members %}
                         <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=member.id) }}">
                             <td data-label="Avatar">
-                                <img src="{{ member.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
-                                    alt="Profile Picture" class="profile-picture-thumbnail">
+                                <img src="{{ member | avatar_url }}"
+                                    alt="Profile Picture" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                             </td>
                             <td data-label="Username">{{ member.username }}</td>
                         </tr>
@@ -408,8 +408,8 @@
                         {% for invite in pending_members %}
                         <tr>
                             <td data-label="Avatar">
-                                <img src="{{ invite.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
-                                     alt="Profile Picture" class="profile-picture-thumbnail">
+                                <img src="{{ invite | avatar_url }}"
+                                     alt="Profile Picture" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                             </td>
                             <td data-label="Name">{{ invite.username or invite.name }}</td>
                             <td data-label="Email">{{ invite.email }}</td>
@@ -484,7 +484,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getProfilePictureUrl(playerId) {
         const member = members.find(m => m.id === playerId);
-        return member ? (member.profilePictureUrl || "{{ url_for('static', filename='user_icon.png') }}") : "{{ url_for('static', filename='user_icon.png') }}";
+        if (member && member.profilePictureUrl) return member.profilePictureUrl;
+        const seed = playerId || "default";
+        return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&backgroundColor=2e7d32,ffc107,1976d2`;
     }
 
     function fetchAndDisplayStats() {
@@ -575,7 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <h3>Tale of the Tape</h3>
                         <div class="participants">
                             <div class="participant">
-                                <img src="${player1AvatarUrl}" alt="${player1Name}" class="avatar">
+                                <img src="${player1AvatarUrl}" alt="${player1Name}" class="avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                 <span>${player1Name}</span>
                             </div>
                             <div class="score">
@@ -583,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <span>${p1H2HWins} - ${p2H2HWins}</span>
                             </div>
                             <div class="participant">
-                                <img src="${player2AvatarUrl}" alt="${player2Name}" class="avatar">
+                                <img src="${player2AvatarUrl}" alt="${player2Name}" class="avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                 <span>${player2Name}</span>
                             </div>
                         </div>
