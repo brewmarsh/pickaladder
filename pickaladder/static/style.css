@@ -1512,3 +1512,11 @@ input[type="submit"], .btn {
 .form-indicator.loss {
     background-color: #dc3545; /* Danger Red */
 }
+
+.game-card.game-won {
+    border-left: 5px solid var(--success-color);
+}
+
+.game-card.game-lost {
+    border-left: 5px solid var(--danger-color);
+}
