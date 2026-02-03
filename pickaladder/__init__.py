@@ -40,49 +40,8 @@ class UUIDConverter(BaseConverter):
         return str(value)
 
 
-# TODO: Add type hints for Agent clarity
-def create_app(test_config=None):
-    """Create and configure an instance of the Flask application."""
-    app = Flask(
-        __name__,
-        instance_relative_config=True,
-        static_folder="static",
-        static_url_path="/static",
-    )
-    app.url_map.converters["uuid"] = UUIDConverter
-
-    # Load configuration
-    mail_username = os.environ.get("MAIL_USERNAME")
-    if mail_username:
-        # Emails shouldn't have spaces. Remove them to handle copy-paste
-        # errors or quotes with spaces.
-        mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
-
-    mail_password = os.environ.get("MAIL_PASSWORD")
-    if mail_password:
-        # Google App Passwords are often displayed with spaces, which smtplib/gmail
-        # doesn't like. We also strip quotes to handle cases where users wrap the
-        # password in quotes in their env vars.
-        mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
-
-    app.config.from_mapping(
-        SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
-        FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
-        GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
-        # Default mail settings, can be overridden in config.py
-        MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
-        MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
-        MAIL_USE_TLS=(os.environ.get("MAIL_USE_TLS") or "true").lower()
-        in ("true", "1", "t"),
-        MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower()
-        in ("true", "1", "t"),
-        MAIL_USERNAME=mail_username,
-        MAIL_PASSWORD=mail_password,
-        MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
-        or "noreply@pickaladder.com",
-        UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
-    )
-
+def _configure_mail_logging(app):
+    """Configure detailed mail configuration logging."""
     if not app.config.get("TESTING"):
         print(
             f"DEBUG: Mail User loaded: {bool(app.config.get('MAIL_USERNAME'))}",
@@ -132,10 +91,9 @@ def create_app(test_config=None):
         else:
             print("DEBUG: Mail Config - No Password set!", file=sys.stderr)
 
-    if test_config:
-        app.config.update(test_config)
 
-    # Initialize Firebase Admin SDK only if not in testing mode
+def _initialize_firebase(app):
+    """Initialize Firebase Admin SDK."""
     if not app.config.get("TESTING"):
         cred = None
         project_id = None
@@ -188,6 +146,57 @@ def create_app(test_config=None):
             except ValueError:
                 # This can happen if the app is already initialized, which is fine.
                 app.logger.info("Firebase app already initialized.")
+
+
+# TODO: Add type hints for Agent clarity
+def create_app(test_config=None):
+    """Create and configure an instance of the Flask application."""
+    app = Flask(
+        __name__,
+        instance_relative_config=True,
+        static_folder="static",
+        static_url_path="/static",
+    )
+    app.url_map.converters["uuid"] = UUIDConverter
+
+    # Load configuration
+    mail_username = os.environ.get("MAIL_USERNAME")
+    if mail_username:
+        # Emails shouldn't have spaces. Remove them to handle copy-paste
+        # errors or quotes with spaces.
+        mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
+
+    mail_password = os.environ.get("MAIL_PASSWORD")
+    if mail_password:
+        # Google App Passwords are often displayed with spaces, which smtplib/gmail
+        # doesn't like. We also strip quotes to handle cases where users wrap the
+        # password in quotes in their env vars.
+        mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
+
+    app.config.from_mapping(
+        SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
+        FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
+        GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
+        # Default mail settings, can be overridden in config.py
+        MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
+        MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
+        MAIL_USE_TLS=(os.environ.get("MAIL_USE_TLS") or "true").lower()
+        in ("true", "1", "t"),
+        MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower()
+        in ("true", "1", "t"),
+        MAIL_USERNAME=mail_username,
+        MAIL_PASSWORD=mail_password,
+        MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
+        or "noreply@pickaladder.com",
+        UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
+    )
+
+    _configure_mail_logging(app)
+
+    if test_config:
+        app.config.update(test_config)
+
+    _initialize_firebase(app)
 
     # Ensure the instance folder exists
     with suppress(OSError):
