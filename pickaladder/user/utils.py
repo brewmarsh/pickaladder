@@ -1,9 +1,11 @@
 """Utility functions for user management."""
 
 import datetime
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from firebase_admin import firestore
 from flask import current_app
+from google.cloud.firestore import Client, DocumentReference, DocumentSnapshot
 
 from pickaladder.utils import mask_email
 
@@ -12,8 +14,7 @@ from .models import User
 UPSET_THRESHOLD = 0.25
 
 
-# TODO: Add type hints for Agent clarity
-def merge_ghost_user(db, real_user_ref, email):
+def merge_ghost_user(db: Client, real_user_ref: DocumentReference, email: str) -> None:
     """Check for 'ghost' user with the given email and merge their data.
 
     This function should be called when a user registers or logs in for the first
@@ -130,7 +131,7 @@ def wrap_user(user_data: dict | None, uid: str | None = None) -> User | None:
     return User(data)
 
 
-def smart_display_name(user: dict) -> str:
+def smart_display_name(user: Dict[str, Any]) -> str:
     """Return a smart display name for a user.
 
     If the user is a ghost user (username starts with 'ghost_'):
@@ -158,7 +159,7 @@ class UserService:
     """Service class for user-related operations."""
 
     @staticmethod
-    def get_user_by_id(db, user_id):
+    def get_user_by_id(db: Client, user_id: str) -> Optional[Dict[str, Any]]:
         """Fetch a user by their ID."""
         user_ref = db.collection("users").document(user_id)
         user_doc = user_ref.get()
@@ -169,7 +170,7 @@ class UserService:
         return data
 
     @staticmethod
-    def get_friendship_info(db, current_user_id, target_user_id):
+    def get_friendship_info(db: Client, current_user_id: str, target_user_id: str) -> Tuple[bool, bool]:
         """Check friendship status between two users."""
         friend_request_sent = is_friend = False
         if current_user_id != target_user_id:
@@ -189,7 +190,7 @@ class UserService:
         return is_friend, friend_request_sent
 
     @staticmethod
-    def get_user_friends(db, user_id, limit=None):
+    def get_user_friends(db: Client, user_id: str, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """Fetch a user's friends."""
         user_ref = db.collection("users").document(user_id)
         query = user_ref.collection("friends").where(
@@ -208,7 +209,7 @@ class UserService:
         return [{"id": doc.id, **doc.to_dict()} for doc in friend_docs if doc.exists]
 
     @staticmethod
-    def get_user_pending_requests(db, user_id):
+    def get_user_pending_requests(db: Client, user_id: str) -> List[Dict[str, Any]]:
         """Fetch pending friend requests where the user is the recipient."""
         user_ref = db.collection("users").document(user_id)
         requests_query = (
@@ -226,7 +227,7 @@ class UserService:
         return [{"id": doc.id, **doc.to_dict()} for doc in request_docs if doc.exists]
 
     @staticmethod
-    def get_user_sent_requests(db, user_id):
+    def get_user_sent_requests(db: Client, user_id: str) -> List[Dict[str, Any]]:
         """Fetch pending friend requests where the user is the initiator."""
         user_ref = db.collection("users").document(user_id)
         requests_query = (
@@ -244,7 +245,7 @@ class UserService:
         return [{"id": doc.id, **doc.to_dict()} for doc in request_docs if doc.exists]
 
     @staticmethod
-    def get_all_users(db, current_user_id, search_term=None, limit=20):
+    def get_all_users(db: Client, current_user_id: str, search_term: Optional[str] = None, limit: int = 20) -> List[Dict[str, Any]]:
         """Fetch all users for discovery."""
         query = db.collection("users")
         if search_term:
@@ -271,7 +272,7 @@ class UserService:
         return users
 
     @staticmethod
-    def get_h2h_stats(db, user_id_1, user_id_2):
+    def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> Optional[Dict[str, Any]]:
         """Fetch head-to-head statistics between two users."""
         my_wins = 0
         my_losses = 0
@@ -360,7 +361,7 @@ class UserService:
         return None
 
     @staticmethod
-    def get_user_matches(db, user_id):
+    def get_user_matches(db: Client, user_id: str) -> List[DocumentSnapshot]:
         """Fetch all matches involving a user."""
         user_ref = db.collection("users").document(user_id)
         matches_as_p1 = (
@@ -394,7 +395,7 @@ class UserService:
         return list(unique_matches)
 
     @staticmethod
-    def calculate_stats(matches, user_id):
+    def calculate_stats(matches: List[DocumentSnapshot], user_id: str) -> Dict[str, Any]:
         """Calculate statistics (wins, losses, streak) from matches."""
         wins = 0
         losses = 0
@@ -479,7 +480,7 @@ class UserService:
         }
 
     @staticmethod
-    def get_group_rankings(db, user_id):
+    def get_group_rankings(db: Client, user_id: str) -> List[Dict[str, Any]]:
         """Fetch group rankings for a user."""
         from pickaladder.group.utils import get_group_leaderboard  # noqa: PLC0415
 
@@ -528,7 +529,7 @@ class UserService:
         return group_rankings
 
     @staticmethod
-    def _get_player_info(player_ref, users_map):
+    def _get_player_info(player_ref: DocumentReference, users_map: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
         """Return a dictionary with player info."""
         player_data = users_map.get(player_ref.id)
         if not player_data:
@@ -540,270 +541,160 @@ class UserService:
         }
 
     @staticmethod
-    def format_matches_for_profile(db, display_items, user_id, profile_user_data):
+    def _format_doubles_match(data: Dict[str, Any], user_id: str, profile_user_data: Dict[str, Any], users_map: Dict[str, Dict[str, Any]], match_obj: Dict[str, Any]) -> None:
+        """Helper to format a doubles match for the profile view."""
+        t1r, t2r = data.get("team1", []), data.get("team2", [])
+        in_t1 = any(r.id == user_id for r in t1r)
+
+        def get_unm(ref: Optional[DocumentReference]) -> str:
+            return users_map.get(ref.id, {}).get("username", "Unknown") if ref else "Unknown"
+
+        if in_t1:
+            match_obj.update({"player1_id": user_id, "player1": {"id": user_id, "username": profile_user_data.get("username")}})
+            opp_ref = t2r[0] if t2r else None
+            opp_name = get_unm(opp_ref)
+            if len(t2r) > 1 or len(t1r) > 1: opp_name += " (Doubles)"
+            match_obj["player2"] = {"id": opp_ref.id if opp_ref else "", "username": opp_name}
+        else:
+            opp_ref = t1r[0] if t1r else None
+            opp_name = get_unm(opp_ref)
+            if len(t1r) > 1 or len(t2r) > 1: opp_name += " (Doubles)"
+            match_obj["player1"] = {"id": opp_ref.id if opp_ref else "", "username": opp_name}
+            match_obj["player2"] = {"id": user_id, "username": profile_user_data.get("username")}
+
+    @staticmethod
+    def _format_singles_match(data: Dict[str, Any], user_id: str, profile_user_data: Dict[str, Any], users_map: Dict[str, Dict[str, Any]], match_obj: Dict[str, Any]) -> None:
+        """Helper to format a singles match for the profile view."""
+        p1r, p2r = data.get("player1Ref"), data.get("player2Ref")
+        def get_unm(ref: Optional[DocumentReference]) -> str:
+            return users_map.get(ref.id, {}).get("username", "Unknown") if ref else "Unknown"
+
+        if p1r and p1r.id == user_id:
+            match_obj.update({"player1_id": user_id, "player1": {"id": user_id, "username": profile_user_data.get("username")}, "player2": {"id": p2r.id if p2r else "", "username": get_unm(p2r)}})
+        else:
+            match_obj.update({"player1_id": p1r.id if p1r else "", "player1": {"id": p1r.id if p1r else "", "username": get_unm(p1r)}, "player2": {"id": user_id, "username": profile_user_data.get("username")}})
+
+    @staticmethod
+    def format_matches_for_profile(db: Client, display_items: List[Dict[str, Any]], user_id: str, profile_user_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Format matches for the public profile view."""
-        # Collect all user refs needed for batch fetching
         needed_refs = set()
         for item in display_items:
-            data = item["data"]
-            match_type = data.get("matchType", "singles")
-            if match_type == "doubles":
-                needed_refs.update(data.get("team1", []))
-                needed_refs.update(data.get("team2", []))
+            d = item["data"]
+            if d.get("matchType") == "doubles":
+                needed_refs.update(d.get("team1", []) + d.get("team2", []))
             else:
-                if data.get("player1Ref"):
-                    needed_refs.add(data.get("player1Ref"))
-                if data.get("player2Ref"):
-                    needed_refs.add(data.get("player2Ref"))
+                if d.get("player1Ref"): needed_refs.add(d.get("player1Ref"))
+                if d.get("player2Ref"): needed_refs.add(d.get("player2Ref"))
 
-        # Fetch all unique users in one batch
-        unique_refs_list = list(needed_refs)
-        users_map = {}
-        if unique_refs_list:
-            users_docs = db.get_all(unique_refs_list)
-            users_map = {doc.id: doc.to_dict() for doc in users_docs if doc.exists}
-
-        def get_username(ref, default="Unknown"):
-            if not ref:
-                return default
-            u_data = users_map.get(ref.id)
-            if u_data:
-                return u_data.get("username", default)
-            return default
-
+        u_map = {d.id: d.to_dict() for d in db.get_all(list(needed_refs)) if d.exists}
         final_matches = []
         for item in display_items:
-            data = item["data"]
-            m_id = item["doc"].id
-            match_type = data.get("matchType", "singles")
-
-            # Construct object compatible with template
-            match_obj = {
-                "id": m_id,
-                "match_date": data.get("matchDate"),
-                "player1_score": data.get("player1Score", 0),
-                "player2_score": data.get("player2Score", 0),
-                "player1_id": "",
-                "player1": {"username": "Unknown"},
-                "player2": {"id": "", "username": "Unknown"},
-            }
-
-            if match_type == "doubles":
-                team1_refs = data.get("team1", [])
-                team2_refs = data.get("team2", [])
-                in_team1 = any(ref.id == user_id for ref in team1_refs)
-
-                if in_team1:
-                    # Profile user is in Team 1 (Player 1 slot)
-                    match_obj["player1_id"] = user_id
-                    match_obj["player1"] = {
-                        "id": user_id,
-                        "username": profile_user_data.get("username"),
-                    }
-
-                    # Opponent is Team 2 (Player 2 slot)
-                    opp_name = "Unknown Team"
-                    opp_id = ""
-                    if team2_refs:
-                        opp_ref = team2_refs[0]
-                        opp_id = opp_ref.id
-                        opp_name = get_username(opp_ref)
-                        if len(team2_refs) > 1 or len(team1_refs) > 1:
-                            opp_name += " (Doubles)"
-
-                    match_obj["player2"] = {"id": opp_id, "username": opp_name}
-
-                else:
-                    # Profile user is in Team 2 (Player 2 slot)
-                    match_obj["player1_id"] = ""  # Not profile user
-
-                    # Opponent is Team 1 (Player 1 slot)
-                    opp_name = "Unknown Team"
-                    opp_id = ""
-                    if team1_refs:
-                        opp_ref = team1_refs[0]
-                        opp_id = opp_ref.id
-                        opp_name = get_username(opp_ref)
-                        if len(team1_refs) > 1 or len(team2_refs) > 1:
-                            opp_name += " (Doubles)"
-
-                    match_obj["player1"] = {"id": opp_id, "username": opp_name}
-                    match_obj["player2"] = {
-                        "id": user_id,
-                        "username": profile_user_data.get("username"),
-                    }
-
+            d = item["data"]
+            match_obj = {"id": item["doc"].id, "match_date": d.get("matchDate"), "player1_score": d.get("player1Score", 0), "player2_score": d.get("player2Score", 0), "player1_id": "", "player1": {"username": "Unknown"}, "player2": {"id": "", "username": "Unknown"}}
+            if d.get("matchType") == "doubles":
+                UserService._format_doubles_match(d, user_id, profile_user_data, u_map, match_obj)
             else:
-                # Singles
-                p1_ref = data.get("player1Ref")
-                p2_ref = data.get("player2Ref")
-
-                if p1_ref and p1_ref.id == user_id:
-                    match_obj["player1_id"] = user_id
-                    match_obj["player1"] = {
-                        "id": user_id,
-                        "username": profile_user_data.get("username"),
-                    }
-
-                    opp_name = get_username(p2_ref)
-                    opp_id = p2_ref.id if p2_ref else ""
-                    match_obj["player2"] = {"id": opp_id, "username": opp_name}
-                else:
-                    match_obj["player1_id"] = p1_ref.id if p1_ref else ""
-                    opp_name = get_username(p1_ref)
-                    opp_id = p1_ref.id if p1_ref else ""
-                    match_obj["player1"] = {"id": opp_id, "username": opp_name}
-
-                    match_obj["player2"] = {
-                        "id": user_id,
-                        "username": profile_user_data.get("username"),
-                    }
-
+                UserService._format_singles_match(d, user_id, profile_user_data, u_map, match_obj)
             final_matches.append(match_obj)
         return final_matches
 
     @staticmethod
-    def format_matches_for_dashboard(db, matches_docs, user_id):
+    def _calculate_user_result(match: Dict[str, Any], winner: str, user_id: str) -> str:
+        """Calculate the result of a match for a specific user."""
+        p1_score = match.get("player1Score", 0)
+        p2_score = match.get("player2Score", 0)
+        if p1_score == p2_score:
+            return "draw"
+
+        user_won = False
+        if match.get("matchType") == "doubles":
+            team1_refs = match.get("team1", [])
+            in_team1 = any(ref.id == user_id for ref in team1_refs)
+            if (in_team1 and winner == "player1") or (
+                not in_team1 and winner == "player2"
+            ):
+                user_won = True
+        else:
+            is_player1 = match.get("player1Ref") and match["player1Ref"].id == user_id
+            if (is_player1 and winner == "player1") or (
+                not is_player1 and winner == "player2"
+            ):
+                user_won = True
+        return "win" if user_won else "loss"
+
+    @staticmethod
+    def _is_match_upset(
+        match: Dict[str, Any],
+        winner: str,
+        p1_info: Union[Dict[str, Any], List[Dict[str, Any]]],
+        p2_info: Union[Dict[str, Any], List[Dict[str, Any]]],
+        users_map: Dict[str, Dict[str, Any]],
+    ) -> bool:
+        """Determine if a match was an upset based on DUPR ratings."""
+        if match.get("is_upset"):
+            return True
+
+        def get_single_player(info: Union[Dict[str, Any], List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
+            return info if not isinstance(info, list) else (info[0] if info else None)
+
+        winner_player = get_single_player(p1_info if winner == "player1" else p2_info)
+        loser_player = get_single_player(p2_info if winner == "player1" else p1_info)
+
+        if winner_player and loser_player:
+            winner_data = users_map.get(winner_player["id"], {})
+            loser_data = users_map.get(loser_player["id"], {})
+            winner_rating = float(winner_data.get("duprRating") or 0.0)
+            loser_rating = float(loser_data.get("duprRating") or 0.0)
+            if winner_rating > 0 and loser_rating > 0:
+                return (loser_rating - winner_rating) >= UPSET_THRESHOLD
+        return False
+
+    @staticmethod
+    def format_matches_for_dashboard(
+        db: Client, matches_docs: List[DocumentSnapshot], user_id: str
+    ) -> List[Dict[str, Any]]:
         """Format matches for the API dashboard view."""
-        # Batch fetch user data and team data for all recent matches
-        player_refs = set()
-        team_refs = set()
+        player_refs, team_refs = set(), set()
         for match_doc in matches_docs:
-            match = match_doc.to_dict()
-            if match.get("player1Ref"):
-                player_refs.add(match["player1Ref"])
-            if match.get("player2Ref"):
-                player_refs.add(match["player2Ref"])
-            for ref in match.get("team1", []):
-                player_refs.add(ref)
-            for ref in match.get("team2", []):
-                player_refs.add(ref)
+            m = match_doc.to_dict()
+            if m.get("player1Ref"):
+                player_refs.add(m["player1Ref"])
+            if m.get("player2Ref"):
+                player_refs.add(m["player2Ref"])
+            player_refs.update(m.get("team1", []))
+            player_refs.update(m.get("team2", []))
+            if m.get("team1Ref"):
+                team_refs.add(m["team1Ref"])
+            if m.get("team2Ref"):
+                team_refs.add(m["team2Ref"])
 
-            if match.get("team1Ref"):
-                team_refs.add(match["team1Ref"])
-            if match.get("team2Ref"):
-                team_refs.add(match["team2Ref"])
-
-        users_map = {}
-        if player_refs:
-            user_docs = db.get_all(list(player_refs))
-            users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
-
-        teams_map = {}
-        if team_refs:
-            team_docs = db.get_all(list(team_refs))
-            teams_map = {doc.id: doc.to_dict() for doc in team_docs if doc.exists}
+        u_map = {d.id: d.to_dict() for d in db.get_all(list(player_refs)) if d.exists}
+        t_map = {d.id: d.to_dict() for d in db.get_all(list(team_refs)) if d.exists}
 
         matches_data = []
         for match_doc in matches_docs:
-            match = match_doc.to_dict()
-            p1_score = match.get("player1Score", 0)
-            p2_score = match.get("player2Score", 0)
-            winner = "player1" if p1_score > p2_score else "player2"
+            m = match_doc.to_dict()
+            p1s, p2s = m.get("player1Score", 0), m.get("player2Score", 0)
+            winner = "player1" if p1s > p2s else "player2"
+            u_res = UserService._calculate_user_result(m, winner, user_id)
 
-            user_result = "draw"
-            if p1_score != p2_score:
-                user_won = False
-                if match.get("matchType") == "doubles":
-                    team1_refs = match.get("team1", [])
-                    in_team1 = any(ref.id == user_id for ref in team1_refs)
-                    if (in_team1 and winner == "player1") or (
-                        not in_team1 and winner == "player2"
-                    ):
-                        user_won = True
-                else:
-                    is_player1 = (
-                        match.get("player1Ref") and match["player1Ref"].id == user_id
-                    )
-                    if (is_player1 and winner == "player1") or (
-                        not is_player1 and winner == "player2"
-                    ):
-                        user_won = True
-                user_result = "win" if user_won else "loss"
-
-            if match.get("matchType") == "doubles":
-                team1_info = [
-                    UserService._get_player_info(ref, users_map)
-                    for ref in match.get("team1", [])
-                ]
-                team2_info = [
-                    UserService._get_player_info(ref, users_map)
-                    for ref in match.get("team2", [])
-                ]
-                player1_info = team1_info
-                player2_info = team2_info
+            if m.get("matchType") == "doubles":
+                p1i = [UserService._get_player_info(r, u_map) for r in m.get("team1", [])]
+                p2i = [UserService._get_player_info(r, u_map) for r in m.get("team2", [])]
             else:
-                player1_info = UserService._get_player_info(
-                    match["player1Ref"], users_map
-                )
-                player2_info = UserService._get_player_info(
-                    match["player2Ref"], users_map
-                )
+                p1i = UserService._get_player_info(m["player1Ref"], u_map)
+                p2i = UserService._get_player_info(m["player2Ref"], u_map)
 
-            # Team Names
-            team1_obj = {"name": None}
-            if t1_ref := match.get("team1Ref"):
-                if t1_data := teams_map.get(t1_ref.id):
-                    team1_obj["name"] = t1_data.get("name")
+            t1o = {"name": t_map.get(m["team1Ref"].id, {}).get("name") if m.get("team1Ref") else None}
+            t2o = {"name": t_map.get(m["team2Ref"].id, {}).get("name") if m.get("team2Ref") else None}
+            upset = UserService._is_match_upset(m, winner, p1i, p2i, u_map)
 
-            team2_obj = {"name": None}
-            if t2_ref := match.get("team2Ref"):
-                if t2_data := teams_map.get(t2_ref.id):
-                    team2_obj["name"] = t2_data.get("name")
-
-            # Upset logic
-            is_upset = match.get("is_upset", False)
-            if not is_upset:
-                winner_player = None
-                loser_player = None
-                if winner == "player1":
-                    winner_player = (
-                        player1_info
-                        if not isinstance(player1_info, list)
-                        else player1_info[0]
-                    )
-                    loser_player = (
-                        player2_info
-                        if not isinstance(player2_info, list)
-                        else player2_info[0]
-                    )
-                else:
-                    winner_player = (
-                        player2_info
-                        if not isinstance(player2_info, list)
-                        else player2_info[0]
-                    )
-                    loser_player = (
-                        player1_info
-                        if not isinstance(player1_info, list)
-                        else player1_info[0]
-                    )
-
-                if winner_player and loser_player:
-                    # We need the full user data for ratings, which is in users_map
-                    winner_data = users_map.get(winner_player["id"], {})
-                    loser_data = users_map.get(loser_player["id"], {})
-                    winner_rating = float(winner_data.get("duprRating") or 0.0)
-                    loser_rating = float(loser_data.get("duprRating") or 0.0)
-                    if winner_rating > 0 and loser_rating > 0:
-                        if (loser_rating - winner_rating) >= UPSET_THRESHOLD:
-                            is_upset = True
-
-            matches_data.append(
-                {
-                    "id": match_doc.id,
-                    "player1": player1_info,
-                    "player2": player2_info,
-                    "team1": team1_obj,
-                    "team2": team2_obj,
-                    "player1_score": p1_score,
-                    "player2_score": p2_score,
-                    "winner": winner,
-                    "date": match.get("matchDate", "N/A"),
-                    "is_group_match": bool(match.get("groupId")),
-                    "match_type": match.get("matchType", "singles"),
-                    "user_result": user_result,
-                    "is_upset": is_upset,
-                }
-            )
+            matches_data.append({
+                "id": match_doc.id, "player1": p1i, "player2": p2i, "team1": t1o,
+                "team2": t2o, "player1_score": p1s, "player2_score": p2s,
+                "winner": winner, "date": m.get("matchDate", "N/A"),
+                "is_group_match": bool(m.get("groupId")),
+                "match_type": m.get("matchType", "singles"),
+                "user_result": u_res, "is_upset": upset,
+            })
         return matches_data
