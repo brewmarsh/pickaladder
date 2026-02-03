@@ -449,6 +449,7 @@ class UserService:
                         "group_id": group_doc.id,
                         "group_name": group_data.get("name", "N/A"),
                         "rank": rank,
+                        "rank_change": player.get("rank_change", 0),
                         "points": player.get("avg_score", 0),
                         "form": player.get("form", []),
                     }
@@ -612,8 +613,9 @@ class UserService:
     @staticmethod
     def format_matches_for_dashboard(db, matches_docs, user_id):
         """Format matches for the API dashboard view."""
-        # Batch fetch user data for all players in the recent matches
+        # Batch fetch user data and team data for all recent matches
         player_refs = set()
+        team_refs = set()
         for match_doc in matches_docs:
             match = match_doc.to_dict()
             if match.get("player1Ref"):
@@ -625,10 +627,20 @@ class UserService:
             for ref in match.get("team2", []):
                 player_refs.add(ref)
 
+            if match.get("team1Ref"):
+                team_refs.add(match["team1Ref"])
+            if match.get("team2Ref"):
+                team_refs.add(match["team2Ref"])
+
         users_map = {}
         if player_refs:
             user_docs = db.get_all(list(player_refs))
             users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
+
+        teams_map = {}
+        if team_refs:
+            team_docs = db.get_all(list(team_refs))
+            teams_map = {doc.id: doc.to_dict() for doc in team_docs if doc.exists}
 
         matches_data = []
         for match_doc in matches_docs:
@@ -658,16 +670,16 @@ class UserService:
                 user_result = "win" if user_won else "loss"
 
             if match.get("matchType") == "doubles":
-                team1 = [
+                team1_info = [
                     UserService._get_player_info(ref, users_map)
                     for ref in match.get("team1", [])
                 ]
-                team2 = [
+                team2_info = [
                     UserService._get_player_info(ref, users_map)
                     for ref in match.get("team2", [])
                 ]
-                player1_info = team1
-                player2_info = team2
+                player1_info = team1_info
+                player2_info = team2_info
             else:
                 player1_info = UserService._get_player_info(
                     match["player1Ref"], users_map
@@ -676,11 +688,46 @@ class UserService:
                     match["player2Ref"], users_map
                 )
 
+            # Team Names
+            team1_obj = {"name": None}
+            if t1_ref := match.get("team1Ref"):
+                if t1_data := teams_map.get(t1_ref.id):
+                    team1_obj["name"] = t1_data.get("name")
+
+            team2_obj = {"name": None}
+            if t2_ref := match.get("team2Ref"):
+                if t2_data := teams_map.get(t2_ref.id):
+                    team2_obj["name"] = t2_data.get("name")
+
+            # Upset logic
+            is_upset = match.get("is_upset", False)
+            if not is_upset:
+                winner_player = None
+                loser_player = None
+                if winner == "player1":
+                    winner_player = player1_info if not isinstance(player1_info, list) else player1_info[0]
+                    loser_player = player2_info if not isinstance(player2_info, list) else player2_info[0]
+                else:
+                    winner_player = player2_info if not isinstance(player2_info, list) else player2_info[0]
+                    loser_player = player1_info if not isinstance(player1_info, list) else player1_info[0]
+
+                if winner_player and loser_player:
+                    # We need the full user data for ratings, which is in users_map
+                    winner_data = users_map.get(winner_player["id"], {})
+                    loser_data = users_map.get(loser_player["id"], {})
+                    winner_rating = float(winner_data.get("duprRating") or 0.0)
+                    loser_rating = float(loser_data.get("duprRating") or 0.0)
+                    if winner_rating > 0 and loser_rating > 0:
+                        if (loser_rating - winner_rating) >= 0.25: # UPSET_THRESHOLD
+                            is_upset = True
+
             matches_data.append(
                 {
                     "id": match_doc.id,
                     "player1": player1_info,
                     "player2": player2_info,
+                    "team1": team1_obj,
+                    "team2": team2_obj,
                     "player1_score": p1_score,
                     "player2_score": p2_score,
                     "winner": winner,
@@ -688,6 +735,7 @@ class UserService:
                     "is_group_match": bool(match.get("groupId")),
                     "match_type": match.get("matchType", "singles"),
                     "user_result": user_result,
+                    "is_upset": is_upset,
                 }
             )
         return matches_data
