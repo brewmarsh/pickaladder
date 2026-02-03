@@ -36,6 +36,56 @@ class MockPagination:
 
 
 # TODO: Add type hints for Agent clarity
+@bp.route("/community")
+@login_required
+def view_community():
+    """Display the community hub with friends, requests, and user discovery."""
+    db = firestore.client()
+    current_user_id = g.user["uid"]
+    search_term = request.args.get("search", "").strip()
+
+    # 1. Fetch Friends
+    friends = UserService.get_user_friends(db, current_user_id)
+
+    # 2. Fetch Pending Requests (Received)
+    pending_requests = UserService.get_user_pending_requests(db, current_user_id)
+
+    # 3. Fetch Sent Requests (Outgoing)
+    sent_requests = UserService.get_user_sent_requests(db, current_user_id)
+
+    # 4. Discover Users
+    discover_users_all = UserService.get_all_users(
+        db, current_user_id, search_term=search_term, limit=50
+    )
+
+    friend_ids = {f["id"] for f in friends}
+    sent_request_ids = {s["id"] for s in sent_requests}
+    received_request_ids = {r["id"] for r in pending_requests}
+
+    discover_users = []
+    for user_data in discover_users_all:
+        # Tag status for template action buttons
+        if user_data["id"] in friend_ids:
+            user_data["status"] = "friend"
+        elif user_data["id"] in sent_request_ids:
+            user_data["status"] = "sent"
+        elif user_data["id"] in received_request_ids:
+            user_data["status"] = "received"
+        else:
+            user_data["status"] = "stranger"
+        discover_users.append(user_data)
+
+    return render_template(
+        "user/community.html",
+        friends=friends,
+        pending_requests=pending_requests,
+        sent_requests=sent_requests,
+        discover_users=discover_users,
+        search_term=search_term,
+    )
+
+
+# TODO: Add type hints for Agent clarity
 @bp.route("/edit_profile", methods=["GET", "POST"])
 @login_required
 def edit_profile():
