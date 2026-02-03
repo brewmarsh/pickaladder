@@ -954,6 +954,26 @@ def api_dashboard():
         p2_score = match.get("player2Score", 0)
         winner = "player1" if p1_score > p2_score else "player2"
 
+        user_result = "draw"
+        if p1_score != p2_score:
+            user_won = False
+            if match.get("matchType") == "doubles":
+                team1_refs = match.get("team1", [])
+                in_team1 = any(ref.id == user_id for ref in team1_refs)
+                if (in_team1 and winner == "player1") or (
+                    not in_team1 and winner == "player2"
+                ):
+                    user_won = True
+            else:
+                is_player1 = (
+                    match.get("player1Ref") and match["player1Ref"].id == user_id
+                )
+                if (is_player1 and winner == "player1") or (
+                    not is_player1 and winner == "player2"
+                ):
+                    user_won = True
+            user_result = "win" if user_won else "loss"
+
         if match.get("matchType") == "doubles":
             team1 = [_get_player_info(ref, users_map) for ref in match.get("team1", [])]
             team2 = [_get_player_info(ref, users_map) for ref in match.get("team2", [])]
@@ -974,6 +994,7 @@ def api_dashboard():
                 "date": match.get("matchDate", "N/A"),
                 "is_group_match": bool(match.get("groupId")),
                 "match_type": match.get("matchType", "singles"),
+                "user_result": user_result,
             }
         )
 
@@ -987,18 +1008,38 @@ def api_dashboard():
     for group_doc in my_groups_query:
         group_data = group_doc.to_dict()
         leaderboard = get_group_leaderboard(group_doc.id)
-        rank = "N/A"
+        user_ranking_data = None
         for i, player in enumerate(leaderboard):
             if player["id"] == user_id:
                 rank = i + 1
+                user_ranking_data = {
+                    "group_id": group_doc.id,
+                    "group_name": group_data.get("name", "N/A"),
+                    "rank": rank,
+                    "points": player.get("avg_score", 0),
+                    "form": player.get("form", []),
+                }
+                if i > 0:
+                    player_above = leaderboard[i - 1]
+                    user_ranking_data["player_above"] = player_above.get("name")
+                    user_ranking_data["points_to_overtake"] = player_above.get(
+                        "avg_score", 0
+                    ) - player.get("avg_score", 0)
                 break
-        group_rankings.append(
-            {
-                "group_id": group_doc.id,
-                "group_name": group_data.get("name", "N/A"),
-                "rank": rank,
-            }
-        )
+
+        if user_ranking_data:
+            group_rankings.append(user_ranking_data)
+        else:
+            # Handle case where user is in group but has played no matches
+            group_rankings.append(
+                {
+                    "group_id": group_doc.id,
+                    "group_name": group_data.get("name", "N/A"),
+                    "rank": "N/A",
+                    "points": 0,
+                    "form": [],
+                }
+            )
 
     streak_display = (
         f"{current_streak}{streak_type}" if processed_matches_for_stats else "N/A"
