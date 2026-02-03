@@ -448,7 +448,11 @@ class TestUtilsCoverage(unittest.TestCase):
 
         # Make the thread run synchronously
         thread = MagicMock()
-        thread.start.side_effect = lambda: mock_thread.call_args[1]["target"]()
+
+        def run_thread_success():
+            mock_thread.call_args[1]["target"]()
+
+        thread.start.side_effect = run_thread_success
         mock_thread.return_value = thread
 
         send_invite_email_background(mock_app, "invite_token", email_data)
@@ -475,7 +479,11 @@ class TestUtilsCoverage(unittest.TestCase):
 
         # Make the thread run synchronously
         thread = MagicMock()
-        thread.start.side_effect = lambda: mock_thread.call_args[1]["target"]()
+
+        def run_thread_failure():
+            mock_thread.call_args[1]["target"]()
+
+        thread.start.side_effect = run_thread_failure
         mock_thread.return_value = thread
 
         send_invite_email_background(mock_app, "invite_token", email_data)
