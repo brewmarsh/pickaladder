@@ -172,8 +172,8 @@ class BestBudsTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         # team1 should be best buds because team2 has a member not in group
         self.assertIn(b"Best Buds", response.data)
-        self.assertIn(b"User1", response.data)
-        self.assertIn(b"User2", response.data)
+        self.assertIn(b"User 1", response.data)
+        self.assertIn(b"User 2", response.data)
         self.assertIn(b"10 Wins Together!", response.data)
         # Team 2 should NOT be best buds even though it has more wins (20)
         self.assertNotIn(b"20 Wins Together!", response.data)

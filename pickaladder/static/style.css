@@ -850,6 +850,12 @@ input[type="submit"], .btn {
     color: #ffffff !important;
 }
 
+.leaderboard-container .team-members {
+    flex-direction: row;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
 /* Latest Games Section */
 .latest-games-container {
     display: flex;
@@ -949,6 +955,11 @@ input[type="submit"], .btn {
 .badge-close-call {
     background-color: #ffc107;
     color: #000000;
+}
+
+.badge-upset {
+    background-color: var(--danger-color);
+    color: white;
 }
 
 /* Mobile Formatting */
