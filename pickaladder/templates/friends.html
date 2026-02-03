@@ -3,14 +3,14 @@
 {% block content %}
     <div class="page-header">
         <h1>Friends</h1>
-        <div>
+        <div class="friends-header-actions">
             <button id="invite-friend-btn" class="btn" data-csrf="{{ csrf_token() }}">Invite a Friend</button>
             <a href="{{ url_for('user.users') }}" class="btn">Find New Friends</a>
         </div>
     </div>
     <div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
 
-    <div class="grid-container" style="grid-template-columns: 1fr 1fr; gap: 40px;">
+    <div class="friends-container">
         <div class="card">
             <h3>Your Friends</h3>
             <div class="table-container">

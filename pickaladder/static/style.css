@@ -397,6 +397,12 @@ input[type="submit"], .btn {
     align-items: start;
 }
 
+.friends-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+}
+
 /* Match Cards */
 .match-card {
     background-color: var(--surface-color);
@@ -975,6 +981,39 @@ input[type="submit"], .btn {
 
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .friends-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .friends-container .card {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .friends-header-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .friends-header-actions .btn {
+        width: 100%;
+        margin-top: 0;
+    }
+
+    .responsive-table td {
+        padding-left: 16px !important;
+    }
+
+    .responsive-table td::before {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        margin-bottom: 4px !important;
+        text-align: left !important;
     }
 }
 
