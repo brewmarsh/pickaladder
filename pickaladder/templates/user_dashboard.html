@@ -239,6 +239,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function formatMatchDate(dateString) {
+        if (!dateString || dateString === 'N/A') {
+            return 'Date N/A';
+        }
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
     function renderLatestGames(matches) {
         const feed = document.getElementById('latest-games-feed');
         if (matches.length === 0) {
@@ -265,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const card = `
                 <div class="game-card">
                     <div class="game-card-header">
-                        <span>${match.date || 'Date N/A'}</span>
+                        <span>${formatMatchDate(match.date)}</span>
                     </div>
                     <div class="game-card-body">
                         <div class="team">${player1Display}</div>

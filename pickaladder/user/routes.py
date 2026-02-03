@@ -954,6 +954,26 @@ def api_dashboard():
         p2_score = match.get("player2Score", 0)
         winner = "player1" if p1_score > p2_score else "player2"
 
+        user_result = "draw"
+        if p1_score != p2_score:
+            user_won = False
+            if match.get("matchType") == "doubles":
+                team1_refs = match.get("team1", [])
+                in_team1 = any(ref.id == user_id for ref in team1_refs)
+                if (in_team1 and winner == "player1") or (
+                    not in_team1 and winner == "player2"
+                ):
+                    user_won = True
+            else:
+                is_player1 = (
+                    match.get("player1Ref") and match["player1Ref"].id == user_id
+                )
+                if (is_player1 and winner == "player1") or (
+                    not is_player1 and winner == "player2"
+                ):
+                    user_won = True
+            user_result = "win" if user_won else "loss"
+
         if match.get("matchType") == "doubles":
             team1 = [_get_player_info(ref, users_map) for ref in match.get("team1", [])]
             team2 = [_get_player_info(ref, users_map) for ref in match.get("team2", [])]
@@ -974,6 +994,7 @@ def api_dashboard():
                 "date": match.get("matchDate", "N/A"),
                 "is_group_match": bool(match.get("groupId")),
                 "match_type": match.get("matchType", "singles"),
+                "user_result": user_result,
             }
         )
 
