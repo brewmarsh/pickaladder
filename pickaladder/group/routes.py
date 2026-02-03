@@ -167,6 +167,7 @@ def view_group(group_id):
 
     # --- Team Leaderboard ---
     team_leaderboard = []
+    best_buds = None
     teams_ref = db.collection("teams")
     if member_ids:
         member_id_list = list(member_ids)
@@ -252,6 +253,21 @@ def view_group(group_id):
 
         # Sort teams by win percentage
         team_leaderboard.sort(key=lambda x: x["win_percentage"], reverse=True)
+
+        # Best Buds: Find the team with the most wins from the group's teams
+        if team_leaderboard:
+            # Sort by wins descending, use win percentage as tie-breaker
+            sorted_by_wins = sorted(
+                team_leaderboard,
+                key=lambda x: (
+                    x.get("stats", {}).get("wins", 0),
+                    x.get("win_percentage", 0),
+                ),
+                reverse=True,
+            )
+            top_team = sorted_by_wins[0]
+            if top_team.get("stats", {}).get("wins", 0) > 0:
+                best_buds = top_team
 
     # --- Fetch Pending Invites ---
     pending_members = []
@@ -517,80 +533,6 @@ def view_group(group_id):
 
         recent_matches.append(match_data)
 
-    # --- "Best Buds" Calculation ---
-    def get_id(data, possible_keys):
-        """Get first non-None value for a list of possible keys."""
-        for key in possible_keys:
-            if key in data and data[key] is not None:
-                return data[key]
-        return None
-
-    all_matches_query = matches_ref.where(
-        filter=firestore.FieldFilter("groupId", "==", group_id)
-    ).select(
-        [
-            "winner",
-            "player1",
-            "player1Id",
-            "player1_id",
-            "player_1",
-            "partnerId",
-            "partner",
-            "partner_id",
-            "player2",
-            "player2Id",
-            "player2_id",
-            "opponent1",
-            "opponent1Id",
-            "opponent2Id",
-            "opponent2",
-            "opponent2_id",
-        ]
-    )
-    all_matches_docs = list(all_matches_query.stream())
-    partnership_wins = defaultdict(int)
-    for match_doc in all_matches_docs:
-        match_data = match_doc.to_dict()
-
-        # Check if it's a doubles match by looking for the necessary player IDs
-        player1_id = get_id(
-            match_data, ["player1", "player1Id", "player1_id", "player_1"]
-        )
-        partner_id = get_id(match_data, ["partnerId", "partner", "partner_id"])
-        player2_id = get_id(
-            match_data,
-            ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
-        )
-        opponent2_id = get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"])
-
-        is_doubles = all([player1_id, partner_id, player2_id, opponent2_id])
-
-        if is_doubles:
-            winner = match_data.get("winner")
-            if winner == "team1":
-                winning_pair = tuple(sorted((player1_id, partner_id)))
-            elif winner == "team2":
-                winning_pair = tuple(sorted((player2_id, opponent2_id)))
-            else:
-                winning_pair = None
-
-            if winning_pair:
-                partnership_wins[winning_pair] += 1
-
-    best_buds_pair = None
-    if partnership_wins:
-        best_buds_pair = max(partnership_wins, key=partnership_wins.get)
-
-    best_buds = None
-    if best_buds_pair:
-        player1_ref = db.collection("users").document(best_buds_pair[0]).get()
-        player2_ref = db.collection("users").document(best_buds_pair[1]).get()
-        if player1_ref.exists and player2_ref.exists:
-            best_buds = {
-                "player1": player1_ref.to_dict(),
-                "player2": player2_ref.to_dict(),
-                "wins": partnership_wins[best_buds_pair],
-            }
 
     # --- Giant Slayer Calculation ---
     for match_data in recent_matches:
