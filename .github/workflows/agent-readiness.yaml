@@ -27,8 +27,9 @@ jobs:
         run: pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git
 
       - name: Run Scorecard
-        # Run against the integration directory as requested
-        run: agent-readiness-scorecard check --path custom_components/meraki_ha --format markdown > readiness_report.md
+        # We use 'agent-score' as it is the command provided by the installed package.
+        # We scan the root '.' of the repository to evaluate agent readiness for this project.
+        run: agent-score score . --report readiness_report.md
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
