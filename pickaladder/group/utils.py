@@ -681,24 +681,46 @@ def get_partnership_stats(playerA_id, playerB_id, all_matches_in_group):
     losses = 0
 
     for match_doc in all_matches_in_group:
-        match = match_doc.to_dict()
+        data = match_doc.to_dict()
+        if data.get("matchType") != "doubles":
+            continue
 
-        team1_ids = {match.get("player1Id"), match.get("partnerId")}
-        team2_ids = {match.get("player2Id"), match.get("opponent2Id")}
+        # Extract team member IDs, handling both old (IDs) and new (Refs) formats
+        team1_ids = set()
+        if "team1" in data:  # New format: list of refs
+            team1_ids = {ref.id for ref in data["team1"] if hasattr(ref, "id")}
+        else:  # Old format
+            team1_ids = {data.get("player1Id"), data.get("partnerId")}
 
-        # Using sets to check for partnership
+        team2_ids = set()
+        if "team2" in data:  # New format: list of refs
+            team2_ids = {ref.id for ref in data["team2"] if hasattr(ref, "id")}
+        else:  # Old format
+            team2_ids = {data.get("player2Id"), data.get("opponent2Id")}
+
+        team1_ids.discard(None)
+        team2_ids.discard(None)
+
+        # Check for partnership
         partnership_team1 = {playerA_id, playerB_id}.issubset(team1_ids)
         partnership_team2 = {playerA_id, playerB_id}.issubset(team2_ids)
 
+        p1_score = data.get("player1Score")
+        if p1_score is None:
+            p1_score = data.get("team1Score", 0)
+        p2_score = data.get("player2Score")
+        if p2_score is None:
+            p2_score = data.get("team2Score", 0)
+
         if partnership_team1:
-            if match.get("winner") == "team1":
+            if p1_score > p2_score:
                 wins += 1
-            elif match.get("winner") == "team2":
+            elif p2_score > p1_score:
                 losses += 1
         elif partnership_team2:
-            if match.get("winner") == "team2":
+            if p2_score > p1_score:
                 wins += 1
-            elif match.get("winner") == "team1":
+            elif p1_score > p2_score:
                 losses += 1
 
     return {"wins": wins, "losses": losses}
@@ -736,19 +758,27 @@ def get_head_to_head_stats(group_id, playerA_id, playerB_id):
     rivalry_matches = []
 
     for match_doc in all_matches_in_group:
-        match = match_doc.to_dict()
+        data = match_doc.to_dict()
 
-        participants = {
-            match.get("player1Id"),
-            match.get("player2Id"),
-            match.get("partnerId"),
-            match.get("opponent2Id"),
-        }
+        # Extract team member IDs, handling both old (IDs) and new (Refs) formats
+        team1_ids = set()
+        if "team1" in data:  # New format: list of refs
+            team1_ids = {ref.id for ref in data["team1"] if hasattr(ref, "id")}
+        else:  # Old format
+            team1_ids = {data.get("player1Id"), data.get("partnerId")}
+
+        team2_ids = set()
+        if "team2" in data:  # New format: list of refs
+            team2_ids = {ref.id for ref in data["team2"] if hasattr(ref, "id")}
+        else:  # Old format
+            team2_ids = {data.get("player2Id"), data.get("opponent2Id")}
+
+        team1_ids.discard(None)
+        team2_ids.discard(None)
+
+        participants = team1_ids.union(team2_ids)
         if playerA_id not in participants or playerB_id not in participants:
             continue
-
-        team1_ids = {match.get("player1Id"), match.get("partnerId")}
-        team2_ids = {match.get("player2Id"), match.get("opponent2Id")}
 
         player_a_is_team1 = playerA_id in team1_ids
         player_b_is_team2 = playerB_id in team2_ids
@@ -759,26 +789,38 @@ def get_head_to_head_stats(group_id, playerA_id, playerB_id):
         if (player_a_is_team1 and player_b_is_team2) or (
             player_a_is_team2 and player_b_is_team1
         ):
-            rivalry_matches.append(match)
+            # For display in 'Recent Clashes', we need to ensure some fields are present
+            match_display_data = data.copy()
+            match_display_data["id"] = match_doc.id
 
-            team1_score = match.get("team1Score", 0) or 0
-            team2_score = match.get("team2Score", 0) or 0
+            # Pass the extracted IDs back for template compatibility
+            match_display_data["team1_ids"] = list(team1_ids)
+            match_display_data["team2_ids"] = list(team2_ids)
+
+            rivalry_matches.append(match_display_data)
+
+            team1_score = data.get("player1Score")
+            if team1_score is None:
+                team1_score = data.get("team1Score", 0)
+            team2_score = data.get("player2Score")
+            if team2_score is None:
+                team2_score = data.get("team2Score", 0)
 
             if player_a_is_team1:
                 point_diff += team1_score - team2_score
                 playerA_total_points += team1_score
                 playerB_total_points += team2_score
-                if match.get("winner") == "team1":
+                if team1_score > team2_score:
                     wins += 1
-                else:
+                elif team2_score > team1_score:
                     losses += 1
             else:  # Player A is on team 2
                 point_diff += team2_score - team1_score
                 playerA_total_points += team2_score
                 playerB_total_points += team1_score
-                if match.get("winner") == "team2":
+                if team2_score > team1_score:
                     wins += 1
-                else:
+                elif team1_score > team2_score:
                     losses += 1
 
     num_matches = len(rivalry_matches)

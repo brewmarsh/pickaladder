@@ -3,7 +3,11 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from pickaladder.group.utils import get_group_leaderboard
+from pickaladder.group.utils import (
+    get_group_leaderboard,
+    get_head_to_head_stats,
+    get_partnership_stats,
+)
 
 
 class TestGroupUtils(unittest.TestCase):
@@ -83,6 +87,119 @@ class TestGroupUtils(unittest.TestCase):
         self.assertEqual(leaderboard[1]["wins"], 0)
         self.assertEqual(leaderboard[1]["losses"], 1)
         self.assertEqual(leaderboard[1]["avg_score"], 5.0)
+
+    def test_get_partnership_stats(self):
+        """Test the get_partnership_stats function with old and new formats."""
+        # Legacy format (IDs)
+        match1 = MagicMock()
+        match1.to_dict.return_value = {
+            "matchType": "doubles",
+            "player1Id": "user1",
+            "partnerId": "user2",
+            "player1Score": 11,
+            "player2Score": 5,
+        }
+
+        # New format (Refs)
+        ref1 = MagicMock()
+        ref1.id = "user1"
+        ref2 = MagicMock()
+        ref2.id = "user2"
+        match2 = MagicMock()
+        match2.to_dict.return_value = {
+            "matchType": "doubles",
+            "team1": [ref1, ref2],
+            "player1Score": 5,
+            "player2Score": 11,
+        }
+
+        # Singles match (should be ignored)
+        match3 = MagicMock()
+        match3.to_dict.return_value = {
+            "matchType": "singles",
+            "player1Id": "user1",
+            "player2Id": "user2",
+            "player1Score": 11,
+            "player2Score": 5,
+        }
+
+        matches = [match1, match2, match3]
+
+        # Test partnership user1 and user2
+        stats = get_partnership_stats("user1", "user2", matches)
+        # match1: win, match2: loss
+        self.assertEqual(stats["wins"], 1)
+        self.assertEqual(stats["losses"], 1)
+
+    @patch("pickaladder.group.utils.firestore")
+    def test_get_head_to_head_stats(self, mock_firestore):
+        """Test the get_head_to_head_stats function with mixed formats."""
+        mock_db = mock_firestore.client.return_value
+
+        # Match 1: user1 & user3 vs user2 & user4 (Legacy format)
+        match1 = MagicMock()
+        match1.id = "match1"
+        match1.to_dict.return_value = {
+            "matchType": "doubles",
+            "player1Id": "user1",
+            "partnerId": "user3",
+            "player2Id": "user2",
+            "opponent2Id": "user4",
+            "player1Score": 11,
+            "player2Score": 5,
+        }
+
+        # Match 2: user2 & user3 vs user1 & user4 (New format)
+        ref1 = MagicMock()
+        ref1.id = "user1"
+        ref2 = MagicMock()
+        ref2.id = "user2"
+        ref3 = MagicMock()
+        ref3.id = "user3"
+        ref4 = MagicMock()
+        ref4.id = "user4"
+
+        match2 = MagicMock()
+        match2.id = "match2"
+        match2.to_dict.return_value = {
+            "matchType": "doubles",
+            "team1": [ref2, ref3],
+            "team2": [ref1, ref4],
+            "player1Score": 11,
+            "player2Score": 5,
+        }
+
+        # Match 3: Partnership match (should be counted for chemistry but not rivalry)
+        match3 = MagicMock()
+        match3.id = "match3"
+        match3.to_dict.return_value = {
+            "matchType": "doubles",
+            "team1": [ref1, ref2],
+            "team2": [ref3, ref4],
+            "player1Score": 11,
+            "player2Score": 5,
+        }
+
+        mock_db.collection.return_value.where.return_value.stream.return_value = [
+            match1,
+            match2,
+            match3,
+        ]
+
+        stats = get_head_to_head_stats("group1", "user1", "user2")
+
+        # match1: user1 wins against user2
+        # match2: user1 loses against user2
+        self.assertEqual(stats["wins"], 1)
+        self.assertEqual(stats["losses"], 1)
+        self.assertEqual(len(stats["matches"]), 2)
+        # match1 diff: 11-5=6, match2 diff: 5-11=-6
+        self.assertEqual(stats["point_diff"], 0)
+
+        # Chemistry (Partnership)
+        # match3: user1 & user2 win together
+        self.assertEqual(stats["partnership_record"]["wins"], 1)
+        self.assertEqual(stats["partnership_record"]["losses"], 0)
 
 
 if __name__ == "__main__":

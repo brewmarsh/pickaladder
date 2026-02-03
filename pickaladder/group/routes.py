@@ -135,6 +135,13 @@ def view_group(group_id):
     current_user_id = g.user["uid"]
     user_ref = db.collection("users").document(current_user_id)
 
+    # Pre-calculate rivalry stats if players are selected via query params
+    playerA_id = request.args.get("playerA")
+    playerB_id = request.args.get("playerB")
+    rivalry_stats = None
+    if playerA_id and playerB_id:
+        rivalry_stats = get_h2h_stats(group_id, playerA_id, playerB_id)
+
     # Fetch members' data
     member_refs = group_data.get("members", [])
     member_ids = {ref.id for ref in member_refs}
@@ -526,6 +533,9 @@ def view_group(group_id):
         recent_matches=recent_matches,
         best_buds=best_buds,
         team_leaderboard=team_leaderboard,
+        rivalry_stats=rivalry_stats,
+        playerA_id=playerA_id,
+        playerB_id=playerB_id,
     )
 
 
