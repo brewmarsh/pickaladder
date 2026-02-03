@@ -9,6 +9,8 @@ from pickaladder.utils import mask_email
 
 from .models import User
 
+UPSET_THRESHOLD = 0.25
+
 
 # TODO: Add type hints for Agent clarity
 def merge_ghost_user(db, real_user_ref, email):
@@ -705,11 +707,27 @@ class UserService:
                 winner_player = None
                 loser_player = None
                 if winner == "player1":
-                    winner_player = player1_info if not isinstance(player1_info, list) else player1_info[0]
-                    loser_player = player2_info if not isinstance(player2_info, list) else player2_info[0]
+                    winner_player = (
+                        player1_info
+                        if not isinstance(player1_info, list)
+                        else player1_info[0]
+                    )
+                    loser_player = (
+                        player2_info
+                        if not isinstance(player2_info, list)
+                        else player2_info[0]
+                    )
                 else:
-                    winner_player = player2_info if not isinstance(player2_info, list) else player2_info[0]
-                    loser_player = player1_info if not isinstance(player1_info, list) else player1_info[0]
+                    winner_player = (
+                        player2_info
+                        if not isinstance(player2_info, list)
+                        else player2_info[0]
+                    )
+                    loser_player = (
+                        player1_info
+                        if not isinstance(player1_info, list)
+                        else player1_info[0]
+                    )
 
                 if winner_player and loser_player:
                     # We need the full user data for ratings, which is in users_map
@@ -718,7 +736,7 @@ class UserService:
                     winner_rating = float(winner_data.get("duprRating") or 0.0)
                     loser_rating = float(loser_data.get("duprRating") or 0.0)
                     if winner_rating > 0 and loser_rating > 0:
-                        if (loser_rating - winner_rating) >= 0.25: # UPSET_THRESHOLD
+                        if (loser_rating - winner_rating) >= UPSET_THRESHOLD:
                             is_upset = True
 
             matches_data.append(
