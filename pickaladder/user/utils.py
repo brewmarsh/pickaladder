@@ -4,6 +4,7 @@ from firebase_admin import firestore
 from flask import current_app
 
 from pickaladder.utils import mask_email
+
 from .models import User
 
 

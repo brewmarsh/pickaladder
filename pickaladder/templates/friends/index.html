@@ -86,7 +86,7 @@
             {% for friend in friends %}
                 <div class="friend-card">
                     <div class="friend-card-content">
-                        <img src="{{ friend | avatar_url }}" alt="{{ friend | smart_display_name }}" class="friend-avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                        <img src="{{ friend | avatar_url }}" alt="{{ friend | smart_display_name }}" class="friend-avatar avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                         <h3 class="friend-name">{{ friend | smart_display_name }}</h3>
                         <div class="friend-rating">
                             <span class="star-icon">⭐</span>
