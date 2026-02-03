@@ -18,7 +18,6 @@ from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.group.utils import (
-    _get_recent_matches_and_players,
     friend_group_members,
     get_group_leaderboard,
     get_leaderboard_trend_data,
@@ -423,7 +422,98 @@ def view_group(group_id):
         .limit(20)
     )
     recent_matches_docs = list(matches_query.stream())
-    recent_matches = _get_recent_matches_and_players(db, recent_matches_docs)
+
+    # Collect all team and player references
+    team_refs = []
+    player_refs = []
+    for doc in recent_matches_docs:
+        data = doc.to_dict()
+        if ref := data.get("team1Ref"):
+            if isinstance(ref, firestore.DocumentReference):
+                team_refs.append(ref)
+        if ref := data.get("team2Ref"):
+            if isinstance(ref, firestore.DocumentReference):
+                team_refs.append(ref)
+
+        # Collect player refs for fallback and older match types
+        player_keys = [
+            "player1Ref",
+            "player2Ref",
+            "partnerRef",
+            "opponent1Ref",
+            "opponent2Ref",
+            "player1",
+            "player2",
+            "partner",
+            "opponent1",
+            "opponent2",
+        ]
+        for key in player_keys:
+            if ref := data.get(key):
+                if isinstance(ref, firestore.DocumentReference):
+                    player_refs.append(ref)
+
+    # Batch fetch Teams
+    teams_map = {}
+    if team_refs:
+        # Deduplicate
+        unique_team_refs = list(
+            {ref.path: ref for ref in team_refs if hasattr(ref, "path")}.values()
+        )
+        if unique_team_refs:
+            team_docs = db.get_all(unique_team_refs)
+            teams_map = {
+                doc.id: {**doc.to_dict(), "id": doc.id} for doc in team_docs if doc.exists
+            }
+
+    # Batch fetch Players
+    players_map = {}
+    if player_refs:
+        # Deduplicate
+        unique_player_refs = list(
+            {ref.path: ref for ref in player_refs if hasattr(ref, "path")}.values()
+        )
+        if unique_player_refs:
+            player_docs = db.get_all(unique_player_refs)
+            players_map = {
+                doc.id: {**doc.to_dict(), "id": doc.id}
+                for doc in player_docs
+                if doc.exists
+            }
+
+    recent_matches = []
+    for match_doc in recent_matches_docs:
+        match_data = match_doc.to_dict()
+        match_data["id"] = match_doc.id
+
+        # Attach Teams
+        if t1_ref := match_data.get("team1Ref"):
+            if isinstance(t1_ref, firestore.DocumentReference):
+                match_data["team1"] = teams_map.get(t1_ref.id)
+        if t2_ref := match_data.get("team2Ref"):
+            if isinstance(t2_ref, firestore.DocumentReference):
+                match_data["team2"] = teams_map.get(t2_ref.id)
+
+        # Populate Players (as fallback and for older match types)
+        player_keys = [
+            "player1",
+            "player2",
+            "partner",
+            "opponent1",
+            "opponent2",
+            "player1Ref",
+            "player2Ref",
+            "partnerRef",
+            "opponent1Ref",
+            "opponent2Ref",
+        ]
+        for key in player_keys:
+            ref = match_data.get(key)
+            if isinstance(ref, firestore.DocumentReference):
+                target = key.replace("Ref", "")
+                match_data[target] = players_map.get(ref.id, GUEST_USER)
+
+        recent_matches.append(match_data)
 
     # --- "Best Buds" Calculation ---
     def get_id(data, possible_keys):
