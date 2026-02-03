@@ -583,6 +583,10 @@ input[type="submit"], .btn {
     text-align: center;
 }
 
+.text-muted {
+    color: var(--text-secondary-color);
+}
+
 .winning-score {
     font-weight: bold;
 }
@@ -854,6 +858,11 @@ input[type="submit"], .btn {
     flex-direction: row;
     gap: 8px;
     justify-content: flex-start;
+}
+
+.team-leaderboard .leaderboard-header,
+.team-leaderboard .leaderboard-row {
+    grid-template-columns: 50px 1fr 150px 80px;
 }
 
 /* Latest Games Section */

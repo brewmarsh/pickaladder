@@ -160,7 +160,8 @@
         border-radius: var(--border-radius);
     }
 
-    .leaderboard-cell[data-label="Player"] {
+    .leaderboard-cell[data-label="Player"],
+    .leaderboard-cell[data-label="Team"] {
         grid-area: player;
         font-size: 1.2em;
         margin-bottom: 15px;
@@ -168,6 +169,7 @@
 
     .leaderboard-cell[data-label="Rank"],
     .leaderboard-cell[data-label="Avg. Score"],
+    .leaderboard-cell[data-label="Stats"],
     .leaderboard-cell[data-label="Form"],
     .leaderboard-cell[data-label="Games"] {
         display: flex;
@@ -196,5 +198,9 @@
         border: 2px solid var(--primary-color);
         border-left: none; /* Override desktop style */
         background-color: #E8F5E9; /* A light green */
+    }
+
+    .team-leaderboard .leaderboard-row {
+        grid-template-columns: 1fr;
     }
 }
