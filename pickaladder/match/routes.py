@@ -396,6 +396,9 @@ def record_match():
 
     if request.method == "GET":
         form.player1.data = user_id
+        opponent_id = request.args.get("opponent")
+        if opponent_id:
+            form.player2.data = opponent_id
         user_ref = db.collection("users").document(user_id)
         user_snapshot = user_ref.get()
         if user_snapshot.exists:

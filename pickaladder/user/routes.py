@@ -705,7 +705,7 @@ def friends():
         sent_requests = [{"id": doc.id, **doc.to_dict()} for doc in docs if doc.exists]
 
     return render_template(
-        "friends.html",
+        "friends/index.html",
         friends=accepted_friends,
         requests=pending_requests,
         sent_requests=sent_requests,
