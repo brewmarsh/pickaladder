@@ -46,7 +46,7 @@ echo -e "\n>>> 5. Testing Connectivity (Nginx -> Web)..."
 if docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER}$"; then
     # Check if netcat is available
     if docker exec "$NGINX_CONTAINER" which nc > /dev/null 2>&1; then
-        # In docker-compose, the host is the service name 'web'.
+        # In docker compose, the host is the service name 'web'.
         if docker exec "$NGINX_CONTAINER" nc -z -v web 27272; then
             echo " [OK] Nginx can reach 'web' on port 27272."
         else

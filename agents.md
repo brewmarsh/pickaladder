@@ -27,7 +27,7 @@ When getting started, it's helpful to review these key files to understand the a
 
 *   **To build and start the application:** `make up`
 *   **To run backend tests:** `make test`. **Important:** The application environment must be running before you can run the tests. Always run `make up` before running `make test`.
-*   **To clean the Docker environment:** `docker-compose down -v`
+*   **To clean the Docker environment:** `docker compose down -v`
 
 *For more commands, see the `Makefile` and `README.md`.*
 

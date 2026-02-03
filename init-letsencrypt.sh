@@ -77,7 +77,7 @@ done
 
 # 1. Try to take down the project gracefully
 # We ignore errors here because the state might be corrupted (hence the KeyError)
-docker-compose -f docker-compose.prod.yml down --remove-orphans || true
+docker compose -f docker-compose.prod.yml down --remove-orphans || true
 
 # 2. Force remove containers by label (matches any container in the project)
 # This finds all containers belonging to 'picka-server' project
@@ -148,7 +148,7 @@ else
     # 2. Start the web and nginx services. The new Nginx entrypoint will
     # automatically wait for the web service to be ready.
     echo ">>> Starting web and nginx with dummy certificate..."
-    if ! docker-compose -f docker-compose.prod.yml up -d web nginx; then
+    if ! docker compose -f docker-compose.prod.yml up -d web nginx; then
         echo "ERROR: Failed to start web and nginx."
         echo ">>> Diagnostic info:"
         echo "--- docker ps -a ---"
@@ -200,7 +200,7 @@ else
     # We remove the dummy files before certbot runs.
     echo ">>> Requesting real certificate from Let's Encrypt..."
     sudo rm -rf $CERT_DIR
-    docker-compose -f docker-compose.prod.yml run --name picka-certbot-init --rm --entrypoint certbot certbot certonly --webroot \
+    docker compose -f docker-compose.prod.yml run --name picka-certbot-init --rm --entrypoint certbot certbot certonly --webroot \
         --webroot-path /var/www/certbot \
         --email $EMAIL \
         --agree-tos \
@@ -211,11 +211,11 @@ else
     # 4. Stop the Nginx container that was using the dummy cert.
     # The next step will bring everything up with the real cert.
     echo ">>> Shutting down Nginx..."
-    docker-compose -f docker-compose.prod.yml down
+    docker compose -f docker-compose.prod.yml down
 fi
 
 # 5. Start or restart all services with the final configuration and real certificate.
 echo ">>> Starting all services for production..."
-docker-compose -f docker-compose.prod.yml up --build -d --remove-orphans
+docker compose -f docker-compose.prod.yml up --build -d --remove-orphans
 
 echo ">>> Deployment script finished successfully."
