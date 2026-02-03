@@ -19,11 +19,11 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.group.utils import get_group_leaderboard
 from pickaladder.utils import EmailError, send_email
 
 from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm
+from .utils import UserService
 
 
 class MockPagination:
@@ -174,364 +174,36 @@ def dashboard():
 def view_user(user_id):
     """Display a user's public profile."""
     db = firestore.client()
-    profile_user_ref = db.collection("users").document(user_id)
-    profile_user = profile_user_ref.get()
+    profile_user_data = UserService.get_user_by_id(db, user_id)
 
-    if not profile_user.exists:
+    if not profile_user_data:
         flash("User not found.", "danger")
         return redirect(url_for(".users"))
 
-    profile_user_data = profile_user.to_dict()
-    profile_user_data["id"] = user_id
     current_user_id = g.user["uid"]
 
-    h2h_stats = None
     # Fetch friendship status
-    friend_request_sent = is_friend = False
+    is_friend, friend_request_sent = UserService.get_friendship_info(
+        db, current_user_id, user_id
+    )
 
+    # H2H STATS
+    h2h_stats = None
     if current_user_id != user_id:
-        friend_ref = (
-            db.collection("users")
-            .document(current_user_id)
-            .collection("friends")
-            .document(user_id)
-        )
-        friend_doc = friend_ref.get()
-        if friend_doc.exists:
-            status = friend_doc.to_dict().get("status")
-            if status == "accepted":
-                is_friend = True
-            elif status == "pending":
-                friend_request_sent = True
-
-        # H2H STATS
-        my_wins = 0
-        my_losses = 0
-        point_diff = 0
-
-        # Singles matches
-        singles_query_1 = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("player1Id", "==", current_user_id))
-            .where(filter=firestore.FieldFilter("player2Id", "==", user_id))
-            .where(filter=firestore.FieldFilter("status", "==", "completed"))
-            .stream()
-        )
-        singles_query_2 = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("player1Id", "==", user_id))
-            .where(filter=firestore.FieldFilter("player2Id", "==", current_user_id))
-            .where(filter=firestore.FieldFilter("status", "==", "completed"))
-            .stream()
-        )
-
-        for match in singles_query_1:
-            data = match.to_dict()
-            if data.get("winnerId") == current_user_id:
-                my_wins += 1
-            else:
-                my_losses += 1
-            point_diff += data.get("player1Score", 0) - data.get("player2Score", 0)
-
-        for match in singles_query_2:
-            data = match.to_dict()
-            if data.get("winnerId") == current_user_id:
-                my_wins += 1
-            else:
-                my_losses += 1
-            point_diff += data.get("player2Score", 0) - data.get("player1Score", 0)
-
-        # Doubles matches - Firestore does not support multiple array_contains on
-        # different fields.
-        # Fetch all doubles matches for the current user and filter in Python.
-        doubles_query = (
-            db.collection("matches")
-            .where(
-                filter=firestore.FieldFilter(
-                    "participants", "array_contains", current_user_id
-                )
-            )
-            .where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
-            .where(filter=firestore.FieldFilter("status", "==", "completed"))
-            .stream()
-        )
-
-        for match in doubles_query:
-            data = match.to_dict()
-            participants = data.get("participants", [])
-            if user_id in participants:
-                team1_ids = data.get("team1Id", [])
-                team2_ids = data.get("team2Id", [])
-
-                user_in_team1 = current_user_id in team1_ids
-                opponent_in_team2 = user_id in team2_ids
-                user_in_team2 = current_user_id in team2_ids
-                opponent_in_team1 = user_id in team1_ids
-
-                if user_in_team1 and opponent_in_team2:
-                    if data.get("winnerId") == "team1":
-                        my_wins += 1
-                    else:
-                        my_losses += 1
-                    point_diff += data.get("player1Score", 0) - data.get(
-                        "player2Score", 0
-                    )
-                elif user_in_team2 and opponent_in_team1:
-                    if data.get("winnerId") == "team2":
-                        my_wins += 1
-                    else:
-                        my_losses += 1
-                    point_diff += data.get("player2Score", 0) - data.get(
-                        "player1Score", 0
-                    )
-
-        if my_wins > 0 or my_losses > 0:
-            h2h_stats = {
-                "wins": my_wins,
-                "losses": my_losses,
-                "point_diff": point_diff,
-            }
+        h2h_stats = UserService.get_h2h_stats(db, current_user_id, user_id)
 
     # Fetch user's friends (limited for display)
-    friends_query = (
-        profile_user_ref.collection("friends")
-        .where(filter=firestore.FieldFilter("status", "==", "accepted"))
-        .limit(10)
-        .stream()
+    friends = UserService.get_user_friends(db, user_id, limit=10)
+
+    # Fetch and process user's match history
+    matches = UserService.get_user_matches(db, user_id)
+    stats = UserService.calculate_stats(matches, user_id)
+
+    # Format matches for display
+    display_items = stats["processed_matches"][:20]
+    final_matches = UserService.format_matches_for_profile(
+        db, display_items, user_id, profile_user_data
     )
-    friends = [db.collection("users").document(f.id).get() for f in friends_query]
-
-    # Fetch user's match history
-    matches_as_p1 = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("player1Ref", "==", profile_user_ref))
-        .stream()
-    )
-    matches_as_p2 = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("player2Ref", "==", profile_user_ref))
-        .stream()
-    )
-    matches_as_t1 = (
-        db.collection("matches")
-        .where(
-            filter=firestore.FieldFilter("team1", "array_contains", profile_user_ref)
-        )
-        .stream()
-    )
-    matches_as_t2 = (
-        db.collection("matches")
-        .where(
-            filter=firestore.FieldFilter("team2", "array_contains", profile_user_ref)
-        )
-        .stream()
-    )
-
-    all_matches = (
-        list(matches_as_p1)
-        + list(matches_as_p2)
-        + list(matches_as_t1)
-        + list(matches_as_t2)
-    )
-    # Deduplicate matches by ID
-    unique_matches = {match.id: match for match in all_matches}.values()
-
-    wins = 0
-    losses = 0
-    all_processed_matches = []
-
-    for match_doc in unique_matches:
-        match_data = match_doc.to_dict()
-        match_type = match_data.get("matchType", "singles")
-        p1_score = match_data.get("player1Score", 0)
-        p2_score = match_data.get("player2Score", 0)
-
-        user_won = False
-        user_lost = False
-
-        if match_type == "doubles":
-            team1_refs = match_data.get("team1", [])
-            in_team1 = any(ref.id == user_id for ref in team1_refs)
-
-            if in_team1:
-                if p1_score > p2_score:
-                    user_won = True
-                else:
-                    user_lost = True
-            elif p2_score > p1_score:
-                user_won = True
-            else:
-                user_lost = True
-        else:
-            is_player1 = match_data.get("player1Ref") == profile_user_ref
-            if is_player1:
-                if p1_score > p2_score:
-                    user_won = True
-                else:
-                    user_lost = True
-            elif p2_score > p1_score:
-                user_won = True
-            else:
-                user_lost = True
-
-        if user_won:
-            wins += 1
-        elif user_lost:
-            losses += 1
-
-        all_processed_matches.append(
-            {
-                "doc": match_doc,
-                "data": match_data,
-                "date": match_data.get("matchDate") or match_doc.create_time,
-                "user_won": user_won,
-            }
-        )
-
-    record = {"wins": wins, "losses": losses}
-    total_games = wins + losses
-    win_rate = (wins / total_games) * 100 if total_games > 0 else 0
-
-    # Sort and Limit for display
-    all_processed_matches.sort(
-        key=lambda x: x["date"] or datetime.datetime.min, reverse=True
-    )
-
-    current_streak = 0
-    streak_type = "N/A"
-    if all_processed_matches:
-        last_result = all_processed_matches[0]["user_won"]
-        streak_type = "W" if last_result else "L"
-        for match in all_processed_matches:
-            if match["user_won"] == last_result:
-                current_streak += 1
-            else:
-                break
-
-    display_items = all_processed_matches[:20]
-
-    # Collect all user refs needed for batch fetching
-    needed_refs = set()
-    needed_refs.add(profile_user_ref)
-
-    for item in display_items:
-        data = item["data"]
-        match_type = data.get("matchType", "singles")
-        if match_type == "doubles":
-            needed_refs.update(data.get("team1", []))
-            needed_refs.update(data.get("team2", []))
-        else:
-            if data.get("player1Ref"):
-                needed_refs.add(data.get("player1Ref"))
-            if data.get("player2Ref"):
-                needed_refs.add(data.get("player2Ref"))
-
-    # Fetch all unique users in one batch
-    unique_refs_list = list(needed_refs)
-    users_map = {}
-    if unique_refs_list:
-        users_docs = db.get_all(unique_refs_list)
-        users_map = {doc.id: doc.to_dict() for doc in users_docs if doc.exists}
-
-    # TODO: Add type hints for Agent clarity
-    def get_username(ref, default="Unknown"):
-        """TODO: Add docstring for AI context."""
-        if not ref:
-            return default
-        u_data = users_map.get(ref.id)
-        if u_data:
-            return u_data.get("username", default)
-        return default
-
-    final_matches = []
-    for item in display_items:
-        data = item["data"]
-        m_id = item["doc"].id
-        match_type = data.get("matchType", "singles")
-
-        # Construct object compatible with template
-        match_obj = {
-            "id": m_id,
-            "match_date": data.get("matchDate"),
-            "player1_score": data.get("player1Score", 0),
-            "player2_score": data.get("player2Score", 0),
-            "player1_id": "",
-            "player1": {"username": "Unknown"},
-            "player2": {"id": "", "username": "Unknown"},
-        }
-
-        if match_type == "doubles":
-            team1_refs = data.get("team1", [])
-            team2_refs = data.get("team2", [])
-            in_team1 = any(ref.id == user_id for ref in team1_refs)
-
-            if in_team1:
-                # Profile user is in Team 1 (Player 1 slot)
-                match_obj["player1_id"] = user_id
-                match_obj["player1"] = {
-                    "id": user_id,
-                    "username": profile_user_data.get("username"),
-                }
-
-                # Opponent is Team 2 (Player 2 slot)
-                opp_name = "Unknown Team"
-                opp_id = ""
-                if team2_refs:
-                    opp_ref = team2_refs[0]
-                    opp_id = opp_ref.id
-                    opp_name = get_username(opp_ref)
-                    if len(team2_refs) > 1 or len(team1_refs) > 1:
-                        opp_name += " (Doubles)"
-
-                match_obj["player2"] = {"id": opp_id, "username": opp_name}
-
-            else:
-                # Profile user is in Team 2 (Player 2 slot)
-                match_obj["player1_id"] = ""  # Not profile user
-
-                # Opponent is Team 1 (Player 1 slot)
-                opp_name = "Unknown Team"
-                opp_id = ""
-                if team1_refs:
-                    opp_ref = team1_refs[0]
-                    opp_id = opp_ref.id
-                    opp_name = get_username(opp_ref)
-                    if len(team1_refs) > 1 or len(team2_refs) > 1:
-                        opp_name += " (Doubles)"
-
-                match_obj["player1"] = {"id": opp_id, "username": opp_name}
-                match_obj["player2"] = {
-                    "id": user_id,
-                    "username": profile_user_data.get("username"),
-                }
-
-        else:
-            # Singles
-            p1_ref = data.get("player1Ref")
-            p2_ref = data.get("player2Ref")
-
-            if p1_ref and p1_ref.id == user_id:
-                match_obj["player1_id"] = user_id
-                match_obj["player1"] = {
-                    "id": user_id,
-                    "username": profile_user_data.get("username"),
-                }
-
-                opp_name = get_username(p2_ref)
-                opp_id = p2_ref.id if p2_ref else ""
-                match_obj["player2"] = {"id": opp_id, "username": opp_name}
-            else:
-                match_obj["player1_id"] = p1_ref.id if p1_ref else ""
-                opp_name = get_username(p1_ref)
-                opp_id = p1_ref.id if p1_ref else ""
-                match_obj["player1"] = {"id": opp_id, "username": opp_name}
-
-                match_obj["player2"] = {
-                    "id": user_id,
-                    "username": profile_user_data.get("username"),
-                }
-
-        final_matches.append(match_obj)
 
     return render_template(
         "user_profile.html",
@@ -540,12 +212,12 @@ def view_user(user_id):
         matches=final_matches,
         is_friend=is_friend,
         friend_request_sent=friend_request_sent,
-        record=record,
+        record={"wins": stats["wins"], "losses": stats["losses"]},
         user=g.user,
-        total_games=total_games,
-        win_rate=win_rate,
-        current_streak=current_streak,
-        streak_type=streak_type,
+        total_games=stats["total_games"],
+        win_rate=stats["win_rate"],
+        current_streak=stats["current_streak"],
+        streak_type=stats["streak_type"],
         h2h_stats=h2h_stats,
     )
 
@@ -787,263 +459,45 @@ def decline_friend_request(friend_id):
 
 
 # TODO: Add type hints for Agent clarity
-def _get_player_info(player_ref, users_map):
-    """Return a dictionary with player info."""
-    player_data = users_map.get(player_ref.id)
-    if not player_data:
-        return {"id": player_ref.id, "username": "Unknown", "thumbnail_url": ""}
-    return {
-        "id": player_ref.id,
-        "username": player_data.get("username", "Unknown"),
-        "thumbnail_url": player_data.get("thumbnail_url", ""),
-    }
-
-
-# TODO: Add type hints for Agent clarity
 @bp.route("/api/dashboard")
 @login_required
 def api_dashboard():
     """Provide dashboard data as JSON, including matches and group rankings."""
     db = firestore.client()
     user_id = g.user["uid"]
-    user_ref = db.collection("users").document(user_id)
-    user_data = user_ref.get().to_dict()
+    user_data = UserService.get_user_by_id(db, user_id)
 
     # Fetch friends
-    friends_query = (
-        user_ref.collection("friends")
-        .where(filter=firestore.FieldFilter("status", "==", "accepted"))
-        .stream()
-    )
-    friend_ids = [doc.id for doc in friends_query]
-    friends_data = []
-    if friend_ids:
-        refs = [db.collection("users").document(uid) for uid in friend_ids]
-        friend_docs = db.get_all(refs)
-        friends_data = [
-            {"id": doc.id, **doc.to_dict()} for doc in friend_docs if doc.exists
-        ]
+    friends_data = UserService.get_user_friends(db, user_id)
 
     # Fetch pending friend requests
-    requests_query = (
-        user_ref.collection("friends")
-        .where(filter=firestore.FieldFilter("status", "==", "pending"))
-        .where(filter=firestore.FieldFilter("initiator", "==", False))
-        .stream()
-    )
-    request_ids = [doc.id for doc in requests_query]
-    requests_data = []
-    if request_ids:
-        refs = [db.collection("users").document(uid) for uid in request_ids]
-        request_docs = db.get_all(refs)
-        requests_data = [
-            {"id": doc.id, **doc.to_dict()} for doc in request_docs if doc.exists
-        ]
+    requests_data = UserService.get_user_pending_requests(db, user_id)
 
-    # Fetch recent matches (Singles and Doubles)
-    matches_as_p1 = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
-        .stream()
-    )
-    matches_as_p2 = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("player2Ref", "==", user_ref))
-        .stream()
-    )
-    matches_as_t1 = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("team1", "array_contains", user_ref))
-        .stream()
-    )
-    matches_as_t2 = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("team2", "array_contains", user_ref))
-        .stream()
-    )
+    # Fetch and process matches
+    matches = UserService.get_user_matches(db, user_id)
+    stats = UserService.calculate_stats(matches, user_id)
 
-    all_matches = (
-        list(matches_as_p1)
-        + list(matches_as_p2)
-        + list(matches_as_t1)
-        + list(matches_as_t2)
-    )
-    unique_matches = {match.id: match for match in all_matches}.values()
-
-    # Calculate stats over all matches
-    wins = 0
-    losses = 0
-    processed_matches_for_stats = []
-    for match_doc in unique_matches:
-        match_data = match_doc.to_dict()
-        p1_score = match_data.get("player1Score", 0)
-        p2_score = match_data.get("player2Score", 0)
-        user_won = False
-
-        if match_data.get("matchType") == "doubles":
-            team1_refs = match_data.get("team1", [])
-            in_team1 = any(ref.id == user_id for ref in team1_refs)
-            if (in_team1 and p1_score > p2_score) or (
-                not in_team1 and p2_score > p1_score
-            ):
-                user_won = True
-        else:
-            is_player1 = (
-                match_data.get("player1Ref") and match_data["player1Ref"].id == user_id
-            )
-            if (is_player1 and p1_score > p2_score) or (
-                not is_player1 and p2_score > p1_score
-            ):
-                user_won = True
-
-        if user_won:
-            wins += 1
-        else:
-            losses += 1
-        processed_matches_for_stats.append(
-            {
-                "date": match_data.get("matchDate") or match_doc.create_time,
-                "user_won": user_won,
-            }
-        )
-
-    total_games = wins + losses
-    win_percentage = (wins / total_games) * 100 if total_games > 0 else 0
-
-    processed_matches_for_stats.sort(key=lambda x: x["date"], reverse=True)
-    current_streak = 0
-    streak_type = "N/A"
-    if processed_matches_for_stats:
-        last_result = processed_matches_for_stats[0]["user_won"]
-        streak_type = "W" if last_result else "L"
-        for match in processed_matches_for_stats:
-            if match["user_won"] == last_result:
-                current_streak += 1
-            else:
-                break
-
-    # Sort all matches by date and take the most recent 10 for the feed
-    sorted_matches_for_feed = sorted(
-        unique_matches,
+    # Sort all match docs by date and take the most recent 10 for the feed
+    sorted_matches_docs = sorted(
+        matches,
         key=lambda x: x.to_dict().get("matchDate") or x.create_time,
         reverse=True,
     )[:10]
 
-    # Batch fetch user data for all players in the recent matches
-    player_refs = set()
-    for match_doc in sorted_matches_for_feed:
-        match = match_doc.to_dict()
-        if match.get("player1Ref"):
-            player_refs.add(match["player1Ref"])
-        if match.get("player2Ref"):
-            player_refs.add(match["player2Ref"])
-        for ref in match.get("team1", []):
-            player_refs.add(ref)
-        for ref in match.get("team2", []):
-            player_refs.add(ref)
-
-    users_map = {}
-    if player_refs:
-        user_docs = db.get_all(list(player_refs))
-        users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
-
-    matches_data = []
-    for match_doc in sorted_matches_for_feed:
-        match = match_doc.to_dict()
-        p1_score = match.get("player1Score", 0)
-        p2_score = match.get("player2Score", 0)
-        winner = "player1" if p1_score > p2_score else "player2"
-
-        user_result = "draw"
-        if p1_score != p2_score:
-            user_won = False
-            if match.get("matchType") == "doubles":
-                team1_refs = match.get("team1", [])
-                in_team1 = any(ref.id == user_id for ref in team1_refs)
-                if (in_team1 and winner == "player1") or (
-                    not in_team1 and winner == "player2"
-                ):
-                    user_won = True
-            else:
-                is_player1 = (
-                    match.get("player1Ref") and match["player1Ref"].id == user_id
-                )
-                if (is_player1 and winner == "player1") or (
-                    not is_player1 and winner == "player2"
-                ):
-                    user_won = True
-            user_result = "win" if user_won else "loss"
-
-        if match.get("matchType") == "doubles":
-            team1 = [_get_player_info(ref, users_map) for ref in match.get("team1", [])]
-            team2 = [_get_player_info(ref, users_map) for ref in match.get("team2", [])]
-            player1_info = team1
-            player2_info = team2
-        else:
-            player1_info = _get_player_info(match["player1Ref"], users_map)
-            player2_info = _get_player_info(match["player2Ref"], users_map)
-
-        matches_data.append(
-            {
-                "id": match_doc.id,
-                "player1": player1_info,
-                "player2": player2_info,
-                "player1_score": p1_score,
-                "player2_score": p2_score,
-                "winner": winner,
-                "date": match.get("matchDate", "N/A"),
-                "is_group_match": bool(match.get("groupId")),
-                "match_type": match.get("matchType", "singles"),
-                "user_result": user_result,
-            }
-        )
+    # Format matches for the dashboard feed
+    matches_data = UserService.format_matches_for_dashboard(
+        db, sorted_matches_docs, user_id
+    )
 
     # Get group rankings
-    group_rankings = []
-    my_groups_query = (
-        db.collection("groups")
-        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
-        .stream()
-    )
-    for group_doc in my_groups_query:
-        group_data = group_doc.to_dict()
-        leaderboard = get_group_leaderboard(group_doc.id)
-        user_ranking_data = None
-        for i, player in enumerate(leaderboard):
-            if player["id"] == user_id:
-                rank = i + 1
-                user_ranking_data = {
-                    "group_id": group_doc.id,
-                    "group_name": group_data.get("name", "N/A"),
-                    "rank": rank,
-                    "points": player.get("avg_score", 0),
-                    "form": player.get("form", []),
-                }
-                if i > 0:
-                    player_above = leaderboard[i - 1]
-                    user_ranking_data["player_above"] = player_above.get("name")
-                    user_ranking_data["points_to_overtake"] = player_above.get(
-                        "avg_score", 0
-                    ) - player.get("avg_score", 0)
-                break
-
-        if user_ranking_data:
-            group_rankings.append(user_ranking_data)
-        else:
-            # Handle case where user is in group but has played no matches
-            group_rankings.append(
-                {
-                    "group_id": group_doc.id,
-                    "group_name": group_data.get("name", "N/A"),
-                    "rank": "N/A",
-                    "points": 0,
-                    "form": [],
-                }
-            )
+    group_rankings = UserService.get_group_rankings(db, user_id)
 
     streak_display = (
-        f"{current_streak}{streak_type}" if processed_matches_for_stats else "N/A"
+        f"{stats['current_streak']}{stats['streak_type']}"
+        if stats["processed_matches"]
+        else "N/A"
     )
+
     return jsonify(
         {
             "user": user_data,
@@ -1052,8 +506,8 @@ def api_dashboard():
             "matches": matches_data,
             "group_rankings": group_rankings,
             "stats": {
-                "total_matches": total_games,
-                "win_percentage": win_percentage,
+                "total_matches": stats["total_games"],
+                "win_percentage": stats["win_rate"],
                 "current_streak": streak_display,
             },
         }
