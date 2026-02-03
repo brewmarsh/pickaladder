@@ -463,7 +463,9 @@ def view_group(group_id):
         if unique_team_refs:
             team_docs = db.get_all(unique_team_refs)
             teams_map = {
-                doc.id: {**doc.to_dict(), "id": doc.id} for doc in team_docs if doc.exists
+                doc.id: {**doc.to_dict(), "id": doc.id}
+                for doc in team_docs
+                if doc.exists
             }
 
     # Batch fetch Players

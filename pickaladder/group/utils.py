@@ -573,7 +573,6 @@ def friend_group_members(db, group_id, new_member_ref):
             print(f"Error friending group members: {e}", file=sys.stderr)
 
 
-
 def get_partnership_stats(playerA_id, playerB_id, all_matches_in_group):
     """
     Calculates the win/loss record for two players when they are partners.
