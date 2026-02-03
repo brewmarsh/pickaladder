@@ -650,6 +650,7 @@ def get_rivalry_stats(group_id):
         "partnership_record": stats["partnership_record"],
     }
 
+
 def _fetch_recent_matches(db, group_id):
     """Fetch and enrich recent matches for a group."""
     matches_ref = db.collection("matches")
