@@ -205,39 +205,28 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        rankings.forEach(ranking => {
-            let rankContent;
-            if (ranking.rank === 1) {
-                rankContent = `<div class="rank-display">👑</div><div class="rank-text">Reigning Champion</div>`;
-            } else if (ranking.rank > 1) {
-                rankContent = `
-                    <div class="points-to-overtake">
-                        <strong>${ranking.points_to_overtake.toFixed(2)}</strong>
-                        <span class="points-label">points to overtake <strong>${ranking.player_above}</strong></span>
-                    </div>
-                `;
-            } else {
-                 rankContent = `<div class="rank-display">-</div><div class="rank-text">No rank yet</div>`;
-            }
+        container.innerHTML = ''; // Clear existing content
 
-            const formIndicators = (ranking.form || []).map(result =>
-                `<span class="form-indicator ${result}"></span>`
-            ).join('');
+        rankings.forEach(ranking => {
+            let rankIcon = '';
+            if (ranking.rank === 1) rankIcon = '🥇';
+            else if (ranking.rank === 2) rankIcon = '🥈';
+            else if (ranking.rank === 3) rankIcon = '🥉';
+            else rankIcon = `<span class="text-muted" style="font-size: 0.9em;">#${ranking.rank || 'N/A'}</span>`;
+
+            let trendIcon = '';
+            if (ranking.rank_change > 0) trendIcon = '<span class="trend-arrow trend-up">↑</span>';
+            else if (ranking.rank_change < 0) trendIcon = '<span class="trend-arrow trend-down">↓</span>';
+            else if (ranking.rank_change === 'new') trendIcon = '<span class="trend-arrow trend-new">★</span>';
 
             const card = `
                 <a href="${urls.view_group(ranking.group_id)}" class="group-ranking-card">
-                    <div class="group-ranking-card-header">
-                        <span class="group-name">${ranking.group_name}</span>
-                        <span class="group-rank">Rank: ${ranking.rank || 'N/A'}</span>
+                    <div class="group-info">
+                        <div class="rank-medal">${rankIcon}</div>
+                        <div class="group-name">${ranking.group_name}</div>
                     </div>
-                    <div class="group-ranking-card-body">
-                        ${rankContent}
-                    </div>
-                    <div class="group-ranking-card-footer">
-                        <span class="form-preview-label">Form:</span>
-                        <div class="form-preview">
-                            ${formIndicators || 'No recent matches'}
-                        </div>
+                    <div class="group-trend">
+                        ${trendIcon}
                     </div>
                 </a>
             `;
@@ -247,17 +236,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function formatMatchDate(dateString) {
         if (!dateString || dateString === 'N/A') {
-            return 'Date N/A';
+            return 'N/A';
         }
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
-            year: 'numeric',
             month: 'short',
             day: 'numeric'
         });
     }
 
-    function renderLatestGames(matches) {
+    function renderLatestGames(matches, currentUserId) {
         const feed = document.getElementById('latest-games-feed');
         if (matches.length === 0) {
             feed.innerHTML = '<p>No recent games to display.</p>';
@@ -267,37 +255,48 @@ document.addEventListener('DOMContentLoaded', function() {
         feed.innerHTML = ''; // Clear feed
 
         matches.forEach(match => {
-            const winnerTeam = match.winner === 'player1' ? match.player1 : match.player2;
-            const loserTeam = match.winner === 'player1' ? match.player2 : match.player1;
+            const isTeam1 = (Array.isArray(match.player1) && match.player1.some(p => p.id === currentUserId)) ||
+                          (!Array.isArray(match.player1) && match.player1.id === currentUserId);
 
-            const formatTeam = (team) => {
-                if (Array.isArray(team)) {
-                    return team.map(p => `<a href="${urls.view_user(p.id)}">${p.username}</a>`).join(' & ');
+            const myTeam = isTeam1 ? match.player1 : match.player2;
+            const opponentTeam = isTeam1 ? match.player2 : match.player1;
+
+            const myTeamName = isTeam1 ? (match.team1 && match.team1.name) : (match.team2 && match.team2.name);
+            const opponentTeamName = isTeam1 ? (match.team2 && match.team2.name) : (match.team1 && match.team1.name);
+
+            const formatTeamDisplay = (team, teamName, isMe) => {
+                let displayName = '';
+                if (teamName) {
+                    displayName = teamName;
+                } else if (Array.isArray(team)) {
+                    displayName = team.map(p => p.username).join(' & ');
                 } else {
-                    return `<a href="${urls.view_user(team.id)}">${team.username}</a>`;
+                    displayName = team.username;
                 }
+                return isMe ? `<span class="match-user-bold">${displayName}</span>` : displayName;
             };
 
-            const winnerDisplay = formatTeam(winnerTeam);
-            const loserDisplay = formatTeam(loserTeam);
+            const myDisplay = formatTeamDisplay(myTeam, myTeamName, true);
+            const opponentDisplay = formatTeamDisplay(opponentTeam, opponentTeamName, false);
 
-            const winnerScore = Math.max(match.player1_score, match.player2_score);
-            const loserScore = Math.min(match.player1_score, match.player2_score);
+            const myScore = isTeam1 ? match.player1_score : match.player2_score;
+            const opponentScore = isTeam1 ? match.player2_score : match.player1_score;
 
-            const scoreResultClass = match.user_result; // 'win', 'loss', or 'draw'
+            const resultClass = match.user_result === 'win' ? 'game-won' : (match.user_result === 'loss' ? 'game-lost' : '');
+            const upsetIcon = match.is_upset ? ' 🔥' : '';
 
-            const row = `
-                <div class="game-row-compact">
-                    <div class="game-date-compact">${formatMatchDate(match.date)}</div>
-                    <div class="game-info-compact">
-                        ${winnerDisplay} <span class="vs-text">vs</span> ${loserDisplay}
+            const card = `
+                <div class="game-card ${resultClass}">
+                    <div class="game-date">${formatMatchDate(match.date)}</div>
+                    <div class="game-matchup">
+                        ${myDisplay} <span class="vs-text">vs</span> ${opponentDisplay}
                     </div>
-                    <div class="game-score-compact ${scoreResultClass}">
-                        ${winnerScore}-${loserScore}
+                    <div class="game-score">
+                        ${myScore}-${opponentScore}${upsetIcon}
                     </div>
                 </div>
             `;
-            feed.insertAdjacentHTML('beforeend', row);
+            feed.insertAdjacentHTML('beforeend', card);
         });
     }
 
@@ -309,11 +308,12 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.json();
         })
         .then(data => {
+            const currentUserId = data.user.uid || data.user.id;
             renderUserInfo(data.user);
             renderHeroStats(data.user, data.stats);
             renderTable('friend-requests-body', data.requests, requestRowTemplate, 'No pending friend requests.');
             renderTable('friends-body', data.friends, friendRowTemplate, 'You have no friends yet.');
-            renderLatestGames(data.matches);
+            renderLatestGames(data.matches, currentUserId);
             renderGroupRankings(data.group_rankings);
 
             // Hide loader and show content
