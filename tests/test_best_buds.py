@@ -1,12 +1,31 @@
 import unittest
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
 
 
+class MockDocumentReference:
+    def __init__(self, id=None):
+        self.id = id
+        self.path = f"collection/{id}" if id else "collection/unknown"
+        self.get = MagicMock()
+        self.collection = MagicMock()
+
+
 class BestBudsTestCase(unittest.TestCase):
     def setUp(self):
         self.mock_firestore_service = MagicMock()
+        self.mock_firestore_service.DocumentReference = MockDocumentReference
+
+        # Mock collection().document() to return an object with the right id
+        def mock_document(doc_id):
+            return MockDocumentReference(doc_id)
+
+        self.mock_firestore_service.client.return_value.collection.return_value.document.side_effect = (
+            mock_document
+        )
+
         # Patch firestore in multiple places
         self.patchers = [
             patch(
@@ -83,6 +102,7 @@ class BestBudsTestCase(unittest.TestCase):
 
         team1_doc = MagicMock()
         team1_doc.id = "team1"
+        team1_doc.exists = True
         team1_doc.to_dict.return_value = {
             "member_ids": ["user1", "user2"],
             "members": [user_ref1, user_ref2],
@@ -92,30 +112,52 @@ class BestBudsTestCase(unittest.TestCase):
 
         team2_doc = MagicMock()
         team2_doc.id = "team2"
+        team2_doc.exists = True
         team2_doc.to_dict.return_value = {
             "member_ids": ["user1", "other"],
-            "members": [user_ref1, MagicMock()],
+            "members": [user_ref1, MockDocumentReference("other")],
             "stats": {"wins": 20, "losses": 1},
             "name": "User 1 & Other",
         }
 
         mock_query.stream.return_value = [team1_doc, team2_doc]
 
-        # Mock get_all for team members enrichment
-        # In view_group, unique_member_refs is created from team member refs
+        # Mock get_all for both teams and team members enrichment
         def mock_get_all(refs):
-            return [
-                d for d in [user_doc1, user_doc2] if any(r.id == d.id for r in refs)
-            ]
+            results = []
+            for ref in refs:
+                if ref.id == "team1":
+                    results.append(team1_doc)
+                elif ref.id == "team2":
+                    results.append(team2_doc)
+                elif ref.id == "user1":
+                    results.append(user_doc1)
+                elif ref.id == "user2":
+                    results.append(user_doc2)
+            return results
 
         mock_db.get_all.side_effect = mock_get_all
 
-        # Mock matches query
+        # Mock matches query - Now required for best buds calculation
+        match_doc = MagicMock()
+        # Mocking the team references
+        team1_ref = MockDocumentReference("team1")
+        team2_ref = MockDocumentReference("team2")
+
+        match_doc.to_dict.return_value = {
+            "matchType": "doubles",
+            "team1Ref": team1_ref,
+            "team2Ref": team2_ref,
+            "player1Score": 11,
+            "player2Score": 5,
+            "groupId": group_id,
+            "matchDate": datetime.now()
+        }
         (
             mock_db.collection(
                 "matches"
             ).where.return_value.order_by.return_value.limit.return_value.stream.return_value
-        ) = []
+        ) = [match_doc] * 10
 
         # Mock friends query for the invite form
         (

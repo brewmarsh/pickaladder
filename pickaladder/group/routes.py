@@ -164,109 +164,107 @@ def view_group(group_id):
 
     is_member = current_user_id in member_ids
 
+    # --- Fetch Recent Matches ---
+    matches_ref = db.collection("matches")
+    matches_query = (
+        matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
+        .order_by("matchDate", direction=firestore.Query.DESCENDING)
+        .limit(20)
+    )
+    recent_matches_docs = list(matches_query.stream())
+
     # --- Team Leaderboard ---
     team_leaderboard = []
     best_buds = None
-    teams_ref = db.collection("teams")
-    if member_ids:
-        member_id_list = list(member_ids)
-        team_docs_map = {}  # Use a map to prevent duplicates
+    team_stats = {}  # team_id -> {wins, losses, games}
 
-        # Chunk the query to handle Firestore's 30-item limit for
-        # 'in'/'array-contains-any' queries
-        for i in range(0, len(member_id_list), 30):
-            chunk = member_id_list[i : i + 30]
-            query = teams_ref.where(
-                filter=firestore.FieldFilter("member_ids", "array_contains_any", chunk)
-            )
-            for doc in query.stream():
-                team_docs_map[doc.id] = doc
+    for doc in recent_matches_docs:
+        data = doc.to_dict()
+        if data.get("matchType") != "doubles":
+            continue
 
-        all_team_docs = list(team_docs_map.values())
+        t1_ref = data.get("team1Ref")
+        t2_ref = data.get("team2Ref")
+        if not t1_ref or not t2_ref:
+            continue
 
-        # Filter teams to include only those where all members are in the group
-        group_teams = [
-            team_doc
-            for team_doc in all_team_docs
-            if all(
-                member_id in member_ids
-                for member_id in team_doc.to_dict()["member_ids"]
-            )
-        ]
+        for ref in [t1_ref, t2_ref]:
+            if ref.id not in team_stats:
+                team_stats[ref.id] = {"wins": 0, "losses": 0, "games": 0}
 
-        # Batch fetch all team member details to avoid N+1 queries
+        p1_score = data.get("player1Score")
+        if p1_score is None:
+            p1_score = data.get("team1Score", 0)
+        p2_score = data.get("player2Score")
+        if p2_score is None:
+            p2_score = data.get("team2Score", 0)
+
+        team_stats[t1_ref.id]["games"] += 1
+        team_stats[t2_ref.id]["games"] += 1
+
+        if p1_score > p2_score:
+            team_stats[t1_ref.id]["wins"] += 1
+            team_stats[t2_ref.id]["losses"] += 1
+        elif p2_score > p1_score:
+            team_stats[t2_ref.id]["wins"] += 1
+            team_stats[t1_ref.id]["losses"] += 1
+
+    if team_stats:
+        team_ids = list(team_stats.keys())
+        team_refs = [db.collection("teams").document(tid) for tid in team_ids]
+        team_docs = db.get_all(team_refs)
+
+        # Batch fetch all team member details
         all_member_refs = []
-        for team_doc in group_teams:
-            team_data = team_doc.to_dict()
-            if "members" in team_data:
-                all_member_refs.extend(team_data.get("members", []))
+        enriched_team_docs = []
+        for doc in team_docs:
+            if doc.exists:
+                team_data = doc.to_dict()
+                team_data["id"] = doc.id
+                if "members" in team_data:
+                    all_member_refs.extend(team_data.get("members", []))
+                enriched_team_docs.append(team_data)
 
         members_map = {}
         if all_member_refs:
-            # Deduplicate refs by their path
             unique_member_refs = list(
                 {ref.path: ref for ref in all_member_refs}.values()
             )
             member_docs = db.get_all(unique_member_refs)
-            members_map = {doc.id: doc.to_dict() for doc in member_docs if doc.exists}
+            members_map = {
+                doc.id: {**doc.to_dict(), "id": doc.id}
+                for doc in member_docs
+                if doc.exists
+            }
 
-        # Enrich and calculate stats for the leaderboard
-        for team_doc in group_teams:
-            team_data = team_doc.to_dict()
-            team_data["id"] = team_doc.id
-            stats = team_data.get("stats", {})
-            wins = stats.get("wins", 0)
-            losses = stats.get("losses", 0)
-            total_games = wins + losses
-            team_data["win_percentage"] = (
-                (wins / total_games) * 100 if total_games > 0 else 0
+        for team_data in enriched_team_docs:
+            stats = team_stats[team_data["id"]]
+            total_games = stats["games"]
+            stats["win_percentage"] = (
+                (stats["wins"] / total_games) * 100 if total_games > 0 else 0
             )
-            team_data["total_games"] = total_games
 
-            # Get member details from the pre-fetched map
+            # Get member details
             team_members = []
-            member_ids_for_team = team_data.get("member_ids", [])
-            for member_id in member_ids_for_team:
-                if member_id in members_map:
-                    member_data = members_map[member_id]
-                    member_data["id"] = member_id
-                    team_members.append(member_data)
+            for member_ref in team_data.get("members", []):
+                if member_ref.id in members_map:
+                    team_members.append(members_map[member_ref.id])
             team_data["member_details"] = team_members
 
-            # To handle user name changes, we regenerate the default team name.
-            # This assumes that if a custom name is set, it won't follow the "A & B"
-            # pattern. A more robust solution would require a database schema change
-            # (e.g., is_name_custom flag).
-            if len(team_members) == DOUBLES_TEAM_SIZE:
-                member_names = [
-                    m.get("name") or m.get("username", "Unknown") for m in team_members
-                ]
-                generated_name = " & ".join(member_names)
+            team_leaderboard.append({"team": team_data, "stats": stats})
 
-                # Simple heuristic: if the stored name has a " & ", it's likely a
-                # default name that needs refreshing.
-                if " & " in team_data.get("name", ""):
-                    team_data["name"] = generated_name
+        # Sort teams by Win Count descending
+        team_leaderboard.sort(key=lambda x: x["stats"]["wins"], reverse=True)
 
-            team_leaderboard.append(team_data)
-
-        # Sort teams by win percentage
-        team_leaderboard.sort(key=lambda x: x["win_percentage"], reverse=True)
-
-        # Best Buds: Find the team with the most wins from the group's teams
+        # Best Buds: Find the team with the most wins from these group matches
         if team_leaderboard:
-            # Sort by wins descending, use win percentage as tie-breaker
-            sorted_by_wins = sorted(
-                team_leaderboard,
-                key=lambda x: (
-                    x.get("stats", {}).get("wins", 0),
-                    x.get("win_percentage", 0),
-                ),
-                reverse=True,
-            )
-            top_team = sorted_by_wins[0]
-            if top_team.get("stats", {}).get("wins", 0) > 0:
-                best_buds = top_team
+            # Already sorted by wins
+            top_team = team_leaderboard[0]
+            if top_team["stats"]["wins"] > 0:
+                # For template compatibility, best_buds needs to look like a team
+                # with stats
+                best_buds = top_team["team"].copy()
+                best_buds["stats"] = top_team["stats"]
 
     # --- Fetch Pending Invites ---
     pending_members = []
@@ -428,15 +426,6 @@ def view_group(group_id):
     leaderboard = get_group_leaderboard(group_id)
 
     is_member = current_user_id in member_ids
-
-    # --- Fetch Recent Matches ---
-    matches_ref = db.collection("matches")
-    matches_query = (
-        matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
-        .order_by("matchDate", direction=firestore.Query.DESCENDING)
-        .limit(20)
-    )
-    recent_matches_docs = list(matches_query.stream())
 
     # Collect all team and player references
     team_refs = []
