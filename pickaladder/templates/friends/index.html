@@ -10,36 +10,10 @@
     </div>
     <div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
 
-    <div class="grid-container" style="grid-template-columns: 1fr 1fr; gap: 40px;">
-        <div class="card">
-            <h3>Your Friends</h3>
-            <div class="table-container">
-                <table class="table responsive-table">
-                    <thead>
-                        <tr>
-                            <th>Avatar</th>
-                            <th>User</th>
-                            <th>DUPR Rating</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for friend in friends %}
-                            <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=friend.id) }}">
-                                <td data-label="Avatar">
-                                    <img src="{{ friend | avatar_url }}" alt="Profile Picture" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                </td>
-                                <td data-label="User">
-                                    {{ friend | smart_display_name }}
-                                </td>
-                                <td data-label="DUPR Rating">{{ friend.duprRating }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="card">
-            <h3>Friend Requests</h3>
+    {% if requests or sent_requests %}
+    <div class="card requests-section" style="margin-bottom: 40px;">
+        <h3>Friend Requests</h3>
+        {% if requests %}
             <h4>Received</h4>
             <div class="table-container">
                 <table class="table responsive-table">
@@ -54,7 +28,7 @@
                         {% for request in requests %}
                             <tr>
                                 <td data-label="Avatar">
-                                    <img src="{{ request | avatar_url }}" alt="Profile Picture" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                    <img src="{{ request | avatar_url }}" alt="{{ request | smart_display_name }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                 </td>
                                 <td data-label="User"><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request | smart_display_name }}</a></td>
                                 <td data-label="Actions" style="text-align: right;">
@@ -68,12 +42,13 @@
                                     </form>
                                 </td>
                             </tr>
-                        {% else %}
-                            <tr><td colspan="3">No incoming requests.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+        {% endif %}
+
+        {% if sent_requests %}
             <h4 style="margin-top: 20px;">Sent</h4>
             <div class="table-container">
                 <table class="table responsive-table">
@@ -88,17 +63,39 @@
                         {% for request in sent_requests %}
                             <tr>
                                 <td data-label="Avatar">
-                                    <img src="{{ request | avatar_url }}" alt="Profile Picture" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                    <img src="{{ request | avatar_url }}" alt="{{ request | smart_display_name }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                 </td>
                                 <td data-label="User"><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request | smart_display_name }}</a></td>
                                 <td data-label="Status">Pending</td>
                             </tr>
-                        {% else %}
-                             <tr><td colspan="3">No outgoing requests.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="friends-section">
+        <h3>Your Friends</h3>
+        <div class="friend-grid">
+            {% for friend in friends %}
+                <div class="friend-card">
+                    <div class="friend-card-content">
+                        <img src="{{ friend | avatar_url }}" alt="{{ friend | smart_display_name }}" class="friend-avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                        <h3 class="friend-name">{{ friend | smart_display_name }}</h3>
+                        <div class="friend-rating">
+                            <span class="star-icon">⭐</span>
+                            <span class="dupr-value">{{ friend.duprRating or 'N/A' }}</span>
+                        </div>
+                    </div>
+                    <div class="friend-card-actions">
+                        <a href="{{ url_for('match.record_match', opponent=friend.id) }}" class="btn btn-primary challenge-btn">Challenge</a>
+                    </div>
+                </div>
+            {% else %}
+                <p>You haven't added any friends yet. <a href="{{ url_for('user.users') }}">Find some here!</a></p>
+            {% endfor %}
         </div>
     </div>
 {% endblock %}

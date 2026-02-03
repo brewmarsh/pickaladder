@@ -1036,6 +1036,9 @@ input[type="submit"], .btn {
   .group-header-actions {
     flex-wrap: wrap;
   }
+  .group-header-actions {
+    flex-wrap: wrap;
+  }
   .group-header-actions > .btn {
     width: 100%;
     margin-top: 10px;
@@ -1205,28 +1208,6 @@ input[type="submit"], .btn {
 }
 
 /* Team View Specific Styles */
-.team-header-content {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.team-avatars {
-    display: flex;
-}
-
-.team-avatars .profile-picture {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    margin-left: -15px;
-    border: 2px solid var(--surface-color);
-}
-
-.team-avatars .profile-picture:first-child {
-    margin-left: 0;
-}
-
 .team-header-actions {
     display: flex;
     align-items: center;
@@ -1527,6 +1508,92 @@ input[type="submit"], .btn {
     border-left: 5px solid var(--danger-color);
 }
 
+/* Friends Grid & Cards */
+.friend-grid {
+    display: grid;
+    gap: 15px;
+    grid-template-columns: repeat(2, 1fr);
+    margin-top: 20px;
+}
+
+@media (min-width: 768px) {
+    .friend-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1200px) {
+    .friend-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.friend-card {
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 20px;
+    min-width: 0; /* Prevents overflow in grid */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: 1px solid var(--border-color);
+}
+
+.friend-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.friend-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 16px;
+    border: 3px solid var(--border-color);
+}
+
+.friend-name {
+    margin: 0 0 8px 0;
+    font-size: 1.1em;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.friend-rating {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 20px;
+    color: var(--text-secondary-color);
+}
+
+.star-icon {
+    color: var(--warning-color);
+    font-size: 1.2em;
+}
+
+.dupr-value {
+    font-weight: 500;
+    font-size: 0.95em;
+}
+
+.friend-card-actions {
+    width: 100%;
+    margin-top: auto;
+}
+
+.challenge-btn {
+    width: 100%;
+    text-transform: none;
+    font-weight: 600;
+    padding: 10px;
+}
+
 /* Mobile Dashboard Polish */
 @media (max-width: 768px) {
     .container {
@@ -1584,5 +1651,16 @@ input[type="submit"], .btn {
 
     .hero-right-panel .btn {
         width: 100%;
+    }
+
+    .friend-card {
+        padding: 16px;
+    }
+    .friend-avatar {
+        width: 80px;
+        height: 80px;
+    }
+    .challenge-btn {
+        padding: 12px;
     }
 }
