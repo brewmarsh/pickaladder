@@ -21,7 +21,7 @@ from . import match as match_bp
 from . import teams as teams_bp
 from . import user as user_bp
 from .extensions import csrf, mail
-from .user.utils import smart_display_name
+from .user.utils import smart_display_name, wrap_user
 
 APP_PASSWORD_LENGTH = 16
 
@@ -200,6 +200,14 @@ def create_app(test_config=None):
     # Register filters
     app.template_filter("smart_display_name")(smart_display_name)
 
+    @app.template_filter("avatar_url")
+    def avatar_url_filter(user):
+        """Return the avatar URL for a user."""
+        if not user:
+            return ""
+        wrapped = wrap_user(user)
+        return wrapped.avatar_url
+
     # Register blueprints
     app.register_blueprint(auth_bp.bp)
     app.register_blueprint(admin_bp.bp)
@@ -232,8 +240,7 @@ def create_app(test_config=None):
             db = firestore.client()
             user_doc = db.collection("users").document(user_id).get()
             if user_doc.exists:
-                g.user = user_doc.to_dict()
-                g.user["uid"] = user_id  # Ensure uid is in the user object
+                g.user = wrap_user(user_doc.to_dict(), uid=user_id)
             else:
                 # User ID in session but no user in DB. Clear the session.
                 session.clear()

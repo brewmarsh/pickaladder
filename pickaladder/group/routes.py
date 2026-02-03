@@ -1,7 +1,6 @@
 """Routes for the group blueprint."""
 
 import secrets
-from collections import defaultdict
 from dataclasses import dataclass
 
 from firebase_admin import firestore, storage
@@ -165,93 +164,76 @@ def view_group(group_id):
 
     is_member = current_user_id in member_ids
 
-    # --- Team Leaderboard ---
+    # --- Team Leaderboard (Calculated from Group Matches) ---
     team_leaderboard = []
-    teams_ref = db.collection("teams")
-    if member_ids:
-        member_id_list = list(member_ids)
-        team_docs_map = {}  # Use a map to prevent duplicates
+    best_buds = None
+    
+    # 1. Fetch ALL matches for this group (lightweight query) to calculate local stats
+    # We query all because the leaderboard needs total accuracy, unlike "Recent Matches"
+    matches_ref = db.collection("matches")
+    all_group_matches = matches_ref.where(
+        filter=firestore.FieldFilter("groupId", "==", group_id)
+    ).select(["team1Ref", "team2Ref", "winner"]).stream()
 
-        # Chunk the query to handle Firestore's 30-item limit for
-        # 'in'/'array-contains-any' queries
-        for i in range(0, len(member_id_list), 30):
-            chunk = member_id_list[i : i + 30]
-            query = teams_ref.where(
-                filter=firestore.FieldFilter("member_ids", "array_contains_any", chunk)
-            )
-            for doc in query.stream():
-                team_docs_map[doc.id] = doc
+    team_stats_map = {} # { team_id: {wins: 0, losses: 0} }
 
-        all_team_docs = list(team_docs_map.values())
+    # 2. Aggregate Stats
+    for m in all_group_matches:
+        d = m.to_dict()
+        winner = d.get("winner")
+        
+        def update_stats(t_ref, is_winner):
+            if not t_ref or not isinstance(t_ref, firestore.DocumentReference):
+                return
+            tid = t_ref.id
+            if tid not in team_stats_map:
+                team_stats_map[tid] = {'wins': 0, 'losses': 0}
+            
+            if is_winner:
+                team_stats_map[tid]['wins'] += 1
+            else:
+                team_stats_map[tid]['losses'] += 1
 
-        # Filter teams to include only those where all members are in the group
-        group_teams = [
-            team_doc
-            for team_doc in all_team_docs
-            if all(
-                member_id in member_ids
-                for member_id in team_doc.to_dict()["member_ids"]
-            )
-        ]
+        update_stats(d.get("team1Ref"), winner == "team1")
+        update_stats(d.get("team2Ref"), winner == "team2")
 
-        # Batch fetch all team member details to avoid N+1 queries
-        all_member_refs = []
-        for team_doc in group_teams:
-            team_data = team_doc.to_dict()
-            if "members" in team_data:
-                all_member_refs.extend(team_data.get("members", []))
+    # 3. Batch Fetch Team Documents
+    if team_stats_map:
+        # Create refs from IDs
+        t_refs = [db.collection("teams").document(tid) for tid in team_stats_map.keys()]
+        
+        if t_refs:
+            # Batch fetch (Firestore limits to 10 in 'in' queries, but get_all handles more)
+            t_docs = db.get_all(t_refs)
 
-        members_map = {}
-        if all_member_refs:
-            # Deduplicate refs by their path
-            unique_member_refs = list(
-                {ref.path: ref for ref in all_member_refs}.values()
-            )
-            member_docs = db.get_all(unique_member_refs)
-            members_map = {doc.id: doc.to_dict() for doc in member_docs if doc.exists}
+            for t_doc in t_docs:
+                if not t_doc.exists: 
+                    continue
+                
+                stats = team_stats_map.get(t_doc.id)
+                data = t_doc.to_dict()
+                data['id'] = t_doc.id
+                
+                # OVERWRITE global stats with group-specific stats
+                data['stats'] = stats
+                
+                # Win % calculation
+                wins = stats['wins']
+                losses = stats['losses']
+                total = wins + losses
+                data['win_percentage'] = (wins / total * 100) if total > 0 else 0
+                data['total_games'] = total
+                
+                team_leaderboard.append(data)
 
-        # Enrich and calculate stats for the leaderboard
-        for team_doc in group_teams:
-            team_data = team_doc.to_dict()
-            team_data["id"] = team_doc.id
-            stats = team_data.get("stats", {})
-            wins = stats.get("wins", 0)
-            losses = stats.get("losses", 0)
-            total_games = wins + losses
-            team_data["win_percentage"] = (
-                (wins / total_games) * 100 if total_games > 0 else 0
-            )
-            team_data["total_games"] = total_games
+    # 4. Sort by Wins, then Win %
+    team_leaderboard.sort(key=lambda x: (x['stats']['wins'], x['win_percentage']), reverse=True)
 
-            # Get member details from the pre-fetched map
-            team_members = []
-            member_ids_for_team = team_data.get("member_ids", [])
-            for member_id in member_ids_for_team:
-                if member_id in members_map:
-                    member_data = members_map[member_id]
-                    member_data["id"] = member_id
-                    team_members.append(member_data)
-            team_data["member_details"] = team_members
-
-            # To handle user name changes, we regenerate the default team name.
-            # This assumes that if a custom name is set, it won't follow the "A & B"
-            # pattern. A more robust solution would require a database schema change
-            # (e.g., is_name_custom flag).
-            if len(team_members) == DOUBLES_TEAM_SIZE:
-                member_names = [
-                    m.get("name") or m.get("username", "Unknown") for m in team_members
-                ]
-                generated_name = " & ".join(member_names)
-
-                # Simple heuristic: if the stored name has a " & ", it's likely a
-                # default name that needs refreshing.
-                if " & " in team_data.get("name", ""):
-                    team_data["name"] = generated_name
-
-            team_leaderboard.append(team_data)
-
-        # Sort teams by win percentage
-        team_leaderboard.sort(key=lambda x: x["win_percentage"], reverse=True)
+    # 5. Best Buds (Top Team)
+    if team_leaderboard:
+        top_team = team_leaderboard[0]
+        if top_team.get("stats", {}).get("wins", 0) > 0:
+            best_buds = top_team
 
     # --- Fetch Pending Invites ---
     pending_members = []
@@ -516,81 +498,6 @@ def view_group(group_id):
                 match_data[target] = players_map.get(ref.id, GUEST_USER)
 
         recent_matches.append(match_data)
-
-    # --- "Best Buds" Calculation ---
-    def get_id(data, possible_keys):
-        """Get first non-None value for a list of possible keys."""
-        for key in possible_keys:
-            if key in data and data[key] is not None:
-                return data[key]
-        return None
-
-    all_matches_query = matches_ref.where(
-        filter=firestore.FieldFilter("groupId", "==", group_id)
-    ).select(
-        [
-            "winner",
-            "player1",
-            "player1Id",
-            "player1_id",
-            "player_1",
-            "partnerId",
-            "partner",
-            "partner_id",
-            "player2",
-            "player2Id",
-            "player2_id",
-            "opponent1",
-            "opponent1Id",
-            "opponent2Id",
-            "opponent2",
-            "opponent2_id",
-        ]
-    )
-    all_matches_docs = list(all_matches_query.stream())
-    partnership_wins = defaultdict(int)
-    for match_doc in all_matches_docs:
-        match_data = match_doc.to_dict()
-
-        # Check if it's a doubles match by looking for the necessary player IDs
-        player1_id = get_id(
-            match_data, ["player1", "player1Id", "player1_id", "player_1"]
-        )
-        partner_id = get_id(match_data, ["partnerId", "partner", "partner_id"])
-        player2_id = get_id(
-            match_data,
-            ["player2", "player2Id", "player2_id", "opponent1", "opponent1Id"],
-        )
-        opponent2_id = get_id(match_data, ["opponent2Id", "opponent2", "opponent2_id"])
-
-        is_doubles = all([player1_id, partner_id, player2_id, opponent2_id])
-
-        if is_doubles:
-            winner = match_data.get("winner")
-            if winner == "team1":
-                winning_pair = tuple(sorted((player1_id, partner_id)))
-            elif winner == "team2":
-                winning_pair = tuple(sorted((player2_id, opponent2_id)))
-            else:
-                winning_pair = None
-
-            if winning_pair:
-                partnership_wins[winning_pair] += 1
-
-    best_buds_pair = None
-    if partnership_wins:
-        best_buds_pair = max(partnership_wins, key=partnership_wins.get)
-
-    best_buds = None
-    if best_buds_pair:
-        player1_ref = db.collection("users").document(best_buds_pair[0]).get()
-        player2_ref = db.collection("users").document(best_buds_pair[1]).get()
-        if player1_ref.exists and player2_ref.exists:
-            best_buds = {
-                "player1": player1_ref.to_dict(),
-                "player2": player2_ref.to_dict(),
-                "wins": partnership_wins[best_buds_pair],
-            }
 
     # --- Giant Slayer Calculation ---
     for match_data in recent_matches:
