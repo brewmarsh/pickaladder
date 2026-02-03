@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
         statsContainer.innerHTML = '<p>Loading...</p>';
         ctaContainer.innerHTML = '';
 
-        const url = `/group/{{ group.id }}/stats/head_to_head?player1_id=${player1Id}&player2_id=${player2Id}`;
+        const url = `/group/{{ group.id }}/stats/rivalry?playerA_id=${player1Id}&playerB_id=${player2Id}`;
 
         fetch(url)
             .then(response => {
@@ -468,62 +468,87 @@ document.addEventListener('DOMContentLoaded', function() {
                 const player1AvatarUrl = getProfilePictureUrl(player1Id);
                 const player2AvatarUrl = getProfilePictureUrl(player2Id);
 
-                const [p1H2HWins, p2H2HWins] = data.head_to_head_record.split('-').map(Number);
+                const p1H2HWins = data.wins;
+                const p2H2HWins = data.losses;
                 const totalH2H = p1H2HWins + p2H2HWins;
                 const diff = Math.abs(p1H2HWins - p2H2HWins);
-                const winPctPlayer1 = totalH2H > 0 ? (p1H2HWins / totalH2H) : 0;
 
                 let badgeHtml = '';
-                if (totalH2H < 3) {
-                    badgeHtml = `<div class="rivalry-badge fresh">🌱 Fresh Matchup</div>`;
-                } else if (diff <= 2) {
-                    badgeHtml = `<div class="rivalry-badge hot">🔥 Rivalry Heating Up</div>`;
-                } else if (winPctPlayer1 > 0.75) {
-                    badgeHtml = `<div class="rivalry-badge ownage">👑 Owning It</div>`;
-                } else if (winPctPlayer1 < 0.25) { // Player 2 is dominating
-                    badgeHtml = `<div class="rivalry-badge ownage">👑 Owning It</div>`;
+                if (totalH2H > 0 && diff <= 1) {
+                    badgeHtml = `<div class="rivalry-badge hot">🔥 Heated</div>`;
                 }
 
-                const isPlayer1Dominating = winPctPlayer1 > 0.75;
-                const isPlayer2Dominating = winPctPlayer1 < 0.25;
+                let recentClashesHtml = '<div class="recent-clashes"><h4>Recent Clashes</h4><ul>';
+                data.matches.forEach(match => {
+                    const winner = match.winner;
+                    const team1Score = match.team1Score;
+                    const team2Score = match.team2Score;
 
-                let player1DisplayUrl = player1AvatarUrl;
-                let player2DisplayUrl = player2AvatarUrl;
-                let player1DisplayName = player1Name;
-                let player2DisplayName = player2Name;
+                    const team1_ids = [match.player1Id, match.partnerId];
+                    const team2_ids = [match.player2Id, match.opponent2Id];
 
-                if (totalH2H >= 3) {
-                    if (isPlayer1Dominating) {
-                        player1DisplayUrl = player1AvatarUrl;
-                        player1DisplayName = player1Name;
-                        player2DisplayUrl = player2AvatarUrl;
-                        player2DisplayName = player2Name;
-                    } else if (isPlayer2Dominating) {
-                        player1DisplayUrl = player2AvatarUrl;
-                        player1DisplayName = player2Name;
-                        player2DisplayUrl = player1AvatarUrl;
-                        player2DisplayName = player1Name;
+                    const player1_is_team1 = team1_ids.includes(player1Id);
+                    const player2_is_team2 = team2_ids.includes(player2Id);
+
+                    const player1_is_team2 = team2_ids.includes(player1Id);
+                    const player2_is_team1 = team1_ids.includes(player2Id);
+
+                    let player1_wins = false;
+                    if ((player1_is_team1 && winner === 'team1') || (player1_is_team2 && winner === 'team2')) {
+                        player1_wins = true;
                     }
-                }
+
+                    let scoreHtml;
+                    if (player1_is_team1) {
+                        scoreHtml = `${team1Score} - ${team2Score}`;
+                    } else {
+                        scoreHtml = `${team2Score} - ${team1Score}`;
+                    }
+
+                    let player1Display = player1Name;
+                    let player2Display = player2Name;
+
+                    if (player1_wins) {
+                        player1Display = `<strong>${player1Name}</strong>`;
+                    } else {
+                        player2Display = `<strong>${player2Name}</strong>`;
+                    }
+
+                    recentClashesHtml += `
+                        <li>${player1Display} ${scoreHtml} ${player2Display}</li>
+                    `;
+                });
+                recentClashesHtml += '</ul></div>';
+
 
                 let taleOfTheTapeHtml = `
                     <div class="tale-of-the-tape">
-                        ${badgeHtml}
+                        <h3>Tale of the Tape</h3>
                         <div class="participants">
                             <div class="participant">
-                                <img src="${player1DisplayUrl}" alt="${player1DisplayName}" class="avatar">
-                                <span>${player1DisplayName}</span>
+                                <img src="${player1AvatarUrl}" alt="${player1Name}" class="avatar">
+                                <span>${player1Name}</span>
                             </div>
                             <div class="score">
-                                <span>${isPlayer2Dominating ? p2H2HWins : p1H2HWins}</span>
-                                <span class="separator">-</span>
-                                <span>${isPlayer2Dominating ? p1H2HWins : p2H2HWins}</span>
+                                ${badgeHtml}
+                                <span>${p1H2HWins} - ${p2H2HWins}</span>
                             </div>
                             <div class="participant">
-                                <img src="${player2DisplayUrl}" alt="${player2DisplayName}" class="avatar">
-                                <span>${player2DisplayName}</span>
+                                <img src="${player2AvatarUrl}" alt="${player2Name}" class="avatar">
+                                <span>${player2Name}</span>
                             </div>
                         </div>
+                        <div class="stats-grid">
+                            <div class="stat-bar">
+                                <span>Avg Points Scored</span>
+                                <span>${data.avg_points_scored.playerA.toFixed(1)} - ${data.avg_points_scored.playerB.toFixed(1)}</span>
+                            </div>
+                            <div class="stat-bar">
+                                <span>Partnership Record</span>
+                                <span>Chemistry: ${data.partnership_record.wins}W - ${data.partnership_record.losses}L</span>
+                            </div>
+                        </div>
+                        ${recentClashesHtml}
                     </div>
                 `;
 
@@ -537,7 +562,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 ctaContainer.innerHTML = `
                     <a href="${recordMatchUrl.toString()}" class="btn btn-primary">Settle the Score</a>
                 `;
-
             })
             .catch(error => {
                 statsContainer.innerHTML = '<p class="text-danger">Error loading stats.</p>';
