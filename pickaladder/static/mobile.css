@@ -56,6 +56,15 @@
     .grid-container {
         grid-template-columns: 1fr;
     }
+
+    .card {
+        margin-bottom: 16px;
+    }
+
+    .rivalry-check-form {
+        flex-direction: column;
+    }
+
     .responsive-table {
         width: 100%;
         border-collapse: collapse;
@@ -140,6 +149,7 @@
     }
 
     .leaderboard-row {
+        display: grid;
         grid-template-columns: 1fr;
         grid-template-areas:
             "player"
@@ -175,6 +185,7 @@
         content: attr(data-label);
         font-weight: 600;
         color: var(--on-surface-variant-color);
+        margin-right: 8px;
     }
 
     .player-rank {
