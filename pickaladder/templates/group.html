@@ -100,12 +100,11 @@
                 </div>
 
                 <div id="teams" class="tab-content" style="display: none;">
-                    <div class="leaderboard-container">
+                    <div class="leaderboard-container team-leaderboard">
                         <div class="leaderboard-header">
                             <div class="leaderboard-cell">Rank</div>
                             <div class="leaderboard-cell">Team</div>
-                            <div class="leaderboard-cell">Win %</div>
-                            <div class="leaderboard-cell">Record</div>
+                            <div class="leaderboard-cell">Stats</div>
                             <div class="leaderboard-cell">Games</div>
                         </div>
                         <div class="leaderboard-body">
@@ -131,8 +130,10 @@
                                         <span class="team-name">{{ entry.team.name }}</span>
                                     </div>
                                 </div>
-                                <div class="leaderboard-cell" data-label="Win %">{{ "%.1f"|format(entry.stats.win_percentage) }}%</div>
-                                <div class="leaderboard-cell" data-label="Record">{{ entry.stats.wins }}-{{ entry.stats.losses }}</div>
+                                <div class="leaderboard-cell" data-label="Stats">
+                                    <span style="font-weight: 500;">{{ entry.stats.wins }} - {{ entry.stats.losses }}</span>
+                                    <span class="text-muted" style="font-size: 0.9em; margin-left: 5px;">({{ "%.1f"|format(entry.stats.win_percentage) }}%)</span>
+                                </div>
                                 <div class="leaderboard-cell" data-label="Games">{{ entry.stats.games }}</div>
                             </div>
                             {% else %}
