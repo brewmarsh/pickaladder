@@ -15,14 +15,21 @@
             <h3>Your Friends</h3>
             <div class="table-container">
                 <table class="table responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>User</th>
+                            <th>DUPR Rating</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         {% for friend in friends %}
                             <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=friend.id) }}">
                                 <td data-label="Avatar">
                                     <img src="{{ friend.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture-thumbnail">
                                 </td>
-                                <td data-label="Username">
-                                    {{ friend.username }}
+                                <td data-label="User">
+                                    {{ friend | smart_display_name }}
                                 </td>
                                 <td data-label="DUPR Rating">{{ friend.duprRating }}</td>
                             </tr>
@@ -36,10 +43,20 @@
             <h4>Received</h4>
             <div class="table-container">
                 <table class="table responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>User</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         {% for request in requests %}
                             <tr>
-                                <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
+                                <td data-label="Avatar">
+                                    <img src="{{ request.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture-thumbnail">
+                                </td>
+                                <td data-label="User"><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request | smart_display_name }}</a></td>
                                 <td data-label="Actions" style="text-align: right;">
                                     <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -52,7 +69,7 @@
                                 </td>
                             </tr>
                         {% else %}
-                            <tr><td colspan="2">No incoming requests.</td></tr>
+                            <tr><td colspan="3">No incoming requests.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -60,14 +77,24 @@
             <h4 style="margin-top: 20px;">Sent</h4>
             <div class="table-container">
                 <table class="table responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>User</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         {% for request in sent_requests %}
                             <tr>
-                                <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a></td>
+                                <td data-label="Avatar">
+                                    <img src="{{ request.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture-thumbnail">
+                                </td>
+                                <td data-label="User"><a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request | smart_display_name }}</a></td>
                                 <td data-label="Status">Pending</td>
                             </tr>
                         {% else %}
-                             <tr><td>No outgoing requests.</td></tr>
+                             <tr><td colspan="3">No outgoing requests.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

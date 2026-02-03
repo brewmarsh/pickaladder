@@ -45,3 +45,16 @@ def send_email(to, subject, template, **kwargs):
         raise EmailError(f"SMTP Authentication failed: {e}") from e
     except Exception as e:
         raise EmailError(f"Failed to send email: {e}") from e
+
+
+def mask_email(email: str) -> str:
+    """Mask an email address for display.
+
+    Example: march@gmail.com -> m...h@gmail.com
+    """
+    if not email or "@" not in email:
+        return email
+    local, domain = email.split("@")
+    if len(local) <= 1:
+        return f"{local}...@{domain}"
+    return f"{local[0]}...{local[-1]}@{domain}"
