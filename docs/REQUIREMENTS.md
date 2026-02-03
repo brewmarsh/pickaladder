@@ -35,7 +35,7 @@ This document outlines the requirements for the pickaladder application.
 
 ### Architecture
 *   **Monolithic Application:** The application is a monolithic web application built with Flask and PostgreSQL.
-*   **Containerized:** The application is containerized with Docker and deployed with docker-compose.
+*   **Containerized:** The application is containerized with Docker and deployed with docker compose.
 *   **Blueprint-based:** The Flask application is organized using a blueprint-based structure.
 
 ### Database

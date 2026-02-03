@@ -45,11 +45,11 @@ The Flask application is organized into blueprints. The main application is conf
 4.  **Clean the Docker environment:**
     This will stop containers and remove all volumes (including the database).
     ```bash
-    docker-compose down -v
+    docker compose down -v
     ```
 
 ### Troubleshooting
-* **Database Issues:** If you encounter issues with the database, the cleanest way to reset is to run `docker-compose down -v` and then `make up`.
+* **Database Issues:** If you encounter issues with the database, the cleanest way to reset is to run `docker compose down -v` and then `make up`.
 * **Docker Errors:** If you see `permission denied` or `service "web" is not running`, try running the `make` commands with `sudo`.
 * **Docker Hub Rate Limit:** A `429 Too Many Requests` error means Docker Hub is rate-limiting anonymous pulls. There is no immediate workaround besides waiting.
 

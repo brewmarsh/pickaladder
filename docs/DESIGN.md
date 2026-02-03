@@ -8,7 +8,7 @@ The pickaladder application is a web-based application that allows users to crea
 
 ## 2. System Architecture
 
-The application is a monolithic web application built with Flask and PostgreSQL. It is containerized with Docker and deployed with docker-compose.
+The application is a monolithic web application built with Flask and PostgreSQL. It is containerized with Docker and deployed with docker compose.
 
 ### 2.1. Application Architecture
 

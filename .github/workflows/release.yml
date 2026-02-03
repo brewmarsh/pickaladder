@@ -76,7 +76,7 @@ jobs:
             # Login to GitHub Container Registry
             docker login ghcr.io -u ${{ github.repository_owner }} -p ${{ secrets.GITHUB_TOKEN }}
 
-            # Set environment variables for docker-compose and the deployment script
+            # Set environment variables for docker compose and the deployment script
             export IMAGE_TAG=ghcr.io/${{ github.repository }}:${{ github.sha }}
             export SECRET_KEY='${{ secrets.SECRET_KEY }}'
             export MAIL_SERVER='${{ secrets.MAIL_SERVER }}'
