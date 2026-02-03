@@ -1,7 +1,6 @@
 """Routes for the group blueprint."""
 
 import secrets
-from collections import defaultdict
 from dataclasses import dataclass
 
 from firebase_admin import firestore, storage
@@ -532,7 +531,6 @@ def view_group(group_id):
                 match_data[target] = players_map.get(ref.id, GUEST_USER)
 
         recent_matches.append(match_data)
-
 
     # --- Giant Slayer Calculation ---
     for match_data in recent_matches:

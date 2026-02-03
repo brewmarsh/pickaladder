@@ -1,14 +1,17 @@
 import unittest
 from unittest.mock import MagicMock, patch
+
 from pickaladder import create_app
-from flask import g
+
 
 class BestBudsTestCase(unittest.TestCase):
     def setUp(self):
         self.mock_firestore_service = MagicMock()
         # Patch firestore in multiple places
         self.patchers = [
-            patch("pickaladder.group.routes.firestore", new=self.mock_firestore_service),
+            patch(
+                "pickaladder.group.routes.firestore", new=self.mock_firestore_service
+            ),
             patch("pickaladder.firestore", new=self.mock_firestore_service),
         ]
         for p in self.patchers:
@@ -57,7 +60,7 @@ class BestBudsTestCase(unittest.TestCase):
         mock_group_doc.to_dict.return_value = {
             "name": "Test Group",
             "members": [user_ref1, user_ref2],
-            "ownerRef": user_ref1
+            "ownerRef": user_ref1,
         }
         mock_group_ref.get.return_value = mock_group_doc
 
@@ -84,7 +87,7 @@ class BestBudsTestCase(unittest.TestCase):
             "member_ids": ["user1", "user2"],
             "members": [user_ref1, user_ref2],
             "stats": {"wins": 10, "losses": 2},
-            "name": "User 1 & User 2"
+            "name": "User 1 & User 2",
         }
 
         team2_doc = MagicMock()
@@ -93,20 +96,34 @@ class BestBudsTestCase(unittest.TestCase):
             "member_ids": ["user1", "other"],
             "members": [user_ref1, MagicMock()],
             "stats": {"wins": 20, "losses": 1},
-            "name": "User 1 & Other"
+            "name": "User 1 & Other",
         }
 
         mock_query.stream.return_value = [team1_doc, team2_doc]
 
         # Mock get_all for team members enrichment
         # In view_group, unique_member_refs is created from team member refs
-        mock_db.get_all.side_effect = lambda refs: [d for d in [user_doc1, user_doc2] if any(r.id == d.id for r in refs)]
+        def mock_get_all(refs):
+            return [
+                d for d in [user_doc1, user_doc2] if any(r.id == d.id for r in refs)
+            ]
+
+        mock_db.get_all.side_effect = mock_get_all
 
         # Mock matches query
-        mock_db.collection("matches").where.return_value.order_by.return_value.limit.return_value.stream.return_value = []
+        (
+            mock_db.collection(
+                "matches"
+            ).where.return_value.order_by.return_value.limit.return_value.stream.return_value
+        ) = []
 
         # Mock friends query for the invite form
-        mock_db.collection("users").document("user1").collection("friends").where.return_value.stream.return_value = []
+        (
+            mock_db.collection("users")
+            .document("user1")
+            .collection("friends")
+            .where.return_value.stream.return_value
+        ) = []
 
         response = self.client.get(f"/group/{group_id}")
 
@@ -118,6 +135,7 @@ class BestBudsTestCase(unittest.TestCase):
         self.assertIn(b"10 Wins Together!", response.data)
         # Team 2 should NOT be best buds even though it has more wins (20)
         self.assertNotIn(b"20 Wins Together!", response.data)
+
 
 if __name__ == "__main__":
     unittest.main()
