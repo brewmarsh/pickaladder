@@ -1413,3 +1413,105 @@ input[type="submit"], .btn {
     font-size: 0.9em;
     color: var(--text-secondary-color);
 }
+
+/* Tale of the Tape */
+.tale-of-the-tape {
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    background-color: #f9f9f9;
+    margin-top: 1rem;
+}
+
+.tale-of-the-tape h3 {
+    text-align: center;
+    margin-top: 0;
+}
+
+.participants {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+}
+
+.participant {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 120px;
+}
+
+.participant .avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 0.5rem;
+    border: 3px solid #ddd;
+}
+
+.participant span {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.score {
+    font-size: 3.5rem;
+    font-weight: bold;
+    margin: 0 1rem;
+    color: #333;
+    text-align: center;
+}
+
+.rivalry-badge.hot {
+    background-color: #dc3545; /* Red */
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+    margin-bottom: 10px;
+    display: inline-block;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.stat-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #eee;
+    border-radius: 5px;
+}
+
+.recent-clashes {
+    margin-top: 20px;
+}
+
+.recent-clashes h4 {
+    text-align: center;
+}
+
+.recent-clashes ul {
+    list-style: none;
+    padding: 0;
+}
+
+.recent-clashes li {
+    padding: 5px;
+    border-bottom: 1px solid #ddd;
+}
+
+
+
+.recent-clashes li strong {
+    color: green;
+}

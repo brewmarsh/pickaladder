@@ -665,6 +665,45 @@ def _get_recent_matches_and_players(db, recent_matches_docs: list) -> list:
     return recent_matches
 
 
+def get_partnership_stats(playerA_id, playerB_id, all_matches_in_group):
+    """
+    Calculates the win/loss record for two players when they are partners.
+
+    Args:
+        playerA_id: The ID of the first player.
+        playerB_id: The ID of the second player.
+        all_matches_in_group: A list of match documents from Firestore.
+
+    Returns:
+        A dictionary with 'wins' and 'losses' for the partnership.
+    """
+    wins = 0
+    losses = 0
+
+    for match_doc in all_matches_in_group:
+        match = match_doc.to_dict()
+
+        team1_ids = {match.get("player1Id"), match.get("partnerId")}
+        team2_ids = {match.get("player2Id"), match.get("opponent2Id")}
+
+        # Using sets to check for partnership
+        partnership_team1 = {playerA_id, playerB_id}.issubset(team1_ids)
+        partnership_team2 = {playerA_id, playerB_id}.issubset(team2_ids)
+
+        if partnership_team1:
+            if match.get("winner") == "team1":
+                wins += 1
+            elif match.get("winner") == "team2":
+                losses += 1
+        elif partnership_team2:
+            if match.get("winner") == "team2":
+                wins += 1
+            elif match.get("winner") == "team1":
+                losses += 1
+
+    return {"wins": wins, "losses": losses}
+
+
 def get_head_to_head_stats(group_id, playerA_id, playerB_id):
     """
     Calculates head-to-head statistics for two players in doubles matches.
@@ -684,9 +723,16 @@ def get_head_to_head_stats(group_id, playerA_id, playerB_id):
     query = matches_ref.where(filter=FieldFilter("groupId", "==", group_id))
     all_matches_in_group = list(query.stream())
 
+    # Calculate partnership stats first
+    partnership_record = get_partnership_stats(
+        playerA_id, playerB_id, all_matches_in_group
+    )
+
     wins = 0
     losses = 0
     point_diff = 0
+    playerA_total_points = 0
+    playerB_total_points = 0
     rivalry_matches = []
 
     for match_doc in all_matches_in_group:
@@ -720,20 +766,33 @@ def get_head_to_head_stats(group_id, playerA_id, playerB_id):
 
             if player_a_is_team1:
                 point_diff += team1_score - team2_score
+                playerA_total_points += team1_score
+                playerB_total_points += team2_score
                 if match.get("winner") == "team1":
                     wins += 1
                 else:
                     losses += 1
             else:  # Player A is on team 2
                 point_diff += team2_score - team1_score
+                playerA_total_points += team2_score
+                playerB_total_points += team1_score
                 if match.get("winner") == "team2":
                     wins += 1
                 else:
                     losses += 1
+
+    num_matches = len(rivalry_matches)
+    avg_points_A = playerA_total_points / num_matches if num_matches > 0 else 0
+    avg_points_B = playerB_total_points / num_matches if num_matches > 0 else 0
 
     return {
         "wins": wins,
         "losses": losses,
         "matches": rivalry_matches,
         "point_diff": point_diff,
+        "avg_points_scored": {
+            "playerA": avg_points_A,
+            "playerB": avg_points_B,
+        },
+        "partnership_record": partnership_record,
     }

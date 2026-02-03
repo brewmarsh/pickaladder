@@ -862,4 +862,6 @@ def get_rivalry_stats(group_id):
         "losses": stats["losses"],
         "matches": stats["matches"],
         "point_diff": stats["point_diff"],
+        "avg_points_scored": stats["avg_points_scored"],
+        "partnership_record": stats["partnership_record"],
     }
