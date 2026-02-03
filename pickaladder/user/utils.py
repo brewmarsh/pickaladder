@@ -219,6 +219,44 @@ class UserService:
         return [{"id": doc.id, **doc.to_dict()} for doc in request_docs if doc.exists]
 
     @staticmethod
+    def get_user_sent_requests(db, user_id):
+        """Fetch pending friend requests where the user is the initiator."""
+        user_ref = db.collection("users").document(user_id)
+        requests_query = (
+            user_ref.collection("friends")
+            .where(filter=firestore.FieldFilter("status", "==", "pending"))
+            .where(filter=firestore.FieldFilter("initiator", "==", True))
+            .stream()
+        )
+        request_ids = [doc.id for doc in requests_query]
+        if not request_ids:
+            return []
+
+        refs = [db.collection("users").document(uid) for uid in request_ids]
+        request_docs = db.get_all(refs)
+        return [{"id": doc.id, **doc.to_dict()} for doc in request_docs if doc.exists]
+
+    @staticmethod
+    def get_all_users(db, exclude_user_id, limit=20):
+        """Fetch a list of users, excluding the current user, sorted by creation date."""
+        users_query = (
+            db.collection("users")
+            .order_by("createdAt", direction=firestore.Query.DESCENDING)
+            .limit(limit + 1)  # Fetch one extra in case we exclude the current user
+            .stream()
+        )
+        users = []
+        for doc in users_query:
+            if doc.id == exclude_user_id:
+                continue
+            data = doc.to_dict()
+            data["id"] = doc.id
+            users.append(data)
+            if len(users) >= limit:
+                break
+        return users
+
+    @staticmethod
     def get_h2h_stats(db, user_id_1, user_id_2):
         """Fetch head-to-head statistics between two users."""
         my_wins = 0

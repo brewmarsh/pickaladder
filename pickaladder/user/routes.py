@@ -222,6 +222,46 @@ def view_user(user_id):
 
 
 # TODO: Add type hints for Agent clarity
+@bp.route("/community")
+@login_required
+def view_community():
+    """Render the community hub with friends, requests, and other users."""
+    db = firestore.client()
+    current_user_id = g.user["uid"]
+    search_term = request.args.get("search", "").strip()
+
+    # Fetch all data sets
+    friends = UserService.get_user_friends(db, current_user_id)
+    incoming_requests = UserService.get_user_pending_requests(db, current_user_id)
+    outgoing_requests = UserService.get_user_sent_requests(db, current_user_id)
+    all_users = UserService.get_all_users(db, current_user_id, limit=20)
+
+    # Search logic: filter all lists if search_term is present
+    if search_term:
+        term = search_term.lower()
+
+        def matches_search(user_data):
+            username = user_data.get("username", "").lower()
+            name = user_data.get("name", "").lower()
+            email = user_data.get("email", "").lower()
+            return term in username or term in name or term in email
+
+        friends = [f for f in friends if matches_search(f)]
+        incoming_requests = [r for r in incoming_requests if matches_search(r)]
+        outgoing_requests = [r for r in outgoing_requests if matches_search(r)]
+        all_users = [u for u in all_users if matches_search(u)]
+
+    return render_template(
+        "community.html",
+        friends=friends,
+        incoming_requests=incoming_requests,
+        outgoing_requests=outgoing_requests,
+        all_users=all_users,
+        search_term=search_term,
+        user=g.user,
+    )
+
+
 @bp.route("/users")
 @login_required
 def users():
