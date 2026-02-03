@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import current_app
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
 from pickaladder.utils import mask_email
@@ -160,15 +161,19 @@ class UserService:
     def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
         """Fetch a user by their ID."""
         user_ref = db.collection("users").document(user_id)
-        user_doc = user_ref.get()
+        user_doc = cast("DocumentSnapshot", user_ref.get())
         if not user_doc.exists:
             return None
         data = user_doc.to_dict()
+        if data is None:
+            return None
         data["id"] = user_id
         return data
 
     @staticmethod
-    def get_friendship_info(db: Client, current_user_id: str, target_user_id: str) -> tuple[bool, bool]:
+    def get_friendship_info(
+        db: Client, current_user_id: str, target_user_id: str
+    ) -> tuple[bool, bool]:
         """Check friendship status between two users."""
         friend_request_sent = is_friend = False
         if current_user_id != target_user_id:
@@ -188,7 +193,9 @@ class UserService:
         return is_friend, friend_request_sent
 
     @staticmethod
-    def get_user_friends(db: Client, user_id: str, limit: int | None = None) -> list[dict[str, Any]]:
+    def get_user_friends(
+        db: Client, user_id: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch a user's friends."""
         user_ref = db.collection("users").document(user_id)
         query = user_ref.collection("friends").where(
@@ -203,8 +210,14 @@ class UserService:
             return []
 
         refs = [db.collection("users").document(fid) for fid in friend_ids]
-        friend_docs = db.get_all(refs)
-        return [{"id": doc.id, **doc.to_dict()} for doc in friend_docs if doc.exists]
+        friend_docs = cast(list["DocumentSnapshot"], db.get_all(refs))
+        results = []
+        for doc in friend_docs:
+            if doc.exists:
+                data = doc.to_dict()
+                if data is not None:
+                    results.append({"id": doc.id, **data})
+        return results
 
     @staticmethod
     def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
@@ -221,8 +234,14 @@ class UserService:
             return []
 
         refs = [db.collection("users").document(uid) for uid in request_ids]
-        request_docs = db.get_all(refs)
-        return [{"id": doc.id, **doc.to_dict()} for doc in request_docs if doc.exists]
+        request_docs = cast(list["DocumentSnapshot"], db.get_all(refs))
+        results = []
+        for doc in request_docs:
+            if doc.exists:
+                data = doc.to_dict()
+                if data is not None:
+                    results.append({"id": doc.id, **data})
+        return results
 
     @staticmethod
     def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
@@ -239,11 +258,19 @@ class UserService:
             return []
 
         refs = [db.collection("users").document(uid) for uid in request_ids]
-        request_docs = db.get_all(refs)
-        return [{"id": doc.id, **doc.to_dict()} for doc in request_docs if doc.exists]
+        request_docs = cast(list["DocumentSnapshot"], db.get_all(refs))
+        results = []
+        for doc in request_docs:
+            if doc.exists:
+                data = doc.to_dict()
+                if data is not None:
+                    results.append({"id": doc.id, **data})
+        return results
 
     @staticmethod
-    def get_all_users(db: Client, exclude_user_id: str, limit: int = 20) -> list[dict[str, Any]]:
+    def get_all_users(
+        db: Client, exclude_user_id: str, limit: int = 20
+    ) -> list[dict[str, Any]]:
         """Fetch a list of users, excluding the current user, sorted by date."""
         users_query = (
             db.collection("users")
@@ -256,14 +283,17 @@ class UserService:
             if doc.id == exclude_user_id:
                 continue
             data = doc.to_dict()
-            data["id"] = doc.id
-            users.append(data)
+            if data is not None:
+                data["id"] = doc.id
+                users.append(data)
             if len(users) >= limit:
                 break
         return users
 
     @staticmethod
-    def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] | None:
+    def get_h2h_stats(
+        db: Client, user_id_1: str, user_id_2: str
+    ) -> dict[str, Any] | None:
         """Fetch head-to-head statistics between two users."""
         my_wins = 0
         my_losses = 0
@@ -287,6 +317,8 @@ class UserService:
 
         for match in singles_query_1:
             data = match.to_dict()
+            if data is None:
+                continue
             if data.get("winnerId") == user_id_1:
                 my_wins += 1
             else:
@@ -295,6 +327,8 @@ class UserService:
 
         for match in singles_query_2:
             data = match.to_dict()
+            if data is None:
+                continue
             if data.get("winnerId") == user_id_1:
                 my_wins += 1
             else:
@@ -316,6 +350,8 @@ class UserService:
 
         for match in doubles_query:
             data = match.to_dict()
+            if data is None:
+                continue
             participants = data.get("participants", [])
             if user_id_2 in participants:
                 team1_ids = data.get("team1Id", [])
@@ -394,6 +430,8 @@ class UserService:
 
         for match_doc in matches:
             match_data = match_doc.to_dict()
+            if match_data is None:
+                continue
             match_type = match_data.get("matchType", "singles")
             p1_score = match_data.get("player1Score", 0)
             p2_score = match_data.get("player2Score", 0)
@@ -484,6 +522,8 @@ class UserService:
         )
         for group_doc in my_groups_query:
             group_data = group_doc.to_dict()
+            if group_data is None:
+                continue
             leaderboard = get_group_leaderboard(group_doc.id)
             user_ranking_data = None
             for i, player in enumerate(leaderboard):
@@ -532,7 +572,10 @@ class UserService:
 
     @staticmethod
     def format_matches_for_profile(
-        db: Client, display_items: list[dict[str, Any]], user_id: str, profile_user_data: dict[str, Any]
+        db: Client,
+        display_items: list[dict[str, Any]],
+        user_id: str,
+        profile_user_data: dict[str, Any],
     ) -> list[dict[str, Any]]:
         """Format matches for the public profile view."""
         # Collect all user refs needed for batch fetching
@@ -664,6 +707,8 @@ class UserService:
         player_refs = set()
         for match_doc in matches_docs:
             match = match_doc.to_dict()
+            if match is None:
+                continue
             if match.get("player1Ref"):
                 player_refs.add(match["player1Ref"])
             if match.get("player2Ref"):
@@ -681,6 +726,8 @@ class UserService:
         matches_data = []
         for match_doc in matches_docs:
             match = match_doc.to_dict()
+            if match is None:
+                continue
             p1_score = match.get("player1Score", 0)
             p2_score = match.get("player2Score", 0)
             winner = "player1" if p1_score > p2_score else "player2"
@@ -714,8 +761,8 @@ class UserService:
                     UserService._get_player_info(ref, users_map)
                     for ref in match.get("team2", [])
                 ]
-                player1_info = team1
-                player2_info = team2
+                player1_info: Any = team1
+                player2_info: Any = team2
             else:
                 player1_info = UserService._get_player_info(
                     match["player1Ref"], users_map

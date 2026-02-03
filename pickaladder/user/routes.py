@@ -28,7 +28,7 @@ from .forms import UpdateProfileForm, UpdateUserForm
 from .utils import UserService
 
 if TYPE_CHECKING:
-    from flask.wrappers import Response
+    pass
 
 
 class MockPagination:
@@ -44,7 +44,7 @@ class MockPagination:
 # TODO: Add type hints for Agent clarity
 @bp.route("/edit_profile", methods=["GET", "POST"])
 @login_required
-def edit_profile() -> str | Response:
+def edit_profile() -> Any:
     """Handle user profile updates for name, username, and email."""
     db = firestore.client()
     user_id = g.user["uid"]
@@ -55,7 +55,7 @@ def edit_profile() -> str | Response:
     if form.validate_on_submit():
         new_email = form.email.data
         new_username = form.username.data
-        update_data = {
+        update_data: dict[str, Any] = {
             "name": form.name.data,
             "username": new_username,
         }
@@ -118,7 +118,7 @@ def edit_profile() -> str | Response:
 # TODO: Add type hints for Agent clarity
 @bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
-def dashboard() -> str | Response:
+def dashboard() -> Any:
     """Render the user dashboard and handles profile updates.
 
     On GET, it displays the dashboard with the profile form.
@@ -136,7 +136,7 @@ def dashboard() -> str | Response:
 
     if form.validate_on_submit():
         try:
-            update_data = {
+            update_data: dict[str, Any] = {
                 "dark_mode": bool(form.dark_mode.data),
             }
             if form.dupr_rating.data is not None:
@@ -176,7 +176,7 @@ def dashboard() -> str | Response:
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:user_id>")
 @login_required
-def view_user(user_id: str) -> str | Response:
+def view_user(user_id: str) -> Any:
     """Display a user's public profile."""
     db = firestore.client()
     profile_user_data = UserService.get_user_by_id(db, user_id)
@@ -230,7 +230,7 @@ def view_user(user_id: str) -> str | Response:
 # TODO: Add type hints for Agent clarity
 @bp.route("/community")
 @login_required
-def view_community() -> str | Response:
+def view_community() -> Any:
     """Render the community hub with friends, requests, and other users."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -270,7 +270,7 @@ def view_community() -> str | Response:
 
 @bp.route("/users")
 @login_required
-def users() -> str | Response:
+def users() -> Any:
     """List and allows searching for users."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -318,7 +318,7 @@ def users() -> str | Response:
     pagination = MockPagination(user_items)
 
     # The template also iterates over 'fof' (friends of friends)
-    fof = []
+    fof: list[dict[str, Any]] = []
 
     return render_template(
         "users.html", pagination=pagination, search_term=search_term, fof=fof
@@ -328,7 +328,7 @@ def users() -> str | Response:
 # TODO: Add type hints for Agent clarity
 @bp.route("/send_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
-def send_friend_request(friend_id: str) -> Response:
+def send_friend_request(friend_id: str) -> Any:
     """Send a friend request to another user."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -374,7 +374,7 @@ def send_friend_request(friend_id: str) -> Response:
 # TODO: Add type hints for Agent clarity
 @bp.route("/friends")
 @login_required
-def friends() -> str | Response:
+def friends() -> Any:
     """Display the user's friends and pending requests."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -432,7 +432,7 @@ def friends() -> str | Response:
 # TODO: Add type hints for Agent clarity
 @bp.route("/accept_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
-def accept_friend_request(friend_id: str) -> Response:
+def accept_friend_request(friend_id: str) -> Any:
     """Accept a friend request."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -469,7 +469,7 @@ def accept_friend_request(friend_id: str) -> Response:
 # TODO: Add type hints for Agent clarity
 @bp.route("/decline_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
-def decline_friend_request(friend_id: str) -> Response:
+def decline_friend_request(friend_id: str) -> Any:
     """Decline a friend request."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -506,7 +506,7 @@ def decline_friend_request(friend_id: str) -> Response:
 # TODO: Add type hints for Agent clarity
 @bp.route("/api/dashboard")
 @login_required
-def api_dashboard() -> Response:
+def api_dashboard() -> Any:
     """Provide dashboard data as JSON, including matches and group rankings."""
     db = firestore.client()
     user_id = g.user["uid"]
@@ -562,7 +562,7 @@ def api_dashboard() -> Response:
 # TODO: Add type hints for Agent clarity
 @bp.route("/api/create_invite", methods=["POST"])
 @login_required
-def create_invite() -> Response:
+def create_invite() -> Any:
     """Generate a unique invite token and stores it in Firestore."""
     db = firestore.client()
     user_id = g.user["uid"]
