@@ -8,8 +8,7 @@
             <div class="navbar-menu">
                 {% if g.user %}
                     <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
-                    <a href="{{ url_for('user.users') }}">👥 Users</a>
-                    <a href="{{ url_for('user.friends') }}">🧑‍🤝‍🧑 Friends</a>
+                    <a href="{{ url_for('user.view_community') }}">🌍 Community</a>
                     <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
                     <a href="{{ url_for('match.leaderboard') }}">🏆 Global Leaderboard</a>
                 {% else %}
@@ -29,8 +28,7 @@
                         </button>
                         <div class="dropdown-content">
                             <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
-                            <a href="{{ url_for('user.users') }}">👥 Users</a>
-                            <a href="{{ url_for('user.friends') }}">🧑‍🤝‍🧑 Friends</a>
+                            <a href="{{ url_for('user.view_community') }}">🌍 Community</a>
                             <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
                             <a href="{{ url_for('match.leaderboard') }}">🏆 Global Leaderboard</a>
                             <hr>

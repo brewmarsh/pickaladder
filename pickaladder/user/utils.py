@@ -1,19 +1,24 @@
 """Utility functions for user management."""
 
+from __future__ import annotations
+
 import datetime
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import current_app
+
+if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
+    from google.cloud.firestore_v1.client import Client
 
 from pickaladder.utils import mask_email
 
 from .models import User
 
-UPSET_THRESHOLD = 0.25
-
 
 # TODO: Add type hints for Agent clarity
-def merge_ghost_user(db, real_user_ref, email):
+def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
     """Check for 'ghost' user with the given email and merge their data.
 
     This function should be called when a user registers or logs in for the first
@@ -109,7 +114,7 @@ def merge_ghost_user(db, real_user_ref, email):
         current_app.logger.error(f"Error merging ghost user: {e}")
 
 
-def wrap_user(user_data: dict | None, uid: str | None = None) -> User | None:
+def wrap_user(user_data: dict[str, Any] | None, uid: str | None = None) -> User | None:
     """Wrap a user dictionary in a User model object.
 
     Args:
@@ -130,26 +135,21 @@ def wrap_user(user_data: dict | None, uid: str | None = None) -> User | None:
     return User(data)
 
 
-def smart_display_name(user: dict) -> str:
+def smart_display_name(user: dict[str, Any]) -> str:
     """Return a smart display name for a user.
 
     If the user is a ghost user (username starts with 'ghost_'):
-    - If they have a name, return it.
-    - If they have an email but no name, return a masked version of it.
-    - If they have no name and no email, return 'Pending Invite'.
+    - If they have an email, return a masked version of it.
+    - If they have no name, return 'Pending Invite'.
     Otherwise, return the username.
     """
     username = user.get("username", "")
     if username.startswith("ghost_"):
-        name = user.get("name")
-        if name:
-            return name
-
         email = user.get("email")
         if email:
             return mask_email(email)
-
-        return "Pending Invite"
+        if not user.get("name"):
+            return "Pending Invite"
 
     return username
 
@@ -158,18 +158,22 @@ class UserService:
     """Service class for user-related operations."""
 
     @staticmethod
-    def get_user_by_id(db, user_id):
+    def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
         """Fetch a user by their ID."""
         user_ref = db.collection("users").document(user_id)
-        user_doc = user_ref.get()
+        user_doc = cast("DocumentSnapshot", user_ref.get())
         if not user_doc.exists:
             return None
         data = user_doc.to_dict()
+        if data is None:
+            return None
         data["id"] = user_id
         return data
 
     @staticmethod
-    def get_friendship_info(db, current_user_id, target_user_id):
+    def get_friendship_info(
+        db: Client, current_user_id: str, target_user_id: str
+    ) -> tuple[bool, bool]:
         """Check friendship status between two users."""
         friend_request_sent = is_friend = False
         if current_user_id != target_user_id:
@@ -189,7 +193,9 @@ class UserService:
         return is_friend, friend_request_sent
 
     @staticmethod
-    def get_user_friends(db, user_id, limit=None):
+    def get_user_friends(
+        db: Client, user_id: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch a user's friends."""
         user_ref = db.collection("users").document(user_id)
         query = user_ref.collection("friends").where(
@@ -204,11 +210,17 @@ class UserService:
             return []
 
         refs = [db.collection("users").document(fid) for fid in friend_ids]
-        friend_docs = db.get_all(refs)
-        return [{"id": doc.id, **doc.to_dict()} for doc in friend_docs if doc.exists]
+        friend_docs = cast(list["DocumentSnapshot"], db.get_all(refs))
+        results = []
+        for doc in friend_docs:
+            if doc.exists:
+                data = doc.to_dict()
+                if data is not None:
+                    results.append({"id": doc.id, **data})
+        return results
 
     @staticmethod
-    def get_user_pending_requests(db, user_id):
+    def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch pending friend requests where the user is the recipient."""
         user_ref = db.collection("users").document(user_id)
         requests_query = (
@@ -222,11 +234,66 @@ class UserService:
             return []
 
         refs = [db.collection("users").document(uid) for uid in request_ids]
-        request_docs = db.get_all(refs)
-        return [{"id": doc.id, **doc.to_dict()} for doc in request_docs if doc.exists]
+        request_docs = cast(list["DocumentSnapshot"], db.get_all(refs))
+        results = []
+        for doc in request_docs:
+            if doc.exists:
+                data = doc.to_dict()
+                if data is not None:
+                    results.append({"id": doc.id, **data})
+        return results
 
     @staticmethod
-    def get_h2h_stats(db, user_id_1, user_id_2):
+    def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
+        """Fetch pending friend requests where the user is the initiator."""
+        user_ref = db.collection("users").document(user_id)
+        requests_query = (
+            user_ref.collection("friends")
+            .where(filter=firestore.FieldFilter("status", "==", "pending"))
+            .where(filter=firestore.FieldFilter("initiator", "==", True))
+            .stream()
+        )
+        request_ids = [doc.id for doc in requests_query]
+        if not request_ids:
+            return []
+
+        refs = [db.collection("users").document(uid) for uid in request_ids]
+        request_docs = cast(list["DocumentSnapshot"], db.get_all(refs))
+        results = []
+        for doc in request_docs:
+            if doc.exists:
+                data = doc.to_dict()
+                if data is not None:
+                    results.append({"id": doc.id, **data})
+        return results
+
+    @staticmethod
+    def get_all_users(
+        db: Client, exclude_user_id: str, limit: int = 20
+    ) -> list[dict[str, Any]]:
+        """Fetch a list of users, excluding the current user, sorted by date."""
+        users_query = (
+            db.collection("users")
+            .order_by("createdAt", direction=firestore.Query.DESCENDING)
+            .limit(limit + 1)  # Fetch one extra in case we exclude the current user
+            .stream()
+        )
+        users = []
+        for doc in users_query:
+            if doc.id == exclude_user_id:
+                continue
+            data = doc.to_dict()
+            if data is not None:
+                data["id"] = doc.id
+                users.append(data)
+            if len(users) >= limit:
+                break
+        return users
+
+    @staticmethod
+    def get_h2h_stats(
+        db: Client, user_id_1: str, user_id_2: str
+    ) -> dict[str, Any] | None:
         """Fetch head-to-head statistics between two users."""
         my_wins = 0
         my_losses = 0
@@ -250,6 +317,8 @@ class UserService:
 
         for match in singles_query_1:
             data = match.to_dict()
+            if data is None:
+                continue
             if data.get("winnerId") == user_id_1:
                 my_wins += 1
             else:
@@ -258,6 +327,8 @@ class UserService:
 
         for match in singles_query_2:
             data = match.to_dict()
+            if data is None:
+                continue
             if data.get("winnerId") == user_id_1:
                 my_wins += 1
             else:
@@ -279,6 +350,8 @@ class UserService:
 
         for match in doubles_query:
             data = match.to_dict()
+            if data is None:
+                continue
             participants = data.get("participants", [])
             if user_id_2 in participants:
                 team1_ids = data.get("team1Id", [])
@@ -315,7 +388,7 @@ class UserService:
         return None
 
     @staticmethod
-    def get_user_matches(db, user_id):
+    def get_user_matches(db: Client, user_id: str) -> list[Any]:
         """Fetch all matches involving a user."""
         user_ref = db.collection("users").document(user_id)
         matches_as_p1 = (
@@ -349,7 +422,7 @@ class UserService:
         return list(unique_matches)
 
     @staticmethod
-    def calculate_stats(matches, user_id):
+    def calculate_stats(matches: list[Any], user_id: str) -> dict[str, Any]:
         """Calculate statistics (wins, losses, streak) from matches."""
         wins = 0
         losses = 0
@@ -357,6 +430,8 @@ class UserService:
 
         for match_doc in matches:
             match_data = match_doc.to_dict()
+            if match_data is None:
+                continue
             match_type = match_data.get("matchType", "singles")
             p1_score = match_data.get("player1Score", 0)
             p2_score = match_data.get("player2Score", 0)
@@ -434,7 +509,7 @@ class UserService:
         }
 
     @staticmethod
-    def get_group_rankings(db, user_id):
+    def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch group rankings for a user."""
         from pickaladder.group.utils import get_group_leaderboard  # noqa: PLC0415
 
@@ -447,6 +522,8 @@ class UserService:
         )
         for group_doc in my_groups_query:
             group_data = group_doc.to_dict()
+            if group_data is None:
+                continue
             leaderboard = get_group_leaderboard(group_doc.id)
             user_ranking_data = None
             for i, player in enumerate(leaderboard):
@@ -456,7 +533,6 @@ class UserService:
                         "group_id": group_doc.id,
                         "group_name": group_data.get("name", "N/A"),
                         "rank": rank,
-                        "rank_change": player.get("rank_change", 0),
                         "points": player.get("avg_score", 0),
                         "form": player.get("form", []),
                     }
@@ -483,7 +559,7 @@ class UserService:
         return group_rankings
 
     @staticmethod
-    def _get_player_info(player_ref, users_map):
+    def _get_player_info(player_ref: Any, users_map: dict[str, Any]) -> dict[str, Any]:
         """Return a dictionary with player info."""
         player_data = users_map.get(player_ref.id)
         if not player_data:
@@ -495,7 +571,12 @@ class UserService:
         }
 
     @staticmethod
-    def format_matches_for_profile(db, display_items, user_id, profile_user_data):
+    def format_matches_for_profile(
+        db: Client,
+        display_items: list[dict[str, Any]],
+        user_id: str,
+        profile_user_data: dict[str, Any],
+    ) -> list[dict[str, Any]]:
         """Format matches for the public profile view."""
         # Collect all user refs needed for batch fetching
         needed_refs = set()
@@ -618,13 +699,16 @@ class UserService:
         return final_matches
 
     @staticmethod
-    def format_matches_for_dashboard(db, matches_docs, user_id):
+    def format_matches_for_dashboard(
+        db: Client, matches_docs: list[Any], user_id: str
+    ) -> list[dict[str, Any]]:
         """Format matches for the API dashboard view."""
-        # Batch fetch user data and team data for all recent matches
+        # Batch fetch user data for all players in the recent matches
         player_refs = set()
-        team_refs = set()
         for match_doc in matches_docs:
             match = match_doc.to_dict()
+            if match is None:
+                continue
             if match.get("player1Ref"):
                 player_refs.add(match["player1Ref"])
             if match.get("player2Ref"):
@@ -634,24 +718,16 @@ class UserService:
             for ref in match.get("team2", []):
                 player_refs.add(ref)
 
-            if match.get("team1Ref"):
-                team_refs.add(match["team1Ref"])
-            if match.get("team2Ref"):
-                team_refs.add(match["team2Ref"])
-
         users_map = {}
         if player_refs:
             user_docs = db.get_all(list(player_refs))
             users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
 
-        teams_map = {}
-        if team_refs:
-            team_docs = db.get_all(list(team_refs))
-            teams_map = {doc.id: doc.to_dict() for doc in team_docs if doc.exists}
-
         matches_data = []
         for match_doc in matches_docs:
             match = match_doc.to_dict()
+            if match is None:
+                continue
             p1_score = match.get("player1Score", 0)
             p2_score = match.get("player2Score", 0)
             winner = "player1" if p1_score > p2_score else "player2"
@@ -676,17 +752,17 @@ class UserService:
                         user_won = True
                 user_result = "win" if user_won else "loss"
 
+            player1_info: Any
+            player2_info: Any
             if match.get("matchType") == "doubles":
-                team1_info = [
+                player1_info = [
                     UserService._get_player_info(ref, users_map)
                     for ref in match.get("team1", [])
                 ]
-                team2_info = [
+                player2_info = [
                     UserService._get_player_info(ref, users_map)
                     for ref in match.get("team2", [])
                 ]
-                player1_info = team1_info
-                player2_info = team2_info
             else:
                 player1_info = UserService._get_player_info(
                     match["player1Ref"], users_map
@@ -695,62 +771,11 @@ class UserService:
                     match["player2Ref"], users_map
                 )
 
-            # Team Names
-            team1_obj = {"name": None}
-            if t1_ref := match.get("team1Ref"):
-                if t1_data := teams_map.get(t1_ref.id):
-                    team1_obj["name"] = t1_data.get("name")
-
-            team2_obj = {"name": None}
-            if t2_ref := match.get("team2Ref"):
-                if t2_data := teams_map.get(t2_ref.id):
-                    team2_obj["name"] = t2_data.get("name")
-
-            # Upset logic
-            is_upset = match.get("is_upset", False)
-            if not is_upset:
-                winner_player = None
-                loser_player = None
-                if winner == "player1":
-                    winner_player = (
-                        player1_info
-                        if not isinstance(player1_info, list)
-                        else player1_info[0]
-                    )
-                    loser_player = (
-                        player2_info
-                        if not isinstance(player2_info, list)
-                        else player2_info[0]
-                    )
-                else:
-                    winner_player = (
-                        player2_info
-                        if not isinstance(player2_info, list)
-                        else player2_info[0]
-                    )
-                    loser_player = (
-                        player1_info
-                        if not isinstance(player1_info, list)
-                        else player1_info[0]
-                    )
-
-                if winner_player and loser_player:
-                    # We need the full user data for ratings, which is in users_map
-                    winner_data = users_map.get(winner_player["id"], {})
-                    loser_data = users_map.get(loser_player["id"], {})
-                    winner_rating = float(winner_data.get("duprRating") or 0.0)
-                    loser_rating = float(loser_data.get("duprRating") or 0.0)
-                    if winner_rating > 0 and loser_rating > 0:
-                        if (loser_rating - winner_rating) >= UPSET_THRESHOLD:
-                            is_upset = True
-
             matches_data.append(
                 {
                     "id": match_doc.id,
                     "player1": player1_info,
                     "player2": player2_info,
-                    "team1": team1_obj,
-                    "team2": team2_obj,
                     "player1_score": p1_score,
                     "player2_score": p2_score,
                     "winner": winner,
@@ -758,7 +783,6 @@ class UserService:
                     "is_group_match": bool(match.get("groupId")),
                     "match_type": match.get("matchType", "singles"),
                     "user_result": user_result,
-                    "is_upset": is_upset,
                 }
             )
         return matches_data
