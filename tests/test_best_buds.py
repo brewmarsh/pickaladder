@@ -22,7 +22,9 @@ class BestBudsTestCase(unittest.TestCase):
         def mock_document(doc_id):
             return MockDocumentReference(doc_id)
 
-        self.mock_firestore_service.client.return_value.collection.return_value.document.side_effect = mock_document
+        (
+            self.mock_firestore_service.client.return_value.collection.return_value.document.side_effect
+        ) = mock_document
 
         # Patch firestore in multiple places
         self.patchers = [
