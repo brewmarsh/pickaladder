@@ -159,151 +159,7 @@ def view_group(group_id):
         if owner_doc.exists:
             owner = owner_doc.to_dict()
 
-    # --- Leaderboard ---
-    leaderboard = get_group_leaderboard(group_id)
-
     is_member = current_user_id in member_ids
-
-    # --- Fetch Recent Matches ---
-    matches_ref = db.collection("matches")
-    matches_query = (
-        matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
-        .order_by("matchDate", direction=firestore.Query.DESCENDING)
-        .limit(20)
-    )
-    recent_matches_docs = list(matches_query.stream())
-
-    # --- Team Leaderboard ---
-    team_leaderboard = []
-    best_buds = None
-    team_stats = {}  # team_id -> {wins, losses, games}
-
-    for doc in recent_matches_docs:
-        data = doc.to_dict()
-        if data.get("matchType") != "doubles":
-            continue
-
-        t1_ref = data.get("team1Ref")
-        t2_ref = data.get("team2Ref")
-        if not t1_ref or not t2_ref:
-            continue
-
-        for ref in [t1_ref, t2_ref]:
-            if ref.id not in team_stats:
-                team_stats[ref.id] = {"wins": 0, "losses": 0, "games": 0}
-
-        p1_score = data.get("player1Score")
-        if p1_score is None:
-            p1_score = data.get("team1Score", 0)
-        p2_score = data.get("player2Score")
-        if p2_score is None:
-            p2_score = data.get("team2Score", 0)
-
-        team_stats[t1_ref.id]["games"] += 1
-        team_stats[t2_ref.id]["games"] += 1
-
-        if p1_score > p2_score:
-            team_stats[t1_ref.id]["wins"] += 1
-            team_stats[t2_ref.id]["losses"] += 1
-        elif p2_score > p1_score:
-            team_stats[t2_ref.id]["wins"] += 1
-            team_stats[t1_ref.id]["losses"] += 1
-
-    if team_stats:
-        team_ids = list(team_stats.keys())
-        team_refs = [db.collection("teams").document(tid) for tid in team_ids]
-        team_docs = db.get_all(team_refs)
-
-        # Batch fetch all team member details
-        all_member_refs = []
-        enriched_team_docs = []
-        for doc in team_docs:
-            if doc.exists:
-                team_data = doc.to_dict()
-                team_data["id"] = doc.id
-                if "members" in team_data:
-                    all_member_refs.extend(team_data.get("members", []))
-                enriched_team_docs.append(team_data)
-
-        members_map = {}
-        if all_member_refs:
-            unique_member_refs = list(
-                {ref.path: ref for ref in all_member_refs}.values()
-            )
-            member_docs = db.get_all(unique_member_refs)
-            members_map = {
-                doc.id: {**doc.to_dict(), "id": doc.id}
-                for doc in member_docs
-                if doc.exists
-            }
-
-        for team_data in enriched_team_docs:
-            stats = team_stats[team_data["id"]]
-            total_games = stats["games"]
-            stats["win_percentage"] = (
-                (stats["wins"] / total_games) * 100 if total_games > 0 else 0
-            )
-
-            # Get member details
-            team_members = []
-            for member_ref in team_data.get("members", []):
-                if member_ref.id in members_map:
-                    team_members.append(members_map[member_ref.id])
-            team_data["member_details"] = team_members
-
-            team_leaderboard.append({"team": team_data, "stats": stats})
-
-        # Sort teams by Win Count descending
-        team_leaderboard.sort(key=lambda x: x["stats"]["wins"], reverse=True)
-
-        # Best Buds: Find the team with the most wins from these group matches
-        if team_leaderboard:
-            # Already sorted by wins
-            top_team = team_leaderboard[0]
-            if top_team["stats"]["wins"] > 0:
-                # For template compatibility, best_buds needs to look like a team
-                # with stats
-                best_buds = top_team["team"].copy()
-                best_buds["stats"] = top_team["stats"]
-
-    # --- Fetch Pending Invites ---
-    pending_members = []
-    if is_member:
-        invites_ref = db.collection("group_invites")
-        query = invites_ref.where(
-            filter=firestore.FieldFilter("group_id", "==", group_id)
-        ).where(filter=firestore.FieldFilter("used", "==", False))
-
-        pending_invites_docs = list(query.stream())
-        for doc in pending_invites_docs:
-            data = doc.to_dict()
-            data["token"] = doc.id
-            pending_members.append(data)
-
-        # Enrich invites with user data
-        invite_emails = [
-            invite.get("email") for invite in pending_members if invite.get("email")
-        ]
-        if invite_emails:
-            user_docs = {}
-            # Chunk the email list to handle Firestore's 30-item limit for 'in' queries
-            for i in range(0, len(invite_emails), 30):
-                chunk = invite_emails[i : i + 30]
-                users_ref = db.collection("users")
-                user_query = users_ref.where(
-                    filter=firestore.FieldFilter("email", "in", chunk)
-                )
-                for doc in user_query.stream():
-                    user_docs[doc.to_dict()["email"]] = doc.to_dict()
-
-            for invite in pending_members:
-                user_data = user_docs.get(invite.get("email"))
-                if user_data:
-                    invite["username"] = user_data.get("username", invite.get("name"))
-                    invite["profilePictureUrl"] = user_data.get("profilePictureUrl")
-
-        # Sort in memory to avoid composite index requirement
-        pending_members.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
     form = InviteFriendForm()
 
     # Get user's accepted friends
@@ -422,122 +278,19 @@ def view_group(group_id):
         except Exception as e:
             flash(f"An error occurred creating the invitation: {e}", "danger")
 
-    # --- Leaderboard ---
+    # --- Fetch and Calculate Data for Display ---
     leaderboard = get_group_leaderboard(group_id)
 
-    is_member = current_user_id in member_ids
+    # Fetch Match History and Teams
+    recent_matches_docs, recent_matches = _fetch_recent_matches(db, group_id)
+    team_leaderboard, best_buds = _fetch_group_teams(
+        db, group_id, member_ids, recent_matches_docs
+    )
 
-    # Collect all team and player references
-    team_refs = []
-    player_refs = []
-    for doc in recent_matches_docs:
-        data = doc.to_dict()
-        if ref := data.get("team1Ref"):
-            if isinstance(ref, firestore.DocumentReference):
-                team_refs.append(ref)
-        if ref := data.get("team2Ref"):
-            if isinstance(ref, firestore.DocumentReference):
-                team_refs.append(ref)
-
-        # Collect player refs for fallback and older match types
-        player_keys = [
-            "player1Ref",
-            "player2Ref",
-            "partnerRef",
-            "opponent1Ref",
-            "opponent2Ref",
-            "player1",
-            "player2",
-            "partner",
-            "opponent1",
-            "opponent2",
-        ]
-        for key in player_keys:
-            if ref := data.get(key):
-                if isinstance(ref, firestore.DocumentReference):
-                    player_refs.append(ref)
-
-    # Batch fetch Teams
-    teams_map = {}
-    if team_refs:
-        # Deduplicate
-        unique_team_refs = list(
-            {ref.path: ref for ref in team_refs if hasattr(ref, "path")}.values()
-        )
-        if unique_team_refs:
-            team_docs = db.get_all(unique_team_refs)
-            teams_map = {
-                doc.id: {**doc.to_dict(), "id": doc.id}
-                for doc in team_docs
-                if doc.exists
-            }
-
-    # Batch fetch Players
-    players_map = {}
-    if player_refs:
-        # Deduplicate
-        unique_player_refs = list(
-            {ref.path: ref for ref in player_refs if hasattr(ref, "path")}.values()
-        )
-        if unique_player_refs:
-            player_docs = db.get_all(unique_player_refs)
-            players_map = {
-                doc.id: {**doc.to_dict(), "id": doc.id}
-                for doc in player_docs
-                if doc.exists
-            }
-
-    recent_matches = []
-    for match_doc in recent_matches_docs:
-        match_data = match_doc.to_dict()
-        match_data["id"] = match_doc.id
-
-        # Attach Teams
-        if t1_ref := match_data.get("team1Ref"):
-            if isinstance(t1_ref, firestore.DocumentReference):
-                match_data["team1"] = teams_map.get(t1_ref.id)
-        if t2_ref := match_data.get("team2Ref"):
-            if isinstance(t2_ref, firestore.DocumentReference):
-                match_data["team2"] = teams_map.get(t2_ref.id)
-
-        # Populate Players (as fallback and for older match types)
-        player_keys = [
-            "player1",
-            "player2",
-            "partner",
-            "opponent1",
-            "opponent2",
-            "player1Ref",
-            "player2Ref",
-            "partnerRef",
-            "opponent1Ref",
-            "opponent2Ref",
-        ]
-        for key in player_keys:
-            ref = match_data.get(key)
-            if isinstance(ref, firestore.DocumentReference):
-                target = key.replace("Ref", "")
-                match_data[target] = players_map.get(ref.id, GUEST_USER)
-
-        recent_matches.append(match_data)
-
-    # --- Giant Slayer Calculation ---
-    for match_data in recent_matches:
-        winner_player = None
-        loser_player = None
-        if match_data.get("winner") == "team1":
-            winner_player = match_data.get("player1")
-            loser_player = match_data.get("player2")
-        elif match_data.get("winner") == "team2":
-            winner_player = match_data.get("player2")
-            loser_player = match_data.get("player1")
-
-        if winner_player and loser_player:
-            winner_rating = float(winner_player.get("dupr_rating") or 0.0)
-            loser_rating = float(loser_player.get("dupr_rating") or 0.0)
-            if loser_rating > 0 and winner_rating > 0:
-                if (loser_rating - winner_rating) >= UPSET_THRESHOLD:
-                    match_data["is_upset"] = True
+    # Fetch Pending Invites
+    pending_members = []
+    if is_member:
+        pending_members = _get_pending_invites(db, group_id)
 
     return render_template(
         "group.html",
@@ -896,3 +649,266 @@ def get_rivalry_stats(group_id):
         "avg_points_scored": stats["avg_points_scored"],
         "partnership_record": stats["partnership_record"],
     }
+
+
+def _fetch_recent_matches(db, group_id):
+    """Fetch and enrich recent matches for a group."""
+    matches_ref = db.collection("matches")
+    matches_query = (
+        matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
+        .order_by("matchDate", direction=firestore.Query.DESCENDING)
+        .limit(20)
+    )
+    recent_matches_docs = list(matches_query.stream())
+
+    # Collect all team and player references
+    team_refs = []
+    player_refs = []
+    for doc in recent_matches_docs:
+        data = doc.to_dict()
+        if ref := data.get("team1Ref"):
+            if isinstance(ref, firestore.DocumentReference):
+                team_refs.append(ref)
+        if ref := data.get("team2Ref"):
+            if isinstance(ref, firestore.DocumentReference):
+                team_refs.append(ref)
+
+        # Collect player refs for fallback and older match types
+        player_keys = [
+            "player1Ref",
+            "player2Ref",
+            "partnerRef",
+            "opponent1Ref",
+            "opponent2Ref",
+            "player1",
+            "player2",
+            "partner",
+            "opponent1",
+            "opponent2",
+        ]
+        for key in player_keys:
+            if ref := data.get(key):
+                if isinstance(ref, firestore.DocumentReference):
+                    player_refs.append(ref)
+
+    # Batch fetch Teams
+    teams_map = {}
+    if team_refs:
+        # Deduplicate
+        unique_team_refs = list(
+            {ref.path: ref for ref in team_refs if hasattr(ref, "path")}.values()
+        )
+        if unique_team_refs:
+            team_docs = db.get_all(unique_team_refs)
+            teams_map = {
+                doc.id: {**doc.to_dict(), "id": doc.id}
+                for doc in team_docs
+                if doc.exists
+            }
+
+    # Batch fetch Players
+    players_map = {}
+    if player_refs:
+        # Deduplicate
+        unique_player_refs = list(
+            {ref.path: ref for ref in player_refs if hasattr(ref, "path")}.values()
+        )
+        if unique_player_refs:
+            player_docs = db.get_all(unique_player_refs)
+            players_map = {
+                doc.id: {**doc.to_dict(), "id": doc.id}
+                for doc in player_docs
+                if doc.exists
+            }
+
+    recent_matches = []
+    for match_doc in recent_matches_docs:
+        match_data = match_doc.to_dict()
+        match_data["id"] = match_doc.id
+
+        # Attach Teams
+        if t1_ref := match_data.get("team1Ref"):
+            if isinstance(t1_ref, firestore.DocumentReference):
+                match_data["team1"] = teams_map.get(t1_ref.id)
+        if t2_ref := match_data.get("team2Ref"):
+            if isinstance(t2_ref, firestore.DocumentReference):
+                match_data["team2"] = teams_map.get(t2_ref.id)
+
+        # Populate Players (as fallback and for older match types)
+        player_keys = [
+            "player1",
+            "player2",
+            "partner",
+            "opponent1",
+            "opponent2",
+            "player1Ref",
+            "player2Ref",
+            "partnerRef",
+            "opponent1Ref",
+            "opponent2Ref",
+        ]
+        for key in player_keys:
+            ref = match_data.get(key)
+            if isinstance(ref, firestore.DocumentReference):
+                target = key.replace("Ref", "")
+                match_data[target] = players_map.get(ref.id, GUEST_USER)
+
+        recent_matches.append(match_data)
+
+    # --- Giant Slayer Calculation ---
+    for match_data in recent_matches:
+        winner_player = None
+        loser_player = None
+        if match_data.get("winner") == "team1":
+            winner_player = match_data.get("player1")
+            loser_player = match_data.get("player2")
+        elif match_data.get("winner") == "team2":
+            winner_player = match_data.get("player2")
+            loser_player = match_data.get("player1")
+
+        if winner_player and loser_player:
+            winner_rating = float(winner_player.get("dupr_rating") or 0.0)
+            loser_rating = float(loser_player.get("dupr_rating") or 0.0)
+            if loser_rating > 0 and winner_rating > 0:
+                if (loser_rating - winner_rating) >= UPSET_THRESHOLD:
+                    match_data["is_upset"] = True
+
+    return recent_matches_docs, recent_matches
+
+
+def _fetch_group_teams(db, group_id, member_ids, recent_matches_docs):
+    """Calculate team leaderboard and best buds for a group."""
+    team_leaderboard = []
+    best_buds = None
+    team_stats = {}  # team_id -> {wins, losses, games}
+
+    for doc in recent_matches_docs:
+        data = doc.to_dict()
+        if data.get("matchType") != "doubles":
+            continue
+
+        t1_ref = data.get("team1Ref")
+        t2_ref = data.get("team2Ref")
+        if not t1_ref or not t2_ref:
+            continue
+
+        for ref in [t1_ref, t2_ref]:
+            if ref.id not in team_stats:
+                team_stats[ref.id] = {"wins": 0, "losses": 0, "games": 0}
+
+        p1_score = data.get("player1Score")
+        if p1_score is None:
+            p1_score = data.get("team1Score", 0)
+        p2_score = data.get("player2Score")
+        if p2_score is None:
+            p2_score = data.get("team2Score", 0)
+
+        team_stats[t1_ref.id]["games"] += 1
+        team_stats[t2_ref.id]["games"] += 1
+
+        if p1_score > p2_score:
+            team_stats[t1_ref.id]["wins"] += 1
+            team_stats[t2_ref.id]["losses"] += 1
+        elif p2_score > p1_score:
+            team_stats[t2_ref.id]["wins"] += 1
+            team_stats[t1_ref.id]["losses"] += 1
+
+    if team_stats:
+        team_ids = list(team_stats.keys())
+        team_refs = [db.collection("teams").document(tid) for tid in team_ids]
+        team_docs = db.get_all(team_refs)
+
+        # Batch fetch all team member details
+        all_member_refs = []
+        enriched_team_docs = []
+        for doc in team_docs:
+            if doc.exists:
+                team_data = doc.to_dict()
+                team_data["id"] = doc.id
+                if "members" in team_data:
+                    all_member_refs.extend(team_data.get("members", []))
+                enriched_team_docs.append(team_data)
+
+        members_map = {}
+        if all_member_refs:
+            unique_member_refs = list(
+                {ref.path: ref for ref in all_member_refs}.values()
+            )
+            member_docs = db.get_all(unique_member_refs)
+            members_map = {
+                doc.id: {**doc.to_dict(), "id": doc.id}
+                for doc in member_docs
+                if doc.exists
+            }
+
+        for team_data in enriched_team_docs:
+            stats = team_stats[team_data["id"]]
+            total_games = stats["games"]
+            stats["win_percentage"] = (
+                (stats["wins"] / total_games) * 100 if total_games > 0 else 0
+            )
+
+            # Get member details
+            team_members = []
+            for member_ref in team_data.get("members", []):
+                if member_ref.id in members_map:
+                    team_members.append(members_map[member_ref.id])
+            team_data["member_details"] = team_members
+
+            team_leaderboard.append({"team": team_data, "stats": stats})
+
+        # Sort teams by Win Count descending
+        team_leaderboard.sort(key=lambda x: x["stats"]["wins"], reverse=True)
+
+        # Best Buds: Find the team with the most wins from these group matches
+        if team_leaderboard:
+            # Already sorted by wins
+            top_team = team_leaderboard[0]
+            if top_team["stats"]["wins"] > 0:
+                # For template compatibility, best_buds needs to look like a team
+                # with stats
+                best_buds = top_team["team"].copy()
+                best_buds["stats"] = top_team["stats"]
+
+    return team_leaderboard, best_buds
+
+
+def _get_pending_invites(db, group_id):
+    """Fetch pending invites for a group."""
+    pending_members = []
+    invites_ref = db.collection("group_invites")
+    query = invites_ref.where(
+        filter=firestore.FieldFilter("group_id", "==", group_id)
+    ).where(filter=firestore.FieldFilter("used", "==", False))
+
+    pending_invites_docs = list(query.stream())
+    for doc in pending_invites_docs:
+        data = doc.to_dict()
+        data["token"] = doc.id
+        pending_members.append(data)
+
+    # Enrich invites with user data
+    invite_emails = [
+        invite.get("email") for invite in pending_members if invite.get("email")
+    ]
+    if invite_emails:
+        user_docs = {}
+        # Chunk the email list to handle Firestore's 30-item limit for 'in' queries
+        for i in range(0, len(invite_emails), 30):
+            chunk = invite_emails[i : i + 30]
+            users_ref = db.collection("users")
+            user_query = users_ref.where(
+                filter=firestore.FieldFilter("email", "in", chunk)
+            )
+            for doc in user_query.stream():
+                user_docs[doc.to_dict()["email"]] = doc.to_dict()
+
+        for invite in pending_members:
+            user_data = user_docs.get(invite.get("email"))
+            if user_data:
+                invite["username"] = user_data.get("username", invite.get("name"))
+                invite["profilePictureUrl"] = user_data.get("profilePictureUrl")
+
+    # Sort in memory to avoid composite index requirement
+    pending_members.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
+    return pending_members
