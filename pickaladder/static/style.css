@@ -1050,8 +1050,92 @@ input[type="submit"], .btn {
     margin-top: 10px;
   }
 }
+/* Dashboard Pro Layout */
+.hero-stats-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.hero-left-panel {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.profile-picture-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--surface-color);
+    box-shadow: var(--box-shadow);
+}
+
+.hero-name-and-edit h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 500;
+}
+
+.hero-right-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 16px;
+}
+
+.vanity-stats-container {
+    display: flex;
+    gap: 24px;
+}
+
+.vanity-stat {
+    text-align: center;
+}
+
+.vanity-stat .stat-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--primary-brand);
+}
+
+.vanity-stat .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dashboard-columns {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.dashboard-column-left {
+    flex: 2;
+    min-width: 0;
+}
+
+.dashboard-column-right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
 /* Mobile Dashboard Polish */
 @media (max-width: 768px) {
+    .dashboard-columns {
+        flex-direction: column;
+    }
     .container {
         padding: 16px;
     }
@@ -1096,9 +1180,10 @@ input[type="submit"], .btn {
         flex-direction: column;
         width: 100%;
         gap: 16px;
+        align-items: center;
     }
 
-    #vanity-stats-container {
+    .vanity-stats-container {
         width: 100%;
         justify-content: center;
         gap: 20px;
@@ -1107,6 +1192,23 @@ input[type="submit"], .btn {
 
     .hero-right-panel .btn {
         width: 100%;
+    }
+
+    .game-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .game-card .game-date {
+        width: auto;
+    }
+
+    .game-card .game-score {
+        width: 100%;
+        text-align: left;
+        border-top: 1px solid var(--border-color);
+        padding-top: 8px;
     }
 }
 
