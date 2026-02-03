@@ -19,7 +19,6 @@
                 <table class="table responsive-table">
                     <thead>
                         <tr>
-                            <th>Avatar</th>
                             <th>User</th>
                             <th style="text-align: right;">Actions</th>
                         </tr>
@@ -27,11 +26,11 @@
                     <tbody>
                         {% for request in requests %}
                             <tr>
-                                <td data-label="Avatar">
-                                    <img src="{{ request | avatar_url }}" alt="{{ request | smart_display_name }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                </td>
                                 <td data-label="Username">
-                                    <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request | smart_display_name }}</a>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <img src="{{ request.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ request.username }}" class="profile-picture-thumbnail">
+                                        <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
+                                    </div>
                                 </td>
                                 <td data-label="Actions" style="text-align: right;">
                                     <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
@@ -56,7 +55,6 @@
                 <table class="table responsive-table">
                     <thead>
                         <tr>
-                            <th>Avatar</th>
                             <th>User</th>
                             <th>Status</th>
                         </tr>
@@ -64,11 +62,11 @@
                     <tbody>
                         {% for request in sent_requests %}
                             <tr>
-                                <td data-label="Avatar">
-                                    <img src="{{ request | avatar_url }}" alt="{{ request | smart_display_name }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                </td>
                                 <td data-label="Username">
-                                    <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request | smart_display_name }}</a>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <img src="{{ request.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ request.username }}" class="profile-picture-thumbnail">
+                                        <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
+                                    </div>
                                 </td>
                                 <td data-label="Status">Pending</td>
                             </tr>
@@ -86,8 +84,8 @@
             {% for friend in friends %}
                 <div class="friend-card">
                     <div class="friend-card-content">
-                        <img src="{{ friend | avatar_url }}" alt="{{ friend | smart_display_name }}" class="friend-avatar avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                        <h3 class="friend-name">{{ friend | smart_display_name }}</h3>
+                        <img src="{{ friend.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ friend.username }}" class="friend-avatar">
+                        <h3 class="friend-name">{{ friend.username }}</h3>
                         <div class="friend-rating">
                             <span class="star-icon">⭐</span>
                             <span class="dupr-value">{{ friend.duprRating or 'N/A' }}</span>
