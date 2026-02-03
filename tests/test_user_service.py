@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
+
 from pickaladder.user.utils import UserService
+
 
 class TestUserService(unittest.TestCase):
     def setUp(self):
@@ -29,9 +31,13 @@ class TestUserService(unittest.TestCase):
         mock_doc = MagicMock()
         mock_doc.exists = True
         mock_doc.to_dict.return_value = {"status": "accepted"}
-        self.db.collection().document().collection().document().get.return_value = mock_doc
+        self.db.collection().document().collection().document().get.return_value = (
+            mock_doc
+        )
 
-        is_friend, request_sent = UserService.get_friendship_info(self.db, "user1", "user2")
+        is_friend, request_sent = UserService.get_friendship_info(
+            self.db, "user1", "user2"
+        )
         self.assertTrue(is_friend)
         self.assertFalse(request_sent)
 
@@ -39,16 +45,22 @@ class TestUserService(unittest.TestCase):
         mock_doc = MagicMock()
         mock_doc.exists = True
         mock_doc.to_dict.return_value = {"status": "pending"}
-        self.db.collection().document().collection().document().get.return_value = mock_doc
+        self.db.collection().document().collection().document().get.return_value = (
+            mock_doc
+        )
 
-        is_friend, request_sent = UserService.get_friendship_info(self.db, "user1", "user2")
+        is_friend, request_sent = UserService.get_friendship_info(
+            self.db, "user1", "user2"
+        )
         self.assertFalse(is_friend)
         self.assertTrue(request_sent)
 
     def test_get_user_friends(self):
         mock_f1 = MagicMock()
         mock_f1.id = "friend1"
-        self.db.collection().document().collection().where().stream.return_value = [mock_f1]
+        self.db.collection().document().collection().where().stream.return_value = [
+            mock_f1
+        ]
 
         mock_doc1 = MagicMock()
         mock_doc1.exists = True
@@ -66,7 +78,7 @@ class TestUserService(unittest.TestCase):
             "matchType": "singles",
             "player1Ref": MagicMock(id=self.user_id),
             "player1Score": 11,
-            "player2Score": 5
+            "player2Score": 5,
         }
         mock_match1.create_time = 100
 
@@ -75,7 +87,7 @@ class TestUserService(unittest.TestCase):
             "matchType": "singles",
             "player1Ref": MagicMock(id=self.user_id),
             "player1Score": 5,
-            "player2Score": 11
+            "player2Score": 11,
         }
         mock_match2.create_time = 200
 
@@ -97,13 +109,14 @@ class TestUserService(unittest.TestCase):
 
         mock_leaderboard.return_value = [
             {"id": "other", "name": "Other", "avg_score": 100},
-            {"id": self.user_id, "name": "Me", "avg_score": 50}
+            {"id": self.user_id, "name": "Me", "avg_score": 50},
         ]
 
         rankings = UserService.get_group_rankings(self.db, self.user_id)
         self.assertEqual(len(rankings), 1)
         self.assertEqual(rankings[0]["rank"], 2)
         self.assertEqual(rankings[0]["group_name"], "Test Group")
+
 
 if __name__ == "__main__":
     unittest.main()

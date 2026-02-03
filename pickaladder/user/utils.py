@@ -185,9 +185,8 @@ class UserService:
     def get_user_friends(db, user_id, limit=None):
         """Fetch a user's friends."""
         user_ref = db.collection("users").document(user_id)
-        query = (
-            user_ref.collection("friends")
-            .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+        query = user_ref.collection("friends").where(
+            filter=firestore.FieldFilter("status", "==", "accepted")
         )
         if limit:
             query = query.limit(limit)
@@ -262,7 +261,9 @@ class UserService:
         doubles_query = (
             db.collection("matches")
             .where(
-                filter=firestore.FieldFilter("participants", "array_contains", user_id_1)
+                filter=firestore.FieldFilter(
+                    "participants", "array_contains", user_id_1
+                )
             )
             .where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
             .where(filter=firestore.FieldFilter("status", "==", "completed"))
@@ -428,7 +429,7 @@ class UserService:
     @staticmethod
     def get_group_rankings(db, user_id):
         """Fetch group rankings for a user."""
-        from pickaladder.group.utils import get_group_leaderboard
+        from pickaladder.group.utils import get_group_leaderboard  # noqa: PLC0415
 
         user_ref = db.collection("users").document(user_id)
         group_rankings = []

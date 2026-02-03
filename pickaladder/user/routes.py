@@ -1,6 +1,5 @@
 """Routes for the user blueprint."""
 
-import datetime
 import os
 import secrets
 import tempfile
