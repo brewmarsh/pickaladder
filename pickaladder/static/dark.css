@@ -101,7 +101,3 @@ body.dark-mode .close {
     color: var(--text-secondary-color);
 }
 
-body.dark-mode #latest-games-feed .game-card {
-    background-color: var(--surface-color);
-    border-color: var(--border-color);
-}

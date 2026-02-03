@@ -264,35 +264,40 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        feed.innerHTML = ''; // Clear feed
+
         matches.forEach(match => {
-            const isCloseScore = Math.abs(match.player1_score - match.player2_score) <= 2;
-            const scoreClass = isCloseScore ? 'score-close' : '';
+            const winnerTeam = match.winner === 'player1' ? match.player1 : match.player2;
+            const loserTeam = match.winner === 'player1' ? match.player2 : match.player1;
 
-            const p1_winner = match.winner === 'player1' ? 'winner' : '';
-            const p2_winner = match.winner === 'player2' ? 'winner' : '';
+            const formatTeam = (team) => {
+                if (Array.isArray(team)) {
+                    return team.map(p => `<a href="${urls.view_user(p.id)}">${p.username}</a>`).join(' & ');
+                } else {
+                    return `<a href="${urls.view_user(team.id)}">${team.username}</a>`;
+                }
+            };
 
-            let player1Display, player2Display;
-            if (match.match_type === 'doubles') {
-                player1Display = match.player1.map(p => `<a href="${urls.view_user(p.id)}" class="${p1_winner}">${p.username}</a>`).join(' & ');
-                player2Display = match.player2.map(p => `<a href="${urls.view_user(p.id)}" class="${p2_winner}">${p.username}</a>`).join(' & ');
-            } else {
-                player1Display = `<a href="${urls.view_user(match.player1.id)}" class="${p1_winner}">${match.player1.username}</a>`;
-                player2Display = `<a href="${urls.view_user(match.player2.id)}" class="${p2_winner}">${match.player2.username}</a>`;
-            }
+            const winnerDisplay = formatTeam(winnerTeam);
+            const loserDisplay = formatTeam(loserTeam);
 
-            const card = `
-                <div class="game-card">
-                    <div class="game-card-header">
-                        <span>${formatMatchDate(match.date)}</span>
+            const winnerScore = Math.max(match.player1_score, match.player2_score);
+            const loserScore = Math.min(match.player1_score, match.player2_score);
+
+            const scoreResultClass = match.user_result; // 'win', 'loss', or 'draw'
+
+            const row = `
+                <div class="game-row-compact">
+                    <div class="game-date-compact">${formatMatchDate(match.date)}</div>
+                    <div class="game-info-compact">
+                        ${winnerDisplay} <span class="vs-text">vs</span> ${loserDisplay}
                     </div>
-                    <div class="game-card-body">
-                        <div class="team">${player1Display}</div>
-                        <div class="score ${scoreClass}">${match.player1_score} - ${match.player2_score}</div>
-                        <div class="team">${player2Display}</div>
+                    <div class="game-score-compact ${scoreResultClass}">
+                        ${winnerScore}-${loserScore}
                     </div>
                 </div>
             `;
-            feed.insertAdjacentHTML('beforeend', card);
+            feed.insertAdjacentHTML('beforeend', row);
         });
     }
 
