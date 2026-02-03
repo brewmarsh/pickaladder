@@ -924,63 +924,32 @@ input[type="submit"], .btn {
     font-size: 0.9em;
 }
 
-.game-card {
+#latest-games-feed .game-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+#latest-games-feed .winner {
+    font-weight: bold;
+    color: #10B981;
+}
+
+#latest-games-feed .score-close {
+    color: #0F4C81;
+}
+
+#latest-games-feed .game-card-body {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    background-color: var(--surface-color);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    margin-bottom: 12px;
-    padding: 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease;
 }
 
-.game-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-.game-card.game-won {
-    border-left: 6px solid var(--success-color);
-}
-
-.game-card.game-lost {
-    border-left: 6px solid var(--danger-color);
-}
-
-.game-card .game-date {
-    flex: 0 0 70px;
-    font-size: 0.9em;
-    color: var(--text-secondary-color);
-    font-weight: 500;
-}
-
-.game-card .game-matchup {
+#latest-games-feed .team {
     flex: 1;
-    padding: 0 16px;
-    font-size: 1.1em;
-}
-
-.game-card .game-score {
-    flex: 0 0 auto;
-    font-size: 1.5em;
-    font-weight: bold;
-    color: var(--text-color);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.game-card .vs-text {
-    color: var(--text-secondary-color);
-    font-size: 0.8em;
-    margin: 0 4px;
-}
-
-.match-user-bold {
-    font-weight: bold;
-    color: var(--primary-brand);
+    text-align: center;
 }
 
 .badge {
@@ -1090,44 +1059,6 @@ input[type="submit"], .btn {
     margin-top: 10px;
   }
 }
-/* Trophy Case Styles */
-.group-ranking-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: var(--surface-color);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 16px;
-    margin-bottom: 12px;
-    text-decoration: none;
-    color: inherit;
-    transition: background-color 0.2s ease;
-}
-
-.group-ranking-card:hover {
-    background-color: var(--background-color);
-}
-
-.group-ranking-card .group-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.group-ranking-card .group-name {
-    font-weight: 500;
-    font-size: 1.1em;
-}
-
-.group-ranking-card .rank-medal {
-    font-size: 1.4em;
-}
-
-.group-ranking-card .trend-arrow {
-    font-size: 1.2em;
-}
-
 /* Dashboard Pro Layout */
 .hero-stats-card {
     display: flex;
