@@ -142,6 +142,11 @@ body {
     object-fit: cover;
 }
 
+.avatar {
+    border-radius: 50%;
+    object-fit: cover;
+}
+
 /* Forms */
 .form-container {
     max-width: 500px;

@@ -4,8 +4,8 @@
 <div class="page-header team-header-content">
     <div class="team-avatars">
         {% for member in members %}
-        <img src="{{ member.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
-             alt="{{ member.username }}" class="profile-picture">
+        <img src="{{ member | avatar_url }}"
+             alt="{{ member.username }}" class="profile-picture avatar">
         {% endfor %}
     </div>
     <div>

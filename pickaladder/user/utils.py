@@ -4,6 +4,7 @@ from firebase_admin import firestore
 from flask import current_app
 
 from pickaladder.utils import mask_email
+from .models import User
 
 
 # TODO: Add type hints for Agent clarity
@@ -101,6 +102,27 @@ def merge_ghost_user(db, real_user_ref, email):
 
     except Exception as e:
         current_app.logger.error(f"Error merging ghost user: {e}")
+
+
+def wrap_user(user_data: dict, uid: str = None) -> User:
+    """Wrap a user dictionary in a User model object.
+
+    Args:
+        user_data: The user data dictionary from Firestore.
+        uid: Optional user ID if not present in user_data.
+
+    Returns:
+        A User model object.
+    """
+    if user_data is None:
+        return None
+    if isinstance(user_data, User):
+        return user_data
+
+    data = dict(user_data)
+    if uid:
+        data["uid"] = uid
+    return User(data)
 
 
 def smart_display_name(user: dict) -> str:

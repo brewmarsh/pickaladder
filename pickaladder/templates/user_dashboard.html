@@ -77,7 +77,7 @@
             <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data" class="profile-form">
                 {{ form.hidden_tag() }}
                 <div class="profile-header">
-                    <img src="{{ user.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture" id="profile-picture-img">
+                    <img src="{{ user.avatar_url }}" alt="Profile Picture" class="profile-picture avatar" id="profile-picture-img">
                     <div class="form-group profile-picture-group">
                         {{ form.profile_picture(class="form-control", accept="image/*") }}
                     </div>
@@ -132,8 +132,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderHeroStats(user, stats) {
-        const defaultProfilePic = "{{ url_for('static', filename='user_icon.png') }}";
-        document.getElementById('hero-profile-img').src = user.profilePictureUrl || defaultProfilePic;
+        const seed = user.uid || user.id || "default";
+        const diceBearUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&backgroundColor=2e7d32,ffc107,1976d2`;
+        document.getElementById('hero-profile-img').src = user.profilePictureUrl || diceBearUrl;
         document.getElementById('hero-username-text').textContent = user.name || user.username;
 
         const statsContainer = document.getElementById('vanity-stats-container');
@@ -166,10 +167,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const csrf_token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    const requestRowTemplate = (request) => `
+    const requestRowTemplate = (request) => {
+        const seed = request.id || "default";
+        const diceBearUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&backgroundColor=2e7d32,ffc107,1976d2`;
+        const avatarUrl = request.thumbnail_url || request.profilePictureUrl || diceBearUrl;
+        return `
         <tr>
             <td data-label="Username">
-                <img src="${request.thumbnail_url}" alt="${request.username}'s thumbnail" class="profile-picture-thumbnail" style="vertical-align: middle; margin-right: 10px;">
+                <img src="${avatarUrl}" alt="${request.username}'s thumbnail" class="profile-picture-thumbnail avatar" style="vertical-align: middle; margin-right: 10px;">
                 <a href="${urls.view_user(request.id)}">${request.username}</a>
             </td>
             <td data-label="Actions" style="text-align: right;">
@@ -184,6 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
         </tr>
     `;
+    };
 
     const friendRowTemplate = (friend) => `
         <tr>
