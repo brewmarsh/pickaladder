@@ -3,6 +3,8 @@
 from firebase_admin import firestore
 from flask import current_app
 
+from pickaladder.utils import mask_email
+
 
 # TODO: Add type hints for Agent clarity
 def merge_ghost_user(db, real_user_ref, email):
@@ -99,3 +101,22 @@ def merge_ghost_user(db, real_user_ref, email):
 
     except Exception as e:
         current_app.logger.error(f"Error merging ghost user: {e}")
+
+
+def smart_display_name(user: dict) -> str:
+    """Return a smart display name for a user.
+
+    If the user is a ghost user (username starts with 'ghost_'):
+    - If they have an email, return a masked version of it.
+    - If they have no name, return 'Pending Invite'.
+    Otherwise, return the username.
+    """
+    username = user.get("username", "")
+    if username.startswith("ghost_"):
+        email = user.get("email")
+        if email:
+            return mask_email(email)
+        if not user.get("name"):
+            return "Pending Invite"
+
+    return username

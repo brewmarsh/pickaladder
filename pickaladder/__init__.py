@@ -21,6 +21,7 @@ from . import match as match_bp
 from . import teams as teams_bp
 from . import user as user_bp
 from .extensions import csrf, mail
+from .user.utils import smart_display_name
 
 APP_PASSWORD_LENGTH = 16
 
@@ -195,6 +196,9 @@ def create_app(test_config=None):
     # Initialize extensions
     mail.init_app(app)
     csrf.init_app(app)
+
+    # Register filters
+    app.template_filter("smart_display_name")(smart_display_name)
 
     # Register blueprints
     app.register_blueprint(auth_bp.bp)
