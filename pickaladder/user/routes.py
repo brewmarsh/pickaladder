@@ -1,8 +1,11 @@
 """Routes for the user blueprint."""
 
+from __future__ import annotations
+
 import os
 import secrets
 import tempfile
+from typing import TYPE_CHECKING, Any
 
 from firebase_admin import auth, firestore, storage
 from flask import (
@@ -24,12 +27,15 @@ from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm
 from .utils import UserService
 
+if TYPE_CHECKING:
+    from flask.wrappers import Response
+
 
 class MockPagination:
     """A mock pagination object."""
 
     # TODO: Add type hints for Agent clarity
-    def __init__(self, items):
+    def __init__(self, items: list[Any]) -> None:
         """Initialize the mock pagination object."""
         self.items = items
         self.pages = 1
@@ -38,7 +44,7 @@ class MockPagination:
 # TODO: Add type hints for Agent clarity
 @bp.route("/edit_profile", methods=["GET", "POST"])
 @login_required
-def edit_profile():
+def edit_profile() -> str | Response:
     """Handle user profile updates for name, username, and email."""
     db = firestore.client()
     user_id = g.user["uid"]
@@ -112,7 +118,7 @@ def edit_profile():
 # TODO: Add type hints for Agent clarity
 @bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
-def dashboard():
+def dashboard() -> str | Response:
     """Render the user dashboard and handles profile updates.
 
     On GET, it displays the dashboard with the profile form.
@@ -170,7 +176,7 @@ def dashboard():
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:user_id>")
 @login_required
-def view_user(user_id):
+def view_user(user_id: str) -> str | Response:
     """Display a user's public profile."""
     db = firestore.client()
     profile_user_data = UserService.get_user_by_id(db, user_id)
@@ -224,7 +230,7 @@ def view_user(user_id):
 # TODO: Add type hints for Agent clarity
 @bp.route("/community")
 @login_required
-def view_community():
+def view_community() -> str | Response:
     """Render the community hub with friends, requests, and other users."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -264,7 +270,7 @@ def view_community():
 
 @bp.route("/users")
 @login_required
-def users():
+def users() -> str | Response:
     """List and allows searching for users."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -322,7 +328,7 @@ def users():
 # TODO: Add type hints for Agent clarity
 @bp.route("/send_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
-def send_friend_request(friend_id):
+def send_friend_request(friend_id: str) -> Response:
     """Send a friend request to another user."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -368,7 +374,7 @@ def send_friend_request(friend_id):
 # TODO: Add type hints for Agent clarity
 @bp.route("/friends")
 @login_required
-def friends():
+def friends() -> str | Response:
     """Display the user's friends and pending requests."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -426,7 +432,7 @@ def friends():
 # TODO: Add type hints for Agent clarity
 @bp.route("/accept_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
-def accept_friend_request(friend_id):
+def accept_friend_request(friend_id: str) -> Response:
     """Accept a friend request."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -463,7 +469,7 @@ def accept_friend_request(friend_id):
 # TODO: Add type hints for Agent clarity
 @bp.route("/decline_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
-def decline_friend_request(friend_id):
+def decline_friend_request(friend_id: str) -> Response:
     """Decline a friend request."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -500,7 +506,7 @@ def decline_friend_request(friend_id):
 # TODO: Add type hints for Agent clarity
 @bp.route("/api/dashboard")
 @login_required
-def api_dashboard():
+def api_dashboard() -> Response:
     """Provide dashboard data as JSON, including matches and group rankings."""
     db = firestore.client()
     user_id = g.user["uid"]
@@ -556,7 +562,7 @@ def api_dashboard():
 # TODO: Add type hints for Agent clarity
 @bp.route("/api/create_invite", methods=["POST"])
 @login_required
-def create_invite():
+def create_invite() -> Response:
     """Generate a unique invite token and stores it in Firestore."""
     db = firestore.client()
     user_id = g.user["uid"]

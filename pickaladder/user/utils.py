@@ -1,9 +1,15 @@
 """Utility functions for user management."""
 
+from __future__ import annotations
+
 import datetime
+from typing import TYPE_CHECKING, Any
 
 from firebase_admin import firestore
 from flask import current_app
+
+if TYPE_CHECKING:
+    from google.cloud.firestore_v1.client import Client
 
 from pickaladder.utils import mask_email
 
@@ -11,7 +17,7 @@ from .models import User
 
 
 # TODO: Add type hints for Agent clarity
-def merge_ghost_user(db, real_user_ref, email):
+def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
     """Check for 'ghost' user with the given email and merge their data.
 
     This function should be called when a user registers or logs in for the first
@@ -107,7 +113,7 @@ def merge_ghost_user(db, real_user_ref, email):
         current_app.logger.error(f"Error merging ghost user: {e}")
 
 
-def wrap_user(user_data: dict | None, uid: str | None = None) -> User | None:
+def wrap_user(user_data: dict[str, Any] | None, uid: str | None = None) -> User | None:
     """Wrap a user dictionary in a User model object.
 
     Args:
@@ -128,7 +134,7 @@ def wrap_user(user_data: dict | None, uid: str | None = None) -> User | None:
     return User(data)
 
 
-def smart_display_name(user: dict) -> str:
+def smart_display_name(user: dict[str, Any]) -> str:
     """Return a smart display name for a user.
 
     If the user is a ghost user (username starts with 'ghost_'):
@@ -151,7 +157,7 @@ class UserService:
     """Service class for user-related operations."""
 
     @staticmethod
-    def get_user_by_id(db, user_id):
+    def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
         """Fetch a user by their ID."""
         user_ref = db.collection("users").document(user_id)
         user_doc = user_ref.get()
@@ -162,7 +168,7 @@ class UserService:
         return data
 
     @staticmethod
-    def get_friendship_info(db, current_user_id, target_user_id):
+    def get_friendship_info(db: Client, current_user_id: str, target_user_id: str) -> tuple[bool, bool]:
         """Check friendship status between two users."""
         friend_request_sent = is_friend = False
         if current_user_id != target_user_id:
@@ -182,7 +188,7 @@ class UserService:
         return is_friend, friend_request_sent
 
     @staticmethod
-    def get_user_friends(db, user_id, limit=None):
+    def get_user_friends(db: Client, user_id: str, limit: int | None = None) -> list[dict[str, Any]]:
         """Fetch a user's friends."""
         user_ref = db.collection("users").document(user_id)
         query = user_ref.collection("friends").where(
@@ -201,7 +207,7 @@ class UserService:
         return [{"id": doc.id, **doc.to_dict()} for doc in friend_docs if doc.exists]
 
     @staticmethod
-    def get_user_pending_requests(db, user_id):
+    def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch pending friend requests where the user is the recipient."""
         user_ref = db.collection("users").document(user_id)
         requests_query = (
@@ -219,7 +225,7 @@ class UserService:
         return [{"id": doc.id, **doc.to_dict()} for doc in request_docs if doc.exists]
 
     @staticmethod
-    def get_user_sent_requests(db, user_id):
+    def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch pending friend requests where the user is the initiator."""
         user_ref = db.collection("users").document(user_id)
         requests_query = (
@@ -237,8 +243,8 @@ class UserService:
         return [{"id": doc.id, **doc.to_dict()} for doc in request_docs if doc.exists]
 
     @staticmethod
-    def get_all_users(db, exclude_user_id, limit=20):
-        """Fetch a list of users, excluding the current user, sorted by creation date."""
+    def get_all_users(db: Client, exclude_user_id: str, limit: int = 20) -> list[dict[str, Any]]:
+        """Fetch a list of users, excluding the current user, sorted by date."""
         users_query = (
             db.collection("users")
             .order_by("createdAt", direction=firestore.Query.DESCENDING)
@@ -257,7 +263,7 @@ class UserService:
         return users
 
     @staticmethod
-    def get_h2h_stats(db, user_id_1, user_id_2):
+    def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] | None:
         """Fetch head-to-head statistics between two users."""
         my_wins = 0
         my_losses = 0
@@ -346,7 +352,7 @@ class UserService:
         return None
 
     @staticmethod
-    def get_user_matches(db, user_id):
+    def get_user_matches(db: Client, user_id: str) -> list[Any]:
         """Fetch all matches involving a user."""
         user_ref = db.collection("users").document(user_id)
         matches_as_p1 = (
@@ -380,7 +386,7 @@ class UserService:
         return list(unique_matches)
 
     @staticmethod
-    def calculate_stats(matches, user_id):
+    def calculate_stats(matches: list[Any], user_id: str) -> dict[str, Any]:
         """Calculate statistics (wins, losses, streak) from matches."""
         wins = 0
         losses = 0
@@ -465,7 +471,7 @@ class UserService:
         }
 
     @staticmethod
-    def get_group_rankings(db, user_id):
+    def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch group rankings for a user."""
         from pickaladder.group.utils import get_group_leaderboard  # noqa: PLC0415
 
@@ -513,7 +519,7 @@ class UserService:
         return group_rankings
 
     @staticmethod
-    def _get_player_info(player_ref, users_map):
+    def _get_player_info(player_ref: Any, users_map: dict[str, Any]) -> dict[str, Any]:
         """Return a dictionary with player info."""
         player_data = users_map.get(player_ref.id)
         if not player_data:
@@ -525,7 +531,9 @@ class UserService:
         }
 
     @staticmethod
-    def format_matches_for_profile(db, display_items, user_id, profile_user_data):
+    def format_matches_for_profile(
+        db: Client, display_items: list[dict[str, Any]], user_id: str, profile_user_data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Format matches for the public profile view."""
         # Collect all user refs needed for batch fetching
         needed_refs = set()
@@ -648,7 +656,9 @@ class UserService:
         return final_matches
 
     @staticmethod
-    def format_matches_for_dashboard(db, matches_docs, user_id):
+    def format_matches_for_dashboard(
+        db: Client, matches_docs: list[Any], user_id: str
+    ) -> list[dict[str, Any]]:
         """Format matches for the API dashboard view."""
         # Batch fetch user data for all players in the recent matches
         player_refs = set()
