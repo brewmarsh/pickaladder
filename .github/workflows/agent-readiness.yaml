@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -26,10 +28,15 @@ jobs:
       - name: Install Tool
         run: pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git
 
-      - name: Run Scorecard
-        # We use 'agent-score' as it is the command provided by the installed package.
-        # We scan the root '.' of the repository to evaluate agent readiness for this project.
-        run: agent-score score . --report readiness_report.md
+      - name: Run Agent Scorecard (Diff Mode)
+        run: |
+          # Ensure we have the base branch reference locally
+          git fetch origin ${{ github.base_ref || 'main' }}
+          # Run diff against the PR target (e.g. main or beta)
+          # Fallback to 'main' if not in a PR
+          TARGET_BRANCH="origin/${{ github.base_ref || 'main' }}"
+          echo "Running Agent Scorecard against $TARGET_BRANCH..."
+          agent-score score --diff $TARGET_BRANCH --format markdown > readiness_report.md
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
