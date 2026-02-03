@@ -4,6 +4,7 @@ from firebase_admin import firestore
 from flask import current_app
 
 from pickaladder.utils import mask_email
+
 from .models import User
 
 
@@ -104,7 +105,7 @@ def merge_ghost_user(db, real_user_ref, email):
         current_app.logger.error(f"Error merging ghost user: {e}")
 
 
-def wrap_user(user_data: dict, uid: str = None) -> User:
+def wrap_user(user_data: dict | None, uid: str | None = None) -> User | None:
     """Wrap a user dictionary in a User model object.
 
     Args:
@@ -112,7 +113,7 @@ def wrap_user(user_data: dict, uid: str = None) -> User:
         uid: Optional user ID if not present in user_data.
 
     Returns:
-        A User model object.
+        A User model object or None if user_data is None.
     """
     if user_data is None:
         return None

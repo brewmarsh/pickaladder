@@ -13,10 +13,12 @@ class User(UserDict):
         user_id = self.get("uid") or self.get("id") or self.get("userId")
 
         # If the user has a profile picture, use it
-        if self.get("profilePictureThumbnailUrl"):
-            return self.get("profilePictureThumbnailUrl")
-        if self.get("profilePictureUrl"):
-            return self.get("profilePictureUrl")
+        thumbnail = self.get("profilePictureThumbnailUrl")
+        if thumbnail:
+            return str(thumbnail)
+        profile_pic = self.get("profilePictureUrl")
+        if profile_pic:
+            return str(profile_pic)
 
         # Fallback to DiceBear API
         # Using brand colors: Green (2e7d32), Amber (ffc107), Blue (1976d2)
