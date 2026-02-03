@@ -1,0 +1,45 @@
+name: Agent Readiness Scorecard
+
+on:
+  pull_request:
+    branches:
+      - main
+      - beta
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *' # Nightly at 02:00 UTC on beta
+
+jobs:
+  agent-readiness:
+    name: Agent Readiness Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Tool
+        run: pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git
+
+      - name: Run Scorecard
+        # We use 'agent-score' as it is the command provided by the installed package.
+        # We scan the root '.' of the repository to evaluate agent readiness for this project.
+        run: agent-score score . --report readiness_report.md
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-readiness-report
+          path: readiness_report.md
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: agent-readiness-report
+          path: readiness_report.md
