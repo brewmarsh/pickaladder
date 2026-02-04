@@ -23,7 +23,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore_routes": patch(
-                "pickaladder.tournament.routes.firestore", new=self.mock_firestore_service
+                "pickaladder.tournament.routes.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
@@ -84,12 +85,14 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             "location": "Courtside",
             "matchType": "singles",
             "ownerRef": mock_user_doc,
-            "participants": []
+            "participants": [],
         }
         mock_tournament_doc.get.return_value = mock_tournament_snapshot
 
         # Mock UserService.get_user_friends
-        with patch("pickaladder.tournament.routes.UserService.get_user_friends") as mock_friends:
+        with patch(
+            "pickaladder.tournament.routes.UserService.get_user_friends"
+        ) as mock_friends:
             mock_friends.return_value = []
 
             response = self.client.post(
@@ -99,7 +102,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                     "name": "Summer Open",
                     "date": "2024-06-01",
                     "location": "Courtside",
-                    "match_type": "singles"
+                    "match_type": "singles",
                 },
                 follow_redirects=True,
             )
@@ -124,7 +127,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         mock_user_doc.get.return_value = mock_user_snapshot
 
         mock_query = mock_db.collection.return_value.where.return_value
-        mock_query.stream.return_value = [] # Empty list for simplicity
+        mock_query.stream.return_value = []  # Empty list for simplicity
 
         response = self.client.get(
             "/tournaments/",

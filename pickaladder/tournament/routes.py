@@ -37,9 +37,7 @@ def list_tournaments() -> Any:
 
     # For now, let's fetch tournaments where ownerRef is the user
     owned_tournaments = (
-        db.collection("tournaments")
-        .where("ownerRef", "==", user_ref)
-        .stream()
+        db.collection("tournaments").where("ownerRef", "==", user_ref).stream()
     )
 
     # And tournaments where user is a participant.
@@ -86,15 +84,15 @@ def create_tournament() -> Any:
                 "location": form.location.data,
                 "matchType": form.match_type.data,
                 "ownerRef": user_ref,
-                "participants": [
-                    {"userRef": user_ref, "status": "accepted"}
-                ],
+                "participants": [{"userRef": user_ref, "status": "accepted"}],
                 "participant_ids": [g.user["uid"]],
                 "createdAt": firestore.SERVER_TIMESTAMP,
             }
             _, new_tournament_ref = db.collection("tournaments").add(tournament_data)
             flash("Tournament created successfully.", "success")
-            return redirect(url_for(".view_tournament", tournament_id=new_tournament_ref.id))
+            return redirect(
+                url_for(".view_tournament", tournament_id=new_tournament_ref.id)
+            )
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
 
@@ -122,37 +120,46 @@ def view_tournament(tournament_id: str) -> Any:
     if participant_objs:
         user_refs = [obj["userRef"] for obj in participant_objs]
         user_docs = db.get_all(user_refs)
-        users_map = {doc.id: {**doc.to_dict(), "id": doc.id} for doc in user_docs if doc.exists}
+        users_map = {
+            doc.id: {**doc.to_dict(), "id": doc.id} for doc in user_docs if doc.exists
+        }
 
         for obj in participant_objs:
             user_id = obj["userRef"].id
             if user_id in users_map:
                 user_data = users_map[user_id]
-                participants.append({
-                    "user": user_data,
-                    "status": obj["status"],
-                    "display_name": smart_display_name(user_data)
-                })
+                participants.append(
+                    {
+                        "user": user_data,
+                        "status": obj["status"],
+                        "display_name": smart_display_name(user_data),
+                    }
+                )
 
     # Invite form
     invite_form = InvitePlayerForm()
     # Populate choices with friends not in the tournament
-    user_ref = db.collection("users").document(g.user["uid"])
     friends = UserService.get_user_friends(db, g.user["uid"])
     participant_ids = {obj["userRef"].id for obj in participant_objs}
 
     eligible_friends = [f for f in friends if f["id"] not in participant_ids]
-    invite_form.player.choices = [(f["id"], f.get("name") or f["id"]) for f in eligible_friends]
+    invite_form.player.choices = [
+        (f["id"], f.get("name") or f["id"]) for f in eligible_friends
+    ]
 
     if invite_form.validate_on_submit() and "player" in request.form:
         invited_user_id = invite_form.player.data
         invited_user_ref = db.collection("users").document(invited_user_id)
 
         try:
-            tournament_ref.update({
-                "participants": firestore.ArrayUnion([{"userRef": invited_user_ref, "status": "pending"}]),
-                "participant_ids": firestore.ArrayUnion([invited_user_id])
-            })
+            tournament_ref.update(
+                {
+                    "participants": firestore.ArrayUnion(
+                        [{"userRef": invited_user_ref, "status": "pending"}]
+                    ),
+                    "participant_ids": firestore.ArrayUnion([invited_user_id]),
+                }
+            )
             flash("Player invited successfully.", "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
         except Exception as e:
@@ -163,7 +170,7 @@ def view_tournament(tournament_id: str) -> Any:
         tournament=tournament_data,
         participants=participants,
         invite_form=invite_form,
-        is_owner=(tournament_data.get("ownerRef").id == g.user["uid"])
+        is_owner=(tournament_data.get("ownerRef").id == g.user["uid"]),
     )
 
 
