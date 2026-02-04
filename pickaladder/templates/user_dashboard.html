@@ -5,18 +5,29 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='toggle.css') }}">
 {% endblock %}
 {% block content %}
-    <div id="dashboard-content" style="display: none;">
+    <div id="dashboard-content">
         <div class="hero-stats-card">
             <button id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</button>
             <div class="hero-left-panel">
                  <img id="hero-profile-img" src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture-large">
                  <div class="hero-name-and-edit">
-                    <h2 id="hero-username-text"></h2>
+                    <h2 id="hero-username-text">{{ user.name if user.name else user.username }}</h2>
                  </div>
             </div>
             <div class="hero-right-panel">
                 <div id="vanity-stats-container" class="vanity-stats-container">
-                    <!-- Stats go here -->
+                    <div class="vanity-stat">
+                        <div class="stat-value">{{ stats.total_games }}</div>
+                        <div class="stat-label text-muted">Total Matches</div>
+                    </div>
+                    <div class="vanity-stat">
+                        <div class="stat-value">{{ stats.win_rate | round | int }}%</div>
+                        <div class="stat-label text-muted">Win %</div>
+                    </div>
+                    <div class="vanity-stat">
+                        <div class="stat-value">{{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}</div>
+                        <div class="stat-label text-muted">Current Streak</div>
+                    </div>
                 </div>
                 <a href="{{ url_for('match.record_match') }}" class="btn btn-primary">Record a Match</a>
             </div>
@@ -28,7 +39,44 @@
                         <h3>Recent Activity</h3>
                     </div>
                     <div id="latest-games-feed">
-                        <!-- Game cards will be dynamically inserted here -->
+                        {% for match in matches %}
+                            {% set is_win = match.user_result == 'win' %}
+                            {% set is_loss = match.user_result == 'loss' %}
+                            {% set result_class = 'game-won' if is_win else ('game-lost' if is_loss else '') %}
+
+                            <div class="game-card {{ result_class }}">
+                                <div class="game-date">
+                                    {% if match.date and match.date != 'N/A' %}
+                                        {% if match.date is string %}
+                                            {{ match.date }}
+                                        {% else %}
+                                            {{ match.date.strftime('%b %d, %Y') }}
+                                        {% endif %}
+                                    {% else %}
+                                        Date N/A
+                                    {% endif %}
+                                </div>
+                                <div class="game-opponent">
+                                    vs
+                                    {% set user_id = user.id if user.id else user.uid %}
+                                    {% set is_player1 = (match.player1.id == user_id) if match.player1 is mapping else (user_id in match.player1|map(attribute='id')) %}
+                                    {% set opponent_team = match.player2 if is_player1 else match.player1 %}
+
+                                    {% if opponent_team is iterable and opponent_team is not mapping %}
+                                        {% for p in opponent_team %}
+                                            <a href="{{ url_for('user.view_user', user_id=p.id) }}">{{ p.username }}</a>{% if not loop.last %} & {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <a href="{{ url_for('user.view_user', user_id=opponent_team.id) }}">{{ opponent_team.username }}</a>
+                                    {% endif %}
+                                </div>
+                                <div class="game-score">
+                                    {{ [match.player1_score, match.player2_score] | max }}-{{ [match.player1_score, match.player2_score] | min }}
+                                </div>
+                            </div>
+                        {% else %}
+                            <p>No recent games to display.</p>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -44,7 +92,26 @@
                                 </tr>
                             </thead>
                             <tbody id="friend-requests-body">
-                                <!-- Friend requests will be inserted here by JavaScript -->
+                                {% for request in requests %}
+                                    <tr>
+                                        <td data-label="Username">
+                                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}'s thumbnail" class="profile-picture-thumbnail avatar" style="vertical-align: middle; margin-right: 10px;">
+                                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
+                                        </td>
+                                        <td data-label="Actions" style="text-align: right;">
+                                            <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn">Accept</button>
+                                            </form>
+                                            <form action="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-danger">Decline</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="100%">No pending friend requests.</td></tr>
+                                {% endfor %}
                             </tbody>
                         </table>
                     </div>
@@ -59,14 +126,55 @@
                                 </tr>
                             </thead>
                             <tbody id="friends-body">
-                                <!-- Friends will be inserted here by JavaScript -->
+                                {% for friend in friends %}
+                                    <tr>
+                                        <td data-label="Username">
+                                            <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}'s thumbnail" class="profile-picture-thumbnail avatar" style="vertical-align: middle; margin-right: 10px;">
+                                            <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
+                                        </td>
+                                        <td data-label="DUPR Rating">{{ friend.duprRating or 'N/A' }}</td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="100%">You have no friends yet.</td></tr>
+                                {% endfor %}
                             </tbody>
                         </table>
                     </div>
 
                     <h3 style="margin-top: 20px;">My Groups</h3>
                     <div id="group-rankings-container">
-                        <!-- Group ranking cards will be dynamically inserted here -->
+                        {% for ranking in group_rankings %}
+                            <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}" class="group-ranking-card">
+                                <div class="group-ranking-card-header">
+                                    <span class="group-name">{{ ranking.group_name }}</span>
+                                    <span class="group-rank">Rank: {{ ranking.rank or 'N/A' }}</span>
+                                </div>
+                                <div class="group-ranking-card-body">
+                                    {% if ranking.rank == 1 %}
+                                        <div class="rank-display">👑</div><div class="rank-text">Reigning Champion</div>
+                                    {% elif ranking.rank and ranking.rank > 1 %}
+                                        <div class="points-to-overtake">
+                                            <strong>{{ "%.2f"|format(ranking.points_to_overtake) }}</strong>
+                                            <span class="points-label">points to overtake <strong>{{ ranking.player_above }}</strong></span>
+                                        </div>
+                                    {% else %}
+                                        <div class="rank-display">-</div><div class="rank-text">No rank yet</div>
+                                    {% endif %}
+                                </div>
+                                <div class="group-ranking-card-footer">
+                                    <span class="form-preview-label">Form:</span>
+                                    <div class="form-preview">
+                                        {% for result in ranking.form %}
+                                            <span class="form-indicator {{ result }}"></span>
+                                        {% else %}
+                                            No recent matches
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </a>
+                        {% else %}
+                            <p>You are not a member of any groups.</p>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -82,8 +190,8 @@
                         {{ form.profile_picture(class="form-control", accept="image/*") }}
                     </div>
                 </div>
-                <h4 id="user-username"></h4>
-                <p><strong>Email:</strong> <span id="user-email"></span></p>
+                <h4 id="user-username">@{{ user.username }}</h4>
+                <p><strong>Email:</strong> <span id="user-email">{{ user.email }}</span></p>
 
                 <div class="form-group">
                     {{ form.dupr_rating.label(for="dupr_rating_input") }}
@@ -104,225 +212,11 @@
         </div>
     </div>
 
-    <div id="loader" class="loader-container">
-        <div class="loader"></div>
-    </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const loader = document.getElementById('loader');
-    const dashboardContent = document.getElementById('dashboard-content');
-
-    // URLs that will be used in the templates
-    const urls = {
-        view_user: (userId) => `/user/${userId}`,
-        view_group: (groupId) => `/group/${groupId}`,
-        accept_request: (friendId) => `/user/accept_friend_request/${friendId}`,
-        decline_request: (friendId) => `/user/decline_friend_request/${friendId}`,
-        profile_picture: (userId) => `/user/profile_picture/${userId}`
-    };
-
-    function renderUserInfo(user) {
-        document.getElementById('user-username').textContent = `@${user.username}`;
-        document.getElementById('user-email').textContent = user.email;
-        document.getElementById('dupr_rating_input').value = user.duprRating || '';
-        document.querySelector('input[name="dark_mode"]').checked = user.dark_mode;
-    }
-
-    function renderHeroStats(user, stats) {
-        const seed = user.uid || user.id || "default";
-        const diceBearUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&backgroundColor=2e7d32,ffc107,1976d2`;
-        document.getElementById('hero-profile-img').src = user.profilePictureUrl || diceBearUrl;
-        document.getElementById('hero-username-text').textContent = user.name || user.username;
-
-        const statsContainer = document.getElementById('vanity-stats-container');
-        statsContainer.innerHTML = `
-            <div class="vanity-stat">
-                <div class="stat-value">${stats.total_matches}</div>
-                <div class="stat-label text-muted">Total Matches</div>
-            </div>
-            <div class="vanity-stat">
-                <div class="stat-value">${stats.win_percentage.toFixed(0)}%</div>
-                <div class="stat-label text-muted">Win %</div>
-            </div>
-            <div class="vanity-stat">
-                <div class="stat-value">${stats.current_streak}</div>
-                <div class="stat-label text-muted">Current Streak</div>
-            </div>
-        `;
-    }
-
-    function renderTable(tbodyId, items, rowTemplate, noDataMessage) {
-        const tbody = document.getElementById(tbodyId);
-        tbody.innerHTML = ''; // Clear existing content
-        if (items.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="100%">${noDataMessage}</td></tr>`;
-            return;
-        }
-        items.forEach(item => {
-            tbody.insertAdjacentHTML('beforeend', rowTemplate(item));
-        });
-    }
-
-    const csrf_token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    const requestRowTemplate = (request) => {
-        const seed = request.id || "default";
-        const diceBearUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}&backgroundColor=2e7d32,ffc107,1976d2`;
-        const avatarUrl = request.thumbnail_url || request.profilePictureUrl || diceBearUrl;
-        return `
-        <tr>
-            <td data-label="Username">
-                <img src="${avatarUrl}" alt="${request.username}'s thumbnail" class="profile-picture-thumbnail avatar" style="vertical-align: middle; margin-right: 10px;">
-                <a href="${urls.view_user(request.id)}">${request.username}</a>
-            </td>
-            <td data-label="Actions" style="text-align: right;">
-                <form action="${urls.accept_request(request.id)}" method="post" style="display: inline;">
-                    <input type="hidden" name="csrf_token" value="${csrf_token}">
-                    <button type="submit" class="btn">Accept</button>
-                </form>
-                <form action="${urls.decline_request(request.id)}" method="post" style="display: inline;">
-                    <input type="hidden" name="csrf_token" value="${csrf_token}">
-                    <button type="submit" class="btn btn-danger">Decline</button>
-                </form>
-            </td>
-        </tr>
-    `;
-    };
-
-    const friendRowTemplate = (friend) => `
-        <tr>
-            <td data-label="Username"><a href="${urls.view_user(friend.id)}">${friend.username}</a></td>
-            <td data-label="DUPR Rating">${friend.dupr_rating || 'N/A'}</td>
-        </tr>
-    `;
-
-    function renderGroupRankings(rankings) {
-        const container = document.getElementById('group-rankings-container');
-        if (rankings.length === 0) {
-            container.innerHTML = '<p>You are not a member of any groups.</p>';
-            return;
-        }
-
-        rankings.forEach(ranking => {
-            let rankContent;
-            if (ranking.rank === 1) {
-                rankContent = `<div class="rank-display">👑</div><div class="rank-text">Reigning Champion</div>`;
-            } else if (ranking.rank > 1) {
-                rankContent = `
-                    <div class="points-to-overtake">
-                        <strong>${ranking.points_to_overtake.toFixed(2)}</strong>
-                        <span class="points-label">points to overtake <strong>${ranking.player_above}</strong></span>
-                    </div>
-                `;
-            } else {
-                 rankContent = `<div class="rank-display">-</div><div class="rank-text">No rank yet</div>`;
-            }
-
-            const formIndicators = (ranking.form || []).map(result =>
-                `<span class="form-indicator ${result}"></span>`
-            ).join('');
-
-            const card = `
-                <a href="${urls.view_group(ranking.group_id)}" class="group-ranking-card">
-                    <div class="group-ranking-card-header">
-                        <span class="group-name">${ranking.group_name}</span>
-                        <span class="group-rank">Rank: ${ranking.rank || 'N/A'}</span>
-                    </div>
-                    <div class="group-ranking-card-body">
-                        ${rankContent}
-                    </div>
-                    <div class="group-ranking-card-footer">
-                        <span class="form-preview-label">Form:</span>
-                        <div class="form-preview">
-                            ${formIndicators || 'No recent matches'}
-                        </div>
-                    </div>
-                </a>
-            `;
-            container.insertAdjacentHTML('beforeend', card);
-        });
-    }
-
-    function formatMatchDate(dateString) {
-        if (!dateString || dateString === 'N/A') {
-            return 'Date N/A';
-        }
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    }
-
-    function renderLatestGames(matches, userId) {
-        const feed = document.getElementById('latest-games-feed');
-        if (matches.length === 0) {
-            feed.innerHTML = '<p>No recent games to display.</p>';
-            return;
-        }
-
-        feed.innerHTML = ''; // Clear feed
-
-        matches.forEach(match => {
-            const isPlayer1 = Array.isArray(match.player1)
-                ? match.player1.some(p => p.id === userId)
-                : match.player1.id === userId;
-
-            const opponentTeam = isPlayer1 ? match.player2 : match.player1;
-
-            const formatTeamNames = (team) => {
-                const wrapLink = (p) => `<a href="\${urls.view_user(p.id)}">\${p.username}</a>`;
-                if (Array.isArray(team)) {
-                    return team.map(wrapLink).join(' & ');
-                } else {
-                    return wrapLink(team);
-                }
-            };
-
-            const opponentDisplay = formatTeamNames(opponentTeam);
-            const winnerScore = Math.max(match.player1_score, match.player2_score);
-            const loserScore = Math.min(match.player1_score, match.player2_score);
-
-            const scoreResultClass = match.user_result === 'win' ? 'game-won' : (match.user_result === 'loss' ? 'game-lost' : '');
-
-            const card = `
-                <div class="game-card ${scoreResultClass}">
-                    <div class="game-date">${formatMatchDate(match.date)}</div>
-                    <div class="game-opponent">vs ${opponentDisplay}</div>
-                    <div class="game-score">${winnerScore}-${loserScore}</div>
-                </div>
-            `;
-            feed.insertAdjacentHTML('beforeend', card);
-        });
-    }
-
-    fetch('/user/api/dashboard')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            renderUserInfo(data.user);
-            renderHeroStats(data.user, data.stats);
-            renderTable('friend-requests-body', data.requests, requestRowTemplate, 'No pending friend requests.');
-            renderTable('friends-body', data.friends, friendRowTemplate, 'You have no friends yet.');
-            renderLatestGames(data.matches, data.user.id);
-            renderGroupRankings(data.group_rankings);
-
-            // Hide loader and show content
-            loader.style.display = 'none';
-            dashboardContent.style.display = 'block';
-        })
-        .catch(error => {
-            console.error('Error fetching dashboard data:', error);
-            loader.innerHTML = '<p class="alert alert-danger">Could not load dashboard data. Please try again later.</p>';
-        });
-
     // Preview profile picture
     const profilePictureInput = document.querySelector('input[name="profile_picture"]');
     const profilePictureImg = document.getElementById('profile-picture-img');
