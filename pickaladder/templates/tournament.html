@@ -43,10 +43,10 @@
                             <form method="POST">
                                 {{ invite_form.csrf_token }}
                                 <div class="form-group">
-                                    {{ invite_form.player.label(class="form-label") }}
-                                    {{ invite_form.player(class="form-input") }}
+                                    {{ invite_form.user_id.label(class="form-label") }}
+                                    {{ invite_form.user_id(class="form-input") }}
                                 </div>
-                                <button type="submit" name="player" class="btn btn-primary btn-block">Invite</button>
+                                <button type="submit" name="user_id" class="btn btn-primary btn-block">Invite</button>
                             </form>
                         </div>
                     </div>

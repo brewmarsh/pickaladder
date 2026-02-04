@@ -67,6 +67,11 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         # Mock user fetch for before_request
         mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
         mock_user_doc.id = MOCK_USER_ID
+
+        # Add safe defaults for new Firestore calls to avoid mock sorting issues
+        mock_user_doc.collection.return_value.stream.return_value = []
+        mock_db.collection.return_value.where.return_value.stream.return_value = []
+        mock_db.get_all.return_value = []
         mock_user_snapshot = MagicMock()
         mock_user_snapshot.exists = True
         mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
@@ -290,15 +295,39 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             },
         ]
 
+        # Mock friends sub-collection
+        mock_friends_query = mock_user_doc.collection.return_value.stream
+        mock_friend_doc = MagicMock()
+        mock_friend_doc.id = "friend1"
+        mock_friends_query.return_value = [mock_friend_doc]
+
+        # Mock groups query
+        mock_groups_query = mock_db.collection.return_value.where.return_value.stream
+        mock_groups_query.return_value = []
+
+        # Mock db.get_all
+        def mock_get_all(refs):
+            results = []
+            for ref in refs:
+                doc = MagicMock()
+                doc.exists = True
+                doc.id = ref.id
+                if ref.id == "friend1":
+                    doc.to_dict.return_value = {"username": "Friend One", "name": "Friend One"}
+                elif ref.id == "participant1":
+                    doc.to_dict.return_value = {"username": "Participant One", "name": "Participant One"}
+                else:
+                    doc.to_dict.return_value = {"username": ref.id, "name": ref.id}
+                results.append(doc)
+            return results
+
+        mock_db.get_all.side_effect = mock_get_all
+
         with (
-            patch(
-                "pickaladder.tournament.routes.UserService.get_user_friends"
-            ) as mock_get_friends,
             patch(
                 "pickaladder.tournament.routes.get_tournament_standings"
             ) as mock_standings,
         ):
-            mock_get_friends.return_value = friends_data
             mock_standings.return_value = []
 
             response = self.client.get(
