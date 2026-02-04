@@ -24,20 +24,34 @@ def _migrate_ghost_references(
     """Helper to update all Firestore references from a ghost user to a real user."""
     # 1 & 2: Update Singles Matches
     for field in ["player1Ref", "player2Ref"]:
-        for match in db.collection("matches").where(filter=firestore.FieldFilter(field, "==", ghost_ref)).stream():
+        for match in (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter(field, "==", ghost_ref))
+            .stream()
+        ):
             batch.update(match.reference, {field: real_user_ref})
 
     # 3 & 4: Update Doubles Matches (Array fields)
     for field in ["team1", "team2"]:
-        for match in db.collection("matches").where(filter=firestore.FieldFilter(field, "array_contains", ghost_ref)).stream():
+        for match in (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter(field, "array_contains", ghost_ref))
+            .stream()
+        ):
             batch.update(match.reference, {field: firestore.ArrayRemove([ghost_ref])})
-            batch.update(match.reference, {field: firestore.ArrayUnion([real_user_ref])})
+            batch.update(
+                match.reference, {field: firestore.ArrayUnion([real_user_ref])}
+            )
 
     # 5: Update Group Memberships
-    groups_query = db.collection("groups").where(filter=firestore.FieldFilter("members", "array_contains", ghost_ref))
+    groups_query = db.collection("groups").where(
+        filter=firestore.FieldFilter("members", "array_contains", ghost_ref)
+    )
     for group in groups_query.stream():
         batch.update(group.reference, {"members": firestore.ArrayRemove([ghost_ref])})
-        batch.update(group.reference, {"members": firestore.ArrayUnion([real_user_ref])})
+        batch.update(
+            group.reference, {"members": firestore.ArrayUnion([real_user_ref])}
+        )
 
 
 def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
@@ -55,7 +69,9 @@ def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
             return
 
         ghost_doc = ghost_docs[0]
-        current_app.logger.info(f"Merging ghost user {ghost_doc.id} to {real_user_ref.id}")
+        current_app.logger.info(
+            f"Merging ghost user {ghost_doc.id} to {real_user_ref.id}"
+        )
 
         batch = db.batch()
         _migrate_ghost_references(db, batch, ghost_doc.reference, real_user_ref)
@@ -293,9 +309,15 @@ class UserService:
         matches_ref = db.collection("matches")
         common_filters = [firestore.FieldFilter("status", "==", "completed")]
 
-        q1 = matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_1)).where(filter=firestore.FieldFilter("player2Id", "==", user_id_2))
-        q2 = matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_2)).where(filter=firestore.FieldFilter("player2Id", "==", user_id_1))
-        q3 = matches_ref.where(filter=firestore.FieldFilter("participants", "array_contains", user_id_1)).where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
+        q1 = matches_ref.where(
+            filter=firestore.FieldFilter("player1Id", "==", user_id_1)
+        ).where(filter=firestore.FieldFilter("player2Id", "==", user_id_2))
+        q2 = matches_ref.where(
+            filter=firestore.FieldFilter("player1Id", "==", user_id_2)
+        ).where(filter=firestore.FieldFilter("player2Id", "==", user_id_1))
+        q3 = matches_ref.where(
+            filter=firestore.FieldFilter("participants", "array_contains", user_id_1)
+        ).where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
 
         for q_obj in [q1, q2, q3]:
             final_q = q_obj
@@ -305,7 +327,9 @@ class UserService:
             for match in final_q.stream():
                 data = match.to_dict()
                 if data:
-                    w, l_count, p_diff = UserService._process_h2h_match(data, user_id_1, user_id_2)
+                    w, l_count, p_diff = UserService._process_h2h_match(
+                        data, user_id_1, user_id_2
+                    )
                     wins += w
                     losses += l_count
                     points += p_diff
@@ -349,7 +373,9 @@ class UserService:
         return list(unique_matches)
 
     @staticmethod
-    def _get_user_match_won_lost(match_data: dict[str, Any], user_id: str) -> tuple[bool, bool]:
+    def _get_user_match_won_lost(
+        match_data: dict[str, Any], user_id: str
+    ) -> tuple[bool, bool]:
         """Determine if the user won or lost the match, including handling of draws."""
         match_type = match_data.get("matchType", "singles")
         p1_score = match_data.get("player1Score", 0)
@@ -375,7 +401,9 @@ class UserService:
         return user_won, user_lost
 
     @staticmethod
-    def calculate_stats(matches: list[DocumentSnapshot], user_id: str) -> dict[str, Any]:
+    def calculate_stats(
+        matches: list[DocumentSnapshot], user_id: str
+    ) -> dict[str, Any]:
         """Calculate aggregate performance statistics from a list of matches."""
         wins = losses = 0
         processed = []
@@ -385,18 +413,22 @@ class UserService:
             if not match_data:
                 continue
 
-            user_won, user_lost = UserService._get_user_match_won_lost(match_data, user_id)
+            user_won, user_lost = UserService._get_user_match_won_lost(
+                match_data, user_id
+            )
             if user_won:
                 wins += 1
             elif user_lost:
                 losses += 1
 
-            processed.append({
-                "doc": match_doc,
-                "data": match_data,
-                "date": match_data.get("matchDate") or match_doc.create_time,
-                "user_won": user_won,
-            })
+            processed.append(
+                {
+                    "doc": match_doc,
+                    "data": match_data,
+                    "date": match_data.get("matchDate") or match_doc.create_time,
+                    "user_won": user_won,
+                }
+            )
 
         total = wins + losses
         win_rate = (wins / total) * 100 if total > 0 else 0
@@ -414,9 +446,13 @@ class UserService:
                     break
 
         return {
-            "wins": wins, "losses": losses, "total_games": total,
-            "win_rate": win_rate, "current_streak": current_streak,
-            "streak_type": streak_type, "processed_matches": processed,
+            "wins": wins,
+            "losses": losses,
+            "total_games": total,
+            "win_rate": win_rate,
+            "current_streak": current_streak,
+            "streak_type": streak_type,
+            "processed_matches": processed,
         }
 
     @staticmethod
@@ -698,6 +734,9 @@ class UserService:
 
             winner = UserService._get_match_winner_slot(match)
             user_result = UserService._get_user_match_result(match, user_id, winner)
+
+            p1_info: dict[str, Any] | list[dict[str, Any]]
+            p2_info: dict[str, Any] | list[dict[str, Any]]
 
             if match.get("matchType") == "doubles":
                 p1_info = [
