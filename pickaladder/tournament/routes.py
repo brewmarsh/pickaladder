@@ -124,21 +124,15 @@ def view_tournament(tournament_id: str) -> Any:
     participants = []
     participant_objs = tournament_data.get("participants", [])
     if participant_objs:
-        user_refs = [
-            obj["userRef"]
-            if "userRef" in obj
-            else db.collection("users").document(obj["user_id"])
-            for obj in participant_objs
-            if "userRef" in obj or "user_id" in obj
-        ]
+        user_refs = [obj["userRef"] for obj in participant_objs]
         user_docs = db.get_all(user_refs)
         users_map = {
             doc.id: {**doc.to_dict(), "id": doc.id} for doc in user_docs if doc.exists
         }
 
         for obj in participant_objs:
-            user_id = obj["userRef"].id if "userRef" in obj else obj.get("user_id")
-            if user_id and user_id in users_map:
+            user_id = obj["userRef"].id
+            if user_id in users_map:
                 user_data = users_map[user_id]
                 participants.append(
                     {
@@ -188,10 +182,7 @@ def view_tournament(tournament_id: str) -> Any:
         invitable_map[u["id"]] = u
 
     current_uid = g.user["uid"]
-    participant_ids = {
-        obj["userRef"].id if "userRef" in obj else obj.get("user_id")
-        for obj in participant_objs
-    }
+    participant_ids = {obj["userRef"].id for obj in participant_objs}
 
     invitable_users = [
         u
@@ -214,65 +205,6 @@ def view_tournament(tournament_id: str) -> Any:
         invitable_users=invitable_users,
         is_owner=(tournament_data.get("ownerRef").id == g.user["uid"]),
     )
-
-
-@bp.route("/<string:tournament_id>/invite", methods=["POST"])
-@login_required
-def invite_player(tournament_id: str) -> Any:
-    """Invite a player to the tournament."""
-    db = firestore.client()
-    tournament_ref = db.collection("tournaments").document(tournament_id)
-    tournament_doc = tournament_ref.get()
-
-    if not tournament_doc.exists:
-        flash("Tournament not found.", "danger")
-        return redirect(url_for(".list_tournaments"))
-
-    tournament_data = tournament_doc.to_dict()
-    if not tournament_data:
-        flash("Tournament data is empty.", "danger")
-        return redirect(url_for(".list_tournaments"))
-
-    # Security check: Ensure the current user is the organizer_id
-    organizer_id = tournament_data.get("organizer_id")
-    # Fallback to ownerRef if organizer_id is not set
-    if not organizer_id and "ownerRef" in tournament_data:
-        organizer_id = tournament_data["ownerRef"].id
-
-    if organizer_id != g.user["uid"]:
-        flash("Only the organizer can invite players.", "danger")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
-
-    user_id = request.form.get("user_id")
-    if not user_id:
-        flash("No user selected.", "danger")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
-
-    # Fetch invited user for the flash message
-    invited_user_doc = db.collection("users").document(user_id).get()
-    if not invited_user_doc.exists:
-        flash("User not found.", "danger")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
-
-    invited_user_data = invited_user_doc.to_dict() or {}
-    username = (
-        invited_user_data.get("username") or invited_user_data.get("name") or "User"
-    )
-
-    try:
-        tournament_ref.update(
-            {
-                "participants": firestore.ArrayUnion(
-                    [{"user_id": user_id, "status": "pending", "team_name": None}]
-                ),
-                "participant_ids": firestore.ArrayUnion([user_id]),
-            }
-        )
-        flash(f"Invite sent to {username}", "success")
-    except Exception as e:
-        flash(f"An unexpected error occurred: {e}", "danger")
-
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
 @bp.route("/<string:tournament_id>/complete", methods=["POST"])
@@ -397,8 +329,7 @@ def join_tournament(tournament_id: str) -> Any:
 
     updated = False
     for p in participants:
-        p_user_id = p["userRef"].id if "userRef" in p else p.get("user_id")
-        if p_user_id == g.user["uid"] and p["status"] == "pending":
+        if p["userRef"].id == g.user["uid"] and p["status"] == "pending":
             p["status"] = "accepted"
             updated = True
             break
