@@ -68,9 +68,29 @@ def view_groups() -> Any:
 
     # TODO: Add type hints for Agent clarity
     def enrich_group(group_doc: Any) -> dict[str, Any]:
-        """Attach owner data to a group dictionary."""
+        """Attach owner data and user stats to a group dictionary."""
         group_data: dict[str, Any] = group_doc.to_dict()
-        group_data["id"] = group_doc.id  # Add document ID
+        group_id = group_doc.id
+        group_data["id"] = group_id
+
+        # Member count
+        members = group_data.get("members", [])
+        group_data["member_count"] = len(members)
+
+        # Current User's Stats for this group
+        leaderboard = get_group_leaderboard(group_id)
+        current_user_id = g.user["uid"]
+        user_entry = next((p for p in leaderboard if p["id"] == current_user_id), None)
+
+        if user_entry:
+            group_data["user_rank"] = leaderboard.index(user_entry) + 1
+            group_data["user_record"] = (
+                f"{user_entry.get('wins', 0)}W - {user_entry.get('losses', 0)}L"
+            )
+        else:
+            group_data["user_rank"] = "N/A"
+            group_data["user_record"] = "0W - 0L"
+
         owner_ref = group_data.get("ownerRef")
         if owner_ref and owner_ref.id in owners_data:
             group_data["owner"] = owners_data[owner_ref.id]

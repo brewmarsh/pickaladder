@@ -1378,3 +1378,101 @@ input[type="submit"], .btn {
         padding: 12px;
     }
 }
+/* Rich Group Cards */
+.rich-group-card {
+    display: flex;
+    align-items: center;
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 16px;
+    margin-bottom: 16px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: 1px solid var(--border-color);
+}
+
+.rich-group-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.group-avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    object-fit: cover;
+    margin-right: 20px;
+}
+
+.rich-group-middle {
+    flex-grow: 1;
+}
+
+.group-name-bold {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.group-role {
+    font-size: 0.9rem;
+}
+
+.rich-group-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.rank-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    min-width: 50px;
+    text-align: center;
+}
+
+.rank-badge.rank-1 {
+    background-color: #FFD700;
+    color: #000;
+}
+
+.rank-badge.rank-2 {
+    background-color: #C0C0C0;
+    color: #000;
+}
+
+.rank-badge.rank-3 {
+    background-color: #CD7F32;
+    color: #fff;
+}
+
+.rank-badge.rank-other {
+    background-color: #E0E0E0;
+    color: var(--text-secondary-color);
+}
+
+.group-record {
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--text-secondary-color);
+}
+
+@media (max-width: 768px) {
+    .rich-group-card {
+        padding: 12px;
+    }
+    .group-avatar-large {
+        width: 60px;
+        height: 60px;
+        margin-right: 15px;
+    }
+    .group-name-bold {
+        font-size: 1.1rem;
+    }
+}

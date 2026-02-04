@@ -2,19 +2,17 @@
 
 from __future__ import annotations
 
+import importlib
 import os
 import threading
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
-import firebase_admin
 import pytest
 from mockfirestore import CollectionReference, MockFirestore
 from mockfirestore.document import DocumentReference, DocumentSnapshot
 from mockfirestore.query import Query
 from werkzeug.serving import make_server
-
-from pickaladder import create_app
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -319,13 +317,9 @@ def app_server(
     mock_db: EnhancedMockFirestore, mock_auth: MockAuthService
 ) -> Generator[str, None, None]:
     """Start Flask server with mocks."""
-    # Ensure firebase_admin submodules are loaded so we can patch them
-    # We don't import them directly to avoid side effects if not needed
-    try:
-        firebase_admin.auth  # noqa: F401
-        firebase_admin.firestore  # noqa: F401
-    except ImportError:
-        pass
+    # Ensure firebase_admin submodules are loaded for patching
+    importlib.import_module("firebase_admin.auth")
+    importlib.import_module("firebase_admin.firestore")
 
     p1 = patch("firebase_admin.initialize_app")
 
@@ -351,7 +345,8 @@ def app_server(
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
 
-    app = create_app({"TESTING": True})
+    pickaladder = importlib.import_module("pickaladder")
+    app = pickaladder.create_app({"TESTING": True})
 
     port = 5002
     server = make_server("localhost", port, app)

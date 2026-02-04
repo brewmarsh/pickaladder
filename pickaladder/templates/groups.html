@@ -6,27 +6,41 @@
     <a href="{{ url_for('group.create_group') }}" class="btn">Create New Group</a>
 </div>
 
-<div class="card">
+<div class="groups-list">
     <h3>Your Groups</h3>
-    <div class="table-container">
-        <table class="table responsive-table">
-            <tbody>
-                {% for membership in my_groups %}
-                <tr class="clickable-row" data-href="{{ url_for('group.view_group', group_id=membership.group.id) }}">
-                    <td data-label="">
-                        <img src="{{ membership.group.profilePictureUrl if membership.group.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="Group Picture" class="profile-picture-thumbnail">
-                        <strong>{{ membership.group.name }}</strong><br>
-                        <small>Owned by: {{ membership.group.owner.username }}</small>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="2">You are not a member of any groups.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    {% for membership in my_groups %}
+        {% set group = membership.group %}
+        <a href="{{ url_for('group.view_group', group_id=group.id) }}" class="rich-group-card">
+            <div class="rich-group-left">
+                <img src="{{ group.profilePictureUrl if group.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="Group Picture" class="group-avatar-large">
+            </div>
+            <div class="rich-group-middle">
+                <div class="group-name-bold">{{ group.name }}</div>
+                <div class="group-role text-muted">
+                    {% if group.ownerRef and group.ownerRef.id == g.user['uid'] %}
+                        Owner
+                    {% else %}
+                        Member
+                    {% endif %}
+                    • {{ group.member_count }} Members
+                </div>
+            </div>
+            <div class="rich-group-right">
+                <div class="rank-badge
+                    {% if group.user_rank == 1 %}rank-1
+                    {% elif group.user_rank == 2 %}rank-2
+                    {% elif group.user_rank == 3 %}rank-3
+                    {% else %}rank-other{% endif %}">
+                    #{{ group.user_rank }}
+                </div>
+                <div class="group-record">{{ group.user_record }}</div>
+            </div>
+        </a>
+    {% else %}
+        <div class="card">
+            <p>You are not a member of any groups.</p>
+        </div>
+    {% endfor %}
 </div>
 
 {% endblock %}
