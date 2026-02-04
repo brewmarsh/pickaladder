@@ -1,5 +1,7 @@
 """Tests for ProxyFix middleware configuration."""
 
+from __future__ import annotations
+
 import unittest
 
 from flask import request
@@ -10,20 +12,17 @@ from pickaladder import create_app
 class TestProxyFix(unittest.TestCase):
     """Test case for ProxyFix middleware."""
 
-    # TODO: Add type hints for Agent clarity
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up the test client."""
         self.app = create_app({"TESTING": True})
         self.client = self.app.test_client()
 
-    # TODO: Add type hints for Agent clarity
-    def test_https_scheme_with_proxy_headers(self):
+    def test_https_scheme_with_proxy_headers(self) -> None:
         """Test that X-Forwarded-Proto header is respected."""
 
-        # TODO: Add type hints for Agent clarity
         @self.app.route("/test_scheme")
-        def test_scheme():
-            """TODO: Add docstring for AI context."""
+        def test_scheme() -> str:
+            """Test route to check request scheme."""
             return request.scheme
 
         response = self.client.get(

@@ -1,8 +1,10 @@
 """Tests for the app factory."""
 
+from __future__ import annotations
+
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
 
@@ -10,10 +12,11 @@ from pickaladder import create_app
 class AppFirebaseTestCase(unittest.TestCase):
     """Test case for the app factory."""
 
-    # TODO: Add type hints for Agent clarity
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
-    def test_404_error_handler(self, mock_firestore_client, mock_init_app):
+    def test_404_error_handler(
+        self, mock_firestore_client: MagicMock, mock_init_app: MagicMock
+    ) -> None:
         """Test the custom 404 error handler."""
         app = create_app({"TESTING": True, "WTF_CSRF_ENABLED": False})
         with app.test_client() as client:
@@ -21,8 +24,7 @@ class AppFirebaseTestCase(unittest.TestCase):
             self.assertEqual(response.status_code, 404)
             self.assertIn(b"Page Not Found", response.data)
 
-    # TODO: Add type hints for Agent clarity
-    def test_mail_config_sanitization(self):
+    def test_mail_config_sanitization(self) -> None:
         """Test that MAIL_USERNAME and MAIL_PASSWORD are sanitized correctly."""
         env_vars = {
             "MAIL_USERNAME": '"user@example.com"',
@@ -35,8 +37,7 @@ class AppFirebaseTestCase(unittest.TestCase):
             self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
             self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
 
-    # TODO: Add type hints for Agent clarity
-    def test_mail_config_sanitization_single_quotes(self):
+    def test_mail_config_sanitization_single_quotes(self) -> None:
         """Test sanitization with single quotes."""
         env_vars = {
             "MAIL_USERNAME": "'user@example.com'",
@@ -49,8 +50,7 @@ class AppFirebaseTestCase(unittest.TestCase):
             self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
             self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
 
-    # TODO: Add type hints for Agent clarity
-    def test_mail_config_sanitization_no_quotes(self):
+    def test_mail_config_sanitization_no_quotes(self) -> None:
         """Test sanitization without quotes."""
         env_vars = {
             "MAIL_USERNAME": "user@example.com",
@@ -63,8 +63,7 @@ class AppFirebaseTestCase(unittest.TestCase):
             self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
             self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
 
-    # TODO: Add type hints for Agent clarity
-    def test_mail_config_empty_env_vars(self):
+    def test_mail_config_empty_env_vars(self) -> None:
         """Test that empty environment variables fall back to default values."""
         env_vars = {
             "MAIL_SERVER": "",

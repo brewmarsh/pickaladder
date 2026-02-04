@@ -1,10 +1,13 @@
 """End-to-end test scenarios."""
 
-from playwright.sync_api import expect
+from __future__ import annotations
+
+from typing import Any
+
+from playwright.sync_api import Page, expect
 
 
-# TODO: Add type hints for Agent clarity
-def test_user_journey(app_server, page_with_firebase, mock_db):
+def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -> None:
     """Run a complete user journey test."""
     page = page_with_firebase
     base_url = app_server

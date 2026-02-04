@@ -1,5 +1,7 @@
 """Tests for the group utils."""
 
+from __future__ import annotations
+
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -13,9 +15,8 @@ from pickaladder.group.utils import (
 class TestGroupUtils(unittest.TestCase):
     """Test case for the group utils."""
 
-    # TODO: Add type hints for Agent clarity
     @patch("pickaladder.group.utils.firestore")
-    def test_get_group_leaderboard(self, mock_firestore):
+    def test_get_group_leaderboard(self, mock_firestore: MagicMock) -> None:
         """Test the get_group_leaderboard function."""
         # Mock Firestore client
         mock_db = mock_firestore.client.return_value
@@ -88,7 +89,7 @@ class TestGroupUtils(unittest.TestCase):
         self.assertEqual(leaderboard[1]["losses"], 1)
         self.assertEqual(leaderboard[1]["avg_score"], 5.0)
 
-    def test_get_partnership_stats(self):
+    def test_get_partnership_stats(self) -> None:
         """Test the get_partnership_stats function with old and new formats."""
         # Legacy format (IDs)
         match1 = MagicMock()
@@ -132,7 +133,7 @@ class TestGroupUtils(unittest.TestCase):
         self.assertEqual(stats["losses"], 1)
 
     @patch("pickaladder.group.utils.firestore")
-    def test_get_head_to_head_stats(self, mock_firestore):
+    def test_get_head_to_head_stats(self, mock_firestore: MagicMock) -> None:
         """Test the get_head_to_head_stats function with mixed formats."""
         mock_db = mock_firestore.client.return_value
 

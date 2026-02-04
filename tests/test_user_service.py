@@ -1,25 +1,31 @@
+from __future__ import annotations
+
 import unittest
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 from pickaladder.user.utils import UserService
 
 
 class TestUserService(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.db = MagicMock()
         self.user_id = "test_user_id"
 
-    def test_get_user_by_id(self):
+    def test_get_user_by_id(self) -> None:
         mock_doc = MagicMock()
         mock_doc.exists = True
         mock_doc.to_dict.return_value = {"username": "testuser"}
         self.db.collection().document().get.return_value = mock_doc
 
         result = UserService.get_user_by_id(self.db, self.user_id)
-        self.assertEqual(result["id"], self.user_id)
-        self.assertEqual(result["username"], "testuser")
+        self.assertIsNotNone(result)
+        # Using cast to narrow type for Mypy without adding runtime logic
+        res = cast(dict[str, Any], result)
+        self.assertEqual(res["id"], self.user_id)
+        self.assertEqual(res["username"], "testuser")
 
-    def test_get_user_by_id_not_found(self):
+    def test_get_user_by_id_not_found(self) -> None:
         mock_doc = MagicMock()
         mock_doc.exists = False
         self.db.collection().document().get.return_value = mock_doc
@@ -27,7 +33,7 @@ class TestUserService(unittest.TestCase):
         result = UserService.get_user_by_id(self.db, self.user_id)
         self.assertIsNone(result)
 
-    def test_get_friendship_info_is_friend(self):
+    def test_get_friendship_info_is_friend(self) -> None:
         mock_doc = MagicMock()
         mock_doc.exists = True
         mock_doc.to_dict.return_value = {"status": "accepted"}
@@ -41,7 +47,7 @@ class TestUserService(unittest.TestCase):
         self.assertTrue(is_friend)
         self.assertFalse(request_sent)
 
-    def test_get_friendship_info_pending(self):
+    def test_get_friendship_info_pending(self) -> None:
         mock_doc = MagicMock()
         mock_doc.exists = True
         mock_doc.to_dict.return_value = {"status": "pending"}
@@ -55,7 +61,7 @@ class TestUserService(unittest.TestCase):
         self.assertFalse(is_friend)
         self.assertTrue(request_sent)
 
-    def test_get_user_friends(self):
+    def test_get_user_friends(self) -> None:
         mock_f1 = MagicMock()
         mock_f1.id = "friend1"
         self.db.collection().document().collection().where().stream.return_value = [
@@ -72,7 +78,7 @@ class TestUserService(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["id"], "friend1")
 
-    def test_calculate_stats(self):
+    def test_calculate_stats(self) -> None:
         mock_match1 = MagicMock()
         mock_match1.to_dict.return_value = {
             "matchType": "singles",
@@ -101,7 +107,7 @@ class TestUserService(unittest.TestCase):
         self.assertEqual(stats["streak_type"], "L")
 
     @patch("pickaladder.group.utils.get_group_leaderboard")
-    def test_get_group_rankings(self, mock_leaderboard):
+    def test_get_group_rankings(self, mock_leaderboard: MagicMock) -> None:
         mock_group = MagicMock()
         mock_group.id = "group1"
         mock_group.to_dict.return_value = {"name": "Test Group"}

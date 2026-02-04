@@ -1,8 +1,14 @@
 """Tests for the auth blueprint."""
 
+from __future__ import annotations
+
 import re
 import unittest
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
+
+if TYPE_CHECKING:
+    from re import Match
 
 # Pre-emptive imports to ensure patch targets exist.
 from pickaladder import create_app
@@ -17,8 +23,7 @@ MOCK_PASSWORD = "Password123"  # nosec
 class AuthFirebaseTestCase(unittest.TestCase):
     """Test case for the auth blueprint."""
 
-    # TODO: Add type hints for Agent clarity
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
         self.mock_auth_service = MagicMock()
         self.mock_firestore_service = MagicMock()
@@ -41,9 +46,8 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.app = create_app({"TESTING": True, "SERVER_NAME": "localhost"})
         self.client = self.app.test_client()
 
-    # TODO: Add type hints for Agent clarity
     @patch("pickaladder.auth.routes.send_email")
-    def test_successful_registration(self, mock_send_email):
+    def test_successful_registration(self, mock_send_email: MagicMock) -> None:
         """Test user registration with valid data."""
         # Mock the username check to return an empty list, simulating username is
         # available.
@@ -63,7 +67,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             register_page_response.data.decode(),
         )
         self.assertIsNotNone(csrf_token_match)
-        csrf_token = csrf_token_match.group(1)
+        csrf_token = cast("Match[str]", csrf_token_match).group(1)
 
         response = self.client.post(
             "/auth/register",
@@ -86,8 +90,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         ).set.assert_called_once()
         mock_send_email.assert_called_once()
 
-    # TODO: Add type hints for Agent clarity
-    def test_login_page_loads(self):
+    def test_login_page_loads(self) -> None:
         """Test that the login page loads correctly."""
         # Mock the admin check to prevent a redirect to /install.
         mock_db = self.mock_firestore_service.client.return_value
@@ -99,8 +102,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Login", response.data)
 
-    # TODO: Add type hints for Agent clarity
-    def test_session_login(self):
+    def test_session_login(self) -> None:
         """Test the session login endpoint."""
         # Mock the return value of verify_id_token
         self.mock_auth_service.verify_id_token.return_value = MOCK_USER_PAYLOAD
@@ -121,7 +123,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             login_page_response.data.decode(),
         )
         self.assertIsNotNone(csrf_token_match)
-        csrf_token = csrf_token_match.group(1)
+        csrf_token = cast("Match[str]", csrf_token_match).group(1)
 
         response = self.client.post(
             "/auth/session_login",
@@ -134,8 +136,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             self.assertEqual(sess["user_id"], MOCK_USER_ID)
             self.assertEqual(sess["is_admin"], False)
 
-    # TODO: Add type hints for Agent clarity
-    def test_install_admin_user(self):
+    def test_install_admin_user(self) -> None:
         """Test the creation of the initial admin user."""
         # Mock the admin check to simulate no admin user exists.
         mock_db = self.mock_firestore_service.client.return_value
@@ -153,9 +154,8 @@ class AuthFirebaseTestCase(unittest.TestCase):
         mock_user_doc = MagicMock()
         mock_settings_doc = MagicMock()
 
-        # TODO: Add type hints for Agent clarity
-        def document_side_effect(doc_id):
-            """TODO: Add docstring for AI context."""
+        def document_side_effect(doc_id: str) -> MagicMock:
+            """Firestore document side effect mock."""
             if doc_id == "admin_user_uid":
                 return mock_user_doc
             elif doc_id == "enforceEmailVerification":
@@ -172,7 +172,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             r'name="csrf_token" value="([^"]+)"', install_page_response.data.decode()
         )
         self.assertIsNotNone(csrf_token_match)
-        csrf_token = csrf_token_match.group(1)
+        csrf_token = cast("Match[str]", csrf_token_match).group(1)
 
         response = self.client.post(
             "/auth/install",
@@ -196,9 +196,8 @@ class AuthFirebaseTestCase(unittest.TestCase):
         mock_user_doc.set.assert_called_once()
         mock_settings_doc.set.assert_called_once_with({"value": True})
 
-    # TODO: Add type hints for Agent clarity
     @patch("pickaladder.auth.routes.send_email")
-    def test_registration_with_invite_token(self, mock_send_email):
+    def test_registration_with_invite_token(self, mock_send_email: MagicMock) -> None:
         """Test user registration with a valid invite token."""
         # Mock the username check to return an empty list, simulating username is
         # available.
@@ -231,7 +230,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             register_page_response.data.decode(),
         )
         self.assertIsNotNone(csrf_token_match)
-        csrf_token = csrf_token_match.group(1)
+        csrf_token = cast("Match[str]", csrf_token_match).group(1)
 
         response = self.client.post(
             "/auth/register",
@@ -255,8 +254,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             "test_invite_token"
         ).update.assert_called_once_with({"used": True})
 
-    # TODO: Add type hints for Agent clarity
-    def test_google_signin_new_user(self):
+    def test_google_signin_new_user(self) -> None:
         """Test that a new user signing in with Google has their account created."""
         # Mock the return value of verify_id_token
         self.mock_auth_service.verify_id_token.return_value = MOCK_USER_PAYLOAD
@@ -292,7 +290,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             login_page_response.data.decode(),
         )
         self.assertIsNotNone(csrf_token_match)
-        csrf_token = csrf_token_match.group(1)
+        csrf_token = cast("Match[str]", csrf_token_match).group(1)
 
         response = self.client.post(
             "/auth/session_login",
