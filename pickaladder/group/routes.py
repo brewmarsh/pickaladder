@@ -40,31 +40,12 @@ GUEST_USER = {"username": "Guest", "id": "unknown"}
 DOUBLES_TEAM_SIZE = 2
 
 
-@dataclass
-class Pagination:
-    """A simple data class to hold pagination data."""
-
-    items: list
-    pages: int
-
-
 # TODO: Add type hints for Agent clarity
 @bp.route("/", methods=["GET"])
 @login_required
 def view_groups() -> Any:
-    """Display a list of public groups and the user's groups."""
+    """Display the user's groups."""
     db = firestore.client()
-    search_term = request.args.get("search", "")
-
-    # Query for public groups
-    public_groups_query = db.collection("groups").where(
-        filter=firestore.FieldFilter("is_public", "==", True)
-    )
-    if search_term:
-        public_groups_query = public_groups_query.where(
-            filter=firestore.FieldFilter("name", ">=", search_term)
-        ).where(filter=firestore.FieldFilter("name", "<=", search_term + "\uf8ff"))
-    public_group_docs = list(public_groups_query.limit(20).stream())
 
     # Get user's groups
     user_ref = db.collection("users").document(g.user["uid"])
@@ -74,10 +55,9 @@ def view_groups() -> Any:
     my_group_docs = list(my_groups_query.stream())
 
     # --- Enrich groups with owner data ---
-    all_groups = public_group_docs + my_group_docs
     owner_refs = [
         group.to_dict().get("ownerRef")
-        for group in all_groups
+        for group in my_group_docs
         if group.to_dict().get("ownerRef")
     ]
     unique_owner_refs = list({ref for ref in owner_refs if ref})
@@ -99,19 +79,11 @@ def view_groups() -> Any:
             group_data["owner"] = GUEST_USER
         return group_data
 
-    enriched_public_groups = [enrich_group(doc) for doc in public_group_docs]
     enriched_my_groups = [{"group": enrich_group(doc)} for doc in my_group_docs]
 
-    # The template expects a pagination object with an 'items' attribute.
-    pagination_obj = Pagination(
-        items=enriched_public_groups,
-        pages=1,  # Assume a single page for now
-    )
     return render_template(
         "groups.html",
         my_groups=enriched_my_groups,
-        pagination=pagination_obj,
-        search_term=search_term,
     )
 
 

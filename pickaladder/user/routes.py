@@ -264,6 +264,7 @@ def view_community() -> Any:
     incoming_requests = UserService.get_user_pending_requests(db, current_user_id)
     outgoing_requests = UserService.get_user_sent_requests(db, current_user_id)
     all_users = UserService.get_all_users(db, current_user_id, limit=20)
+    public_groups = UserService.get_public_groups(db, limit=10)
 
     # Search logic: filter all lists if search_term is present
     if search_term:
@@ -280,12 +281,20 @@ def view_community() -> Any:
         outgoing_requests = [r for r in outgoing_requests if matches_search(r)]
         all_users = [u for u in all_users if matches_search(u)]
 
+        def group_matches_search(group_data: dict[str, Any]) -> bool:
+            name = group_data.get("name", "").lower()
+            description = group_data.get("description", "").lower()
+            return term in name or term in description
+
+        public_groups = [g for g in public_groups if group_matches_search(g)]
+
     return render_template(
         "community.html",
         friends=friends,
         incoming_requests=incoming_requests,
         outgoing_requests=outgoing_requests,
         all_users=all_users,
+        public_groups=public_groups,
         search_term=search_term,
         user=g.user,
     )

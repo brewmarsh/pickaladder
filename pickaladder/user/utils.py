@@ -698,6 +698,48 @@ class UserService:
         return final_matches
 
     @staticmethod
+    def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
+        """Fetch a list of public groups, enriched with owner data."""
+        # Query for public groups
+        public_groups_query = (
+            db.collection("groups")
+            .where(filter=firestore.FieldFilter("is_public", "==", True))
+            .order_by("createdAt", direction=firestore.Query.DESCENDING)
+            .limit(limit)
+        )
+        public_group_docs = list(public_groups_query.stream())
+
+        # Enrich groups with owner data
+        owner_refs = [
+            doc.to_dict().get("ownerRef")
+            for doc in public_group_docs
+            if doc.to_dict().get("ownerRef")
+        ]
+        unique_owner_refs = list({ref for ref in owner_refs if ref})
+
+        owners_data = {}
+        if unique_owner_refs:
+            owner_docs = db.get_all(unique_owner_refs)
+            owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
+
+        guest_user = {"username": "Guest", "id": "unknown"}
+
+        enriched_groups = []
+        for doc in public_group_docs:
+            data = doc.to_dict()
+            if data is None:
+                continue
+            data["id"] = doc.id
+            owner_ref = data.get("ownerRef")
+            if owner_ref and owner_ref.id in owners_data:
+                data["owner"] = owners_data[owner_ref.id]
+            else:
+                data["owner"] = guest_user
+            enriched_groups.append(data)
+
+        return enriched_groups
+
+    @staticmethod
     def format_matches_for_dashboard(
         db: Client, matches_docs: list[Any], user_id: str
     ) -> list[dict[str, Any]]:
