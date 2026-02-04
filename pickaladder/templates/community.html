@@ -19,6 +19,43 @@
         </div>
     </form>
 
+    {% if pending_tournament_invites %}
+    <div class="card tournament-invites-section" style="margin-bottom: 40px; border-left: 6px solid var(--primary-brand);">
+        <h3>Tournament Invites</h3>
+        <div class="table-container">
+            <table class="table responsive-table">
+                <thead>
+                    <tr>
+                        <th>Tournament</th>
+                        <th>Date</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invite in pending_tournament_invites %}
+                        <tr>
+                            <td data-label="Tournament">
+                                <a href="{{ url_for('tournament.view_tournament', tournament_id=invite.id) }}"><strong>{{ invite.name }}</strong></a>
+                            </td>
+                            <td data-label="Date">{{ invite.date }}</td>
+                            <td data-label="Actions" style="text-align: right;">
+                                <form action="{{ url_for('tournament.accept_invite', tournament_id=invite.id) }}" method="post" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn">Accept</button>
+                                </form>
+                                <form action="{{ url_for('tournament.decline_invite', tournament_id=invite.id) }}" method="post" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-danger">Decline</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
     {% if incoming_requests or outgoing_requests %}
     <div class="card requests-section" style="margin-bottom: 40px;">
         <h3>Friend Requests</h3>

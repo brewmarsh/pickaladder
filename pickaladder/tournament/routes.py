@@ -286,32 +286,88 @@ def complete_tournament(tournament_id: str) -> Any:
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
-@bp.route("/<string:tournament_id>/join", methods=["POST"])
+@bp.route("/<string:tournament_id>/accept", methods=["POST"])
 @login_required
-def join_tournament(tournament_id: str) -> Any:
+def accept_invite(tournament_id: str) -> Any:
     """Accept an invite to a tournament."""
     db = firestore.client()
     tournament_ref = db.collection("tournaments").document(tournament_id)
-    tournament_doc = tournament_ref.get()
 
-    if not tournament_doc.exists:
-        flash("Tournament not found.", "danger")
-        return redirect(url_for(".list_tournaments"))
+    @firestore.transactional
+    def update_in_transaction(transaction, tournament_ref):
+        snapshot = tournament_ref.get(transaction=transaction)
+        if not snapshot.exists:
+            return False
 
-    tournament_data = tournament_doc.to_dict()
-    participants = tournament_data.get("participants", [])
+        participants = snapshot.get("participants")
+        updated = False
+        for p in participants:
+            if p["userRef"].id == g.user["uid"] and p["status"] == "pending":
+                p["status"] = "accepted"
+                updated = True
+                break
 
-    updated = False
-    for p in participants:
-        if p["userRef"].id == g.user["uid"] and p["status"] == "pending":
-            p["status"] = "accepted"
-            updated = True
-            break
+        if updated:
+            transaction.update(tournament_ref, {"participants": participants})
+            return True
+        return False
 
-    if updated:
-        tournament_ref.update({"participants": participants})
-        flash("You have joined the tournament!", "success")
+    success = update_in_transaction(db.transaction(), tournament_ref)
+
+    if success:
+        flash("You have accepted the tournament invite!", "success")
     else:
-        flash("No pending invitation found.", "warning")
+        flash("Invite not found or already accepted.", "warning")
 
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    return redirect(request.referrer or url_for("user.dashboard"))
+
+
+@bp.route("/<string:tournament_id>/decline", methods=["POST"])
+@login_required
+def decline_invite(tournament_id: str) -> Any:
+    """Decline an invite to a tournament."""
+    db = firestore.client()
+    tournament_ref = db.collection("tournaments").document(tournament_id)
+
+    @firestore.transactional
+    def update_in_transaction(transaction, tournament_ref):
+        snapshot = tournament_ref.get(transaction=transaction)
+        if not snapshot.exists:
+            return False
+
+        participants = snapshot.get("participants")
+        participant_ids = snapshot.get("participant_ids")
+
+        new_participants = [
+            p
+            for p in participants
+            if not (p["userRef"].id == g.user["uid"] and p["status"] == "pending")
+        ]
+
+        if len(new_participants) < len(participants):
+            new_participant_ids = [uid for uid in participant_ids if uid != g.user["uid"]]
+            transaction.update(
+                tournament_ref,
+                {
+                    "participants": new_participants,
+                    "participant_ids": new_participant_ids,
+                },
+            )
+            return True
+        return False
+
+    success = update_in_transaction(db.transaction(), tournament_ref)
+
+    if success:
+        flash("You have declined the tournament invite.", "info")
+    else:
+        flash("Invite not found.", "warning")
+
+    return redirect(request.referrer or url_for("user.dashboard"))
+
+
+@bp.route("/<string:tournament_id>/join", methods=["POST"])
+@login_required
+def join_tournament(tournament_id: str) -> Any:
+    """Accept an invite to a tournament (legacy)."""
+    return accept_invite(tournament_id)

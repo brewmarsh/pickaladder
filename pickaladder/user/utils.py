@@ -213,6 +213,27 @@ class UserService:
         return results
 
     @staticmethod
+    def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
+        """Fetch pending tournament invites for a user."""
+        tournaments_query = (
+            db.collection("tournaments")
+            .where(filter=firestore.FieldFilter("participant_ids", "array_contains", user_id))
+            .stream()
+        )
+
+        pending_invites = []
+        for doc in tournaments_query:
+            data = doc.to_dict()
+            if data:
+                participants = data.get("participants", [])
+                for p in participants:
+                    if p["userRef"].id == user_id and p["status"] == "pending":
+                        data["id"] = doc.id
+                        pending_invites.append(data)
+                        break
+        return pending_invites
+
+    @staticmethod
     def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch pending friend requests where the user is the initiator."""
         user_ref = db.collection("users").document(user_id)
