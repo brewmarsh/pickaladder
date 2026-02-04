@@ -117,14 +117,14 @@ def view_tournament(tournament_id: str) -> Any:
     if tournament_data is None:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
-    
+
     tournament_data["id"] = tournament_doc.id
 
     # Format Date
     raw_date = tournament_data.get("date")
     if hasattr(raw_date, "to_datetime"):
-        tournament_data["date_display"] = raw_date.to_datetime().strftime('%b %d, %Y')
-    
+        tournament_data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
+
     match_type = tournament_data.get("matchType", "singles")
     status = tournament_data.get("status", "Active")
 
@@ -133,23 +133,31 @@ def view_tournament(tournament_id: str) -> Any:
     participant_objs = tournament_data.get("participants", [])
     if participant_objs:
         user_refs = [
-            obj["userRef"] if "userRef" in obj else db.collection("users").document(obj["user_id"])
+            (
+                obj["userRef"]
+                if "userRef" in obj
+                else db.collection("users").document(obj["user_id"])
+            )
             for obj in participant_objs
             if "userRef" in obj or "user_id" in obj
         ]
         user_docs = db.get_all(user_refs)
-        users_map = {doc.id: {**doc.to_dict(), "id": doc.id} for doc in user_docs if doc.exists}
+        users_map = {
+            doc.id: {**doc.to_dict(), "id": doc.id} for doc in user_docs if doc.exists
+        }
 
         for obj in participant_objs:
             uid = obj["userRef"].id if "userRef" in obj else obj.get("user_id")
             if uid and uid in users_map:
                 u_data = users_map[uid]
-                participants.append({
-                    "user": u_data,
-                    "status": obj.get("status", "pending"),
-                    "display_name": smart_display_name(u_data),
-                    "team_name": obj.get("team_name")
-                })
+                participants.append(
+                    {
+                        "user": u_data,
+                        "status": obj.get("status", "pending"),
+                        "display_name": smart_display_name(u_data),
+                        "team_name": obj.get("team_name"),
+                    }
+                )
 
     standings = get_tournament_standings(db, tournament_id, match_type)
     podium = standings[:3] if status == "Completed" else []
@@ -157,31 +165,45 @@ def view_tournament(tournament_id: str) -> Any:
     # Handle Invitations
     invite_form = InvitePlayerForm()
     friends = UserService.get_user_friends(db, g.user["uid"])
-    
+
     # Filter friends not already in tournament
     current_participant_ids = {
         obj["userRef"].id if "userRef" in obj else obj.get("user_id")
         for obj in participant_objs
     }
     invitable_users = [f for f in friends if f["id"] not in current_participant_ids]
-    invite_form.user_id.choices = [(u["id"], smart_display_name(u)) for u in invitable_users]
+    invite_form.user_id.choices = [
+        (u["id"], smart_display_name(u)) for u in invitable_users
+    ]
 
     if invite_form.validate_on_submit() and "user_id" in request.form:
         invited_uid = invite_form.user_id.data
         invited_ref = db.collection("users").document(invited_uid)
         try:
-            tournament_ref.update({
-                "participants": firestore.ArrayUnion([{"userRef": invited_ref, "status": "pending", "team_name": None}]),
-                "participant_ids": firestore.ArrayUnion([invited_uid]),
-            })
+            tournament_ref.update(
+                {
+                    "participants": firestore.ArrayUnion(
+                        [
+                            {
+                                "userRef": invited_ref,
+                                "status": "pending",
+                                "team_name": None,
+                            }
+                        ]
+                    ),
+                    "participant_ids": firestore.ArrayUnion([invited_uid]),
+                }
+            )
             flash("Player invited successfully.", "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
         except Exception as e:
             flash(f"Error sending invite: {e}", "danger")
 
     # Ownership check for UI
-    is_owner = tournament_data.get("organizer_id") == g.user["uid"] or \
-               (tournament_data.get("ownerRef") and tournament_data["ownerRef"].id == g.user["uid"])
+    is_owner = tournament_data.get("organizer_id") == g.user["uid"] or (
+        tournament_data.get("ownerRef")
+        and tournament_data["ownerRef"].id == g.user["uid"]
+    )
 
     return render_template(
         "tournament/view.html",
@@ -211,8 +233,10 @@ def edit_tournament(tournament_id: str) -> Any:
     tournament_data["id"] = tournament_id
 
     # Auth check
-    is_owner = tournament_data.get("organizer_id") == g.user["uid"] or \
-               (tournament_data.get("ownerRef") and tournament_data["ownerRef"].id == g.user["uid"])
+    is_owner = tournament_data.get("organizer_id") == g.user["uid"] or (
+        tournament_data.get("ownerRef")
+        and tournament_data["ownerRef"].id == g.user["uid"]
+    )
     if not is_owner:
         flash("Unauthorized.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
@@ -229,9 +253,16 @@ def edit_tournament(tournament_id: str) -> Any:
 
     form = TournamentForm()
     if form.validate_on_submit():
+        date_val = form.date.data
+        if date_val is None:
+            flash("Date is required.", "danger")
+            return render_template(
+                "tournament/edit.html", form=form, tournament=tournament_data
+            )
+
         update_data = {
             "name": form.name.data,
-            "date": datetime.datetime.combine(form.date.data, datetime.time.min),
+            "date": datetime.datetime.combine(date_val, datetime.time.min),
             "location": form.location.data,
         }
         if not is_ongoing:
@@ -240,7 +271,7 @@ def edit_tournament(tournament_id: str) -> Any:
         tournament_ref.update(update_data)
         flash("Tournament updated successfully.", "success")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
-    
+
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
         form.location.data = tournament_data.get("location")
@@ -249,7 +280,9 @@ def edit_tournament(tournament_id: str) -> Any:
         if hasattr(raw_date, "to_datetime"):
             form.date.data = raw_date.to_datetime().date()
 
-    return render_template("tournament/edit.html", form=form, tournament=tournament_data)
+    return render_template(
+        "tournament/edit.html", form=form, tournament=tournament_data
+    )
 
 
 @bp.route("/<string:tournament_id>/invite", methods=["POST"])
@@ -265,12 +298,14 @@ def invite_player(tournament_id: str) -> Any:
     invited_ref = db.collection("users").document(user_id)
     tournament_ref = db.collection("tournaments").document(tournament_id)
 
-    tournament_ref.update({
-        "participants": firestore.ArrayUnion(
-            [{"userRef": invited_ref, "status": "pending", "team_name": None}]
-        ),
-        "participant_ids": firestore.ArrayUnion([user_id]),
-    })
+    tournament_ref.update(
+        {
+            "participants": firestore.ArrayUnion(
+                [{"userRef": invited_ref, "status": "pending", "team_name": None}]
+            ),
+            "participant_ids": firestore.ArrayUnion([user_id]),
+        }
+    )
     flash("Invite sent!", "success")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
@@ -361,9 +396,7 @@ def invite_group(tournament_id: str) -> Any:
         batch.commit()
         flash(f"Success! Invited {count} members from {group_name}.", "success")
     else:
-        flash(
-            f"All members from '{group_name}' are already in the tournament.", "info"
-        )
+        flash(f"All members from '{group_name}' are already in the tournament.", "info")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
@@ -422,17 +455,26 @@ def decline_invite(tournament_id: str) -> Any:
         participant_ids = snapshot.get("participant_ids")
 
         new_participants = [
-            p for p in participants
-            if not ((p["userRef"].id if "userRef" in p else p.get("user_id")) == g.user["uid"] 
-                    and p["status"] == "pending")
+            p
+            for p in participants
+            if not (
+                (p["userRef"].id if "userRef" in p else p.get("user_id"))
+                == g.user["uid"]
+                and p["status"] == "pending"
+            )
         ]
 
         if len(new_participants) < len(participants):
-            new_participant_ids = [uid for uid in participant_ids if uid != g.user["uid"]]
-            transaction.update(t_ref, {
-                "participants": new_participants,
-                "participant_ids": new_participant_ids,
-            })
+            new_participant_ids = [
+                uid for uid in participant_ids if uid != g.user["uid"]
+            ]
+            transaction.update(
+                t_ref,
+                {
+                    "participants": new_participants,
+                    "participant_ids": new_participant_ids,
+                },
+            )
             return True
         return False
 
@@ -453,7 +495,7 @@ def complete_tournament(tournament_id: str) -> Any:
     db = firestore.client()
     tournament_ref = db.collection("tournaments").document(tournament_id)
     tournament_doc = tournament_ref.get()
-    
+
     if not tournament_doc.exists:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
@@ -484,10 +526,12 @@ def complete_tournament(tournament_id: str) -> Any:
                                 user=user,
                                 tournament=t_data,
                                 winner_name=winner_name,
-                                standings=standings[:3]
+                                standings=standings[:3],
                             )
                         except Exception as e:
-                            current_app.logger.error(f"Failed to email {user['email']}: {e}")
+                            current_app.logger.error(
+                                f"Failed to email {user['email']}: {e}"
+                            )
 
         flash("Tournament completed and results emailed!", "success")
     except Exception as e:

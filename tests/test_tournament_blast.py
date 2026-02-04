@@ -5,8 +5,6 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from firebase_admin import firestore
-
 from pickaladder import create_app
 from pickaladder.user.utils import _migrate_ghost_references
 
@@ -102,7 +100,7 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         mock_group_snapshot.to_dict.return_value = {
             "name": "Cool Group",
-            "members": [member1_ref, member2_ref]
+            "members": [member1_ref, member2_ref],
         }
         mock_group_ref.get.return_value = mock_group_snapshot
 
@@ -113,11 +111,11 @@ class TournamentBlastTestCase(unittest.TestCase):
         mock_tournament_snapshot.exists = True
         mock_tournament_snapshot.to_dict.return_value = {
             "name": "Summer Open",
-            "participant_ids": ["owner_id", "user_real"], # member1 already a participant
+            "participant_ids": ["owner_id", "user_real"],
             "participants": [
                 {"userRef": mock_owner_doc, "status": "accepted"},
-                {"userRef": member1_ref, "status": "pending"}
-            ]
+                {"userRef": member1_ref, "status": "pending"},
+            ],
         }
         mock_tournament_ref.get.return_value = mock_tournament_snapshot
 
@@ -134,7 +132,7 @@ class TournamentBlastTestCase(unittest.TestCase):
         member2_doc.to_dict.return_value = {
             "username": "ghost_123",
             "is_ghost": True,
-            "email": "ghost@example.com"
+            "email": "ghost@example.com",
         }
         member2_doc.reference = member2_ref
 
@@ -144,22 +142,20 @@ class TournamentBlastTestCase(unittest.TestCase):
         mock_batch = MagicMock()
         mock_db.batch.return_value = mock_batch
 
-        # Mock standigns for the view redirect (if needed, but follow_redirects=False is easier)
+        # Mock standings for the view redirect (follow_redirects=False is easier)
         response = self.client.post(
             f"/tournaments/{tournament_id}/invite_group",
             data={"group_id": group_id},
-            follow_redirects=False
+            follow_redirects=False,
         )
 
         self.assertEqual(response.status_code, 302)
         # Verify batch updates
         mock_db.batch.assert_called_once()
         mock_batch.update.assert_called_once()
-        update_args = mock_batch.update.call_args[0][1]
 
-        # Should only invite member2 (ghost) because member1 is already a participant
-        # Check participants
-        # In this environment, firestore is self.mock_firestore_service, so ArrayUnion is a mock.
+        # Should only invite member2 (ghost) because member1 already a participant
+        # In this environment, firestore is mocked, so ArrayUnion is a mock.
         self.mock_firestore_service.ArrayUnion.assert_called()
 
         # Find call for participants
@@ -199,13 +195,13 @@ class TournamentBlastTestCase(unittest.TestCase):
             "participant_ids": ["ghost_id", "other_id"],
             "participants": [
                 {"userRef": ghost_ref, "status": "pending", "email": "g@e.com"},
-                {"user_id": "other_id", "status": "accepted"}
-            ]
+                {"user_id": "other_id", "status": "accepted"},
+            ],
         }
 
         # Set up the query chain for tournaments
-        # _migrate_ghost_references calls db.collection("tournaments").where(...).stream()
-        # We need to distinguish it from "matches" and "groups"
+        # _migrate_ghost_references calls
+        # db.collection("tournaments").where(...).stream()
         def collection_side_effect(name):
             mock_coll = MagicMock()
             if name == "tournaments":
@@ -228,6 +224,7 @@ class TournamentBlastTestCase(unittest.TestCase):
                 break
 
         self.assertIsNotNone(tourney_update_call)
+        assert tourney_update_call is not None
         update_data = tourney_update_call[0][1]
 
         # Check participant_ids
@@ -244,6 +241,7 @@ class TournamentBlastTestCase(unittest.TestCase):
                 found_real = True
                 self.assertEqual(p.get("user_id"), "real_id")
         self.assertTrue(found_real)
+
 
 if __name__ == "__main__":
     unittest.main()

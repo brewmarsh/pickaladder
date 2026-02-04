@@ -56,7 +56,11 @@ def _migrate_ghost_references(
     # 6: Update Tournament Participants
     tournaments_query = (
         db.collection("tournaments")
-        .where(filter=firestore.FieldFilter("participant_ids", "array_contains", ghost_ref.id))
+        .where(
+            filter=firestore.FieldFilter(
+                "participant_ids", "array_contains", ghost_ref.id
+            )
+        )
         .stream()
     )
     for tournament in tournaments_query:
