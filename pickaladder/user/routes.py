@@ -134,6 +134,20 @@ def dashboard() -> Any:
         form.dupr_rating.data = user_data.get("duprRating")
         form.dark_mode.data = user_data.get("dark_mode")
 
+    # Fetch dashboard data for SSR
+    matches_docs = UserService.get_user_matches(db, user_id)
+    stats = UserService.calculate_stats(matches_docs, user_id)
+
+    # Prepare formatted matches (limit to 20)
+    recent_matches_items = stats["processed_matches"][:20]
+    recent_matches_docs = [m["doc"] for m in recent_matches_items]
+    matches = UserService.format_matches_for_dashboard(db, recent_matches_docs, user_id)
+
+    # Fetch friends, requests, and rankings
+    friends = UserService.get_user_friends(db, user_id)
+    requests_data = UserService.get_user_pending_requests(db, user_id)
+    group_rankings = UserService.get_group_rankings(db, user_id)
+
     if form.validate_on_submit():
         try:
             update_data: dict[str, Any] = {
@@ -170,7 +184,16 @@ def dashboard() -> Any:
             for error in errors:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
 
-    return render_template("user_dashboard.html", form=form, user=user_data)
+    return render_template(
+        "user_dashboard.html",
+        form=form,
+        user=user_data,
+        matches=matches,
+        stats=stats,
+        friends=friends,
+        requests=requests_data,
+        group_rankings=group_rankings,
+    )
 
 
 # TODO: Add type hints for Agent clarity
