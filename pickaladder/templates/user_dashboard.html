@@ -71,6 +71,9 @@
                                 </div>
                                 <div class="game-score">
                                     {{ match.player1_score }} - {{ match.player2_score }}
+                                    {% if match.tournament_name %}
+                                        <div class="badge badge-tournament">🏆 {{ match.tournament_name }}</div>
+                                    {% endif %}
                                 </div>
                             </div>
                         {% else %}

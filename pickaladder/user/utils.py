@@ -725,53 +725,84 @@ class UserService:
     ) -> list[dict[str, Any]]:
         """Enrich match documents with user and team data for dashboard display."""
         users_map, teams_map = UserService._fetch_match_entities(db, matches_docs)
+
+        # Batch fetch tournament names
+        tournament_ids = set()
+        for m in matches_docs:
+            m_data = m.to_dict()
+            if m_data and (tid := m_data.get("tournamentId")):
+                tournament_ids.add(tid)
+        tournaments_map: dict[str, dict[str, Any]] = {}
+        if tournament_ids:
+            tournament_refs = [
+                db.collection("tournaments").document(tid)
+                for tid in tournament_ids
+                if tid
+            ]
+            tournament_docs = db.get_all(tournament_refs)
+            for doc in tournament_docs:
+                if doc.exists and (d := doc.to_dict()):
+                    tournaments_map[doc.id] = d
+
         matches_data = []
 
         for match_doc in matches_docs:
-            match = match_doc.to_dict()
-            if match is None:
+            m_data = match_doc.to_dict()
+            if m_data is None:
                 continue
+            match_dict: dict[str, Any] = m_data
 
-            winner = UserService._get_match_winner_slot(match)
-            user_result = UserService._get_user_match_result(match, user_id, winner)
+            winner = UserService._get_match_winner_slot(match_dict)
+            user_result = UserService._get_user_match_result(
+                match_dict, user_id, winner
+            )
 
             p1_info: dict[str, Any] | list[dict[str, Any]]
             p2_info: dict[str, Any] | list[dict[str, Any]]
 
-            if match.get("matchType") == "doubles":
+            if match_dict.get("matchType") == "doubles":
                 p1_info = [
                     UserService._get_player_info(r, users_map)
-                    for r in match.get("team1", [])
+                    for r in match_dict.get("team1", [])
                 ]
                 p2_info = [
                     UserService._get_player_info(r, users_map)
-                    for r in match.get("team2", [])
+                    for r in match_dict.get("team2", [])
                 ]
             else:
-                p1_info = UserService._get_player_info(match["player1Ref"], users_map)
-                p2_info = UserService._get_player_info(match["player2Ref"], users_map)
+                p1_info = UserService._get_player_info(
+                    match_dict["player1Ref"], users_map
+                )
+                p2_info = UserService._get_player_info(
+                    match_dict["player2Ref"], users_map
+                )
 
             t1_name = "Team 1"
             t2_name = "Team 2"
-            if t1_ref := match.get("team1Ref"):
+            if t1_ref := match_dict.get("team1Ref"):
                 t1_name = teams_map.get(t1_ref.id, {}).get("name", "Team 1")
-            if t2_ref := match.get("team2Ref"):
+            if t2_ref := match_dict.get("team2Ref"):
                 t2_name = teams_map.get(t2_ref.id, {}).get("name", "Team 2")
+
+            tournament_name = None
+            if t_id := match_dict.get("tournamentId"):
+                tournament_name = tournaments_map.get(t_id, {}).get("name")
 
             matches_data.append(
                 {
                     "id": match_doc.id,
                     "player1": p1_info,
                     "player2": p2_info,
-                    "player1_score": match.get("player1Score", 0),
-                    "player2_score": match.get("player2Score", 0),
+                    "player1_score": m_data.get("player1Score", 0),
+                    "player2_score": m_data.get("player2Score", 0),
                     "winner": winner,
-                    "date": match.get("matchDate", "N/A"),
-                    "is_group_match": bool(match.get("groupId")),
-                    "match_type": match.get("matchType", "singles"),
+                    "date": m_data.get("matchDate", "N/A"),
+                    "is_group_match": bool(m_data.get("groupId")),
+                    "match_type": m_data.get("matchType", "singles"),
                     "user_result": user_result,
                     "team1_name": t1_name,
                     "team2_name": t2_name,
+                    "tournament_name": tournament_name,
                 }
             )
         return matches_data

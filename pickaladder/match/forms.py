@@ -1,7 +1,13 @@
 """Forms for the match blueprint."""
 
 from flask_wtf import FlaskForm  # type: ignore
-from wtforms import DateField, IntegerField, SelectField, ValidationError
+from wtforms import (
+    DateField,
+    HiddenField,
+    IntegerField,
+    SelectField,
+    ValidationError,
+)
 from wtforms.validators import DataRequired, InputRequired, Optional
 
 MIN_WINNING_SCORE = 11
@@ -26,6 +32,8 @@ class MatchForm(FlaskForm):
         "Opponent / Team 2 Score", validators=[InputRequired()]
     )
     match_date = DateField("Date", validators=[DataRequired()])
+    group_id = HiddenField("Group ID", validators=[Optional()])
+    tournament_id = HiddenField("Tournament ID", validators=[Optional()])
 
     # TODO: Add type hints for Agent clarity
     def validate_player1_score(self, field):
