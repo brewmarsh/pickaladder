@@ -113,9 +113,7 @@ def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
         current_app.logger.error(f"Error merging ghost user: {e}")
 
 
-def wrap_user(
-    user_data: dict[str, Any] | None, uid: str | None = None
-) -> User | None:
+def wrap_user(user_data: dict[str, Any] | None, uid: str | None = None) -> User | None:
     """Wrap a user dictionary in a User model object.
 
     Args:
