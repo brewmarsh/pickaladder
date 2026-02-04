@@ -143,10 +143,11 @@ def dashboard() -> Any:
     recent_matches_docs = [m["doc"] for m in recent_matches_items]
     matches = UserService.format_matches_for_dashboard(db, recent_matches_docs, user_id)
 
-    # Fetch friends, requests, and rankings
+    # Fetch friends, requests, rankings, and tournament invites
     friends = UserService.get_user_friends(db, user_id)
     requests_data = UserService.get_user_pending_requests(db, user_id)
     group_rankings = UserService.get_group_rankings(db, user_id)
+    pending_tournament_invites = UserService.get_pending_tournament_invites(db, user_id)
 
     if form.validate_on_submit():
         try:
@@ -193,6 +194,7 @@ def dashboard() -> Any:
         friends=friends,
         requests=requests_data,
         group_rankings=group_rankings,
+        pending_tournament_invites=pending_tournament_invites,
     )
 
 
@@ -265,6 +267,9 @@ def view_community() -> Any:
     outgoing_requests = UserService.get_user_sent_requests(db, current_user_id)
     all_users = UserService.get_all_users(db, current_user_id, limit=20)
     public_groups = UserService.get_public_groups(db, limit=10)
+    pending_tournament_invites = UserService.get_pending_tournament_invites(
+        db, current_user_id
+    )
 
     # Search logic: filter all lists if search_term is present
     if search_term:
@@ -280,6 +285,11 @@ def view_community() -> Any:
         incoming_requests = [r for r in incoming_requests if matches_search(r)]
         outgoing_requests = [r for r in outgoing_requests if matches_search(r)]
         all_users = [u for u in all_users if matches_search(u)]
+        pending_tournament_invites = [
+            ti
+            for ti in pending_tournament_invites
+            if term in ti.get("name", "").lower()
+        ]
 
         def group_matches_search(group_data: dict[str, Any]) -> bool:
             name = group_data.get("name", "").lower()
@@ -295,6 +305,7 @@ def view_community() -> Any:
         outgoing_requests=outgoing_requests,
         all_users=all_users,
         public_groups=public_groups,
+        pending_tournament_invites=pending_tournament_invites,
         search_term=search_term,
         user=g.user,
     )

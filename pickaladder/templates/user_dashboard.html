@@ -83,6 +83,44 @@
                 </div>
             </div>
             <div class="dashboard-column-right">
+                {% if pending_tournament_invites %}
+                    <div class="card" style="margin-bottom: 24px; border-left: 6px solid var(--primary-brand);">
+                        <h3>Tournament Invites</h3>
+                        <div class="table-container">
+                            <table class="table responsive-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tournament</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for invite in pending_tournament_invites %}
+                                        <tr>
+                                            <td data-label="Tournament">
+                                                <a href="{{ url_for('tournament.view_tournament', tournament_id=invite.id) }}"><strong>{{ invite.name }}</strong></a>
+                                                <br><small class="text-muted">{{ invite.date }}</small>
+                                            </td>
+                                            <td data-label="Actions">
+                                                <div style="display: flex; gap: 5px;">
+                                                    <form action="{{ url_for('tournament.accept_invite', tournament_id=invite.id) }}" method="post" style="display: inline;">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <button type="submit" class="btn" style="padding: 8px 12px; font-size: 12px;">Accept</button>
+                                                    </form>
+                                                    <form action="{{ url_for('tournament.decline_invite', tournament_id=invite.id) }}" method="post" style="display: inline;">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <button type="submit" class="btn btn-danger" style="padding: 8px 12px; font-size: 12px;">Decline</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+
                 <div class="card">
                     <h3>Friend Requests</h3>
                     <div class="table-container">

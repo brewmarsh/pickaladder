@@ -10,7 +10,12 @@
                     <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
                     <a href="{{ url_for('user.view_community') }}">🌍 Community</a>
                     <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
-                    <a href="{{ url_for('tournament.list_tournaments') }}">🎾 Tournaments</a>
+                    <a href="{{ url_for('tournament.list_tournaments') }}" style="position: relative;">
+                        🎾 Tournaments
+                        {% if pending_tournament_invites %}
+                            <span class="notification-badge">{{ pending_tournament_invites|length }}</span>
+                        {% endif %}
+                    </a>
                     <a href="{{ url_for('match.leaderboard') }}">🏆 Global Leaderboard</a>
                 {% else %}
                     <div class="desktop-auth-buttons">

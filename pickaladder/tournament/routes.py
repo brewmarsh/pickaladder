@@ -166,7 +166,6 @@ def view_tournament(tournament_id: str) -> Any:
     invitable_users = [f for f in friends if f["id"] not in current_participant_ids]
     invite_form.user_id.choices = [(u["id"], smart_display_name(u)) for u in invitable_users]
 
-    # Process Invitation Post (Accepting changes from implementation-tournament-editing)
     if invite_form.validate_on_submit() and "user_id" in request.form:
         invited_uid = invite_form.user_id.data
         invited_ref = db.collection("users").document(invited_uid)
@@ -194,6 +193,7 @@ def view_tournament(tournament_id: str) -> Any:
         invitable_users=invitable_users,
         is_owner=is_owner,
     )
+
 
 @bp.route("/<string:tournament_id>/edit", methods=["GET", "POST"])
 @login_required
@@ -239,6 +239,7 @@ def edit_tournament(tournament_id: str) -> Any:
 
     return render_template("tournament/edit.html", form=form, tournament=tournament_data)
 
+
 @bp.route("/<string:tournament_id>/invite", methods=["POST"])
 @login_required
 def invite_player(tournament_id: str) -> Any:
@@ -259,53 +260,137 @@ def invite_player(tournament_id: str) -> Any:
     flash("Invite sent!", "success")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
+
+@bp.route("/<string:tournament_id>/accept", methods=["POST"])
+@login_required
+def accept_invite(tournament_id: str) -> Any:
+    """Accept an invite to a tournament using a transaction."""
+    db = firestore.client()
+    tournament_ref = db.collection("tournaments").document(tournament_id)
+
+    @firestore.transactional
+    def update_in_transaction(transaction, t_ref):
+        snapshot = t_ref.get(transaction=transaction)
+        if not snapshot.exists:
+            return False
+
+        participants = snapshot.get("participants")
+        updated = False
+        for p in participants:
+            p_uid = p["userRef"].id if "userRef" in p else p.get("user_id")
+            if p_uid == g.user["uid"] and p["status"] == "pending":
+                p["status"] = "accepted"
+                updated = True
+                break
+
+        if updated:
+            transaction.update(t_ref, {"participants": participants})
+            return True
+        return False
+
+    success = update_in_transaction(db.transaction(), tournament_ref)
+
+    if success:
+        flash("You have accepted the tournament invite!", "success")
+    else:
+        flash("Invite not found or already accepted.", "warning")
+
+    return redirect(request.referrer or url_for("user.dashboard"))
+
+
+@bp.route("/<string:tournament_id>/decline", methods=["POST"])
+@login_required
+def decline_invite(tournament_id: str) -> Any:
+    """Decline an invite to a tournament using a transaction."""
+    db = firestore.client()
+    tournament_ref = db.collection("tournaments").document(tournament_id)
+
+    @firestore.transactional
+    def update_in_transaction(transaction, t_ref):
+        snapshot = t_ref.get(transaction=transaction)
+        if not snapshot.exists:
+            return False
+
+        participants = snapshot.get("participants")
+        participant_ids = snapshot.get("participant_ids")
+
+        new_participants = [
+            p for p in participants
+            if not ((p["userRef"].id if "userRef" in p else p.get("user_id")) == g.user["uid"] 
+                    and p["status"] == "pending")
+        ]
+
+        if len(new_participants) < len(participants):
+            new_participant_ids = [uid for uid in participant_ids if uid != g.user["uid"]]
+            transaction.update(t_ref, {
+                "participants": new_participants,
+                "participant_ids": new_participant_ids,
+            })
+            return True
+        return False
+
+    success = update_in_transaction(db.transaction(), tournament_ref)
+
+    if success:
+        flash("You have declined the tournament invite.", "info")
+    else:
+        flash("Invite not found.", "warning")
+
+    return redirect(request.referrer or url_for("user.dashboard"))
+
+
 @bp.route("/<string:tournament_id>/complete", methods=["POST"])
 @login_required
 def complete_tournament(tournament_id: str) -> Any:
-    """Close tournament and send results."""
+    """Close tournament and send results to all participants."""
     db = firestore.client()
     tournament_ref = db.collection("tournaments").document(tournament_id)
     tournament_doc = tournament_ref.get()
-    t_data = tournament_doc.to_dict()
-
-    tournament_ref.update({"status": "Completed"})
-    standings = get_tournament_standings(db, tournament_id, t_data.get("matchType"))
     
-    # Notify accepted participants via email
-    for p in t_data.get("participants", []):
-        if p.get("status") == "accepted":
-            u_doc = p["userRef"].get()
-            if u_doc.exists:
-                user = u_doc.to_dict()
-                if user.get("email"):
-                    send_email(
-                        to=user["email"],
-                        subject=f"Results for {t_data['name']}",
-                        template="email/tournament_results.html",
-                        user=user,
-                        tournament=t_data,
-                        standings=standings[:3]
-                    )
+    if not tournament_doc.exists:
+        flash("Tournament not found.", "danger")
+        return redirect(url_for(".list_tournaments"))
 
-    flash("Tournament completed and results emailed!", "success")
+    t_data = tournament_doc.to_dict()
+    if t_data.get("ownerRef").id != g.user["uid"]:
+        flash("Only the organizer can complete the tournament.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    try:
+        tournament_ref.update({"status": "Completed"})
+        standings = get_tournament_standings(db, tournament_id, t_data.get("matchType"))
+        winner_name = standings[0]["name"] if standings else "No one"
+
+        # Notify accepted participants via email
+        participants = t_data.get("participants", [])
+        for p in participants:
+            if p.get("status") == "accepted":
+                u_doc = p["userRef"].get()
+                if u_doc.exists:
+                    user = u_doc.to_dict()
+                    if user.get("email"):
+                        try:
+                            send_email(
+                                to=user["email"],
+                                subject=f"The results are in for {t_data['name']}!",
+                                template="email/tournament_results.html",
+                                user=user,
+                                tournament=t_data,
+                                winner_name=winner_name,
+                                standings=standings[:3]
+                            )
+                        except Exception as e:
+                            current_app.logger.error(f"Failed to email {user['email']}: {e}")
+
+        flash("Tournament completed and results emailed!", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
 
 @bp.route("/<string:tournament_id>/join", methods=["POST"])
 @login_required
 def join_tournament(tournament_id: str) -> Any:
-    """Accept tournament invitation."""
-    db = firestore.client()
-    t_ref = db.collection("tournaments").document(tournament_id)
-    t_doc = t_ref.get()
-    t_data = t_doc.to_dict()
-    
-    participants = t_data.get("participants", [])
-    for p in participants:
-        uid = p["userRef"].id if "userRef" in p else p.get("user_id")
-        if uid == g.user["uid"]:
-            p["status"] = "accepted"
-            break
-            
-    t_ref.update({"participants": participants})
-    flash("Welcome to the tournament!", "success")
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    """Accept tournament invitation (legacy alias)."""
+    return accept_invite(tournament_id)
