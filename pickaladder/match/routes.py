@@ -87,7 +87,10 @@ def _get_candidate_player_ids(
 
 # TODO: Add type hints for Agent clarity
 def _save_match_data(
-    player_1_id: str, form_data: Any, group_id: str | None = None
+    player_1_id: str,
+    form_data: Any,
+    group_id: str | None = None,
+    tournament_id: str | None = None,
 ) -> None:
     """Construct and save a match document to Firestore."""
     db = firestore.client()
@@ -122,6 +125,8 @@ def _save_match_data(
 
     if group_id:
         match_data["groupId"] = group_id
+    if tournament_id:
+        match_data["tournamentId"] = tournament_id
 
     if match_type == "singles":
         player1_ref = db.collection("users").document(get_data("player1"))
@@ -319,6 +324,7 @@ def record_match() -> Any:
     db = firestore.client()
     user_id = g.user["uid"]
     group_id = request.args.get("group_id")
+    tournament_id = request.args.get("tournament_id")
     candidate_player_ids = _get_candidate_player_ids(user_id, group_id)
 
     if request.method == "POST" and request.is_json:
@@ -349,7 +355,7 @@ def record_match() -> Any:
 
         if form.validate():
             try:
-                _save_match_data(user_id, data, group_id)
+                _save_match_data(user_id, data, group_id, tournament_id)
                 return jsonify({"status": "success", "message": "Match recorded."}), 200
             except Exception as e:
                 return jsonify({"status": "error", "message": str(e)}), 500
@@ -429,18 +435,29 @@ def record_match() -> Any:
         active_players = [p for p in player_ids if p]
         if len(active_players) != len(set(active_players)):
             flash("All players must be unique.", "danger")
-            return render_template("record_match.html", form=form)
+            return render_template(
+                "record_match.html",
+                form=form,
+                group_id=group_id,
+                tournament_id=tournament_id,
+            )
 
         try:
-            _save_match_data(player_1_id, form, group_id)
+            _save_match_data(player_1_id, form, group_id, tournament_id)
             flash("Match recorded successfully.", "success")
+            if tournament_id:
+                return redirect(
+                    url_for("tournament.view_tournament", tournament_id=tournament_id)
+                )
             if group_id:
                 return redirect(url_for("group.view_group", group_id=group_id))
             return redirect(url_for("user.dashboard"))
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
 
-    return render_template("record_match.html", form=form)
+    return render_template(
+        "record_match.html", form=form, group_id=group_id, tournament_id=tournament_id
+    )
 
 
 # TODO: Add type hints for Agent clarity

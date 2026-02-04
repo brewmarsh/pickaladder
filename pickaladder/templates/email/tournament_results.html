@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Tournament Results: {{ tournament.name }}</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f4f9;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 30px auto;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+      .header {
+        background-color: #0F4C81;
+        color: #ffffff;
+        padding: 20px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      .content {
+        padding: 30px;
+        line-height: 1.6;
+      }
+      .winner-box {
+        background-color: #DFFF00;
+        color: #000;
+        padding: 20px;
+        text-align: center;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+      .standings-list {
+        list-style: none;
+        padding: 0;
+      }
+      .standings-item {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+      }
+      .btn-container {
+        text-align: center;
+        margin: 30px 0;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #0F4C81;
+        color: #ffffff !important;
+        text-decoration: none;
+        padding: 12px 25px;
+        border-radius: 5px;
+        font-weight: bold;
+        font-size: 16px;
+      }
+      .footer {
+        background-color: #e9ecef;
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #6c757d;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>pickaladder</h1>
+      </div>
+      <div class="content">
+        <p>Hi {{ user.name or user.username or 'Player' }},</p>
+        <p>The results are in for the <strong>{{ tournament.name }}</strong>!</p>
+
+        <div class="winner-box">
+          <h2 style="margin: 0;">🥇 Gold Medal 🥇</h2>
+          <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">{{ winner_name }}</p>
+          <p>Congratulations on taking the top spot!</p>
+        </div>
+
+        <h3>Podium Finishers</h3>
+        <ul class="standings-list">
+          {% for s in standings %}
+            <li class="standings-item">
+              <span>
+                {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% endif %}
+                {{ s.name }}
+              </span>
+              <span style="float: right;">{{ s.wins }}W - {{ s.losses }}L</span>
+              <div style="clear: both;"></div>
+            </li>
+          {% endfor %}
+        </ul>
+
+        <div class="btn-container">
+          <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id, _external=True) }}" class="btn">View Full Standings</a>
+        </div>
+
+        <p>Thanks for participating and see you at the next event!</p>
+      </div>
+      <div class="footer">
+        <p>Cheers,<br>The pickaladder Team</p>
+      </div>
+    </div>
+  </body>
+</html>
