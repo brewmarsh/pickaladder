@@ -123,6 +123,30 @@ class TestUserService(unittest.TestCase):
         self.assertEqual(rankings[0]["rank"], 2)
         self.assertEqual(rankings[0]["group_name"], "Test Group")
 
+    def test_get_public_groups(self):
+        mock_group1 = MagicMock()
+        mock_group1.id = "g1"
+        mock_group1.to_dict.return_value = {
+            "name": "Public Group 1",
+            "is_public": True,
+            "ownerRef": MagicMock(id="owner1"),
+        }
+
+        self.db.collection().where().order_by().limit().stream.return_value = [
+            mock_group1
+        ]
+
+        mock_owner = MagicMock()
+        mock_owner.exists = True
+        mock_owner.id = "owner1"
+        mock_owner.to_dict.return_value = {"username": "owner_user"}
+        self.db.get_all.return_value = [mock_owner]
+
+        result = UserService.get_public_groups(self.db, limit=10)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "g1")
+        self.assertEqual(result[0]["owner"]["username"], "owner_user")
+
 
 if __name__ == "__main__":
     unittest.main()

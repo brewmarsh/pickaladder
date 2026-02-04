@@ -29,37 +29,4 @@
     </div>
 </div>
 
-<div class="card" style="margin-top: 20px;">
-    <h3>Discover Public Groups</h3>
-    <form method="get" action="{{ url_for('group.view_groups') }}" class="search-form" style="margin-bottom: 20px;">
-        <input type="text" name="search" placeholder="Search for public groups..." value="{{ search_term or '' }}" style="width: 300px; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
-        <button type="submit" class="btn">Search</button>
-    </form>
-
-    <div class="table-container">
-        <table class="table responsive-table">
-            <tbody>
-                {% for group in pagination.items %}
-                <tr class="clickable-row" data-href="{{ url_for('group.view_group', group_id=group.id) }}">
-                    <td data-label="">
-                        <img src="{{ group.profilePictureUrl if group.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="Group Picture" class="profile-picture-thumbnail">
-                        <strong>{{ group.name }}</strong><br>
-                        <small>Owned by: {{ group.owner.username }}</small><br>
-                        <small>{{ group.description or '' }}</small>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="2">No public groups found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    {% if pagination.pages > 1 %}
-        {% from "_pagination.html" import render_pagination %}
-        {{ render_pagination(pagination, 'group.view_groups', query_params={'search': search_term}) }}
-    {% endif %}
-</div>
 {% endblock %}

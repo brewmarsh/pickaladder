@@ -112,7 +112,7 @@
         {% endif %}
     </div>
 
-    <div class="discover-section">
+    <div class="discover-section" style="margin-bottom: 40px;">
         <h3>Discover Players</h3>
         {% if all_users %}
             <div class="table-container">
@@ -148,6 +148,47 @@
             </div>
         {% else %}
             <p>No other players found.</p>
+        {% endif %}
+    </div>
+
+    <div class="groups-section">
+        <h3>Find Groups</h3>
+        {% if public_groups %}
+            <div class="table-container">
+                <table class="table responsive-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Group Name</th>
+                            <th>Owner</th>
+                            <th>Description</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for group in public_groups %}
+                            <tr>
+                                <td data-label="Logo">
+                                    <img src="{{ group.profilePictureUrl if group.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="Group Logo" class="profile-picture-thumbnail avatar">
+                                </td>
+                                <td data-label="Group Name">
+                                    <a href="{{ url_for('group.view_group', group_id=group.id) }}"><strong>{{ group.name }}</strong></a>
+                                </td>
+                                <td data-label="Owner">{{ group.owner.username }}</td>
+                                <td data-label="Description"><small>{{ group.description or '' }}</small></td>
+                                <td data-label="Actions" class="actions-cell" style="text-align: right;">
+                                    <form action="{{ url_for('group.join_group', group_id=group.id) }}" method="post" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn">Join</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>No public groups found.</p>
         {% endif %}
     </div>
 {% endblock %}
