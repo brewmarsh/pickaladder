@@ -56,7 +56,13 @@
             {{ form.match_date(class="form-control") }}
         </div>
         <button type="submit" class="btn">Record Match</button>
-        <a href="{{ url_for('user.dashboard') }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
+        {% if tournament_id %}
+            <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament_id) }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
+        {% elif group_id %}
+            <a href="{{ url_for('group.view_group', group_id=group_id) }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
+        {% else %}
+            <a href="{{ url_for('user.dashboard') }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
+        {% endif %}
     </form>
     <script>
         document.getElementById('match_date').valueAsDate = new Date();
