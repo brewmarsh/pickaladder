@@ -1,9 +1,11 @@
 """Routes for the user blueprint."""
 
+from __future__ import annotations
+
 import os
 import secrets
 import tempfile
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any
 
 from firebase_admin import auth, firestore, storage
 from flask import (
@@ -25,12 +27,14 @@ from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm
 from .utils import UserService
 
+if TYPE_CHECKING:
+    pass
+
 
 class MockPagination:
     """A mock pagination object."""
 
-    # TODO: Add type hints for Agent clarity
-    def __init__(self, items):
+    def __init__(self, items: list[Any]) -> None:
         """Initialize the mock pagination object."""
         self.items = items
         self.pages = 1
@@ -38,7 +42,7 @@ class MockPagination:
 
 @bp.route("/community")
 @login_required
-def view_community() -> Union[str, Any]:
+def view_community() -> str | Any:
     """Display the community hub with friends, requests, and user discovery."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -87,7 +91,7 @@ def view_community() -> Union[str, Any]:
 
 @bp.route("/edit_profile", methods=["GET", "POST"])
 @login_required
-def edit_profile() -> Union[str, Any]:
+def edit_profile() -> str | Any:
     """Handle user profile updates for name, username, and email."""
     db = firestore.client()
     user_id = g.user["uid"]
@@ -160,7 +164,7 @@ def edit_profile() -> Union[str, Any]:
 
 @bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
-def dashboard() -> Union[str, Any]:
+def dashboard() -> str | Any:
     """Render the user dashboard and handles profile updates.
 
     On GET, it displays the dashboard with the profile form.
@@ -218,7 +222,7 @@ def dashboard() -> Union[str, Any]:
 
 @bp.route("/<string:user_id>")
 @login_required
-def view_user(user_id: str) -> Union[str, Any]:
+def view_user(user_id: str) -> str | Any:
     """Display a user's public profile."""
     db = firestore.client()
     profile_user_data = UserService.get_user_by_id(db, user_id)

@@ -924,63 +924,70 @@ input[type="submit"], .btn {
     font-size: 0.9em;
 }
 
-.game-card {
+#latest-games-feed .game-card {
     display: flex;
+    justify-content: space-between;
     align-items: center;
     background-color: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    margin-bottom: 12px;
     padding: 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease;
+    margin-bottom: 12px;
+    transition: transform 0.2s ease-in-out;
 }
 
-.game-card:hover {
+#latest-games-feed .game-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: var(--box-shadow);
 }
 
-.game-card.game-won {
-    border-left: 6px solid var(--success-color);
+.game-won {
+    border-left: 6px solid var(--success-color) !important;
 }
 
-.game-card.game-lost {
-    border-left: 6px solid var(--danger-color);
+.game-lost {
+    border-left: 6px solid var(--danger-color) !important;
 }
 
-.game-card .game-date {
-    flex: 0 0 70px;
-    font-size: 0.9em;
+.game-date {
     color: var(--text-secondary-color);
-    font-weight: 500;
-}
-
-.game-card .game-matchup {
+    font-size: 0.85rem;
     flex: 1;
-    padding: 0 16px;
-    font-size: 1.1em;
 }
 
-.game-card .game-score {
-    flex: 0 0 auto;
-    font-size: 1.5em;
+.game-opponent {
     font-weight: bold;
-    color: var(--text-color);
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    flex: 2;
+    text-align: center;
+    font-size: 1.1rem;
 }
 
-.game-card .vs-text {
-    color: var(--text-secondary-color);
-    font-size: 0.8em;
-    margin: 0 4px;
-}
-
-.match-user-bold {
+.game-score {
+    font-size: 1.5rem;
     font-weight: bold;
+    flex: 1;
+    text-align: right;
     color: var(--primary-brand);
+}
+
+#latest-games-feed .winner {
+    font-weight: bold;
+    color: #10B981;
+}
+
+#latest-games-feed .score-close {
+    color: #0F4C81;
+}
+
+#latest-games-feed .game-card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#latest-games-feed .team {
+    flex: 1;
+    text-align: center;
 }
 
 .badge {
@@ -1090,44 +1097,6 @@ input[type="submit"], .btn {
     margin-top: 10px;
   }
 }
-/* Trophy Case Styles */
-.group-ranking-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: var(--surface-color);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 16px;
-    margin-bottom: 12px;
-    text-decoration: none;
-    color: inherit;
-    transition: background-color 0.2s ease;
-}
-
-.group-ranking-card:hover {
-    background-color: var(--background-color);
-}
-
-.group-ranking-card .group-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.group-ranking-card .group-name {
-    font-weight: 500;
-    font-size: 1.1em;
-}
-
-.group-ranking-card .rank-medal {
-    font-size: 1.4em;
-}
-
-.group-ranking-card .trend-arrow {
-    font-size: 1.2em;
-}
-
 /* Dashboard Pro Layout */
 .hero-stats-card {
     display: flex;
@@ -1138,6 +1107,26 @@ input[type="submit"], .btn {
     box-shadow: var(--box-shadow);
     padding: 24px;
     margin-bottom: 24px;
+    position: relative;
+}
+
+.btn-edit-gear {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    color: var(--text-secondary-color);
+    transition: transform 0.2s ease-in-out;
+    line-height: 1;
+}
+
+.btn-edit-gear:hover {
+    transform: rotate(45deg);
+    color: var(--primary-brand);
 }
 
 .hero-left-panel {
