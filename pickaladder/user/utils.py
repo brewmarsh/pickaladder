@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.document import DocumentReference
 
 from pickaladder.utils import mask_email
+
 from .models import User
 
 UPSET_THRESHOLD = 0.25
@@ -140,22 +141,17 @@ def smart_display_name(user: dict[str, Any]) -> str:
     """Return a smart display name for a user.
 
     If the user is a ghost user (username starts with 'ghost_'):
-    - If they have a name, return it.
-    - If they have an email but no name, return a masked version of it.
-    - If they have no name and no email, return 'Pending Invite'.
+    - If they have an email, return a masked version of it.
+    - If they have no name, return 'Pending Invite'.
     Otherwise, return the username.
     """
     username = user.get("username", "")
     if username.startswith("ghost_"):
-        name = user.get("name")
-        if name:
-            return name
-
         email = user.get("email")
         if email:
             return mask_email(email)
-
-        return "Pending Invite"
+        if not user.get("name"):
+            return "Pending Invite"
 
     return username
 
@@ -191,11 +187,13 @@ class UserService:
             )
             friend_doc = friend_ref.get()
             if friend_doc.exists:
-                status = friend_doc.to_dict().get("status")
-                if status == "accepted":
-                    is_friend = True
-                elif status == "pending":
-                    friend_request_sent = True
+                friend_data = friend_doc.to_dict()
+                if friend_data:
+                    status = friend_data.get("status")
+                    if status == "accepted":
+                        is_friend = True
+                    elif status == "pending":
+                        friend_request_sent = True
         return is_friend, friend_request_sent
 
     @staticmethod
@@ -281,7 +279,7 @@ class UserService:
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         """Fetch all users for discovery."""
-        query = db.collection("users")
+        query: Any = db.collection("users")
         if search_term:
             # Firestore doesn't support case-insensitive search natively.
             # This searches for an exact username match prefix.
@@ -605,7 +603,10 @@ class UserService:
         def get_unm(ref: DocumentReference | None) -> str:
             if not ref:
                 return "Unknown"
-            return users_map.get(ref.id, {}).get("username", "Unknown")
+            u_data = users_map.get(ref.id)
+            if not u_data:
+                return "Unknown"
+            return u_data.get("username", "Unknown")
 
         if in_t1:
             match_obj.update(
@@ -653,7 +654,10 @@ class UserService:
         def get_unm(ref: DocumentReference | None) -> str:
             if not ref:
                 return "Unknown"
-            return users_map.get(ref.id, {}).get("username", "Unknown")
+            u_data = users_map.get(ref.id)
+            if not u_data:
+                return "Unknown"
+            return u_data.get("username", "Unknown")
 
         if p1r and p1r.id == user_id:
             match_obj.update(
@@ -697,7 +701,14 @@ class UserService:
                 if d.get("player2Ref"):
                     needed_refs.add(d.get("player2Ref"))
 
-        u_map = {d.id: d.to_dict() for d in db.get_all(list(needed_refs)) if d.exists}
+        u_map: dict[str, dict[str, Any]] = {}
+        if needed_refs:
+            for d in db.get_all(list(needed_refs)):
+                if d.exists:
+                    data = d.to_dict()
+                    if data is not None:
+                        u_map[d.id] = data
+
         final_matches = []
         for item in display_items:
             d = item["data"]
@@ -741,7 +752,8 @@ class UserService:
             ):
                 user_won = True
         else:
-            is_player1 = match.get("player1Ref") and match["player1Ref"].id == user_id
+            p1_ref = match.get("player1Ref")
+            is_player1 = p1_ref and p1_ref.id == user_id
             if (is_player1 and winner == "player1") or (
                 not is_player1 and winner == "player2"
             ):
@@ -785,6 +797,8 @@ class UserService:
         player_refs, team_refs = set(), set()
         for match_doc in matches_docs:
             m = match_doc.to_dict()
+            if m is None:
+                continue
             if m.get("player1Ref"):
                 player_refs.add(m["player1Ref"])
             if m.get("player2Ref"):
@@ -796,12 +810,27 @@ class UserService:
             if m.get("team2Ref"):
                 team_refs.add(m["team2Ref"])
 
-        u_map = {d.id: d.to_dict() for d in db.get_all(list(player_refs)) if d.exists}
-        t_map = {d.id: d.to_dict() for d in db.get_all(list(team_refs)) if d.exists}
+        u_map: dict[str, dict[str, Any]] = {}
+        if player_refs:
+            for d in db.get_all(list(player_refs)):
+                if d.exists:
+                    data = d.to_dict()
+                    if data is not None:
+                        u_map[d.id] = data
+
+        t_map: dict[str, dict[str, Any]] = {}
+        if team_refs:
+            for d in db.get_all(list(team_refs)):
+                if d.exists:
+                    data = d.to_dict()
+                    if data is not None:
+                        t_map[d.id] = data
 
         matches_data = []
         for match_doc in matches_docs:
             m = match_doc.to_dict()
+            if m is None:
+                continue
             p1s, p2s = m.get("player1Score", 0), m.get("player2Score", 0)
             winner = "player1" if p1s > p2s else "player2"
             u_res = UserService._calculate_user_result(m, winner, user_id)
@@ -817,12 +846,21 @@ class UserService:
                     UserService._get_player_info(r, u_map) for r in m.get("team2", [])
                 ]
             else:
-                p1i = UserService._get_player_info(m["player1Ref"], u_map)
-                p2i = UserService._get_player_info(m["player2Ref"], u_map)
+                p1_ref = m.get("player1Ref")
+                p2_ref = m.get("player2Ref")
+                if p1_ref and p2_ref:
+                    p1i = UserService._get_player_info(p1_ref, u_map)
+                    p2i = UserService._get_player_info(p2_ref, u_map)
+                else:
+                    # Fallback for singles with missing refs
+                    p1i = {"username": "Unknown", "id": ""}
+                    p2i = {"username": "Unknown", "id": ""}
 
             t1r, t2r = m.get("team1Ref"), m.get("team2Ref")
-            t1o = {"name": t_map.get(t1r.id, {}).get("name") if t1r else None}
-            t2o = {"name": t_map.get(t2r.id, {}).get("name") if t2r else None}
+            t1_data = t_map.get(t1r.id) if t1r else None
+            t2_data = t_map.get(t2r.id) if t2r else None
+            t1o = {"name": t1_data.get("name") if t1_data else None}
+            t2o = {"name": t2_data.get("name") if t2_data else None}
             upset = UserService._is_match_upset(m, winner, p1i, p2i, u_map)
 
             matches_data.append(

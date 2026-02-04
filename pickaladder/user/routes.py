@@ -34,7 +34,6 @@ if TYPE_CHECKING:
 class MockPagination:
     """A mock pagination object."""
 
-    # TODO: Add type hints for Agent clarity
     def __init__(self, items: list[Any]) -> None:
         """Initialize the mock pagination object."""
         self.items = items
@@ -60,26 +59,12 @@ def view_community() -> str | Any:
 
     # 4. Discover Users
     discover_users_all = UserService.get_all_users(
-        db, current_user_id, limit=50
+        db, current_user_id, search_term=search_term, limit=50
     )
 
     friend_ids = {f["id"] for f in friends}
     sent_request_ids = {s["id"] for s in sent_requests}
     received_request_ids = {r["id"] for r in pending_requests}
-
-    # Filter by search term if present
-    if search_term:
-        term = search_term.lower()
-        def matches_search(u):
-            return (
-                term in u.get("username", "").lower() 
-                or term in u.get("name", "").lower()
-            )
-        
-        friends = [f for f in friends if matches_search(f)]
-        pending_requests = [r for r in pending_requests if matches_search(r)]
-        sent_requests = [s for s in sent_requests if matches_search(s)]
-        discover_users_all = [u for u in discover_users_all if matches_search(u)]
 
     discover_users = []
     for user_data in discover_users_all:
@@ -290,14 +275,16 @@ def view_user(user_id: str) -> str | Any:
 
 @bp.route("/users")
 @login_required
-def users() -> str | Any:
-    """List and allows searching for users (Legacy/Discovery)."""
+def users() -> str:
+    """List and allows searching for users."""
     db = firestore.client()
     current_user_id = g.user["uid"]
     search_term = request.args.get("search", "")
     query = db.collection("users")
 
     if search_term:
+        # Firestore doesn't support case-insensitive search natively.
+        # This searches for an exact username match.
         query = query.where(
             filter=firestore.FieldFilter("username", ">=", search_term)
         ).where(filter=firestore.FieldFilter("username", "<=", search_term + "\uf8ff"))
@@ -314,7 +301,9 @@ def users() -> str | Any:
     user_items = []
     for user_doc in all_users_docs:
         user_data = user_doc.to_dict()
-        user_data["id"] = user_doc.id
+        if user_data is None:
+            continue
+        user_data["id"] = user_doc.id  # Add document ID to the dictionary
 
         sent_status = None
         received_status = None
@@ -331,7 +320,11 @@ def users() -> str | Any:
 
         user_items.append((user_data, sent_status, received_status))
 
+    # The template expects a pagination object with an 'items' attribute.
+    # We are not implementing full pagination, just adapting to the template.
     pagination = MockPagination(user_items)
+
+    # The template also iterates over 'fof' (friends of friends)
     fof: list[Any] = []
 
     return render_template(
@@ -349,6 +342,7 @@ def send_friend_request(friend_id: str) -> Any:
         flash("You cannot send a friend request to yourself.", "danger")
         return redirect(url_for(".users"))
 
+    # Use a batch to ensure both documents are created or neither is.
     batch = db.batch()
 
     # Create pending request in current user's friend list
@@ -385,18 +379,64 @@ def send_friend_request(friend_id: str) -> Any:
 
 @bp.route("/friends")
 @login_required
-def friends() -> str | Any:
+def friends() -> str:
     """Display the user's friends and pending requests."""
     db = firestore.client()
     current_user_id = g.user["uid"]
-    
-    friends = UserService.get_user_friends(db, current_user_id)
-    pending_requests = UserService.get_user_pending_requests(db, current_user_id)
-    sent_requests = UserService.get_user_sent_requests(db, current_user_id)
+    friends_ref = db.collection("users").document(current_user_id).collection("friends")
+
+    # Fetch accepted friends
+    accepted_docs = friends_ref.where(
+        filter=firestore.FieldFilter("status", "==", "accepted")
+    ).stream()
+    accepted_ids = [doc.id for doc in accepted_docs]
+    accepted_friends = []
+    if accepted_ids:
+        refs = [db.collection("users").document(uid) for uid in accepted_ids]
+        docs = db.get_all(refs)
+        accepted_friends = [
+            {"id": doc.id, **doc.to_dict()}  # type: ignore[dict-item]
+            for doc in docs
+            if doc.exists and doc.to_dict() is not None
+        ]
+
+    # Fetch pending requests (where the other user was the initiator)
+    requests_docs = (
+        friends_ref.where(filter=firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=firestore.FieldFilter("initiator", "==", False))
+        .stream()
+    )
+    request_ids = [doc.id for doc in requests_docs]
+    pending_requests = []
+    if request_ids:
+        refs = [db.collection("users").document(uid) for uid in request_ids]
+        docs = db.get_all(refs)
+        pending_requests = [
+            {"id": doc.id, **doc.to_dict()}  # type: ignore[dict-item]
+            for doc in docs
+            if doc.exists and doc.to_dict() is not None
+        ]
+
+    # Fetch sent requests (where the current user was the initiator)
+    sent_docs = (
+        friends_ref.where(filter=firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=firestore.FieldFilter("initiator", "==", True))
+        .stream()
+    )
+    sent_ids = [doc.id for doc in sent_docs]
+    sent_requests = []
+    if sent_ids:
+        refs = [db.collection("users").document(uid) for uid in sent_ids]
+        docs = db.get_all(refs)
+        sent_requests = [
+            {"id": doc.id, **doc.to_dict()}  # type: ignore[dict-item]
+            for doc in docs
+            if doc.exists and doc.to_dict() is not None
+        ]
 
     return render_template(
         "friends/index.html",
-        friends=friends,
+        friends=accepted_friends,
         requests=pending_requests,
         sent_requests=sent_requests,
     )
@@ -495,7 +535,7 @@ def api_dashboard() -> Any:
     # Sort all match docs by date and take the most recent 10 for the feed
     sorted_matches_docs = sorted(
         matches,
-        key=lambda x: x.to_dict().get("matchDate") or x.create_time,
+        key=lambda x: (x.to_dict() or {}).get("matchDate") or x.create_time,
         reverse=True,
     )[:10]
 
