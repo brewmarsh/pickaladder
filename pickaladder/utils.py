@@ -1,6 +1,9 @@
 """Utility functions for the application."""
 
+from __future__ import annotations
+
 import smtplib
+from typing import Any
 
 from flask import current_app, render_template
 from flask_mail import Message
@@ -16,8 +19,7 @@ class EmailError(Exception):
     pass
 
 
-# TODO: Add type hints for Agent clarity
-def send_email(to, subject, template, **kwargs):
+def send_email(to: Any, subject: str, template: str, **kwargs: Any) -> None:
     """Send an email to a recipient.
 
     Raises:

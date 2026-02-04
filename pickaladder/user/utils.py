@@ -17,7 +17,6 @@ from pickaladder.utils import mask_email
 from .models import User
 
 
-# TODO: Add type hints for Agent clarity
 def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
     """Check for 'ghost' user with the given email and merge their data.
 
@@ -599,7 +598,7 @@ class UserService:
             users_docs = db.get_all(unique_refs_list)
             users_map = {doc.id: doc.to_dict() for doc in users_docs if doc.exists}
 
-        def get_username(ref, default="Unknown"):
+        def get_username(ref: Any, default: str = "Unknown") -> str:
             if not ref:
                 return default
             u_data = users_map.get(ref.id)
