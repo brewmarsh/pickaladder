@@ -1,0 +1,203 @@
+{% extends "layout.html" %}
+{% block title %}Community{% endblock %}
+
+{% macro player_card(user, status, current_user_is_admin) %}
+    <div class="friend-card" style="position: relative;">
+        {% if current_user_is_admin %}
+        <div class="meatball-menu">
+            <button class="meatball-btn">⋮</button>
+            <div class="meatball-content">
+                <a href="{{ url_for('admin.promote_user', user_id=user.id) }}">Promote</a>
+                {% if not user.email_verified %}
+                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit">Verify</button>
+                    </form>
+                {% endif %}
+                <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn-danger-text">Delete</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="friend-card-content">
+            <img src="{{ user | avatar_url }}" alt="{{ user.username }}" class="friend-avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+            <h3 class="friend-name">
+                <a href="{{ url_for('user.view_user', user_id=user.id) }}" style="text-decoration: none; color: inherit;">
+                    {{ user.name if user.name else user|smart_display_name }}
+                </a>
+            </h3>
+            <div class="friend-rating">
+                <span class="star-icon">⭐</span>
+                <span class="dupr-value">{{ user.duprRating or 'N/A' }}</span>
+            </div>
+        </div>
+        <div class="friend-card-actions">
+            {% if status == 'friend' %}
+                <a href="{{ url_for('match.record_match', opponent=user.id) }}" class="btn btn-challenge">Challenge</a>
+            {% elif status == 'sent' %}
+                <button class="btn btn-sent" disabled>Request Sent</button>
+            {% elif status == 'received' %}
+                <button class="btn btn-warning" onclick="document.getElementById('requests-tab').click();">Review Request</button>
+            {% else %}
+                <form method="post" action="{{ url_for('user.send_friend_request', friend_id=user.id) }}" class="ajax-friend-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-add-friend add-friend-btn">Add Friend</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}
+
+{% block content %}
+<div class="hero-search">
+    <div class="container">
+        <h1>Community Hub</h1>
+        <form method="get" action="{{ url_for('user.view_community') }}" class="search-container">
+            <input type="text" name="search" class="hero-search-input" placeholder="Find players by name or email..." value="{{ search_term }}">
+        </form>
+    </div>
+</div>
+
+<div class="community-tabs">
+    <ul class="nav nav-tabs" id="communityTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="friends-tab" data-toggle="tab" href="#friends" role="tab">My Friends</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="discover-tab" data-toggle="tab" href="#discover" role="tab">Discover</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="requests-tab" data-toggle="tab" href="#requests" role="tab">
+                Requests
+                {% if pending_requests %}
+                    <span class="badge badge-pill badge-danger">{{ pending_requests|length }}</span>
+                {% endif %}
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="communityTabsContent" style="margin-top: 30px;">
+        <!-- Friends Tab -->
+        <div class="tab-pane fade show active" id="friends" role="tabpanel">
+            <div class="friend-grid">
+                {% for friend in friends %}
+                    {{ player_card(friend, 'friend', session['is_admin']) }}
+                {% else %}
+                    <div class="text-center" style="grid-column: 1 / -1; padding: 40px;">
+                        <p class="text-muted">You haven't added any friends yet.</p>
+                        <button class="btn btn-primary" style="width: auto;" onclick="document.getElementById('discover-tab').click();">Discover Players</button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Discover Tab -->
+        <div class="tab-pane fade" id="discover" role="tabpanel">
+            <div class="friend-grid">
+                {% for user in discover_users %}
+                    {{ player_card(user, user.status, session['is_admin']) }}
+                {% else %}
+                    <div class="text-center" style="grid-column: 1 / -1; padding: 40px;">
+                        <p class="text-muted">No users found.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Requests Tab -->
+        <div class="tab-pane fade" id="requests" role="tabpanel">
+            {% if pending_requests %}
+                <h3 style="margin-bottom: 20px;">Received Requests</h3>
+                <div class="friend-grid" style="margin-bottom: 40px;">
+                    {% for request in pending_requests %}
+                        <div class="friend-card">
+                            <div class="friend-card-content">
+                                <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="friend-avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                <h3 class="friend-name">{{ request.name if request.name else request|smart_display_name }}</h3>
+                            </div>
+                            <div class="friend-card-actions" style="display: flex; gap: 10px;">
+                                <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post" style="flex: 1; margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn" style="background-color: var(--success-color); margin: 0;">Accept</button>
+                                </form>
+                                <form action="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" method="post" style="flex: 1; margin: 0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-danger" style="margin: 0;">Decline</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if sent_requests %}
+                <h3 style="margin-bottom: 20px;">Sent Requests</h3>
+                <div class="friend-grid">
+                    {% for request in sent_requests %}
+                        {{ player_card(request, 'sent', session['is_admin']) }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if not pending_requests and not sent_requests %}
+                <div class="text-center" style="padding: 40px;">
+                    <p class="text-muted">No pending requests.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // AJAX for Add Friend buttons
+        const addFriendBtns = document.querySelectorAll(".add-friend-btn");
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        addFriendBtns.forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                const form = btn.closest('form');
+                const url = form.action;
+
+                fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        btn.textContent = "Request Sent";
+                        btn.classList.remove('btn-add-friend');
+                        btn.classList.add('btn-sent');
+                        btn.disabled = true;
+                    } else {
+                        alert(data.message || "An error occurred.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("An error occurred while sending the friend request.");
+                });
+            });
+        });
+
+        // Switch to Discover tab if search is active
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('search') && urlParams.get('search').trim() !== "") {
+            const discoverTab = document.getElementById('discover-tab');
+            if (discoverTab) {
+                $(discoverTab).tab('show');
+            }
+        }
+    });
+</script>
+{% endblock %}

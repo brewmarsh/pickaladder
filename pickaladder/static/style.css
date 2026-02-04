@@ -1378,3 +1378,165 @@ input[type="submit"], .btn {
         padding: 12px;
     }
 }
+/* Community Hub & Pro UI */
+.hero-search {
+    background-color: var(--primary-brand);
+    padding: 60px 20px;
+    text-align: center;
+    color: white;
+    margin-bottom: 40px;
+    border-radius: var(--border-radius);
+}
+
+.hero-search h1 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 2.5em;
+    font-weight: 500;
+}
+
+.search-container {
+    max-width: 600px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.hero-search-input {
+    width: 100%;
+    padding: 16px 24px;
+    font-size: 1.1em;
+    border-radius: 30px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    background-color: white;
+    color: var(--text-color);
+}
+
+.hero-search-input:focus {
+    outline: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+/* Tabs Styling */
+.community-tabs {
+    margin-bottom: 30px;
+}
+
+.nav-tabs {
+    border-bottom: 2px solid var(--border-color);
+    justify-content: center;
+}
+
+.nav-tabs .nav-link {
+    border: none !important;
+    color: var(--text-secondary-color) !important;
+    font-weight: 500 !important;
+    padding: 12px 24px !important;
+    transition: color 0.2s !important;
+    background: none !important;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--primary-brand) !important;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary-brand) !important;
+    border-bottom: 3px solid var(--primary-brand) !important;
+}
+
+/* Player Cards & Buttons */
+.btn-challenge {
+    background-color: var(--warning-color) !important;
+    color: var(--text-color) !important;
+}
+
+.btn-add-friend {
+    background-color: var(--primary-brand) !important;
+    color: white !important;
+}
+
+.btn-sent {
+    background-color: #e0e0e0 !important;
+    color: #757575 !important;
+    cursor: not-allowed !important;
+}
+
+/* Admin Meatball Menu */
+.meatball-menu {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.meatball-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-secondary-color);
+    padding: 0 8px;
+    line-height: 1;
+}
+
+.meatball-btn:hover {
+    color: var(--text-color);
+}
+
+.meatball-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: var(--surface-color);
+    box-shadow: var(--box-shadow);
+    z-index: 100;
+    border-radius: 4px;
+    min-width: 140px;
+    overflow: hidden;
+}
+
+.meatball-menu:hover .meatball-content,
+.meatball-menu:focus-within .meatball-content {
+    display: block;
+}
+
+.meatball-content form, .meatball-content a {
+    margin: 0;
+}
+
+.meatball-content button, .meatball-content a {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 16px;
+    text-decoration: none;
+    color: var(--text-color);
+    border: none;
+    background: none;
+    font-size: 14px;
+    cursor: pointer;
+    text-transform: none;
+    font-weight: normal;
+    letter-spacing: normal;
+}
+
+.meatball-content button:hover, .meatball-content a:hover {
+    background-color: var(--background-color);
+}
+
+.meatball-content .btn-danger-text {
+    color: var(--danger-color);
+}
+
+@media (max-width: 768px) {
+    .hero-search h1 {
+        font-size: 1.8em;
+    }
+    .hero-search {
+        padding: 40px 16px;
+    }
+    .nav-tabs .nav-link {
+        padding: 10px 12px !important;
+        font-size: 0.9em !important;
+    }
+}

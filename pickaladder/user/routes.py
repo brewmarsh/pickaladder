@@ -34,17 +34,64 @@ if TYPE_CHECKING:
 class MockPagination:
     """A mock pagination object."""
 
-    # TODO: Add type hints for Agent clarity
     def __init__(self, items: list[Any]) -> None:
         """Initialize the mock pagination object."""
         self.items = items
         self.pages = 1
 
 
-# TODO: Add type hints for Agent clarity
+@bp.route("/community")
+@login_required
+def view_community() -> str | Any:
+    """Display the community hub with friends, requests, and user discovery."""
+    db = firestore.client()
+    current_user_id = g.user["uid"]
+    search_term = request.args.get("search", "").strip()
+
+    # 1. Fetch Friends
+    friends = UserService.get_user_friends(db, current_user_id)
+
+    # 2. Fetch Pending Requests (Received)
+    pending_requests = UserService.get_user_pending_requests(db, current_user_id)
+
+    # 3. Fetch Sent Requests (Outgoing)
+    sent_requests = UserService.get_user_sent_requests(db, current_user_id)
+
+    # 4. Discover Users
+    discover_users_all = UserService.get_all_users(
+        db, current_user_id, search_term=search_term, limit=50
+    )
+
+    friend_ids = {f["id"] for f in friends}
+    sent_request_ids = {s["id"] for s in sent_requests}
+    received_request_ids = {r["id"] for r in pending_requests}
+
+    discover_users = []
+    for user_data in discover_users_all:
+        # Tag status for template action buttons
+        if user_data["id"] in friend_ids:
+            user_data["status"] = "friend"
+        elif user_data["id"] in sent_request_ids:
+            user_data["status"] = "sent"
+        elif user_data["id"] in received_request_ids:
+            user_data["status"] = "received"
+        else:
+            user_data["status"] = "stranger"
+        discover_users.append(user_data)
+
+    return render_template(
+        "user/community.html",
+        friends=friends,
+        pending_requests=pending_requests,
+        sent_requests=sent_requests,
+        discover_users=discover_users,
+        search_term=search_term,
+    )
+
+
 @bp.route("/edit_profile", methods=["GET", "POST"])
 @login_required
-def edit_profile() -> Any:
+def edit_profile() -> str | Any:
     """Handle user profile updates for name, username, and email."""
     db = firestore.client()
     user_id = g.user["uid"]
@@ -115,10 +162,9 @@ def edit_profile() -> Any:
     return render_template("edit_profile.html", form=form, user=user_data)
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
-def dashboard() -> Any:
+def dashboard() -> str | Any:
     """Render the user dashboard and handles profile updates.
 
     On GET, it displays the dashboard with the profile form.
@@ -132,7 +178,8 @@ def dashboard() -> Any:
     form = UpdateProfileForm()
     if request.method == "GET":
         form.dupr_rating.data = user_data.get("duprRating")
-        form.dark_mode.data = user_data.get("dark_mode")
+        if user_data.get("dark_mode") is not None:
+            form.dark_mode.data = bool(user_data.get("dark_mode"))
 
     if form.validate_on_submit():
         try:
@@ -173,10 +220,9 @@ def dashboard() -> Any:
     return render_template("user_dashboard.html", form=form, user=user_data)
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/<string:user_id>")
 @login_required
-def view_user(user_id: str) -> Any:
+def view_user(user_id: str) -> str | Any:
     """Display a user's public profile."""
     db = firestore.client()
     profile_user_data = UserService.get_user_by_id(db, user_id)
@@ -227,50 +273,9 @@ def view_user(user_id: str) -> Any:
     )
 
 
-# TODO: Add type hints for Agent clarity
-@bp.route("/community")
-@login_required
-def view_community() -> Any:
-    """Render the community hub with friends, requests, and other users."""
-    db = firestore.client()
-    current_user_id = g.user["uid"]
-    search_term = request.args.get("search", "").strip()
-
-    # Fetch all data sets
-    friends = UserService.get_user_friends(db, current_user_id)
-    incoming_requests = UserService.get_user_pending_requests(db, current_user_id)
-    outgoing_requests = UserService.get_user_sent_requests(db, current_user_id)
-    all_users = UserService.get_all_users(db, current_user_id, limit=20)
-
-    # Search logic: filter all lists if search_term is present
-    if search_term:
-        term = search_term.lower()
-
-        def matches_search(user_data):
-            username = user_data.get("username", "").lower()
-            name = user_data.get("name", "").lower()
-            email = user_data.get("email", "").lower()
-            return term in username or term in name or term in email
-
-        friends = [f for f in friends if matches_search(f)]
-        incoming_requests = [r for r in incoming_requests if matches_search(r)]
-        outgoing_requests = [r for r in outgoing_requests if matches_search(r)]
-        all_users = [u for u in all_users if matches_search(u)]
-
-    return render_template(
-        "community.html",
-        friends=friends,
-        incoming_requests=incoming_requests,
-        outgoing_requests=outgoing_requests,
-        all_users=all_users,
-        search_term=search_term,
-        user=g.user,
-    )
-
-
 @bp.route("/users")
 @login_required
-def users() -> Any:
+def users() -> str:
     """List and allows searching for users."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -296,6 +301,8 @@ def users() -> Any:
     user_items = []
     for user_doc in all_users_docs:
         user_data = user_doc.to_dict()
+        if user_data is None:
+            continue
         user_data["id"] = user_doc.id  # Add document ID to the dictionary
 
         sent_status = None
@@ -318,14 +325,13 @@ def users() -> Any:
     pagination = MockPagination(user_items)
 
     # The template also iterates over 'fof' (friends of friends)
-    fof: list[dict[str, Any]] = []
+    fof: list[Any] = []
 
     return render_template(
         "users.html", pagination=pagination, search_term=search_term, fof=fof
     )
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/send_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def send_friend_request(friend_id: str) -> Any:
@@ -371,10 +377,9 @@ def send_friend_request(friend_id: str) -> Any:
     return redirect(url_for(".users"))
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/friends")
 @login_required
-def friends() -> Any:
+def friends() -> str:
     """Display the user's friends and pending requests."""
     db = firestore.client()
     current_user_id = g.user["uid"]
@@ -390,7 +395,9 @@ def friends() -> Any:
         refs = [db.collection("users").document(uid) for uid in accepted_ids]
         docs = db.get_all(refs)
         accepted_friends = [
-            {"id": doc.id, **doc.to_dict()} for doc in docs if doc.exists
+            {"id": doc.id, **doc.to_dict()}  # type: ignore[dict-item]
+            for doc in docs
+            if doc.exists and doc.to_dict() is not None
         ]
 
     # Fetch pending requests (where the other user was the initiator)
@@ -405,7 +412,9 @@ def friends() -> Any:
         refs = [db.collection("users").document(uid) for uid in request_ids]
         docs = db.get_all(refs)
         pending_requests = [
-            {"id": doc.id, **doc.to_dict()} for doc in docs if doc.exists
+            {"id": doc.id, **doc.to_dict()}  # type: ignore[dict-item]
+            for doc in docs
+            if doc.exists and doc.to_dict() is not None
         ]
 
     # Fetch sent requests (where the current user was the initiator)
@@ -419,7 +428,11 @@ def friends() -> Any:
     if sent_ids:
         refs = [db.collection("users").document(uid) for uid in sent_ids]
         docs = db.get_all(refs)
-        sent_requests = [{"id": doc.id, **doc.to_dict()} for doc in docs if doc.exists]
+        sent_requests = [
+            {"id": doc.id, **doc.to_dict()}  # type: ignore[dict-item]
+            for doc in docs
+            if doc.exists and doc.to_dict() is not None
+        ]
 
     return render_template(
         "friends/index.html",
@@ -429,7 +442,6 @@ def friends() -> Any:
     )
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/accept_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def accept_friend_request(friend_id: str) -> Any:
@@ -466,7 +478,6 @@ def accept_friend_request(friend_id: str) -> Any:
     return redirect(url_for(".friends"))
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/decline_friend_request/<string:friend_id>", methods=["POST"])
 @login_required
 def decline_friend_request(friend_id: str) -> Any:
@@ -503,7 +514,6 @@ def decline_friend_request(friend_id: str) -> Any:
     return redirect(url_for(".friends"))
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/api/dashboard")
 @login_required
 def api_dashboard() -> Any:
@@ -525,7 +535,7 @@ def api_dashboard() -> Any:
     # Sort all match docs by date and take the most recent 10 for the feed
     sorted_matches_docs = sorted(
         matches,
-        key=lambda x: x.to_dict().get("matchDate") or x.create_time,
+        key=lambda x: (x.to_dict() or {}).get("matchDate") or x.create_time,
         reverse=True,
     )[:10]
 
@@ -559,7 +569,6 @@ def api_dashboard() -> Any:
     )
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/api/create_invite", methods=["POST"])
 @login_required
 def create_invite() -> Any:
