@@ -7,18 +7,18 @@
 {% block content %}
     <div id="dashboard-content" style="display: none;">
         <div class="hero-stats-card">
+            <button id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</button>
             <div class="hero-left-panel">
-                 <img id="hero-profile-img" src="" alt="Profile Picture" class="profile-picture-large">
+                 <img id="hero-profile-img" src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture-large">
                  <div class="hero-name-and-edit">
                     <h2 id="hero-username-text"></h2>
-                    <button id="edit-profile-toggle" class="btn btn-sm">⚙️ <span class="edit-profile-text">Edit Profile</span></button>
                  </div>
             </div>
             <div class="hero-right-panel">
-                <div id="vanity-stats-container">
+                <div id="vanity-stats-container" class="vanity-stats-container">
                     <!-- Stats go here -->
                 </div>
-                <a href="{{ url_for('match.record_match') }}" class="btn">Record a Match</a>
+                <a href="{{ url_for('match.record_match') }}" class="btn btn-primary">Record a Match</a>
             </div>
         </div>
         <div class="dashboard-columns">
@@ -141,15 +141,15 @@ document.addEventListener('DOMContentLoaded', function() {
         statsContainer.innerHTML = `
             <div class="vanity-stat">
                 <div class="stat-value">${stats.total_matches}</div>
-                <div class="stat-label">Total Matches</div>
+                <div class="stat-label text-muted">Total Matches</div>
             </div>
             <div class="vanity-stat">
                 <div class="stat-value">${stats.win_percentage.toFixed(0)}%</div>
-                <div class="stat-label">Win %</div>
+                <div class="stat-label text-muted">Win %</div>
             </div>
             <div class="vanity-stat">
                 <div class="stat-value">${stats.current_streak}</div>
-                <div class="stat-label">Current Streak</div>
+                <div class="stat-label text-muted">Current Streak</div>
             </div>
         `;
     }
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function renderLatestGames(matches) {
+    function renderLatestGames(matches, userId) {
         const feed = document.getElementById('latest-games-feed');
         if (matches.length === 0) {
             feed.innerHTML = '<p>No recent games to display.</p>';
@@ -267,37 +267,35 @@ document.addEventListener('DOMContentLoaded', function() {
         feed.innerHTML = ''; // Clear feed
 
         matches.forEach(match => {
-            const winnerTeam = match.winner === 'player1' ? match.player1 : match.player2;
-            const loserTeam = match.winner === 'player1' ? match.player2 : match.player1;
+            const isPlayer1 = Array.isArray(match.player1)
+                ? match.player1.some(p => p.id === userId)
+                : match.player1.id === userId;
 
-            const formatTeam = (team) => {
+            const opponentTeam = isPlayer1 ? match.player2 : match.player1;
+
+            const formatTeamNames = (team) => {
+                const wrapLink = (p) => `<a href="\${urls.view_user(p.id)}">\${p.username}</a>`;
                 if (Array.isArray(team)) {
-                    return team.map(p => `<a href="${urls.view_user(p.id)}">${p.username}</a>`).join(' & ');
+                    return team.map(wrapLink).join(' & ');
                 } else {
-                    return `<a href="${urls.view_user(team.id)}">${team.username}</a>`;
+                    return wrapLink(team);
                 }
             };
 
-            const winnerDisplay = formatTeam(winnerTeam);
-            const loserDisplay = formatTeam(loserTeam);
-
+            const opponentDisplay = formatTeamNames(opponentTeam);
             const winnerScore = Math.max(match.player1_score, match.player2_score);
             const loserScore = Math.min(match.player1_score, match.player2_score);
 
-            const scoreResultClass = match.user_result; // 'win', 'loss', or 'draw'
+            const scoreResultClass = match.user_result === 'win' ? 'game-won' : (match.user_result === 'loss' ? 'game-lost' : '');
 
-            const row = `
-                <div class="game-row-compact">
-                    <div class="game-date-compact">${formatMatchDate(match.date)}</div>
-                    <div class="game-info-compact">
-                        ${winnerDisplay} <span class="vs-text">vs</span> ${loserDisplay}
-                    </div>
-                    <div class="game-score-compact ${scoreResultClass}">
-                        ${winnerScore}-${loserScore}
-                    </div>
+            const card = `
+                <div class="game-card ${scoreResultClass}">
+                    <div class="game-date">${formatMatchDate(match.date)}</div>
+                    <div class="game-opponent">vs ${opponentDisplay}</div>
+                    <div class="game-score">${winnerScore}-${loserScore}</div>
                 </div>
             `;
-            feed.insertAdjacentHTML('beforeend', row);
+            feed.insertAdjacentHTML('beforeend', card);
         });
     }
 
@@ -313,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderHeroStats(data.user, data.stats);
             renderTable('friend-requests-body', data.requests, requestRowTemplate, 'No pending friend requests.');
             renderTable('friends-body', data.friends, friendRowTemplate, 'You have no friends yet.');
-            renderLatestGames(data.matches);
+            renderLatestGames(data.matches, data.user.id);
             renderGroupRankings(data.group_rankings);
 
             // Hide loader and show content

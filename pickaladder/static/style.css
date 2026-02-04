@@ -925,11 +925,49 @@ input[type="submit"], .btn {
 }
 
 #latest-games-feed .game-card {
-    background-color: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: transform 0.2s ease-in-out;
+}
+
+#latest-games-feed .game-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--box-shadow);
+}
+
+.game-won {
+    border-left: 6px solid var(--success-color) !important;
+}
+
+.game-lost {
+    border-left: 6px solid var(--danger-color) !important;
+}
+
+.game-date {
+    color: var(--text-secondary-color);
+    font-size: 0.85rem;
+    flex: 1;
+}
+
+.game-opponent {
+    font-weight: bold;
+    flex: 2;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.game-score {
+    font-size: 1.5rem;
+    font-weight: bold;
+    flex: 1;
+    text-align: right;
+    color: var(--primary-brand);
 }
 
 #latest-games-feed .winner {
@@ -1069,6 +1107,26 @@ input[type="submit"], .btn {
     box-shadow: var(--box-shadow);
     padding: 24px;
     margin-bottom: 24px;
+    position: relative;
+}
+
+.btn-edit-gear {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    color: var(--text-secondary-color);
+    transition: transform 0.2s ease-in-out;
+    line-height: 1;
+}
+
+.btn-edit-gear:hover {
+    transform: rotate(45deg);
+    color: var(--primary-brand);
 }
 
 .hero-left-panel {
