@@ -268,7 +268,9 @@ class MockAuthService:
 
         pass
 
-    def verify_id_token(self, token: str, check_revoked: bool = False) -> dict[str, Any]:
+    def verify_id_token(
+        self, token: str, check_revoked: bool = False
+    ) -> dict[str, Any]:
         """Mock verify_id_token."""
         if token.startswith("token_"):
             uid = token.replace("token_", "")
