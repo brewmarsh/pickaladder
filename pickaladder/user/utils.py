@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.document import DocumentReference
 
 from pickaladder.utils import mask_email
-
 from .models import User
 
 UPSET_THRESHOLD = 0.25
@@ -141,17 +140,22 @@ def smart_display_name(user: dict[str, Any]) -> str:
     """Return a smart display name for a user.
 
     If the user is a ghost user (username starts with 'ghost_'):
-    - If they have an email, return a masked version of it.
-    - If they have no name, return 'Pending Invite'.
+    - If they have a name, return it.
+    - If they have an email but no name, return a masked version of it.
+    - If they have no name and no email, return 'Pending Invite'.
     Otherwise, return the username.
     """
     username = user.get("username", "")
     if username.startswith("ghost_"):
+        name = user.get("name")
+        if name:
+            return name
+
         email = user.get("email")
         if email:
             return mask_email(email)
-        if not user.get("name"):
-            return "Pending Invite"
+
+        return "Pending Invite"
 
     return username
 
