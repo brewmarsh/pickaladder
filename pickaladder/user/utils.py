@@ -746,6 +746,7 @@ class UserService:
         """Format matches for the API dashboard view."""
         # Batch fetch user data for all players in the recent matches
         player_refs = set()
+        team_ids = set()
         for match_doc in matches_docs:
             match = match_doc.to_dict()
             if match is None:
@@ -759,10 +760,22 @@ class UserService:
             for ref in match.get("team2", []):
                 player_refs.add(ref)
 
+            if match.get("matchType") == "doubles":
+                if t1_id := match.get("team1Id"):
+                    team_ids.add(t1_id)
+                if t2_id := match.get("team2Id"):
+                    team_ids.add(t2_id)
+
         users_map = {}
         if player_refs:
             user_docs = db.get_all(list(player_refs))
             users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
+
+        teams_map = {}
+        if team_ids:
+            team_refs = [db.collection("teams").document(tid) for tid in team_ids]
+            team_docs = db.get_all(team_refs)
+            teams_map = {doc.id: doc.to_dict() for doc in team_docs if doc.exists}
 
         matches_data = []
         for match_doc in matches_docs:
@@ -812,6 +825,18 @@ class UserService:
                     match["player2Ref"], users_map
                 )
 
+            team1_name = None
+            team2_name = None
+            if match.get("matchType") == "doubles":
+                if t1_id := match.get("team1Id"):
+                    team1_data = teams_map.get(t1_id)
+                    if team1_data:
+                        team1_name = team1_data.get("name")
+                if t2_id := match.get("team2Id"):
+                    team2_data = teams_map.get(t2_id)
+                    if team2_data:
+                        team2_name = team2_data.get("name")
+
             matches_data.append(
                 {
                     "id": match_doc.id,
@@ -824,6 +849,8 @@ class UserService:
                     "is_group_match": bool(match.get("groupId")),
                     "match_type": match.get("matchType", "singles"),
                     "user_result": user_result,
+                    "team1_name": team1_name,
+                    "team2_name": team2_name,
                 }
             )
         return matches_data
