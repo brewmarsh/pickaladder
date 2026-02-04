@@ -19,13 +19,23 @@ CLOSE_CALL_THRESHOLD = 2
 
 # TODO: Add type hints for Agent clarity
 def _get_candidate_player_ids(
-    user_id: str, group_id: str | None = None, include_user: bool = False
+    user_id: str,
+    group_id: str | None = None,
+    tournament_id: str | None = None,
+    include_user: bool = False,
 ) -> set[str]:
-    """Fetch a set of valid opponent IDs for a user, optionally within a group."""
+    """Fetch a set of valid opponent IDs for a user, optionally within a group or tournament."""
     db = firestore.client()
-    candidate_player_ids = set()
+    candidate_player_ids: set[str] = set()
 
-    if group_id:
+    if tournament_id:
+        # If in a tournament context, candidates are tournament participants
+        tournament_ref = db.collection("tournaments").document(tournament_id)
+        tournament = tournament_ref.get()
+        if tournament.exists:
+            participant_ids = tournament.to_dict().get("participant_ids", [])
+            candidate_player_ids.update(participant_ids)
+    elif group_id:
         # If in a group context, candidates are group members and pending invitees
         group_ref = db.collection("groups").document(group_id)
         group = group_ref.get()
@@ -325,7 +335,13 @@ def record_match() -> Any:
     user_id = g.user["uid"]
     group_id = request.args.get("group_id")
     tournament_id = request.args.get("tournament_id")
-    candidate_player_ids = _get_candidate_player_ids(user_id, group_id)
+    candidate_player_ids = _get_candidate_player_ids(user_id, group_id, tournament_id)
+
+    tournament_name = None
+    if tournament_id:
+        tournament_doc = db.collection("tournaments").document(tournament_id).get()
+        if tournament_doc.exists:
+            tournament_name = tournament_doc.to_dict().get("name")
 
     if request.method == "POST" and request.is_json:
         data = request.get_json()
@@ -355,7 +371,9 @@ def record_match() -> Any:
 
         if form.validate():
             try:
-                _save_match_data(user_id, data, group_id, tournament_id)
+                json_group_id = data.get("group_id") or group_id
+                json_tournament_id = data.get("tournament_id") or tournament_id
+                _save_match_data(user_id, data, json_group_id, json_tournament_id)
                 return jsonify({"status": "success", "message": "Match recorded."}), 200
             except Exception as e:
                 return jsonify({"status": "error", "message": str(e)}), 500
@@ -376,7 +394,7 @@ def record_match() -> Any:
 
     # Fetch and populate player choices for the form dropdowns
     player1_candidate_ids = _get_candidate_player_ids(
-        user_id, group_id, include_user=True
+        user_id, group_id, tournament_id, include_user=True
     )
 
     player1_choices = []
@@ -412,6 +430,8 @@ def record_match() -> Any:
 
     if request.method == "GET":
         form.player1.data = user_id
+        form.group_id.data = group_id
+        form.tournament_id.data = tournament_id
         opponent_id = request.args.get("opponent")
         if opponent_id:
             form.player2.data = opponent_id
@@ -425,6 +445,8 @@ def record_match() -> Any:
 
     if form.validate_on_submit():
         player_1_id = request.form.get("player1") or user_id
+        group_id = form.group_id.data or group_id
+        tournament_id = form.tournament_id.data or tournament_id
 
         # Uniqueness check
         player_ids = [player_1_id, form.player2.data]
@@ -440,6 +462,7 @@ def record_match() -> Any:
                 form=form,
                 group_id=group_id,
                 tournament_id=tournament_id,
+                tournament_name=tournament_name,
             )
 
         try:
@@ -456,7 +479,11 @@ def record_match() -> Any:
             flash(f"An unexpected error occurred: {e}", "danger")
 
     return render_template(
-        "record_match.html", form=form, group_id=group_id, tournament_id=tournament_id
+        "record_match.html",
+        form=form,
+        group_id=group_id,
+        tournament_id=tournament_id,
+        tournament_name=tournament_name,
     )
 
 

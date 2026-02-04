@@ -725,6 +725,25 @@ class UserService:
     ) -> list[dict[str, Any]]:
         """Enrich match documents with user and team data for dashboard display."""
         users_map, teams_map = UserService._fetch_match_entities(db, matches_docs)
+
+        # Batch fetch tournament names
+        tournament_ids = {
+            m.to_dict().get("tournamentId")
+            for m in matches_docs
+            if m.to_dict() and m.to_dict().get("tournamentId")
+        }
+        tournaments_map = {}
+        if tournament_ids:
+            tournament_refs = [
+                db.collection("tournaments").document(tid)
+                for tid in tournament_ids
+                if tid
+            ]
+            tournament_docs = db.get_all(tournament_refs)
+            tournaments_map = {
+                doc.id: doc.to_dict() for doc in tournament_docs if doc.exists
+            }
+
         matches_data = []
 
         for match_doc in matches_docs:
@@ -758,6 +777,10 @@ class UserService:
             if t2_ref := match.get("team2Ref"):
                 t2_name = teams_map.get(t2_ref.id, {}).get("name", "Team 2")
 
+            tournament_name = None
+            if t_id := match.get("tournamentId"):
+                tournament_name = tournaments_map.get(t_id, {}).get("name")
+
             matches_data.append(
                 {
                     "id": match_doc.id,
@@ -772,6 +795,7 @@ class UserService:
                     "user_result": user_result,
                     "team1_name": t1_name,
                     "team2_name": t2_name,
+                    "tournament_name": tournament_name,
                 }
             )
         return matches_data
