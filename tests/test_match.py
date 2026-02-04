@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import datetime
 import unittest
-from typing import Any, Dict, Set
 from unittest.mock import MagicMock, patch
 
 from firebase_admin import firestore
@@ -72,7 +71,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             sess["is_admin"] = False
         self.mocks["verify_id_token"].return_value = MOCK_USER_PAYLOAD
 
-    def _get_auth_headers(self) -> Dict[str, str]:
+    def _get_auth_headers(self) -> dict[str, str]:
         """Get standard authentication headers for tests."""
         return {"Authorization": "Bearer mock-token"}
 

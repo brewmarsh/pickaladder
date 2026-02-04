@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import threading
-from typing import Any, Dict, Generator, List, Optional
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
 import firebase_admin
@@ -16,11 +16,14 @@ from werkzeug.serving import make_server
 
 from pickaladder import create_app
 
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
 # --- Mock Infrastructure & Patches ---
 
 
 # Fix mockfirestore Query.get to return a list instead of generator
-def query_get(self: Query) -> List[DocumentSnapshot]:
+def query_get(self: Query) -> list[DocumentSnapshot]:
     """Return a list instead of generator."""
     return list(self.stream())
 
@@ -33,8 +36,8 @@ original_collection_where = CollectionReference.where
 
 def collection_where(
     self: CollectionReference,
-    field_path: Optional[str] = None,
-    op_string: Optional[str] = None,
+    field_path: str | None = None,
+    op_string: str | None = None,
     value: Any = None,
     filter: Any = None,
 ) -> Query:
@@ -54,8 +57,8 @@ original_where = Query.where
 
 def query_where(
     self: Query,
-    field_path: Optional[str] = None,
-    op_string: Optional[str] = None,
+    field_path: str | None = None,
+    op_string: str | None = None,
     value: Any = None,
     filter: Any = None,
 ) -> Query:
@@ -75,7 +78,7 @@ def query_compare_func(self: Query, op: str) -> Any:
     """Handle document ID comparisons and array_contains."""
     if op == "in":
 
-        def in_op(x: Any, y: List[Any]) -> bool:
+        def in_op(x: Any, y: list[Any]) -> bool:
             """Handle 'in' operator mock."""
             normalized_y = []
             for item in y:
@@ -91,7 +94,7 @@ def query_compare_func(self: Query, op: str) -> Any:
         return in_op
     elif op == "array_contains":
 
-        def array_contains_op(x: Optional[List[Any]], y: Any) -> bool:
+        def array_contains_op(x: list[Any] | None, y: Any) -> bool:
             """Handle 'array_contains' operator mock."""
             if x is None:
                 return False
@@ -138,23 +141,23 @@ DocumentReference.__hash__ = doc_ref_hash
 class MockSentinel:
     """Mock sentinel for array operations."""
 
-    def __init__(self, values: List[Any], op: str) -> None:
+    def __init__(self, values: list[Any], op: str) -> None:
         """Initialize mock sentinel."""
         self.values = values
         self.op = op
 
 
-def mock_array_union(values: List[Any]) -> MockSentinel:
+def mock_array_union(values: list[Any]) -> MockSentinel:
     """Mock ArrayUnion."""
     return MockSentinel(values, "UNION")
 
 
-def mock_array_remove(values: List[Any]) -> MockSentinel:
+def mock_array_remove(values: list[Any]) -> MockSentinel:
     """Mock ArrayRemove."""
     return MockSentinel(values, "REMOVE")
 
 
-def doc_ref_update(self: DocumentReference, data: Dict[str, Any]) -> None:
+def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
     """Update document handling sentinels."""
     doc_snapshot = self.get()
     if doc_snapshot.exists:
@@ -202,15 +205,15 @@ class MockBatch:
     def __init__(self, client: Any) -> None:
         """Initialize mock batch."""
         self.client = client
-        self.ops: List[Any] = []
+        self.ops: list[Any] = []
 
     def set(
-        self, doc_ref: DocumentReference, data: Dict[str, Any], merge: bool = False
+        self, doc_ref: DocumentReference, data: dict[str, Any], merge: bool = False
     ) -> None:
         """Mock set."""
         self.ops.append(("set", doc_ref, data, merge))
 
-    def update(self, doc_ref: DocumentReference, data: Dict[str, Any]) -> None:
+    def update(self, doc_ref: DocumentReference, data: dict[str, Any]) -> None:
         """Mock update."""
         self.ops.append(("update", doc_ref, data))
 
@@ -265,7 +268,7 @@ class MockAuthService:
 
         pass
 
-    def verify_id_token(self, token: str, check_revoked: bool = False) -> Dict[str, Any]:
+    def verify_id_token(self, token: str, check_revoked: bool = False) -> dict[str, Any]:
         """Mock verify_id_token."""
         if token.startswith("token_"):
             uid = token.replace("token_", "")
@@ -278,7 +281,7 @@ class MockAuthService:
 
     def create_user(self, email: str, password: str, **kwargs: Any) -> MagicMock:
         """Mock create_user."""
-        uid = email.split("@")[0]
+        uid = email.split("@", 1)[0]
         m = MagicMock(uid=uid, email=email)
         m.display_name = uid
         return m

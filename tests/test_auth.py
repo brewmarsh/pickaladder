@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import unittest
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 if TYPE_CHECKING:

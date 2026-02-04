@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import unittest
-from typing import Any, Dict, cast
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 from pickaladder.user.utils import UserService
@@ -21,7 +21,7 @@ class TestUserService(unittest.TestCase):
         result = UserService.get_user_by_id(self.db, self.user_id)
         self.assertIsNotNone(result)
         # Using cast to narrow type for Mypy without adding runtime logic
-        res = cast(Dict[str, Any], result)
+        res = cast(dict[str, Any], result)
         self.assertEqual(res["id"], self.user_id)
         self.assertEqual(res["username"], "testuser")
 

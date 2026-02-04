@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import unittest
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
@@ -53,7 +53,9 @@ class AdminRoutesTestCase(unittest.TestCase):
         """Tear down the test client."""
         self.app_context.pop()
 
-    def _login_user(self, user_id: str, user_data: Dict[str, Any], is_admin: bool) -> None:
+    def _login_user(
+        self, user_id: str, user_data: dict[str, Any], is_admin: bool
+    ) -> None:
         """Simulate a user login by setting the session and mocking Firestore."""
         with self.client.session_transaction() as sess:
             sess["user_id"] = user_id

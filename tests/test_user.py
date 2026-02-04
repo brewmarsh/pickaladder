@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import unittest
 from io import BytesIO
-from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
 # INSIGHT #2: Explicitly import submodules to defeat lazy loading

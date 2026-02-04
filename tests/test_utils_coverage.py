@@ -244,7 +244,9 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(player2_stats["rank_change"], -1)  # Was 1st, now 2nd
 
     @patch("pickaladder.group.utils.firestore")
-    def test_get_group_leaderboard_winning_streak(self, mock_firestore: MagicMock) -> None:
+    def test_get_group_leaderboard_winning_streak(
+        self, mock_firestore: MagicMock
+    ) -> None:
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
         mock_group_doc.exists = True
@@ -448,7 +450,10 @@ class TestUtilsCoverage(unittest.TestCase):
     @patch("pickaladder.group.utils.send_email")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_success(
-        self, mock_firestore: MagicMock, mock_send_email: MagicMock, mock_thread: MagicMock
+        self,
+        mock_firestore: MagicMock,
+        mock_send_email: MagicMock,
+        mock_thread: MagicMock,
     ) -> None:
         mock_app = MagicMock()
         mock_app.app_context.return_value.__enter__.return_value = None
@@ -478,7 +483,10 @@ class TestUtilsCoverage(unittest.TestCase):
     @patch("pickaladder.group.utils.send_email")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_failure(
-        self, mock_firestore: MagicMock, mock_send_email: MagicMock, mock_thread: MagicMock
+        self,
+        mock_firestore: MagicMock,
+        mock_send_email: MagicMock,
+        mock_thread: MagicMock,
     ) -> None:
         mock_app = MagicMock()
         mock_app.app_context.return_value.__enter__.return_value = None

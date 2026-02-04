@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import unittest
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app

@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import unittest
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
 
 
 class MockDocumentReference:
-    def __init__(self, id: Optional[str] = None) -> None:
+    def __init__(self, id: str | None = None) -> None:
         self.id = id
         self.path = f"collection/{id}" if id else "collection/unknown"
         self.get = MagicMock()
@@ -126,7 +126,7 @@ class BestBudsTestCase(unittest.TestCase):
         mock_query.stream.return_value = [team1_doc, team2_doc]
 
         # Mock get_all for both teams and team members enrichment
-        def mock_get_all(refs: List[Any]) -> List[Any]:
+        def mock_get_all(refs: list[Any]) -> list[Any]:
             results = []
             for ref in refs:
                 if ref.id == "team1":

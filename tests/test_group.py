@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import unittest
 from io import BytesIO
-from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
 # Pre-emptive imports to ensure patch targets exist.
@@ -60,7 +59,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             sess["is_admin"] = False
         self.mocks["verify_id_token"].return_value = MOCK_USER_PAYLOAD
 
-    def _get_auth_headers(self) -> Dict[str, str]:
+    def _get_auth_headers(self) -> dict[str, str]:
         """Get standard authentication headers for tests."""
         return {"Authorization": "Bearer mock-token"}
 

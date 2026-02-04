@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import unittest
-from typing import Tuple
 from unittest.mock import MagicMock, patch
 
 from pickaladder.group.utils import get_group_leaderboard
@@ -19,7 +18,7 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
         mock_db = mock_firestore.client.return_value
 
         # Create mock users
-        def create_mock_user(uid: str, name: str) -> Tuple[MagicMock, MagicMock]:
+        def create_mock_user(uid: str, name: str) -> tuple[MagicMock, MagicMock]:
             """Create a pair of mock user reference and document snapshot."""
             doc = MagicMock()
             doc.id = uid
