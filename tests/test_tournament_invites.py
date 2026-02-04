@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
+from pickaladder.user.utils import UserService
 
 # Mock user payloads
 MOCK_USER_ID = "user1"
@@ -71,8 +72,6 @@ class TournamentInvitesTestCase(unittest.TestCase):
 
     def test_get_pending_tournament_invites(self) -> None:
         """Test UserService.get_pending_tournament_invites."""
-        from pickaladder.user.utils import UserService
-
         mock_db = self.mock_firestore_service.client.return_value
 
         # Mock tournament docs
@@ -82,18 +81,14 @@ class TournamentInvitesTestCase(unittest.TestCase):
         mock_user_ref.id = MOCK_USER_ID
         mock_doc1.to_dict.return_value = {
             "name": "Tournament 1",
-            "participants": [
-                {"userRef": mock_user_ref, "status": "pending"}
-            ]
+            "participants": [{"userRef": mock_user_ref, "status": "pending"}],
         }
 
         mock_doc2 = MagicMock()
         mock_doc2.id = "t2"
         mock_doc2.to_dict.return_value = {
             "name": "Tournament 2",
-            "participants": [
-                {"userRef": mock_user_ref, "status": "accepted"}
-            ]
+            "participants": [{"userRef": mock_user_ref, "status": "accepted"}],
         }
 
         mock_query = mock_db.collection.return_value.where.return_value
@@ -136,21 +131,24 @@ class TournamentInvitesTestCase(unittest.TestCase):
 
         # We need to simulate the transactional behavior.
         # The route calls update_in_transaction(db.transaction(), tournament_ref)
-        # In the route: success = update_in_transaction(db.transaction(), tournament_ref)
+        # In the route:
+        # success = update_in_transaction(db.transaction(), tournament_ref)
 
         # Since we are mocking the transaction object, we need to make sure
         # the transaction decorator/wrapper works.
-        # But wait, the route uses @firestore.transactional which we might need to patch
-        # if it doesn't work well with MagicMocks.
+        # But wait, the route uses @firestore.transactional which we might
+        # need to patch if it doesn't work well with MagicMocks.
 
-        with patch("pickaladder.tournament.routes.firestore.transactional") as mock_trans_decorator:
+        with patch(
+            "pickaladder.tournament.routes.firestore.transactional"
+        ) as mock_trans_decorator:
             # Make the decorator just return the function
             mock_trans_decorator.side_effect = lambda x: x
 
             response = self.client.post(
                 f"/tournaments/{tournament_id}/accept",
                 headers=self._get_auth_headers(),
-                follow_redirects=True
+                follow_redirects=True,
             )
 
         self.assertEqual(response.status_code, 200)
@@ -182,17 +180,19 @@ class TournamentInvitesTestCase(unittest.TestCase):
         mock_user_ref.id = MOCK_USER_ID
         mock_snapshot.get.side_effect = lambda key: {
             "participants": [{"userRef": mock_user_ref, "status": "pending"}],
-            "participant_ids": [MOCK_USER_ID]
+            "participant_ids": [MOCK_USER_ID],
         }[key]
         mock_tournament_ref.get.return_value = mock_snapshot
 
-        with patch("pickaladder.tournament.routes.firestore.transactional") as mock_trans_decorator:
+        with patch(
+            "pickaladder.tournament.routes.firestore.transactional"
+        ) as mock_trans_decorator:
             mock_trans_decorator.side_effect = lambda x: x
 
             response = self.client.post(
                 f"/tournaments/{tournament_id}/decline",
                 headers=self._get_auth_headers(),
-                follow_redirects=True
+                follow_redirects=True,
             )
 
         self.assertEqual(response.status_code, 200)

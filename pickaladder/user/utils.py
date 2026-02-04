@@ -213,11 +213,17 @@ class UserService:
         return results
 
     @staticmethod
-    def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
+    def get_pending_tournament_invites(
+        db: Client, user_id: str
+    ) -> list[dict[str, Any]]:
         """Fetch pending tournament invites for a user."""
         tournaments_query = (
             db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("participant_ids", "array_contains", user_id))
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_id
+                )
+            )
             .stream()
         )
 

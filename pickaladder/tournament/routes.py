@@ -345,7 +345,9 @@ def decline_invite(tournament_id: str) -> Any:
         ]
 
         if len(new_participants) < len(participants):
-            new_participant_ids = [uid for uid in participant_ids if uid != g.user["uid"]]
+            new_participant_ids = [
+                uid for uid in participant_ids if uid != g.user["uid"]
+            ]
             transaction.update(
                 tournament_ref,
                 {

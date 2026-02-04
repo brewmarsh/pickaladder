@@ -147,9 +147,7 @@ def dashboard() -> Any:
     friends = UserService.get_user_friends(db, user_id)
     requests_data = UserService.get_user_pending_requests(db, user_id)
     group_rankings = UserService.get_group_rankings(db, user_id)
-    pending_tournament_invites = UserService.get_pending_tournament_invites(
-        db, user_id
-    )
+    pending_tournament_invites = UserService.get_pending_tournament_invites(db, user_id)
 
     if form.validate_on_submit():
         try:
@@ -288,7 +286,9 @@ def view_community() -> Any:
         outgoing_requests = [r for r in outgoing_requests if matches_search(r)]
         all_users = [u for u in all_users if matches_search(u)]
         pending_tournament_invites = [
-            ti for ti in pending_tournament_invites if term in ti.get("name", "").lower()
+            ti
+            for ti in pending_tournament_invites
+            if term in ti.get("name", "").lower()
         ]
 
         def group_matches_search(group_data: dict[str, Any]) -> bool:
