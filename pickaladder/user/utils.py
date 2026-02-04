@@ -710,11 +710,11 @@ class UserService:
         public_group_docs = list(public_groups_query.stream())
 
         # Enrich groups with owner data
-        owner_refs = [
-            doc.to_dict().get("ownerRef")
-            for doc in public_group_docs
-            if doc.to_dict().get("ownerRef")
-        ]
+        owner_refs = []
+        for doc in public_group_docs:
+            data = doc.to_dict()
+            if data and (ref := data.get("ownerRef")):
+                owner_refs.append(ref)
         unique_owner_refs = list({ref for ref in owner_refs if ref})
 
         owners_data = {}
