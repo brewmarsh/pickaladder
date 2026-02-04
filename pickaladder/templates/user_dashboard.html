@@ -57,13 +57,27 @@
                                         {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
                                         {% if in_team1 %}
                                             {% set partner = match.player1[1] if match.player1[0].id == user.uid else match.player1[0] %}
-                                            {% set opponent_name = match.team2_name %}
+                                            {% set opponents = match.player2 %}
+                                            {% set my_team_name = match.team1_name %}
+                                            {% set opponent_team_name = match.team2_name %}
                                         {% else %}
                                             {% set partner = match.player2[1] if match.player2[0].id == user.uid else match.player2[0] %}
-                                            {% set opponent_name = match.team1_name %}
+                                            {% set opponents = match.player1 %}
+                                            {% set my_team_name = match.team2_name %}
+                                            {% set opponent_team_name = match.team1_name %}
                                         {% endif %}
-                                        (You & {{ partner.username }}) vs {{ opponent_name }}
-                                    {% else %}
+
+                                        {% if my_team_name %}
+                                            <strong>{{ my_team_name }}</strong>
+                                        {% else %}
+                                            (You & {{ partner.username }})
+                                        {% endif %}
+                                        vs
+                                        {% if opponent_team_name %}
+                                            <strong>{{ opponent_team_name }}</strong>
+                                        {% else %}
+                                            ({{ opponents[0].username }} & {{ opponents[1].username }})
+                                        {% endif %}                                    {% else %}
                                         {% set is_p1 = match.player1.id == user.uid %}
                                         {% set opponent = match.player2 if is_p1 else match.player1 %}
                                         You vs {{ opponent.username }}

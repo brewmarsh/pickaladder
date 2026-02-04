@@ -740,17 +740,21 @@ class UserService:
         return enriched_groups
 
     @staticmethod
+@staticmethod
     def format_matches_for_dashboard(
         db: Client, matches_docs: list[Any], user_id: str
     ) -> list[dict[str, Any]]:
         """Format matches for the API dashboard view."""
-        # Batch fetch user data for all players in the recent matches
+        # Batch fetch user data and team data for all players in the recent matches
         player_refs = set()
         team_refs = set()
+        
         for match_doc in matches_docs:
             match = match_doc.to_dict()
             if match is None:
                 continue
+            
+            # Collect Player References
             if match.get("player1Ref"):
                 player_refs.add(match["player1Ref"])
             if match.get("player2Ref"):
@@ -759,16 +763,20 @@ class UserService:
                 player_refs.add(ref)
             for ref in match.get("team2", []):
                 player_refs.add(ref)
+            
+            # Collect Team References (The Reference-based approach)
             if match.get("team1Ref"):
                 team_refs.add(match["team1Ref"])
             if match.get("team2Ref"):
                 team_refs.add(match["team2Ref"])
 
+        # Batch fetch Users
         users_map = {}
         if player_refs:
             user_docs = db.get_all(list(player_refs))
             users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
 
+        # Batch fetch Teams
         teams_map = {}
         if team_refs:
             team_docs = db.get_all(list(team_refs))
@@ -822,16 +830,17 @@ class UserService:
                     match["player2Ref"], users_map
                 )
 
-            team1_name = "Team 1"
-            team2_name = "Team 2"
+            # Resolve Team Names using the References
+            team1_name = None
+            team2_name = None
             if t1_ref := match.get("team1Ref"):
                 t1_data = teams_map.get(t1_ref.id)
                 if t1_data:
-                    team1_name = t1_data.get("name", "Team 1")
+                    team1_name = t1_data.get("name")
             if t2_ref := match.get("team2Ref"):
                 t2_data = teams_map.get(t2_ref.id)
                 if t2_data:
-                    team2_name = t2_data.get("name", "Team 2")
+                    team2_name = t2_data.get("name")
 
             matches_data.append(
                 {
