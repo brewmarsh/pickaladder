@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
@@ -224,8 +225,7 @@ class TournamentBlastTestCase(unittest.TestCase):
                 break
 
         self.assertIsNotNone(tourney_update_call)
-        assert tourney_update_call is not None
-        update_data = tourney_update_call[0][1]
+        update_data = cast(Any, tourney_update_call)[0][1]
 
         # Check participant_ids
         self.assertIn("real_id", update_data["participant_ids"])
