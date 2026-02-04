@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}{{ tournament.name }}{% endblock %}
+
 {% block content %}
 <div class="hero-stats-card">
     <div class="hero-left-panel">
@@ -23,7 +24,9 @@
             </div>
         </div>
         <div style="display: flex; gap: 10px; margin-top: 10px;">
+            {# Fixed Google Maps Link #}
             <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.location|urlencode }}" target="_blank" class="btn btn-warning" style="width: auto;">📍 Directions</a>
+            
             {% if tournament.status != 'Completed' %}
                 <a href="{{ url_for('match.record_match', tournament_id=tournament.id) }}" class="btn btn-primary" style="width: auto;">Record Match</a>
             {% endif %}
@@ -37,7 +40,7 @@
     <div style="display: flex; justify-content: center; align-items: flex-end; gap: 20px; padding: 20px; flex-wrap: wrap;">
         {% if podium|length > 1 %}
         <div style="text-align: center; order: 1;">
-            <div style="font-size: 3rem;">🥈</div>
+            <div style="font-size: 3rem;">2️⃣</div>
             <div class="rank-badge rank-2" style="padding: 10px 20px; font-size: 1.2rem; border-radius: 10px; margin-bottom: 5px;">
                 {{ podium[1].name }}
             </div>
@@ -46,7 +49,7 @@
         {% endif %}
 
         <div style="text-align: center; order: 0;">
-            <div style="font-size: 4rem;">🥇</div>
+            <div style="font-size: 4rem;">1️⃣</div>
             <div class="rank-badge rank-1" style="padding: 15px 30px; font-size: 1.5rem; border-radius: 10px; box-shadow: 0 0 15px var(--warning-color); margin-bottom: 5px;">
                 {{ podium[0].name }}
             </div>
@@ -55,7 +58,7 @@
 
         {% if podium|length > 2 %}
         <div style="text-align: center; order: 2;">
-            <div style="font-size: 2.5rem;">🥉</div>
+            <div style="font-size: 2.5rem;">3️⃣</div>
             <div class="rank-badge rank-3" style="padding: 8px 15px; font-size: 1.1rem; border-radius: 10px; margin-bottom: 5px;">
                 {{ podium[2].name }}
             </div>
@@ -108,7 +111,13 @@
                     <div class="friend-card">
                         <img src="{{ p.user | avatar_url }}" alt="Avatar" class="friend-avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                         <div class="friend-info">
-                            <h4 class="friend-name">{{ p.display_name }}</h4>
+                            <h4 class="friend-name">
+                                {{ p.display_name }}
+                                {# Logic for Team Names in Doubles #}
+                                {% if p.team_name %}
+                                    <small class="text-muted">({{ p.team_name }})</small>
+                                {% endif %}
+                            </h4>
                             <span class="badge {{ 'badge-success' if p.status == 'accepted' else 'badge-warning' }}">
                                 {{ p.status|capitalize }}
                             </span>
@@ -142,6 +151,7 @@
                 </div>
                 <div class="card-body" style="padding: 0;">
                     <form action="{{ url_for('tournament.invite_player', tournament_id=tournament.id) }}" method="POST">
+                        {# Resolved Conflict: Used invite_form helper #}
                         {{ invite_form.csrf_token }}
                         <div class="form-group">
                             {{ invite_form.user_id.label(class="form-label") }}
