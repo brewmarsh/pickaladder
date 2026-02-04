@@ -21,94 +21,7 @@ from pickaladder.utils import send_email
 
 from . import bp
 from .forms import InvitePlayerForm, TournamentForm
-
-
-def _get_tournament_standings(
-    db: Any, tournament_id: str, match_type: str
-) -> list[dict[str, Any]]:
-    """Calculate tournament standings based on matches."""
-    matches_query = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("tournamentId", "==", tournament_id))
-        .stream()
-    )
-    standings: dict[str, dict[str, Any]] = {}
-
-    for match in matches_query:
-        data = match.to_dict()
-        p1_score = data.get("player1Score", 0)
-        p2_score = data.get("player2Score", 0)
-
-        if match_type == "doubles":
-            team1_id = data.get("team1Id")
-            team2_id = data.get("team2Id")
-            if not team1_id or not team2_id:
-                continue
-
-            if team1_id not in standings:
-                standings[team1_id] = {
-                    "id": team1_id,
-                    "wins": 0,
-                    "losses": 0,
-                    "name": "Unknown Team",
-                }
-            if team2_id not in standings:
-                standings[team2_id] = {
-                    "id": team2_id,
-                    "wins": 0,
-                    "losses": 0,
-                    "name": "Unknown Team",
-                }
-
-            if p1_score > p2_score:
-                standings[team1_id]["wins"] += 1
-                standings[team2_id]["losses"] += 1
-            else:
-                standings[team2_id]["wins"] += 1
-                standings[team1_id]["losses"] += 1
-        else:
-            p1_ref = data.get("player1Ref")
-            p2_ref = data.get("player2Ref")
-            if not p1_ref or not p2_ref:
-                continue
-
-            p1_id = p1_ref.id
-            p2_id = p2_ref.id
-
-            if p1_id not in standings:
-                standings[p1_id] = {"id": p1_id, "wins": 0, "losses": 0}
-            if p2_id not in standings:
-                standings[p2_id] = {"id": p2_id, "wins": 0, "losses": 0}
-
-            if p1_score > p2_score:
-                standings[p1_id]["wins"] += 1
-                standings[p2_id]["losses"] += 1
-            else:
-                standings[p2_id]["wins"] += 1
-                standings[p1_id]["losses"] += 1
-
-    standings_list = list(standings.values())
-    if not standings_list:
-        return []
-
-    if match_type == "doubles":
-        for s in standings_list:
-            team_doc = db.collection("teams").document(s["id"]).get()
-            if team_doc.exists:
-                s["name"] = team_doc.to_dict().get("name", "Unknown Team")
-    else:
-        user_ids = [s["id"] for s in standings_list]
-        user_refs = [db.collection("users").document(uid) for uid in user_ids]
-        user_docs = db.get_all(user_refs)
-        users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
-        for s in standings_list:
-            user_data = users_map.get(s["id"], {})
-            s["name"] = (
-                user_data.get("name") or user_data.get("username") or "Unknown Player"
-            )
-
-    standings_list.sort(key=lambda x: (x["wins"], -x["losses"]), reverse=True)
-    return standings_list
+from .utils import get_tournament_standings
 
 
 @bp.route("/", methods=["GET"])
@@ -230,7 +143,7 @@ def view_tournament(tournament_id: str) -> Any:
                 )
 
     # Calculate Standings
-    standings = _get_tournament_standings(db, tournament_id, match_type)
+    standings = get_tournament_standings(db, tournament_id, match_type)
     podium = standings[:3] if status == "Completed" else []
 
     # Invite form
@@ -295,7 +208,7 @@ def complete_tournament(tournament_id: str) -> Any:
 
         # Calculate final standings for the email
         match_type = tournament_data.get("matchType", "singles")
-        standings = _get_tournament_standings(db, tournament_id, match_type)
+        standings = get_tournament_standings(db, tournament_id, match_type)
         winner_name = standings[0]["name"] if standings else "No one"
 
         # Send emails to all participants
