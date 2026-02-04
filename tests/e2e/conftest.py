@@ -14,8 +14,6 @@ from mockfirestore.document import DocumentReference, DocumentSnapshot
 from mockfirestore.query import Query
 from werkzeug.serving import make_server
 
-from pickaladder import create_app
-
 if TYPE_CHECKING:
     from collections.abc import Generator
 
@@ -322,8 +320,8 @@ def app_server(
     # Ensure firebase_admin submodules are loaded so we can patch them
     # We don't import them directly to avoid side effects if not needed
     try:
-        firebase_admin.auth  # noqa: F401
-        firebase_admin.firestore  # noqa: F401
+        import firebase_admin.auth
+        import firebase_admin.firestore
     except ImportError:
         pass
 
@@ -351,6 +349,7 @@ def app_server(
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
 
+    from pickaladder import create_app
     app = create_app({"TESTING": True})
 
     port = 5002
