@@ -1,6 +1,7 @@
 """Routes for the tournament blueprint."""
 
 from __future__ import annotations
+import datetime
 
 from typing import Any
 
@@ -84,10 +85,11 @@ def create_tournament() -> Any:
         try:
             tournament_data = {
                 "name": form.name.data,
-                "date": str(form.date.data),
+                "date": datetime.datetime.combine(form.date.data, datetime.time.min),
                 "location": form.location.data,
                 "matchType": form.match_type.data,
                 "ownerRef": user_ref,
+                "organizer_id": g.user["uid"],
                 "participants": [{"userRef": user_ref, "status": "accepted"}],
                 "participant_ids": [g.user["uid"]],
                 "createdAt": firestore.SERVER_TIMESTAMP,
@@ -116,7 +118,15 @@ def view_tournament(tournament_id: str) -> Any:
         return redirect(url_for(".list_tournaments"))
 
     tournament_data = tournament_doc.to_dict()
+    if tournament_data is None:
+        flash("Tournament not found.", "danger")
+        return redirect(url_for(".list_tournaments"))
     tournament_data["id"] = tournament_doc.id
+
+    # Handle date conversion for display
+    raw_date = tournament_data.get("date")
+    if hasattr(raw_date, "to_datetime"):
+        tournament_data["date"] = raw_date.to_datetime().date()
     match_type = tournament_data.get("matchType", "singles")
     status = tournament_data.get("status", "Active")
 
@@ -212,6 +222,12 @@ def view_tournament(tournament_id: str) -> Any:
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
 
+    owner_ref = tournament_data.get("ownerRef")
+    is_owner = (
+        tournament_data.get("organizer_id") == g.user["uid"]
+        or (owner_ref and owner_ref.id == g.user["uid"])
+    )
+
     return render_template(
         "tournament/view.html",
         tournament=tournament_data,
@@ -220,7 +236,83 @@ def view_tournament(tournament_id: str) -> Any:
         podium=podium,
         invite_form=invite_form,
         invitable_users=invitable_users,
-        is_owner=(tournament_data.get("ownerRef").id == g.user["uid"]),
+        is_owner=is_owner,
+    )
+
+
+@bp.route("/<string:tournament_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_tournament(tournament_id: str) -> Any:
+    """Edit an existing tournament."""
+    db = firestore.client()
+    tournament_ref = db.collection("tournaments").document(tournament_id)
+    tournament_doc = tournament_ref.get()
+
+    if not tournament_doc.exists:
+        flash("Tournament not found.", "danger")
+        return redirect(url_for(".list_tournaments"))
+
+    tournament_data = tournament_doc.to_dict()
+    if tournament_data is None:
+        flash("Tournament data is empty.", "danger")
+        return redirect(url_for(".list_tournaments"))
+    tournament_data["id"] = tournament_doc.id
+
+    # Authorization
+    organizer_id = tournament_data.get("organizer_id")
+    owner_ref = tournament_data.get("ownerRef")
+    if organizer_id != g.user["uid"] and (not owner_ref or owner_ref.id != g.user["uid"]):
+        flash("You are not authorized to edit this tournament.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    # Check if ongoing
+    matches_query = (
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("tournamentId", "==", tournament_id))
+        .limit(1)
+        .stream()
+    )
+    is_ongoing = any(matches_query)
+
+    form = TournamentForm()
+
+    if form.validate_on_submit():
+        update_data = {
+            "name": form.name.data,
+            "date": datetime.datetime.combine(form.date.data, datetime.time.min),
+            "location": form.location.data,
+        }
+        if not is_ongoing:
+            update_data["matchType"] = form.match_type.data
+
+        try:
+            tournament_ref.update(update_data)
+            flash("Tournament updated successfully.", "success")
+            return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        except Exception as e:
+            flash(f"An error occurred: {e}", "danger")
+    elif request.method == "GET":
+        form.name.data = tournament_data.get("name")
+        form.location.data = tournament_data.get("location")
+        form.match_type.data = tournament_data.get("matchType")
+
+        # Handle date conversion
+        raw_date = tournament_data.get("date")
+        if isinstance(raw_date, datetime.datetime):
+            form.date.data = raw_date.date()
+        elif hasattr(raw_date, "to_datetime"):  # Firestore Timestamp
+            form.date.data = raw_date.to_datetime().date()
+        elif isinstance(raw_date, str):
+            try:
+                form.date.data = datetime.datetime.strptime(raw_date, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+
+    return render_template(
+        "tournament/edit.html",
+        form=form,
+        tournament=tournament_data,
+        is_ongoing=is_ongoing,
     )
 
 
@@ -237,8 +329,15 @@ def complete_tournament(tournament_id: str) -> Any:
         return redirect(url_for(".list_tournaments"))
 
     tournament_data = tournament_doc.to_dict()
-    if tournament_data.get("ownerRef").id != g.user["uid"]:
-        flash("Only the owner can complete the tournament.", "danger")
+    if tournament_data is None:
+        flash("Tournament data is empty.", "danger")
+        return redirect(url_for(".list_tournaments"))
+
+    owner_ref = tournament_data.get("ownerRef")
+    if tournament_data.get("organizer_id") != g.user["uid"] and (
+        not owner_ref or owner_ref.id != g.user["uid"]
+    ):
+        flash("Only the organizer can complete the tournament.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
     try:
