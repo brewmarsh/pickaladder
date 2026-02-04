@@ -217,16 +217,28 @@ def edit_tournament(tournament_id: str) -> Any:
         flash("Unauthorized.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
+    # Check if tournament is ongoing (has matches)
+    is_ongoing = bool(
+        list(
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("tournamentId", "==", tournament_id))
+            .limit(1)
+            .stream()
+        )
+    )
+
     form = TournamentForm()
     if form.validate_on_submit():
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(form.date.data, datetime.time.min),
             "location": form.location.data,
-            "matchType": form.match_type.data,
         }
+        if not is_ongoing:
+            update_data["matchType"] = form.match_type.data
+
         tournament_ref.update(update_data)
-        flash("Updated!", "success")
+        flash("Tournament updated successfully.", "success")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
     
     elif request.method == "GET":
@@ -252,12 +264,107 @@ def invite_player(tournament_id: str) -> Any:
 
     invited_ref = db.collection("users").document(user_id)
     tournament_ref = db.collection("tournaments").document(tournament_id)
-    
+
     tournament_ref.update({
-        "participants": firestore.ArrayUnion([{"userRef": invited_ref, "status": "pending", "team_name": None}]),
+        "participants": firestore.ArrayUnion(
+            [{"userRef": invited_ref, "status": "pending", "team_name": None}]
+        ),
         "participant_ids": firestore.ArrayUnion([user_id]),
     })
     flash("Invite sent!", "success")
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/invite_group", methods=["POST"])
+@login_required
+def invite_group(tournament_id: str) -> Any:
+    """Invites all members of a group to a tournament."""
+    db = firestore.client()
+    group_id = request.form.get("group_id")
+    if not group_id:
+        flash("No group selected.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    group_ref = db.collection("groups").document(group_id)
+    group_doc = group_ref.get()
+    if not group_doc.exists:
+        flash("Group not found.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    group_data = group_doc.to_dict()
+    if not group_data:
+        flash("Group data is empty.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    group_name = group_data.get("name", "Group")
+    member_refs = group_data.get("members", [])
+    if not member_refs:
+        flash(f"Group '{group_name}' has no members to invite.", "warning")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    tournament_ref = db.collection("tournaments").document(tournament_id)
+    tournament_doc = tournament_ref.get()
+    if not tournament_doc.exists:
+        flash("Tournament not found.", "danger")
+        return redirect(url_for(".list_tournaments"))
+
+    tournament_data = tournament_doc.to_dict()
+    if not tournament_data:
+        flash("Tournament data is empty.", "danger")
+        return redirect(url_for(".list_tournaments"))
+
+    current_participant_ids = set(tournament_data.get("participant_ids", []))
+
+    # Batch fetch all member documents to check for ghosts and emails
+    member_docs = db.get_all(member_refs)
+
+    new_participants = []
+    new_participant_ids = []
+
+    for member_doc in member_docs:
+        if not member_doc.exists:
+            continue
+
+        member_id = member_doc.id
+        if member_id in current_participant_ids:
+            continue
+
+        m_data = member_doc.to_dict()
+        if not m_data:
+            continue
+
+        participant_obj = {
+            "userRef": member_doc.reference,
+            "status": "pending",
+            "team_name": None,
+        }
+
+        # Check if ghost and include email
+        if m_data.get("is_ghost"):
+            email = m_data.get("email")
+            if email:
+                participant_obj["email"] = email
+
+        new_participants.append(participant_obj)
+        new_participant_ids.append(member_id)
+
+    count = len(new_participant_ids)
+    if count > 0:
+        batch = db.batch()
+        batch.update(
+            tournament_ref,
+            {
+                "participants": firestore.ArrayUnion(new_participants),
+                "participant_ids": firestore.ArrayUnion(new_participant_ids),
+            },
+        )
+        batch.commit()
+        flash(f"Success! Invited {count} members from {group_name}.", "success")
+    else:
+        flash(
+            f"All members from '{group_name}' are already in the tournament.", "info"
+        )
+
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
