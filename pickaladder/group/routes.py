@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import secrets
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from firebase_admin import firestore, storage
 from flask import (
@@ -88,9 +88,9 @@ def view_groups() -> Any:
         owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
 
     # TODO: Add type hints for Agent clarity
-    def enrich_group(group_doc: Any) -> Dict[str, Any]:
+    def enrich_group(group_doc: Any) -> dict[str, Any]:
         """Attach owner data to a group dictionary."""
-        group_data: Dict[str, Any] = group_doc.to_dict()
+        group_data: dict[str, Any] = group_doc.to_dict()
         group_data["id"] = group_doc.id  # Add document ID
         owner_ref = group_data.get("ownerRef")
         if owner_ref and owner_ref.id in owners_data:
@@ -205,7 +205,7 @@ def view_group(group_id: str) -> Any:
     if invite_email_form.validate_on_submit() and "email" in request.form:
         try:
             name = invite_email_form.name.data or "Friend"
-            original_email = invite_email_form.email.data
+            original_email: str = invite_email_form.email.data or ""
             email = original_email.lower()
 
             # Check if user exists (checking both original and lowercase to be safe)
@@ -273,7 +273,9 @@ def view_group(group_id: str) -> Any:
             }
 
             send_invite_email_background(
-                current_app._get_current_object(), token, email_data
+                current_app._get_current_object(),
+                token,
+                email_data,  # type: ignore[attr-defined]
             )
 
             flash(f"Invitation is being sent to {email}.", "toast")
@@ -462,7 +464,11 @@ def resend_invite(token: str) -> Any:
         "joke": get_random_joke(),
     }
 
-    send_invite_email_background(current_app._get_current_object(), token, email_data)
+    send_invite_email_background(
+        current_app._get_current_object(),
+        token,
+        email_data,  # type: ignore[attr-defined]
+    )
     flash(f"Resending invitation to {data.get('email')}...", "toast")
     return redirect(url_for(".view_group", group_id=group_id))
 
@@ -639,7 +645,7 @@ def get_rivalry_stats(group_id: str) -> Any:
     playerA_id = request.args.get("playerA_id")
     playerB_id = request.args.get("playerB_id")
 
-    if not all([playerA_id, playerB_id]):
+    if not playerA_id or not playerB_id:
         return {"error": "playerA_id and playerB_id are required"}, 400
 
     stats = get_h2h_stats(group_id, playerA_id, playerB_id)
@@ -654,7 +660,9 @@ def get_rivalry_stats(group_id: str) -> Any:
     }
 
 
-def _fetch_recent_matches(db: Any, group_id: str) -> Tuple[List[Any], List[Dict[str, Any]]]:
+def _fetch_recent_matches(
+    db: Any, group_id: str
+) -> tuple[list[Any], list[dict[str, Any]]]:
     """Fetch and enrich recent matches for a group."""
     matches_ref = db.collection("matches")
     matches_query = (
@@ -780,12 +788,12 @@ def _fetch_recent_matches(db: Any, group_id: str) -> Tuple[List[Any], List[Dict[
 
 
 def _fetch_group_teams(
-    db: Any, group_id: str, member_ids: Set[str], recent_matches_docs: List[Any]
-) -> Tuple[List[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    db: Any, group_id: str, member_ids: set[str], recent_matches_docs: list[Any]
+) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
     """Calculate team leaderboard and best buds for a group."""
     team_leaderboard = []
     best_buds = None
-    team_stats = {}  # team_id -> {wins, losses, games}
+    team_stats: dict[str, dict[str, Any]] = {}  # team_id -> {wins, losses, games}
 
     for doc in recent_matches_docs:
         data = doc.to_dict()
@@ -849,7 +857,7 @@ def _fetch_group_teams(
         for team_data in enriched_team_docs:
             stats = team_stats[team_data["id"]]
             total_games = stats["games"]
-            stats["win_percentage"] = (
+            stats["win_percentage"] = float(
                 (stats["wins"] / total_games) * 100 if total_games > 0 else 0
             )
 
@@ -878,7 +886,7 @@ def _fetch_group_teams(
     return team_leaderboard, best_buds
 
 
-def _get_pending_invites(db: Any, group_id: str) -> List[Dict[str, Any]]:
+def _get_pending_invites(db: Any, group_id: str) -> list[dict[str, Any]]:
     """Fetch pending invites for a group."""
     pending_members = []
     invites_ref = db.collection("group_invites")

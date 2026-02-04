@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from firebase_admin import firestore
 from flask import flash, g, jsonify, redirect, render_template, request, url_for
@@ -19,8 +19,8 @@ CLOSE_CALL_THRESHOLD = 2
 
 # TODO: Add type hints for Agent clarity
 def _get_candidate_player_ids(
-    user_id: str, group_id: Optional[str] = None, include_user: bool = False
-) -> Set[str]:
+    user_id: str, group_id: str | None = None, include_user: bool = False
+) -> set[str]:
     """Fetch a set of valid opponent IDs for a user, optionally within a group."""
     db = firestore.client()
     candidate_player_ids = set()
@@ -87,7 +87,7 @@ def _get_candidate_player_ids(
 
 # TODO: Add type hints for Agent clarity
 def _save_match_data(
-    player_1_id: str, form_data: Any, group_id: Optional[str] = None
+    player_1_id: str, form_data: Any, group_id: str | None = None
 ) -> None:
     """Construct and save a match document to Firestore."""
     db = firestore.client()
@@ -161,7 +161,7 @@ def _save_match_data(
 
 
 # TODO: Add type hints for Agent clarity
-def get_player_record(player_ref: Any) -> Dict[str, int]:
+def get_player_record(player_ref: Any) -> dict[str, int]:
     """Calculate the win/loss record for a given player by their document reference."""
     db = firestore.client()
     wins = 0
@@ -326,23 +326,26 @@ def record_match() -> Any:
         form = MatchForm(data=data)
 
         # Security check: Ensure all selected players are valid candidates
-        selected_players = {data.get("player2")}
+        selected_players: set[str | None] = {data.get("player2")}
         if data.get("match_type") == "doubles":
             selected_players.add(data.get("partner"))
             selected_players.add(data.get("opponent2"))
 
-        if not selected_players.issubset(candidate_player_ids):
+        if not all(
+            p in candidate_player_ids for p in selected_players if p is not None
+        ):
             return (
                 jsonify({"status": "error", "message": "Invalid opponent selected."}),
                 403,
             )
 
         # Populate choices for validation to work
-        form.player1.choices = [(p_id, "") for p_id in candidate_player_ids]
-        form.player2.choices = [(p_id, "") for p_id in candidate_player_ids]
+        choices: list[tuple[str, str]] = [(p_id, "") for p_id in candidate_player_ids]
+        form.player1.choices = choices  # type: ignore[assignment]
+        form.player2.choices = choices  # type: ignore[assignment]
         if data.get("match_type") == "doubles":
-            form.partner.choices = form.player2.choices
-            form.opponent2.choices = form.player2.choices
+            form.partner.choices = choices  # type: ignore[assignment]
+            form.opponent2.choices = choices  # type: ignore[assignment]
 
         if form.validate():
             try:
@@ -382,7 +385,7 @@ def record_match() -> Any:
                     (user_doc.id, user_doc.to_dict().get("name", user_doc.id))
                 )
 
-    form.player1.choices = player1_choices
+    form.player1.choices = player1_choices  # type: ignore[assignment]
 
     player_choices = []
     if candidate_player_ids:
@@ -397,9 +400,9 @@ def record_match() -> Any:
                     (user_doc.id, user_doc.to_dict().get("name", user_doc.id))
                 )
 
-    form.player2.choices = player_choices
-    form.partner.choices = player_choices
-    form.opponent2.choices = player_choices
+    form.player2.choices = player_choices  # type: ignore[assignment]
+    form.partner.choices = player_choices  # type: ignore[assignment]
+    form.opponent2.choices = player_choices  # type: ignore[assignment]
 
     if request.method == "GET":
         form.player1.data = user_id
@@ -441,7 +444,7 @@ def record_match() -> Any:
 
 
 # TODO: Add type hints for Agent clarity
-def get_latest_matches(limit: int = 10) -> List[Dict[str, Any]]:
+def get_latest_matches(limit: int = 10) -> list[dict[str, Any]]:
     """Fetch and process the latest matches."""
     db = firestore.client()
     matches_query = (
@@ -549,10 +552,10 @@ def leaderboard() -> Any:
             user_ref = db.collection("users").document(user.id)
             record = get_player_record(user_ref)
 
-            win_percentage = 0
+            win_percentage = 0.0
             games_played = record["wins"] + record["losses"]
             if games_played > 0:
-                win_percentage = (record["wins"] / games_played) * 100
+                win_percentage = float((record["wins"] / games_played) * 100)
 
             players.append(
                 {

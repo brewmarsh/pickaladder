@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import secrets
 import tempfile
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any
 
 from firebase_admin import auth, firestore, storage
 from flask import (
@@ -246,7 +246,7 @@ def view_community() -> Any:
     if search_term:
         term = search_term.lower()
 
-        def matches_search(user_data: Dict[str, Any]) -> bool:
+        def matches_search(user_data: dict[str, Any]) -> bool:
             username = user_data.get("username", "").lower()
             name = user_data.get("name", "").lower()
             email = user_data.get("email", "").lower()
