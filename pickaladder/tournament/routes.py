@@ -148,13 +148,50 @@ def view_tournament(tournament_id: str) -> Any:
 
     # Invite form
     invite_form = InvitePlayerForm()
-    # Populate choices with friends not in the tournament
+
+    # Source 1: Friends
     friends = UserService.get_user_friends(db, g.user["uid"])
+
+    # Source 2: Groups
+    user_ref = db.collection("users").document(g.user["uid"])
+    groups_query = (
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
+    )
+
+    group_member_refs = set()
+    for group_doc in groups_query:
+        group_data = group_doc.to_dict()
+        if group_data and "members" in group_data:
+            for member_ref in group_data["members"]:
+                group_member_refs.add(member_ref)
+
+    group_members = []
+    if group_member_refs:
+        group_members_docs = db.get_all(list(group_member_refs))
+        for doc in group_members_docs:
+            if doc.exists:
+                data = doc.to_dict()
+                if data:
+                    group_members.append({"id": doc.id, **data})
+
+    # Deduplicate & Filter
+    invitable_map = {u["id"]: u for u in friends}
+    for u in group_members:
+        invitable_map[u["id"]] = u
+
+    current_uid = g.user["uid"]
     participant_ids = {obj["userRef"].id for obj in participant_objs}
 
-    invitable_users = [f for f in friends if f["id"] not in participant_ids]
+    invitable_users = [
+        u
+        for uid, u in invitable_map.items()
+        if uid != current_uid and uid not in participant_ids
+    ]
+
     invite_form.player.choices = [
-        (f["id"], smart_display_name(f)) for f in invitable_users
+        (u["id"], smart_display_name(u)) for u in invitable_users
     ]
 
     if invite_form.validate_on_submit() and "player" in request.form:
