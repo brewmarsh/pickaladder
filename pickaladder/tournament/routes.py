@@ -152,9 +152,9 @@ def view_tournament(tournament_id: str) -> Any:
     friends = UserService.get_user_friends(db, g.user["uid"])
     participant_ids = {obj["userRef"].id for obj in participant_objs}
 
-    eligible_friends = [f for f in friends if f["id"] not in participant_ids]
+    invitable_users = [f for f in friends if f["id"] not in participant_ids]
     invite_form.player.choices = [
-        (f["id"], f.get("name") or f["id"]) for f in eligible_friends
+        (f["id"], smart_display_name(f)) for f in invitable_users
     ]
 
     if invite_form.validate_on_submit() and "player" in request.form:
@@ -182,7 +182,7 @@ def view_tournament(tournament_id: str) -> Any:
         standings=standings,
         podium=podium,
         invite_form=invite_form,
-        invitable_users=eligible_friends,
+        invitable_users=invitable_users,
         is_owner=(tournament_data.get("ownerRef").id == g.user["uid"]),
     )
 

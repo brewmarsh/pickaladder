@@ -29,12 +29,12 @@ from pickaladder.group.utils import (
 from pickaladder.group.utils import (
     get_head_to_head_stats as get_h2h_stats,
 )
-from pickaladder.match.services import UPSET_THRESHOLD
 from pickaladder.user.utils import merge_ghost_user
 
 from . import bp
 from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
 
+UPSET_THRESHOLD = 0.25
 GUEST_USER = {"username": "Guest", "id": "unknown"}
 DOUBLES_TEAM_SIZE = 2
 
