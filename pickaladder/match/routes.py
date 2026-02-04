@@ -9,10 +9,10 @@ from firebase_admin import firestore
 from flask import flash, g, jsonify, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.teams.utils import get_or_create_team
 
 from . import bp
 from .forms import MatchForm
+from .services import MatchService
 
 CLOSE_CALL_THRESHOLD = 2
 
@@ -98,87 +98,6 @@ def _get_candidate_player_ids(
     return candidate_player_ids
 
 
-# TODO: Add type hints for Agent clarity
-def _save_match_data(
-    player_1_id: str,
-    form_data: Any,
-    group_id: str | None = None,
-    tournament_id: str | None = None,
-) -> None:
-    """Construct and save a match document to Firestore."""
-    db = firestore.client()
-    user_ref = db.collection("users").document(player_1_id)
-
-    # Handle both form objects and dictionaries
-    def get_data(key: str) -> Any:
-        if isinstance(form_data, dict):
-            return form_data.get(key)
-        return getattr(form_data, key).data
-
-    match_type = get_data("match_type")
-    match_date_input = get_data("match_date")
-
-    if isinstance(match_date_input, str) and match_date_input:
-        match_date = datetime.datetime.strptime(match_date_input, "%Y-%m-%d")
-    elif isinstance(match_date_input, datetime.date):
-        match_date = datetime.datetime.combine(match_date_input, datetime.time.min)
-    else:
-        match_date = datetime.datetime.now()
-
-    player1_score = int(get_data("player1_score"))
-    player2_score = int(get_data("player2_score"))
-
-    match_data = {
-        "player1Score": player1_score,
-        "player2Score": player2_score,
-        "matchDate": match_date,
-        "createdAt": firestore.SERVER_TIMESTAMP,
-        "matchType": match_type,
-    }
-
-    if group_id:
-        match_data["groupId"] = group_id
-    if tournament_id:
-        match_data["tournamentId"] = tournament_id
-
-    if match_type == "singles":
-        player1_ref = db.collection("users").document(get_data("player1"))
-        player2_ref = db.collection("users").document(get_data("player2"))
-        match_data["player1Ref"] = player1_ref
-        match_data["player2Ref"] = player2_ref
-    elif match_type == "doubles":
-        t1_p1_id = get_data("player1")
-        t1_p2_id = get_data("partner")
-        t2_p1_id = get_data("player2")
-        t2_p2_id = get_data("opponent2")
-
-        team1_id = get_or_create_team(t1_p1_id, t1_p2_id)
-        team2_id = get_or_create_team(t2_p1_id, t2_p2_id)
-
-        t1_p1_ref = db.collection("users").document(t1_p1_id)
-        t1_p2_ref = db.collection("users").document(t1_p2_id)
-        t2_p1_ref = db.collection("users").document(t2_p1_id)
-        t2_p2_ref = db.collection("users").document(t2_p2_id)
-
-        match_data["team1"] = [t1_p1_ref, t1_p2_ref]
-        match_data["team2"] = [t2_p1_ref, t2_p2_ref]
-        match_data["team1Id"] = team1_id
-        match_data["team2Id"] = team2_id
-
-        team1_ref = db.collection("teams").document(team1_id)
-        team2_ref = db.collection("teams").document(team2_id)
-        if player1_score > player2_score:
-            team1_ref.update({"stats.wins": firestore.Increment(1)})
-            team2_ref.update({"stats.losses": firestore.Increment(1)})
-        elif player2_score > player1_score:
-            team1_ref.update({"stats.losses": firestore.Increment(1)})
-            team2_ref.update({"stats.wins": firestore.Increment(1)})
-
-    db.collection("matches").add(match_data)
-    user_ref.update({"lastMatchRecordedType": match_type})
-
-
-# TODO: Add type hints for Agent clarity
 def get_player_record(player_ref: Any) -> dict[str, int]:
     """Calculate the win/loss record for a given player by their document reference."""
     db = firestore.client()
@@ -376,7 +295,9 @@ def record_match() -> Any:
             try:
                 json_group_id = data.get("group_id") or group_id
                 json_tournament_id = data.get("tournament_id") or tournament_id
-                _save_match_data(user_id, data, json_group_id, json_tournament_id)
+                MatchService.create_match_record(
+                    db, data, user_id, json_group_id, json_tournament_id
+                )
                 return jsonify({"status": "success", "message": "Match recorded."}), 200
             except Exception as e:
                 return jsonify({"status": "error", "message": str(e)}), 500
@@ -469,7 +390,9 @@ def record_match() -> Any:
             )
 
         try:
-            _save_match_data(player_1_id, form, group_id, tournament_id)
+            MatchService.create_match_record(
+                db, form, player_1_id, group_id, tournament_id
+            )
             flash("Match recorded successfully.", "success")
             if tournament_id:
                 return redirect(
