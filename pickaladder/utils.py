@@ -1,5 +1,7 @@
 """Utility functions for the application."""
 
+from __future__ import annotations
+
 import smtplib
 from typing import Any
 
@@ -17,7 +19,7 @@ class EmailError(Exception):
     pass
 
 
-def send_email(to: str, subject: str, template: str, **kwargs: Any) -> None:
+def send_email(to: Any, subject: str, template: str, **kwargs: Any) -> None:
     """Send an email to a recipient.
 
     Raises:

@@ -7,7 +7,7 @@ import secrets
 import sys
 import threading
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from firebase_admin import firestore
 
@@ -49,8 +49,8 @@ def get_random_joke() -> str:
 
 
 def _calculate_leaderboard_from_matches(
-    member_refs: List[Any], matches: List[Any]
-) -> List[Dict[str, Any]]:
+    member_refs: list[Any], matches: list[Any]
+) -> list[dict[str, Any]]:
     """Calculate the leaderboard from a list of matches."""
     player_stats = {
         ref.id: {
@@ -177,7 +177,7 @@ def _calculate_leaderboard_from_matches(
     return leaderboard
 
 
-def get_group_leaderboard(group_id: str) -> List[Dict[str, Any]]:
+def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
     """Calculate the leaderboard for a specific group using Firestore.
 
     This implementation uses the 'groupId' field on matches.
@@ -241,7 +241,9 @@ def get_group_leaderboard(group_id: str) -> List[Dict[str, Any]]:
     )
 
     # Pre-process matches to map users to their matches
-    user_matches_map = {ref.id: [] for ref in member_refs}
+    user_matches_map: dict[str, list[dict[str, Any]]] = {
+        ref.id: [] for ref in member_refs
+    }
     for match in all_matches:
         data = match.to_dict()
         match_type = data.get("matchType", "singles")
@@ -307,7 +309,7 @@ def get_group_leaderboard(group_id: str) -> List[Dict[str, Any]]:
     return current_leaderboard
 
 
-def get_leaderboard_trend_data(group_id: str) -> Dict[str, Any]:
+def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
     """Generate data for a leaderboard trend chart."""
     db = firestore.client()
     matches_query = db.collection("matches").where(
@@ -343,7 +345,7 @@ def get_leaderboard_trend_data(group_id: str) -> Dict[str, Any]:
             }
 
     player_stats = {ref.id: {"total_score": 0, "games": 0} for ref in all_player_refs}
-    trend_data = {"labels": [], "datasets": {}}
+    trend_data: dict[str, Any] = {"labels": [], "datasets": {}}
 
     for player_id, player_info in players_data.items():
         trend_data["datasets"][player_id] = {
@@ -413,7 +415,7 @@ def get_leaderboard_trend_data(group_id: str) -> Dict[str, Any]:
     return trend_data
 
 
-def get_user_group_stats(group_id: str, user_id: str) -> Dict[str, Any]:
+def get_user_group_stats(group_id: str, user_id: str) -> dict[str, Any]:
     """Calculate detailed statistics for a specific user within a group."""
     db = firestore.client()
     stats = {
@@ -490,7 +492,7 @@ def get_user_group_stats(group_id: str, user_id: str) -> Dict[str, Any]:
 
 
 def send_invite_email_background(
-    app: Flask, invite_token: str, email_data: Dict[str, Any]
+    app: Flask, invite_token: str, email_data: dict[str, Any]
 ) -> None:
     """Send an invite email in a background thread."""
 
@@ -577,8 +579,8 @@ def friend_group_members(db: Any, group_id: str, new_member_ref: Any) -> None:
 
 
 def get_partnership_stats(
-    playerA_id: str, playerB_id: str, all_matches_in_group: List[Any]
-) -> Dict[str, int]:
+    playerA_id: str, playerB_id: str, all_matches_in_group: list[Any]
+) -> dict[str, int]:
     """
     Calculates the win/loss record for two players when they are partners.
 
@@ -641,7 +643,7 @@ def get_partnership_stats(
 
 def get_head_to_head_stats(
     group_id: str, playerA_id: str, playerB_id: str
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Calculates head-to-head statistics for two players in doubles matches.
 
