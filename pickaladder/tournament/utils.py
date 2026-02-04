@@ -17,6 +17,7 @@ def fetch_tournament_matches(db: Any, tournament_id: str) -> Any:
         .stream()
     )
 
+
 def aggregate_match_data(matches: Any, match_type: str) -> dict[str, dict[str, Any]]:
     """Iterate once through matches to build raw map of wins, losses, and point_diff."""
     standings: dict[str, dict[str, Any]] = {}
@@ -58,10 +59,11 @@ def aggregate_match_data(matches: Any, match_type: str) -> dict[str, dict[str, A
             standings[id2]["wins"] += 1
             standings[id1]["losses"] += 1
 
-        standings[id1]["point_diff"] += (p1_score - p2_score)
-        standings[id2]["point_diff"] += (p2_score - p1_score)
+        standings[id1]["point_diff"] += p1_score - p2_score
+        standings[id2]["point_diff"] += p2_score - p1_score
 
     return standings
+
 
 def sort_and_format_standings(
     db: Any, raw_standings: dict[str, dict[str, Any]], match_type: str
@@ -93,6 +95,7 @@ def sort_and_format_standings(
         key=lambda x: (x["wins"], -x["losses"], x.get("point_diff", 0)), reverse=True
     )
     return standings_list
+
 
 def get_tournament_standings(
     db: Any, tournament_id: str, match_type: str

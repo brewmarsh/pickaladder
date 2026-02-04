@@ -37,11 +37,15 @@ class TournamentUtilsTestCase(unittest.TestCase):
 
         self.assertEqual(raw_standings["p1"]["wins"], 1)
         self.assertEqual(raw_standings["p1"]["losses"], 1)
-        self.assertEqual(raw_standings["p1"]["point_diff"], 11 - 5 + 8 - 11)  # 6 - 3 = 3
+        self.assertEqual(
+            raw_standings["p1"]["point_diff"], 11 - 5 + 8 - 11
+        )  # 6 - 3 = 3
 
         self.assertEqual(raw_standings["p2"]["wins"], 1)
         self.assertEqual(raw_standings["p2"]["losses"], 1)
-        self.assertEqual(raw_standings["p2"]["point_diff"], 5 - 11 + 11 - 8)  # -6 + 3 = -3
+        self.assertEqual(
+            raw_standings["p2"]["point_diff"], 5 - 11 + 11 - 8
+        )  # -6 + 3 = -3
 
     def test_aggregate_match_data_doubles(self) -> None:
         """Test aggregation for doubles matches."""
@@ -100,6 +104,7 @@ class TournamentUtilsTestCase(unittest.TestCase):
         # p2 should be third (1 win, 1 loss, 5 point_diff)
         self.assertEqual(sorted_standings[2]["id"], "p2")
         self.assertEqual(sorted_standings[2]["point_diff"], 5)
+
 
 if __name__ == "__main__":
     unittest.main()
