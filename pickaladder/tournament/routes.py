@@ -6,9 +6,9 @@ from typing import Any
 
 from firebase_admin import firestore
 from flask import (
+    current_app,
     flash,
     g,
-    current_app,
     redirect,
     render_template,
     request,
@@ -17,6 +17,7 @@ from flask import (
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.user.utils import UserService, smart_display_name
+from pickaladder.utils import send_email
 
 from . import bp
 from .forms import InvitePlayerForm, TournamentForm
@@ -308,11 +309,12 @@ def complete_tournament(tournament_id: str) -> Any:
                     email = user_data.get("email")
                     if email:
                         try:
-                            from pickaladder.utils import send_email
-
+                            subject = (
+                                f"The results are in for {tournament_data['name']}!"
+                            )
                             send_email(
                                 to=email,
-                                subject=f"The results are in for {tournament_data['name']}!",
+                                subject=subject,
                                 template="email/tournament_results.html",
                                 user=user_data,
                                 tournament=tournament_data,
@@ -320,9 +322,11 @@ def complete_tournament(tournament_id: str) -> Any:
                                 standings=standings[:3],
                             )
                         except Exception as e:
-                            current_app.logger.error(
-                                f"Failed to send tournament results email to {email}: {e}"
+                            msg = (
+                                f"Failed to send tournament results email "
+                                f"to {email}: {e}"
                             )
+                            current_app.logger.error(msg)
 
         flash("Tournament completed and results sent!", "success")
     except Exception as e:
