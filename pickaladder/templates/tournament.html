@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ tournament.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1>{{ tournament.name }}</h1>
+        <p class="text-muted">{{ tournament.date }} | {{ tournament.location }} | {{ tournament.matchType|capitalize }}</p>
+    </div>
+    <div class="card-body">
+        <div class="dashboard-columns">
+            <div class="dashboard-main">
+                <h3>Participants</h3>
+                <div class="friend-grid">
+                    {% for p in participants %}
+                        <div class="friend-card">
+                            <img src="{{ p.user.avatar_url }}" alt="Avatar" class="friend-avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                            <div class="friend-info">
+                                <h4>{{ p.display_name }}</h4>
+                                <span class="badge {{ 'badge-success' if p.status == 'accepted' else 'badge-warning' }}">
+                                    {{ p.status|capitalize }}
+                                </span>
+                                {% if p.user.id == g.user.uid and p.status == 'pending' %}
+                                    <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="margin-top: 8px;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-success">Join Tournament</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="dashboard-sidebar">
+                {% if is_owner %}
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h4>Invite Player</h4>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST">
+                                {{ invite_form.csrf_token }}
+                                <div class="form-group">
+                                    {{ invite_form.player.label(class="form-label") }}
+                                    {{ invite_form.player(class="form-input") }}
+                                </div>
+                                <button type="submit" name="player" class="btn btn-primary btn-block">Invite</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}Tournaments{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0;">🎾 Tournaments</h2>
+        <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary">Create Tournament</a>
+    </div>
+    <div class="card-body">
+        {% if tournaments %}
+            <div class="friend-grid">
+                {% for tournament in tournaments %}
+                    <div class="friend-card clickable-row" data-href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}">
+                        <div class="friend-info">
+                            <h3>{{ tournament.name }}</h3>
+                            <p class="text-muted">{{ tournament.date }} | {{ tournament.location }}</p>
+                            <span class="badge badge-info">{{ tournament.matchType|capitalize }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-center text-muted">No tournaments found. Create one to get started!</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

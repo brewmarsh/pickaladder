@@ -10,6 +10,7 @@
                     <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
                     <a href="{{ url_for('user.view_community') }}">🌍 Community</a>
                     <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
+                    <a href="{{ url_for('tournament.list_tournaments') }}">🎾 Tournaments</a>
                     <a href="{{ url_for('match.leaderboard') }}">🏆 Global Leaderboard</a>
                 {% else %}
                     <div class="desktop-auth-buttons">
@@ -30,6 +31,7 @@
                             <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
                             <a href="{{ url_for('user.view_community') }}">🌍 Community</a>
                             <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
+                            <a href="{{ url_for('tournament.list_tournaments') }}">🎾 Tournaments</a>
                             <a href="{{ url_for('match.leaderboard') }}">🏆 Global Leaderboard</a>
                             <hr>
                             <a href="{{ url_for('auth.change_password') }}">🔑 Change Password</a>
