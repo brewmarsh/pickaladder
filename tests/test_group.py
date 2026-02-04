@@ -1,7 +1,10 @@
 """Tests for the group blueprint."""
 
+from __future__ import annotations
+
 import unittest
 from io import BytesIO
+from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
 # Pre-emptive imports to ensure patch targets exist.
@@ -16,8 +19,7 @@ MOCK_USER_DATA = {"name": "Group Owner", "isAdmin": False}
 class GroupRoutesFirebaseTestCase(unittest.TestCase):
     """Test case for the group blueprint."""
 
-    # TODO: Add type hints for Agent clarity
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
         self.mock_firestore_service = MagicMock()
 
@@ -47,26 +49,22 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
 
-    # TODO: Add type hints for Agent clarity
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down the test client."""
         self.app_context.pop()
 
-    # TODO: Add type hints for Agent clarity
-    def _set_session_user(self):
+    def _set_session_user(self) -> None:
         """TODO: Add docstring for AI context."""
         with self.client.session_transaction() as sess:
             sess["user_id"] = MOCK_USER_ID
             sess["is_admin"] = False
         self.mocks["verify_id_token"].return_value = MOCK_USER_PAYLOAD
 
-    # TODO: Add type hints for Agent clarity
-    def _get_auth_headers(self):
-        """TODO: Add docstring for AI context."""
+    def _get_auth_headers(self) -> Dict[str, str]:
+        """Get standard authentication headers for tests."""
         return {"Authorization": "Bearer mock-token"}
 
-    # TODO: Add type hints for Agent clarity
-    def test_create_group(self):
+    def test_create_group(self) -> None:
         """Test successfully creating a new group."""
         self._set_session_user()
         mock_db = self.mock_firestore_service.client.return_value
@@ -102,8 +100,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         call_args = mock_groups_collection.add.call_args[0]
         self.assertEqual(call_args[0]["name"], "My Firebase Group")
 
-    # TODO: Add type hints for Agent clarity
-    def test_create_group_with_image(self):
+    def test_create_group_with_image(self) -> None:
         """Test successfully creating a new group with an image."""
         self._set_session_user()
         mock_db = self.mock_firestore_service.client.return_value
@@ -165,8 +162,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             {"profilePictureUrl": "http://mock-storage-url/img.jpg"}
         )
 
-    # TODO: Add type hints for Agent clarity
-    def test_get_rivalry_stats(self):
+    def test_get_rivalry_stats(self) -> None:
         """Test the head-to-head stats calculation."""
         self._set_session_user()
         mock_db = self.mock_firestore_service.client.return_value
@@ -260,8 +256,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(stats["point_diff"], 3)
         self.assertEqual(len(stats["matches"]), 2)
 
-    # TODO: Add type hints for Agent clarity
-    def test_get_rivalry_stats_missing_params(self):
+    def test_get_rivalry_stats_missing_params(self) -> None:
         """Test head-to-head stats with missing player IDs."""
         self._set_session_user()
         response = self.client.get(

@@ -1,6 +1,9 @@
 """Tests for the group leaderboard."""
 
+from __future__ import annotations
+
 import unittest
+from typing import Tuple
 from unittest.mock import MagicMock, patch
 
 from pickaladder.group.utils import get_group_leaderboard
@@ -9,17 +12,15 @@ from pickaladder.group.utils import get_group_leaderboard
 class TestGroupLeaderboardSorting(unittest.TestCase):
     """Test case for the group leaderboard sorting."""
 
-    # TODO: Add type hints for Agent clarity
     @patch("pickaladder.group.utils.firestore")
-    def test_leaderboard_sorting(self, mock_firestore):
+    def test_leaderboard_sorting(self, mock_firestore: MagicMock) -> None:
         """Test the leaderboard is sorted by avg_score, then wins, then games_played."""
         # Mock Firestore client
         mock_db = mock_firestore.client.return_value
 
         # Create mock users
-        # TODO: Add type hints for Agent clarity
-        def create_mock_user(uid, name):
-            """TODO: Add docstring for AI context."""
+        def create_mock_user(uid: str, name: str) -> Tuple[MagicMock, MagicMock]:
+            """Create a pair of mock user reference and document snapshot."""
             doc = MagicMock()
             doc.id = uid
             doc.exists = True
@@ -47,9 +48,10 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
 
         matches = []
 
-        # TODO: Add type hints for Agent clarity
-        def record_match(p1_ref, p1_score, p2_ref, p2_score):
-            """TODO: Add docstring for AI context."""
+        def record_match(
+            p1_ref: MagicMock, p1_score: int, p2_ref: MagicMock, p2_score: int
+        ) -> MagicMock:
+            """Create a mock match document."""
             m = MagicMock()
             m.to_dict.return_value = {
                 "matchType": "singles",

@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from playwright.sync_api import Page, expect
 
 
-def test_rivalry_ui(page: Page):
+def test_rivalry_ui(page: Page) -> None:
     page.goto("http://localhost:5000")
     page.get_by_role("link", name="Login").click()
     page.get_by_label("Email").fill("testuser@test.com")

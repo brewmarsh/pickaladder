@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 import unittest
 from datetime import datetime
+from typing import Any, List, Optional
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
 
 
 class MockDocumentReference:
-    def __init__(self, id=None):
+    def __init__(self, id: Optional[str] = None) -> None:
         self.id = id
         self.path = f"collection/{id}" if id else "collection/unknown"
         self.get = MagicMock()
@@ -14,12 +17,12 @@ class MockDocumentReference:
 
 
 class BestBudsTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.mock_firestore_service = MagicMock()
         self.mock_firestore_service.DocumentReference = MockDocumentReference
 
         # Mock collection().document() to return an object with the right id
-        def mock_document(doc_id):
+        def mock_document(doc_id: str) -> MockDocumentReference:
             return MockDocumentReference(doc_id)
 
         (
@@ -41,13 +44,13 @@ class BestBudsTestCase(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         for p in self.patchers:
             p.stop()
         self.app_context.pop()
 
     @patch("pickaladder.group.routes.get_group_leaderboard", return_value=[])
-    def test_best_buds_identification(self, mock_leaderboard):
+    def test_best_buds_identification(self, mock_leaderboard: MagicMock) -> None:
         # Set session
         with self.client.session_transaction() as sess:
             sess["user_id"] = "user1"
@@ -123,7 +126,7 @@ class BestBudsTestCase(unittest.TestCase):
         mock_query.stream.return_value = [team1_doc, team2_doc]
 
         # Mock get_all for both teams and team members enrichment
-        def mock_get_all(refs):
+        def mock_get_all(refs: List[Any]) -> List[Any]:
             results = []
             for ref in refs:
                 if ref.id == "team1":
