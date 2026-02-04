@@ -141,13 +141,13 @@
                     <h4 style="margin: 0;">Invite Player</h4>
                 </div>
                 <div class="card-body" style="padding: 0;">
-                    <form method="POST">
+                    <form action="{{ url_for('tournament.invite_player', tournament_id=tournament.id) }}" method="POST">
                         {{ invite_form.csrf_token }}
                         <div class="form-group">
-                            {{ invite_form.player.label(class="form-label") }}
-                            {{ invite_form.player(class="form-input") }}
+                            {{ invite_form.user_id.label(class="form-label") }}
+                            {{ invite_form.user_id(class="form-input") }}
                         </div>
-                        <button type="submit" name="player" class="btn btn-primary">Invite</button>
+                        <button type="submit" class="btn btn-primary">Invite</button>
                     </form>
                 </div>
             </div>

@@ -189,28 +189,11 @@ def view_tournament(tournament_id: str) -> Any:
         for uid, u in invitable_map.items()
         if uid != current_uid and uid not in participant_ids
     ]
+    invitable_users.sort(key=lambda x: x.get("username", "").lower())
 
-    invite_form.player.choices = [
-        (u["id"], smart_display_name(u)) for u in invitable_users
+    invite_form.user_id.choices = [
+        (u["id"], u.get("username", "Unknown")) for u in invitable_users
     ]
-
-    if invite_form.validate_on_submit() and "player" in request.form:
-        invited_user_id = invite_form.player.data
-        invited_user_ref = db.collection("users").document(invited_user_id)
-
-        try:
-            tournament_ref.update(
-                {
-                    "participants": firestore.ArrayUnion(
-                        [{"userRef": invited_user_ref, "status": "pending"}]
-                    ),
-                    "participant_ids": firestore.ArrayUnion([invited_user_id]),
-                }
-            )
-            flash("Player invited successfully.", "success")
-            return redirect(url_for(".view_tournament", tournament_id=tournament_id))
-        except Exception as e:
-            flash(f"An unexpected error occurred: {e}", "danger")
 
     return render_template(
         "tournament/view.html",
@@ -282,6 +265,52 @@ def complete_tournament(tournament_id: str) -> Any:
         flash("Tournament completed and results sent!", "success")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
+
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/invite", methods=["POST"])
+@login_required
+def invite_player(tournament_id: str) -> Any:
+    """Invite a player to a tournament."""
+    db = firestore.client()
+    tournament_ref = db.collection("tournaments").document(tournament_id)
+    tournament_doc = tournament_ref.get()
+
+    if not tournament_doc.exists:
+        flash("Tournament not found.", "danger")
+        return redirect(url_for(".list_tournaments"))
+
+    tournament_data = tournament_doc.to_dict()
+    if (
+        not tournament_data
+        or tournament_data.get("ownerRef").id != g.user["uid"]
+    ):
+        flash("Only the owner can invite players.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    form = InvitePlayerForm()
+    # Dynamically set choices to allow the submitted user_id to pass validation
+    submitted_uid = request.form.get("user_id")
+    if submitted_uid:
+        form.user_id.choices = [(submitted_uid, "")]
+
+    if form.validate_on_submit():
+        invited_user_id = form.user_id.data
+        invited_user_ref = db.collection("users").document(invited_user_id)
+
+        try:
+            tournament_ref.update(
+                {
+                    "participants": firestore.ArrayUnion(
+                        [{"userRef": invited_user_ref, "status": "pending"}]
+                    ),
+                    "participant_ids": firestore.ArrayUnion([invited_user_id]),
+                }
+            )
+            flash("Player invited successfully.", "success")
+        except Exception as e:
+            flash(f"An unexpected error occurred: {e}", "danger")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 

@@ -205,10 +205,57 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         # are a participant.
         # However, it should NOT appear as an OPTION in the select field.
         # WTForms renders options as <option value="id">label</option>
+        # Verify the select field has the correct name and options
+        self.assertIn(b'name="user_id"', response.data)
         self.assertIn(b'<option value="friend1">Friend One</option>', response.data)
         self.assertNotIn(
             b'<option value="participant1">Participant One</option>', response.data
         )
+
+    def test_invite_player_route(self) -> None:
+        """Test the new invite_player route."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+
+        # Mock user fetch for before_request
+        mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
+        mock_user_doc.id = MOCK_USER_ID
+        mock_user_snapshot = MagicMock()
+        mock_user_snapshot.exists = True
+        mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
+        mock_user_doc.get.return_value = mock_user_snapshot
+
+        # Mock tournament doc
+        tournament_id = "test_tournament_id"
+        mock_tournament_doc = mock_db.collection("tournaments").document(tournament_id)
+        mock_tournament_snapshot = MagicMock()
+        mock_tournament_snapshot.exists = True
+        mock_tournament_snapshot.to_dict.return_value = {
+            "name": "Test Tournament",
+            "ownerRef": mock_user_doc,
+            "participants": [],
+            "participant_ids": [],
+        }
+        mock_tournament_doc.get.return_value = mock_tournament_snapshot
+
+        # Mock invitation
+        invited_user_id = "friend1"
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/invite",
+            headers=self._get_auth_headers(),
+            data={"user_id": invited_user_id},
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Player invited successfully.", response.data)
+
+        # Verify Firestore update
+        mock_tournament_doc.update.assert_called_once()
+        update_call = mock_tournament_doc.update.call_args[0][0]
+        self.assertIn("participants", update_call)
+        self.assertIn("participant_ids", update_call)
 
 
 if __name__ == "__main__":
