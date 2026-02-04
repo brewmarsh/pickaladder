@@ -1,6 +1,9 @@
 """Routes for the match blueprint."""
 
+from __future__ import annotations
+
 import datetime
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from firebase_admin import firestore
 from flask import flash, g, jsonify, redirect, render_template, request, url_for
@@ -15,7 +18,9 @@ CLOSE_CALL_THRESHOLD = 2
 
 
 # TODO: Add type hints for Agent clarity
-def _get_candidate_player_ids(user_id, group_id=None, include_user=False):
+def _get_candidate_player_ids(
+    user_id: str, group_id: Optional[str] = None, include_user: bool = False
+) -> Set[str]:
     """Fetch a set of valid opponent IDs for a user, optionally within a group."""
     db = firestore.client()
     candidate_player_ids = set()
@@ -81,13 +86,15 @@ def _get_candidate_player_ids(user_id, group_id=None, include_user=False):
 
 
 # TODO: Add type hints for Agent clarity
-def _save_match_data(player_1_id, form_data, group_id=None):
+def _save_match_data(
+    player_1_id: str, form_data: Any, group_id: Optional[str] = None
+) -> None:
     """Construct and save a match document to Firestore."""
     db = firestore.client()
     user_ref = db.collection("users").document(player_1_id)
 
     # Handle both form objects and dictionaries
-    def get_data(key):
+    def get_data(key: str) -> Any:
         if isinstance(form_data, dict):
             return form_data.get(key)
         return getattr(form_data, key).data
@@ -154,7 +161,7 @@ def _save_match_data(player_1_id, form_data, group_id=None):
 
 
 # TODO: Add type hints for Agent clarity
-def get_player_record(player_ref):
+def get_player_record(player_ref: Any) -> Dict[str, int]:
     """Calculate the win/loss record for a given player by their document reference."""
     db = firestore.client()
     wins = 0
@@ -234,7 +241,7 @@ def get_player_record(player_ref):
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:match_id>")
 @login_required
-def view_match_page(match_id):
+def view_match_page(match_id: str) -> Any:
     """Display the details of a single match."""
     db = firestore.client()
     match_ref = db.collection("matches").document(match_id)
@@ -307,7 +314,7 @@ def view_match_page(match_id):
 # TODO: Add type hints for Agent clarity
 @bp.route("/record", methods=["GET", "POST"])
 @login_required
-def record_match():
+def record_match() -> Any:
     """Handle match recording for both web form and optimistic JSON submission."""
     db = firestore.client()
     user_id = g.user["uid"]
@@ -434,7 +441,7 @@ def record_match():
 
 
 # TODO: Add type hints for Agent clarity
-def get_latest_matches(limit=10):
+def get_latest_matches(limit: int = 10) -> List[Dict[str, Any]]:
     """Fetch and process the latest matches."""
     db = firestore.client()
     matches_query = (
@@ -527,7 +534,7 @@ def get_latest_matches(limit=10):
 # TODO: Add type hints for Agent clarity
 @bp.route("/leaderboard")
 @login_required
-def leaderboard():
+def leaderboard() -> Any:
     """Display a global leaderboard.
 
     Note: This is a simplified, non-scalable implementation. A production-ready
