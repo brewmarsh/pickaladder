@@ -43,15 +43,17 @@ def test_tournament_flow(
 
     # Create a friend to verify the Invite dropdown
     friend_id = "friend_user"
-    mock_db.collection("users").document(friend_id).set({
-        "username": "friend_user",
-        "email": "friend@example.com",
-        "name": "Friend User",
-        "createdAt": "2023-01-01T00:00:00"
-    })
-    mock_db.collection("users").document("admin").collection("friends").document(friend_id).set({
-        "status": "accepted"
-    })
+    mock_db.collection("users").document(friend_id).set(
+        {
+            "username": "friend_user",
+            "email": "friend@example.com",
+            "name": "Friend User",
+            "createdAt": "2023-01-01T00:00:00",
+        }
+    )
+    mock_db.collection("users").document("admin").collection("friends").document(
+        friend_id
+    ).set({"status": "accepted"})
 
     page.reload()
     page.screenshot(path="/home/jules/verification/tournament_invite.png")

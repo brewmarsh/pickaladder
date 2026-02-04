@@ -173,11 +173,21 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         # Mock friends: one who is already a participant, one who is not
         friends_data = [
             {"id": "friend1", "username": "Friend One", "name": "Friend One"},
-            {"id": "participant1", "username": "Participant One", "name": "Participant One"},
+            {
+                "id": "participant1",
+                "username": "Participant One",
+                "name": "Participant One",
+            },
         ]
 
-        with patch("pickaladder.tournament.routes.UserService.get_user_friends") as mock_get_friends, \
-             patch("pickaladder.tournament.routes.get_tournament_standings") as mock_standings:
+        with (
+            patch(
+                "pickaladder.tournament.routes.UserService.get_user_friends"
+            ) as mock_get_friends,
+            patch(
+                "pickaladder.tournament.routes.get_tournament_standings"
+            ) as mock_standings,
+        ):
             mock_get_friends.return_value = friends_data
             mock_standings.return_value = []
 
@@ -189,12 +199,16 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         # Check that Friend One is in the options but Participant One is not
         self.assertIn(b"Friend One", response.data)
-        # Note: Participant One's name might appear in the participant list, but we want to check the select options.
-        # But wait, the name "Participant One" WILL appear because they are a participant.
+        # Note: Participant One's name might appear in the participant list,
+        # but we want to check the select options.
+        # But wait, the name "Participant One" WILL appear because they
+        # are a participant.
         # However, it should NOT appear as an OPTION in the select field.
         # WTForms renders options as <option value="id">label</option>
         self.assertIn(b'<option value="friend1">Friend One</option>', response.data)
-        self.assertNotIn(b'<option value="participant1">Participant One</option>', response.data)
+        self.assertNotIn(
+            b'<option value="participant1">Participant One</option>', response.data
+        )
 
 
 if __name__ == "__main__":
