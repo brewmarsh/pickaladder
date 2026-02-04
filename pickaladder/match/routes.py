@@ -24,7 +24,10 @@ def _get_candidate_player_ids(
     tournament_id: str | None = None,
     include_user: bool = False,
 ) -> set[str]:
-    """Fetch a set of valid opponent IDs for a user, optionally within a group or tournament."""
+    """Fetch a set of valid opponent IDs for a user.
+
+    Optionally restricts to a group or tournament.
+    """
     db = firestore.client()
     candidate_player_ids: set[str] = set()
 
