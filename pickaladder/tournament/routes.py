@@ -282,10 +282,7 @@ def invite_player(tournament_id: str) -> Any:
         return redirect(url_for(".list_tournaments"))
 
     tournament_data = tournament_doc.to_dict()
-    if (
-        not tournament_data
-        or tournament_data.get("ownerRef").id != g.user["uid"]
-    ):
+    if not tournament_data or tournament_data.get("ownerRef").id != g.user["uid"]:
         flash("Only the owner can invite players.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
