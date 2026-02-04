@@ -57,7 +57,7 @@ def test_tournament_flow(
 
     page.reload()
     page.screenshot(path="/home/jules/verification/tournament_invite.png")
-    expect(page.locator("select[name='player']")).to_contain_text("friend_user")
+    expect(page.locator("select[name='user_id']")).to_contain_text("friend_user")
 
     # 3. Check Directions button
     directions_btn = page.locator("text=Directions")
