@@ -1,5 +1,9 @@
 """Routes for the teams blueprint."""
 
+from __future__ import annotations
+
+from typing import Any
+
 from firebase_admin import firestore
 from flask import flash, g, redirect, render_template, url_for
 
@@ -11,7 +15,7 @@ from .forms import EditTeamNameForm
 
 @bp.route("/<string:team_id>")
 @login_required
-def view_team(team_id):
+def view_team(team_id: str) -> Any:
     """Display a single team's page."""
     db = firestore.client()
     team_ref = db.collection("teams").document(team_id)
@@ -146,7 +150,7 @@ def view_team(team_id):
 
 @bp.route("/<string:team_id>/edit", methods=["GET", "POST"])
 @login_required
-def edit_team(team_id):
+def edit_team(team_id: str) -> Any:
     """Edit a team's name."""
     db = firestore.client()
     team_ref = db.collection("teams").document(team_id)

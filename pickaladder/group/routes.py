@@ -1,7 +1,10 @@
 """Routes for the group blueprint."""
 
+from __future__ import annotations
+
 import secrets
 from dataclasses import dataclass
+from typing import Any
 
 from firebase_admin import firestore, storage
 from flask import (
@@ -48,7 +51,7 @@ class Pagination:
 # TODO: Add type hints for Agent clarity
 @bp.route("/", methods=["GET"])
 @login_required
-def view_groups():
+def view_groups() -> Any:
     """Display a list of public groups and the user's groups."""
     db = firestore.client()
     search_term = request.args.get("search", "")
@@ -85,9 +88,9 @@ def view_groups():
         owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
 
     # TODO: Add type hints for Agent clarity
-    def enrich_group(group_doc):
+    def enrich_group(group_doc: Any) -> dict[str, Any]:
         """Attach owner data to a group dictionary."""
-        group_data = group_doc.to_dict()
+        group_data: dict[str, Any] = group_doc.to_dict()
         group_data["id"] = group_doc.id  # Add document ID
         owner_ref = group_data.get("ownerRef")
         if owner_ref and owner_ref.id in owners_data:
@@ -115,7 +118,7 @@ def view_groups():
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>", methods=["GET", "POST"])
 @login_required
-def view_group(group_id):
+def view_group(group_id: str) -> Any:
     """Display a single group's page.
 
     Display a single group's page, including its members, leaderboard, and
@@ -202,7 +205,7 @@ def view_group(group_id):
     if invite_email_form.validate_on_submit() and "email" in request.form:
         try:
             name = invite_email_form.name.data or "Friend"
-            original_email = invite_email_form.email.data
+            original_email: str = invite_email_form.email.data or ""
             email = original_email.lower()
 
             # Check if user exists (checking both original and lowercase to be safe)
@@ -270,7 +273,9 @@ def view_group(group_id):
             }
 
             send_invite_email_background(
-                current_app._get_current_object(), token, email_data
+                current_app._get_current_object(),  # type: ignore[attr-defined]
+                token,
+                email_data,
             )
 
             flash(f"Invitation is being sent to {email}.", "toast")
@@ -316,7 +321,7 @@ def view_group(group_id):
 # TODO: Add type hints for Agent clarity
 @bp.route("/create", methods=["GET", "POST"])
 @login_required
-def create_group():
+def create_group() -> Any:
     """Create a new group."""
     form = GroupForm()
     if form.validate_on_submit():
@@ -363,7 +368,7 @@ def create_group():
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/edit", methods=["GET", "POST"])
 @login_required
-def edit_group(group_id):
+def edit_group(group_id: str) -> Any:
     """Edit a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
@@ -416,7 +421,7 @@ def edit_group(group_id):
 # TODO: Add type hints for Agent clarity
 @bp.route("/invite/<token>/resend", methods=["POST"])
 @login_required
-def resend_invite(token):
+def resend_invite(token: str) -> Any:
     """Resend a group invitation."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -459,7 +464,11 @@ def resend_invite(token):
         "joke": get_random_joke(),
     }
 
-    send_invite_email_background(current_app._get_current_object(), token, email_data)
+    send_invite_email_background(
+        current_app._get_current_object(),  # type: ignore[attr-defined]
+        token,
+        email_data,
+    )
     flash(f"Resending invitation to {data.get('email')}...", "toast")
     return redirect(url_for(".view_group", group_id=group_id))
 
@@ -467,7 +476,7 @@ def resend_invite(token):
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/leaderboard-trend")
 @login_required
-def view_leaderboard_trend(group_id):
+def view_leaderboard_trend(group_id: str) -> Any:
     """Display a trend chart of the group's leaderboard."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
@@ -493,7 +502,7 @@ def view_leaderboard_trend(group_id):
 # TODO: Add type hints for Agent clarity
 @bp.route("/invite/<token>/delete", methods=["POST"])
 @login_required
-def delete_invite(token):
+def delete_invite(token: str) -> Any:
     """Delete a pending invitation."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -524,7 +533,7 @@ def delete_invite(token):
 # TODO: Add type hints for Agent clarity
 @bp.route("/invite/<token>")
 @login_required
-def handle_invite(token):
+def handle_invite(token: str) -> Any:
     """Handle an invitation link."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -567,7 +576,7 @@ def handle_invite(token):
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/delete", methods=["POST"])
 @login_required
-def delete_group(group_id):
+def delete_group(group_id: str) -> Any:
     """Delete a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
@@ -594,7 +603,7 @@ def delete_group(group_id):
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/join", methods=["POST"])
 @login_required
-def join_group(group_id):
+def join_group(group_id: str) -> Any:
     """Join a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
@@ -613,7 +622,7 @@ def join_group(group_id):
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/leave", methods=["POST"])
 @login_required
-def leave_group(group_id):
+def leave_group(group_id: str) -> Any:
     """Leave a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
@@ -631,12 +640,12 @@ def leave_group(group_id):
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>/stats/rivalry", methods=["GET"])
 @login_required
-def get_rivalry_stats(group_id):
+def get_rivalry_stats(group_id: str) -> Any:
     """Return head-to-head stats for two players in a group."""
     playerA_id = request.args.get("playerA_id")
     playerB_id = request.args.get("playerB_id")
 
-    if not all([playerA_id, playerB_id]):
+    if not playerA_id or not playerB_id:
         return {"error": "playerA_id and playerB_id are required"}, 400
 
     stats = get_h2h_stats(group_id, playerA_id, playerB_id)
@@ -651,7 +660,9 @@ def get_rivalry_stats(group_id):
     }
 
 
-def _fetch_recent_matches(db, group_id):
+def _fetch_recent_matches(
+    db: Any, group_id: str
+) -> tuple[list[Any], list[dict[str, Any]]]:
     """Fetch and enrich recent matches for a group."""
     matches_ref = db.collection("matches")
     matches_query = (
@@ -776,11 +787,13 @@ def _fetch_recent_matches(db, group_id):
     return recent_matches_docs, recent_matches
 
 
-def _fetch_group_teams(db, group_id, member_ids, recent_matches_docs):
+def _fetch_group_teams(
+    db: Any, group_id: str, member_ids: set[str], recent_matches_docs: list[Any]
+) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
     """Calculate team leaderboard and best buds for a group."""
     team_leaderboard = []
     best_buds = None
-    team_stats = {}  # team_id -> {wins, losses, games}
+    team_stats: dict[str, dict[str, Any]] = {}  # team_id -> {wins, losses, games}
 
     for doc in recent_matches_docs:
         data = doc.to_dict()
@@ -844,7 +857,7 @@ def _fetch_group_teams(db, group_id, member_ids, recent_matches_docs):
         for team_data in enriched_team_docs:
             stats = team_stats[team_data["id"]]
             total_games = stats["games"]
-            stats["win_percentage"] = (
+            stats["win_percentage"] = float(
                 (stats["wins"] / total_games) * 100 if total_games > 0 else 0
             )
 
@@ -873,7 +886,7 @@ def _fetch_group_teams(db, group_id, member_ids, recent_matches_docs):
     return team_leaderboard, best_buds
 
 
-def _get_pending_invites(db, group_id):
+def _get_pending_invites(db: Any, group_id: str) -> list[dict[str, Any]]:
     """Fetch pending invites for a group."""
     pending_members = []
     invites_ref = db.collection("group_invites")
