@@ -31,9 +31,10 @@ def list_tournaments() -> Any:
     # Fetch tournaments where the user is an owner or participant
     # Note: Firestore 'array-contains' might be tricky with objects in arrays.
     # Usually, it's better to store participant IDs in a separate array for querying.
-    # But for now, let's fetch all and filter, or just fetch all public ones if they existed.
-    # User specifically said: "stores them in a participants array with a 'pending' status"
-    # To query efficiently, we might need a separate 'participant_ids' array.
+    # But for now, let's fetch all and filter, or just fetch all public ones if
+    # they existed. User specifically said: "stores them in a participants array
+    # with a 'pending' status" To query efficiently, we might need a separate
+    # 'participant_ids' array.
 
     # For now, let's fetch tournaments where ownerRef is the user
     owned_tournaments = (
@@ -41,8 +42,8 @@ def list_tournaments() -> Any:
     )
 
     # And tournaments where user is a participant.
-    # Since we store objects in 'participants', we can't use 'array-contains' on the object
-    # unless we know the exact object.
+    # Since we store objects in 'participants', we can't use 'array-contains' on the
+    # object unless we know the exact object.
     # Let's also maintain a 'participant_ids' array for easier querying.
     participating_tournaments = (
         db.collection("tournaments")
