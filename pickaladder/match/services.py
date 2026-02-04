@@ -170,11 +170,10 @@ class MatchService:
                 won = (pid == player1_id and winner_slot == "player1") or (
                     pid == player2_id and winner_slot == "player2"
                 )
+            elif pid in [player1_id, get_data("partner")]:
+                won = winner_slot == "player1"
             else:
-                if pid in [player1_id, get_data("partner")]:
-                    won = winner_slot == "player1"
-                else:
-                    won = winner_slot == "player2"
+                won = winner_slot == "player2"
 
             # Stats update
             stats = p_data.get("stats", {})

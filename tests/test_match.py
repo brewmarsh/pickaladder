@@ -131,7 +131,6 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_opponent_snapshot.to_dict.return_value = MOCK_OPPONENT_DATA
         mock_db.get_all.return_value = [mock_user_snapshot, mock_opponent_snapshot]
 
-        mock_matches_collection = mock_db.collection("matches")
         mock_batch = mock_db.batch.return_value
 
         response = self.client.post(
