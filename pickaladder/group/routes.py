@@ -273,9 +273,9 @@ def view_group(group_id: str) -> Any:
             }
 
             send_invite_email_background(
-                current_app._get_current_object(),
+                current_app._get_current_object(),  # type: ignore[attr-defined]
                 token,
-                email_data,  # type: ignore[attr-defined]
+                email_data,
             )
 
             flash(f"Invitation is being sent to {email}.", "toast")
@@ -465,9 +465,9 @@ def resend_invite(token: str) -> Any:
     }
 
     send_invite_email_background(
-        current_app._get_current_object(),
+        current_app._get_current_object(),  # type: ignore[attr-defined]
         token,
-        email_data,  # type: ignore[attr-defined]
+        email_data,
     )
     flash(f"Resending invitation to {data.get('email')}...", "toast")
     return redirect(url_for(".view_group", group_id=group_id))
