@@ -40,11 +40,7 @@
                     </div>
                     <div id="latest-games-feed">
                         {% for match in matches %}
-                            {% set is_win = match.user_result == 'win' %}
-                            {% set is_loss = match.user_result == 'loss' %}
-                            {% set result_class = 'game-won' if is_win else ('game-lost' if is_loss else '') %}
-
-                            <div class="game-card {{ result_class }}">
+                            <div class="game-card {{ 'game-won' if match.user_result == 'win' else 'game-lost' }}">
                                 <div class="game-date">
                                     {% if match.date and match.date != 'N/A' %}
                                         {% if match.date is string %}
@@ -57,21 +53,24 @@
                                     {% endif %}
                                 </div>
                                 <div class="game-opponent">
-                                    vs
-                                    {% set user_id = user.id if user.id else user.uid %}
-                                    {% set is_player1 = (match.player1.id == user_id) if match.player1 is mapping else (user_id in match.player1|map(attribute='id')) %}
-                                    {% set opponent_team = match.player2 if is_player1 else match.player1 %}
-
-                                    {% if opponent_team is iterable and opponent_team is not mapping %}
-                                        {% for p in opponent_team %}
-                                            <a href="{{ url_for('user.view_user', user_id=p.id) }}">{{ p.username }}</a>{% if not loop.last %} & {% endif %}
-                                        {% endfor %}
+                                    {% if match.match_type == 'doubles' %}
+                                        {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
+                                        {% if in_team1 %}
+                                            {% set partner = match.player1[1] if match.player1[0].id == user.uid else match.player1[0] %}
+                                            {% set opponents = match.player2 %}
+                                        {% else %}
+                                            {% set partner = match.player2[1] if match.player2[0].id == user.uid else match.player2[0] %}
+                                            {% set opponents = match.player1 %}
+                                        {% endif %}
+                                        (You & {{ partner.username }}) vs ({{ opponents[0].username }} & {{ opponents[1].username }})
                                     {% else %}
-                                        <a href="{{ url_for('user.view_user', user_id=opponent_team.id) }}">{{ opponent_team.username }}</a>
+                                        {% set is_p1 = match.player1.id == user.uid %}
+                                        {% set opponent = match.player2 if is_p1 else match.player1 %}
+                                        You vs {{ opponent.username }}
                                     {% endif %}
                                 </div>
                                 <div class="game-score">
-                                    {{ [match.player1_score, match.player2_score] | max }}-{{ [match.player1_score, match.player2_score] | min }}
+                                    {{ match.player1_score }} - {{ match.player2_score }}
                                 </div>
                             </div>
                         {% else %}
@@ -91,7 +90,7 @@
                                     <th></th>
                                 </tr>
                             </thead>
-                            <tbody id="friend-requests-body">
+                            <tbody>
                                 {% for request in requests %}
                                     <tr>
                                         <td data-label="Username">
@@ -125,7 +124,7 @@
                                     <th>DUPR Rating</th>
                                 </tr>
                             </thead>
-                            <tbody id="friends-body">
+                            <tbody>
                                 {% for friend in friends %}
                                     <tr>
                                         <td data-label="Username">
@@ -142,7 +141,7 @@
                     </div>
 
                     <h3 style="margin-top: 20px;">My Groups</h3>
-                    <div id="group-rankings-container">
+                    <div>
                         {% for ranking in group_rankings %}
                             <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}" class="group-ranking-card">
                                 <div class="group-ranking-card-header">
