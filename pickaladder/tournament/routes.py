@@ -157,6 +157,7 @@ def view_tournament(tournament_id: str) -> Any:
     # Handle Invitations
     invite_form = InvitePlayerForm()
     friends = UserService.get_user_friends(db, g.user["uid"])
+    user_groups = UserService.get_user_groups(db, g.user["uid"])
     
     # Filter friends not already in tournament
     current_participant_ids = {
@@ -164,10 +165,10 @@ def view_tournament(tournament_id: str) -> Any:
         for obj in participant_objs
     }
     invitable_users = [f for f in friends if f["id"] not in current_participant_ids]
-    invite_form.user_id.choices = [(u["id"], smart_display_name(u)) for u in invitable_users]
+    invite_form.player.choices = [(u["id"], smart_display_name(u)) for u in invitable_users]
 
-    if invite_form.validate_on_submit() and "user_id" in request.form:
-        invited_uid = invite_form.user_id.data
+    if invite_form.validate_on_submit() and "player" in request.form:
+        invited_uid = invite_form.player.data
         invited_ref = db.collection("users").document(invited_uid)
         try:
             tournament_ref.update({
@@ -191,6 +192,7 @@ def view_tournament(tournament_id: str) -> Any:
         podium=podium,
         invite_form=invite_form,
         invitable_users=invitable_users,
+        user_groups=user_groups,
         is_owner=is_owner,
     )
 
@@ -245,7 +247,7 @@ def edit_tournament(tournament_id: str) -> Any:
 def invite_player(tournament_id: str) -> Any:
     """Invites a player (Endpoint used by the form)."""
     db = firestore.client()
-    user_id = request.form.get("user_id")
+    user_id = request.form.get("player")
     if not user_id:
         flash("No player selected.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
@@ -258,6 +260,68 @@ def invite_player(tournament_id: str) -> Any:
         "participant_ids": firestore.ArrayUnion([user_id]),
     })
     flash("Invite sent!", "success")
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/invite_group", methods=["POST"])
+@login_required
+def invite_group(tournament_id: str) -> Any:
+    """Invites all members of a group to the tournament."""
+    db = firestore.client()
+    group_id = request.form.get("group_id")
+    if not group_id:
+        flash("No group selected.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    tournament_ref = db.collection("tournaments").document(tournament_id)
+    tournament_doc = tournament_ref.get()
+    if not tournament_doc.exists:
+        flash("Tournament not found.", "danger")
+        return redirect(url_for(".list_tournaments"))
+
+    t_data = tournament_doc.to_dict()
+    if t_data is None:
+        flash("Tournament data not found.", "danger")
+        return redirect(url_for(".list_tournaments"))
+
+    # Auth check
+    is_owner = t_data.get("organizer_id") == g.user["uid"] or \
+               (t_data.get("ownerRef") and t_data["ownerRef"].id == g.user["uid"])
+    if not is_owner:
+        flash("Unauthorized.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    group_ref = db.collection("groups").document(group_id)
+    group_doc = group_ref.get()
+    if not group_doc.exists:
+        flash("Group not found.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    group_data = group_doc.to_dict()
+    if group_data is None:
+        flash("Group data not found.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    member_refs = group_data.get("members", [])
+    current_participant_ids = set(t_data.get("participant_ids", []))
+
+    new_participants = []
+    new_participant_ids = []
+
+    for member_ref in member_refs:
+        if member_ref.id not in current_participant_ids:
+            new_participants.append({"userRef": member_ref, "status": "pending", "team_name": None})
+            new_participant_ids.append(member_ref.id)
+
+    if new_participants:
+        tournament_ref.update({
+            "participants": firestore.ArrayUnion(new_participants),
+            "participant_ids": firestore.ArrayUnion(new_participant_ids),
+        })
+        flash(f"Invited {len(new_participants)} members from the group.", "success")
+    else:
+        flash("All group members are already in the tournament.", "info")
+
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
