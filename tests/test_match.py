@@ -35,6 +35,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             "firestore": patch(
                 "pickaladder.match.routes.firestore", new=self.mock_firestore_service
             ),
+            "match_services_firestore": patch(
+                "pickaladder.match.services.firestore", new=self.mock_firestore_service
+            ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
@@ -129,6 +132,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_db.get_all.return_value = [mock_user_snapshot, mock_opponent_snapshot]
 
         mock_matches_collection = mock_db.collection("matches")
+        mock_batch = mock_db.batch.return_value
 
         response = self.client.post(
             "/match/record",
@@ -145,7 +149,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match recorded successfully.", response.data)
-        mock_matches_collection.add.assert_called_once()
+        # MatchService uses batch operations
+        mock_batch.set.assert_called()
+        mock_batch.commit.assert_called_once()
 
     def test_pending_invites_query_uses_correct_field(self) -> None:
         """Test that pending invites are queried using 'inviter_id'."""
