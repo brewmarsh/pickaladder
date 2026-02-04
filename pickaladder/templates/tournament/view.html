@@ -144,10 +144,18 @@
                     <form method="POST">
                         {{ invite_form.csrf_token }}
                         <div class="form-group">
-                            {{ invite_form.player.label(class="form-label") }}
-                            {{ invite_form.player(class="form-input") }}
+                            <label for="player" class="form-label">Player</label>
+                            <select name="player" id="player" class="form-input" {% if not invitable_users %}disabled{% endif %}>
+                                {% if invitable_users %}
+                                    {% for user in invitable_users %}
+                                        <option value="{{ user.id }}">{{ user.username }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option disabled selected>No more friends to invite</option>
+                                {% endif %}
+                            </select>
                         </div>
-                        <button type="submit" name="player" class="btn btn-primary">Invite</button>
+                        <button type="submit" name="player" class="btn btn-primary" {% if not invitable_users %}disabled{% endif %}>Invite</button>
                     </form>
                 </div>
             </div>

@@ -182,6 +182,7 @@ def view_tournament(tournament_id: str) -> Any:
         standings=standings,
         podium=podium,
         invite_form=invite_form,
+        invitable_users=eligible_friends,
         is_owner=(tournament_data.get("ownerRef").id == g.user["uid"]),
     )
 
