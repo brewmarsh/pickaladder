@@ -41,6 +41,22 @@ def test_tournament_flow(
     expect(page.locator("h2")).to_contain_text("Winter Open")
     expect(page.locator(".badge-warning", has_text="Active")).to_be_visible()
 
+    # Create a friend to verify the Invite dropdown
+    friend_id = "friend_user"
+    mock_db.collection("users").document(friend_id).set({
+        "username": "friend_user",
+        "email": "friend@example.com",
+        "name": "Friend User",
+        "createdAt": "2023-01-01T00:00:00"
+    })
+    mock_db.collection("users").document("admin").collection("friends").document(friend_id).set({
+        "status": "accepted"
+    })
+
+    page.reload()
+    page.screenshot(path="/home/jules/verification/tournament_invite.png")
+    expect(page.locator("select[name='player']")).to_contain_text("friend_user")
+
     # 3. Check Directions button
     directions_btn = page.locator("text=Directions")
     expect(directions_btn).to_be_visible()

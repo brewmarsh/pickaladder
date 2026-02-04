@@ -65,6 +65,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         # Mock user fetch for before_request
         mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
+        mock_user_doc.id = MOCK_USER_ID
         mock_user_snapshot = MagicMock()
         mock_user_snapshot.exists = True
         mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
@@ -121,6 +122,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         # Mock user fetch for before_request
         mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
+        mock_user_doc.id = MOCK_USER_ID
         mock_user_snapshot = MagicMock()
         mock_user_snapshot.exists = True
         mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
@@ -135,6 +137,64 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Tournaments", response.data)
+
+    def test_view_tournament_with_invitable_users(self) -> None:
+        """Test that only non-participant friends are in the invitable list."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+
+        # Mock user fetch for before_request
+        mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
+        mock_user_doc.id = MOCK_USER_ID
+        mock_user_snapshot = MagicMock()
+        mock_user_snapshot.exists = True
+        mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
+        mock_user_doc.get.return_value = mock_user_snapshot
+
+        # Mock tournament doc
+        tournament_id = "test_tournament_id"
+        mock_tournament_doc = mock_db.collection("tournaments").document(tournament_id)
+        mock_tournament_snapshot = MagicMock()
+        mock_tournament_snapshot.exists = True
+        mock_friend_ref = MagicMock()
+        mock_friend_ref.id = "friend1"
+        mock_participant_ref = MagicMock()
+        mock_participant_ref.id = "participant1"
+
+        mock_tournament_snapshot.to_dict.return_value = {
+            "name": "Test Tournament",
+            "ownerRef": mock_user_doc,
+            "participants": [{"userRef": mock_participant_ref, "status": "accepted"}],
+            "participant_ids": ["participant1"],
+        }
+        mock_tournament_snapshot.id = tournament_id
+        mock_tournament_doc.get.return_value = mock_tournament_snapshot
+
+        # Mock friends: one who is already a participant, one who is not
+        friends_data = [
+            {"id": "friend1", "username": "Friend One", "name": "Friend One"},
+            {"id": "participant1", "username": "Participant One", "name": "Participant One"},
+        ]
+
+        with patch("pickaladder.tournament.routes.UserService.get_user_friends") as mock_get_friends, \
+             patch("pickaladder.tournament.routes.get_tournament_standings") as mock_standings:
+            mock_get_friends.return_value = friends_data
+            mock_standings.return_value = []
+
+            response = self.client.get(
+                f"/tournaments/{tournament_id}",
+                headers=self._get_auth_headers(),
+            )
+
+        self.assertEqual(response.status_code, 200)
+        # Check that Friend One is in the options but Participant One is not
+        self.assertIn(b"Friend One", response.data)
+        # Note: Participant One's name might appear in the participant list, but we want to check the select options.
+        # But wait, the name "Participant One" WILL appear because they are a participant.
+        # However, it should NOT appear as an OPTION in the select field.
+        # WTForms renders options as <option value="id">label</option>
+        self.assertIn(b'<option value="friend1">Friend One</option>', response.data)
+        self.assertNotIn(b'<option value="participant1">Participant One</option>', response.data)
 
 
 if __name__ == "__main__":
