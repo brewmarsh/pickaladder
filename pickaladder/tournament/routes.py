@@ -1,8 +1,8 @@
 """Routes for the tournament blueprint."""
 
 from __future__ import annotations
-import datetime
 
+import datetime
 from typing import Any
 
 from firebase_admin import firestore
@@ -83,9 +83,14 @@ def create_tournament() -> Any:
         db = firestore.client()
         user_ref = db.collection("users").document(g.user["uid"])
         try:
+            # Ensure form.date.data is not None for mypy
+            date_val = form.date.data
+            if date_val is None:
+                raise ValueError("Date is required")
+
             tournament_data = {
                 "name": form.name.data,
-                "date": datetime.datetime.combine(form.date.data, datetime.time.min),
+                "date": datetime.datetime.combine(date_val, datetime.time.min),
                 "location": form.location.data,
                 "matchType": form.match_type.data,
                 "ownerRef": user_ref,
@@ -223,9 +228,8 @@ def view_tournament(tournament_id: str) -> Any:
             flash(f"An unexpected error occurred: {e}", "danger")
 
     owner_ref = tournament_data.get("ownerRef")
-    is_owner = (
-        tournament_data.get("organizer_id") == g.user["uid"]
-        or (owner_ref and owner_ref.id == g.user["uid"])
+    is_owner = tournament_data.get("organizer_id") == g.user["uid"] or (
+        owner_ref and owner_ref.id == g.user["uid"]
     )
 
     return render_template(
@@ -256,12 +260,16 @@ def edit_tournament(tournament_id: str) -> Any:
     if tournament_data is None:
         flash("Tournament data is empty.", "danger")
         return redirect(url_for(".list_tournaments"))
-    tournament_data["id"] = tournament_doc.id
+    tournament_data["id"] = tournament_id
 
     # Authorization
     organizer_id = tournament_data.get("organizer_id")
     owner_ref = tournament_data.get("ownerRef")
-    if organizer_id != g.user["uid"] and (not owner_ref or owner_ref.id != g.user["uid"]):
+    is_authorized = organizer_id == g.user["uid"] or (
+        owner_ref and owner_ref.id == g.user["uid"]
+    )
+
+    if not is_authorized:
         flash("You are not authorized to edit this tournament.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
@@ -277,9 +285,20 @@ def edit_tournament(tournament_id: str) -> Any:
     form = TournamentForm()
 
     if form.validate_on_submit():
+        # Ensure form.date.data is not None for mypy
+        date_val = form.date.data
+        if date_val is None:
+            flash("Date is required.", "danger")
+            return render_template(
+                "tournament/edit.html",
+                form=form,
+                tournament=tournament_data,
+                is_ongoing=is_ongoing,
+            )
+
         update_data = {
             "name": form.name.data,
-            "date": datetime.datetime.combine(form.date.data, datetime.time.min),
+            "date": datetime.datetime.combine(date_val, datetime.time.min),
             "location": form.location.data,
         }
         if not is_ongoing:
@@ -329,15 +348,8 @@ def complete_tournament(tournament_id: str) -> Any:
         return redirect(url_for(".list_tournaments"))
 
     tournament_data = tournament_doc.to_dict()
-    if tournament_data is None:
-        flash("Tournament data is empty.", "danger")
-        return redirect(url_for(".list_tournaments"))
-
-    owner_ref = tournament_data.get("ownerRef")
-    if tournament_data.get("organizer_id") != g.user["uid"] and (
-        not owner_ref or owner_ref.id != g.user["uid"]
-    ):
-        flash("Only the organizer can complete the tournament.", "danger")
+    if tournament_data.get("ownerRef").id != g.user["uid"]:
+        flash("Only the owner can complete the tournament.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
     try:

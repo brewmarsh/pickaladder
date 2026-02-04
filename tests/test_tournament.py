@@ -1,8 +1,8 @@
 """Tests for the tournament blueprint."""
 
 from __future__ import annotations
-import datetime
 
+import datetime
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -148,9 +148,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         mock_tournament_doc.get.return_value = mock_tournament_snapshot
 
         # Mock matches query (not ongoing)
-        mock_db.collection.return_value.where.return_value.limit.return_value.stream.return_value = (
-            iter([])
-        )
+        mock_matches_query = mock_db.collection.return_value.where.return_value
+        mock_limit_query = mock_matches_query.limit.return_value
+        mock_limit_query.stream.return_value = iter([])
 
         response = self.client.post(
             f"/tournaments/{tournament_id}/edit",
@@ -202,9 +202,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         mock_tournament_doc.get.return_value = mock_tournament_snapshot
 
         # Mock matches query (IS ongoing)
-        mock_db.collection.return_value.where.return_value.limit.return_value.stream.return_value = (
-            iter([MagicMock()])
-        )
+        mock_matches_query = mock_db.collection.return_value.where.return_value
+        mock_limit_query = mock_matches_query.limit.return_value
+        mock_limit_query.stream.return_value = iter([MagicMock()])
 
         response = self.client.post(
             f"/tournaments/{tournament_id}/edit",
