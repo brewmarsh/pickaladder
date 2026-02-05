@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -114,6 +115,115 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         call_args = mock_tournaments_collection.add.call_args[0]
         self.assertEqual(call_args[0]["name"], "Summer Open")
         self.assertEqual(call_args[0]["matchType"], "singles")
+        # Check that it's a datetime object
+        self.assertIsInstance(call_args[0]["date"], datetime.datetime)
+
+    def test_edit_tournament(self) -> None:
+        """Test successfully editing an existing tournament."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+
+        # Mock user fetch for before_request
+        mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
+        mock_user_doc.id = MOCK_USER_ID
+        mock_user_snapshot = MagicMock()
+        mock_user_snapshot.exists = True
+        mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
+        mock_user_doc.get.return_value = mock_user_snapshot
+
+        # Mock tournament doc
+        tournament_id = "test_tournament_id"
+        mock_tournament_doc = mock_db.collection("tournaments").document(tournament_id)
+        mock_tournament_snapshot = MagicMock()
+        mock_tournament_snapshot.exists = True
+        mock_tournament_snapshot.to_dict.return_value = {
+            "name": "Original Name",
+            "date": "2024-06-01",
+            "location": "Original Location",
+            "matchType": "singles",
+            "ownerRef": mock_user_doc,
+            "organizer_id": MOCK_USER_ID,
+        }
+        mock_tournament_snapshot.id = tournament_id
+        mock_tournament_doc.get.return_value = mock_tournament_snapshot
+
+        # Mock matches query (not ongoing)
+        mock_matches_query = mock_db.collection.return_value.where.return_value
+        mock_limit_query = mock_matches_query.limit.return_value
+        mock_limit_query.stream.return_value = iter([])
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/edit",
+            headers=self._get_auth_headers(),
+            data={
+                "name": "Updated Name",
+                "date": "2024-07-01",
+                "location": "Updated Location",
+                "match_type": "doubles",
+            },
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Tournament updated successfully.", response.data)
+        mock_tournament_doc.update.assert_called_once()
+        update_args = mock_tournament_doc.update.call_args[0][0]
+        self.assertEqual(update_args["name"], "Updated Name")
+        self.assertEqual(update_args["matchType"], "doubles")
+        self.assertIsInstance(update_args["date"], datetime.datetime)
+
+    def test_edit_tournament_ongoing(self) -> None:
+        """Test that matchType cannot be changed if tournament is ongoing."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+
+        # Mock user fetch for before_request
+        mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
+        mock_user_doc.id = MOCK_USER_ID
+        mock_user_snapshot = MagicMock()
+        mock_user_snapshot.exists = True
+        mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
+        mock_user_doc.get.return_value = mock_user_snapshot
+
+        # Mock tournament doc
+        tournament_id = "test_tournament_id"
+        mock_tournament_doc = mock_db.collection("tournaments").document(tournament_id)
+        mock_tournament_snapshot = MagicMock()
+        mock_tournament_snapshot.exists = True
+        mock_tournament_snapshot.to_dict.return_value = {
+            "name": "Original Name",
+            "date": "2024-06-01",
+            "location": "Original Location",
+            "matchType": "singles",
+            "ownerRef": mock_user_doc,
+            "organizer_id": MOCK_USER_ID,
+        }
+        mock_tournament_snapshot.id = tournament_id
+        mock_tournament_doc.get.return_value = mock_tournament_snapshot
+
+        # Mock matches query (IS ongoing)
+        mock_matches_query = mock_db.collection.return_value.where.return_value
+        mock_limit_query = mock_matches_query.limit.return_value
+        mock_limit_query.stream.return_value = iter([MagicMock()])
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/edit",
+            headers=self._get_auth_headers(),
+            data={
+                "name": "Updated Name",
+                "date": "2024-07-01",
+                "location": "Updated Location",
+                "match_type": "doubles",  # Attempt to change matchType
+            },
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        mock_tournament_doc.update.assert_called_once()
+        update_args = mock_tournament_doc.update.call_args[0][0]
+        self.assertEqual(update_args["name"], "Updated Name")
+        # matchType should NOT be in update_args or should be the original
+        self.assertNotIn("matchType", update_args)
 
     def test_list_tournaments(self) -> None:
         """Test listing tournaments."""
@@ -235,6 +345,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             "ownerRef": mock_user_doc,
             "participants": [],
             "participant_ids": [],
+            "organizer_id": MOCK_USER_ID,
         }
         mock_tournament_doc.get.return_value = mock_tournament_snapshot
 
