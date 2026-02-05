@@ -7,6 +7,7 @@ from typing import Any
 from firebase_admin import firestore
 from flask import current_app
 
+from pickaladder.tournament.utils import get_tournament_standings
 from pickaladder.user.utils import UserService, smart_display_name
 from pickaladder.utils import send_email
 
