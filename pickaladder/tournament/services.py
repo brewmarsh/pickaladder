@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import current_app
@@ -13,6 +13,7 @@ from pickaladder.utils import send_email
 from .utils import get_tournament_standings
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
@@ -39,9 +40,11 @@ class TournamentService:
         if not user_refs:
             return []
 
-        user_docs = db.get_all(user_refs)
+        user_docs = cast(list["DocumentSnapshot"], db.get_all(user_refs))
         users_map = {
-            doc.id: {**doc.to_dict(), "id": doc.id} for doc in user_docs if doc.exists
+            doc.id: {**cast(dict[str, Any], doc.to_dict()), "id": doc.id}
+            for doc in user_docs
+            if doc.exists
         }
 
         participants = []
@@ -92,7 +95,7 @@ class TournamentService:
         invitable_users = []
         if final_ids:
             u_refs = [db.collection("users").document(uid) for uid in final_ids]
-            u_docs = db.get_all(u_refs)
+            u_docs = cast(list["DocumentSnapshot"], db.get_all(u_refs))
             for u_doc in u_docs:
                 if u_doc.exists:
                     u_data = u_doc.to_dict()
@@ -157,7 +160,7 @@ class TournamentService:
             "createdAt": firestore.SERVER_TIMESTAMP,
         }
         _, ref = db.collection("tournaments").add(tournament_payload)
-        return ref.id
+        return cast(str, ref.id)
 
     @staticmethod
     def get_tournament_details(
@@ -166,7 +169,10 @@ class TournamentService:
         """Fetch comprehensive details for the tournament view."""
         if db is None:
             db = firestore.client()
-        doc = db.collection("tournaments").document(tournament_id).get()
+        doc = cast(
+            "DocumentSnapshot",
+            db.collection("tournaments").document(tournament_id).get(),
+        )
         if not doc.exists:
             return None
 
@@ -186,7 +192,7 @@ class TournamentService:
 
         # Standings & Podium
         standings = get_tournament_standings(
-            db, tournament_id, data.get("matchType", "singles")
+            db, tournament_id, cast(str, data.get("matchType", "singles"))
         )
         podium = standings[:3] if data.get("status") == "Completed" else []
 
@@ -229,7 +235,7 @@ class TournamentService:
         if db is None:
             db = firestore.client()
         ref = db.collection("tournaments").document(tournament_id)
-        doc = ref.get()
+        doc = cast("DocumentSnapshot", ref.get())
         if not doc.exists:
             raise ValueError("Tournament not found.")
 
@@ -292,7 +298,9 @@ class TournamentService:
             raise PermissionError("Unauthorized.")
 
         # Fetch Group
-        g_doc = db.collection("groups").document(group_id).get()
+        g_doc = cast(
+            "DocumentSnapshot", db.collection("groups").document(group_id).get()
+        )
         if not g_doc.exists:
             raise ValueError("Group not found")
         g_data = g_doc.to_dict()
@@ -316,7 +324,7 @@ class TournamentService:
             db = firestore.client()
 
         t_ref = db.collection("tournaments").document(tournament_id)
-        t_doc = t_ref.get()
+        t_doc = cast("DocumentSnapshot", t_ref.get())
         if not t_doc.exists:
             raise ValueError("Tournament not found")
         t_data = t_doc.to_dict()
@@ -328,7 +336,7 @@ class TournamentService:
         )
 
         current_ids = set(t_data.get("participant_ids", []))
-        member_docs = db.get_all(member_refs)
+        member_docs = cast(list["DocumentSnapshot"], db.get_all(member_refs))
 
         new_parts = []
         new_ids = []
@@ -371,7 +379,7 @@ class TournamentService:
 
         @firestore.transactional
         def _tx(transaction: Transaction, t_ref: DocumentReference) -> bool:
-            snap = t_ref.get(transaction=transaction)
+            snap = cast("DocumentSnapshot", t_ref.get(transaction=transaction))
             if not snap.exists:
                 return False
             parts = snap.get("participants")
@@ -402,7 +410,7 @@ class TournamentService:
 
         @firestore.transactional
         def _tx(transaction: Transaction, t_ref: DocumentReference) -> bool:
-            snap = t_ref.get(transaction=transaction)
+            snap = cast("DocumentSnapshot", t_ref.get(transaction=transaction))
             if not snap.exists:
                 return False
             parts = snap.get("participants")
@@ -439,7 +447,11 @@ class TournamentService:
         for p in tournament_data.get("participants", []):
             if p and p.get("status") == "accepted":
                 try:
-                    u_doc = p.get("userRef").get() if "userRef" in p else None
+                    u_doc = (
+                        cast("DocumentSnapshot", p.get("userRef").get())
+                        if "userRef" in p
+                        else None
+                    )
                     if u_doc and u_doc.exists:
                         u_data = u_doc.to_dict()
                         if u_data and u_data.get("email"):
@@ -463,7 +475,7 @@ class TournamentService:
         if db is None:
             db = firestore.client()
         ref = db.collection("tournaments").document(tournament_id)
-        doc = ref.get()
+        doc = cast("DocumentSnapshot", ref.get())
         if not doc.exists:
             raise ValueError("Tournament not found")
 
@@ -479,6 +491,8 @@ class TournamentService:
 
         ref.update({"status": "Completed"})
 
-        standings = get_tournament_standings(db, tournament_id, data.get("matchType"))
+        standings = get_tournament_standings(
+            db, tournament_id, cast(str, data.get("matchType", "singles"))
+        )
         winner = standings[0]["name"] if standings else "No one"
         TournamentService._notify_participants(data, winner, standings)
