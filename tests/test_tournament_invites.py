@@ -27,6 +27,10 @@ class TournamentInvitesTestCase(unittest.TestCase):
                 "pickaladder.tournament.routes.firestore",
                 new=self.mock_firestore_service,
             ),
+            "firestore_services": patch(
+                "pickaladder.tournament.services.firestore",
+                new=self.mock_firestore_service,
+            ),
             "firestore_user_routes": patch(
                 "pickaladder.user.routes.firestore",
                 new=self.mock_firestore_service,

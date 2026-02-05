@@ -693,6 +693,14 @@ def _fetch_recent_matches(
                 if isinstance(ref, firestore.DocumentReference):
                     player_refs.append(ref)
 
+        # Also collect players from team arrays
+        for team_key in ["team1", "team2"]:
+            team_players = data.get(team_key)
+            if isinstance(team_players, list):
+                for p_ref in team_players:
+                    if isinstance(p_ref, firestore.DocumentReference):
+                        player_refs.append(p_ref)
+
     # Batch fetch Teams
     teams_map = {}
     if team_refs:
@@ -728,13 +736,17 @@ def _fetch_recent_matches(
         match_data = match_doc.to_dict()
         match_data["id"] = match_doc.id
 
-        # Attach Teams
+        # Attach Teams and set team names
         if t1_ref := match_data.get("team1Ref"):
             if isinstance(t1_ref, firestore.DocumentReference):
                 match_data["team1"] = teams_map.get(t1_ref.id)
+                if match_data["team1"]:
+                    match_data["team1_name"] = match_data["team1"].get("name")
         if t2_ref := match_data.get("team2Ref"):
             if isinstance(t2_ref, firestore.DocumentReference):
                 match_data["team2"] = teams_map.get(t2_ref.id)
+                if match_data["team2"]:
+                    match_data["team2_name"] = match_data["team2"].get("name")
 
         # Populate Players (as fallback and for older match types)
         player_keys = [
@@ -754,6 +766,38 @@ def _fetch_recent_matches(
             if isinstance(ref, firestore.DocumentReference):
                 target = key.replace("Ref", "")
                 match_data[target] = players_map.get(ref.id, GUEST_USER)
+
+        # Ensure players are populated from team arrays for newer doubles matches
+        for team_key in ["team1", "team2"]:
+            team_val = match_data.get(team_key)
+            if isinstance(team_val, list):
+                # We need to map these back to player1/partner/player2/opponent2
+                if team_key == "team1":
+                    if len(team_val) > 0 and isinstance(
+                        team_val[0], firestore.DocumentReference
+                    ):
+                        match_data["player1"] = players_map.get(
+                            team_val[0].id, GUEST_USER
+                        )
+                    if len(team_val) > 1 and isinstance(
+                        team_val[1], firestore.DocumentReference
+                    ):
+                        match_data["partner"] = players_map.get(
+                            team_val[1].id, GUEST_USER
+                        )
+                else:  # team2
+                    if len(team_val) > 0 and isinstance(
+                        team_val[0], firestore.DocumentReference
+                    ):
+                        match_data["player2"] = players_map.get(
+                            team_val[0].id, GUEST_USER
+                        )
+                    if len(team_val) > 1 and isinstance(
+                        team_val[1], firestore.DocumentReference
+                    ):
+                        match_data["opponent2"] = players_map.get(
+                            team_val[1].id, GUEST_USER
+                        )
 
         recent_matches.append(match_data)
 
