@@ -75,6 +75,16 @@ def view_tournament(tournament_id: str) -> Any:
         (u["id"], smart_display_name(u)) for u in invitable_users
     ]
 
+    # Handle Invite Form Submission from the view page itself
+    if invite_form.validate_on_submit() and "user_id" in request.form:
+        invited_uid = invite_form.user_id.data
+        try:
+            TournamentService.invite_player(tournament_id, g.user["uid"], invited_uid)
+            flash("Player invited successfully.", "success")
+            return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        except Exception as e:
+            flash(f"Error sending invite: {e}", "danger")
+
     return render_template(
         "tournament/view.html",
         invite_form=invite_form,
@@ -86,23 +96,6 @@ def view_tournament(tournament_id: str) -> Any:
 @login_required
 def edit_tournament(tournament_id: str) -> Any:
     """Edit tournament details."""
-    # We fetch details to prepopulate form and check permissions
-    # Ideally service should have specific methods or we reuse get_details logic partially
-    # But get_tournament_details is heavy.
-    # Let's use a lighter check or just try-catch the update?
-    # For GET we need data.
-    # We can rely on TournamentService.update_tournament for permission check on POST.
-    # For GET, we might need a fetch method in Service?
-    # get_tournament_details includes permission check 'is_owner' logic but returns everything.
-    
-    # Using existing service method pattern (manual fetch in route vs service)
-    # The previous code did manual fetch.
-    # To fully refactor, we should probably add get_tournament(id) to service.
-    # For now, I will stick to what the service provides or keep simple manual fetch for GET if service lacks it.
-    # Wait, update_tournament in service DOES fetch and check permissions.
-    
-    # Let's fetch using get_tournament_details for now to be safe and consistent, 
-    # although it might be slightly inefficient.
     details = TournamentService.get_tournament_details(tournament_id, g.user["uid"])
     if not details:
         flash("Tournament not found.", "danger")
@@ -135,7 +128,7 @@ def edit_tournament(tournament_id: str) -> Any:
             flash("Tournament updated successfully.", "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
         except ValueError as e:
-            flash(str(e), "danger") # e.g. "Tournament not found"
+            flash(str(e), "danger")
         except PermissionError:
             flash("Unauthorized.", "danger")
         except Exception as e:
