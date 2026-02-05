@@ -279,12 +279,13 @@ class UserService:
                         data["id"] = doc.id
                         # Format date for display
                         raw_date = data.get("date")
-                        if hasattr(raw_date, "to_datetime"):
-                            data["date_display"] = raw_date.to_datetime().strftime(
-                                "%b %d, %Y"
-                            )
-                        elif isinstance(raw_date, datetime.datetime):
-                            data["date_display"] = raw_date.strftime("%b %d, %Y")
+                        if raw_date is not None:
+                            if hasattr(raw_date, "to_datetime"):
+                                data["date_display"] = raw_date.to_datetime().strftime(
+                                    "%b %d, %Y"
+                                )
+                            elif isinstance(raw_date, datetime.datetime):
+                                data["date_display"] = raw_date.strftime("%b %d, %Y")
                         pending_invites.append(data)
                         break
         return pending_invites
@@ -316,12 +317,13 @@ class UserService:
                         data["id"] = doc.id
                         # Format date for display
                         raw_date = data.get("date")
-                        if hasattr(raw_date, "to_datetime"):
-                            data["date_display"] = raw_date.to_datetime().strftime(
-                                "%b %d, %Y"
-                            )
-                        elif isinstance(raw_date, datetime.datetime):
-                            data["date_display"] = raw_date.strftime("%b %d, %Y")
+                        if raw_date is not None:
+                            if hasattr(raw_date, "to_datetime"):
+                                data["date_display"] = raw_date.to_datetime().strftime(
+                                    "%b %d, %Y"
+                                )
+                            elif isinstance(raw_date, datetime.datetime):
+                                data["date_display"] = raw_date.strftime("%b %d, %Y")
                         active_tournaments.append(data)
                         break
         return active_tournaments
@@ -353,10 +355,13 @@ class UserService:
                 data["winner_name"] = standings[0]["name"] if standings else "TBD"
 
                 raw_date = data.get("date")
-                if hasattr(raw_date, "to_datetime"):
-                    data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
-                elif isinstance(raw_date, datetime.datetime):
-                    data["date_display"] = raw_date.strftime("%b %d, %Y")
+                if raw_date is not None:
+                    if hasattr(raw_date, "to_datetime"):
+                        data["date_display"] = raw_date.to_datetime().strftime(
+                            "%b %d, %Y"
+                        )
+                    elif isinstance(raw_date, datetime.datetime):
+                        data["date_display"] = raw_date.strftime("%b %d, %Y")
 
                 past_tournaments.append(data)
 
