@@ -631,9 +631,9 @@ class UserService:
                 user_won = True
         else:
             p1_ref = match_data.get("player1Ref")
-            if p1_ref and p1_ref.id == user_id:
-                if winner == "player1": user_won = True
-            elif winner == "player2": user_won = True
+            is_player1 = p1_ref and p1_ref.id == user_id
+            if (is_player1 and winner == "player1") or (not is_player1 and winner == "player2"):
+                user_won = True
         return "win" if user_won else "loss"
 
     @staticmethod
@@ -662,13 +662,16 @@ class UserService:
 
     @staticmethod
     def format_matches_for_dashboard(db: Client, matches_docs: list[DocumentSnapshot], user_id: str) -> list[dict[str, Any]]:
-        """Enrich matches for dashboard."""
+        """Enrich matches for dashboard display."""
         users_map, teams_map = UserService._fetch_match_entities(db, matches_docs)
+        
+        # Batch fetch tournament names
         tournament_ids = set()
         for m in matches_docs:
             m_data = m.to_dict()
             if m_data and (tid := m_data.get("tournamentId")):
                 tournament_ids.add(tid)
+        
         tournaments_map = {}
         if tournament_ids:
             tournament_refs = [db.collection("tournaments").document(tid) for tid in tournament_ids if tid]
@@ -676,21 +679,26 @@ class UserService:
             for doc in tournament_docs:
                 if doc.exists and (d := doc.to_dict()):
                     tournaments_map[doc.id] = d
+        
         matches_data = []
         for match_doc in matches_docs:
             m_data = match_doc.to_dict()
             if m_data is None: continue
+            
             winner = UserService._get_match_winner_slot(m_data)
             user_result = UserService._get_user_match_result(m_data, user_id, winner)
+            
             if m_data.get("matchType") == "doubles":
                 p1_info = [UserService._get_player_info(r, users_map) for r in m_data.get("team1", [])]
                 p2_info = [UserService._get_player_info(r, users_map) for r in m_data.get("team2", [])]
             else:
                 p1_info = UserService._get_player_info(m_data["player1Ref"], users_map)
                 p2_info = UserService._get_player_info(m_data["player2Ref"], users_map)
+                
             t1_name = teams_map.get(m_data["team1Ref"].id, {}).get("name", "Team 1") if m_data.get("team1Ref") else "Team 1"
             t2_name = teams_map.get(m_data["team2Ref"].id, {}).get("name", "Team 2") if m_data.get("team2Ref") else "Team 2"
             tournament_name = tournaments_map.get(m_data.get("tournamentId"), {}).get("name")
+            
             matches_data.append({
                 "id": match_doc.id,
                 "player1": p1_info,

@@ -95,7 +95,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            # TARGET: Service layer, where logic now resides
+            # TARGET: Service layer, where database logic now resides
             "firestore_services": patch(
                 "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,
@@ -204,6 +204,62 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(data["name"], "Updated Name")
         self.assertEqual(data["matchType"], "doubles")
 
+    def test_edit_tournament_ongoing(self) -> None:
+        """Test that matchType cannot be changed if tournament is ongoing."""
+        self._set_session_user()
+
+        # Setup existing tournament
+        tournament_id = "test_tournament_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Original Name",
+                "date": datetime.datetime(2024, 6, 1),
+                "location": "Original Location",
+                "matchType": "singles",
+                "ownerRef": user_ref,
+                "organizer_id": MOCK_USER_ID,
+            }
+        )
+
+        # Setup an ongoing match for this tournament
+        self.mock_db.collection("matches").add({"tournamentId": tournament_id})
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/edit",
+            headers=self._get_auth_headers(),
+            data={
+                "name": "Updated Name",
+                "date": "2024-07-01",
+                "location": "Updated Location",
+                "match_type": "doubles",  # Attempt to change matchType
+            },
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Updated!", response.data)
+
+        # Verify that matchType was NOT updated
+        data = (
+            self.mock_db.collection("tournaments")
+            .document(tournament_id)
+            .get()
+            .to_dict()
+        )
+        self.assertEqual(data["name"], "Updated Name")
+        self.assertEqual(data["matchType"], "singles")  # Should still be singles
+
+    def test_list_tournaments(self) -> None:
+        """Test listing tournaments."""
+        self._set_session_user()
+        response = self.client.get(
+            "/tournaments/",
+            headers=self._get_auth_headers(),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Tournaments", response.data)
+
     def test_view_tournament_with_invitable_users(self) -> None:
         """Test that only non-participant players are in the invitable list."""
         self._set_session_user()
@@ -245,6 +301,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             }
         )
 
+        # PATCH FIX: Target the Service layer standings helper
         with patch(
             "pickaladder.tournament.services.get_tournament_standings"
         ) as mock_standings:

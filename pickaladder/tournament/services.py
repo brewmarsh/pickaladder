@@ -112,10 +112,18 @@ class TournamentService:
             db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
 
-        owned = db.collection("tournaments").where("ownerRef", "==", user_ref).stream()
+        owned = (
+            db.collection("tournaments")
+            .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
+            .stream()
+        )
         participating = (
             db.collection("tournaments")
-            .where("participant_ids", "array_contains", user_uid)
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_uid
+                )
+            )
             .stream()
         )
 
