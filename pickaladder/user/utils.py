@@ -145,17 +145,18 @@ def smart_display_name(user: dict[str, Any]) -> str:
     """Return a smart display name for a user.
 
     If the user is a ghost user (username starts with 'ghost_'):
+    - If they have a name, return "{name} (Pending)".
     - If they have an email, return a masked version of it.
-    - If they have no name, return 'Pending Invite'.
+    - Otherwise, return 'Pending Invite'.
     Otherwise, return the username.
     """
     username = user.get("username", "")
     if username.startswith("ghost_"):
-        email = user.get("email")
-        if email:
+        if name := user.get("name"):
+            return f"{name} (Pending)"
+        if email := user.get("email"):
             return mask_email(email)
-        if not user.get("name"):
-            return "Pending Invite"
+        return "Pending Invite"
 
     return username
 
