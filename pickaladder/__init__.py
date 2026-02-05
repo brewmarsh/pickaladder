@@ -22,7 +22,7 @@ from . import teams as teams_bp
 from . import tournament as tournament_bp
 from . import user as user_bp
 from .extensions import csrf, mail
-from .user.utils import smart_display_name, wrap_user
+from .user.utils import UserService, smart_display_name, wrap_user
 
 APP_PASSWORD_LENGTH = 16
 
@@ -269,6 +269,20 @@ def create_app(test_config=None):
         return dict(app_version=os.environ.get("APP_VERSION", "dev"))
 
     # TODO: Add type hints for Agent clarity
+    @app.context_processor
+    def inject_pending_tournament_invites():
+        """Injects pending tournament invites into the template context."""
+        if g.user:
+            try:
+                db = firestore.client()
+                pending_invites = UserService.get_pending_tournament_invites(
+                    db, g.user["uid"]
+                )
+                return dict(pending_tournament_invites=pending_invites)
+            except Exception as e:
+                current_app.logger.error(f"Error fetching tournament invites: {e}")
+        return dict(pending_tournament_invites=[])
+
     @app.context_processor
     def inject_firebase_api_key():
         """Injects the Firebase API key into the template context."""

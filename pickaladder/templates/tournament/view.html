@@ -4,7 +4,12 @@
 <div class="hero-stats-card">
     <div class="hero-left-panel">
         <div class="hero-name-and-edit">
-            <h2>{{ tournament.name }}</h2>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <h2 style="margin: 0;">{{ tournament.name }}</h2>
+                {% if is_owner %}
+                    <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn btn-outline btn-sm">Edit Details</a>
+                {% endif %}
+            </div>
             <p class="text-muted">{{ tournament.date }} | {{ tournament.location }}</p>
             <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}">
                 {{ tournament.status or 'Active' }}
@@ -103,24 +108,41 @@
 
         <div class="card" style="margin-top: 24px;">
             <h3>Participants</h3>
-            <div class="friend-grid">
-                {% for p in participants %}
-                    <div class="friend-card">
-                        <img src="{{ p.user | avatar_url }}" alt="Avatar" class="friend-avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                        <div class="friend-info">
-                            <h4 class="friend-name">{{ p.display_name }}</h4>
-                            <span class="badge {{ 'badge-success' if p.status == 'accepted' else 'badge-warning' }}">
-                                {{ p.status|capitalize }}
-                            </span>
-                            {% if p.user.id == g.user.uid and p.status == 'pending' %}
-                                <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="margin-top: 8px;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-sm btn-success">Join Tournament</button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endfor %}
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in participants %}
+                            <tr>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <img src="{{ p.user | avatar_url }}" alt="Avatar" class="friend-avatar" style="width: 32px; height: 32px;" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                        <span>{{ p.display_name }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge {{ 'badge-success' if p.status == 'accepted' else 'badge-warning' if p.status == 'pending' else 'badge-info' }}">
+                                        {{ 'Confirmed' if p.status == 'accepted' else 'Pending' if p.status == 'pending' else 'Invited (Email)' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if p.user.id == g.user.uid and p.status == 'pending' %}
+                                        <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-success">Join</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
