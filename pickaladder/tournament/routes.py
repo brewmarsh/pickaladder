@@ -17,12 +17,91 @@ from flask import (
 )
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.user.utils import UserService, smart_display_name
+from pickaladder.user.utils import smart_display_name
 from pickaladder.utils import send_email
 
 from . import bp
 from .forms import InvitePlayerForm, TournamentForm
 from .utils import get_tournament_standings
+
+
+def _resolve_tournament_participants(
+    db: Any, participant_objs: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Helper to resolve participant user data from Firestore."""
+    if not participant_objs:
+        return []
+
+    user_refs = [
+        obj["userRef"]
+        if "userRef" in obj
+        else db.collection("users").document(obj["user_id"])
+        for obj in participant_objs
+        if "userRef" in obj or "user_id" in obj
+    ]
+    user_docs = db.get_all(user_refs)
+    users_map = {
+        doc.id: {**doc.to_dict(), "id": doc.id} for doc in user_docs if doc.exists
+    }
+
+    participants = []
+    for obj in participant_objs:
+        uid = obj["userRef"].id if "userRef" in obj else obj.get("user_id")
+        if uid and uid in users_map:
+            u_data = users_map[uid]
+            participants.append(
+                {
+                    "user": u_data,
+                    "status": obj.get("status", "pending"),
+                    "display_name": smart_display_name(u_data),
+                    "team_name": obj.get("team_name"),
+                }
+            )
+    return participants
+
+
+def _get_invitable_players(
+    db: Any, user_uid: str, current_participant_ids: set[str]
+) -> list[dict[str, Any]]:
+    """Helper to aggregate invitable players from friends and groups."""
+    user_ref = db.collection("users").document(user_uid)
+
+    # Source A: Friends
+    friends_query = user_ref.collection("friends").stream()
+    friend_ids = {doc.id for doc in friends_query}
+
+    # Source B: Groups
+    groups_query = (
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
+    )
+    group_member_ids = set()
+    for group_doc in groups_query:
+        g_data = group_doc.to_dict()
+        if g_data and "members" in g_data:
+            for m_ref in g_data["members"]:
+                group_member_ids.add(m_ref.id)
+
+    # Deduplicate & Filter
+    all_potential_ids = {str(uid) for uid in (friend_ids | group_member_ids)}
+    all_potential_ids.discard(str(user_uid))
+    final_invitable_ids = all_potential_ids - current_participant_ids
+
+    # Fetch Details
+    invitable_users = []
+    if final_invitable_ids:
+        u_refs = [db.collection("users").document(uid) for uid in final_invitable_ids]
+        u_docs = db.get_all(u_refs)
+        for u_doc in u_docs:
+            if u_doc.exists:
+                u_data = u_doc.to_dict()
+                if u_data:
+                    u_data["id"] = u_doc.id
+                    invitable_users.append(u_data)
+
+    invitable_users.sort(key=lambda u: smart_display_name(u).lower())
+    return invitable_users
 
 
 @bp.route("/", methods=["GET"])
@@ -44,7 +123,7 @@ def list_tournaments() -> Any:
         .stream()
     )
 
-    tournaments = []
+    tournaments: list[dict[str, Any]] = []
     seen_ids = set()
 
     for doc in owned_tournaments:
@@ -69,7 +148,7 @@ def list_tournaments() -> Any:
 @login_required
 def create_tournament() -> Any:
     """Create a new tournament."""
-    form = TournamentForm()
+    form: TournamentForm = TournamentForm()
     if form.validate_on_submit():
         db = firestore.client()
         user_ref = db.collection("users").document(g.user["uid"])
@@ -113,8 +192,8 @@ def view_tournament(tournament_id: str) -> Any:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
 
-    tournament_data = tournament_doc.to_dict()
-    if tournament_data is None:
+    tournament_data: dict[str, Any] = tournament_doc.to_dict() or {}
+    if not tournament_data:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
 
@@ -122,92 +201,32 @@ def view_tournament(tournament_id: str) -> Any:
 
     # Format Date
     raw_date = tournament_data.get("date")
-    if hasattr(raw_date, "to_datetime"):
+    if raw_date and hasattr(raw_date, "to_datetime"):
         tournament_data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
 
-    match_type = tournament_data.get("matchType", "singles")
-    status = tournament_data.get("status", "Active")
+    match_type: str = tournament_data.get("matchType", "singles")
+    status: str = tournament_data.get("status", "Active")
 
     # Resolve Participant Data
-    participants = []
-    participant_objs = tournament_data.get("participants", [])
-    if participant_objs:
-        user_refs = [
-            obj["userRef"]
-            if "userRef" in obj
-            else db.collection("users").document(obj["user_id"])
-            for obj in participant_objs
-            if "userRef" in obj or "user_id" in obj
-        ]
-        user_docs = db.get_all(user_refs)
-        users_map = {
-            doc.id: {**doc.to_dict(), "id": doc.id} for doc in user_docs if doc.exists
-        }
-
-        for obj in participant_objs:
-            uid = obj["userRef"].id if "userRef" in obj else obj.get("user_id")
-            if uid and uid in users_map:
-                u_data = users_map[uid]
-                participants.append(
-                    {
-                        "user": u_data,
-                        "status": obj.get("status", "pending"),
-                        "display_name": smart_display_name(u_data),
-                        "team_name": obj.get("team_name"),
-                    }
-                )
+    participant_objs: list[dict[str, Any]] = tournament_data.get("participants", [])
+    participants = _resolve_tournament_participants(db, participant_objs)
 
     standings = get_tournament_standings(db, tournament_id, match_type)
     podium = standings[:3] if status == "Completed" else []
-
-    # Handle Invitations
-    invite_form = InvitePlayerForm()
-    user_ref = db.collection("users").document(g.user["uid"])
-
-    # Source A: Friends (Include all regardless of status)
-    friends_query = user_ref.collection("friends").stream()
-    friend_ids = {doc.id for doc in friends_query}
-
-    # Source B: Groups (Extract all members from groups the current user is in)
-    groups_query = (
-        db.collection("groups")
-        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
-        .stream()
-    )
-    group_member_ids = set()
-    for group_doc in groups_query:
-        g_data = group_doc.to_dict()
-        if g_data and "members" in g_data:
-            for m_ref in g_data["members"]:
-                group_member_ids.add(m_ref.id)
-
-    # Deduplicate & Filter: Remove current user and existing participants
-    all_potential_ids = {str(uid) for uid in (friend_ids | group_member_ids)}
-    current_uid = str(g.user["uid"])
-    all_potential_ids.discard(current_uid)
 
     # Filter friends not already in tournament
     current_participant_ids = {
         str(obj["userRef"].id if "userRef" in obj else obj.get("user_id"))
         for obj in participant_objs
+        if "userRef" in obj or "user_id" in obj
     }
-    final_invitable_ids = all_potential_ids - current_participant_ids
 
-    # Fetch Details for these IDs
-    invitable_users = []
-    if final_invitable_ids:
-        u_refs = [db.collection("users").document(uid) for uid in final_invitable_ids]
-        u_docs = db.get_all(u_refs)
-        for u_doc in u_docs:
-            if u_doc.exists:
-                u_data = u_doc.to_dict()
-                if u_data:
-                    u_data["id"] = u_doc.id
-                    invitable_users.append(u_data)
+    # Handle Invitations
+    invitable_users = _get_invitable_players(
+        db, str(g.user["uid"]), current_participant_ids
+    )
 
-    # Smart Sort by name
-    invitable_users.sort(key=lambda u: smart_display_name(u).lower())
-    
+    invite_form = InvitePlayerForm()
     invite_form.user_id.choices = [
         (u["id"], smart_display_name(u)) for u in invitable_users
     ]
@@ -302,7 +321,7 @@ def edit_tournament(tournament_id: str) -> Any:
         form.location.data = tournament_data.get("location")
         form.match_type.data = tournament_data.get("matchType")
         raw_date = tournament_data.get("date")
-        if hasattr(raw_date, "to_datetime"):
+        if raw_date and hasattr(raw_date, "to_datetime"):
             form.date.data = raw_date.to_datetime().date()
 
     return render_template(
