@@ -924,7 +924,7 @@ input[type="submit"], .btn {
     font-size: 0.9em;
 }
 
-.game-card {
+#latest-games-feed .game-card {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -936,13 +936,9 @@ input[type="submit"], .btn {
     transition: transform 0.2s ease-in-out;
 }
 
-.game-card:hover {
+#latest-games-feed .game-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--box-shadow);
-}
-
-.tournament-invite-card {
-    border-left: 6px solid #800080 !important;
 }
 
 .game-won {

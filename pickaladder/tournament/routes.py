@@ -6,13 +6,13 @@ import datetime
 from typing import Any
 
 from flask import (
-    current_app,
     flash,
     g,
     redirect,
     render_template,
     request,
     url_for,
+    current_app,
 )
 
 from pickaladder.auth.decorators import login_required
@@ -26,7 +26,8 @@ from .services import TournamentService
 @bp.route("/", methods=["GET"])
 @login_required
 def list_tournaments() -> Any:
-    """List all tournaments."""
+    """List all tournaments for the current user."""
+    # Logic moved to Service: handles fetching owned + participating tournaments
     tournaments = TournamentService.list_tournaments(g.user["uid"])
     return render_template("tournaments.html", tournaments=tournaments)
 
@@ -61,6 +62,7 @@ def create_tournament() -> Any:
 @login_required
 def view_tournament(tournament_id: str) -> Any:
     """View a single tournament lobby."""
+    # Service handles complex data aggregation (Participants, Standings, Groups)
     details = TournamentService.get_tournament_details(tournament_id, g.user["uid"])
     if not details:
         flash("Tournament not found.", "danger")
@@ -72,7 +74,7 @@ def view_tournament(tournament_id: str) -> Any:
         (u["id"], smart_display_name(u)) for u in details["invitable_users"]
     ]
 
-    # Handle Inline Invite Submission
+    # Handle Inline Invite Submission (Single Player)
     if invite_form.validate_on_submit() and "user_id" in request.form:
         try:
             TournamentService.invite_player(
@@ -91,7 +93,7 @@ def view_tournament(tournament_id: str) -> Any:
         podium=details["podium"],
         invite_form=invite_form,
         invitable_users=details["invitable_users"],
-        user_groups=details["user_groups"],
+        user_groups=details["user_groups"],  # Needed for the "Invite Group" dropdown
         is_owner=details["is_owner"],
     )
 
@@ -100,12 +102,12 @@ def view_tournament(tournament_id: str) -> Any:
 @login_required
 def edit_tournament(tournament_id: str) -> Any:
     """Edit tournament details."""
-    # We fetch view data to populate GET request (reuse service for efficiency)
+    # Reuse service to fetch current data and check ownership
     details = TournamentService.get_tournament_details(tournament_id, g.user["uid"])
     if not details:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
-
+    
     if not details["is_owner"]:
         flash("Unauthorized.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
@@ -125,11 +127,10 @@ def edit_tournament(tournament_id: str) -> Any:
             "location": form.location.data,
             "matchType": form.match_type.data,
         }
-
+        
         try:
-            TournamentService.update_tournament(
-                tournament_id, g.user["uid"], update_data
-            )
+            # Service handles the "Ongoing Tournament" check internally
+            TournamentService.update_tournament(tournament_id, g.user["uid"], update_data)
             flash("Updated!", "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
         except Exception as e:
@@ -166,7 +167,7 @@ def invite_player(tournament_id: str) -> Any:
         flash("Invite sent!", "success")
     except Exception as e:
         flash(f"Error: {e}", "danger")
-
+        
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
@@ -182,7 +183,7 @@ def invite_group(tournament_id: str) -> Any:
     try:
         count = TournamentService.invite_group(tournament_id, group_id, g.user["uid"])
         if count > 0:
-            flash(f"Invited {count} members from the group.", "success")
+            flash(f"Success! Invited {count} members.", "success")
         else:
             flash("All group members are already in the tournament.", "info")
     except (ValueError, PermissionError) as e:
