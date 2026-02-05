@@ -182,7 +182,7 @@ def invite_group(tournament_id: str) -> Any:
     try:
         count = TournamentService.invite_group(tournament_id, group_id, g.user["uid"])
         if count > 0:
-            flash(f"Success! Invited {count} members.", "success")
+            flash(f"Invited {count} members from the group.", "success")
         else:
             flash("All group members are already in the tournament.", "info")
     except (ValueError, PermissionError) as e:

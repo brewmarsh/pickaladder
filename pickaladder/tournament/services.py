@@ -10,7 +10,7 @@ from flask import current_app
 from pickaladder.user.utils import UserService, smart_display_name
 from pickaladder.utils import send_email
 
-from .tournament.utils import get_tournament_standings
+from .utils import get_tournament_standings
 
 
 class TournamentService:
@@ -274,7 +274,7 @@ class TournamentService:
         if not owner_id and t_data.get("ownerRef"):
             owner_id = t_data["ownerRef"].id
         if owner_id != user_uid:
-            raise PermissionError("Unauthorized")
+            raise PermissionError("Unauthorized.")
 
         # 3. Fetch Group
         g_doc = db.collection("groups").document(group_id).get()

@@ -97,7 +97,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore_services": patch(
-                "pickaladder.services.firestore",
+                "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,
             ),
             "firestore_app": patch(
@@ -299,7 +299,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             }
         )
 
-        with patch("pickaladder.services.get_tournament_standings") as mock_standings:
+        with patch(
+            "pickaladder.tournament.services.get_tournament_standings"
+        ) as mock_standings:
             mock_standings.return_value = []
 
             response = self.client.get(

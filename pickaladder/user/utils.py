@@ -144,18 +144,23 @@ def wrap_user(user_data: dict[str, Any] | None, uid: str | None = None) -> User 
 def smart_display_name(user: dict[str, Any]) -> str:
     """Return a smart display name for a user.
 
-    If the user is a ghost user (username starts with 'ghost_'):
-    - If they have an email, return a masked version of it.
-    - If they have no name, return 'Pending Invite'.
-    Otherwise, return the username.
+    If the user is a ghost user (is_ghost is True or username starts with 'ghost_'):
+    - Prioritize the name field.
+    - Fallback to a masked version of the email if available.
+    - Default to 'Pending Invite' if both are missing.
+    Regular users default to their username.
     """
     username = user.get("username", "")
-    if username.startswith("ghost_"):
+    name = user.get("name")
+    is_ghost = user.get("is_ghost") or username.startswith("ghost_")
+
+    if is_ghost:
+        if name:
+            return name
         email = user.get("email")
         if email:
             return mask_email(email)
-        if not user.get("name"):
-            return "Pending Invite"
+        return "Pending Invite"
 
     return username
 
