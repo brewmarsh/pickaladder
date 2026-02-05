@@ -1502,3 +1502,145 @@ input[type="submit"], .btn {
     font-weight: bold;
     line-height: 1;
 }
+
+/* Competition Stack Styles */
+.competition-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.competition-card {
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 16px;
+    border-left: 6px solid var(--primary-brand);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.competition-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.tournament-invite-card {
+    border-left-color: #9333ea; /* Purple */
+}
+
+.active-tournament-card {
+    border-left-color: var(--success-color);
+}
+
+.badge-live {
+    background-color: var(--success-color);
+    color: white;
+    animation: blinker 1.5s linear infinite;
+}
+
+@keyframes blinker {
+    50% { opacity: 0; }
+}
+
+.badge-upcoming {
+    background-color: var(--primary-brand);
+    color: white;
+}
+
+/* Ranking Cards for My Groups */
+.ranking-card {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color 0.2s ease;
+}
+
+.ranking-card:hover {
+    background-color: var(--background-color);
+}
+
+.ranking-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.ranking-group-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.rank-badge-small {
+    background: var(--background-color);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.ranking-details {
+    font-size: 0.9rem;
+    color: var(--text-secondary-color);
+    margin-bottom: 8px;
+}
+
+.overtake-value {
+    color: var(--primary-brand);
+    font-weight: bold;
+}
+
+.form-dots-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.form-dot-small {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.form-dot-small.win {
+    background-color: var(--success-color);
+}
+
+.form-dot-small.loss {
+    background-color: var(--border-color);
+}
+
+/* Past Tournaments List */
+.past-tournaments-list {
+    width: 100%;
+    font-size: 0.9rem;
+}
+
+.past-tournament-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.past-tournament-row:last-child {
+    border-bottom: none;
+}
+
+.past-tournament-info {
+    flex: 1;
+}
+
+.past-tournament-winner {
+    text-align: right;
+    font-weight: 500;
+}
