@@ -17,7 +17,7 @@ from flask import (
 )
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.user.utils import UserService, smart_display_name
+from pickaladder.user.utils import smart_display_name
 from pickaladder.utils import send_email
 
 from . import bp
@@ -207,7 +207,7 @@ def view_tournament(tournament_id: str) -> Any:
 
     # Smart Sort by name
     invitable_users.sort(key=lambda u: smart_display_name(u).lower())
-    
+
     invite_form.user_id.choices = [
         (u["id"], smart_display_name(u)) for u in invitable_users
     ]
