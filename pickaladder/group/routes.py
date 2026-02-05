@@ -29,7 +29,7 @@ from pickaladder.group.utils import (
 from pickaladder.group.utils import (
     get_head_to_head_stats as get_h2h_stats,
 )
-from pickaladder.user.utils import merge_ghost_user
+from pickaladder.user.utils import merge_ghost_user, smart_display_name
 
 from . import bp
 from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
@@ -289,7 +289,7 @@ def view_group(group_id: str) -> Any:
         pending_members = _get_pending_invites(db, group_id)
 
     return render_template(
-        "group.html",
+        "group/view.html",
         group=group_data,
         group_id=group.id,
         members=members,
@@ -754,6 +754,41 @@ def _fetch_recent_matches(
             if isinstance(ref, firestore.DocumentReference):
                 target = key.replace("Ref", "")
                 match_data[target] = players_map.get(ref.id, GUEST_USER)
+
+        # Team Name Resolution
+        for i in [1, 2]:
+            team_key = f"team{i}"
+            team = match_data.get(team_key)
+            name = None
+            is_custom = False
+
+            if team and team.get("name"):
+                name = team["name"]
+                is_custom = True
+            else:
+                p_names = []
+                if i == 1:
+                    p1 = match_data.get("player1")
+                    part = match_data.get("partner")
+                    if p1 and p1 != GUEST_USER:
+                        p_names.append(smart_display_name(p1))
+                    if part and part != GUEST_USER:
+                        p_names.append(smart_display_name(part))
+                else:
+                    p2 = match_data.get("player2")
+                    opp2 = match_data.get("opponent2")
+                    if p2 and p2 != GUEST_USER:
+                        p_names.append(smart_display_name(p2))
+                    if opp2 and opp2 != GUEST_USER:
+                        p_names.append(smart_display_name(opp2))
+
+                if p_names:
+                    name = " & ".join(p_names)
+                else:
+                    name = "Unknown Team"
+
+            match_data[f"team{i}_display_name"] = name
+            match_data[f"team{i}_has_custom_name"] = is_custom
 
         recent_matches.append(match_data)
 
