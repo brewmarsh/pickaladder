@@ -17,6 +17,7 @@ from flask import (
 )
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.tournament.services import TournamentService
 from pickaladder.user.utils import smart_display_name
 from pickaladder.utils import send_email
 
@@ -118,7 +119,7 @@ def view_tournament(tournament_id: str) -> Any:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
 
-    tournament_data["id"] = tournament_doc.id
+    tournament_data["id"] = tournament_id
 
     # Format Date
     raw_date = tournament_data.get("date")
