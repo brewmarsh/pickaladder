@@ -99,7 +99,7 @@ def _migrate_ghost_references(
             )
 
 
-def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
+def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> bool:
     """Check for 'ghost' user with the given email and merge their data."""
     try:
         query = (
@@ -111,7 +111,7 @@ def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
 
         ghost_docs = list(query.stream())
         if not ghost_docs:
-            return
+            return False
 
         ghost_doc = ghost_docs[0]
         current_app.logger.info(
@@ -123,9 +123,11 @@ def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
         batch.delete(ghost_doc.reference)
         batch.commit()
         current_app.logger.info("Ghost user merge completed successfully.")
+        return True
 
     except Exception as e:
         current_app.logger.error(f"Error merging ghost user: {e}")
+        return False
 
 
 def wrap_user(user_data: dict[str, Any] | None, uid: str | None = None) -> User | None:
@@ -277,8 +279,14 @@ class UserService:
             data = doc.to_dict()
             if data:
                 participants = data.get("participants", [])
+                if not isinstance(participants, list):
+                    continue
                 for p in participants:
-                    if p["userRef"].id == user_id and p["status"] == "pending":
+                    if not isinstance(p, dict):
+                        continue
+                    p_ref = p.get("userRef")
+                    p_uid = p_ref.id if p_ref else p.get("user_id")
+                    if p_uid == user_id and p.get("status") == "pending":
                         data["id"] = doc.id
                         pending_invites.append(data)
                         break
@@ -361,7 +369,7 @@ class UserService:
                 else:
                     losses += 1
                 points += data.get("player1Score", 0) - data.get("player2Score", 0)
-            elif user_id_1 in team2_ids and user_id_2 in team1_ids:
+            elif user_id_1 in team2_ids and user_id_1 in team1_ids:
                 if winner_id == "team2":
                     wins += 1
                 else:

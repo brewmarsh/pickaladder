@@ -17,7 +17,7 @@ from flask import (
 )
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.user.utils import UserService, smart_display_name
+from pickaladder.user.utils import smart_display_name
 from pickaladder.utils import send_email
 
 from . import bp
@@ -164,18 +164,57 @@ def view_tournament(tournament_id: str) -> Any:
 
     # Handle Invitations
     invite_form = InvitePlayerForm()
-    friends = UserService.get_user_friends(db, g.user["uid"])
+    user_ref = db.collection("users").document(g.user["uid"])
+
+    # Source A: Friends (Include all regardless of status)
+    friends_query = user_ref.collection("friends").stream()
+    friend_ids = {doc.id for doc in friends_query}
+
+    # Source B: Groups (Extract all members from groups the current user is in)
+    groups_query = (
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
+    )
+    group_member_ids = set()
+    for group_doc in groups_query:
+        g_data = group_doc.to_dict()
+        if g_data and "members" in g_data:
+            for m_ref in g_data["members"]:
+                group_member_ids.add(m_ref.id)
+
+    # Deduplicate & Filter: Remove current user and existing participants
+    all_potential_ids = {str(uid) for uid in (friend_ids | group_member_ids)}
+    current_uid = str(g.user["uid"])
+    all_potential_ids.discard(current_uid)
 
     # Filter friends not already in tournament
     current_participant_ids = {
-        obj["userRef"].id if "userRef" in obj else obj.get("user_id")
+        str(obj["userRef"].id if "userRef" in obj else obj.get("user_id"))
         for obj in participant_objs
     }
-    invitable_users = [f for f in friends if f["id"] not in current_participant_ids]
+    final_invitable_ids = all_potential_ids - current_participant_ids
+
+    # Fetch Details for these IDs
+    invitable_users = []
+    if final_invitable_ids:
+        u_refs = [db.collection("users").document(uid) for uid in final_invitable_ids]
+        u_docs = db.get_all(u_refs)
+        for u_doc in u_docs:
+            if u_doc.exists:
+                u_data = u_doc.to_dict()
+                if u_data:
+                    u_data["id"] = u_doc.id
+                    invitable_users.append(u_data)
+
+    # Smart Sort by name
+    invitable_users.sort(key=lambda u: smart_display_name(u).lower())
+
     invite_form.user_id.choices = [
         (u["id"], smart_display_name(u)) for u in invitable_users
     ]
 
+    # Handle Invite Form Submission from the view page itself
     if invite_form.validate_on_submit() and "user_id" in request.form:
         invited_uid = invite_form.user_id.data
         invited_ref = db.collection("users").document(invited_uid)
@@ -269,7 +308,7 @@ def edit_tournament(tournament_id: str) -> Any:
             update_data["matchType"] = form.match_type.data
 
         tournament_ref.update(update_data)
-        flash("Tournament updated successfully.", "success")
+        flash("Updated!", "success")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
     elif request.method == "GET":
@@ -285,10 +324,13 @@ def edit_tournament(tournament_id: str) -> Any:
     )
 
 
-@bp.route("/<string:tournament_id>/invite", methods=["POST"])
+@bp.route("/<string:tournament_id>/invite", methods=["GET", "POST"])
 @login_required
 def invite_player(tournament_id: str) -> Any:
     """Invites a player (Endpoint used by the form)."""
+    if request.method == "GET":
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
     db = firestore.client()
     user_id = request.form.get("user_id")
     if not user_id:
