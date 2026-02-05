@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import (
@@ -29,9 +29,11 @@ from .utils import (
 )
 
 if TYPE_CHECKING:
-    from flask import Response
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.transaction import Transaction
+
+from flask import Response
 
 
 @bp.route("/", methods=["GET"])
@@ -101,8 +103,11 @@ def create_tournament() -> str | Response:
             }
             _, new_tournament_ref = db.collection("tournaments").add(tournament_data)
             flash("Tournament created successfully.", "success")
-            return redirect(
-                url_for(".view_tournament", tournament_id=new_tournament_ref.id)
+            return cast(
+                Response,
+                redirect(
+                    url_for(".view_tournament", tournament_id=new_tournament_ref.id)
+                ),
             )
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
@@ -116,18 +121,18 @@ def view_tournament(tournament_id: str) -> str | Response:
     """View a single tournament lobby."""
     db: Client = firestore.client()
     tournament_ref = db.collection("tournaments").document(tournament_id)
-    tournament_doc = tournament_ref.get()
+    tournament_doc = cast("DocumentSnapshot", tournament_ref.get())
 
     if not tournament_doc.exists:
         flash("Tournament not found.", "danger")
-        return redirect(url_for(".list_tournaments"))
+        return cast(Response, redirect(url_for(".list_tournaments")))
 
-    tournament_data = tournament_doc.to_dict() or {}
+    tournament_data = cast(dict[str, Any], tournament_doc.to_dict() or {})
     tournament_data["id"] = tournament_doc.id
 
     # Format Date
     raw_date = tournament_data.get("date")
-    if hasattr(raw_date, "to_datetime"):
+    if raw_date and hasattr(raw_date, "to_datetime"):
         tournament_data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
 
     match_type = tournament_data.get("matchType", "singles")
@@ -168,14 +173,17 @@ def view_tournament(tournament_id: str) -> str | Response:
                 }
             )
             flash("Player invited successfully.", "success")
-            return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+            return cast(
+                Response,
+                redirect(url_for(".view_tournament", tournament_id=tournament_id)),
+            )
         except Exception as e:
             flash(f"Error sending invite: {e}", "danger")
 
     # Ownership check for UI
     is_owner = tournament_data.get("organizer_id") == g.user["uid"] or (
         tournament_data.get("ownerRef")
-        and tournament_data["ownerRef"].id == g.user["uid"]
+        and cast(Any, tournament_data["ownerRef"]).id == g.user["uid"]
     )
 
     return render_template(
@@ -196,23 +204,25 @@ def edit_tournament(tournament_id: str) -> str | Response:
     """Edit tournament details."""
     db: Client = firestore.client()
     tournament_ref = db.collection("tournaments").document(tournament_id)
-    tournament_doc = tournament_ref.get()
+    tournament_doc = cast("DocumentSnapshot", tournament_ref.get())
 
     if not tournament_doc.exists:
         flash("Tournament not found.", "danger")
-        return redirect(url_for(".list_tournaments"))
+        return cast(Response, redirect(url_for(".list_tournaments")))
 
-    tournament_data = tournament_doc.to_dict()
+    tournament_data = cast(dict[str, Any], tournament_doc.to_dict() or {})
     tournament_data["id"] = tournament_id
 
     # Auth check
     is_owner = tournament_data.get("organizer_id") == g.user["uid"] or (
         tournament_data.get("ownerRef")
-        and tournament_data["ownerRef"].id == g.user["uid"]
+        and cast(Any, tournament_data["ownerRef"]).id == g.user["uid"]
     )
     if not is_owner:
         flash("Unauthorized.", "danger")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        return cast(
+            Response, redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        )
 
     form = TournamentForm()
     if form.validate_on_submit():
@@ -231,14 +241,16 @@ def edit_tournament(tournament_id: str) -> str | Response:
         }
         tournament_ref.update(update_data)
         flash("Updated!", "success")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        return cast(
+            Response, redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        )
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
         form.location.data = tournament_data.get("location")
         form.match_type.data = tournament_data.get("matchType")
         raw_date = tournament_data.get("date")
-        if hasattr(raw_date, "to_datetime"):
+        if raw_date and hasattr(raw_date, "to_datetime"):
             form.date.data = raw_date.to_datetime().date()
 
     return render_template(
@@ -251,13 +263,17 @@ def edit_tournament(tournament_id: str) -> str | Response:
 def invite_player(tournament_id: str) -> Response:
     """Invites a player (Endpoint used by the form)."""
     if request.method == "GET":
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        return cast(
+            Response, redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        )
 
     db: Client = firestore.client()
     user_id = request.form.get("user_id")
     if not user_id:
         flash("No player selected.", "danger")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        return cast(
+            Response, redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        )
 
     invited_ref = db.collection("users").document(user_id)
     tournament_ref = db.collection("tournaments").document(tournament_id)
@@ -271,7 +287,9 @@ def invite_player(tournament_id: str) -> Response:
         }
     )
     flash("Invite sent!", "success")
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    return cast(
+        Response, redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    )
 
 
 @bp.route("/<string:tournament_id>/accept", methods=["POST"])
@@ -308,7 +326,7 @@ def accept_invite(tournament_id: str) -> Response:
     else:
         flash("Invite not found or already accepted.", "warning")
 
-    return redirect(request.referrer or url_for("user.dashboard"))
+    return cast(Response, redirect(request.referrer or url_for("user.dashboard")))
 
 
 @bp.route("/<string:tournament_id>/decline", methods=["POST"])
@@ -358,7 +376,7 @@ def decline_invite(tournament_id: str) -> Response:
     else:
         flash("Invite not found.", "warning")
 
-    return redirect(request.referrer or url_for("user.dashboard"))
+    return cast(Response, redirect(request.referrer or url_for("user.dashboard")))
 
 
 @bp.route("/<string:tournament_id>/complete", methods=["POST"])
@@ -367,34 +385,37 @@ def complete_tournament(tournament_id: str) -> Response:
     """Close tournament and send results to all participants."""
     db: Client = firestore.client()
     tournament_ref = db.collection("tournaments").document(tournament_id)
-    tournament_doc = tournament_ref.get()
+    tournament_doc = cast("DocumentSnapshot", tournament_ref.get())
 
     if not tournament_doc.exists:
         flash("Tournament not found.", "danger")
-        return redirect(url_for(".list_tournaments"))
+        return cast(Response, redirect(url_for(".list_tournaments")))
 
-    t_data = tournament_doc.to_dict()
-    if t_data.get("ownerRef").id != g.user["uid"]:
+    t_data = cast(dict[str, Any], tournament_doc.to_dict() or {})
+    if cast(Any, t_data.get("ownerRef")).id != g.user["uid"]:
         flash("Only the organizer can complete the tournament.", "danger")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        return cast(
+            Response, redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        )
 
     try:
         tournament_ref.update({"status": "Completed"})
-        standings = get_tournament_standings(db, tournament_id, t_data.get("matchType"))
+        match_type = str(t_data.get("matchType", "singles"))
+        standings = get_tournament_standings(db, tournament_id, match_type)
         winner_name = standings[0]["name"] if standings else "No one"
 
         # Notify accepted participants via email
-        participants = t_data.get("participants", [])
+        participants = cast(list[dict[str, Any]], t_data.get("participants", []))
         for p in participants:
             if p.get("status") == "accepted":
-                u_doc = p["userRef"].get()
+                u_doc = cast("DocumentSnapshot", p["userRef"].get())
                 if u_doc.exists:
                     user = u_doc.to_dict()
                     if user.get("email"):
                         try:
                             send_email(
                                 to=user["email"],
-                                subject=f"The results are in for {t_data['name']}!",
+                                subject=f"The results are in for {t_data.get('name', 'Tournament')}!",
                                 template="email/tournament_results.html",
                                 user=user,
                                 tournament=t_data,
@@ -410,11 +431,13 @@ def complete_tournament(tournament_id: str) -> Response:
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
 
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    return cast(
+        Response, redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    )
 
 
 @bp.route("/<string:tournament_id>/join", methods=["POST"])
 @login_required
 def join_tournament(tournament_id: str) -> Response:
     """Accept tournament invitation (legacy alias)."""
-    return accept_invite(tournament_id)
+    return cast(Response, accept_invite(tournament_id))

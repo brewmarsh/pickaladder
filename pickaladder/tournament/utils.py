@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
 from pickaladder.user.utils import smart_display_name
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
 
@@ -78,20 +79,23 @@ def sort_and_format_standings(
 
     if match_type == "doubles":
         for s in standings_list:
-            team_doc = db.collection("teams").document(s["id"]).get()
+            team_doc = cast(
+                "DocumentSnapshot", db.collection("teams").document(s["id"]).get()
+            )
+            t_data = team_doc.to_dict()
             s["name"] = (
-                team_doc.to_dict().get("name", "Unknown Team")
-                if team_doc.exists and team_doc.to_dict()
+                t_data.get("name", "Unknown Team")
+                if team_doc.exists and t_data
                 else "Unknown Team"
             )
     else:
         user_ids = [s["id"] for s in standings_list]
         user_refs = [db.collection("users").document(uid) for uid in user_ids]
-        user_docs = db.get_all(user_refs)
+        user_docs = cast(list["DocumentSnapshot"], db.get_all(user_refs))
         users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
         for s in standings_list:
-            user_data = users_map.get(s["id"], {})
-            s["name"] = smart_display_name(user_data) or "Unknown Player"
+            user_data = users_map.get(s["id"])
+            s["name"] = smart_display_name(user_data) if user_data else "Unknown Player"
 
     # Sort by wins (desc), losses (asc), then point_diff (desc)
     standings_list.sort(
