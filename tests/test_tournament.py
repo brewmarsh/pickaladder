@@ -55,11 +55,13 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
         self.mock_db = MockFirestore()
+
         # Add missing batch method to mock-firestore
         def mock_batch():
             batch = MagicMock()
             batch.update.side_effect = lambda ref, data: ref.update(data)
             return batch
+
         self.mock_db.batch = MagicMock(side_effect=mock_batch)
 
         # Patch firestore.client() to return our mock_db

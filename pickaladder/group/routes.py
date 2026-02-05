@@ -767,7 +767,7 @@ def _fetch_recent_matches(
                 target = key.replace("Ref", "")
                 match_data[target] = players_map.get(ref.id, GUEST_USER)
 
-        # Ensure player1/partner/etc are populated from team arrays for newer doubles matches
+        # Ensure players are populated from team arrays for newer doubles matches
         for team_key in ["team1", "team2"]:
             team_val = match_data.get(team_key)
             if isinstance(team_val, list):
