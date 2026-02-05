@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from firebase_admin import firestore
+
 
 class TournamentService:
     """Service class for tournament-related operations."""
@@ -12,7 +14,6 @@ class TournamentService:
     def list_tournaments(user_id: str, db: Any = None) -> list[dict[str, Any]]:
         """List all tournaments for a given user (owned or participating)."""
         if db is None:
-            from firebase_admin import firestore
             db = firestore.client()
         user_ref = db.collection("users").document(user_id)
 
