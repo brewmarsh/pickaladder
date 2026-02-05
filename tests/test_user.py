@@ -350,7 +350,10 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         # Mock group docs
         mock_group1 = MagicMock()
         mock_group1.id = "group1"
-        mock_group1.to_dict.return_value = {"name": "Group One", "members": [mock_user_ref]}
+        mock_group1.to_dict.return_value = {
+            "name": "Group One",
+            "members": [mock_user_ref],
+        }
 
         mock_query = mock_db.collection.return_value.where.return_value
         mock_query.stream.return_value = [mock_group1]
