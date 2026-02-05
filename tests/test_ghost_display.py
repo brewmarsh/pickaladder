@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from typing import cast
 
-from pickaladder.user.utils import smart_display_name
+from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import mask_email
 
 

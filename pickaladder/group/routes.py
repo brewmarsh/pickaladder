@@ -29,7 +29,7 @@ from pickaladder.group.utils import (
 from pickaladder.group.utils import (
     get_head_to_head_stats as get_h2h_stats,
 )
-from pickaladder.user.utils import merge_ghost_user
+from pickaladder.user.services import UserService
 
 from . import bp
 from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
@@ -547,7 +547,7 @@ def handle_invite(token: str) -> Any:
         # Merge ghost user if exists
         invite_email = invite_data.get("email")
         if invite_email:
-            merge_ghost_user(db, user_ref, invite_email)
+            UserService.merge_ghost_account(db, user_ref, invite_email)
 
         # Add user to group
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})

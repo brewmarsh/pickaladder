@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
-from pickaladder.user.utils import UserService
+from pickaladder.user.services import UserService
 
 # Mock user payloads
 MOCK_USER_ID = "user1"
@@ -36,7 +36,7 @@ class TournamentInvitesTestCase(unittest.TestCase):
                 new=self.mock_firestore_service,
             ),
             "firestore_user_utils": patch(
-                "pickaladder.user.utils.firestore",
+                "pickaladder.user.services.firestore",
                 new=self.mock_firestore_service,
             ),
             "firestore_app": patch(

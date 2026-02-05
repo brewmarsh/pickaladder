@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 # INSIGHT #2: Explicitly import submodules to defeat lazy loading
 # and ensure patch targets exist before the test runner tries to find them.
 from pickaladder import create_app
-from pickaladder.user.utils import UserService
+from pickaladder.user.services import UserService
 
 # Mock user payloads for consistent test data
 MOCK_USER_ID = "user1"
@@ -30,7 +30,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 "pickaladder.user.routes.firestore", new=self.mock_firestore_service
             ),
             "firestore_utils": patch(
-                "pickaladder.user.utils.firestore", new=self.mock_firestore_service
+                "pickaladder.user.services.firestore", new=self.mock_firestore_service
             ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service

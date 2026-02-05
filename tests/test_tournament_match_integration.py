@@ -9,7 +9,7 @@ from firebase_admin import firestore
 
 from pickaladder import create_app
 from pickaladder.match.routes import _get_candidate_player_ids
-from pickaladder.user.utils import UserService
+from pickaladder.user.services import UserService
 
 # Mock data
 MOCK_USER_ID = "user123"
@@ -34,7 +34,7 @@ class TournamentMatchIntegrationTestCase(unittest.TestCase):
                 "pickaladder.match.routes.firestore", new=self.mock_firestore_service
             ),
             "firestore_user_utils": patch(
-                "pickaladder.user.utils.firestore", new=self.mock_firestore_service
+                "pickaladder.user.services.firestore", new=self.mock_firestore_service
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
