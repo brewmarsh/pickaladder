@@ -12,7 +12,7 @@
                     <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
                     <a href="{{ url_for('tournament.list_tournaments') }}" style="position: relative;">
                         🎾 Tournaments
-                        {% if pending_tournament_invites %}
+                        {% if pending_tournament_invites|length > 0 %}
                             <span class="notification-badge">{{ pending_tournament_invites|length }}</span>
                         {% endif %}
                     </a>
@@ -36,7 +36,12 @@
                             <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
                             <a href="{{ url_for('user.view_community') }}">🌍 Community</a>
                             <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
-                            <a href="{{ url_for('tournament.list_tournaments') }}">🎾 Tournaments</a>
+                            <a href="{{ url_for('tournament.list_tournaments') }}">
+                                🎾 Tournaments
+                                {% if pending_tournament_invites|length > 0 %}
+                                    <span class="notification-badge" style="position: static; vertical-align: middle; margin-left: 8px;">{{ pending_tournament_invites|length }}</span>
+                                {% endif %}
+                            </a>
                             <a href="{{ url_for('match.leaderboard') }}">🏆 Global Leaderboard</a>
                             <hr>
                             <a href="{{ url_for('auth.change_password') }}">🔑 Change Password</a>

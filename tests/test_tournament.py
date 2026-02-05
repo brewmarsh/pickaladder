@@ -183,7 +183,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(data["matchType"], "doubles")
 
     def test_edit_tournament_ongoing(self) -> None:
-        """Test that matchType cannot be changed if tournament is ongoing."""
+        """Test ongoing tournament logic."""
         self._set_session_user()
 
         # Setup existing tournament
@@ -210,7 +210,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Updated Name",
                 "date": "2024-07-01",
                 "location": "Updated Location",
-                "match_type": "doubles",  # Attempt to change matchType
+                "match_type": "doubles",
             },
             follow_redirects=True,
         )
