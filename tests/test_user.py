@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 # INSIGHT #2: Explicitly import submodules to defeat lazy loading
 # and ensure patch targets exist before the test runner tries to find them.
 from pickaladder import create_app
+from pickaladder.user.utils import UserService
 
 # Mock user payloads for consistent test data
 MOCK_USER_ID = "user1"
@@ -340,6 +341,28 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn("match_date", first_match)
         self.assertIn("player1", first_match)
         self.assertIn("username", first_match["player1"])
+
+    def test_get_user_groups(self) -> None:
+        """Test fetching groups for a user."""
+        mock_db = self.mock_firestore_service.client.return_value
+        mock_user_ref = mock_db.collection("users").document(MOCK_USER_ID)
+
+        # Mock group docs
+        mock_group1 = MagicMock()
+        mock_group1.id = "group1"
+        mock_group1.to_dict.return_value = {
+            "name": "Group One",
+            "members": [mock_user_ref],
+        }
+
+        mock_query = mock_db.collection.return_value.where.return_value
+        mock_query.stream.return_value = [mock_group1]
+
+        groups = UserService.get_user_groups(mock_db, MOCK_USER_ID)
+
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0]["id"], "group1")
+        self.assertEqual(groups[0]["name"], "Group One")
 
 
 if __name__ == "__main__":

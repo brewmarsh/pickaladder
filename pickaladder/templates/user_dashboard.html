@@ -6,6 +6,29 @@
 {% endblock %}
 {% block content %}
     <div id="dashboard-content">
+        {# Section: Tournament Invites (Top Priority Alert) #}
+        {% if pending_tournament_invites %}
+            {% for tournament in pending_tournament_invites %}
+                <div class="game-card tournament-invite-card" style="margin-bottom: 20px; border-left: 5px solid var(--accent-color);">
+                    <div style="flex: 2;">
+                        <div style="font-weight: 600; font-size: 1.1rem; color: var(--accent-color);">🏆 You've been invited!</div>
+                        <div style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">{{ tournament.name }}</div>
+                        <div class="text-muted small">Starts {{ tournament.date }}</div>
+                    </div>
+                    <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
+                        <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-primary" style="width: auto; margin: 0;">Accept</button>
+                        </form>
+                        <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger" style="width: auto; margin: 0;">Decline</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
         <div class="hero-stats-card">
             <button id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</button>
             <div class="hero-left-panel">
@@ -32,7 +55,9 @@
                 <a href="{{ url_for('match.record_match') }}" class="btn btn-primary">Record a Match</a>
             </div>
         </div>
+
         <div class="dashboard-columns">
+            {# Left Column: Recent Activity #}
             <div class="dashboard-column-left">
                 <div class="card">
                     <div class="header-with-button">
@@ -82,35 +107,12 @@
                     </div>
                 </div>
             </div>
+
+            {# Right Column: Competition Stack #}
             <div class="dashboard-column-right">
                 <div class="competition-stack">
-                    {# Section: Active Tournaments (Top) #}
-                    {% if active_tournaments or pending_tournament_invites %}
-                        {% for invite in pending_tournament_invites %}
-                            <div class="competition-card tournament-invite-card">
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div>
-                                        <div class="ranking-group-name">{{ invite.name }}</div>
-                                        <div class="text-muted small">
-                                            {{ invite.date_display or invite.date }} • {{ invite.location or 'Online' }}
-                                        </div>
-                                    </div>
-                                    <span class="badge badge-upcoming">INVITED</span>
-                                </div>
-                                <div style="display: flex; gap: 8px; margin-top: 10px;">
-                                    <form action="{{ url_for('tournament.accept_invite', tournament_id=invite.id) }}" method="post" style="flex: 1;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm" style="width: 100%; text-transform: none; font-size: 0.8rem;">Accept</button>
-                                    </form>
-                                    <form action="{{ url_for('tournament.decline_invite', tournament_id=invite.id) }}" method="post" style="flex: 1;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-danger" style="width: 100%; text-transform: none; font-size: 0.8rem;">Decline</button>
-                                    </form>
-                                </div>
-                                <a href="{{ url_for('tournament.view_tournament', tournament_id=invite.id) }}" class="btn btn-sm" style="width: 100%; margin-top: 8px; background: none; border: 1px solid var(--border-color); color: var(--text-color); text-transform: none; font-size: 0.8rem;">View Lobby</a>
-                            </div>
-                        {% endfor %}
-
+                    {# Section: Active Tournaments #}
+                    {% if active_tournaments %}
                         {% for tournament in active_tournaments %}
                             <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="competition-card active-tournament-card">
                                 <div style="display: flex; justify-content: space-between; align-items: start;">
@@ -131,7 +133,7 @@
                         {% endfor %}
                     {% endif %}
 
-                    {# Section: My Groups (Middle) #}
+                    {# Section: My Groups #}
                     <div class="card" style="padding: 16px;">
                         <h3 style="margin-top: 0; margin-bottom: 16px;">My Groups</h3>
                         {% for ranking in group_rankings %}
@@ -160,7 +162,7 @@
                         {% endfor %}
                     </div>
 
-                    {# Section: Past Tournaments (Bottom) #}
+                    {# Section: Past Tournaments #}
                     <div class="card" style="padding: 16px;">
                         <h3 style="margin-top: 0; margin-bottom: 12px;">Past Tournaments</h3>
                         <div class="past-tournaments-list">
@@ -180,7 +182,7 @@
                         </div>
                     </div>
 
-                    {# Section: Social (Footer) #}
+                    {# Section: Social (Friends) #}
                     <div class="card" style="padding: 16px;">
                         <h3 style="margin-top: 0; margin-bottom: 16px;">Social</h3>
                         {% if requests %}
@@ -266,24 +268,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const profilePictureInput = document.querySelector('input[name="profile_picture"]');
     const profilePictureImg = document.getElementById('profile-picture-img');
 
-    profilePictureInput.addEventListener('change', function() {
-        if (this.files && this.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                profilePictureImg.src = e.target.result;
+    if (profilePictureInput) {
+        profilePictureInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    profilePictureImg.src = e.target.result;
+                }
+                reader.readAsDataURL(this.files[0]);
             }
-            reader.readAsDataURL(this.files[0]);
-        }
-    });
+        });
+    }
 
     // Toggle for the profile edit section
     const editProfileToggle = document.getElementById('edit-profile-toggle');
     const profileEditSection = document.getElementById('profile-edit-section');
 
-    editProfileToggle.addEventListener('click', function() {
-        const isHidden = profileEditSection.style.display === 'none';
-        profileEditSection.style.display = isHidden ? 'block' : 'none';
-    });
+    if (editProfileToggle) {
+        editProfileToggle.addEventListener('click', function() {
+            const isHidden = profileEditSection.style.display === 'none';
+            profileEditSection.style.display = isHidden ? 'block' : 'none';
+        });
+    }
 });
 </script>
 {% endblock %}
