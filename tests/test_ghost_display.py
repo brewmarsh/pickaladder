@@ -23,6 +23,15 @@ class TestGhostDisplay(unittest.TestCase):
             "email": "march@gmail.com",
             "name": "John Doe",
         }
+        # Ghost with name and email: prioritize name
+        self.assertEqual(smart_display_name(user), "John Doe")
+
+    def test_smart_display_name_ghost_no_name_with_email(self) -> None:
+        user = {
+            "username": "ghost_ceec6a",
+            "email": "march@gmail.com",
+        }
+        # Ghost with no name but has email: show masked email
         self.assertEqual(smart_display_name(user), "m...h@gmail.com")
 
     def test_smart_display_name_ghost_no_email_no_name(self) -> None:
@@ -31,9 +40,8 @@ class TestGhostDisplay(unittest.TestCase):
 
     def test_smart_display_name_ghost_no_email_with_name(self) -> None:
         user = {"username": "ghost_ceec6a", "name": "John Doe"}
-        # Based on literal instructions: "Otherwise, show the username"
-        # Since it's a ghost, but no email and HAS a name, it doesn't match rule 1 or 2.
-        self.assertEqual(smart_display_name(user), "ghost_ceec6a")
+        # Ghost with name but no email: prioritize name
+        self.assertEqual(smart_display_name(user), "John Doe")
 
     def test_smart_display_name_regular_user(self) -> None:
         user = {"username": "jdoe", "email": "jdoe@example.com", "name": "John Doe"}

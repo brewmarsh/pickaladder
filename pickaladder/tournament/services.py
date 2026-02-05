@@ -264,7 +264,7 @@ class TournamentService:
         if not owner_id and t_data.get("ownerRef"):
             owner_id = t_data["ownerRef"].id
         if owner_id != user_uid:
-            raise PermissionError("Unauthorized")
+            raise PermissionError("Unauthorized.")
 
         # 3. Fetch Group
         g_doc = db.collection("groups").document(group_id).get()

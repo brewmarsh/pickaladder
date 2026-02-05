@@ -55,6 +55,12 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
         self.mock_db = MockFirestore()
+        # Add missing batch method to mock-firestore
+        def mock_batch():
+            batch = MagicMock()
+            batch.update.side_effect = lambda ref, data: ref.update(data)
+            return batch
+        self.mock_db.batch = MagicMock(side_effect=mock_batch)
 
         # Patch firestore.client() to return our mock_db
         self.mock_firestore_module = MagicMock()
@@ -76,6 +82,10 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore_routes": patch(
                 "pickaladder.tournament.routes.firestore",
+                new=self.mock_firestore_module,
+            ),
+            "firestore_services": patch(
+                "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,
             ),
             "firestore_app": patch(
@@ -278,7 +288,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         with patch(
-            "pickaladder.tournament.routes.get_tournament_standings"
+            "pickaladder.tournament.services.get_tournament_standings"
         ) as mock_standings:
             mock_standings.return_value = []
 
