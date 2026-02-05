@@ -178,6 +178,27 @@
                     </form>
                 </div>
             </div>
+
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="card-header" style="padding: 0; border-bottom: none; margin-bottom: 15px;">
+                    <h4 style="margin: 0;">👥 Invite a Group</h4>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <form action="{{ url_for('tournament.invite_group', tournament_id=tournament.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="form-group">
+                            <label for="group_id" class="form-label">Group</label>
+                            <select name="group_id" id="group_id" class="form-input" required>
+                                <option value="" disabled selected>Select a group</option>
+                                {% for group in user_groups %}
+                                    <option value="{{ group.id }}">{{ group.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Invite All Members</button>
+                    </form>
+                </div>
+            </div>
             {% endif %}
         {% endif %}
 
