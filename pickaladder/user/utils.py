@@ -144,46 +144,24 @@ def wrap_user(user_data: dict[str, Any] | None, uid: str | None = None) -> User 
 def smart_display_name(user: dict[str, Any]) -> str:
     """Return a smart display name for a user.
 
-    If the user is a ghost user (is_ghost is True or username starts with 'ghost_'):
-    - Prioritize the name field.
-    - Fallback to a masked version of the email if available.
-    - Default to 'Pending Invite' if both are missing.
-    Regular users default to their username.
+    If the user is a ghost user (username starts with 'ghost_'):
+    - If they have an email, return a masked version of it.
+    - If they have no name, return 'Pending Invite'.
+    Otherwise, return the username.
     """
     username = user.get("username", "")
-    name = user.get("name")
-    is_ghost = user.get("is_ghost") or username.startswith("ghost_")
-
-    if is_ghost:
-        if name:
-            return name
+    if username.startswith("ghost_"):
         email = user.get("email")
         if email:
             return mask_email(email)
-        return "Pending Invite"
+        if not user.get("name"):
+            return "Pending Invite"
 
     return username
 
 
 class UserService:
     """Service class for user-related operations."""
-
-    @staticmethod
-    def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
-        """Fetch all groups the user is a member of."""
-        user_ref = db.collection("users").document(user_id)
-        groups_query = (
-            db.collection("groups")
-            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
-            .stream()
-        )
-        groups = []
-        for doc in groups_query:
-            data = doc.to_dict()
-            if data:
-                data["id"] = doc.id
-                groups.append(data)
-        return groups
 
     @staticmethod
     def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
@@ -290,10 +268,14 @@ class UserService:
         for doc in tournaments_query:
             data = doc.to_dict()
             if data:
-                participants = data.get("participants", [])
+                participants = data.get("participants") or []
                 for p in participants:
-                    p_uid = p.get("userRef").id if "userRef" in p else p.get("user_id")
-                    if p_uid == user_id and p["status"] == "pending":
+                    if not p:
+                        continue
+                    p_uid = (
+                        p.get("userRef").id if p.get("userRef") else p.get("user_id")
+                    )
+                    if p_uid == user_id and p.get("status") == "pending":
                         data["id"] = doc.id
                         pending_invites.append(data)
                         break
