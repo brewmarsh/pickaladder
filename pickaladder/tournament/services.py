@@ -185,7 +185,7 @@ class TournamentService:
         )
 
         # Groups for dropdown
-        user_groups = UserService.get_user_groups(db, user_uid)
+        user_groups = UserService.get_user_groups(db, user_uid)  # type: ignore[attr-defined]
 
         # Ownership
         is_owner = data.get("organizer_id") == user_uid or (
