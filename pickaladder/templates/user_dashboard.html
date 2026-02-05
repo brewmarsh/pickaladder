@@ -6,6 +6,25 @@
 {% endblock %}
 {% block content %}
     <div id="dashboard-content">
+        {% if pending_tournament_invites %}
+            {% for tournament in pending_tournament_invites %}
+                <div class="game-card tournament-invite-card" style="margin-bottom: 20px;">
+                    <div style="flex: 2; font-weight: 500; font-size: 1.1rem;">
+                        🏆 {{ tournament.name }} - You've been invited! (Starts {{ tournament.date }})
+                    </div>
+                    <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px;">
+                        <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn" style="width: auto; margin-top: 0; padding: 8px 16px; font-size: 14px;">Accept</button>
+                        </form>
+                        <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger" style="width: auto; margin-top: 0; padding: 8px 16px; font-size: 14px;">Decline</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
         <div class="hero-stats-card">
             <button id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</button>
             <div class="hero-left-panel">
