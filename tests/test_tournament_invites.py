@@ -23,10 +23,6 @@ class TournamentInvitesTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_routes": patch(
-                "pickaladder.tournament.routes.firestore",
-                new=self.mock_firestore_service,
-            ),
             "firestore_services": patch(
                 "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_service,
@@ -144,7 +140,7 @@ class TournamentInvitesTestCase(unittest.TestCase):
         # need to patch if it doesn't work well with MagicMocks.
 
         with patch(
-            "pickaladder.tournament.routes.firestore.transactional"
+            "pickaladder.tournament.services.firestore.transactional"
         ) as mock_trans_decorator:
             # Make the decorator just return the function
             mock_trans_decorator.side_effect = lambda x: x
@@ -189,7 +185,7 @@ class TournamentInvitesTestCase(unittest.TestCase):
         mock_tournament_ref.get.return_value = mock_snapshot
 
         with patch(
-            "pickaladder.tournament.routes.firestore.transactional"
+            "pickaladder.tournament.services.firestore.transactional"
         ) as mock_trans_decorator:
             mock_trans_decorator.side_effect = lambda x: x
 
