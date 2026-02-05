@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import (
-    Response,
     current_app,
     flash,
     g,
@@ -34,6 +33,8 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.transaction import Transaction
 
+from flask import Response
+
 
 @bp.route("/", methods=["GET"])
 @login_required
@@ -54,7 +55,7 @@ def list_tournaments() -> str | Response:
         .stream()
     )
 
-    tournaments: list[dict[str, Any]] = []
+    tournaments = []
     seen_ids = set()
 
     for doc in owned_tournaments:
@@ -79,7 +80,7 @@ def list_tournaments() -> str | Response:
 @login_required
 def create_tournament() -> str | Response:
     """Create a new tournament."""
-    form: TournamentForm = TournamentForm()
+    form = TournamentForm()
     if form.validate_on_submit():
         db: Client = firestore.client()
         user_ref = db.collection("users").document(g.user["uid"])
@@ -134,8 +135,8 @@ def view_tournament(tournament_id: str) -> str | Response:
     if raw_date and hasattr(raw_date, "to_datetime"):
         tournament_data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
 
-    match_type: str = tournament_data.get("matchType", "singles")
-    status: str = tournament_data.get("status", "Active")
+    match_type = tournament_data.get("matchType", "singles")
+    status = tournament_data.get("status", "Active")
 
     # Resolve Participant Data
     participant_objs = tournament_data.get("participants", [])
@@ -432,4 +433,12 @@ def complete_tournament(tournament_id: str) -> Response:
         flash(f"An error occurred: {e}", "danger")
 
     return cast(
-        Response, redirect(url_for(".view_tournament", tournament_
+        Response, redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    )
+
+
+@bp.route("/<string:tournament_id>/join", methods=["POST"])
+@login_required
+def join_tournament(tournament_id: str) -> Response:
+    """Accept tournament invitation (legacy alias)."""
+    return cast(Response, accept_invite(tournament_id))
