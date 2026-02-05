@@ -409,23 +409,24 @@ def complete_tournament(tournament_id: str) -> Response:
         for p in participants:
             if p.get("status") == "accepted":
                 u_doc = cast("DocumentSnapshot", p["userRef"].get())
-                if u_doc.exists:
-                    user = u_doc.to_dict()
-                    if user.get("email"):
-                        try:
-                            send_email(
-                                to=user["email"],
-                                subject=f"The results are in for {t_data.get('name', 'Tournament')}!",
-                                template="email/tournament_results.html",
-                                user=user,
-                                tournament=t_data,
-                                winner_name=winner_name,
-                                standings=standings[:3],
-                            )
-                        except Exception as e:
-                            current_app.logger.error(
-                                f"Failed to email {user['email']}: {e}"
-                            )
+                user_data = u_doc.to_dict()
+                if u_doc.exists and user_data and user_data.get("email"):
+                    recipient_email = str(user_data["email"])
+                    t_name = str(t_data.get("name", "Tournament"))
+                    try:
+                        send_email(
+                            to=recipient_email,
+                            subject=f"The results are in for {t_name}!",
+                            template="email/tournament_results.html",
+                            user=user_data,
+                            tournament=t_data,
+                            winner_name=winner_name,
+                            standings=standings[:3],
+                        )
+                    except Exception as e:
+                        current_app.logger.error(
+                            f"Failed to email {recipient_email}: {e}"
+                        )
 
         flash("Tournament completed and results emailed!", "success")
     except Exception as e:
