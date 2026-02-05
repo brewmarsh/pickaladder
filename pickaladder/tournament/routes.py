@@ -6,21 +6,21 @@ import datetime
 from typing import Any
 
 from flask import (
+    current_app,
     flash,
     g,
     redirect,
     render_template,
     request,
     url_for,
-    current_app,
 )
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.services import TournamentService
 from pickaladder.user.utils import smart_display_name
 
 from . import bp
 from .forms import InvitePlayerForm, TournamentForm
-from pickaladder.services import TournamentService
 
 
 @bp.route("/", methods=["GET"])
@@ -105,7 +105,7 @@ def edit_tournament(tournament_id: str) -> Any:
     if not details:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
-    
+
     if not details["is_owner"]:
         flash("Unauthorized.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
@@ -125,9 +125,11 @@ def edit_tournament(tournament_id: str) -> Any:
             "location": form.location.data,
             "matchType": form.match_type.data,
         }
-        
+
         try:
-            TournamentService.update_tournament(tournament_id, g.user["uid"], update_data)
+            TournamentService.update_tournament(
+                tournament_id, g.user["uid"], update_data
+            )
             flash("Updated!", "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
         except Exception as e:
@@ -164,7 +166,7 @@ def invite_player(tournament_id: str) -> Any:
         flash("Invite sent!", "success")
     except Exception as e:
         flash(f"Error: {e}", "danger")
-        
+
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 

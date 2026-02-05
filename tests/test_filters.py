@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
 
@@ -31,7 +30,7 @@ class TestFilters(unittest.TestCase):
         ghost_user = {
             "username": "ghost_123",
             "email": "test@example.com",
-            "name": "Test User"
+            "name": "Test User",
         }
         # m...l@domain.com logic from mask_email
         # t...t@example.com
@@ -40,6 +39,7 @@ class TestFilters(unittest.TestCase):
         # Test ghost user without email or name
         ghost_user_minimal = {"username": "ghost_123"}
         self.assertEqual(display_name_filter(ghost_user_minimal), "Pending Invite")
+
 
 if __name__ == "__main__":
     unittest.main()

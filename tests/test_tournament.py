@@ -299,9 +299,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             }
         )
 
-        with patch(
-            "pickaladder.services.get_tournament_standings"
-        ) as mock_standings:
+        with patch("pickaladder.services.get_tournament_standings") as mock_standings:
             mock_standings.return_value = []
 
             response = self.client.get(
