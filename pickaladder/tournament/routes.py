@@ -20,7 +20,7 @@ from pickaladder.user.utils import smart_display_name
 
 from . import bp
 from .forms import InvitePlayerForm, TournamentForm
-from .services import TournamentService
+from pickaladder.services import TournamentService
 
 
 @bp.route("/", methods=["GET"])

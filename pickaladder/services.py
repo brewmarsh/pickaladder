@@ -11,7 +11,7 @@ from flask import current_app
 from pickaladder.user.utils import UserService, smart_display_name
 from pickaladder.utils import send_email
 from pickaladder.group.utils import get_group_leaderboard
-from .utils import get_tournament_standings
+from .tournament.utils import get_tournament_standings
 
 
 class TournamentService:
