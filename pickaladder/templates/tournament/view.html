@@ -164,15 +164,10 @@
                 </div>
                 <div class="card-body" style="padding: 0;">
                     <form action="{{ url_for('tournament.invite_player', tournament_id=tournament.id) }}" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {{ invite_form.csrf_token }}
                         <div class="form-group">
-                            <label for="user_id" class="form-label">Player</label>
-                            <select name="user_id" id="user_id" class="form-input" required>
-                                <option value="" disabled selected>Select a player</option>
-                                {% for user in invitable_users %}
-                                    <option value="{{ user.id }}">{{ user|smart_display_name }}</option>
-                                {% endfor %}
-                            </select>
+                            {{ invite_form.user_id.label(class="form-label") }}
+                            {{ invite_form.user_id(class="form-input") }}
                         </div>
                         <button type="submit" class="btn btn-primary">Invite</button>
                     </form>

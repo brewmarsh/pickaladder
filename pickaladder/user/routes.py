@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import os
 import secrets
 import tempfile
@@ -21,6 +22,7 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.tournament.services import TournamentService
 from pickaladder.utils import EmailError, send_email
 
 from . import bp
@@ -148,6 +150,20 @@ def dashboard() -> Any:
     requests_data = UserService.get_user_pending_requests(db, user_id)
     group_rankings = UserService.get_group_rankings(db, user_id)
     pending_tournament_invites = UserService.get_pending_tournament_invites(db, user_id)
+    active_tournaments = UserService.get_active_tournaments(db, user_id)
+    past_tournaments = UserService.get_past_tournaments(db, user_id)
+
+    # Fetch and filter tournaments
+    tournaments = TournamentService.list_tournaments(user_id, db=db)
+    active_tournaments = [
+        t for t in tournaments if t.get("status") in ["Active", "Scheduled"]
+    ]
+    active_tournaments.sort(key=lambda x: x.get("date") or datetime.datetime.max)
+
+    past_tournaments = [t for t in tournaments if t.get("status") == "Completed"]
+    past_tournaments.sort(
+        key=lambda x: x.get("date") or datetime.datetime.min, reverse=True
+    )
 
     if form.validate_on_submit():
         try:
@@ -195,6 +211,8 @@ def dashboard() -> Any:
         requests=requests_data,
         group_rankings=group_rankings,
         pending_tournament_invites=pending_tournament_invites,
+        active_tournaments=active_tournaments,
+        past_tournaments=past_tournaments,
     )
 
 

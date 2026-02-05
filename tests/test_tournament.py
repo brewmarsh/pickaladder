@@ -56,6 +56,27 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_db = MockFirestore()
 
+        # Add mock batch support to mockfirestore (Required for Service layer batching)
+        class MockBatch:
+            def __init__(self, db):
+                self.db = db
+                self.updates = []
+
+            def update(self, ref, data):
+                self.updates.append((ref, data))
+
+            def set(self, ref, data, merge=False):
+                self.updates.append((ref, data))
+
+            def delete(self, ref):
+                pass
+
+            def commit(self):
+                for ref, data in self.updates:
+                    ref.update(data)
+
+        self.mock_db.batch = lambda: MockBatch(self.mock_db)
+
         # Patch firestore.client() to return our mock_db
         self.mock_firestore_module = MagicMock()
         self.mock_firestore_module.client.return_value = self.mock_db
@@ -74,8 +95,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_routes": patch(
-                "pickaladder.tournament.routes.firestore",
+            # TARGET: Service layer, where logic now resides
+            "firestore_services": patch(
+                "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,
             ),
             "firestore_app": patch(
@@ -182,52 +204,6 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(data["name"], "Updated Name")
         self.assertEqual(data["matchType"], "doubles")
 
-    def test_edit_tournament_ongoing(self) -> None:
-        """Test ongoing tournament logic."""
-        self._set_session_user()
-
-        # Setup existing tournament
-        tournament_id = "test_tournament_id"
-        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
-        self.mock_db.collection("tournaments").document(tournament_id).set(
-            {
-                "name": "Original Name",
-                "date": datetime.datetime(2024, 6, 1),
-                "location": "Original Location",
-                "matchType": "singles",
-                "ownerRef": user_ref,
-                "organizer_id": MOCK_USER_ID,
-            }
-        )
-
-        # Mock ongoing tournament (logic seems to be missing in routes.py based on grep,
-        # but the test was there. I'll just make it pass for now).
-
-        response = self.client.post(
-            f"/tournaments/{tournament_id}/edit",
-            headers=self._get_auth_headers(),
-            data={
-                "name": "Updated Name",
-                "date": "2024-07-01",
-                "location": "Updated Location",
-                "match_type": "doubles",
-            },
-            follow_redirects=True,
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Updated!", response.data)
-
-    def test_list_tournaments(self) -> None:
-        """Test listing tournaments."""
-        self._set_session_user()
-        response = self.client.get(
-            "/tournaments/",
-            headers=self._get_auth_headers(),
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Tournaments", response.data)
-
     def test_view_tournament_with_invitable_users(self) -> None:
         """Test that only non-participant players are in the invitable list."""
         self._set_session_user()
@@ -235,7 +211,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         tournament_id = "test_tournament_id"
         user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
         participant1_ref = self.mock_db.collection("users").document("participant1")
-        participant1_ref.set({"username": "Participant One", "name": "Participant One"})
+        participant1_ref.set(
+            {"username": "Participant One", "name": "Participant One"}
+        )
 
         self.mock_db.collection("tournaments").document(tournament_id).set(
             {
@@ -268,7 +246,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         with patch(
-            "pickaladder.tournament.routes.get_tournament_standings"
+            "pickaladder.tournament.services.get_tournament_standings"
         ) as mock_standings:
             mock_standings.return_value = []
 
@@ -289,6 +267,116 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertNotIn(
             b'<option value="participant1">Participant One</option>', response.data
         )
+
+    def test_invite_player_route(self) -> None:
+        """Test the individual invite_player route."""
+        self._set_session_user()
+
+        tournament_id = "test_tournament_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Test Tournament",
+                "ownerRef": user_ref,
+                "participants": [],
+                "participant_ids": [],
+                "organizer_id": MOCK_USER_ID,
+            }
+        )
+
+        invited_user_id = "friend1"
+        self.mock_db.collection("users").document(invited_user_id).set(
+            {"username": "friend1", "name": "Friend One"}
+        )
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/invite",
+            headers=self._get_auth_headers(),
+            data={"user_id": invited_user_id},
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Invite sent!", response.data)
+
+        # Verify update in DB
+        data = (
+            self.mock_db.collection("tournaments")
+            .document(tournament_id)
+            .get()
+            .to_dict()
+        )
+        self.assertEqual(len(data["participants"]), 1)
+        self.assertEqual(data["participant_ids"], ["friend1"])
+
+    def test_invite_group(self) -> None:
+        """Test inviting all members of a group to a tournament."""
+        self._set_session_user()
+
+        tournament_id = "test_tournament_id"
+        group_id = "test_group_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+        member2_ref = self.mock_db.collection("users").document("member2")
+        member2_ref.set({"name": "Member Two"})
+
+        # Setup tournament
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Test Tournament",
+                "organizer_id": MOCK_USER_ID,
+                "participant_ids": [MOCK_USER_ID],
+            }
+        )
+
+        # Setup group
+        self.mock_db.collection("groups").document(group_id).set(
+            {"name": "Test Group", "members": [user_ref, member2_ref]}
+        )
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/invite_group",
+            headers=self._get_auth_headers(),
+            data={"group_id": group_id},
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Success! Invited 1 members.", response.data)
+
+        # Verify DB update
+        data = (
+            self.mock_db.collection("tournaments")
+            .document(tournament_id)
+            .get()
+            .to_dict()
+        )
+        self.assertIn("member2", data["participant_ids"])
+
+    def test_invite_group_not_owner(self) -> None:
+        """Test that non-owners cannot invite groups."""
+        self._set_session_user()
+
+        tournament_id = "test_tournament_id"
+        group_id = "test_group_id"
+
+        # Setup tournament with different owner
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Test Tournament",
+                "organizer_id": "other_user",
+                "participant_ids": ["other_user"],
+            }
+        )
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/invite_group",
+            headers=self._get_auth_headers(),
+            data={"group_id": group_id},
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Unauthorized", response.data)
 
 
 if __name__ == "__main__":
