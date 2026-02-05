@@ -34,13 +34,19 @@ def list_tournaments() -> Any:
 
     # Fetch tournaments where the user is an owner
     owned_tournaments = (
-        db.collection("tournaments").where("ownerRef", "==", user_ref).stream()
+        db.collection("tournaments")
+        .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
+        .stream()
     )
 
     # Fetch tournaments where user is a participant via the participant_ids array
     participating_tournaments = (
         db.collection("tournaments")
-        .where("participant_ids", "array_contains", g.user["uid"])
+        .where(
+            filter=firestore.FieldFilter(
+                "participant_ids", "array_contains", g.user["uid"]
+            )
+        )
         .stream()
     )
 
