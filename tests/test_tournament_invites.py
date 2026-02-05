@@ -23,10 +23,7 @@ class TournamentInvitesTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_routes": patch(
-                "pickaladder.tournament.routes.firestore",
-                new=self.mock_firestore_service,
-            ),
+            # PATCH FIX: Point to the Service layer where the DB calls actually happen
             "firestore_services": patch(
                 "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_service,
@@ -133,20 +130,11 @@ class TournamentInvitesTestCase(unittest.TestCase):
         }[key]
         mock_tournament_ref.get.return_value = mock_snapshot
 
-        # We need to simulate the transactional behavior.
-        # The route calls update_in_transaction(db.transaction(), tournament_ref)
-        # In the route:
-        # success = update_in_transaction(db.transaction(), tournament_ref)
-
-        # Since we are mocking the transaction object, we need to make sure
-        # the transaction decorator/wrapper works.
-        # But wait, the route uses @firestore.transactional which we might
-        # need to patch if it doesn't work well with MagicMocks.
-
+        # Patch the transactional decorator in the Service layer
         with patch(
-            "pickaladder.tournament.routes.firestore.transactional"
+            "pickaladder.tournament.services.firestore.transactional"
         ) as mock_trans_decorator:
-            # Make the decorator just return the function
+            # Make the decorator just return the function so logic executes immediately
             mock_trans_decorator.side_effect = lambda x: x
 
             response = self.client.post(
@@ -188,8 +176,9 @@ class TournamentInvitesTestCase(unittest.TestCase):
         }[key]
         mock_tournament_ref.get.return_value = mock_snapshot
 
+        # Patch the transactional decorator in the Service layer
         with patch(
-            "pickaladder.tournament.routes.firestore.transactional"
+            "pickaladder.tournament.services.firestore.transactional"
         ) as mock_trans_decorator:
             mock_trans_decorator.side_effect = lambda x: x
 
