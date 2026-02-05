@@ -6,7 +6,7 @@
 {% endblock %}
 {% block content %}
     <div id="dashboard-content">
-        {# Section: Tournament Invites (Top Priority Alert) #}
+        {# Section: Tournament Invites (Top Priority Alert Banner) #}
         {% if pending_tournament_invites %}
             {% for tournament in pending_tournament_invites %}
                 <div class="game-card tournament-invite-card" style="margin-bottom: 20px; border-left: 5px solid var(--accent-color);">
@@ -111,8 +111,34 @@
             {# Right Column: Competition Stack #}
             <div class="dashboard-column-right">
                 <div class="competition-stack">
-                    {# Section: Active Tournaments #}
-                    {% if active_tournaments %}
+                    {# Section: Active Tournaments & Invites List #}
+                    {% if active_tournaments or pending_tournament_invites %}
+                        {# Render Invites as cards within the stack too #}
+                        {% for invite in pending_tournament_invites %}
+                            <div class="competition-card tournament-invite-card">
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div>
+                                        <div class="ranking-group-name">{{ invite.name }}</div>
+                                        <div class="text-muted small">
+                                            {{ invite.date_display or invite.date }} • {{ invite.location or 'Online' }}
+                                        </div>
+                                    </div>
+                                    <span class="badge badge-upcoming">INVITED</span>
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                    <form action="{{ url_for('tournament.accept_invite', tournament_id=invite.id) }}" method="post" style="flex: 1;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm" style="width: 100%; text-transform: none; font-size: 0.8rem;">Accept</button>
+                                    </form>
+                                    <form action="{{ url_for('tournament.decline_invite', tournament_id=invite.id) }}" method="post" style="flex: 1;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger" style="width: 100%; text-transform: none; font-size: 0.8rem;">Decline</button>
+                                    </form>
+                                </div>
+                                <a href="{{ url_for('tournament.view_tournament', tournament_id=invite.id) }}" class="btn btn-sm" style="width: 100%; margin-top: 8px; background: none; border: 1px solid var(--border-color); color: var(--text-color); text-transform: none; font-size: 0.8rem;">View Lobby</a>
+                            </div>
+                        {% endfor %}
+
                         {% for tournament in active_tournaments %}
                             <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="competition-card active-tournament-card">
                                 <div style="display: flex; justify-content: space-between; align-items: start;">
