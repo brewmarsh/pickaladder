@@ -166,8 +166,8 @@
                     <form action="{{ url_for('tournament.invite_player', tournament_id=tournament.id) }}" method="POST">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="form-group">
-                            <label for="player" class="form-label">Player</label>
-                            <select name="player" id="player" class="form-input" required>
+                            <label for="user_id" class="form-label">Player</label>
+                            <select name="user_id" id="user_id" class="form-input" required>
                                 <option value="" disabled selected>Select a player</option>
                                 {% for user in invitable_users %}
                                     <option value="{{ user.id }}">{{ user|smart_display_name }}</option>

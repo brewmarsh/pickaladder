@@ -222,8 +222,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         mock_tournament_doc.update.assert_called_once()
         update_args = mock_tournament_doc.update.call_args[0][0]
         self.assertEqual(update_args["name"], "Updated Name")
-        # matchType IS currently updated even if ongoing (original behavior)
-        self.assertEqual(update_args["matchType"], "doubles")
+        # matchType should NOT be in update_args or should be the original
+        self.assertNotIn("matchType", update_args)
 
     def test_list_tournaments(self) -> None:
         """Test listing tournaments."""

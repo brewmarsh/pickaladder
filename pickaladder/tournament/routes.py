@@ -171,12 +171,12 @@ def view_tournament(tournament_id: str) -> Any:
         for obj in participant_objs
     }
     invitable_users = [f for f in friends if f["id"] not in current_participant_ids]
-    invite_form.player.choices = [
+    invite_form.user_id.choices = [
         (u["id"], smart_display_name(u)) for u in invitable_users
     ]
 
-    if invite_form.validate_on_submit() and "player" in request.form:
-        invited_uid = invite_form.player.data
+    if invite_form.validate_on_submit() and "user_id" in request.form:
+        invited_uid = invite_form.user_id.data
         invited_ref = db.collection("users").document(invited_uid)
         try:
             tournament_ref.update(
@@ -241,6 +241,15 @@ def edit_tournament(tournament_id: str) -> Any:
         flash("Unauthorized.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
+    # Check if tournament is ongoing (has at least one match)
+    matches_query = (
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("tournamentId", "==", tournament_id))
+        .limit(1)
+        .stream()
+    )
+    is_ongoing = any(matches_query)
+
     form = TournamentForm()
     if form.validate_on_submit():
         date_val = form.date.data
@@ -254,8 +263,12 @@ def edit_tournament(tournament_id: str) -> Any:
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
             "location": form.location.data,
-            "matchType": form.match_type.data,
         }
+
+        # Only allow changing matchType if tournament is not ongoing
+        if not is_ongoing:
+            update_data["matchType"] = form.match_type.data
+
         tournament_ref.update(update_data)
         flash("Updated!", "success")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
@@ -278,7 +291,7 @@ def edit_tournament(tournament_id: str) -> Any:
 def invite_player(tournament_id: str) -> Any:
     """Invites a player (Endpoint used by the form)."""
     db = firestore.client()
-    user_id = request.form.get("player")
+    user_id = request.form.get("user_id")
     if not user_id:
         flash("No player selected.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
