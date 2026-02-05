@@ -17,7 +17,7 @@ from flask import (
 )
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.user.utils import smart_display_name
+from pickaladder.user.utils import UserService, smart_display_name
 from pickaladder.utils import send_email
 
 from . import bp
@@ -186,6 +186,7 @@ def view_tournament(tournament_id: str) -> Any:
     current_uid = str(g.user["uid"])
     all_potential_ids.discard(current_uid)
 
+    # Filter friends not already in tournament
     current_participant_ids = {
         str(obj["userRef"].id if "userRef" in obj else obj.get("user_id"))
         for obj in participant_objs
@@ -206,10 +207,12 @@ def view_tournament(tournament_id: str) -> Any:
 
     # Smart Sort by name
     invitable_users.sort(key=lambda u: smart_display_name(u).lower())
+    
     invite_form.user_id.choices = [
         (u["id"], smart_display_name(u)) for u in invitable_users
     ]
 
+    # Handle Invite Form Submission from the view page itself
     if invite_form.validate_on_submit() and "user_id" in request.form:
         invited_uid = invite_form.user_id.data
         invited_ref = db.collection("users").document(invited_uid)
@@ -280,7 +283,9 @@ def edit_tournament(tournament_id: str) -> Any:
         date_val = form.date.data
         if date_val is None:
             flash("Date is required.", "danger")
-            return redirect(url_for(".edit_tournament", tournament_id=tournament_id))
+            return render_template(
+                "tournament/edit.html", form=form, tournament=tournament_data
+            )
 
         update_data = {
             "name": form.name.data,
@@ -305,10 +310,13 @@ def edit_tournament(tournament_id: str) -> Any:
     )
 
 
-@bp.route("/<string:tournament_id>/invite", methods=["POST"])
+@bp.route("/<string:tournament_id>/invite", methods=["GET", "POST"])
 @login_required
 def invite_player(tournament_id: str) -> Any:
     """Invites a player (Endpoint used by the form)."""
+    if request.method == "GET":
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
     db = firestore.client()
     user_id = request.form.get("user_id")
     if not user_id:
