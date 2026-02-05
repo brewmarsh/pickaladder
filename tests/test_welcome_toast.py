@@ -56,7 +56,7 @@ class WelcomeToastTestCase(unittest.TestCase):
     def test_welcome_toast_triggered_on_merge(
         self, mock_get_invites: MagicMock
     ) -> None:
-        """Test that the welcome toast session flag is set when a ghost user is merged."""
+        """Test welcome toast session flag is set when a ghost user is merged."""
         # 1. Mock verify_id_token to return a user payload
         self.mock_auth_service.verify_id_token.return_value = {"uid": MOCK_USER_ID}
 
@@ -94,7 +94,7 @@ class WelcomeToastTestCase(unittest.TestCase):
     def test_welcome_toast_not_triggered_on_no_merge(
         self, mock_get_invites: MagicMock
     ) -> None:
-        """Test that the welcome toast session flag is NOT set when no merge occurred."""
+        """Test welcome toast flag is NOT set when no merge occurred."""
         self.mock_auth_service.verify_id_token.return_value = {"uid": MOCK_USER_ID}
         mock_db = self.mock_firestore_service.client.return_value
         mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
@@ -126,7 +126,7 @@ class WelcomeToastTestCase(unittest.TestCase):
     def test_welcome_toast_triggered_on_register(
         self, mock_get_invites: MagicMock, mock_send_email: MagicMock
     ) -> None:
-        """Test that the welcome toast session flag is set when a user registers and is merged."""
+        """Test welcome toast flag is set when a user registers and is merged."""
         # Mock auth create_user
         self.mock_auth_service.create_user.return_value = MagicMock(uid=MOCK_USER_ID)
         self.mock_auth_service.generate_email_verification_link.return_value = (
