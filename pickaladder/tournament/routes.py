@@ -7,7 +7,6 @@ from typing import Any
 
 from firebase_admin import firestore
 from flask import (
-    Response,
     current_app,
     flash,
     g,
@@ -107,7 +106,7 @@ def _get_invitable_players(
 
 @bp.route("/", methods=["GET"])
 @login_required
-def list_tournaments() -> Response | str:
+def list_tournaments() -> Any:
     """List all tournaments."""
     db = firestore.client()
     user_ref = db.collection("users").document(g.user["uid"])
@@ -147,7 +146,7 @@ def list_tournaments() -> Response | str:
 
 @bp.route("/create", methods=["GET", "POST"])
 @login_required
-def create_tournament() -> Response | str:
+def create_tournament() -> Any:
     """Create a new tournament."""
     form: TournamentForm = TournamentForm()
     if form.validate_on_submit():
@@ -183,7 +182,7 @@ def create_tournament() -> Response | str:
 
 @bp.route("/<string:tournament_id>", methods=["GET", "POST"])
 @login_required
-def view_tournament(tournament_id: str) -> Response | str:
+def view_tournament(tournament_id: str) -> Any:
     """View a single tournament lobby."""
     db = firestore.client()
     tournament_ref = db.collection("tournaments").document(tournament_id)
@@ -202,7 +201,7 @@ def view_tournament(tournament_id: str) -> Response | str:
 
     # Format Date
     raw_date = tournament_data.get("date")
-    if hasattr(raw_date, "to_datetime"):
+    if raw_date and hasattr(raw_date, "to_datetime"):
         tournament_data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
 
     match_type: str = tournament_data.get("matchType", "singles")
@@ -276,7 +275,7 @@ def view_tournament(tournament_id: str) -> Response | str:
 
 @bp.route("/<string:tournament_id>/edit", methods=["GET", "POST"])
 @login_required
-def edit_tournament(tournament_id: str) -> Response | str:
+def edit_tournament(tournament_id: str) -> Any:
     """Edit tournament details."""
     db = firestore.client()
     tournament_ref = db.collection("tournaments").document(tournament_id)
@@ -322,7 +321,7 @@ def edit_tournament(tournament_id: str) -> Response | str:
         form.location.data = tournament_data.get("location")
         form.match_type.data = tournament_data.get("matchType")
         raw_date = tournament_data.get("date")
-        if hasattr(raw_date, "to_datetime"):
+        if raw_date and hasattr(raw_date, "to_datetime"):
             form.date.data = raw_date.to_datetime().date()
 
     return render_template(
@@ -332,7 +331,7 @@ def edit_tournament(tournament_id: str) -> Response | str:
 
 @bp.route("/<string:tournament_id>/invite", methods=["GET", "POST"])
 @login_required
-def invite_player(tournament_id: str) -> Response:
+def invite_player(tournament_id: str) -> Any:
     """Invites a player (Endpoint used by the form)."""
     if request.method == "GET":
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
@@ -360,7 +359,7 @@ def invite_player(tournament_id: str) -> Response:
 
 @bp.route("/<string:tournament_id>/accept", methods=["POST"])
 @login_required
-def accept_invite(tournament_id: str) -> Response:
+def accept_invite(tournament_id: str) -> Any:
     """Accept an invite to a tournament using a transaction."""
     db = firestore.client()
     tournament_ref = db.collection("tournaments").document(tournament_id)
@@ -397,7 +396,7 @@ def accept_invite(tournament_id: str) -> Response:
 
 @bp.route("/<string:tournament_id>/decline", methods=["POST"])
 @login_required
-def decline_invite(tournament_id: str) -> Response:
+def decline_invite(tournament_id: str) -> Any:
     """Decline an invite to a tournament using a transaction."""
     db = firestore.client()
     tournament_ref = db.collection("tournaments").document(tournament_id)
@@ -447,7 +446,7 @@ def decline_invite(tournament_id: str) -> Response:
 
 @bp.route("/<string:tournament_id>/complete", methods=["POST"])
 @login_required
-def complete_tournament(tournament_id: str) -> Response:
+def complete_tournament(tournament_id: str) -> Any:
     """Close tournament and send results to all participants."""
     db = firestore.client()
     tournament_ref = db.collection("tournaments").document(tournament_id)
@@ -499,6 +498,6 @@ def complete_tournament(tournament_id: str) -> Response:
 
 @bp.route("/<string:tournament_id>/join", methods=["POST"])
 @login_required
-def join_tournament(tournament_id: str) -> Response:
+def join_tournament(tournament_id: str) -> Any:
     """Accept tournament invitation (legacy alias)."""
     return accept_invite(tournament_id)
