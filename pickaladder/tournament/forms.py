@@ -21,4 +21,4 @@ class TournamentForm(FlaskForm):
 class InvitePlayerForm(FlaskForm):
     """Form for inviting a player to a tournament."""
 
-    player = SelectField("Player", validators=[DataRequired()])
+    user_id = SelectField("Player", validators=[DataRequired()])
