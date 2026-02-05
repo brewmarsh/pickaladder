@@ -17,7 +17,7 @@ from flask import (
 from werkzeug.exceptions import UnprocessableEntity
 
 from pickaladder.errors import DuplicateResourceError
-from pickaladder.user.utils import merge_ghost_user
+from pickaladder.user.utils import UserService, merge_ghost_user
 from pickaladder.utils import EmailError, send_email
 
 from . import bp
@@ -78,7 +78,13 @@ def register():
             )
 
             # Check for ghost user merge
-            merge_ghost_user(db, user_doc_ref, email)
+            if merge_ghost_user(db, user_doc_ref, email):
+                # Check for tournament invites to show welcome toast
+                invites = UserService.get_pending_tournament_invites(
+                    db, user_doc_ref.id
+                )
+                if invites:
+                    session["show_welcome_invites"] = len(invites)
 
             # Handle invite token
             invite_token = session.pop("invite_token", None)
@@ -206,7 +212,11 @@ def session_login():
             user_doc_ref.set(user_info)
 
             # Check for ghost user merge
-            merge_ghost_user(db, user_doc_ref, email)
+            if merge_ghost_user(db, user_doc_ref, email):
+                # Check for tournament invites to show welcome toast
+                invites = UserService.get_pending_tournament_invites(db, uid)
+                if invites:
+                    session["show_welcome_invites"] = len(invites)
 
         session["user_id"] = uid
         session["is_admin"] = user_info.get("isAdmin", False)
