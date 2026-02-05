@@ -150,6 +150,8 @@ def dashboard() -> Any:
     requests_data = UserService.get_user_pending_requests(db, user_id)
     group_rankings = UserService.get_group_rankings(db, user_id)
     pending_tournament_invites = UserService.get_pending_tournament_invites(db, user_id)
+    active_tournaments = UserService.get_active_tournaments(db, user_id)
+    past_tournaments = UserService.get_past_tournaments(db, user_id)
 
     # Fetch and filter tournaments
     tournaments = TournamentService.list_tournaments(user_id, db=db)
