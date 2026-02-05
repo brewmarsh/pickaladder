@@ -53,7 +53,9 @@ class WelcomeToastTestCase(unittest.TestCase):
             p.stop()
 
     @patch("pickaladder.auth.routes.UserService.get_pending_tournament_invites")
-    def test_welcome_toast_triggered_on_merge(self, mock_get_invites: MagicMock) -> None:
+    def test_welcome_toast_triggered_on_merge(
+        self, mock_get_invites: MagicMock
+    ) -> None:
         """Test that the welcome toast session flag is set when a ghost user is merged."""
         # 1. Mock verify_id_token to return a user payload
         self.mock_auth_service.verify_id_token.return_value = {"uid": MOCK_USER_ID}
@@ -125,8 +127,6 @@ class WelcomeToastTestCase(unittest.TestCase):
         self, mock_get_invites: MagicMock, mock_send_email: MagicMock
     ) -> None:
         """Test that the welcome toast session flag is set when a user registers and is merged."""
-        mock_db = self.mock_firestore_service.client.return_value
-
         # Mock auth create_user
         self.mock_auth_service.create_user.return_value = MagicMock(uid=MOCK_USER_ID)
         self.mock_auth_service.generate_email_verification_link.return_value = (
@@ -145,8 +145,8 @@ class WelcomeToastTestCase(unittest.TestCase):
             data={
                 "username": "newuser",
                 "email": MOCK_EMAIL,
-                "password": "Password123",
-                "confirm_password": "Password123",
+                "password": "Password123",  # nosec
+                "confirm_password": "Password123",  # nosec
                 "name": "New User",
                 "dupr_rating": "4.5",
             },
