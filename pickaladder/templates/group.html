@@ -191,25 +191,30 @@
                         <tr>
                             <td data-label="Date">{{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate else 'N/A' }}</td>
                             <td data-label="Team 1">
-                                {% if match.team1 %}
-                                    {{ match.team1.name }}
-                                    {% if g.user and g.user.uid in match.team1.member_ids %}
+                                {% if match.team1_name %}
+                                    {{ match.team1_name }}
+                                    {% if match.team1 and g.user and g.user.uid in match.team1.member_ids %}
                                         <a href="{{ url_for('teams.edit_team', team_id=match.team1.id) }}" class="icon-link" title="Edit Team Name">✏️</a>
                                     {% endif %}
                                 {% elif match.player1 %}
-                                    {% if match.player1.id != 'unknown' %}
-                                        <a href="{{ url_for('user.view_user', user_id=match.player1.id) }}">{{ match.player1.username }}</a>
-                                    {% else %}
-                                        {{ match.player1.username }}
-                                    {% endif %}
-                                    {% if match.partner %}
-                                        &
-                                        {% if match.partner.id != 'unknown' %}
-                                            <a href="{{ url_for('user.view_user', user_id=match.partner.id) }}">{{ match.partner.username }}</a>
+                                    <span style="font-weight: normal;">
+                                        {% if match.player1.id != 'unknown' %}
+                                            <a href="{{ url_for('user.view_user', user_id=match.player1.id) }}">{{ match.player1 | smart_display_name }}</a>
                                         {% else %}
-                                            {{ match.partner.username }}
+                                            {{ match.player1 | smart_display_name }}
                                         {% endif %}
-                                    {% endif %}
+                                        {% if match.player1.is_ghost %} (Pending){% endif %}
+
+                                        {% if match.partner %}
+                                            &
+                                            {% if match.partner.id != 'unknown' %}
+                                                <a href="{{ url_for('user.view_user', user_id=match.partner.id) }}">{{ match.partner | smart_display_name }}</a>
+                                            {% else %}
+                                                {{ match.partner | smart_display_name }}
+                                            {% endif %}
+                                            {% if match.partner.is_ghost %} (Pending){% endif %}
+                                        {% endif %}
+                                    </span>
                                 {% else %}
                                     Unknown
                                 {% endif %}
@@ -218,25 +223,30 @@
                                 {% endif %}
                             </td>
                             <td data-label="Team 2">
-                                {% if match.team2 %}
-                                    {{ match.team2.name }}
-                                    {% if g.user and g.user.uid in match.team2.member_ids %}
+                                {% if match.team2_name %}
+                                    {{ match.team2_name }}
+                                    {% if match.team2 and g.user and g.user.uid in match.team2.member_ids %}
                                         <a href="{{ url_for('teams.edit_team', team_id=match.team2.id) }}" class="icon-link" title="Edit Team Name">✏️</a>
                                     {% endif %}
                                 {% elif match.player2 %}
-                                    {% if match.player2.id != 'unknown' %}
-                                        <a href="{{ url_for('user.view_user', user_id=match.player2.id) }}">{{ match.player2.username }}</a>
-                                    {% else %}
-                                        {{ match.player2.username }}
-                                    {% endif %}
-                                    {% if match.opponent2 %}
-                                        &
-                                        {% if match.opponent2.id != 'unknown' %}
-                                            <a href="{{ url_for('user.view_user', user_id=match.opponent2.id) }}">{{ match.opponent2.username }}</a>
+                                    <span style="font-weight: normal;">
+                                        {% if match.player2.id != 'unknown' %}
+                                            <a href="{{ url_for('user.view_user', user_id=match.player2.id) }}">{{ match.player2 | smart_display_name }}</a>
                                         {% else %}
-                                            {{ match.opponent2.username }}
+                                            {{ match.player2 | smart_display_name }}
                                         {% endif %}
-                                    {% endif %}
+                                        {% if match.player2.is_ghost %} (Pending){% endif %}
+
+                                        {% if match.opponent2 %}
+                                            &
+                                            {% if match.opponent2.id != 'unknown' %}
+                                                <a href="{{ url_for('user.view_user', user_id=match.opponent2.id) }}">{{ match.opponent2 | smart_display_name }}</a>
+                                            {% else %}
+                                                {{ match.opponent2 | smart_display_name }}
+                                            {% endif %}
+                                            {% if match.opponent2.is_ghost %} (Pending){% endif %}
+                                        {% endif %}
+                                    </span>
                                 {% else %}
                                     Unknown
                                 {% endif %}
