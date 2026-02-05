@@ -56,6 +56,28 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_db = MockFirestore()
 
+        # Add mock batch support to mockfirestore
+        class MockBatch:
+            def __init__(self, db):
+                self.db = db
+                self.updates = []
+
+            def update(self, ref, data):
+                self.updates.append((ref, data))
+
+            def set(self, ref, data, merge=False):
+                self.updates.append((ref, data))
+
+            def delete(self, ref):
+                # For simplicity, not implemented here unless needed
+                pass
+
+            def commit(self):
+                for ref, data in self.updates:
+                    ref.update(data)
+
+        self.mock_db.batch = lambda: MockBatch(self.mock_db)
+
         # Patch firestore.client() to return our mock_db
         self.mock_firestore_module = MagicMock()
         self.mock_firestore_module.client.return_value = self.mock_db
@@ -74,8 +96,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_routes": patch(
-                "pickaladder.tournament.routes.firestore",
+            "firestore_services": patch(
+                "pickaladder.services.firestore",
                 new=self.mock_firestore_module,
             ),
             "firestore_app": patch(
@@ -277,9 +299,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             }
         )
 
-        with patch(
-            "pickaladder.tournament.routes.get_tournament_standings"
-        ) as mock_standings:
+        with patch("pickaladder.services.get_tournament_standings") as mock_standings:
             mock_standings.return_value = []
 
             response = self.client.get(
@@ -332,7 +352,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Invited 1 members from the group.", response.data)
+        self.assertIn(b"Success! Invited 1 members.", response.data)
 
         # Verify DB update
         data = (
@@ -369,7 +389,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Unauthorized.", response.data)
+        self.assertIn(b"Unauthorized", response.data)
 
     def test_invite_group_not_member(self) -> None:
         """Test that user cannot invite from a group they don't belong to."""

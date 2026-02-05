@@ -209,6 +209,7 @@ def create_app(test_config=None):
 
     # Register filters
     app.template_filter("smart_display_name")(smart_display_name)
+    app.template_filter("display_name")(smart_display_name)
 
     @app.template_filter("avatar_url")
     def avatar_url_filter(user):
