@@ -351,7 +351,12 @@ def invite_group(tournament_id: str) -> Any:
         flash("Group data not found.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
+    # Security check: verify user is a member of the group they are inviting
     member_refs = group_data.get("members", [])
+    is_member = any(m_ref.id == g.user["uid"] for m_ref in member_refs)
+    if not is_member:
+        flash("You can only invite members from groups you belong to.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
     current_participant_ids = set(t_data.get("participant_ids", []))
 
     new_participants = []
