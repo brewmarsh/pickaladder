@@ -183,7 +183,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(data["matchType"], "doubles")
 
     def test_edit_tournament_ongoing(self) -> None:
-        """Test ongoing tournament logic."""
+        """Test that matchType cannot be changed if tournament is ongoing."""
         self._set_session_user()
 
         # Setup existing tournament
@@ -200,8 +200,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             }
         )
 
-        # Mock ongoing tournament (logic seems to be missing in routes.py based on grep,
-        # but the test was there. I'll just make it pass for now).
+        # Setup an ongoing match for this tournament
+        self.mock_db.collection("matches").add({"tournamentId": tournament_id})
 
         response = self.client.post(
             f"/tournaments/{tournament_id}/edit",
@@ -210,13 +210,23 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Updated Name",
                 "date": "2024-07-01",
                 "location": "Updated Location",
-                "match_type": "doubles",
+                "match_type": "doubles",  # Attempt to change matchType
             },
             follow_redirects=True,
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Updated!", response.data)
+
+        # Verify that matchType was NOT updated
+        data = (
+            self.mock_db.collection("tournaments")
+            .document(tournament_id)
+            .get()
+            .to_dict()
+        )
+        self.assertEqual(data["name"], "Updated Name")
+        self.assertEqual(data["matchType"], "singles")  # Should still be singles
 
     def test_list_tournaments(self) -> None:
         """Test listing tournaments."""
@@ -288,6 +298,111 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertNotIn(
             b'<option value="participant1">Participant One</option>', response.data
+        )
+
+    def test_invite_group(self) -> None:
+        """Test inviting all members of a group to a tournament."""
+        self._set_session_user()
+
+        tournament_id = "test_tournament_id"
+        group_id = "test_group_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+        member2_ref = self.mock_db.collection("users").document("member2")
+        member2_ref.set({"name": "Member Two"})
+
+        # Setup tournament
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Test Tournament",
+                "organizer_id": MOCK_USER_ID,
+                "participant_ids": [MOCK_USER_ID],
+            }
+        )
+
+        # Setup group
+        self.mock_db.collection("groups").document(group_id).set(
+            {"name": "Test Group", "members": [user_ref, member2_ref]}
+        )
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/invite_group",
+            headers=self._get_auth_headers(),
+            data={"group_id": group_id},
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Invited 1 members from the group.", response.data)
+
+        # Verify DB update
+        data = (
+            self.mock_db.collection("tournaments")
+            .document(tournament_id)
+            .get()
+            .to_dict()
+        )
+        self.assertIn("member2", data["participant_ids"])
+        # Check that owner (MOCK_USER_ID) was not re-invited
+        # Since owner was already in participant_ids, they should be filtered out.
+
+    def test_invite_group_not_owner(self) -> None:
+        """Test that non-owners cannot invite groups."""
+        self._set_session_user()
+
+        tournament_id = "test_tournament_id"
+        group_id = "test_group_id"
+
+        # Setup tournament with different owner
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Test Tournament",
+                "organizer_id": "other_user",
+                "participant_ids": ["other_user"],
+            }
+        )
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/invite_group",
+            headers=self._get_auth_headers(),
+            data={"group_id": group_id},
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Unauthorized.", response.data)
+
+    def test_invite_group_not_member(self) -> None:
+        """Test that user cannot invite from a group they don't belong to."""
+        self._set_session_user()
+
+        tournament_id = "test_tournament_id"
+        group_id = "test_group_id"
+        other_user_ref = self.mock_db.collection("users").document("other_user")
+
+        # Setup tournament
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Test Tournament",
+                "organizer_id": MOCK_USER_ID,
+                "participant_ids": [MOCK_USER_ID],
+            }
+        )
+
+        # Setup group user is NOT in
+        self.mock_db.collection("groups").document(group_id).set(
+            {"name": "Test Group", "members": [other_user_ref]}
+        )
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/invite_group",
+            headers=self._get_auth_headers(),
+            data={"group_id": group_id},
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b"You can only invite members from groups you belong to.", response.data
         )
 
 
