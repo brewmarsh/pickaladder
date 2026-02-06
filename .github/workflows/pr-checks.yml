@@ -85,7 +85,7 @@ jobs:
       - name: Static Type Checking with mypy
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv run python -m mypy --no-incremental .
+        run: uv run mypy --no-incremental .
 
   vulnerabilities:
     runs-on: ubuntu-latest

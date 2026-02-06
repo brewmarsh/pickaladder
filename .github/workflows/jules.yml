@@ -17,6 +17,11 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
       
       # Run Bandit (Python Security)
       - name: Run Bandit
