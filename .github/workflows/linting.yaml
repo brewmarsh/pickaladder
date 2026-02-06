@@ -18,13 +18,13 @@ jobs:
         python-version: '3.x'
     - name: Install dependencies
       run: |
-        uv pip install --upgrade pip --system
-        uv pip install ruff==0.14.14 refurb --system
+        uv sync --group dev
+        uv pip install refurb
     - name: Run ruff (Blocking Checks)
-      run: ruff check --select UP,E,F,I .
+      run: uv run ruff check --select UP,E,F,I .
     - name: Run ruff (Audit Checks)
-      run: ruff check --select ANN,D,C90 .
+      run: uv run ruff check --select ANN,D,C90 .
       continue-on-error: true
     - name: Run refurb
-      run: refurb .
+      run: uv run refurb .
       continue-on-error: true
