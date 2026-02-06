@@ -5,7 +5,6 @@ from __future__ import annotations
 import datetime
 from typing import Any
 
-from firebase_admin import firestore
 from flask import (
     flash,
     g,
