@@ -54,14 +54,14 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context.pop()
 
     def _set_session_user(self) -> None:
-        """Set a logged-in user in the session."""
+        """TODO: Add docstring for AI context."""
         with self.client.session_transaction() as sess:
             sess["user_id"] = MOCK_USER_ID
             sess["is_admin"] = False
         self.mocks["verify_id_token"].return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
 
     def _mock_firestore_user(self) -> MagicMock:
-        """Mock a firestore user document."""
+        """TODO: Add docstring for AI context."""
         mock_db = self.mock_firestore_service.client.return_value
         mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
         mock_user_snapshot = MagicMock()

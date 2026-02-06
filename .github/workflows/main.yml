@@ -39,7 +39,10 @@ jobs:
           python-version: 3.11
 
       - name: Install dependencies
-        run: uv pip install -r requirements.txt mock-firestore coverage --system
+        run: |
+          uv pip install git+https://github.com/pypa/pip.git@7daeda1cb53546615a8c75161028b8121321119e --system
+          uv pip install setuptools==78.1.1 --system
+          uv pip install -r requirements.txt mock-firestore coverage --system
 
       - name: Enable uuid-ossp extension
         run: |
@@ -54,9 +57,9 @@ jobs:
           POSTGRES_DB: postgres
           UV_SYSTEM_PYTHON: 1
         run: |
-          uv run --no-project python -m unittest discover tests
-          uv run --no-project python -m coverage run -m unittest discover tests
-          uv run --no-project python -m coverage xml
+          uv run python -m unittest discover tests
+          uv run python -m coverage run -m unittest discover tests
+          uv run python -m coverage xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5

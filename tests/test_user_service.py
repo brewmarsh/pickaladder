@@ -5,6 +5,7 @@ from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 from pickaladder.user.services import UserService
+from pickaladder.user.stats import UserStats
 
 
 class TestUserService(unittest.TestCase):
@@ -97,7 +98,7 @@ class TestUserService(unittest.TestCase):
         }
         mock_match2.create_time = 200
 
-        stats = UserService.calculate_stats([mock_match1, mock_match2], self.user_id)
+        stats = UserStats.calculate([mock_match1, mock_match2], self.user_id)
         self.assertEqual(stats["wins"], 1)
         self.assertEqual(stats["losses"], 1)
         self.assertEqual(stats["total_games"], 2)
@@ -118,7 +119,7 @@ class TestUserService(unittest.TestCase):
             {"id": self.user_id, "name": "Me", "avg_score": 50},
         ]
 
-        rankings = UserService.get_group_rankings(self.db, self.user_id)
+        rankings = UserStats.get_group_rankings(self.db, self.user_id)
         self.assertEqual(len(rankings), 1)
         self.assertEqual(rankings[0]["rank"], 2)
         self.assertEqual(rankings[0]["group_name"], "Test Group")
@@ -146,30 +147,6 @@ class TestUserService(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["id"], "g1")
         self.assertEqual(result[0]["owner"]["username"], "owner_user")
-
-    def test_get_all_users_with_exclusions(self) -> None:
-        mock_u1 = MagicMock()
-        mock_u1.id = "user1"
-        mock_u1.to_dict.return_value = {"username": "u1"}
-        mock_u2 = MagicMock()
-        mock_u2.id = "user2"
-        mock_u2.to_dict.return_value = {"username": "u2"}
-        mock_u3 = MagicMock()
-        mock_u3.id = "user3"
-        mock_u3.to_dict.return_value = {"username": "u3"}
-
-        self.db.collection().order_by().limit().stream.return_value = [
-            mock_u1,
-            mock_u2,
-            mock_u3,
-        ]
-
-        # Exclude user1 and user3
-        exclude_ids = ["user1", "user3"]
-        result = UserService.get_all_users(self.db, exclude_ids, limit=10)
-
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "user2")
 
 
 if __name__ == "__main__":

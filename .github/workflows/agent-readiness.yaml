@@ -20,22 +20,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install Tool
-        run: uv pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
+        run: pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git
 
       - name: Run Agent Scorecard (Diff Mode)
-        env:
-          UV_SYSTEM_PYTHON: 1
         run: |
           # Ensure we have the base branch reference locally
           git fetch origin ${{ github.base_ref || 'main' }}
@@ -43,7 +36,7 @@ jobs:
           # Fallback to 'main' if not in a PR
           TARGET_BRANCH="origin/${{ github.base_ref || 'main' }}"
           echo "Running Agent Scorecard against $TARGET_BRANCH..."
-          uv run --no-project agent-score score --diff $TARGET_BRANCH --report readiness_report.md
+          agent-score score --diff $TARGET_BRANCH --report readiness_report.md
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
