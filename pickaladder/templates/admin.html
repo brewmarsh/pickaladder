@@ -13,22 +13,6 @@
             </button>
         </div>
         <div class="card">
-            <h3>Generate Users</h3>
-            <p>This will generate 10 random users.</p>
-            <form action="{{ url_for('admin.generate_users') }}" method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-primary">Generate Users</button>
-            </form>
-        </div>
-        <div class="card">
-            <h3>Generate Matches</h3>
-            <p>This will generate 10 random matches between friends.</p>
-            <form action="{{ url_for('admin.generate_matches') }}" method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-primary">Generate Matches</button>
-            </form>
-        </div>
-        <div class="card">
             <h3>Enforce Email Verification</h3>
             <p>
                 Current status:
