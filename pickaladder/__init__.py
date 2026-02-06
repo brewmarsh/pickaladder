@@ -22,8 +22,8 @@ from . import teams as teams_bp
 from . import tournament as tournament_bp
 from . import user as user_bp
 from .extensions import csrf, mail
+from .user.helpers import smart_display_name, wrap_user
 from .user.services import UserService
-from .user.utils import smart_display_name, wrap_user
 
 APP_PASSWORD_LENGTH = 16
 

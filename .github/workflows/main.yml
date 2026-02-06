@@ -40,7 +40,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --group dev
+          uv pip install git+https://github.com/pypa/pip.git@7daeda1cb53546615a8c75161028b8121321119e --system
+          uv pip install setuptools==78.1.1 --system
+          uv pip install -r requirements.txt mock-firestore coverage --system
 
       - name: Enable uuid-ossp extension
         run: |
