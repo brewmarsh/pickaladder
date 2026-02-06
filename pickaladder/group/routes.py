@@ -739,7 +739,9 @@ def _fetch_group_teams(
         )
 
         team_data["member_details"] = [
-            members_map[m.id] for m in team_data.get("members", []) if m.id in members_map
+            members_map[m.id]
+            for m in team_data.get("members", [])
+            if m.id in members_map
         ]
         team_leaderboard.append({"team": team_data, "stats": stats})
 
@@ -832,6 +834,7 @@ def _get_pending_invites(db: Any, group_id: str) -> list[dict[str, Any]]:
     # Sort in memory to avoid composite index requirement
     pending_members.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
     return pending_members
+
 
 def _process_friend_invite(db: Any, group_id: str, group_ref: Any, form: Any) -> Any:
     """Handle friend invitation submission."""
