@@ -15,6 +15,7 @@ from flask import (
     request,
     url_for,
 )
+from google.cloud.firestore_v1.field_path import FieldPath
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
@@ -176,7 +177,7 @@ def view_group(group_id: str) -> Any:
             db.collection("users")
             .where(
                 filter=firestore.FieldFilter(
-                    firestore.FieldPath.document_id(), "in", eligible_friend_ids
+                    FieldPath.document_id(), "in", eligible_friend_ids
                 )
             )
             .stream()
