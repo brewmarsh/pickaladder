@@ -29,9 +29,7 @@ class MockArrayRemove:
 def patch_mockfirestore():
     """Apply monkeypatches to mockfirestore to support FieldFilter and equality."""
 
-    def collection_where(
-        self, field_path=None, op_string=None, value=None, filter=None
-    ):
+    def collection_where(self, field_path=None, op_string=None, value=None, filter=None):  # noqa: E501
         if filter:
             return self._where(filter.field_path, filter.op_string, filter.value)
         return self._where(field_path, op_string, value)
@@ -72,7 +70,12 @@ def patch_mockfirestore():
                     existing = current_data.get(k, [])
                     if not isinstance(existing, list):
                         existing = []
-                    new_data[k] = existing + [i for i in v.values if i not in existing]
+                    # Simple append for mock, firestore does set union
+                    merged = list(existing)
+                    for item in v.values:
+                        if item not in merged:
+                            merged.append(item)
+                    new_data[k] = merged
                 elif isinstance(v, MockArrayRemove):
                     existing = current_data.get(k, [])
                     if not isinstance(existing, list):
@@ -80,6 +83,34 @@ def patch_mockfirestore():
                     new_data[k] = [i for i in existing if i not in v.values]
                 else:
                     new_data[k] = v
+            # MockFirestore's DocumentReference.update just updates its internal _data
+            # We use the original update to ensure any other logic is preserved
             return self._orig_update(new_data)
 
         DocumentReference.update = patched_update
+
+
+class MockBatch:
+    def __init__(self, db):
+        self.db = db
+        self.updates = []
+        import unittest.mock
+        self.commit = unittest.mock.MagicMock(side_effect=self._real_commit)
+
+    def update(self, ref, data):
+        self.updates.append((ref, data))
+
+    def set(self, ref, data, merge=False):
+        # For set with merge=True, it's like update.
+        # For simplicity in tests, we just update.
+        self.updates.append((ref, data))
+
+    def delete(self, ref):
+        self.updates.append((ref, "DELETE"))
+
+    def _real_commit(self):
+        for ref, data in self.updates:
+            if data == "DELETE":
+                ref.delete()
+            else:
+                ref.update(data)

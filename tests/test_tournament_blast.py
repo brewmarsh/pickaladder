@@ -11,7 +11,12 @@ from mockfirestore import MockFirestore
 from pickaladder import create_app
 from pickaladder.tournament.services import TournamentService  # noqa: F401
 from pickaladder.user.utils import _migrate_ghost_references
-from tests.conftest import MockArrayRemove, MockArrayUnion, patch_mockfirestore
+from tests.conftest import (
+    MockArrayRemove,
+    MockArrayUnion,
+    MockBatch,
+    patch_mockfirestore,
+)
 
 patch_mockfirestore()
 
@@ -27,26 +32,6 @@ class TournamentBlastTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
         self.mock_db = MockFirestore()
-
-        # Add mock batch support to mockfirestore
-        class MockBatch:
-            def __init__(self, db):
-                self.db = db
-                self.updates = []
-                self.commit = MagicMock(side_effect=self._real_commit)
-
-            def update(self, ref, data):
-                self.updates.append((ref, data))
-
-            def set(self, ref, data, merge=False):
-                self.updates.append((ref, data))
-
-            def delete(self, ref):
-                pass
-
-            def _real_commit(self):
-                for ref, data in self.updates:
-                    ref.update(data)
 
         self.mock_batch_instance = MockBatch(self.mock_db)
         self.mock_db.batch = MagicMock(return_value=self.mock_batch_instance)
