@@ -23,4 +23,6 @@ class User(UserDict):
         # Fallback to DiceBear API
         # Using brand colors: Green (2e7d32), Amber (ffc107), Blue (1976d2)
         seed = user_id or self.get("username") or "default"
-        return f"https://api.dicebear.com/7.x/avataaars/svg?seed={seed}&backgroundColor=2e7d32,ffc107,1976d2"
+        base_url = "https://api.dicebear.com/7.x/avataaars/svg"
+        params = f"seed={seed}&backgroundColor=2e7d32,ffc107,1976d2"
+        return f"{base_url}?{params}"

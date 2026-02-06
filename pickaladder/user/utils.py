@@ -54,26 +54,14 @@ def _migrate_ghost_references(
         )
 
     # 6: Update Tournament Participants
-    tournaments_query = (
-        db.collection("tournaments")
-        .where(
-            filter=firestore.FieldFilter(
-                "participant_ids", "array_contains", ghost_ref.id
-            )
-        )
-        .stream()
+    tournaments_query = db.collection("tournaments").where(
+        filter=firestore.FieldFilter("participant_ids", "array_contains", ghost_ref.id)
     )
-    for tournament in tournaments_query:
-        t_data = tournament.to_dict()
-        if not t_data:
+    for tournament in tournaments_query.stream():
+        data = tournament.to_dict()
+        if not data:
             continue
-
-        participants = t_data.get("participants", [])
-        participant_ids = t_data.get("participant_ids", [])
-        real_user_id = real_user_ref.id
-        already_participant = real_user_id in participant_ids
-
-        new_participants = []
+        participants = data.get("participants", [])
         updated = False
         for p in participants:
             # Handle both userRef (object) and user_id (string) formats
@@ -84,28 +72,24 @@ def _migrate_ghost_references(
                 p_uid = p["user_id"]
 
             if p_uid == ghost_ref.id:
+                if "userRef" in p:
+                    p["userRef"] = real_user_ref
+                if "user_id" in p:
+                    p["user_id"] = real_user_ref.id
                 updated = True
-                if not already_participant:
-                    new_p = p.copy()
-                    new_p["userRef"] = real_user_ref
-                    new_p["user_id"] = real_user_id
-                    new_participants.append(new_p)
-                # If already a participant, we just drop the ghost entry
-            else:
-                new_participants.append(p)
 
         if updated:
-            new_ids = [uid for uid in participant_ids if uid != ghost_ref.id]
-            if not already_participant:
-                new_ids.append(real_user_id)
-
+            p_ids = data.get("participant_ids", [])
+            new_p_ids = [
+                real_user_ref.id if pid == ghost_ref.id else pid for pid in p_ids
+            ]
             batch.update(
                 tournament.reference,
-                {"participants": new_participants, "participant_ids": new_ids},
+                {"participants": participants, "participant_ids": new_p_ids},
             )
 
 
-def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
+def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> bool:
     """Check for 'ghost' user with the given email and merge their data."""
     try:
         query = (
@@ -117,7 +101,7 @@ def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
 
         ghost_docs = list(query.stream())
         if not ghost_docs:
-            return
+            return False
 
         ghost_doc = ghost_docs[0]
         current_app.logger.info(
@@ -129,9 +113,11 @@ def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> None:
         batch.delete(ghost_doc.reference)
         batch.commit()
         current_app.logger.info("Ghost user merge completed successfully.")
+        return True
 
     except Exception as e:
         current_app.logger.error(f"Error merging ghost user: {e}")
+        return False
 
 
 def wrap_user(user_data: dict[str, Any] | None, uid: str | None = None) -> User | None:
@@ -284,8 +270,12 @@ class UserService:
             if data:
                 participants = data.get("participants") or []
                 for p in participants:
-                    p_uid = p["userRef"].id if "userRef" in p else p.get("user_id")
-                    if p_uid == user_id and p["status"] == "pending":
+                    if not p:
+                        continue
+                    p_uid = (
+                        p.get("userRef").id if p.get("userRef") else p.get("user_id")
+                    )
+                    if p_uid == user_id and p.get("status") == "pending":
                         data["id"] = doc.id
                         # Format date for display
                         raw_date = data.get("date")
