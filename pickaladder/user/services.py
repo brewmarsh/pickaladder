@@ -932,6 +932,36 @@ class UserService:
         return None
 
     @staticmethod
+    def accept_friend_request(db: Client, user_id: str, requester_id: str) -> bool:
+        """Accept a friend request and ensure reciprocal status."""
+        try:
+            batch = db.batch()
+
+            # Update status in current user's friend list
+            my_friend_ref = (
+                db.collection("users")
+                .document(user_id)
+                .collection("friends")
+                .document(requester_id)
+            )
+            batch.update(my_friend_ref, {"status": "accepted"})
+
+            # Update status in the other user's friend list
+            their_friend_ref = (
+                db.collection("users")
+                .document(requester_id)
+                .collection("friends")
+                .document(user_id)
+            )
+            batch.update(their_friend_ref, {"status": "accepted"})
+
+            batch.commit()
+            return True
+        except Exception as e:
+            current_app.logger.error(f"Error accepting friend request: {e}")
+            return False
+
+    @staticmethod
     def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch group rankings for a user."""
         from pickaladder.group.utils import (  # noqa: PLC0415
