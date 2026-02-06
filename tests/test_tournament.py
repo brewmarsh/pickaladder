@@ -12,6 +12,28 @@ from mockfirestore.document import DocumentReference
 from pickaladder import create_app
 
 
+class MockBatch:
+    """Mock for Firestore WriteBatch that mockfirestore lacks."""
+
+    def __init__(self):
+        self.calls = []
+
+    def set(self, ref, data, merge=False):
+        self.calls.append(("set", ref, data, merge))
+        ref.set(data, merge=merge)
+
+    def update(self, ref, data):
+        self.calls.append(("update", ref, data))
+        ref.update(data)
+
+    def delete(self, ref):
+        self.calls.append(("delete", ref))
+        ref.delete()
+
+    def commit(self):
+        return None
+
+
 # Fix mockfirestore where() to handle FieldFilter
 def collection_where(self, field_path=None, op_string=None, value=None, filter=None):
     if filter:
@@ -71,11 +93,12 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_firestore_module.ArrayUnion = lambda x: x
         self.mock_firestore_module.ArrayRemove = lambda x: x
         self.mock_firestore_module.SERVER_TIMESTAMP = "2023-01-01"
+        self.mock_firestore_module.transactional = lambda x: x
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_routes": patch(
-                "pickaladder.tournament.routes.firestore",
+            "firestore_service": patch(
+                "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,
             ),
             "firestore_app": patch(
@@ -97,6 +120,10 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         # Setup current user in mock DB
         self.mock_db.collection("users").document(MOCK_USER_ID).set(MOCK_USER_DATA)
+
+        # Patch batch support
+        self.mock_batch = MockBatch()
+        self.mock_db.batch = MagicMock(return_value=self.mock_batch)
 
     def tearDown(self) -> None:
         """Tear down the test client."""
@@ -268,7 +295,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         with patch(
-            "pickaladder.tournament.routes.get_tournament_standings"
+            "pickaladder.tournament.services.get_tournament_standings"
         ) as mock_standings:
             mock_standings.return_value = []
 
