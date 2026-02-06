@@ -26,7 +26,7 @@ class WelcomeToastTestCase(unittest.TestCase):
             patch("firebase_admin.initialize_app"),
             patch("pickaladder.auth.routes.auth", new=self.mock_auth_service),
             patch("pickaladder.auth.routes.firestore", new=self.mock_firestore_service),
-            patch("pickaladder.auth.routes.UserService.merge_ghost_account"),
+            patch("pickaladder.auth.routes.UserService.merge_ghost_user"),
         ]
 
         self.mocks = []

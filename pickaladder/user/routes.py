@@ -28,7 +28,6 @@ from pickaladder.utils import EmailError, send_email
 from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm
 from .services import UserService
-from .stats import UserStats
 
 if TYPE_CHECKING:
     pass
@@ -139,7 +138,7 @@ def dashboard() -> Any:
 
     # Fetch dashboard data for SSR
     matches_docs = UserService.get_user_matches(db, user_id)
-    stats = UserStats.calculate(matches_docs, user_id)
+    stats = UserService.calculate_stats(matches_docs, user_id)
 
     # Prepare formatted matches (limit to 20)
     recent_matches_items = stats["processed_matches"][:20]
@@ -149,7 +148,7 @@ def dashboard() -> Any:
     # Fetch friends, requests, rankings, and tournament invites
     friends = UserService.get_user_friends(db, user_id)
     requests_data = UserService.get_user_pending_requests(db, user_id)
-    group_rankings = UserStats.get_group_rankings(db, user_id)
+    group_rankings = UserService.get_group_rankings(db, user_id)
     pending_tournament_invites = UserService.get_pending_tournament_invites(db, user_id)
     active_tournaments = UserService.get_active_tournaments(db, user_id)
     past_tournaments = UserService.get_past_tournaments(db, user_id)
@@ -239,14 +238,14 @@ def view_user(user_id: str) -> Any:
     # H2H STATS
     h2h_stats = None
     if current_user_id != user_id:
-        h2h_stats = UserStats.get_h2h_stats(db, current_user_id, user_id)
+        h2h_stats = UserService.get_h2h_stats(db, current_user_id, user_id)
 
     # Fetch user's friends (limited for display)
     friends = UserService.get_user_friends(db, user_id, limit=10)
 
     # Fetch and process user's match history
     matches = UserService.get_user_matches(db, user_id)
-    stats = UserStats.calculate(matches, user_id)
+    stats = UserService.calculate_stats(matches, user_id)
 
     # Format matches for display
     display_items = stats["processed_matches"][:20]
@@ -582,7 +581,7 @@ def api_dashboard() -> Any:
 
     # Fetch and process matches
     matches = UserService.get_user_matches(db, user_id)
-    stats = UserStats.calculate(matches, user_id)
+    stats = UserService.calculate_stats(matches, user_id)
 
     # Sort all match docs by date and take the most recent 10 for the feed
     sorted_matches_docs = sorted(
@@ -597,7 +596,7 @@ def api_dashboard() -> Any:
     )
 
     # Get group rankings
-    group_rankings = UserStats.get_group_rankings(db, user_id)
+    group_rankings = UserService.get_group_rankings(db, user_id)
 
     streak_display = (
         f"{stats['current_streak']}{stats['streak_type']}"
