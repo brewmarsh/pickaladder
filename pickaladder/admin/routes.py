@@ -10,6 +10,7 @@ from flask import (
     jsonify,
     redirect,
     render_template,
+    request,
     url_for,
 )
 
@@ -34,11 +35,39 @@ def admin():
     setting_ref = db.collection("settings").document("enforceEmailVerification")
     email_verification_setting = setting_ref.get()
     return render_template(
-        "admin.html",
+        "admin/dashboard.html",
         email_verification_setting=email_verification_setting.to_dict()
         if email_verification_setting.exists
         else {"value": False},
     )
+
+
+@bp.route("/merge-ghost", methods=["POST"])
+@login_required(admin_required=True)
+def merge_ghost():
+    """Merge a ghost account into a real user profile."""
+    target_user_id = request.form.get("target_user_id")
+    ghost_email = request.form.get("ghost_email")
+
+    if not target_user_id or not ghost_email:
+        flash("Target User ID and Ghost Email are required.", "danger")
+        return redirect(url_for(".admin"))
+
+    db = firestore.client()
+    real_user_ref = db.collection("users").document(target_user_id)
+
+    from pickaladder.user.services import UserService
+
+    try:
+        success = UserService.merge_ghost_user(db, real_user_ref, ghost_email)
+        if success:
+            flash("Ghost user merged successfully", "success")
+        else:
+            flash("Merge failed or ghost user not found", "danger")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+
+    return redirect(url_for(".admin"))
 
 
 # TODO: Add type hints for Agent clarity
