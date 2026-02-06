@@ -81,11 +81,7 @@ def view_team(team_id: str) -> Any:
             chunk = id_list[i : i + 30]
             team_docs = (
                 db.collection("teams")
-                .where(
-                    filter=firestore.FieldFilter(
-                        firestore.FieldPath.document_id(), "in", chunk
-                    )
-                )
+                .where(filter=firestore.FieldFilter("__name__", "in", chunk))
                 .stream()
             )
             for doc in team_docs:
