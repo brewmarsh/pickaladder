@@ -83,8 +83,6 @@ jobs:
         run: |
           uv sync --group dev
       - name: Static Type Checking with mypy
-        env:
-          UV_SYSTEM_PYTHON: 1
         run: uv run python -m mypy --no-incremental .
 
   vulnerabilities:

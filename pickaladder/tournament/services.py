@@ -6,9 +6,9 @@ import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
-from flask import current_app
 
 from pickaladder.user.helpers import smart_display_name
+from pickaladder.user.services import UserService
 from pickaladder.utils import send_email
 
 from .utils import get_tournament_standings
@@ -30,13 +30,15 @@ class TournamentService:
         if not participant_objs:
             return []
 
-        user_refs = [
-            obj["userRef"]
-            if "userRef" in obj
-            else db.collection("users").document(obj["user_id"])
-            for obj in participant_objs
-            if obj and ("userRef" in obj or "user_id" in obj)
-        ]
+        user_refs = []
+        for obj in participant_objs:
+            if not obj:
+                continue
+            if obj.get("userRef"):
+                user_refs.append(obj["userRef"])
+            elif obj.get("user_id"):
+                user_refs.append(db.collection("users").document(obj["user_id"]))
+
         if not user_refs:
             return []
 
@@ -51,7 +53,7 @@ class TournamentService:
         for obj in participant_objs:
             if not obj:
                 continue
-            uid = obj["userRef"].id if "userRef" in obj else obj.get("user_id")
+            uid = obj.get("userRef").id if obj.get("userRef") else obj.get("user_id")
             if uid and uid in users_map:
                 u_data = users_map[uid]
                 participants.append(
@@ -203,17 +205,15 @@ class TournamentService:
 
         # Invitable Users
         current_p_ids = {
-            str(obj["userRef"].id if "userRef" in obj else obj.get("user_id"))
+            str(obj.get("userRef").id if obj.get("userRef") else obj.get("user_id"))
             for obj in raw_participants
-            if obj and ("userRef" in obj or "user_id" in obj)
+            if obj and (obj.get("userRef") or obj.get("user_id"))
         }
         invitable = TournamentService._get_invitable_players(
             db, user_uid, current_p_ids
         )
 
         # Groups for dropdown
-        from pickaladder.user.services import UserService  # noqa: PLC0415
-
         user_groups = UserService.get_user_groups(db, user_uid)
 
         # Ownership
@@ -392,8 +392,8 @@ class TournamentService:
             for p in parts:
                 if not p:
                     continue
-                uid = p["userRef"].id if "userRef" in p else p.get("user_id")
-                if uid == user_uid and p["status"] == "pending":
+                uid = p.get("userRef").id if p.get("userRef") else p.get("user_id")
+                if uid == user_uid and p.get("status") == "pending":
                     p["status"] = "accepted"
                     updated = True
                     break
@@ -426,9 +426,9 @@ class TournamentService:
                 for p in parts
                 if not (
                     p
-                    and (p["userRef"].id if "userRef" in p else p.get("user_id"))
+                    and (p.get("userRef").id if p.get("userRef") else p.get("user_id"))
                     == user_uid
-                    and p["status"] == "pending"
+                    and p.get("status") == "pending"
                 )
             ]
 
