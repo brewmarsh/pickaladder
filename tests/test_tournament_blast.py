@@ -7,10 +7,10 @@ from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 from mockfirestore import MockFirestore
-from pickaladder.user.services import UserService
 
 from pickaladder import create_app
 from pickaladder.tournament.services import TournamentService  # noqa: F401
+from pickaladder.user.services import UserService
 from tests.conftest import (
     MockArrayRemove,
     MockArrayUnion,
@@ -196,7 +196,9 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         mock_db.collection.side_effect = collection_side_effect
 
-        UserService._migrate_ghost_references(mock_db, mock_batch, ghost_ref, real_user_ref)
+        UserService._migrate_ghost_references(
+            mock_db, mock_batch, ghost_ref, real_user_ref
+        )
 
         # Verify batch.update was called for the tournament
         mock_batch.update.assert_called()
