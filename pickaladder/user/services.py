@@ -134,38 +134,78 @@ class UserService:
     def _migrate_ghost_references(
         db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
     ) -> None:
-        """Helper to update Firestore references from a ghost user to a real user."""
-        # 1 & 2: Update Singles Matches
+        """Orchestrate the migration of all ghost user references."""
+        UserService._migrate_singles_matches(db, batch, ghost_ref, real_user_ref)
+        UserService._migrate_doubles_matches(db, batch, ghost_ref, real_user_ref)
+        UserService._migrate_groups(db, batch, ghost_ref, real_user_ref)
+        UserService._migrate_tournaments(db, batch, ghost_ref, real_user_ref)
+
+    @staticmethod
+    def _migrate_singles_matches(
+        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    ) -> None:
+        """Update singles matches where the ghost user is player 1 or 2."""
+        match_updates: dict[str, dict[str, Any]] = {}
         for field in ["player1Ref", "player2Ref"]:
-            for match in (
+            matches = (
                 db.collection("matches")
                 .where(filter=firestore.FieldFilter(field, "==", ghost_ref))
                 .stream()
-            ):
-                batch.update(match.reference, {field: real_user_ref})
+            )
+            for match in matches:
+                if match.id not in match_updates:
+                    match_updates[match.id] = {"ref": match.reference, "data": {}}
+                match_updates[match.id]["data"][field] = real_user_ref
 
-        # 3 & 4: Update Doubles Matches (Array fields)
+        for update in match_updates.values():
+            batch.update(update["ref"], update["data"])
+
+    @staticmethod
+    def _migrate_doubles_matches(
+        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    ) -> None:
+        """Update doubles matches where the ghost user is in a team array."""
+        match_updates: dict[str, dict[str, Any]] = {}
         for field in ["team1", "team2"]:
-            for match in (
+            matches = (
                 db.collection("matches")
                 .where(filter=firestore.FieldFilter(field, "array_contains", ghost_ref))
                 .stream()
-            ):
-                # Update array elements in memory since batch.update doesn't
-                # support both ArrayRemove and ArrayUnion on the same field
-                m_data = match.to_dict()
-                if m_data and field in m_data:
+            )
+            for match in matches:
+                if match.id not in match_updates:
+                    m_data = match.to_dict()
+                    if not m_data:
+                        continue
+                    match_updates[match.id] = {
+                        "ref": match.reference,
+                        "full_data": m_data,
+                        "updates": {},
+                    }
+
+                m_data = match_updates[match.id]["full_data"]
+                if field in m_data:
                     current_team = m_data[field]
                     new_team = [
                         real_user_ref if r == ghost_ref else r for r in current_team
                     ]
-                    batch.update(match.reference, {field: new_team})
+                    match_updates[match.id]["updates"][field] = new_team
 
-        # 5: Update Group Memberships
-        groups_query = db.collection("groups").where(
-            filter=firestore.FieldFilter("members", "array_contains", ghost_ref)
+        for update in match_updates.values():
+            if update["updates"]:
+                batch.update(update["ref"], update["updates"])
+
+    @staticmethod
+    def _migrate_groups(
+        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    ) -> None:
+        """Update group memberships."""
+        groups = (
+            db.collection("groups")
+            .where(filter=firestore.FieldFilter("members", "array_contains", ghost_ref))
+            .stream()
         )
-        for group in groups_query.stream():
+        for group in groups:
             g_data = group.to_dict()
             if g_data and "members" in g_data:
                 current_members = g_data["members"]
@@ -174,40 +214,50 @@ class UserService:
                 ]
                 batch.update(group.reference, {"members": new_members})
 
-        # 6: Update Tournament Participants
-        tournaments_query = db.collection("tournaments").where(
-            filter=firestore.FieldFilter(
-                "participant_ids", "array_contains", ghost_ref.id
+    @staticmethod
+    def _migrate_tournaments(
+        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    ) -> None:
+        """Update tournament participant lists and IDs."""
+        tournaments = (
+            db.collection("tournaments")
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", ghost_ref.id
+                )
             )
+            .stream()
         )
-        for tournament in tournaments_query.stream():
+
+        for tournament in tournaments:
             data = tournament.to_dict()
             if not data:
                 continue
+
             participants = data.get("participants", [])
             updated = False
+
             for p in participants:
                 if not p:
                     continue
-                # Handle both userRef (object) and user_id (string) formats
-                p_uid = None
-                if p.get("userRef"):
-                    p_uid = p["userRef"].id
-                elif p.get("user_id"):
-                    p_uid = p["user_id"]
+
+                # Check IDs in both formats (ref object or string ID)
+                p_ref = p.get("userRef")
+                p_uid = p_ref.id if p_ref else p.get("user_id")
 
                 if p_uid == ghost_ref.id:
                     if "userRef" in p:
                         p["userRef"] = real_user_ref
-                    # Always update user_id if it exists, or if we matched a ref
+
+                    # Ensure at least one ID field is present and correct
                     if "user_id" in p or "userRef" in p:
                         p["user_id"] = real_user_ref.id
-                    elif "userRef" in p:
-                        p["user_id"] = real_user_ref.id
+
                     updated = True
 
             if updated:
                 p_ids = data.get("participant_ids", [])
+                # Rebuild the simple ID list
                 new_p_ids = [
                     real_user_ref.id if pid == ghost_ref.id else pid for pid in p_ids
                 ]
