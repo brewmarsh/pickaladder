@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import datetime
 import os
 import secrets
 import tempfile
@@ -22,7 +21,6 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.tournament.services import TournamentService
 from pickaladder.utils import EmailError, send_email
 
 from . import bp
