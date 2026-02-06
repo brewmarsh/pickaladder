@@ -127,7 +127,9 @@ def edit_tournament(tournament_id: str) -> Any:
         else:
             flash(message, "danger")
             if message == "Unauthorized.":
-                return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+                return redirect(
+                    url_for(".view_tournament", tournament_id=tournament_id)
+                )
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
