@@ -10,17 +10,24 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.9'
 
       - name: Install agent-readiness-scorecard
-        run: pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git
+        run: uv pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
 
       - name: Run agent-score and check threshold
+        env:
+          UV_SYSTEM_PYTHON: 1
         run: |
-          SCORE=$(agent-score pickaladder/ | tee /dev/tty | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
+          SCORE=$(uv run agent-score pickaladder/ | tee /dev/tty | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
           if (( $(echo "$SCORE < 75" | bc -l) )); then
             echo "Agent score of $SCORE is below the threshold of 75"
             exit 1

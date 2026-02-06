@@ -12,12 +12,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
       
       # Run Bandit (Python Security)
       - name: Run Bandit
+        env:
+          UV_SYSTEM_PYTHON: 1
         run: |
-          pip install bandit
-          bandit -r . -f json -o bandit-results.json || true
+          uv pip install bandit --system
+          uv run bandit -r . -f json -o bandit-results.json || true
           
       # Run Trivy (Vulnerability Scan)
       - name: Run Trivy

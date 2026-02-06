@@ -60,6 +60,6 @@ jobs:
 
       - name: Set up uv
         if: success() && steps.jules.outputs.branch_name != ''
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
