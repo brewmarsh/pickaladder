@@ -554,7 +554,7 @@ def handle_invite(token: str) -> Any:
         # Merge ghost user if exists
         invite_email = invite_data.get("email")
         if invite_email:
-            UserService.merge_ghost_account(db, user_ref, invite_email)
+            UserService.merge_ghost_user(db, user_ref, invite_email)
 
         # Add user to group
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})

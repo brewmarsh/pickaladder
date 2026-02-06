@@ -13,15 +13,18 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install uv
         uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
       - name: Set up Python 3.11
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          uv pip install ruff==0.14.14 --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Lint with ruff
-        run: ruff check .
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project ruff check .
 
   format:
     runs-on: ubuntu-latest
@@ -29,15 +32,18 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install uv
         uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
       - name: Set up Python 3.11
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          uv pip install ruff==0.14.14 --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Format with ruff
-        run: ruff format --check .
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project ruff format --check .
 
   security:
     runs-on: ubuntu-latest
@@ -45,15 +51,18 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install uv
         uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
       - name: Set up Python 3.11
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          uv pip install bandit==1.9.3 --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Security Analysis with Bandit
-        run: bandit -r .
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project bandit -r .
 
   typing:
     runs-on: ubuntu-latest
@@ -61,15 +70,18 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install uv
         uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
       - name: Set up Python 3.11
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          uv pip install mypy==1.19.1 -r requirements.txt --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Static Type Checking with mypy
-        run: python -m mypy --no-incremental .
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project python -m mypy --no-incremental .
 
   vulnerabilities:
     runs-on: ubuntu-latest
@@ -77,14 +89,17 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install uv
         uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
       - name: Set up Python 3.11
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          pip install pip-audit
-      - name: Upgrade pip
-        run: python -m pip install --upgrade pip
+          uv pip install --upgrade pip --system
+          uv pip install -r requirements.txt mock-firestore coverage pip-audit --system
       - name: Scan for vulnerabilities
-        run: pip-audit
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project pip-audit

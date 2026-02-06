@@ -271,6 +271,21 @@ def create_app(test_config=None):
 
     # TODO: Add type hints for Agent clarity
     @app.context_processor
+    def inject_pending_friend_requests():
+        """Injects pending friend requests into the template context."""
+        if g.user:
+            try:
+                db = firestore.client()
+                pending_requests = UserService.get_user_pending_requests(
+                    db, g.user["uid"]
+                )
+                return dict(pending_friend_requests=pending_requests)
+            except Exception as e:
+                current_app.logger.error(f"Error fetching friend requests: {e}")
+        return dict(pending_friend_requests=[])
+
+    # TODO: Add type hints for Agent clarity
+    @app.context_processor
     def inject_pending_tournament_invites():
         """Injects pending tournament invites into the template context."""
         if g.user:

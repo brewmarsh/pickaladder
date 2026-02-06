@@ -9,7 +9,6 @@ from unittest.mock import MagicMock, patch
 # INSIGHT #2: Explicitly import submodules to defeat lazy loading
 # and ensure patch targets exist before the test runner tries to find them.
 from pickaladder import create_app
-from pickaladder.user.services import UserService
 
 # Mock user payloads for consistent test data
 MOCK_USER_ID = "user1"
@@ -55,14 +54,14 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context.pop()
 
     def _set_session_user(self) -> None:
-        """TODO: Add docstring for AI context."""
+        """Set a logged-in user in the session."""
         with self.client.session_transaction() as sess:
             sess["user_id"] = MOCK_USER_ID
             sess["is_admin"] = False
         self.mocks["verify_id_token"].return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
 
     def _mock_firestore_user(self) -> MagicMock:
-        """TODO: Add docstring for AI context."""
+        """Mock a firestore user document."""
         mock_db = self.mock_firestore_service.client.return_value
         mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
         mock_user_snapshot = MagicMock()
