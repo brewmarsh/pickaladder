@@ -178,7 +178,12 @@ class TournamentBlastTestCase(unittest.TestCase):
         mock_tournament_doc.to_dict.return_value = {
             "participant_ids": ["ghost_id", "other_id"],
             "participants": [
-                {"userRef": ghost_ref, "status": "pending", "email": "g@e.com"},
+                {
+                    "userRef": ghost_ref,
+                    "user_id": "ghost_id",
+                    "status": "pending",
+                    "email": "g@e.com",
+                },
                 {"user_id": "other_id", "status": "accepted"},
             ],
         }
