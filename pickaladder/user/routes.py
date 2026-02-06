@@ -586,7 +586,7 @@ def api_dashboard() -> Any:
     # Sort all match docs by date and take the most recent 10 for the feed
     sorted_matches_docs = sorted(
         matches,
-        key=lambda x: x.to_dict().get("matchDate") or x.create_time,
+        key=lambda x: (x.to_dict() or {}).get("matchDate") or x.create_time,
         reverse=True,
     )[:10]
 

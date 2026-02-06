@@ -154,7 +154,7 @@ class UserService:
     def _migrate_ghost_references(
         db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
     ) -> None:
-        """Helper to update all Firestore references from a ghost user to a real user."""
+        """Update all Firestore references from a ghost user to a real user."""
         # 1 & 2: Update Singles Matches
         for field in ["player1Ref", "player2Ref"]:
             for match in (
@@ -803,7 +803,9 @@ class UserService:
         return current_streak, streak_type
 
     @staticmethod
-    def calculate_stats(matches: list[DocumentSnapshot], user_id: str) -> dict[str, Any]:
+    def calculate_stats(
+        matches: list[DocumentSnapshot], user_id: str
+    ) -> dict[str, Any]:
         """Calculate aggregate performance statistics from a list of matches."""
         wins = losses = 0
         processed = []
@@ -892,7 +894,6 @@ class UserService:
 
         # Build queries
         matches_ref = db.collection("matches")
-        common_filters = [firestore.FieldFilter("status", "==", "completed")]
 
         q1 = (
             matches_ref.where(

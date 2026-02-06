@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from pickaladder.utils import mask_email
-
 from .models import User
 
 if TYPE_CHECKING:
@@ -31,5 +29,3 @@ def wrap_user(user_data: dict[str, Any] | None, uid: str | None = None) -> User 
     if uid:
         data["uid"] = uid
     return User(data)
-
-
