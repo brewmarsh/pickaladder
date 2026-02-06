@@ -193,7 +193,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Updated!", response.data)
+        self.assertIn(b"Tournament updated successfully.", response.data)
 
         # Verify update in DB
         data = (
@@ -239,7 +239,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Updated!", response.data)
+        self.assertIn(b"Tournament updated successfully.", response.data)
 
     def test_list_tournaments(self) -> None:
         """Test listing tournaments."""
@@ -345,7 +345,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Invite sent!", response.data)
+        self.assertIn(b"Player invited successfully.", response.data)
 
         # Verify update in DB
         data = (

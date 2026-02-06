@@ -336,7 +336,7 @@ class TournamentService:
         )
 
         current_ids = set(t_data.get("participant_ids", []))
-        member_docs = db.get_all(member_refs)
+        member_docs = list(db.get_all(member_refs))
 
         new_parts = []
         new_ids = []
