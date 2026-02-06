@@ -21,7 +21,7 @@ jobs:
     - name: Install dependencies
       run: |
         uv pip install --upgrade pip --system
-        uv pip install -r requirements.txt mockfirestore coverage refurb --system
+        uv pip install -r requirements.txt mock-firestore coverage refurb --system
     - name: Run ruff (Blocking Checks)
       env:
         UV_SYSTEM_PYTHON: 1
