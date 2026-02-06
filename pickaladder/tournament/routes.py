@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
-from typing import Any
+from typing import Any, cast
 
 from flask import (
     flash,
@@ -42,11 +41,11 @@ def create_tournament() -> Any:
                 raise ValueError("Date is required")
 
             tournament_id = TournamentService.create_tournament(
-                g.user["uid"],
-                form.name.data,
+                cast(str, g.user["uid"]),
+                cast(str, form.name.data),
                 date_val,
-                form.location.data,
-                form.match_type.data,
+                cast(str, form.location.data),
+                cast(str, form.match_type.data),
             )
             flash("Tournament created successfully.", "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
@@ -116,11 +115,11 @@ def edit_tournament(tournament_id: str) -> Any:
 
         success, message = TournamentService.update_tournament_details(
             tournament_id,
-            g.user["uid"],
-            form.name.data,
+            cast(str, g.user["uid"]),
+            cast(str, form.name.data),
             date_val,
-            form.location.data,
-            form.match_type.data,
+            cast(str, form.location.data),
+            cast(str, form.match_type.data),
         )
         if success:
             flash(message, "success")
@@ -135,7 +134,7 @@ def edit_tournament(tournament_id: str) -> Any:
         form.location.data = tournament_data.get("location")
         form.match_type.data = tournament_data.get("matchType")
         raw_date = tournament_data.get("date")
-        if hasattr(raw_date, "to_datetime"):
+        if raw_date and hasattr(raw_date, "to_datetime"):
             form.date.data = raw_date.to_datetime().date()
 
     return render_template(

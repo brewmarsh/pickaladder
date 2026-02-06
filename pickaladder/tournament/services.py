@@ -7,7 +7,6 @@ import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
-from flask import current_app
 
 from pickaladder.user.utils import smart_display_name
 from pickaladder.utils import send_email
@@ -69,7 +68,7 @@ class TournamentService:
         return tournaments
 
     @staticmethod
-    def create_tournament(
+    def create_tournament(  # noqa: PLR0913
         user_id: str,
         name: str,
         date: datetime.date,
@@ -94,7 +93,7 @@ class TournamentService:
             "createdAt": firestore.SERVER_TIMESTAMP,
         }
         _, new_tournament_ref = db.collection("tournaments").add(tournament_data)
-        return new_tournament_ref.id
+        return cast(str, new_tournament_ref.id)
 
     @staticmethod
     def get_tournament(tournament_id: str, db: Any = None) -> dict[str, Any] | None:
@@ -133,7 +132,7 @@ class TournamentService:
 
         # Format Date Display
         raw_date = tournament_data.get("date")
-        if hasattr(raw_date, "to_datetime"):
+        if raw_date and hasattr(raw_date, "to_datetime"):
             tournament_data["date_display"] = raw_date.to_datetime().strftime(
                 "%b %d, %Y"
             )
@@ -156,7 +155,7 @@ class TournamentService:
             ]
             user_docs = cast(list["DocumentSnapshot"], db.get_all(user_refs))
             users_map = {
-                doc.id: {**doc.to_dict(), "id": doc.id}
+                doc.id: {**cast(dict[str, Any], doc.to_dict()), "id": doc.id}
                 for doc in user_docs
                 if doc.exists
             }
@@ -219,10 +218,10 @@ class TournamentService:
             u_docs = cast(list["DocumentSnapshot"], db.get_all(u_refs))
             for u_doc in u_docs:
                 if u_doc.exists:
-                    u_data = u_doc.to_dict()
-                    if u_data:
-                        u_data["id"] = u_doc.id
-                        invitable_users.append(u_data)
+                    u_dict = cast(dict[str, Any], u_doc.to_dict())
+                    if u_dict:
+                        u_dict["id"] = u_doc.id
+                        invitable_users.append(u_dict)
 
         invitable_users.sort(key=lambda u: smart_display_name(u).lower())
 
@@ -419,13 +418,14 @@ class TournamentService:
         if not t_data:
             return False, "Tournament data is empty."
 
-        if t_data.get("ownerRef").id != user_id:
+        owner_ref = t_data.get("ownerRef")
+        if not owner_ref or owner_ref.id != user_id:
             return False, "Only the organizer can complete the tournament."
 
         try:
             tournament_ref.update({"status": "Completed"})
             standings = get_tournament_standings(
-                db, tournament_id, t_data.get("matchType")
+                db, tournament_id, cast(str, t_data.get("matchType", "singles"))
             )
             winner_name = standings[0]["name"] if standings else "No one"
 
@@ -455,7 +455,7 @@ class TournamentService:
             return False, f"An error occurred: {e}"
 
     @staticmethod
-    def update_tournament_details(
+    def update_tournament_details(  # noqa: PLR0913
         tournament_id: str,
         user_id: str,
         name: str,
@@ -496,7 +496,9 @@ class TournamentService:
                 list(
                     db.collection("matches")
                     .where(
-                        filter=firestore.FieldFilter("tournamentId", "==", tournament_id)
+                        filter=firestore.FieldFilter(
+                            "tournamentId", "==", tournament_id
+                        )
                     )
                     .limit(1)
                     .stream()
