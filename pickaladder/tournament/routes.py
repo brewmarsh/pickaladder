@@ -151,7 +151,7 @@ def edit_tournament(tournament_id: str) -> Any:
 def invite_player(tournament_id: str) -> Any:
     """Invite a player to a tournament."""
     form = InvitePlayerForm()
-    # Dynamically set choices to allow validation (hacky but standard in this app)
+    # Dynamically set choices to allow validation
     submitted_uid = request.form.get("user_id")
     if submitted_uid:
         form.user_id.choices = [(submitted_uid, "")]

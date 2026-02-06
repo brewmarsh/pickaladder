@@ -74,7 +74,7 @@
                             <tr>
                                 <td data-label="Username">
                                     <div style="display: flex; align-items: center; gap: 10px;">
-                                        <img src="{{ request.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ request.username }}" class="profile-picture-thumbnail">
+                                        <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="profile-picture-thumbnail">
                                         <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
                                     </div>
                                 </td>
@@ -110,7 +110,7 @@
                             <tr>
                                 <td data-label="Username">
                                     <div style="display: flex; align-items: center; gap: 10px;">
-                                        <img src="{{ request.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ request.username }}" class="profile-picture-thumbnail">
+                                        <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="profile-picture-thumbnail">
                                         <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
                                     </div>
                                 </td>
@@ -131,7 +131,7 @@
                 {% for friend in friends %}
                     <div class="friend-card">
                         <div class="friend-card-content">
-                            <img src="{{ friend.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ friend.username }}" class="friend-avatar">
+                            <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="friend-avatar">
                             <h3 class="friend-name">{{ friend.username }}</h3>
                             <div class="friend-rating">
                                 <span class="star-icon">⭐</span>

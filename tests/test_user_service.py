@@ -147,6 +147,30 @@ class TestUserService(unittest.TestCase):
         self.assertEqual(result[0]["id"], "g1")
         self.assertEqual(result[0]["owner"]["username"], "owner_user")
 
+    def test_get_all_users_with_exclusions(self) -> None:
+        mock_u1 = MagicMock()
+        mock_u1.id = "user1"
+        mock_u1.to_dict.return_value = {"username": "u1"}
+        mock_u2 = MagicMock()
+        mock_u2.id = "user2"
+        mock_u2.to_dict.return_value = {"username": "u2"}
+        mock_u3 = MagicMock()
+        mock_u3.id = "user3"
+        mock_u3.to_dict.return_value = {"username": "u3"}
+
+        self.db.collection().order_by().limit().stream.return_value = [
+            mock_u1,
+            mock_u2,
+            mock_u3,
+        ]
+
+        # Exclude user1 and user3
+        exclude_ids = ["user1", "user3"]
+        result = UserService.get_all_users(self.db, exclude_ids, limit=10)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["id"], "user2")
+
 
 if __name__ == "__main__":
     unittest.main()

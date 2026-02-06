@@ -216,6 +216,8 @@ class UserService:
                     # Always update user_id if it exists, or if we matched a ref
                     if "user_id" in p or "userRef" in p:
                         p["user_id"] = real_user_ref.id
+                    elif "userRef" in p:
+                        p["user_id"] = real_user_ref.id
                     updated = True
 
             if updated:
@@ -428,18 +430,18 @@ class UserService:
 
     @staticmethod
     def get_all_users(
-        db: Client, exclude_user_id: str, limit: int = 20
+        db: Client, exclude_ids: list[str], limit: int = 20
     ) -> list[dict[str, Any]]:
-        """Fetch a list of users, excluding the current user, sorted by date."""
+        """Fetch a list of users, excluding given IDs, sorted by date."""
         users_query = (
             db.collection("users")
             .order_by("createdAt", direction=firestore.Query.DESCENDING)
-            .limit(limit + 1)  # Fetch one extra in case we exclude the current user
+            .limit(limit + len(exclude_ids))  # Fetch extra in case we exclude users
             .stream()
         )
         users = []
         for doc in users_query:
-            if doc.id == exclude_user_id:
+            if doc.id in exclude_ids:
                 continue
             data = doc.to_dict()
             if data is not None:
