@@ -100,6 +100,47 @@ class AdminRoutesTestCase(unittest.TestCase):
         self.assertIn(b"You are not authorized to view this page.", response.data)
         self.assertNotIn(b"Admin Panel", response.data)
 
+    @patch("pickaladder.admin.routes.UserService")
+    def test_merge_ghost_user_success(self, mock_user_service: MagicMock) -> None:
+        """Ensure an admin can merge a ghost user."""
+        self._login_user(MOCK_ADMIN_ID, MOCK_ADMIN_DATA, is_admin=True)
+        mock_user_service.merge_ghost_user.return_value = True
+
+        response = self.client.post(
+            "/admin/merge-ghost",
+            data={"target_user_id": "real_user", "ghost_email": "ghost@example.com"},
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Successfully merged ghost@example.com into real_user.", response.data)
+        mock_user_service.merge_ghost_user.assert_called_once()
+
+    @patch("pickaladder.admin.routes.UserService")
+    def test_merge_ghost_user_failure(self, mock_user_service: MagicMock) -> None:
+        """Ensure failure message is shown when merge fails."""
+        self._login_user(MOCK_ADMIN_ID, MOCK_ADMIN_DATA, is_admin=True)
+        mock_user_service.merge_ghost_user.return_value = False
+
+        response = self.client.post(
+            "/admin/merge-ghost",
+            data={"target_user_id": "real_user", "ghost_email": "ghost@example.com"},
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Failed to merge ghost@example.com. Ghost account might not exist.", response.data)
+
+    def test_merge_ghost_user_missing_fields(self) -> None:
+        """Ensure error message is shown when fields are missing."""
+        self._login_user(MOCK_ADMIN_ID, MOCK_ADMIN_DATA, is_admin=True)
+
+        response = self.client.post(
+            "/admin/merge-ghost",
+            data={"target_user_id": "real_user"},
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Both Target User ID and Ghost Email are required.", response.data)
+
 
 if __name__ == "__main__":
     unittest.main()
