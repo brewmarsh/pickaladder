@@ -136,9 +136,7 @@ def accept_request(requester_id: str) -> Any:
 
     # Get the requester's name for the flash message
     requester = UserService.get_user_by_id(db, requester_id)
-    username = (
-        UserService.smart_display_name(requester) if requester else "the user"
-    )
+    username = UserService.smart_display_name(requester) if requester else "the user"
 
     if UserService.accept_friend_request(db, user_id, requester_id):
         flash(f"You are now friends with {username}!", "success")

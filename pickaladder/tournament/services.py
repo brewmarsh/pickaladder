@@ -52,7 +52,8 @@ class TournamentService:
         for obj in participant_objs:
             if not obj:
                 continue
-            uid = obj.get("userRef").id if obj.get("userRef") else obj.get("user_id")
+            user_ref = obj.get("userRef")
+            uid = user_ref.id if user_ref else obj.get("user_id")
             if uid and uid in users_map:
                 u_data = users_map[uid]
                 participants.append(
@@ -203,11 +204,14 @@ class TournamentService:
         podium = standings[:3] if data.get("status") == "Completed" else []
 
         # Invitable Users
-        current_p_ids = {
-            str(obj.get("userRef").id if obj.get("userRef") else obj.get("user_id"))
-            for obj in raw_participants
-            if obj and (obj.get("userRef") or obj.get("user_id"))
-        }
+        current_p_ids = set()
+        for obj in raw_participants:
+            if not obj:
+                continue
+            user_ref = obj.get("userRef")
+            uid = user_ref.id if user_ref else obj.get("user_id")
+            if uid:
+                current_p_ids.add(str(uid))
         invitable = TournamentService._get_invitable_players(
             db, user_uid, current_p_ids
         )
@@ -393,7 +397,8 @@ class TournamentService:
             for p in parts:
                 if not p:
                     continue
-                uid = p.get("userRef").id if p.get("userRef") else p.get("user_id")
+                user_ref = p.get("userRef")
+                uid = user_ref.id if user_ref else p.get("user_id")
                 if uid == user_uid and p.get("status") == "pending":
                     p["status"] = "accepted"
                     updated = True
@@ -422,16 +427,14 @@ class TournamentService:
             parts = snap.get("participants")
             p_ids = snap.get("participant_ids")
 
-            new_parts = [
-                p
-                for p in parts
-                if not (
-                    p
-                    and (p.get("userRef").id if p.get("userRef") else p.get("user_id"))
-                    == user_uid
-                    and p.get("status") == "pending"
-                )
-            ]
+            new_parts = []
+            for p in parts:
+                if not p:
+                    continue
+                user_ref = p.get("userRef")
+                uid = user_ref.id if user_ref else p.get("user_id")
+                if not (uid == user_uid and p.get("status") == "pending"):
+                    new_parts.append(p)
 
             if len(new_parts) < len(parts):
                 new_ids = [uid for uid in p_ids if uid != user_uid]
