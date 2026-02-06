@@ -10,6 +10,7 @@ from mockfirestore import CollectionReference, MockFirestore, Query
 from mockfirestore.document import DocumentReference
 
 from pickaladder import create_app
+from pickaladder.tournament.services import TournamentService  # noqa: F401
 
 
 # Fix mockfirestore where() to handle FieldFilter
@@ -19,8 +20,9 @@ def collection_where(self, field_path=None, op_string=None, value=None, filter=N
     return self._where(field_path, op_string, value)
 
 
-CollectionReference._where = CollectionReference.where
-CollectionReference.where = collection_where
+if not hasattr(CollectionReference, "_where"):
+    CollectionReference._where = CollectionReference.where
+    CollectionReference.where = collection_where
 
 
 def query_where(self, field_path=None, op_string=None, value=None, filter=None):
@@ -29,8 +31,9 @@ def query_where(self, field_path=None, op_string=None, value=None, filter=None):
     return self._where(field_path, op_string, value)
 
 
-Query._where = Query.where
-Query.where = query_where
+if not hasattr(Query, "_where"):
+    Query._where = Query.where
+    Query.where = query_where
 
 
 # Fix DocumentReference equality
@@ -40,7 +43,9 @@ def doc_ref_eq(self, other):
     return self._path == other._path
 
 
-DocumentReference.__eq__ = doc_ref_eq
+if not hasattr(DocumentReference, "_orig_eq"):
+    DocumentReference._orig_eq = DocumentReference.__eq__
+    DocumentReference.__eq__ = doc_ref_eq
 DocumentReference.__hash__ = lambda self: hash(tuple(self._path))
 
 # Mock user payloads
@@ -61,6 +66,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             def __init__(self, db):
                 self.db = db
                 self.updates = []
+                self.commit = MagicMock(side_effect=self._real_commit)
 
             def update(self, ref, data):
                 self.updates.append((ref, data))
@@ -72,11 +78,12 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 # For simplicity, not implemented here unless needed
                 pass
 
-            def commit(self):
+            def _real_commit(self):
                 for ref, data in self.updates:
                     ref.update(data)
 
-        self.mock_db.batch = lambda: MockBatch(self.mock_db)
+        self.mock_batch_instance = MockBatch(self.mock_db)
+        self.mock_db.batch = MagicMock(return_value=self.mock_batch_instance)
 
         # Patch firestore.client() to return our mock_db
         self.mock_firestore_module = MagicMock()
@@ -193,7 +200,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Updated!", response.data)
+        self.assertIn(b"Tournament updated successfully.", response.data)
 
         # Verify update in DB
         data = (
@@ -239,7 +246,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Updated!", response.data)
+        self.assertIn(b"Tournament updated successfully.", response.data)
 
     def test_list_tournaments(self) -> None:
         """Test listing tournaments."""
@@ -345,7 +352,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Invite sent!", response.data)
+        self.assertIn(b"Player invited successfully.", response.data)
 
         # Verify update in DB
         data = (
@@ -390,6 +397,10 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Success! Invited 1 members.", response.data)
+
+        # Verify batch was used
+        self.mock_db.batch.assert_called()
+        self.mock_batch_instance.commit.assert_called()
 
         # Verify DB update
         data = (

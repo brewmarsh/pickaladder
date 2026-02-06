@@ -625,6 +625,23 @@ class UserService:
         }
 
     @staticmethod
+    def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
+        """Fetch all groups where the user is a member."""
+        user_ref = db.collection("users").document(user_id)
+        groups_query = (
+            db.collection("groups")
+            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+            .stream()
+        )
+        results = []
+        for doc in groups_query:
+            data = doc.to_dict()
+            if data is not None:
+                data["id"] = doc.id
+                results.append(data)
+        return results
+
+    @staticmethod
     def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch group rankings for a user."""
         from pickaladder.group.utils import get_group_leaderboard  # noqa: PLC0415
