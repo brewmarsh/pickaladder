@@ -21,7 +21,7 @@ from . import match as match_bp
 from . import teams as teams_bp
 from . import tournament as tournament_bp
 from . import user as user_bp
-from .extensions import csrf, mail
+from .extensions import csrf, login_manager, mail
 from .user.helpers import smart_display_name, wrap_user
 from .user.services import UserService
 
@@ -207,6 +207,20 @@ def create_app(test_config=None):
     # Initialize extensions
     mail.init_app(app)
     csrf.init_app(app)
+    login_manager.init_app(app)
+    login_manager.login_view = "auth.login"
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        """Load user by ID for Flask-Login."""
+        try:
+            db = firestore.client()
+            user_doc = db.collection("users").document(user_id).get()
+            if user_doc.exists:
+                return wrap_user(user_doc.to_dict(), uid=user_id)
+        except Exception as e:
+            current_app.logger.error(f"Error in user_loader: {e}")
+        return None
 
     # Register filters
     app.template_filter("smart_display_name")(smart_display_name)

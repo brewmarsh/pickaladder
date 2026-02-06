@@ -14,9 +14,11 @@ from flask import (
     session,
     url_for,
 )
+from flask_login import login_user, logout_user
 from werkzeug.exceptions import UnprocessableEntity
 
 from pickaladder.errors import DuplicateResourceError
+from pickaladder.user.helpers import wrap_user
 from pickaladder.user.services import UserService
 from pickaladder.utils import EmailError, send_email
 
@@ -218,6 +220,10 @@ def session_login():
                 if invites:
                     session["show_welcome_invites"] = len(invites)
 
+        remember = request.json.get("remember", False)
+        user = wrap_user(user_info, uid=uid)
+        login_user(user, remember=remember)
+
         session["user_id"] = uid
         session["is_admin"] = user_info.get("isAdmin", False)
         return jsonify({"status": "success"})
@@ -238,6 +244,7 @@ def logout():
     This route is for clearing any server-side session info if needed.
     """
     session.clear()
+    logout_user()
     flash("You have been logged out.", "success")
     return redirect(url_for("auth.login"))
 

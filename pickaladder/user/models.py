@@ -2,9 +2,15 @@
 
 from collections import UserDict
 
+from flask_login import UserMixin
 
-class User(UserDict):
+
+class User(UserDict, UserMixin):
     """A wrapper class for user data that provides additional properties."""
+
+    def get_id(self) -> str:
+        """Return the user ID."""
+        return str(self.get("uid", ""))
 
     @property
     def avatar_url(self) -> str:
