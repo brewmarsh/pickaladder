@@ -338,8 +338,9 @@ class UserService:
                 for p in participants:
                     if not p:
                         continue
-                    u_ref = p.get("userRef")
-                    p_uid = u_ref.id if u_ref else p.get("user_id")
+                    p_uid = (
+                        p.get("userRef").id if p.get("userRef") else p.get("user_id")
+                    )
                     if p_uid == user_id and p.get("status") == "accepted":
                         data["id"] = doc.id
                         # Format date for display
@@ -929,6 +930,36 @@ class UserService:
         if wins > 0 or losses > 0:
             return {"wins": wins, "losses": losses, "point_diff": points}
         return None
+
+    @staticmethod
+    def accept_friend_request(db: Client, user_id: str, requester_id: str) -> bool:
+        """Accept a friend request and ensure reciprocal status."""
+        try:
+            batch = db.batch()
+
+            # Update status in current user's friend list
+            my_friend_ref = (
+                db.collection("users")
+                .document(user_id)
+                .collection("friends")
+                .document(requester_id)
+            )
+            batch.update(my_friend_ref, {"status": "accepted"})
+
+            # Update status in the other user's friend list
+            their_friend_ref = (
+                db.collection("users")
+                .document(requester_id)
+                .collection("friends")
+                .document(user_id)
+            )
+            batch.update(their_friend_ref, {"status": "accepted"})
+
+            batch.commit()
+            return True
+        except Exception as e:
+            current_app.logger.error(f"Error accepting friend request: {e}")
+            return False
 
     @staticmethod
     def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:

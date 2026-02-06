@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block title %}Friend Requests{% endblock %}
+{% block content %}
+    <div class="page-header">
+        <h1>Friend Requests</h1>
+    </div>
+
+    <div class="card requests-section" style="margin-bottom: 40px;">
+        <h3>Pending Requests</h3>
+        {% if requests %}
+            <div class="table-container">
+                <table class="table responsive-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request_user in requests %}
+                            <tr>
+                                <td data-label="User">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <img src="{{ request_user | avatar_url }}" alt="{{ request_user | smart_display_name }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                        <a href="{{ url_for('user.view_user', user_id=request_user.id) }}"><strong>{{ request_user | smart_display_name }}</strong></a>
+                                    </div>
+                                </td>
+                                <td data-label="Actions" style="text-align: right;">
+                                    <form action="{{ url_for('user.accept_request', requester_id=request_user.id) }}" method="post" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-primary">Confirm</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>No pending friend requests.</p>
+        {% endif %}
+    </div>
+{% endblock %}

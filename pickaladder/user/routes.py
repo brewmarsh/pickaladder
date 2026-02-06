@@ -117,6 +117,35 @@ def edit_profile() -> Any:
     return render_template("edit_profile.html", form=form, user=user_data)
 
 
+@bp.route("/requests", methods=["GET"])
+@login_required
+def friend_requests() -> Any:
+    """Display pending friend requests."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+    requests_data = UserService.get_user_pending_requests(db, user_id)
+    return render_template("user/requests.html", requests=requests_data)
+
+
+@bp.route("/requests/<string:requester_id>/accept", methods=["POST"])
+@login_required
+def accept_request(requester_id: str) -> Any:
+    """Accept a friend request and redirect back to the requests list."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+
+    # Get the requester's name for the flash message
+    requester = UserService.get_user_by_id(db, requester_id)
+    username = UserService.smart_display_name(requester) if requester else "the user"
+
+    if UserService.accept_friend_request(db, user_id, requester_id):
+        flash(f"You are now friends with {username}!", "success")
+    else:
+        flash("An error occurred while accepting the friend request.", "danger")
+
+    return redirect(url_for(".friend_requests"))
+
+
 # TODO: Add type hints for Agent clarity
 @bp.route("/dashboard", methods=["GET", "POST"])
 @login_required

@@ -208,10 +208,10 @@ class TournamentService:
         for obj in raw_participants:
             if not obj:
                 continue
-            u_ref = obj.get("userRef")
-            u_id = u_ref.id if u_ref else obj.get("user_id")
-            if u_id:
-                current_p_ids.add(str(u_id))
+            user_ref = obj.get("userRef")
+            uid = user_ref.id if user_ref else obj.get("user_id")
+            if uid:
+                current_p_ids.add(str(uid))
         invitable = TournamentService._get_invitable_players(
             db, user_uid, current_p_ids
         )
@@ -397,8 +397,8 @@ class TournamentService:
             for p in parts:
                 if not p:
                     continue
-                u_ref = p.get("userRef")
-                uid = u_ref.id if u_ref else p.get("user_id")
+                user_ref = p.get("userRef")
+                uid = user_ref.id if user_ref else p.get("user_id")
                 if uid == user_uid and p.get("status") == "pending":
                     p["status"] = "accepted"
                     updated = True
@@ -431,11 +431,10 @@ class TournamentService:
             for p in parts:
                 if not p:
                     continue
-                u_ref = p.get("userRef")
-                uid = u_ref.id if u_ref else p.get("user_id")
-                if uid == user_uid and p.get("status") == "pending":
-                    continue
-                new_parts.append(p)
+                user_ref = p.get("userRef")
+                uid = user_ref.id if user_ref else p.get("user_id")
+                if not (uid == user_uid and p.get("status") == "pending"):
+                    new_parts.append(p)
 
             if len(new_parts) < len(parts):
                 new_ids = [uid for uid in p_ids if uid != user_uid]
