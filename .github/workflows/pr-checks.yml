@@ -15,11 +15,9 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
       - name: Install dependencies
         run: |
-          uv pip install ruff --system
+          pip install ruff
       - name: Lint with ruff
         run: ruff check .
 
@@ -31,11 +29,9 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
       - name: Install dependencies
         run: |
-          uv pip install ruff --system
+          pip install ruff
       - name: Format with ruff
         run: ruff format --check .
 
@@ -47,11 +43,9 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
       - name: Install dependencies
         run: |
-          uv pip install bandit --system
+          pip install bandit
       - name: Security Analysis with Bandit
         run: bandit -r .
 
@@ -63,11 +57,10 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
       - name: Install dependencies
         run: |
-          uv pip install mypy -r requirements.txt --system
+          pip install mypy
+          pip install -r requirements.txt
       - name: Static Type Checking with mypy
         run: python -m mypy --no-incremental .
 
@@ -79,8 +72,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: 3.11
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v5
       - name: Install dependencies
         run: |
           uv pip install --upgrade pip --system

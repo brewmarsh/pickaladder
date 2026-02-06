@@ -14,11 +14,10 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: '3.x'
-    - name: Set up uv
-      uses: astral-sh/setup-uv@v5
     - name: Install dependencies
       run: |
-        uv pip install ruff refurb --system
+        python -m pip install --upgrade pip
+        pip install ruff refurb
     - name: Run ruff (Blocking Checks)
       run: ruff check --select UP,E,F,I .
     - name: Run ruff (Audit Checks)
