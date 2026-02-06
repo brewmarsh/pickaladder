@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, cast
 from firebase_admin import firestore
 from flask import current_app
 
-from .utils import smart_display_name
+from .helpers import smart_display_name
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
@@ -130,7 +130,7 @@ class UserService:
     def _migrate_ghost_references(
         db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
     ) -> None:
-        """Update all Firestore references from a ghost user to a real user."""
+        """Update Firestore references from a ghost user to a real user."""
         # 1 & 2: Update Singles Matches
         for field in ["player1Ref", "player2Ref"]:
             for match in (
@@ -187,10 +187,8 @@ class UserService:
                     p_uid = p["user_id"]
 
                 if p_uid == ghost_ref.id:
-                    if "userRef" in p:
-                        p["userRef"] = real_user_ref
-                    if "user_id" in p:
-                        p["user_id"] = real_user_ref.id
+                    p["userRef"] = real_user_ref
+                    p["user_id"] = real_user_ref.id
                     updated = True
 
             if updated:
@@ -235,11 +233,13 @@ class UserService:
             )
             friend_doc = friend_ref.get()
             if friend_doc.exists:
-                status = friend_doc.to_dict().get("status")
-                if status == "accepted":
-                    is_friend = True
-                elif status == "pending":
-                    friend_request_sent = True
+                data = friend_doc.to_dict()
+                if data:
+                    status = data.get("status")
+                    if status == "accepted":
+                        is_friend = True
+                    elif status == "pending":
+                        friend_request_sent = True
         return is_friend, friend_request_sent
 
     @staticmethod
@@ -538,7 +538,7 @@ class UserService:
             if opp_refs:
                 opp_ref = opp_refs[0]
                 opp_id = opp_ref.id
-                opp_name = users_map.get(opp_id, {}).get("username", "Unknown")
+                opp_name = (users_map.get(opp_id) or {}).get("username", "Unknown")
                 if len(team1_refs) > 1 or len(team2_refs) > 1:
                     opp_name += " (Doubles)"
 
@@ -554,19 +554,18 @@ class UserService:
             if p1_ref and p1_ref.id == user_id:
                 p1_id, p1_info = user_id, {"id": user_id, "username": profile_username}
                 opp_ref = p2_ref
+                opp_id = opp_ref.id if opp_ref else ""
                 p2_info = {
-                    "id": opp_ref.id if opp_ref else "",
-                    "username": users_map.get(opp_ref.id, {}).get("username", "Unknown")
-                    if opp_ref
-                    else "Unknown",
+                    "id": opp_id,
+                    "username": (users_map.get(opp_id) or {}).get(
+                        "username", "Unknown"
+                    ),
                 }
             else:
                 p1_id = p1_ref.id if p1_ref else ""
                 p1_info = {
                     "id": p1_id,
-                    "username": users_map.get(p1_id, {}).get("username", "Unknown")
-                    if p1_id
-                    else "Unknown",
+                    "username": (users_map.get(p1_id) or {}).get("username", "Unknown"),
                 }
                 p2_info = {"id": user_id, "username": profile_username}
 
@@ -652,11 +651,11 @@ class UserService:
         users_map, teams_map = UserService._fetch_match_entities(db, matches_docs)
 
         # Batch fetch tournament names
-        tournament_ids = set()
-        for m in matches_docs:
-            m_data = m.to_dict()
-            if m_data and (tid := m_data.get("tournamentId")):
-                tournament_ids.add(tid)
+        tournament_ids = {
+            (m.to_dict() or {}).get("tournamentId")
+            for m in matches_docs
+            if m.to_dict() and (m.to_dict() or {}).get("tournamentId")
+        }
         tournaments_map: dict[str, dict[str, Any]] = {}
         if tournament_ids:
             tournament_refs = [
@@ -665,9 +664,11 @@ class UserService:
                 if tid
             ]
             tournament_docs = db.get_all(tournament_refs)
-            for doc in tournament_docs:
-                if doc.exists and (d := doc.to_dict()):
-                    tournaments_map[doc.id] = d
+            tournaments_map = {
+                doc.id: cast(dict[str, Any], doc.to_dict())
+                for doc in tournament_docs
+                if doc.exists
+            }
 
         matches_data = []
 
@@ -675,43 +676,41 @@ class UserService:
             m_data = match_doc.to_dict()
             if m_data is None:
                 continue
-            match_dict: dict[str, Any] = m_data
 
-            winner = UserService._get_match_winner_slot(match_dict)
-            user_result = UserService._get_user_match_result(
-                match_dict, user_id, winner
-            )
+            winner = UserService._get_match_winner_slot(m_data)
+            user_result = UserService._get_user_match_result(m_data, user_id, winner)
 
             p1_info: dict[str, Any] | list[dict[str, Any]]
             p2_info: dict[str, Any] | list[dict[str, Any]]
 
-            if match_dict.get("matchType") == "doubles":
+            if m_data.get("matchType") == "doubles":
                 p1_info = [
                     UserService._get_player_info(r, users_map)
-                    for r in match_dict.get("team1", [])
+                    for r in m_data.get("team1", [])
                 ]
                 p2_info = [
                     UserService._get_player_info(r, users_map)
-                    for r in match_dict.get("team2", [])
+                    for r in m_data.get("team2", [])
                 ]
             else:
-                p1_info = UserService._get_player_info(
-                    match_dict["player1Ref"], users_map
-                )
-                p2_info = UserService._get_player_info(
-                    match_dict["player2Ref"], users_map
-                )
+                p1_info = UserService._get_player_info(m_data["player1Ref"], users_map)
+                p2_info = UserService._get_player_info(m_data["player2Ref"], users_map)
 
-            t1_name = "Team 1"
-            t2_name = "Team 2"
-            if t1_ref := match_dict.get("team1Ref"):
-                t1_name = teams_map.get(t1_ref.id, {}).get("name", "Team 1")
-            if t2_ref := match_dict.get("team2Ref"):
-                t2_name = teams_map.get(t2_ref.id, {}).get("name", "Team 2")
+            t1_ref = m_data.get("team1Ref")
+            t1_name = (
+                teams_map.get(t1_ref.id, {}).get("name", "Team 1")
+                if t1_ref
+                else "Team 1"
+            )
+            t2_ref = m_data.get("team2Ref")
+            t2_name = (
+                teams_map.get(t2_ref.id, {}).get("name", "Team 2")
+                if t2_ref
+                else "Team 2"
+            )
 
-            tournament_name = None
-            if t_id := match_dict.get("tournamentId"):
-                tournament_name = tournaments_map.get(t_id, {}).get("name")
+            t_id = m_data.get("tournamentId")
+            t_name = tournaments_map.get(t_id, {}).get("name") if t_id else None
 
             matches_data.append(
                 {
@@ -727,7 +726,7 @@ class UserService:
                     "user_result": user_result,
                     "team1_name": t1_name,
                     "team2_name": t2_name,
-                    "tournament_name": tournament_name,
+                    "tournament_name": t_name,
                 }
             )
         return matches_data
