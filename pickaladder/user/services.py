@@ -1015,7 +1015,7 @@ class UserService:
 
     @staticmethod
     def cancel_friend_request(db: Client, user_id: str, target_user_id: str) -> bool:
-        """Cancel or decline a friend request by deleting the relationship for both users."""
+        """Cancel or decline a friend request for both users."""
         try:
             batch = db.batch()
 
