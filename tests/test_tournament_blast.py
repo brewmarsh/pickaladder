@@ -24,8 +24,8 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_routes": patch(
-                "pickaladder.tournament.routes.firestore",
+            "firestore_services": patch(
+                "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
@@ -96,12 +96,13 @@ class TournamentBlastTestCase(unittest.TestCase):
         mock_group_snapshot = MagicMock()
         mock_group_snapshot.exists = True
 
+        owner_ref = mock_db.collection("users").document(MOCK_USER_ID)
         member1_ref = mock_db.collection("users").document("user_real")
         member2_ref = mock_db.collection("users").document("user_ghost")
 
         mock_group_snapshot.to_dict.return_value = {
             "name": "Cool Group",
-            "members": [member1_ref, member2_ref],
+            "members": [owner_ref, member1_ref, member2_ref],
         }
         mock_group_ref.get.return_value = mock_group_snapshot
 
@@ -112,7 +113,8 @@ class TournamentBlastTestCase(unittest.TestCase):
         mock_tournament_snapshot.exists = True
         mock_tournament_snapshot.to_dict.return_value = {
             "name": "Summer Open",
-            "participant_ids": ["owner_id", "user_real"],
+            "organizer_id": MOCK_USER_ID,
+            "participant_ids": [MOCK_USER_ID, "user_real"],
             "participants": [
                 {"userRef": mock_owner_doc, "status": "accepted"},
                 {"userRef": member1_ref, "status": "pending"},
@@ -137,7 +139,13 @@ class TournamentBlastTestCase(unittest.TestCase):
         }
         member2_doc.reference = member2_ref
 
-        mock_db.get_all.return_value = [member1_doc, member2_doc]
+        owner_doc = MagicMock()
+        owner_doc.exists = True
+        owner_doc.id = MOCK_USER_ID
+        owner_doc.to_dict.return_value = MOCK_USER_DATA
+        owner_doc.reference = owner_ref
+
+        mock_db.get_all.return_value = [owner_doc, member1_doc, member2_doc]
 
         # Mock batch
         mock_batch = MagicMock()
