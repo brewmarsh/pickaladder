@@ -6,7 +6,7 @@ from typing import Any
 
 from firebase_admin import firestore
 
-from pickaladder.user.helpers import smart_display_name
+from pickaladder.user.utils import smart_display_name
 
 
 def fetch_tournament_matches(db: Any, tournament_id: str) -> Any:
