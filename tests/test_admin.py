@@ -128,7 +128,9 @@ class AdminRoutesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        expected_msg = b"Failed to merge ghost@example.com. Ghost account might not exist."
+        expected_msg = (
+            b"Failed to merge ghost@example.com. Ghost account might not exist."
+        )
         self.assertIn(expected_msg, response.data)
 
     def test_merge_ghost_user_missing_fields(self) -> None:
