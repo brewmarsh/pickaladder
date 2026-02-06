@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import datetime
+import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
@@ -16,6 +18,8 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
+
+logger = logging.getLogger(__name__)
 
 
 class TournamentService:
