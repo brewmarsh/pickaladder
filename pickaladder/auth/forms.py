@@ -4,6 +4,7 @@ import re
 
 from flask_wtf import FlaskForm  # type: ignore
 from wtforms import (
+    BooleanField,
     DecimalField,
     PasswordField,
     StringField,
@@ -26,6 +27,7 @@ class LoginForm(FlaskForm):
         validators=[DataRequired()],
         render_kw={"autocomplete": "current-password"},
     )
+    remember = BooleanField("Remember me")
     submit = SubmitField("Login")
 
 
