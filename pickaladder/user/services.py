@@ -130,7 +130,7 @@ class UserService:
     def _migrate_ghost_references(
         db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
     ) -> None:
-        """Helper to update all Firestore references from a ghost user to a real user."""
+        """Update Firestore references from a ghost user to a real user."""
         # 1 & 2: Update Singles Matches
         for field in ["player1Ref", "player2Ref"]:
             for match in (

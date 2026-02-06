@@ -196,7 +196,9 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         mock_db.collection.side_effect = collection_side_effect
 
-        UserService._migrate_ghost_references(mock_db, mock_batch, ghost_ref, real_user_ref)
+        UserService._migrate_ghost_references(
+            mock_db, mock_batch, ghost_ref, real_user_ref
+        )
 
         # Verify batch.update was called for the tournament
         mock_batch.update.assert_called()
