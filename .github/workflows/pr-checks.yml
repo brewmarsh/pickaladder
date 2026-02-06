@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt mockfirestore coverage --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Lint with ruff
         env:
           UV_SYSTEM_PYTHON: 1
@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt mockfirestore coverage --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Format with ruff
         env:
           UV_SYSTEM_PYTHON: 1
@@ -58,7 +58,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt mockfirestore coverage --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Security Analysis with Bandit
         env:
           UV_SYSTEM_PYTHON: 1
@@ -77,7 +77,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt mockfirestore coverage --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Static Type Checking with mypy
         env:
           UV_SYSTEM_PYTHON: 1
@@ -98,7 +98,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv pip install --upgrade pip --system
-          uv pip install -r requirements.txt mockfirestore coverage pip-audit --system
+          uv pip install -r requirements.txt mock-firestore coverage pip-audit --system
       - name: Scan for vulnerabilities
         env:
           UV_SYSTEM_PYTHON: 1
