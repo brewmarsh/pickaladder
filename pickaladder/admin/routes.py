@@ -263,6 +263,7 @@ def merge_ghost():
     if success:
         flash(f"Successfully merged {ghost_email} into {target_user_id}.", "success")
     else:
-        flash(f"Failed to merge {ghost_email}. Ghost account might not exist.", "danger")
+        error_msg = f"Failed to merge {ghost_email}. Ghost account might not exist."
+        flash(error_msg, "danger")
 
     return redirect(url_for(".admin"))

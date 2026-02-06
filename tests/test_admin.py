@@ -112,7 +112,8 @@ class AdminRoutesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Successfully merged ghost@example.com into real_user.", response.data)
+        expected_msg = b"Successfully merged ghost@example.com into real_user."
+        self.assertIn(expected_msg, response.data)
         mock_user_service.merge_ghost_user.assert_called_once()
 
     @patch("pickaladder.admin.routes.UserService")
@@ -127,7 +128,8 @@ class AdminRoutesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Failed to merge ghost@example.com. Ghost account might not exist.", response.data)
+        expected_msg = b"Failed to merge ghost@example.com. Ghost account might not exist."
+        self.assertIn(expected_msg, response.data)
 
     def test_merge_ghost_user_missing_fields(self) -> None:
         """Ensure error message is shown when fields are missing."""
@@ -139,7 +141,8 @@ class AdminRoutesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Both Target User ID and Ghost Email are required.", response.data)
+        expected_msg = b"Both Target User ID and Ghost Email are required."
+        self.assertIn(expected_msg, response.data)
 
 
 if __name__ == "__main__":
