@@ -10,7 +10,6 @@ class User(UserDict):
     def avatar_url(self) -> str:
         """Return a deterministic avatar URL based on the user ID."""
         # Try to get the user ID from various common keys
-        user_id = self.get("uid") or self.get("id") or self.get("userId")
 
         # If the user has a profile picture, use it
         thumbnail = self.get("profilePictureThumbnailUrl")

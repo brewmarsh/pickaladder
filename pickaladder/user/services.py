@@ -130,7 +130,7 @@ class UserService:
     def _migrate_ghost_references(
         db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
     ) -> None:
-        """Helper to update all Firestore references from a ghost user to a real user."""
+        """Helper to update Firestore references from a ghost user to a real user."""
         # 1 & 2: Update Singles Matches
         for field in ["player1Ref", "player2Ref"]:
             for match in (
@@ -190,6 +190,8 @@ class UserService:
                     if "userRef" in p:
                         p["userRef"] = real_user_ref
                     if "user_id" in p:
+                        p["user_id"] = real_user_ref.id
+                    elif "userRef" in p:
                         p["user_id"] = real_user_ref.id
                     updated = True
 
