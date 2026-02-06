@@ -6,7 +6,6 @@ import datetime
 from typing import Any
 
 from flask import (
-    current_app,
     flash,
     g,
     redirect,
@@ -98,7 +97,7 @@ def edit_tournament(tournament_id: str) -> Any:
     if not details:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
-        
+
     if not details["is_owner"]:
         flash("Unauthorized.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
@@ -122,7 +121,9 @@ def edit_tournament(tournament_id: str) -> Any:
         }
 
         try:
-            TournamentService.update_tournament(tournament_id, g.user["uid"], update_data)
+            TournamentService.update_tournament(
+                tournament_id, g.user["uid"], update_data
+            )
             flash("Tournament updated successfully.", "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
         except ValueError as e:
@@ -158,7 +159,9 @@ def invite_player(tournament_id: str) -> Any:
     if form.validate_on_submit():
         invited_user_id = form.user_id.data
         try:
-            TournamentService.invite_player(tournament_id, g.user["uid"], invited_user_id)
+            TournamentService.invite_player(
+                tournament_id, g.user["uid"], invited_user_id
+            )
             flash("Player invited successfully.", "success")
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")

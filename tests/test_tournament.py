@@ -192,7 +192,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Updated!", response.data)
+        self.assertIn(b"Tournament updated successfully.", response.data)
 
         # Verify update in DB
         data = (
@@ -238,7 +238,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Updated!", response.data)
+        self.assertIn(b"Tournament updated successfully.", response.data)
 
         # Verify that matchType was NOT updated
         data = (
@@ -267,9 +267,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         tournament_id = "test_tournament_id"
         user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
         participant1_ref = self.mock_db.collection("users").document("participant1")
-        participant1_ref.set(
-            {"username": "Participant One", "name": "Participant One"}
-        )
+        participant1_ref.set({"username": "Participant One", "name": "Participant One"})
 
         self.mock_db.collection("tournaments").document(tournament_id).set(
             {
@@ -354,7 +352,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Invite sent!", response.data)
+        self.assertIn(b"Player invited successfully.", response.data)
 
         # Verify update in DB
         data = (

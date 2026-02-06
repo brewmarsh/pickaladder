@@ -585,8 +585,11 @@ class UserService:
                     if i > 0:
                         player_above = leaderboard[i - 1]
                         user_ranking_data["player_above"] = player_above.get("name")
-                        user_ranking_data["points_to_overtake"] = player_above.get("avg_score", 0) - player.get("avg_score", 0)
+                        user_ranking_data["points_to_overtake"] = player_above.get(
+                            "avg_score", 0
+                        ) - player.get("avg_score", 0)
                     break
+
             if user_ranking_data:
                 group_rankings.append(user_ranking_data)
             else:
@@ -623,45 +626,66 @@ class UserService:
         """Determine user match result."""
         p1_score = match_data.get("player1Score", 0)
         p2_score = match_data.get("player2Score", 0)
-        if p1_score == p2_score: return "draw"
+
+        if p1_score == p2_score:
+            return "draw"
+
         user_won = False
         if match_data.get("matchType") == "doubles":
-            in_team1 = any(ref.id == user_id for ref in match_data.get("team1", []))
-            if (in_team1 and winner == "player1") or (not in_team1 and winner == "player2"):
+            team1_refs = match_data.get("team1", [])
+            in_team1 = any(ref.id == user_id for ref in team1_refs)
+            if (in_team1 and winner == "player1") or (
+                not in_team1 and winner == "player2"
+            ):
                 user_won = True
         else:
             p1_ref = match_data.get("player1Ref")
             is_player1 = p1_ref and p1_ref.id == user_id
-            if (is_player1 and winner == "player1") or (not is_player1 and winner == "player2"):
+            if (is_player1 and winner == "player1") or (
+                not is_player1 and winner == "player2"
+            ):
                 user_won = True
+
         return "win" if user_won else "loss"
 
     @staticmethod
-    def _fetch_match_entities(db: Client, matches_docs: list[DocumentSnapshot]) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Fetch entities for matches."""
+    def _fetch_match_entities(
+        db: Client, matches_docs: list[DocumentSnapshot]
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Fetch all users and teams involved in a list of matches."""
         player_refs = set()
         team_refs = set()
         for match_doc in matches_docs:
             match = match_doc.to_dict()
-            if match is None: continue
-            if match.get("player1Ref"): player_refs.add(match["player1Ref"])
-            if match.get("player2Ref"): player_refs.add(match["player2Ref"])
+            if match is None:
+                continue
+            if match.get("player1Ref"):
+                player_refs.add(match["player1Ref"])
+            if match.get("player2Ref"):
+                player_refs.add(match["player2Ref"])
             player_refs.update(match.get("team1", []))
             player_refs.update(match.get("team2", []))
-            if match.get("team1Ref"): team_refs.add(match["team1Ref"])
-            if match.get("team2Ref"): team_refs.add(match["team2Ref"])
+            if match.get("team1Ref"):
+                team_refs.add(match["team1Ref"])
+            if match.get("team2Ref"):
+                team_refs.add(match["team2Ref"])
+
         users_map = {}
         if player_refs:
             user_docs = db.get_all(list(player_refs))
             users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
+
         teams_map = {}
         if team_refs:
             team_docs = db.get_all(list(team_refs))
             teams_map = {doc.id: doc.to_dict() for doc in team_docs if doc.exists}
+
         return users_map, teams_map
 
     @staticmethod
-    def format_matches_for_dashboard(db: Client, matches_docs: list[DocumentSnapshot], user_id: str) -> list[dict[str, Any]]:
+    def format_matches_for_dashboard(
+        db: Client, matches_docs: list[DocumentSnapshot], user_id: str
+    ) -> list[dict[str, Any]]:
         """Enrich matches for dashboard display."""
         users_map, teams_map = UserService._fetch_match_entities(db, matches_docs)
         
@@ -683,7 +707,8 @@ class UserService:
         matches_data = []
         for match_doc in matches_docs:
             m_data = match_doc.to_dict()
-            if m_data is None: continue
+            if m_data is None:
+                continue
             
             winner = UserService._get_match_winner_slot(m_data)
             user_result = UserService._get_user_match_result(m_data, user_id, winner)
