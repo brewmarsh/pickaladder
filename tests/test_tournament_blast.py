@@ -6,48 +6,14 @@ import unittest
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
-from mockfirestore import CollectionReference, MockFirestore, Query
-from mockfirestore.document import DocumentReference
+from mockfirestore import MockFirestore
 
 from pickaladder import create_app
 from pickaladder.tournament.services import TournamentService  # noqa: F401
 from pickaladder.user.utils import _migrate_ghost_references
+from tests.conftest import patch_mockfirestore
 
-
-# Fix mockfirestore where() to handle FieldFilter
-def collection_where(self, field_path=None, op_string=None, value=None, filter=None):
-    if filter:
-        return self._where(filter.field_path, filter.op_string, filter.value)
-    return self._where(field_path, op_string, value)
-
-
-if not hasattr(CollectionReference, "_where"):
-    CollectionReference._where = CollectionReference.where
-    CollectionReference.where = collection_where
-
-
-def query_where(self, field_path=None, op_string=None, value=None, filter=None):
-    if filter:
-        return self._where(filter.field_path, filter.op_string, filter.value)
-    return self._where(field_path, op_string, value)
-
-
-if not hasattr(Query, "_where"):
-    Query._where = Query.where
-    Query.where = query_where
-
-
-# Fix DocumentReference equality
-def doc_ref_eq(self, other):
-    if not isinstance(other, DocumentReference):
-        return False
-    return self._path == other._path
-
-
-if not hasattr(DocumentReference, "_orig_eq"):
-    DocumentReference._orig_eq = DocumentReference.__eq__
-    DocumentReference.__eq__ = doc_ref_eq
-DocumentReference.__hash__ = lambda self: hash(tuple(self._path))
+patch_mockfirestore()
 
 # Mock user payloads
 MOCK_USER_ID = "owner_id"
@@ -189,28 +155,23 @@ class TournamentBlastTestCase(unittest.TestCase):
         self.mock_db.batch.assert_called()
         self.mock_batch_instance.commit.assert_called()
 
-        # Verify ArrayUnion calls
-        self.mock_firestore_service.ArrayUnion.assert_called()
-        calls = self.mock_firestore_service.ArrayUnion.call_args_list
+        # Verify DB update
+        t_data = (
+            self.mock_db.collection("tournaments")
+            .document(tournament_id)
+            .get()
+            .to_dict()
+        )
+        self.assertIn("user_ghost", t_data["participant_ids"])
+        # Should have 3 participants now: owner, user_real, user_ghost
+        self.assertEqual(len(t_data["participants"]), 3)
 
-        # We expect two calls: one for participants, one for participant_ids
-        found_participants = False
-        found_ids = False
-        for call in calls:
-            args = call[0][0]
-            if not args:
-                continue
-            if isinstance(args[0], dict) and "userRef" in args[0]:
-                self.assertEqual(len(args), 1)
-                self.assertEqual(args[0]["email"], "ghost@example.com")
-                self.assertEqual(args[0]["userRef"].id, "user_ghost")
-                found_participants = True
-            elif isinstance(args[0], str):
-                self.assertEqual(args, ["user_ghost"])
-                found_ids = True
-
-        self.assertTrue(found_participants)
-        self.assertTrue(found_ids)
+        # Find ghost participant
+        ghost_p = next(
+            p for p in t_data["participants"] if p.get("userRef").id == "user_ghost"
+        )
+        self.assertEqual(ghost_p["status"], "pending")
+        self.assertEqual(ghost_p["email"], "ghost@example.com")
 
     def test_migrate_ghost_references_tournaments(self) -> None:
         """Test that _migrate_ghost_references correctly updates tournaments."""

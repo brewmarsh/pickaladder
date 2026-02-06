@@ -6,47 +6,13 @@ import datetime
 import unittest
 from unittest.mock import MagicMock, patch
 
-from mockfirestore import CollectionReference, MockFirestore, Query
-from mockfirestore.document import DocumentReference
+from mockfirestore import MockFirestore
 
 from pickaladder import create_app
 from pickaladder.tournament.services import TournamentService  # noqa: F401
+from tests.conftest import patch_mockfirestore
 
-
-# Fix mockfirestore where() to handle FieldFilter
-def collection_where(self, field_path=None, op_string=None, value=None, filter=None):
-    if filter:
-        return self._where(filter.field_path, filter.op_string, filter.value)
-    return self._where(field_path, op_string, value)
-
-
-if not hasattr(CollectionReference, "_where"):
-    CollectionReference._where = CollectionReference.where
-    CollectionReference.where = collection_where
-
-
-def query_where(self, field_path=None, op_string=None, value=None, filter=None):
-    if filter:
-        return self._where(filter.field_path, filter.op_string, filter.value)
-    return self._where(field_path, op_string, value)
-
-
-if not hasattr(Query, "_where"):
-    Query._where = Query.where
-    Query.where = query_where
-
-
-# Fix DocumentReference equality
-def doc_ref_eq(self, other):
-    if not isinstance(other, DocumentReference):
-        return False
-    return self._path == other._path
-
-
-if not hasattr(DocumentReference, "_orig_eq"):
-    DocumentReference._orig_eq = DocumentReference.__eq__
-    DocumentReference.__eq__ = doc_ref_eq
-DocumentReference.__hash__ = lambda self: hash(tuple(self._path))
+patch_mockfirestore()
 
 # Mock user payloads
 MOCK_USER_ID = "user1"
