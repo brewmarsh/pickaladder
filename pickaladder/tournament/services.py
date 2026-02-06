@@ -211,7 +211,6 @@ class TournamentService:
         )
 
         # Groups for dropdown
-
         user_groups = UserService.get_user_groups(db, user_uid)
 
         # Ownership
