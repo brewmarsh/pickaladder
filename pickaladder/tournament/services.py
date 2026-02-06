@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING, Any, cast
 from firebase_admin import firestore
 from flask import current_app
 
-from pickaladder.user.utils import smart_display_name
+from pickaladder.user.helpers import smart_display_name
+from pickaladder.user.services import UserService
 from pickaladder.utils import send_email
 
 from .utils import get_tournament_standings
@@ -211,7 +212,7 @@ class TournamentService:
         )
 
         # Groups for dropdown
-        from pickaladder.user.utils import UserService  # noqa: PLC0415
+        from pickaladder.user.services import UserService  # noqa: PLC0415
 
         user_groups = UserService.get_user_groups(db, user_uid)
 
