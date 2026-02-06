@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import datetime
-import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
+from flask import current_app
 
 from pickaladder.user.utils import smart_display_name
 from pickaladder.utils import send_email
@@ -14,170 +13,62 @@ from pickaladder.utils import send_email
 from .utils import get_tournament_standings
 
 if TYPE_CHECKING:
-    from google.cloud.firestore_v1.document import DocumentSnapshot
-
-logger = logging.getLogger(__name__)
+    from google.cloud.firestore_v1.client import Client
+    from google.cloud.firestore_v1.document import DocumentReference
+    from google.cloud.firestore_v1.transaction import Transaction
 
 
 class TournamentService:
     """Handles business logic and data access for tournaments."""
 
     @staticmethod
-    def list_tournaments(user_id: str, db: Any = None) -> list[dict[str, Any]]:
-        """Fetch all tournaments associated with a user (owned or participating)."""
-        if db is None:
-            db = firestore.client()
-        user_ref = db.collection("users").document(user_id)
+    def _resolve_participants(
+        db: Client, participant_objs: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Internal helper to resolve participant user data."""
+        if not participant_objs:
+            return []
 
-        # Fetch tournaments where the user is an owner
-        owned_tournaments = (
-            db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
-            .stream()
-        )
+        user_refs = [
+            obj["userRef"]
+            if "userRef" in obj
+            else db.collection("users").document(obj["user_id"])
+            for obj in participant_objs
+            if obj and ("userRef" in obj or "user_id" in obj)
+        ]
+        if not user_refs:
+            return []
 
-        # Fetch tournaments where user is a participant via the participant_ids array
-        participating_tournaments = (
-            db.collection("tournaments")
-            .where(
-                filter=firestore.FieldFilter(
-                    "participant_ids", "array_contains", user_id
-                )
-            )
-            .stream()
-        )
-
-        tournaments = []
-        seen_ids = set()
-
-        for doc in owned_tournaments:
-            data = doc.to_dict()
-            if data:
-                data["id"] = doc.id
-                tournaments.append(data)
-                seen_ids.add(doc.id)
-
-        for doc in participating_tournaments:
-            if doc.id not in seen_ids:
-                data = doc.to_dict()
-                if data:
-                    data["id"] = doc.id
-                    tournaments.append(data)
-                    seen_ids.add(doc.id)
-
-        return tournaments
-
-    @staticmethod
-    def create_tournament(  # noqa: PLR0913
-        user_id: str,
-        name: str,
-        date: datetime.date,
-        location: str,
-        match_type: str,
-        db: Any = None,
-    ) -> str:
-        """Create a new tournament."""
-        if db is None:
-            db = firestore.client()
-        user_ref = db.collection("users").document(user_id)
-        tournament_data = {
-            "name": name,
-            "date": datetime.datetime.combine(date, datetime.time.min),
-            "location": location,
-            "matchType": match_type,
-            "ownerRef": user_ref,
-            "organizer_id": user_id,
-            "status": "Active",
-            "participants": [{"userRef": user_ref, "status": "accepted"}],
-            "participant_ids": [user_id],
-            "createdAt": firestore.SERVER_TIMESTAMP,
+        user_docs = cast(list[Any], db.get_all(user_refs))
+        users_map = {
+            doc.id: {**(doc.to_dict() or {}), "id": doc.id}
+            for doc in user_docs
+            if doc.exists
         }
-        _, new_tournament_ref = db.collection("tournaments").add(tournament_data)
-        return cast(str, new_tournament_ref.id)
 
-    @staticmethod
-    def get_tournament(tournament_id: str, db: Any = None) -> dict[str, Any] | None:
-        """Fetch basic tournament data."""
-        if db is None:
-            db = firestore.client()
-        tournament_ref = db.collection("tournaments").document(tournament_id)
-        tournament_doc = cast("DocumentSnapshot", tournament_ref.get())
-
-        if not tournament_doc.exists:
-            return None
-
-        data = tournament_doc.to_dict()
-        if data:
-            data["id"] = tournament_id
-        return data
-
-    @staticmethod
-    def get_tournament_details(
-        tournament_id: str, current_user_id: str, db: Any = None
-    ) -> dict[str, Any] | None:
-        """Resolve all data needed for the tournament view page."""
-        if db is None:
-            db = firestore.client()
-        tournament_ref = db.collection("tournaments").document(tournament_id)
-        tournament_doc = cast("DocumentSnapshot", tournament_ref.get())
-
-        if not tournament_doc.exists:
-            return None
-
-        tournament_data = tournament_doc.to_dict()
-        if tournament_data is None:
-            return None
-
-        tournament_data["id"] = tournament_doc.id
-
-        # Format Date Display
-        raw_date = tournament_data.get("date")
-        if raw_date and hasattr(raw_date, "to_datetime"):
-            tournament_data["date_display"] = raw_date.to_datetime().strftime(
-                "%b %d, %Y"
-            )
-
-        match_type = tournament_data.get("matchType", "singles")
-        status = tournament_data.get("status", "Active")
-
-        # Resolve Participant Data
         participants = []
-        participant_objs = tournament_data.get("participants", [])
-        if participant_objs:
-            user_refs = [
-                (
-                    obj["userRef"]
-                    if "userRef" in obj
-                    else db.collection("users").document(obj["user_id"])
+        for obj in participant_objs:
+            if not obj:
+                continue
+            uid = obj["userRef"].id if "userRef" in obj else obj.get("user_id")
+            if uid and uid in users_map:
+                u_data = users_map[uid]
+                participants.append(
+                    {
+                        "user": u_data,
+                        "status": obj.get("status", "pending"),
+                        "display_name": smart_display_name(u_data),
+                        "team_name": obj.get("team_name"),
+                    }
                 )
-                for obj in participant_objs
-                if "userRef" in obj or "user_id" in obj
-            ]
-            user_docs = cast(list["DocumentSnapshot"], db.get_all(user_refs))
-            users_map = {
-                doc.id: {**cast(dict[str, Any], doc.to_dict()), "id": doc.id}
-                for doc in user_docs
-                if doc.exists
-            }
+        return participants
 
-            for obj in participant_objs:
-                uid = obj["userRef"].id if "userRef" in obj else obj.get("user_id")
-                if uid and uid in users_map:
-                    u_data = users_map[uid]
-                    participants.append(
-                        {
-                            "user": u_data,
-                            "status": obj.get("status", "pending"),
-                            "display_name": smart_display_name(u_data),
-                            "team_name": obj.get("team_name"),
-                        }
-                    )
-
-        standings = get_tournament_standings(db, tournament_id, match_type)
-        podium = standings[:3] if status == "Completed" else []
-
-        # Handle Candidate Players for Invitation
-        user_ref = db.collection("users").document(current_user_id)
+    @staticmethod
+    def _get_invitable_players(
+        db: Client, user_uid: str, current_participant_ids: set[str]
+    ) -> list[dict[str, Any]]:
+        """Internal helper to find invite candidates."""
+        user_ref = db.collection("users").document(user_uid)
 
         # Source A: Friends
         friends_query = user_ref.collection("friends").stream()
@@ -189,323 +80,419 @@ class TournamentService:
             .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
             .stream()
         )
-        user_groups_list = []
         group_member_ids = set()
         for group_doc in groups_query:
             g_data = group_doc.to_dict()
-            if g_data:
-                user_groups_list.append(
-                    {"id": group_doc.id, "name": g_data.get("name", "Unnamed Group")}
-                )
-                if "members" in g_data:
-                    for m_ref in g_data["members"]:
-                        group_member_ids.add(m_ref.id)
+            if g_data and "members" in g_data:
+                for m_ref in g_data["members"]:
+                    group_member_ids.add(m_ref.id)
 
-        all_potential_ids = {str(uid) for uid in (friend_ids | group_member_ids)}
-        all_potential_ids.discard(str(current_user_id))
-
-        current_participant_ids = {
-            str(obj["userRef"].id if "userRef" in obj else obj.get("user_id"))
-            for obj in participant_objs
-        }
-        final_invitable_ids = all_potential_ids - current_participant_ids
+        all_ids = {str(uid) for uid in (friend_ids | group_member_ids)}
+        all_ids.discard(str(user_uid))
+        final_ids = all_ids - current_participant_ids
 
         invitable_users = []
-        if final_invitable_ids:
-            u_refs = [
-                db.collection("users").document(uid) for uid in final_invitable_ids
-            ]
-            u_docs = cast(list["DocumentSnapshot"], db.get_all(u_refs))
+        if final_ids:
+            u_refs = [db.collection("users").document(uid) for uid in final_ids]
+            u_docs = cast(list[Any], db.get_all(u_refs))
             for u_doc in u_docs:
                 if u_doc.exists:
-                    u_dict = cast(dict[str, Any], u_doc.to_dict())
-                    if u_dict:
-                        u_dict["id"] = u_doc.id
-                        invitable_users.append(u_dict)
+                    u_data = u_doc.to_dict()
+                    if u_data:
+                        u_data["id"] = u_doc.id
+                        invitable_users.append(u_data)
 
         invitable_users.sort(key=lambda u: smart_display_name(u).lower())
+        return invitable_users
 
-        # Ownership check
-        is_owner = tournament_data.get("organizer_id") == current_user_id or (
-            tournament_data.get("ownerRef")
-            and tournament_data["ownerRef"].id == current_user_id
+    @staticmethod
+    def list_tournaments(
+        user_uid: str, db: Client | None = None
+    ) -> list[dict[str, Any]]:
+        """Fetch all tournaments for a user."""
+        if db is None:
+            db = firestore.client()
+        user_ref = db.collection("users").document(user_uid)
+
+        owned = (
+            db.collection("tournaments")
+            .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
+            .stream()
+        )
+        participating = (
+            db.collection("tournaments")
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_uid
+                )
+            )
+            .stream()
+        )
+
+        results = {}
+        for doc in owned:
+            data = doc.to_dict()
+            if data:
+                data["id"] = doc.id
+                results[doc.id] = data
+
+        for doc in participating:
+            if doc.id not in results:
+                data = doc.to_dict()
+                if data:
+                    data["id"] = doc.id
+                    results[doc.id] = data
+
+        return list(results.values())
+
+    @staticmethod
+    def create_tournament(
+        data: dict[str, Any], user_uid: str, db: Client | None = None
+    ) -> str:
+        """Create a tournament and return its ID."""
+        if db is None:
+            db = firestore.client()
+        user_ref = db.collection("users").document(user_uid)
+
+        tournament_payload = {
+            "name": data["name"],
+            "date": data["date"],
+            "location": data["location"],
+            "matchType": data["matchType"],
+            "ownerRef": user_ref,
+            "organizer_id": user_uid,
+            "status": "Active",
+            "participants": [{"userRef": user_ref, "status": "accepted"}],
+            "participant_ids": [user_uid],
+            "createdAt": firestore.SERVER_TIMESTAMP,
+        }
+        _, ref = db.collection("tournaments").add(tournament_payload)
+        return ref.id
+
+    @staticmethod
+    def get_tournament_details(
+        tournament_id: str, user_uid: str, db: Client | None = None
+    ) -> dict[str, Any] | None:
+        """Fetch comprehensive details for the tournament view."""
+        if db is None:
+            db = firestore.client()
+        doc = cast(Any, db.collection("tournaments").document(tournament_id).get())
+        if not doc.exists:
+            return None
+
+        data = cast(dict[str, Any], doc.to_dict())
+        if not data:
+            return None
+        data["id"] = doc.id
+
+        # Formatting
+        raw_date = data.get("date")
+        if raw_date and hasattr(raw_date, "to_datetime"):
+            data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
+
+        # Participants
+        raw_participants = data.get("participants", [])
+        participants = TournamentService._resolve_participants(db, raw_participants)
+
+        # Standings & Podium
+        standings = get_tournament_standings(
+            db, tournament_id, data.get("matchType", "singles")
+        )
+        podium = standings[:3] if data.get("status") == "Completed" else []
+
+        # Invitable Users
+        current_p_ids = {
+            str(obj["userRef"].id if "userRef" in obj else obj.get("user_id"))
+            for obj in raw_participants
+            if obj and ("userRef" in obj or "user_id" in obj)
+        }
+        invitable = TournamentService._get_invitable_players(
+            db, user_uid, current_p_ids
+        )
+
+        # Groups for dropdown
+        from pickaladder.user.utils import UserService  # noqa: PLC0415
+
+        user_groups = UserService.get_user_groups(db, user_uid)
+
+        # Ownership
+        is_owner = data.get("organizer_id") == user_uid or (
+            data.get("ownerRef") and data["ownerRef"].id == user_uid
         )
 
         return {
-            "tournament": tournament_data,
+            "tournament": data,
             "participants": participants,
             "standings": standings,
             "podium": podium,
-            "invitable_users": invitable_users,
-            "user_groups": user_groups_list,
+            "invitable_users": invitable,
+            "user_groups": user_groups,
             "is_owner": is_owner,
         }
 
     @staticmethod
-    def invite_player(tournament_id: str, user_id: str, db: Any = None) -> None:
-        """Invite a single player to the tournament."""
+    def update_tournament(
+        tournament_id: str,
+        user_uid: str,
+        update_data: dict[str, Any],
+        db: Client | None = None,
+    ) -> None:
+        """Update tournament details with ownership check."""
         if db is None:
             db = firestore.client()
-        invited_ref = db.collection("users").document(user_id)
-        tournament_ref = db.collection("tournaments").document(tournament_id)
-        tournament_ref.update(
+        ref = db.collection("tournaments").document(tournament_id)
+        doc = cast(Any, ref.get())
+        if not doc.exists:
+            raise ValueError("Tournament not found.")
+
+        data = cast(dict[str, Any], doc.to_dict())
+        if not data:
+            raise ValueError("Tournament data is empty.")
+        owner_id = data.get("organizer_id")
+        if not owner_id and data.get("ownerRef"):
+            owner_id = data["ownerRef"].id
+
+        if owner_id != user_uid:
+            raise PermissionError("Unauthorized.")
+
+        # If changing match type, ensure no matches exist
+        if "matchType" in update_data:
+            matches = (
+                db.collection("matches")
+                .where(
+                    filter=firestore.FieldFilter("tournamentId", "==", tournament_id)
+                )
+                .limit(1)
+                .stream()
+            )
+            if any(matches):
+                # Don't update matchType if matches exist
+                del update_data["matchType"]
+
+        ref.update(update_data)
+
+    @staticmethod
+    def invite_player(
+        tournament_id: str, user_uid: str, invited_uid: str, db: Client | None = None
+    ) -> None:
+        """Invite a single player."""
+        if db is None:
+            db = firestore.client()
+
+        ref = db.collection("tournaments").document(tournament_id)
+        invited_ref = db.collection("users").document(invited_uid)
+
+        ref.update(
             {
                 "participants": firestore.ArrayUnion(
                     [{"userRef": invited_ref, "status": "pending", "team_name": None}]
                 ),
-                "participant_ids": firestore.ArrayUnion([user_id]),
+                "participant_ids": firestore.ArrayUnion([invited_uid]),
             }
         )
 
     @staticmethod
+    def _validate_group_invite(
+        db: Client, tournament_data: dict[str, Any], group_id: str, user_uid: str
+    ) -> list[Any]:
+        """Validate permissions and return group member references."""
+        # Check Tournament Ownership
+        owner_id = tournament_data.get("organizer_id")
+        if not owner_id and tournament_data.get("ownerRef"):
+            owner_id = tournament_data["ownerRef"].id
+        if owner_id != user_uid:
+            raise PermissionError("Unauthorized.")
+
+        # Fetch Group
+        g_doc = cast(Any, db.collection("groups").document(group_id).get())
+        if not g_doc.exists:
+            raise ValueError("Group not found")
+        g_data = cast(dict[str, Any], g_doc.to_dict())
+        if not g_data:
+            raise ValueError("Group data is empty")
+
+        # Check Group Membership
+        member_refs = g_data.get("members", [])
+        if not any(m.id == user_uid for m in member_refs):
+            raise PermissionError(
+                "You can only invite members from groups you belong to."
+            )
+        return member_refs
+
+    @staticmethod
     def invite_group(
-        tournament_id: str, group_id: str, db: Any = None
-    ) -> tuple[int, str]:
-        """Invite all members of a group to a tournament."""
+        tournament_id: str, group_id: str, user_uid: str, db: Client | None = None
+    ) -> int:
+        """Invite all members of a group. Returns count of new invites."""
         if db is None:
             db = firestore.client()
-        group_ref = db.collection("groups").document(group_id)
-        group_doc = cast("DocumentSnapshot", group_ref.get())
-        if not group_doc.exists:
-            raise ValueError("Group not found.")
 
-        group_data = group_doc.to_dict()
-        if not group_data:
-            raise ValueError("Group data is empty.")
+        t_ref = db.collection("tournaments").document(tournament_id)
+        t_doc = cast(Any, t_ref.get())
+        if not t_doc.exists:
+            raise ValueError("Tournament not found")
+        t_data = cast(dict[str, Any], t_doc.to_dict())
+        if not t_data:
+            raise ValueError("Tournament data is empty")
 
-        group_name = group_data.get("name", "Group")
-        member_refs = group_data.get("members", [])
-        if not member_refs:
-            return 0, group_name
+        member_refs = TournamentService._validate_group_invite(
+            db, t_data, group_id, user_uid
+        )
 
-        tournament_ref = db.collection("tournaments").document(tournament_id)
-        tournament_doc = cast("DocumentSnapshot", tournament_ref.get())
-        if not tournament_doc.exists:
-            raise ValueError("Tournament not found.")
+        current_ids = set(t_data.get("participant_ids", []))
+        member_docs = db.get_all(member_refs)
 
-        tournament_data = tournament_doc.to_dict()
-        if not tournament_data:
-            raise ValueError("Tournament data is empty.")
+        new_parts = []
+        new_ids = []
 
-        current_participant_ids = set(tournament_data.get("participant_ids", []))
-        member_docs = cast(list["DocumentSnapshot"], db.get_all(member_refs))
-
-        new_participants = []
-        new_participant_ids = []
-
-        for member_doc in member_docs:
-            if not member_doc.exists:
+        for m_doc in member_docs:
+            if not m_doc.exists or m_doc.id in current_ids:
                 continue
 
-            member_id = member_doc.id
-            if member_id in current_participant_ids:
-                continue
-
-            m_data = member_doc.to_dict()
+            m_data = m_doc.to_dict()
             if not m_data:
                 continue
+            p_obj = {"userRef": m_doc.reference, "status": "pending", "team_name": None}
+            if m_data.get("is_ghost") and m_data.get("email"):
+                p_obj["email"] = m_data.get("email")
 
-            participant_obj = {
-                "userRef": member_doc.reference,
-                "status": "pending",
-                "team_name": None,
-            }
+            new_parts.append(p_obj)
+            new_ids.append(m_doc.id)
 
-            if m_data.get("is_ghost"):
-                email = m_data.get("email")
-                if email:
-                    participant_obj["email"] = email
-
-            new_participants.append(participant_obj)
-            new_participant_ids.append(member_id)
-
-        count = len(new_participant_ids)
-        if count > 0:
+        if new_parts:
             batch = db.batch()
             batch.update(
-                tournament_ref,
+                t_ref,
                 {
-                    "participants": firestore.ArrayUnion(new_participants),
-                    "participant_ids": firestore.ArrayUnion(new_participant_ids),
+                    "participants": firestore.ArrayUnion(new_parts),
+                    "participant_ids": firestore.ArrayUnion(new_ids),
                 },
             )
             batch.commit()
 
-        return count, group_name
+        return len(new_parts)
 
     @staticmethod
-    def accept_invite(tournament_id: str, user_id: str, db: Any = None) -> bool:
-        """Accept an invite to a tournament using a transaction."""
+    def accept_invite(
+        tournament_id: str, user_uid: str, db: Client | None = None
+    ) -> bool:
+        """Accept invite via transaction."""
         if db is None:
             db = firestore.client()
-        tournament_ref = db.collection("tournaments").document(tournament_id)
+        ref = db.collection("tournaments").document(tournament_id)
 
         @firestore.transactional
-        def update_in_transaction(transaction, t_ref):
-            snapshot = t_ref.get(transaction=transaction)
-            if not snapshot.exists:
+        def _tx(transaction: Transaction, t_ref: DocumentReference) -> bool:
+            snap = cast(Any, t_ref.get(transaction=transaction))
+            if not snap.exists:
                 return False
-
-            participants = snapshot.get("participants")
+            parts = snap.get("participants")
             updated = False
-            for p in participants:
-                p_uid = p["userRef"].id if "userRef" in p else p.get("user_id")
-                if p_uid == user_id and p["status"] == "pending":
+            for p in parts:
+                if not p:
+                    continue
+                uid = p["userRef"].id if "userRef" in p else p.get("user_id")
+                if uid == user_uid and p["status"] == "pending":
                     p["status"] = "accepted"
                     updated = True
                     break
-
             if updated:
-                transaction.update(t_ref, {"participants": participants})
+                transaction.update(t_ref, {"participants": parts})
                 return True
             return False
 
-        return update_in_transaction(db.transaction(), tournament_ref)
+        return _tx(db.transaction(), ref)
 
     @staticmethod
-    def decline_invite(tournament_id: str, user_id: str, db: Any = None) -> bool:
-        """Decline an invite to a tournament using a transaction."""
+    def decline_invite(
+        tournament_id: str, user_uid: str, db: Client | None = None
+    ) -> bool:
+        """Decline invite via transaction."""
         if db is None:
             db = firestore.client()
-        tournament_ref = db.collection("tournaments").document(tournament_id)
+        ref = db.collection("tournaments").document(tournament_id)
 
         @firestore.transactional
-        def update_in_transaction(transaction, t_ref):
-            snapshot = t_ref.get(transaction=transaction)
-            if not snapshot.exists:
+        def _tx(transaction: Transaction, t_ref: DocumentReference) -> bool:
+            snap = cast(Any, t_ref.get(transaction=transaction))
+            if not snap.exists:
                 return False
+            parts = snap.get("participants")
+            p_ids = snap.get("participant_ids")
 
-            participants = snapshot.get("participants")
-            participant_ids = snapshot.get("participant_ids")
-
-            new_participants = [
+            new_parts = [
                 p
-                for p in participants
+                for p in parts
                 if not (
-                    (p["userRef"].id if "userRef" in p else p.get("user_id")) == user_id
+                    p
+                    and (p["userRef"].id if "userRef" in p else p.get("user_id"))
+                    == user_uid
                     and p["status"] == "pending"
                 )
             ]
 
-            if len(new_participants) < len(participants):
-                new_participant_ids = [uid for uid in participant_ids if uid != user_id]
+            if len(new_parts) < len(parts):
+                new_ids = [uid for uid in p_ids if uid != user_uid]
                 transaction.update(
-                    t_ref,
-                    {
-                        "participants": new_participants,
-                        "participant_ids": new_participant_ids,
-                    },
+                    t_ref, {"participants": new_parts, "participant_ids": new_ids}
                 )
                 return True
             return False
 
-        return update_in_transaction(db.transaction(), tournament_ref)
+        return _tx(db.transaction(), ref)
+
+    @staticmethod
+    def _notify_participants(
+        tournament_data: dict[str, Any],
+        winner_name: str,
+        standings: list[dict[str, Any]],
+    ) -> None:
+        """Internal helper to send result emails."""
+        for p in tournament_data.get("participants", []):
+            if p and p.get("status") == "accepted":
+                try:
+                    u_doc = p.get("userRef").get() if "userRef" in p else None
+                    if u_doc and u_doc.exists:
+                        u_data = u_doc.to_dict()
+                        if u_data and u_data.get("email"):
+                            send_email(
+                                to=u_data["email"],
+                                subject=f"Results: {tournament_data['name']}",
+                                template="email/tournament_results.html",
+                                user=u_data,
+                                tournament=tournament_data,
+                                winner_name=winner_name,
+                                standings=standings[:3],
+                            )
+                except Exception as e:
+                    current_app.logger.error(f"Email failed: {e}")
 
     @staticmethod
     def complete_tournament(
-        tournament_id: str, user_id: str, db: Any = None
-    ) -> tuple[bool, str]:
-        """Close tournament and send results to all participants."""
+        tournament_id: str, user_uid: str, db: Client | None = None
+    ) -> None:
+        """Finalize tournament and send emails."""
         if db is None:
             db = firestore.client()
-        tournament_ref = db.collection("tournaments").document(tournament_id)
-        tournament_doc = cast("DocumentSnapshot", tournament_ref.get())
+        ref = db.collection("tournaments").document(tournament_id)
+        doc = cast(Any, ref.get())
+        if not doc.exists:
+            raise ValueError("Tournament not found")
 
-        if not tournament_doc.exists:
-            return False, "Tournament not found."
+        data = cast(dict[str, Any], doc.to_dict())
+        if not data:
+            raise ValueError("Tournament data is empty")
+        owner_id = data.get("organizer_id")
+        if not owner_id and data.get("ownerRef"):
+            owner_id = data["ownerRef"].id
 
-        t_data = tournament_doc.to_dict()
-        if not t_data:
-            return False, "Tournament data is empty."
+        if owner_id != user_uid:
+            raise PermissionError("Only the organizer can complete the tournament.")
 
-        owner_ref = t_data.get("ownerRef")
-        if not owner_ref or owner_ref.id != user_id:
-            return False, "Only the organizer can complete the tournament."
+        ref.update({"status": "Completed"})
 
-        try:
-            tournament_ref.update({"status": "Completed"})
-            standings = get_tournament_standings(
-                db, tournament_id, cast(str, t_data.get("matchType", "singles"))
-            )
-            winner_name = standings[0]["name"] if standings else "No one"
-
-            # Notify accepted participants via email
-            participants = t_data.get("participants", [])
-            for p in participants:
-                if p.get("status") == "accepted":
-                    u_doc = p["userRef"].get()
-                    if u_doc.exists:
-                        user = u_doc.to_dict()
-                        if user and user.get("email"):
-                            try:
-                                send_email(
-                                    to=user["email"],
-                                    subject=f"The results are in for {t_data['name']}!",
-                                    template="email/tournament_results.html",
-                                    user=user,
-                                    tournament=t_data,
-                                    winner_name=winner_name,
-                                    standings=standings[:3],
-                                )
-                            except Exception as e:
-                                logger.error(f"Failed to email {user['email']}: {e}")
-
-            return True, "Tournament completed and results emailed!"
-        except Exception as e:
-            return False, f"An error occurred: {e}"
-
-    @staticmethod
-    def update_tournament_details(  # noqa: PLR0913
-        tournament_id: str,
-        user_id: str,
-        name: str,
-        date: datetime.date,
-        location: str,
-        match_type: str | None = None,
-        db: Any = None,
-    ) -> tuple[bool, str]:
-        """Update tournament details."""
-        if db is None:
-            db = firestore.client()
-        tournament_ref = db.collection("tournaments").document(tournament_id)
-        tournament_doc = cast("DocumentSnapshot", tournament_ref.get())
-
-        if not tournament_doc.exists:
-            return False, "Tournament not found."
-
-        tournament_data = tournament_doc.to_dict()
-        if not tournament_data:
-            return False, "Tournament data is empty."
-
-        # Auth check
-        is_owner = tournament_data.get("organizer_id") == user_id or (
-            tournament_data.get("ownerRef")
-            and tournament_data["ownerRef"].id == user_id
+        standings = get_tournament_standings(
+            db, tournament_id, data.get("matchType", "singles")
         )
-        if not is_owner:
-            return False, "Unauthorized."
-
-        update_data: dict[str, Any] = {
-            "name": name,
-            "date": datetime.datetime.combine(date, datetime.time.min),
-            "location": location,
-        }
-        if match_type is not None:
-            # Check if tournament is ongoing (has matches)
-            is_ongoing = bool(
-                list(
-                    db.collection("matches")
-                    .where(
-                        filter=firestore.FieldFilter(
-                            "tournamentId", "==", tournament_id
-                        )
-                    )
-                    .limit(1)
-                    .stream()
-                )
-            )
-            if not is_ongoing:
-                update_data["matchType"] = match_type
-
-        tournament_ref.update(update_data)
-        return True, "Updated!"
+        winner = standings[0]["name"] if standings else "No one"
+        TournamentService._notify_participants(data, winner, standings)
