@@ -83,6 +83,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: Install dependencies
         run: |
+          uv pip install --upgrade pip --system
           uv pip install pip-audit --system
       - name: Scan for vulnerabilities
         run: pip-audit
