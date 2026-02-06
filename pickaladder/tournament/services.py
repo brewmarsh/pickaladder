@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import current_app
 
-from pickaladder.user.utils import UserService, smart_display_name
+from pickaladder.user.services import UserService, smart_display_name
 from pickaladder.utils import send_email
 
 from .utils import get_tournament_standings
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
@@ -31,7 +32,7 @@ class TournamentService:
 
         user_refs = [
             obj["userRef"]
-            if "userRef" in obj
+            if obj and "userRef" in obj
             else db.collection("users").document(obj["user_id"])
             for obj in participant_objs
             if obj and ("userRef" in obj or "user_id" in obj)
@@ -41,14 +42,20 @@ class TournamentService:
 
         user_docs = db.get_all(user_refs)
         users_map = {
-            doc.id: {**doc.to_dict(), "id": doc.id} for doc in user_docs if doc.exists
+            doc.id: {**cast(dict[str, Any], doc.to_dict()), "id": doc.id}
+            for doc in user_docs
+            if doc.exists
         }
 
         participants = []
         for obj in participant_objs:
             if not obj:
                 continue
-            uid = obj["userRef"].id if "userRef" in obj else obj.get("user_id")
+            uid = (
+                obj["userRef"].id
+                if "userRef" in obj and obj["userRef"]
+                else obj.get("user_id")
+            )
             if uid and uid in users_map:
                 u_data = users_map[uid]
                 participants.append(
@@ -166,11 +173,11 @@ class TournamentService:
         """Fetch comprehensive details for the tournament view."""
         if db is None:
             db = firestore.client()
-        doc = db.collection("tournaments").document(tournament_id).get()
+        doc = cast("DocumentSnapshot", db.collection("tournaments").document(tournament_id).get())
         if not doc.exists:
             return None
 
-        data = doc.to_dict()
+        data = cast(dict[str, Any], doc.to_dict())
         if not data:
             return None
         data["id"] = doc.id
@@ -192,7 +199,7 @@ class TournamentService:
 
         # Invitable Users
         current_p_ids = {
-            str(obj["userRef"].id if "userRef" in obj else obj.get("user_id"))
+            str(obj["userRef"].id if obj and "userRef" in obj else obj.get("user_id"))
             for obj in raw_participants
             if obj and ("userRef" in obj or "user_id" in obj)
         }
@@ -229,11 +236,11 @@ class TournamentService:
         if db is None:
             db = firestore.client()
         ref = db.collection("tournaments").document(tournament_id)
-        doc = ref.get()
+        doc = cast("DocumentSnapshot", ref.get())
         if not doc.exists:
             raise ValueError("Tournament not found.")
 
-        data = doc.to_dict()
+        data = cast(dict[str, Any], doc.to_dict())
         if not data:
             raise ValueError("Tournament data is empty.")
         owner_id = data.get("organizer_id")
@@ -292,10 +299,10 @@ class TournamentService:
             raise PermissionError("Unauthorized.")
 
         # Fetch Group
-        g_doc = db.collection("groups").document(group_id).get()
+        g_doc = cast("DocumentSnapshot", db.collection("groups").document(group_id).get())
         if not g_doc.exists:
             raise ValueError("Group not found")
-        g_data = g_doc.to_dict()
+        g_data = cast(dict[str, Any], g_doc.to_dict())
         if not g_data:
             raise ValueError("Group data is empty")
 
@@ -316,10 +323,10 @@ class TournamentService:
             db = firestore.client()
 
         t_ref = db.collection("tournaments").document(tournament_id)
-        t_doc = t_ref.get()
+        t_doc = cast("DocumentSnapshot", t_ref.get())
         if not t_doc.exists:
             raise ValueError("Tournament not found")
-        t_data = t_doc.to_dict()
+        t_data = cast(dict[str, Any], t_doc.to_dict())
         if not t_data:
             raise ValueError("Tournament data is empty")
 
@@ -371,7 +378,7 @@ class TournamentService:
 
         @firestore.transactional
         def _tx(transaction: Transaction, t_ref: DocumentReference) -> bool:
-            snap = t_ref.get(transaction=transaction)
+            snap = cast("DocumentSnapshot", t_ref.get(transaction=transaction))
             if not snap.exists:
                 return False
             parts = snap.get("participants")
@@ -402,7 +409,7 @@ class TournamentService:
 
         @firestore.transactional
         def _tx(transaction: Transaction, t_ref: DocumentReference) -> bool:
-            snap = t_ref.get(transaction=transaction)
+            snap = cast("DocumentSnapshot", t_ref.get(transaction=transaction))
             if not snap.exists:
                 return False
             parts = snap.get("participants")
@@ -439,7 +446,7 @@ class TournamentService:
         for p in tournament_data.get("participants", []):
             if p and p.get("status") == "accepted":
                 try:
-                    u_doc = p.get("userRef").get() if "userRef" in p else None
+                    u_doc = cast("DocumentSnapshot", p.get("userRef").get() if "userRef" in p else None)
                     if u_doc and u_doc.exists:
                         u_data = u_doc.to_dict()
                         if u_data and u_data.get("email"):
@@ -463,11 +470,11 @@ class TournamentService:
         if db is None:
             db = firestore.client()
         ref = db.collection("tournaments").document(tournament_id)
-        doc = ref.get()
+        doc = cast("DocumentSnapshot", ref.get())
         if not doc.exists:
             raise ValueError("Tournament not found")
 
-        data = doc.to_dict()
+        data = cast(dict[str, Any], doc.to_dict())
         if not data:
             raise ValueError("Tournament data is empty")
         owner_id = data.get("organizer_id")
@@ -479,6 +486,6 @@ class TournamentService:
 
         ref.update({"status": "Completed"})
 
-        standings = get_tournament_standings(db, tournament_id, data.get("matchType"))
+        standings = get_tournament_standings(db, tournament_id, str(data.get("matchType", "singles")))
         winner = standings[0]["name"] if standings else "No one"
         TournamentService._notify_participants(data, winner, standings)
