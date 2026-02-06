@@ -1014,6 +1014,36 @@ class UserService:
             return False
 
     @staticmethod
+    def cancel_friend_request(db: Client, user_id: str, target_user_id: str) -> bool:
+        """Cancel or decline a friend request by deleting the relationship for both users."""
+        try:
+            batch = db.batch()
+
+            # Delete request from current user's list
+            my_friend_ref = (
+                db.collection("users")
+                .document(user_id)
+                .collection("friends")
+                .document(target_user_id)
+            )
+            batch.delete(my_friend_ref)
+
+            # Delete request from the other user's list
+            their_friend_ref = (
+                db.collection("users")
+                .document(target_user_id)
+                .collection("friends")
+                .document(user_id)
+            )
+            batch.delete(their_friend_ref)
+
+            batch.commit()
+            return True
+        except Exception as e:
+            current_app.logger.error(f"Error cancelling friend request: {e}")
+            return False
+
+    @staticmethod
     def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch group rankings for a user."""
         from pickaladder.group.utils import (  # noqa: PLC0415

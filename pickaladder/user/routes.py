@@ -122,7 +122,10 @@ def friend_requests() -> Any:
     db = firestore.client()
     user_id = g.user["uid"]
     requests_data = UserService.get_user_pending_requests(db, user_id)
-    return render_template("user/requests.html", requests=requests_data)
+    sent_requests = UserService.get_user_sent_requests(db, user_id)
+    return render_template(
+        "user/requests.html", requests=requests_data, sent_requests=sent_requests
+    )
 
 
 @bp.route("/requests/<string:requester_id>/accept", methods=["POST"])
@@ -140,6 +143,21 @@ def accept_request(requester_id: str) -> Any:
         flash(f"You are now friends with {username}!", "success")
     else:
         flash("An error occurred while accepting the friend request.", "danger")
+
+    return redirect(url_for(".friend_requests"))
+
+
+@bp.route("/requests/<string:target_id>/cancel", methods=["POST"])
+@login_required
+def cancel_request(target_id: str) -> Any:
+    """Cancel a sent friend request."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+
+    if UserService.cancel_friend_request(db, user_id, target_id):
+        flash("Friend request cancelled.", "success")
+    else:
+        flash("An error occurred while cancelling the friend request.", "danger")
 
     return redirect(url_for(".friend_requests"))
 
