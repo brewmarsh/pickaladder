@@ -1,5 +1,7 @@
 """Common utilities for tests."""
 
+import unittest.mock
+
 from mockfirestore import CollectionReference, Query
 from mockfirestore.document import DocumentReference
 
@@ -29,7 +31,9 @@ class MockArrayRemove:
 def patch_mockfirestore():
     """Apply monkeypatches to mockfirestore to support FieldFilter and equality."""
 
-    def collection_where(self, field_path=None, op_string=None, value=None, filter=None):  # noqa: E501
+    def collection_where(
+        self, field_path=None, op_string=None, value=None, filter=None
+    ):  # noqa: E501
         if filter:
             return self._where(filter.field_path, filter.op_string, filter.value)
         return self._where(field_path, op_string, value)
@@ -94,7 +98,6 @@ class MockBatch:
     def __init__(self, db):
         self.db = db
         self.updates = []
-        import unittest.mock
         self.commit = unittest.mock.MagicMock(side_effect=self._real_commit)
 
     def update(self, ref, data):
