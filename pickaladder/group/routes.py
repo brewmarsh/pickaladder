@@ -169,16 +169,9 @@ def view_group(group_id: str) -> Any:
 
     eligible_friends = []
     if eligible_friend_ids:
-        # FieldPath.document_id() must be used when filtering by document IDs
-        # with a list of strings to avoid "InvalidArgument: 400 key filter
-        # value must be a Key" errors.
         eligible_friends_query = (
             db.collection("users")
-            .where(
-                filter=firestore.FieldFilter(
-                    firestore.FieldPath.document_id(), "in", eligible_friend_ids
-                )
-            )
+            .where(filter=firestore.FieldFilter("__name__", "in", eligible_friend_ids))
             .stream()
         )
         eligible_friends = [doc for doc in eligible_friends_query]

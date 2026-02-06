@@ -6,29 +6,6 @@
 {% endblock %}
 {% block content %}
     <div id="dashboard-content">
-        {# Section: Tournament Invites (Top Priority Alert Banner) #}
-        {% if pending_tournament_invites %}
-            {% for tournament in pending_tournament_invites %}
-                <div class="game-card tournament-invite-card" style="margin-bottom: 20px; border-left: 5px solid var(--accent-color);">
-                    <div style="flex: 2;">
-                        <div style="font-weight: 600; font-size: 1.1rem; color: var(--accent-color);">🏆 You've been invited!</div>
-                        <div style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">{{ tournament.name }}</div>
-                        <div class="text-muted small">Starts {{ tournament.date }}</div>
-                    </div>
-                    <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
-                        <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post" style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-primary" style="width: auto; margin: 0;">Accept</button>
-                        </form>
-                        <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post" style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-danger" style="width: auto; margin: 0;">Decline</button>
-                        </form>
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
-
         <div class="hero-stats-card">
             <button id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</button>
             <div class="hero-left-panel">
@@ -55,9 +32,7 @@
                 <a href="{{ url_for('match.record_match') }}" class="btn btn-primary">Record a Match</a>
             </div>
         </div>
-
         <div class="dashboard-columns">
-            {# Left Column: Recent Activity #}
             <div class="dashboard-column-left">
                 <div class="card">
                     <div class="header-with-button">
@@ -107,147 +82,139 @@
                     </div>
                 </div>
             </div>
-
-            {# Right Column: Competition Stack #}
             <div class="dashboard-column-right">
-                <div class="competition-stack">
-                    {# Section: Active Tournaments & Invites List #}
-                    {% if active_tournaments or pending_tournament_invites %}
-                        {# Render Invites as cards within the stack too #}
-                        {% for invite in pending_tournament_invites %}
-                            <div class="competition-card tournament-invite-card">
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div>
-                                        <div class="ranking-group-name">{{ invite.name }}</div>
-                                        <div class="text-muted small">
-                                            {{ invite.date_display or invite.date }} • {{ invite.location or 'Online' }}
-                                        </div>
-                                    </div>
-                                    <span class="badge badge-upcoming">INVITED</span>
-                                </div>
-                                <div style="display: flex; gap: 8px; margin-top: 10px;">
-                                    <form action="{{ url_for('tournament.accept_invite', tournament_id=invite.id) }}" method="post" style="flex: 1;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm" style="width: 100%; text-transform: none; font-size: 0.8rem;">Accept</button>
-                                    </form>
-                                    <form action="{{ url_for('tournament.decline_invite', tournament_id=invite.id) }}" method="post" style="flex: 1;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-danger" style="width: 100%; text-transform: none; font-size: 0.8rem;">Decline</button>
-                                    </form>
-                                </div>
-                                <a href="{{ url_for('tournament.view_tournament', tournament_id=invite.id) }}" class="btn btn-sm" style="width: 100%; margin-top: 8px; background: none; border: 1px solid var(--border-color); color: var(--text-color); text-transform: none; font-size: 0.8rem;">View Lobby</a>
-                            </div>
-                        {% endfor %}
-
-                        {% for tournament in active_tournaments %}
-                            <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="competition-card active-tournament-card">
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div>
-                                        <div class="ranking-group-name">{{ tournament.name }}</div>
-                                        <div class="text-muted small">
-                                            {{ tournament.date_display }} • {{ tournament.location or 'Online' }}
-                                        </div>
-                                    </div>
-                                    {% if tournament.status == 'Active' %}
-                                        <span class="badge badge-live">LIVE</span>
-                                    {% else %}
-                                        <span class="badge badge-upcoming">Upcoming</span>
-                                    {% endif %}
-                                </div>
-                                <span class="btn btn-sm" style="margin-top: 10px; width: 100%; display: block;">Enter Lobby</span>
-                            </a>
-                        {% endfor %}
-                    {% endif %}
-
-                    {# Section: My Groups #}
-                    <div class="card" style="padding: 16px;">
-                        <h3 style="margin-top: 0; margin-bottom: 16px;">My Groups</h3>
-                        {% for ranking in group_rankings %}
-                            <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}" class="ranking-card">
-                                <div class="ranking-card-top">
-                                    <span class="ranking-group-name">{{ ranking.group_name }}</span>
-                                    <span class="rank-badge-small">#{{ ranking.rank or '?' }}</span>
-                                </div>
-                                <div class="ranking-details">
-                                    {% if ranking.rank == 1 %}
-                                        Reigning Champion 👑
-                                    {% elif ranking.rank and ranking.rank > 1 %}
-                                        <span class="overtake-value">{{ "%.1f"|format(ranking.points_to_overtake) }}</span> pts to overtake <strong>{{ ranking.player_above }}</strong>
-                                    {% else %}
-                                        No rank yet
-                                    {% endif %}
-                                </div>
-                                <div class="form-dots-row">
-                                    {% for result in ranking.form %}
-                                        <span class="form-dot-small {{ result }}"></span>
+                {% if pending_tournament_invites %}
+                    <div class="card" style="margin-bottom: 24px; border-left: 6px solid var(--primary-brand);">
+                        <h3>Tournament Invites</h3>
+                        <div class="table-container">
+                            <table class="table responsive-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tournament</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for invite in pending_tournament_invites %}
+                                        <tr>
+                                            <td data-label="Tournament">
+                                                <a href="{{ url_for('tournament.view_tournament', tournament_id=invite.id) }}"><strong>{{ invite.name }}</strong></a>
+                                                <br><small class="text-muted">{{ invite.date }}</small>
+                                            </td>
+                                            <td data-label="Actions">
+                                                <div style="display: flex; gap: 5px;">
+                                                    <form action="{{ url_for('tournament.accept_invite', tournament_id=invite.id) }}" method="post" style="display: inline;">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <button type="submit" class="btn" style="padding: 8px 12px; font-size: 12px;">Accept</button>
+                                                    </form>
+                                                    <form action="{{ url_for('tournament.decline_invite', tournament_id=invite.id) }}" method="post" style="display: inline;">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <button type="submit" class="btn btn-danger" style="padding: 8px 12px; font-size: 12px;">Decline</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="card">
+                    <h3>Friend Requests</h3>
+                    <div class="table-container">
+                        <table class="table responsive-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for request in requests %}
+                                    <tr>
+                                        <td data-label="Username">
+                                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}'s thumbnail" class="profile-picture-thumbnail avatar" style="vertical-align: middle; margin-right: 10px;">
+                                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
+                                        </td>
+                                        <td data-label="Actions" style="text-align: right;">
+                                            <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn">Accept</button>
+                                            </form>
+                                            <form action="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-danger">Decline</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="100%">No pending friend requests.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 style="margin-top: 20px;">Your Friends</h3>
+                    <div class="table-container">
+                        <table class="table responsive-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>DUPR Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for friend in friends %}
+                                    <tr>
+                                        <td data-label="Username">
+                                            <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}'s thumbnail" class="profile-picture-thumbnail avatar" style="vertical-align: middle; margin-right: 10px;">
+                                            <a href="{{ url_for('user.view_user', user_id=friend.id) }}">{{ friend.username }}</a>
+                                        </td>
+                                        <td data-label="DUPR Rating">{{ friend.duprRating or 'N/A' }}</td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="100%">You have no friends yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 style="margin-top: 20px;">My Groups</h3>
+                    <div>
+                        {% for ranking in group_rankings %}
+                            <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}" class="group-ranking-card">
+                                <div class="group-ranking-card-header">
+                                    <span class="group-name">{{ ranking.group_name }}</span>
+                                    <span class="group-rank">Rank: {{ ranking.rank or 'N/A' }}</span>
+                                </div>
+                                <div class="group-ranking-card-body">
+                                    {% if ranking.rank == 1 %}
+                                        <div class="rank-display">👑</div><div class="rank-text">Reigning Champion</div>
+                                    {% elif ranking.rank and ranking.rank > 1 %}
+                                        <div class="points-to-overtake">
+                                            <strong>{{ "%.2f"|format(ranking.points_to_overtake) }}</strong>
+                                            <span class="points-label">points to overtake <strong>{{ ranking.player_above }}</strong></span>
+                                        </div>
+                                    {% else %}
+                                        <div class="rank-display">-</div><div class="rank-text">No rank yet</div>
+                                    {% endif %}
+                                </div>
+                                <div class="group-ranking-card-footer">
+                                    <span class="form-preview-label">Form:</span>
+                                    <div class="form-preview">
+                                        {% for result in ranking.form %}
+                                            <span class="form-indicator {{ result }}"></span>
+                                        {% else %}
+                                            No recent matches
+                                        {% endfor %}
+                                    </div>
                                 </div>
                             </a>
                         {% else %}
-                            <p class="text-muted">You are not a member of any groups.</p>
+                            <p>You are not a member of any groups.</p>
                         {% endfor %}
-                    </div>
-
-                    {# Section: Past Tournaments #}
-                    <div class="card" style="padding: 16px;">
-                        <h3 style="margin-top: 0; margin-bottom: 12px;">Past Tournaments</h3>
-                        <div class="past-tournaments-list">
-                            {% for tournament in past_tournaments %}
-                                <div class="past-tournament-row">
-                                    <div class="past-tournament-info">
-                                        <strong>{{ tournament.name }}</strong><br>
-                                        <small class="text-muted">{{ tournament.date_display }}</small>
-                                    </div>
-                                    <div class="past-tournament-winner">
-                                        Winner: {{ tournament.winner_name }}
-                                    </div>
-                                </div>
-                            {% else %}
-                                <p class="text-muted">No past tournaments.</p>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    {# Section: Social (Friends) #}
-                    <div class="card" style="padding: 16px;">
-                        <h3 style="margin-top: 0; margin-bottom: 16px;">Social</h3>
-                        {% if requests %}
-                            <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Friend Requests</h4>
-                            <div class="table-container" style="box-shadow: none; border: 1px solid var(--border-color); margin-bottom: 16px; border-radius: 4px;">
-                                <table class="table responsive-table" style="margin-top: 0;">
-                                    <tbody>
-                                        {% for request in requests %}
-                                            <tr>
-                                                <td style="padding: 8px;">
-                                                    <a href="{{ url_for('user.view_user', user_id=request.id) }}" style="font-size: 0.85rem;">{{ request.username }}</a>
-                                                </td>
-                                                <td style="padding: 8px; text-align: right;">
-                                                    <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
-                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                        <button type="submit" class="btn btn-sm" style="padding: 4px 8px; font-size: 0.75rem; width: auto; text-transform: none;">Accept</button>
-                                                    </form>
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% endif %}
-
-                        <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Your Friends</h4>
-                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                            {% for friend in friends[:10] %}
-                                <a href="{{ url_for('user.view_user', user_id=friend.id) }}" title="{{ friend.username }}">
-                                    <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="profile-picture-thumbnail" style="width: 32px; height: 32px; margin: 0;">
-                                </a>
-                            {% else %}
-                                <p class="text-muted small">No friends yet.</p>
-                            {% endfor %}
-                            {% if friends|length > 10 %}
-                                <a href="{{ url_for('user.view_community') }}" class="text-muted small" style="align-self: center;">+{{ friends|length - 10 }} more</a>
-                            {% endif %}
-                        </div>
-                        <a href="{{ url_for('user.view_community') }}" class="btn btn-sm btn-outline" style="width: 100%; margin-top: 12px; background: none; border: 1px solid var(--border-color); color: var(--text-color); text-transform: none; font-size: 0.8rem;">Community Hub</a>
                     </div>
                 </div>
             </div>
@@ -294,28 +261,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const profilePictureInput = document.querySelector('input[name="profile_picture"]');
     const profilePictureImg = document.getElementById('profile-picture-img');
 
-    if (profilePictureInput) {
-        profilePictureInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    profilePictureImg.src = e.target.result;
-                }
-                reader.readAsDataURL(this.files[0]);
+    profilePictureInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                profilePictureImg.src = e.target.result;
             }
-        });
-    }
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
 
     // Toggle for the profile edit section
     const editProfileToggle = document.getElementById('edit-profile-toggle');
     const profileEditSection = document.getElementById('profile-edit-section');
 
-    if (editProfileToggle) {
-        editProfileToggle.addEventListener('click', function() {
-            const isHidden = profileEditSection.style.display === 'none';
-            profileEditSection.style.display = isHidden ? 'block' : 'none';
-        });
-    }
+    editProfileToggle.addEventListener('click', function() {
+        const isHidden = profileEditSection.style.display === 'none';
+        profileEditSection.style.display = isHidden ? 'block' : 'none';
+    });
 });
 </script>
 {% endblock %}
