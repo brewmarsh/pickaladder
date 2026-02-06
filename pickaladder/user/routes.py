@@ -166,12 +166,12 @@ def dashboard() -> Any:
         form.dark_mode.data = user_data.get("dark_mode")
 
     # Fetch dashboard data for SSR
-    matches_docs = UserService.get_user_matches(db, user_id)
-    stats = UserService.calculate_stats(matches_docs, user_id)
+    matches_all = UserService.get_user_matches(db, user_id)
+    stats = UserService.calculate_stats(matches_all, user_id)
 
-    # Prepare formatted matches (limit to 20)
-    recent_matches_items = stats["processed_matches"][:20]
-    recent_matches_docs = [m["doc"] for m in recent_matches_items]
+    # Prepare formatted matches for the activity feed (limit to 20)
+    # calculate_stats already sorts them by date descending
+    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:20]]
     matches = UserService.format_matches_for_dashboard(db, recent_matches_docs, user_id)
 
     # Fetch friends, requests, rankings, and tournament invites
@@ -181,18 +181,6 @@ def dashboard() -> Any:
     pending_tournament_invites = UserService.get_pending_tournament_invites(db, user_id)
     active_tournaments = UserService.get_active_tournaments(db, user_id)
     past_tournaments = UserService.get_past_tournaments(db, user_id)
-
-    # Fetch and filter tournaments
-    tournaments = TournamentService.list_tournaments(user_id, db=db)
-    active_tournaments = [
-        t for t in tournaments if t.get("status") in ["Active", "Scheduled"]
-    ]
-    active_tournaments.sort(key=lambda x: x.get("date") or datetime.datetime.max)
-
-    past_tournaments = [t for t in tournaments if t.get("status") == "Completed"]
-    past_tournaments.sort(
-        key=lambda x: x.get("date") or datetime.datetime.min, reverse=True
-    )
 
     if form.validate_on_submit():
         try:
@@ -615,20 +603,15 @@ def api_dashboard() -> Any:
     # Fetch pending friend requests
     requests_data = UserService.get_user_pending_requests(db, user_id)
 
-    # Fetch and process matches
-    matches = UserService.get_user_matches(db, user_id)
-    stats = UserService.calculate_stats(matches, user_id)
+    # Fetch and process matches for the dashboard data
+    matches_all = UserService.get_user_matches(db, user_id)
+    stats = UserService.calculate_stats(matches_all, user_id)
 
-    # Sort all match docs by date and take the most recent 10 for the feed
-    sorted_matches_docs = sorted(
-        matches,
-        key=lambda x: (x.to_dict() or {}).get("matchDate") or x.create_time,
-        reverse=True,
-    )[:10]
-
-    # Format matches for the dashboard feed
+    # Format the 10 most recent matches for the activity feed
+    # calculate_stats already sorted them by date descending
+    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:10]]
     matches_data = UserService.format_matches_for_dashboard(
-        db, sorted_matches_docs, user_id
+        db, recent_matches_docs, user_id
     )
 
     # Get group rankings

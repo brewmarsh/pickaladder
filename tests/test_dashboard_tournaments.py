@@ -61,6 +61,42 @@ class DashboardTournamentsTestCase(unittest.TestCase):
         self.assertEqual(active[1]["name"], "Scheduled Tournament")
         self.assertIn("date_display", active[0])
 
+    def test_get_active_tournaments_sorting(self):
+        """Test that active tournaments are sorted by date ascending."""
+        user_id = "user123"
+        mock_db = MagicMock()
+
+        mock_doc1 = MagicMock()
+        mock_doc1.id = "t1"
+        mock_doc1.to_dict.return_value = {
+            "name": "Later Tournament",
+            "status": "Active",
+            "participant_ids": [user_id],
+            "participants": [{"user_id": user_id, "status": "accepted"}],
+            "date": datetime.datetime(2023, 12, 1),
+        }
+
+        mock_doc2 = MagicMock()
+        mock_doc2.id = "t2"
+        mock_doc2.to_dict.return_value = {
+            "name": "Earlier Tournament",
+            "status": "Active",
+            "participant_ids": [user_id],
+            "participants": [{"user_id": user_id, "status": "accepted"}],
+            "date": datetime.datetime(2023, 11, 1),
+        }
+
+        mock_db.collection.return_value.where.return_value.stream.return_value = [
+            mock_doc1,
+            mock_doc2,
+        ]
+
+        active = UserService.get_active_tournaments(mock_db, user_id)
+
+        self.assertEqual(len(active), 2)
+        self.assertEqual(active[0]["name"], "Earlier Tournament")
+        self.assertEqual(active[1]["name"], "Later Tournament")
+
     def test_get_past_tournaments(self):
         """Test getting past tournaments."""
         user_id = "user123"
