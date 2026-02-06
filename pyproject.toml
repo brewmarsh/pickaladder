@@ -31,16 +31,3 @@ indent-style = "space"
 
 # Like Black, respect magic trailing commas.
 skip-magic-trailing-comma = false
-
-[dependency-groups]
-dev = [
-    "bandit==1.9.3",
-    "coverage==7.13.2",
-    "faker==40.1.2",
-    "mkdocs==1.6.1",
-    "mock-firestore==0.11.0",
-    "mypy==1.19.1",
-    "pytest==8.3.4",
-    "pytest-flask==1.3.0",
-    "ruff==0.14.14",
-]

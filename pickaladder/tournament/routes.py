@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 from typing import Any
 
+from firebase_admin import firestore  # noqa: F401
 from flask import (
     flash,
     g,
@@ -151,7 +152,7 @@ def edit_tournament(tournament_id: str) -> Any:
 def invite_player(tournament_id: str) -> Any:
     """Invite a player to a tournament."""
     form = InvitePlayerForm()
-    # Dynamically set choices to allow validation
+    # Dynamically set choices to allow validation (hacky but standard in this app)
     submitted_uid = request.form.get("user_id")
     if submitted_uid:
         form.user_id.choices = [(submitted_uid, "")]
