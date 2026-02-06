@@ -19,7 +19,7 @@ jobs:
     - name: Install dependencies
       run: |
         uv pip install --upgrade pip --system
-        uv pip install ruff refurb --system
+        uv pip install ruff==0.14.14 refurb --system
     - name: Run ruff (Blocking Checks)
       run: ruff check --select UP,E,F,I .
     - name: Run ruff (Audit Checks)

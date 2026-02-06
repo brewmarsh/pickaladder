@@ -19,7 +19,7 @@ jobs:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          uv pip install ruff --system
+          uv pip install ruff==0.14.14 --system
       - name: Lint with ruff
         run: ruff check .
 
@@ -35,7 +35,7 @@ jobs:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          uv pip install ruff --system
+          uv pip install ruff==0.14.14 --system
       - name: Format with ruff
         run: ruff format --check .
 
@@ -51,7 +51,7 @@ jobs:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          uv pip install bandit --system
+          uv pip install bandit==1.9.3 --system
       - name: Security Analysis with Bandit
         run: bandit -r .
 
@@ -67,7 +67,7 @@ jobs:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          uv pip install mypy -r requirements.txt --system
+          uv pip install mypy==1.19.1 -r requirements.txt --system
       - name: Static Type Checking with mypy
         run: python -m mypy --no-incremental .
 
