@@ -4,10 +4,34 @@ from mockfirestore import CollectionReference, Query
 from mockfirestore.document import DocumentReference
 
 
+class MockArrayUnion:
+    def __init__(self, values):
+        self.values = values
+
+    def __iter__(self):
+        return iter(self.values)
+
+    def __len__(self):
+        return len(self.values)
+
+
+class MockArrayRemove:
+    def __init__(self, values):
+        self.values = values
+
+    def __iter__(self):
+        return iter(self.values)
+
+    def __len__(self):
+        return len(self.values)
+
+
 def patch_mockfirestore():
     """Apply monkeypatches to mockfirestore to support FieldFilter and equality."""
 
-    def collection_where(self, field_path=None, op_string=None, value=None, filter=None):
+    def collection_where(
+        self, field_path=None, op_string=None, value=None, filter=None
+    ):
         if filter:
             return self._where(filter.field_path, filter.op_string, filter.value)
         return self._where(field_path, op_string, value)
@@ -33,4 +57,29 @@ def patch_mockfirestore():
     if not hasattr(DocumentReference, "_orig_eq"):
         DocumentReference._orig_eq = DocumentReference.__eq__
         DocumentReference.__eq__ = doc_ref_eq
+
+    if not hasattr(DocumentReference, "__hash__"):
         DocumentReference.__hash__ = lambda self: hash(tuple(self._path))
+
+    if not hasattr(DocumentReference, "_orig_update"):
+        DocumentReference._orig_update = DocumentReference.update
+
+        def patched_update(self, data):
+            current_data = self.get().to_dict() or {}
+            new_data = {}
+            for k, v in data.items():
+                if isinstance(v, MockArrayUnion):
+                    existing = current_data.get(k, [])
+                    if not isinstance(existing, list):
+                        existing = []
+                    new_data[k] = existing + [i for i in v.values if i not in existing]
+                elif isinstance(v, MockArrayRemove):
+                    existing = current_data.get(k, [])
+                    if not isinstance(existing, list):
+                        existing = []
+                    new_data[k] = [i for i in existing if i not in v.values]
+                else:
+                    new_data[k] = v
+            return self._orig_update(new_data)
+
+        DocumentReference.update = patched_update

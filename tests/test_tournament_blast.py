@@ -11,7 +11,7 @@ from mockfirestore import MockFirestore
 from pickaladder import create_app
 from pickaladder.tournament.services import TournamentService  # noqa: F401
 from pickaladder.user.utils import _migrate_ghost_references
-from tests.conftest import patch_mockfirestore
+from tests.conftest import MockArrayRemove, MockArrayUnion, patch_mockfirestore
 
 patch_mockfirestore()
 
@@ -53,8 +53,8 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         self.mock_firestore_service = MagicMock()
         self.mock_firestore_service.client.return_value = self.mock_db
-        self.mock_firestore_service.ArrayUnion = MagicMock(side_effect=lambda x: x)
-        self.mock_firestore_service.ArrayRemove = MagicMock(side_effect=lambda x: x)
+        self.mock_firestore_service.ArrayUnion = MockArrayUnion
+        self.mock_firestore_service.ArrayRemove = MockArrayRemove
 
         # Mock FieldFilter
         class MockFieldFilter:
@@ -67,8 +67,7 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            # FIX: Ensure we patch the service layer where firestore is actually used
-            "firestore_service": patch(
+            "firestore_services": patch(
                 "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_service,
             ),
@@ -164,6 +163,7 @@ class TournamentBlastTestCase(unittest.TestCase):
             .to_dict()
         )
         self.assertIn("user_ghost", t_data["participant_ids"])
+        # Should have 3 participants now: owner, user_real, user_ghost
         self.assertEqual(len(t_data["participants"]), 3)
 
         # Find ghost participant
@@ -198,6 +198,9 @@ class TournamentBlastTestCase(unittest.TestCase):
             ],
         }
 
+        # Set up the query chain for tournaments
+        # _migrate_ghost_references calls
+        # db.collection("tournaments").where(...).stream()
         def collection_side_effect(name):
             mock_coll = MagicMock()
             if name == "tournaments":
@@ -212,6 +215,7 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         # Verify batch.update was called for the tournament
         mock_batch.update.assert_called()
+        # Find the call for the tournament
         tourney_update_call = None
         for call in mock_batch.update.call_args_list:
             if call[0][0] == mock_tournament_doc.reference:
@@ -221,11 +225,14 @@ class TournamentBlastTestCase(unittest.TestCase):
         self.assertIsNotNone(tourney_update_call)
         update_data = cast(Any, tourney_update_call)[0][1]
 
+        # Check participant_ids
         self.assertIn("real_id", update_data["participant_ids"])
         self.assertNotIn("ghost_id", update_data["participant_ids"])
 
+        # Check participants
         new_participants = update_data["participants"]
         self.assertEqual(len(new_participants), 2)
+        # One should be the real user now
         found_real = False
         for p in new_participants:
             if p.get("userRef") == real_user_ref:

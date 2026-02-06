@@ -10,7 +10,7 @@
                     <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn btn-outline btn-sm">Edit Details</a>
                 {% endif %}
             </div>
-            <p class="text-muted">{{ tournament.date }} | {{ tournament.location }}</p>
+            <p class="text-muted">{{ tournament.date_display or tournament.date }} | {{ tournament.location }}</p>
             <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}">
                 {{ tournament.status or 'Active' }}
             </span>
@@ -164,15 +164,10 @@
                 </div>
                 <div class="card-body" style="padding: 0;">
                     <form action="{{ url_for('tournament.invite_player', tournament_id=tournament.id) }}" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {{ invite_form.csrf_token }}
                         <div class="form-group">
-                            <label for="user_id" class="form-label">Player</label>
-                            <select name="user_id" id="user_id" class="form-input" required>
-                                <option value="" disabled selected>Select a player</option>
-                                {% for user in invitable_users %}
-                                    <option value="{{ user.id }}">{{ user|smart_display_name }}</option>
-                                {% endfor %}
-                            </select>
+                            {{ invite_form.user_id.label(class="form-label") }}
+                            {{ invite_form.user_id(class="form-input") }}
                         </div>
                         <button type="submit" class="btn btn-primary">Invite</button>
                     </form>
@@ -204,7 +199,7 @@
 
         <div class="card">
             <h4>Quick Info</h4>
-            <p><strong>Date:</strong> {{ tournament.date }}</p>
+            <p><strong>Date:</strong> {{ tournament.date_display or tournament.date }}</p>
             <p><strong>Location:</strong> {{ tournament.location }}</p>
             <p><strong>Format:</strong> {{ tournament.matchType|capitalize }}</p>
         </div>
