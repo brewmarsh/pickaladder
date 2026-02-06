@@ -187,10 +187,8 @@ class UserService:
                     p_uid = p["user_id"]
 
                 if p_uid == ghost_ref.id:
-                    if "userRef" in p:
-                        p["userRef"] = real_user_ref
-                    if "user_id" in p:
-                        p["user_id"] = real_user_ref.id
+                    p["userRef"] = real_user_ref
+                    p["user_id"] = real_user_ref.id
                     updated = True
 
             if updated:

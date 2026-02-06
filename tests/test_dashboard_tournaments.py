@@ -6,7 +6,7 @@ import datetime
 import unittest
 from unittest.mock import MagicMock, patch
 
-from pickaladder.user.utils import UserService
+from pickaladder.user.services import UserService
 
 
 class DashboardTournamentsTestCase(unittest.TestCase):
