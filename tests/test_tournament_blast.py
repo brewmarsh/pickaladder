@@ -6,8 +6,19 @@ import unittest
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
+from mockfirestore import MockFirestore
+
 from pickaladder import create_app
+from pickaladder.tournament.services import TournamentService  # noqa: F401
 from pickaladder.user.utils import _migrate_ghost_references
+from tests.conftest import (
+    MockArrayRemove,
+    MockArrayUnion,
+    MockBatch,
+    patch_mockfirestore,
+)
+
+patch_mockfirestore()
 
 # Mock user payloads
 MOCK_USER_ID = "owner_id"
@@ -20,12 +31,29 @@ class TournamentBlastTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
+        self.mock_db = MockFirestore()
+
+        self.mock_batch_instance = MockBatch(self.mock_db)
+        self.mock_db.batch = MagicMock(return_value=self.mock_batch_instance)
+
         self.mock_firestore_service = MagicMock()
+        self.mock_firestore_service.client.return_value = self.mock_db
+        self.mock_firestore_service.ArrayUnion = MockArrayUnion
+        self.mock_firestore_service.ArrayRemove = MockArrayRemove
+
+        # Mock FieldFilter
+        class MockFieldFilter:
+            def __init__(self, field_path, op_string, value):
+                self.field_path = field_path
+                self.op_string = op_string
+                self.value = value
+
+        self.mock_firestore_service.FieldFilter = MockFieldFilter
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_routes": patch(
-                "pickaladder.tournament.routes.firestore",
+            "firestore_services": patch(
+                "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
@@ -59,121 +87,76 @@ class TournamentBlastTestCase(unittest.TestCase):
     def test_invite_group_success(self) -> None:
         """Test successfully inviting a group to a tournament."""
         self._set_session_user()
-        mock_db = self.mock_firestore_service.client.return_value
 
-        # Use a dictionary to map collection names and document IDs to mocks
-        collection_mocks = {}
+        # Setup owner
+        owner_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+        owner_ref.set(MOCK_USER_DATA)
 
-        def get_collection(name):
-            if name not in collection_mocks:
-                mock_coll = MagicMock()
-                collection_mocks[name] = mock_coll
-                doc_mocks = {}
-
-                def get_document(doc_id):
-                    if doc_id not in doc_mocks:
-                        mock_doc = MagicMock()
-                        mock_doc.id = doc_id
-                        mock_doc.reference = mock_doc
-                        doc_mocks[doc_id] = mock_doc
-                    return doc_mocks[doc_id]
-
-                mock_coll.document.side_effect = get_document
-            return collection_mocks[name]
-
-        mock_db.collection.side_effect = get_collection
-
-        # Mock owner user doc
-        mock_owner_doc = mock_db.collection("users").document(MOCK_USER_ID)
-        mock_owner_snapshot = MagicMock()
-        mock_owner_snapshot.exists = True
-        mock_owner_snapshot.to_dict.return_value = MOCK_USER_DATA
-        mock_owner_doc.get.return_value = mock_owner_snapshot
-
-        # Mock group
-        group_id = "test_group_id"
-        mock_group_ref = mock_db.collection("groups").document(group_id)
-        mock_group_snapshot = MagicMock()
-        mock_group_snapshot.exists = True
-
-        member1_ref = mock_db.collection("users").document("user_real")
-        member2_ref = mock_db.collection("users").document("user_ghost")
-
-        mock_group_snapshot.to_dict.return_value = {
-            "name": "Cool Group",
-            "members": [member1_ref, member2_ref],
-        }
-        mock_group_ref.get.return_value = mock_group_snapshot
-
-        # Mock tournament
-        tournament_id = "test_tournament_id"
-        mock_tournament_ref = mock_db.collection("tournaments").document(tournament_id)
-        mock_tournament_snapshot = MagicMock()
-        mock_tournament_snapshot.exists = True
-        mock_tournament_snapshot.to_dict.return_value = {
-            "name": "Summer Open",
-            "participant_ids": ["owner_id", "user_real"],
-            "participants": [
-                {"userRef": mock_owner_doc, "status": "accepted"},
-                {"userRef": member1_ref, "status": "pending"},
-            ],
-        }
-        mock_tournament_ref.get.return_value = mock_tournament_snapshot
-
-        # Mock member docs for db.get_all
-        member1_doc = MagicMock()
-        member1_doc.exists = True
-        member1_doc.id = "user_real"
-        member1_doc.to_dict.return_value = {"username": "real_user", "is_ghost": False}
-        member1_doc.reference = member1_ref
-
-        member2_doc = MagicMock()
-        member2_doc.exists = True
-        member2_doc.id = "user_ghost"
-        member2_doc.to_dict.return_value = {
-            "username": "ghost_123",
-            "is_ghost": True,
-            "email": "ghost@example.com",
-        }
-        member2_doc.reference = member2_ref
-
-        mock_db.get_all.return_value = [member1_doc, member2_doc]
-
-        # Mock batch
-        mock_batch = MagicMock()
-        mock_db.batch.return_value = mock_batch
-
-        # Mock standings for the view redirect (follow_redirects=False is easier)
-        response = self.client.post(
-            f"/tournaments/{tournament_id}/invite_group",
-            data={"group_id": group_id},
-            follow_redirects=False,
+        # Setup members
+        member1_ref = self.mock_db.collection("users").document("user_real")
+        member1_ref.set({"username": "real_user", "is_ghost": False})
+        member2_ref = self.mock_db.collection("users").document("user_ghost")
+        member2_ref.set(
+            {"username": "ghost_123", "is_ghost": True, "email": "ghost@example.com"}
         )
 
+        # Setup group
+        group_id = "test_group_id"
+        self.mock_db.collection("groups").document(group_id).set(
+            {
+                "name": "Cool Group",
+                "members": [owner_ref, member1_ref, member2_ref],
+            }
+        )
+
+        # Setup tournament
+        tournament_id = "test_tournament_id"
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Summer Open",
+                "organizer_id": MOCK_USER_ID,
+                "participant_ids": [MOCK_USER_ID, "user_real"],
+                "participants": [
+                    {"userRef": owner_ref, "status": "accepted"},
+                    {"userRef": member1_ref, "status": "pending"},
+                ],
+            }
+        )
+
+        # Mock standings for the view redirect
+        with patch(
+            "pickaladder.tournament.services.get_tournament_standings"
+        ) as mock_standings:
+            mock_standings.return_value = []
+            response = self.client.post(
+                f"/tournaments/{tournament_id}/invite_group",
+                data={"group_id": group_id},
+                follow_redirects=False,
+            )
+
         self.assertEqual(response.status_code, 302)
-        # Verify batch updates
-        mock_db.batch.assert_called_once()
-        mock_batch.update.assert_called_once()
 
-        # Should only invite member2 (ghost) because member1 already a participant
-        # In this environment, firestore is mocked, so ArrayUnion is a mock.
-        self.mock_firestore_service.ArrayUnion.assert_called()
+        # Verify batch updates via our MockBatch
+        self.mock_db.batch.assert_called()
+        self.mock_batch_instance.commit.assert_called()
 
-        # Find call for participants
-        # It's called twice, once for participants and once for participant_ids
-        calls = self.mock_firestore_service.ArrayUnion.call_args_list
+        # Verify DB update
+        t_data = (
+            self.mock_db.collection("tournaments")
+            .document(tournament_id)
+            .get()
+            .to_dict()
+        )
+        self.assertIn("user_ghost", t_data["participant_ids"])
+        # Should have 3 participants now: owner, user_real, user_ghost
+        self.assertEqual(len(t_data["participants"]), 3)
 
-        # Verify participant object
-        invited_p_list = calls[0][0][0]
-        self.assertEqual(len(invited_p_list), 1)
-        self.assertEqual(invited_p_list[0]["email"], "ghost@example.com")
-        self.assertEqual(invited_p_list[0]["userRef"], member2_ref)
-
-        # Verify participant_ids
-        invited_ids_list = calls[1][0][0]
-        self.assertEqual(invited_ids_list, ["user_ghost"])
-
-        mock_batch.commit.assert_called_once()
+        # Find ghost participant
+        ghost_p = next(
+            p for p in t_data["participants"] if p.get("userRef").id == "user_ghost"
+        )
+        self.assertEqual(ghost_p["status"], "pending")
+        self.assertEqual(ghost_p["email"], "ghost@example.com")
 
     def test_migrate_ghost_references_tournaments(self) -> None:
         """Test that _migrate_ghost_references correctly updates tournaments."""
