@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import datetime
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import current_app
 
-from pickaladder.user.utils import smart_display_name
+from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
 from .utils import get_tournament_standings
@@ -18,8 +17,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
-
-logger = logging.getLogger(__name__)
 
 
 class TournamentService:
@@ -206,7 +203,7 @@ class TournamentService:
 
         # Invitable Users
         current_p_ids = {
-            str(obj["userRef"].id if obj and "userRef" in obj else obj.get("user_id"))
+            str(obj["userRef"].id if "userRef" in obj else obj.get("user_id"))
             for obj in raw_participants
             if obj and ("userRef" in obj or "user_id" in obj)
         }
@@ -214,7 +211,9 @@ class TournamentService:
             db, user_uid, current_p_ids
         )
 
-        from pickaladder.user.utils import UserService
+        # Groups for dropdown
+        from pickaladder.user.services import UserService  # noqa: PLC0415
+
         user_groups = UserService.get_user_groups(db, user_uid)
 
         # Ownership
@@ -268,6 +267,7 @@ class TournamentService:
                 .stream()
             )
             if any(matches):
+                # Don't update matchType if matches exist
                 del update_data["matchType"]
 
         ref.update(update_data)
@@ -297,12 +297,14 @@ class TournamentService:
         db: Client, tournament_data: dict[str, Any], group_id: str, user_uid: str
     ) -> list[Any]:
         """Validate permissions and return group member references."""
+        # Check Tournament Ownership
         owner_id = tournament_data.get("organizer_id")
         if not owner_id and tournament_data.get("ownerRef"):
             owner_id = tournament_data["ownerRef"].id
         if owner_id != user_uid:
             raise PermissionError("Unauthorized.")
 
+        # Fetch Group
         g_doc = cast(Any, db.collection("groups").document(group_id).get())
         if not g_doc.exists:
             raise ValueError("Group not found")
@@ -310,6 +312,7 @@ class TournamentService:
         if not g_data:
             raise ValueError("Group data is empty")
 
+        # Check Group Membership
         member_refs = g_data.get("members", [])
         if not any(m.id == user_uid for m in member_refs):
             raise PermissionError(
@@ -463,7 +466,7 @@ class TournamentService:
                                 standings=standings[:3],
                             )
                 except Exception as e:
-                    current_app.logger.error(f"Email failed: {e}")
+                    logging.error(f"Email failed: {e}")
 
     @staticmethod
     def complete_tournament(

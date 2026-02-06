@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, cast
 from firebase_admin import firestore
 from flask import current_app
 
-from .utils import smart_display_name
+from .helpers import smart_display_name
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot

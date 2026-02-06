@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import unittest
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 from pickaladder.group.utils import (
@@ -54,7 +54,7 @@ class TestUtilsCoverage(unittest.TestCase):
             "team2": [mock_user3_ref, mock_user4_ref],
             "player1Score": 11,
             "player2Score": 5,
-            "matchDate": datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC),
+            "matchDate": datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         }
         mock_db.collection("matches").where.return_value.stream.return_value = [
             mock_match
@@ -111,7 +111,7 @@ class TestUtilsCoverage(unittest.TestCase):
             "player2Ref": mock_user2_ref,
             "player1Score": 10,
             "player2Score": 10,
-            "matchDate": datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC),
+            "matchDate": datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         }
         mock_db.collection("matches").where.return_value.stream.return_value = [
             mock_match
@@ -206,7 +206,7 @@ class TestUtilsCoverage(unittest.TestCase):
             "group1"
         ).get.return_value = mock_group_doc
 
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         mock_datetime.now.return_value = now
         one_week_ago = now - timedelta(days=7)
         two_weeks_ago = now - timedelta(days=14)
@@ -268,7 +268,7 @@ class TestUtilsCoverage(unittest.TestCase):
             "group1"
         ).get.return_value = mock_group_doc
 
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         matches = []
         for i in range(5):
             match = MagicMock()
