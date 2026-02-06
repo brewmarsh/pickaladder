@@ -113,7 +113,9 @@ class UserService:
             )
 
             batch = db.batch()
-            UserService._migrate_ghost_references(db, batch, ghost_doc.reference, real_user_ref)
+            UserService._migrate_ghost_references(
+                db, batch, ghost_doc.reference, real_user_ref
+            )
             batch.delete(ghost_doc.reference)
             batch.commit()
             current_app.logger.info("Ghost user merge completed successfully.")
@@ -144,7 +146,9 @@ class UserService:
                 .where(filter=firestore.FieldFilter(field, "array_contains", ghost_ref))
                 .stream()
             ):
-                batch.update(match.reference, {field: firestore.ArrayRemove([ghost_ref])})
+                batch.update(
+                    match.reference, {field: firestore.ArrayRemove([ghost_ref])}
+                )
                 batch.update(
                     match.reference, {field: firestore.ArrayUnion([real_user_ref])}
                 )
@@ -154,14 +158,18 @@ class UserService:
             filter=firestore.FieldFilter("members", "array_contains", ghost_ref)
         )
         for group in groups_query.stream():
-            batch.update(group.reference, {"members": firestore.ArrayRemove([ghost_ref])})
+            batch.update(
+                group.reference, {"members": firestore.ArrayRemove([ghost_ref])}
+            )
             batch.update(
                 group.reference, {"members": firestore.ArrayUnion([real_user_ref])}
             )
 
         # 6: Update Tournament Participants
         tournaments_query = db.collection("tournaments").where(
-            filter=firestore.FieldFilter("participant_ids", "array_contains", ghost_ref.id)
+            filter=firestore.FieldFilter(
+                "participant_ids", "array_contains", ghost_ref.id
+            )
         )
         for tournament in tournaments_query.stream():
             data = tournament.to_dict()
@@ -383,10 +391,10 @@ class UserService:
         return "win" if user_won else "loss"
 
     @staticmethod
-    def _fetch_match_entities(
-        db: Client, matches_docs: list[DocumentSnapshot]
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Fetch all users and teams involved in a list of matches."""
+    def _collect_match_refs(
+        matches_docs: list[DocumentSnapshot],
+    ) -> tuple[set[DocumentReference], set[DocumentReference]]:
+        """Collect all unique user and team references from match documents."""
         player_refs = set()
         team_refs = set()
         for match_doc in matches_docs:
@@ -403,6 +411,14 @@ class UserService:
                 team_refs.add(match["team1Ref"])
             if match.get("team2Ref"):
                 team_refs.add(match["team2Ref"])
+        return player_refs, team_refs
+
+    @staticmethod
+    def _fetch_match_entities(
+        db: Client, matches_docs: list[DocumentSnapshot]
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Fetch all users and teams involved in a list of matches."""
+        player_refs, team_refs = UserService._collect_match_refs(matches_docs)
 
         users_map = {}
         if player_refs:

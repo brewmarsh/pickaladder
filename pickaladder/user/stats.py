@@ -49,9 +49,23 @@ class UserStats:
         return user_won, user_lost
 
     @staticmethod
-    def calculate(
-        matches: list[DocumentSnapshot], user_id: str
-    ) -> dict[str, Any]:
+    def _calculate_streak(processed: list[dict[str, Any]]) -> tuple[int, str]:
+        """Calculate current streak from processed matches."""
+        if not processed:
+            return 0, "N/A"
+
+        last_won = processed[0]["user_won"]
+        streak_type = "W" if last_won else "L"
+        current_streak = 0
+        for m in processed:
+            if m["user_won"] == last_won:
+                current_streak += 1
+            else:
+                break
+        return current_streak, streak_type
+
+    @staticmethod
+    def calculate(matches: list[DocumentSnapshot], user_id: str) -> dict[str, Any]:
         """Calculate aggregate performance statistics from a list of matches."""
         wins = losses = 0
         processed = []
@@ -61,12 +75,10 @@ class UserStats:
             if not match_data:
                 continue
 
-            user_won, user_lost = UserStats._get_user_match_won_lost(
-                match_data, user_id
-            )
-            if user_won:
+            won, lost = UserStats._get_user_match_won_lost(match_data, user_id)
+            if won:
                 wins += 1
-            elif user_lost:
+            elif lost:
                 losses += 1
 
             processed.append(
@@ -74,7 +86,7 @@ class UserStats:
                     "doc": match_doc,
                     "data": match_data,
                     "date": match_data.get("matchDate") or match_doc.create_time,
-                    "user_won": user_won,
+                    "user_won": won,
                 }
             )
 
@@ -82,24 +94,15 @@ class UserStats:
         win_rate = (wins / total) * 100 if total > 0 else 0
         processed.sort(key=lambda x: x["date"] or datetime.datetime.min, reverse=True)
 
-        current_streak = 0
-        streak_type = "N/A"
-        if processed:
-            last_won = processed[0]["user_won"]
-            streak_type = "W" if last_won else "L"
-            for m in processed:
-                if m["user_won"] == last_won:
-                    current_streak += 1
-                else:
-                    break
+        streak, s_type = UserStats._calculate_streak(processed)
 
         return {
             "wins": wins,
             "losses": losses,
             "total_games": total,
             "win_rate": win_rate,
-            "current_streak": current_streak,
-            "streak_type": streak_type,
+            "current_streak": streak,
+            "streak_type": s_type,
             "processed_matches": processed,
         }
 
