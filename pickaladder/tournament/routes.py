@@ -17,7 +17,7 @@ from flask import (
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.tournament.services import TournamentService
-from pickaladder.user.helpers import smart_display_name
+from pickaladder.user.services import UserService
 
 from . import bp
 from .forms import InvitePlayerForm, TournamentForm
@@ -70,7 +70,7 @@ def view_tournament(tournament_id: str) -> Any:
     invite_form = InvitePlayerForm()
     invitable_users = details.get("invitable_users", [])
     invite_form.user_id.choices = [
-        (u["id"], smart_display_name(u)) for u in invitable_users
+        (u["id"], UserService.smart_display_name(u)) for u in invitable_users
     ]
 
     # Handle Invite Form Submission from the view page itself

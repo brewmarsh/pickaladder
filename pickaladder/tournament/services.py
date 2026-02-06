@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, cast
 from firebase_admin import firestore
 from flask import current_app
 
-from pickaladder.user.helpers import smart_display_name
 from pickaladder.user.services import UserService
 from pickaladder.utils import send_email
 
@@ -58,7 +57,7 @@ class TournamentService:
                     {
                         "user": u_data,
                         "status": obj.get("status", "pending"),
-                        "display_name": smart_display_name(u_data),
+                        "display_name": UserService.smart_display_name(u_data),
                         "team_name": obj.get("team_name"),
                     }
                 )
@@ -103,7 +102,7 @@ class TournamentService:
                         u_data["id"] = u_doc.id
                         invitable_users.append(u_data)
 
-        invitable_users.sort(key=lambda u: smart_display_name(u).lower())
+        invitable_users.sort(key=lambda u: UserService.smart_display_name(u).lower())
         return invitable_users
 
     @staticmethod

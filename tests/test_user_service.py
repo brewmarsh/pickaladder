@@ -5,7 +5,6 @@ from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 from pickaladder.user.services import UserService
-from pickaladder.user.stats import UserStats
 
 
 class TestUserService(unittest.TestCase):
@@ -98,7 +97,7 @@ class TestUserService(unittest.TestCase):
         }
         mock_match2.create_time = 200
 
-        stats = UserStats.calculate([mock_match1, mock_match2], self.user_id)
+        stats = UserService.calculate_stats([mock_match1, mock_match2], self.user_id)
         self.assertEqual(stats["wins"], 1)
         self.assertEqual(stats["losses"], 1)
         self.assertEqual(stats["total_games"], 2)
@@ -119,7 +118,7 @@ class TestUserService(unittest.TestCase):
             {"id": self.user_id, "name": "Me", "avg_score": 50},
         ]
 
-        rankings = UserStats.get_group_rankings(self.db, self.user_id)
+        rankings = UserService.get_group_rankings(self.db, self.user_id)
         self.assertEqual(len(rankings), 1)
         self.assertEqual(rankings[0]["rank"], 2)
         self.assertEqual(rankings[0]["group_name"], "Test Group")
