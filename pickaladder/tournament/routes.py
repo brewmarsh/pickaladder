@@ -17,7 +17,7 @@ from flask import (
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.tournament.services import TournamentService
-from pickaladder.user.helpers import smart_display_name
+from pickaladder.user.utils import smart_display_name
 
 from . import bp
 from .forms import InvitePlayerForm, TournamentForm

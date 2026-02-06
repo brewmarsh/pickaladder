@@ -10,7 +10,7 @@ from mockfirestore import MockFirestore
 
 from pickaladder import create_app
 from pickaladder.tournament.services import TournamentService  # noqa: F401
-from pickaladder.user.utils import _migrate_ghost_references
+from pickaladder.user.services import UserService
 from tests.conftest import (
     MockArrayRemove,
     MockArrayUnion,
@@ -178,7 +178,12 @@ class TournamentBlastTestCase(unittest.TestCase):
         mock_tournament_doc.to_dict.return_value = {
             "participant_ids": ["ghost_id", "other_id"],
             "participants": [
-                {"userRef": ghost_ref, "status": "pending", "email": "g@e.com"},
+                {
+                    "userRef": ghost_ref,
+                    "user_id": "ghost_id",
+                    "status": "pending",
+                    "email": "g@e.com",
+                },
                 {"user_id": "other_id", "status": "accepted"},
             ],
         }
@@ -196,7 +201,9 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         mock_db.collection.side_effect = collection_side_effect
 
-        _migrate_ghost_references(mock_db, mock_batch, ghost_ref, real_user_ref)
+        UserService._migrate_ghost_references(
+            mock_db, mock_batch, ghost_ref, real_user_ref
+        )
 
         # Verify batch.update was called for the tournament
         mock_batch.update.assert_called()

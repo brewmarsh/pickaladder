@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 from firebase_admin import firestore
 from flask import current_app
 
-from pickaladder.user.helpers import smart_display_name
+from pickaladder.user.utils import smart_display_name
 from pickaladder.user.services import UserService
 from pickaladder.utils import send_email
 
