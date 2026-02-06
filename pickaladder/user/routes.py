@@ -284,7 +284,14 @@ def view_community() -> Any:
     friends = UserService.get_user_friends(db, current_user_id)
     incoming_requests = UserService.get_user_pending_requests(db, current_user_id)
     outgoing_requests = UserService.get_user_sent_requests(db, current_user_id)
-    all_users = UserService.get_all_users(db, current_user_id, limit=20)
+
+    # Combine all IDs to exclude from "Discover Players"
+    exclude_ids = [current_user_id]
+    exclude_ids.extend([f["id"] for f in friends])
+    exclude_ids.extend([r["id"] for r in incoming_requests])
+    exclude_ids.extend([r["id"] for r in outgoing_requests])
+
+    all_users = UserService.get_all_users(db, exclude_ids, limit=20)
     public_groups = UserService.get_public_groups(db, limit=10)
     pending_tournament_invites = UserService.get_pending_tournament_invites(
         db, current_user_id
