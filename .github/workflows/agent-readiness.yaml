@@ -43,7 +43,7 @@ jobs:
           # Fallback to 'main' if not in a PR
           TARGET_BRANCH="origin/${{ github.base_ref || 'main' }}"
           echo "Running Agent Scorecard against $TARGET_BRANCH..."
-          uv run agent-score score --diff $TARGET_BRANCH --report readiness_report.md
+          uv run --no-project agent-score score --diff $TARGET_BRANCH --report readiness_report.md
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

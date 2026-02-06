@@ -20,11 +20,11 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          # Use uv to manage ruff without forcing system python
-          uv pip install ruff==0.14.14
+        run: uv pip install -r requirements.txt mockfirestore coverage --system
       - name: Lint with ruff
-        run: uv run ruff check .
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project ruff check .
 
   format:
     runs-on: ubuntu-latest
@@ -39,10 +39,11 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          uv pip install ruff==0.14.14
+        run: uv pip install -r requirements.txt mockfirestore coverage --system
       - name: Format with ruff
-        run: uv run ruff format --check .
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project ruff format --check .
 
   security:
     runs-on: ubuntu-latest
@@ -57,10 +58,11 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          uv pip install bandit==1.9.3
+        run: uv pip install -r requirements.txt mockfirestore coverage --system
       - name: Security Analysis with Bandit
-        run: uv run bandit -r .
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project bandit -r .
 
   typing:
     runs-on: ubuntu-latest
@@ -75,11 +77,11 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          # Syncs everything from pyproject.toml including dev tools for typing
-          uv sync --group dev
+        run: uv pip install -r requirements.txt mockfirestore coverage --system
       - name: Static Type Checking with mypy
-        run: python -m mypy --no-incremental .
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project python -m mypy --no-incremental .
 
   vulnerabilities:
     runs-on: ubuntu-latest
@@ -95,8 +97,9 @@ jobs:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          pip install pip-audit
-      - name: Upgrade pip
-        run: python -m pip install --upgrade pip
+          uv pip install --upgrade pip --system
+          uv pip install -r requirements.txt mockfirestore coverage pip-audit --system
       - name: Scan for vulnerabilities
-        run: uv run pip-audit
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project pip-audit

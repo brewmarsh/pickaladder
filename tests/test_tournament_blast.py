@@ -9,7 +9,6 @@ from unittest.mock import MagicMock, patch
 from mockfirestore import MockFirestore
 
 from pickaladder import create_app
-from pickaladder.tournament.services import TournamentService  # noqa: F401
 from pickaladder.user.services import UserService
 from tests.conftest import (
     MockArrayRemove,
@@ -18,7 +17,6 @@ from tests.conftest import (
     patch_mockfirestore,
 )
 
-# Apply global mockfirestore monkey-patches
 patch_mockfirestore()
 
 # Mock user payloads
@@ -34,7 +32,6 @@ class TournamentBlastTestCase(unittest.TestCase):
         """Set up a test client and a comprehensive mock environment."""
         self.mock_db = MockFirestore()
 
-        # Initialize the mock batch instance from shared conftest
         self.mock_batch_instance = MockBatch(self.mock_db)
         self.mock_db.batch = MagicMock(return_value=self.mock_batch_instance)
 
@@ -43,7 +40,7 @@ class TournamentBlastTestCase(unittest.TestCase):
         self.mock_firestore_service.ArrayUnion = MockArrayUnion
         self.mock_firestore_service.ArrayRemove = MockArrayRemove
 
-        # Mock FieldFilter for firestore queries
+        # Mock FieldFilter
         class MockFieldFilter:
             def __init__(self, field_path, op_string, value):
                 self.field_path = field_path
@@ -186,6 +183,8 @@ class TournamentBlastTestCase(unittest.TestCase):
         }
 
         # Set up the query chain for tournaments
+        # _migrate_ghost_references calls
+        # db.collection("tournaments").where(...).stream()
         def collection_side_effect(name):
             mock_coll = MagicMock()
             if name == "tournaments":

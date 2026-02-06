@@ -27,7 +27,7 @@ jobs:
         env:
           UV_SYSTEM_PYTHON: 1
         run: |
-          SCORE=$(uv run agent-score pickaladder/ | tee /dev/tty | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
+          SCORE=$(uv run --no-project agent-score pickaladder/ | tee /dev/tty | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
           if (( $(echo "$SCORE < 75" | bc -l) )); then
             echo "Agent score of $SCORE is below the threshold of 75"
             exit 1

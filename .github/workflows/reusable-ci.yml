@@ -35,9 +35,7 @@ jobs:
           python-version: 3.11
 
       - name: Install dependencies
-        run: |
-          # Respects the lockfile and includes dev-group tools (mockfirestore, coverage)
-          uv sync --group dev
+        run: uv pip install -r requirements.txt mockfirestore coverage --system
 
       - name: Enable uuid-ossp extension
         run: |
@@ -50,11 +48,11 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
+          UV_SYSTEM_PYTHON: 1
         run: |
-          # Execute within the project context created by uv sync
-          uv run coverage run -m unittest discover tests
-          uv run coverage xml
-
+          uv run --no-project python -m unittest discover tests
+          uv run --no-project python -m coverage run -m unittest discover tests
+          uv run --no-project python -m coverage xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:

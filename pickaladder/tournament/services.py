@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import datetime
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
-from flask import current_app
 
+from pickaladder.user.helpers import smart_display_name
 from pickaladder.user.services import UserService
 from pickaladder.utils import send_email
 
@@ -18,8 +17,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
-
-logger = logging.getLogger(__name__)
 
 
 class TournamentService:
@@ -33,13 +30,15 @@ class TournamentService:
         if not participant_objs:
             return []
 
-        user_refs = [
-            obj["userRef"]
-            if "userRef" in obj
-            else db.collection("users").document(obj["user_id"])
-            for obj in participant_objs
-            if obj and ("userRef" in obj or "user_id" in obj)
-        ]
+        user_refs = []
+        for obj in participant_objs:
+            if not obj:
+                continue
+            if obj.get("userRef"):
+                user_refs.append(obj["userRef"])
+            elif obj.get("user_id"):
+                user_refs.append(db.collection("users").document(obj["user_id"]))
+
         if not user_refs:
             return []
 
@@ -54,14 +53,14 @@ class TournamentService:
         for obj in participant_objs:
             if not obj:
                 continue
-            uid = obj["userRef"].id if "userRef" in obj else obj.get("user_id")
+            uid = obj.get("userRef").id if obj.get("userRef") else obj.get("user_id")
             if uid and uid in users_map:
                 u_data = users_map[uid]
                 participants.append(
                     {
                         "user": u_data,
                         "status": obj.get("status", "pending"),
-                        "display_name": UserService.smart_display_name(u_data),
+                        "display_name": smart_display_name(u_data),
                         "team_name": obj.get("team_name"),
                     }
                 )
@@ -106,7 +105,7 @@ class TournamentService:
                         u_data["id"] = u_doc.id
                         invitable_users.append(u_data)
 
-        invitable_users.sort(key=lambda u: UserService.smart_display_name(u).lower())
+        invitable_users.sort(key=lambda u: smart_display_name(u).lower())
         return invitable_users
 
     @staticmethod
@@ -206,9 +205,9 @@ class TournamentService:
 
         # Invitable Users
         current_p_ids = {
-            str(obj["userRef"].id if obj and "userRef" in obj else obj.get("user_id"))
+            str(obj.get("userRef").id if obj.get("userRef") else obj.get("user_id"))
             for obj in raw_participants
-            if obj and ("userRef" in obj or "user_id" in obj)
+            if obj and (obj.get("userRef") or obj.get("user_id"))
         }
         invitable = TournamentService._get_invitable_players(
             db, user_uid, current_p_ids
@@ -268,6 +267,7 @@ class TournamentService:
                 .stream()
             )
             if any(matches):
+                # Don't update matchType if matches exist
                 del update_data["matchType"]
 
         ref.update(update_data)
@@ -297,12 +297,14 @@ class TournamentService:
         db: Client, tournament_data: dict[str, Any], group_id: str, user_uid: str
     ) -> list[Any]:
         """Validate permissions and return group member references."""
+        # Check Tournament Ownership
         owner_id = tournament_data.get("organizer_id")
         if not owner_id and tournament_data.get("ownerRef"):
             owner_id = tournament_data["ownerRef"].id
         if owner_id != user_uid:
             raise PermissionError("Unauthorized.")
 
+        # Fetch Group
         g_doc = cast(Any, db.collection("groups").document(group_id).get())
         if not g_doc.exists:
             raise ValueError("Group not found")
@@ -310,6 +312,7 @@ class TournamentService:
         if not g_data:
             raise ValueError("Group data is empty")
 
+        # Check Group Membership
         member_refs = g_data.get("members", [])
         if not any(m.id == user_uid for m in member_refs):
             raise PermissionError(
@@ -389,8 +392,8 @@ class TournamentService:
             for p in parts:
                 if not p:
                     continue
-                uid = p["userRef"].id if "userRef" in p else p.get("user_id")
-                if uid == user_uid and p["status"] == "pending":
+                uid = p.get("userRef").id if p.get("userRef") else p.get("user_id")
+                if uid == user_uid and p.get("status") == "pending":
                     p["status"] = "accepted"
                     updated = True
                     break
@@ -423,9 +426,9 @@ class TournamentService:
                 for p in parts
                 if not (
                     p
-                    and (p["userRef"].id if "userRef" in p else p.get("user_id"))
+                    and (p.get("userRef").id if p.get("userRef") else p.get("user_id"))
                     == user_uid
-                    and p["status"] == "pending"
+                    and p.get("status") == "pending"
                 )
             ]
 
@@ -463,7 +466,7 @@ class TournamentService:
                                 standings=standings[:3],
                             )
                 except Exception as e:
-                    current_app.logger.error(f"Email failed: {e}")
+                    logging.error(f"Email failed: {e}")
 
     @staticmethod
     def complete_tournament(

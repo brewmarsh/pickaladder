@@ -22,7 +22,7 @@ from . import teams as teams_bp
 from . import tournament as tournament_bp
 from . import user as user_bp
 from .extensions import csrf, mail
-from .user.helpers import wrap_user
+from .user.helpers import smart_display_name, wrap_user
 from .user.services import UserService
 
 APP_PASSWORD_LENGTH = 16
@@ -209,7 +209,7 @@ def create_app(test_config=None):
     csrf.init_app(app)
 
     # Register filters
-    app.template_filter("smart_display_name")(UserService.smart_display_name)
+    app.template_filter("smart_display_name")(smart_display_name)
 
     @app.template_filter("avatar_url")
     def avatar_url_filter(user):
