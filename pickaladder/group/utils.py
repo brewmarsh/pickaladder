@@ -6,7 +6,7 @@ import operator
 import secrets
 import sys
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from firebase_admin import firestore
@@ -206,7 +206,7 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
     current_leaderboard = _calculate_leaderboard_from_matches(member_refs, all_matches)
 
     # Calculate leaderboard from a week ago for rank trend
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    one_week_ago = datetime.now(UTC) - timedelta(days=7)
     matches_last_week = [
         m
         for m in all_matches

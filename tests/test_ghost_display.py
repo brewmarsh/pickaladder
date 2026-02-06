@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from typing import cast
 
-from pickaladder.user.helpers import smart_display_name
+from pickaladder.user.utils import smart_display_name
 from pickaladder.utils import mask_email
 
 
@@ -23,7 +23,7 @@ class TestGhostDisplay(unittest.TestCase):
             "email": "march@gmail.com",
             "name": "John Doe",
         }
-        # implementation prioritizes name
+        # Prioritize name field for ghost users
         self.assertEqual(smart_display_name(user), "John Doe")
 
     def test_smart_display_name_ghost_no_email_no_name(self) -> None:
@@ -32,7 +32,7 @@ class TestGhostDisplay(unittest.TestCase):
 
     def test_smart_display_name_ghost_no_email_with_name(self) -> None:
         user = {"username": "ghost_ceec6a", "name": "John Doe"}
-        # implementation prioritizes name
+        # Prioritize name field for ghost users
         self.assertEqual(smart_display_name(user), "John Doe")
 
     def test_smart_display_name_regular_user(self) -> None:

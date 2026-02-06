@@ -21,10 +21,9 @@ jobs:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          uv pip install ruff==0.14.14 --system
+          # Use uv to manage ruff without forcing system python
+          uv pip install ruff==0.14.14
       - name: Lint with ruff
-        env:
-          UV_SYSTEM_PYTHON: 1
         run: uv run ruff check .
 
   format:
@@ -41,10 +40,8 @@ jobs:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          uv pip install ruff==0.14.14 --system
+          uv pip install ruff==0.14.14
       - name: Format with ruff
-        env:
-          UV_SYSTEM_PYTHON: 1
         run: uv run ruff format --check .
 
   security:
@@ -61,10 +58,8 @@ jobs:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          uv pip install bandit==1.9.3 --system
+          uv pip install bandit==1.9.3
       - name: Security Analysis with Bandit
-        env:
-          UV_SYSTEM_PYTHON: 1
         run: uv run bandit -r .
 
   typing:
@@ -81,11 +76,10 @@ jobs:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          uv pip install mypy==1.19.1 -r requirements.txt --system
+          # Syncs everything from pyproject.toml including dev tools for typing
+          uv sync --group dev
       - name: Static Type Checking with mypy
-        env:
-          UV_SYSTEM_PYTHON: 1
-        run: uv run mypy --no-incremental .
+        run: uv run python -m mypy --no-incremental .
 
   vulnerabilities:
     runs-on: ubuntu-latest
@@ -101,10 +95,7 @@ jobs:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          uv pip install pip-audit --system
-      - name: Upgrade pip
-        run: uv pip install --upgrade pip --system
+          uv sync
+          uv pip install pip-audit
       - name: Scan for vulnerabilities
-        env:
-          UV_SYSTEM_PYTHON: 1
         run: uv run pip-audit
