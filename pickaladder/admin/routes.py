@@ -10,12 +10,10 @@ from flask import (
     jsonify,
     redirect,
     render_template,
-    request,
     url_for,
 )
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.user.services import UserService
 
 from . import bp
 
@@ -242,28 +240,3 @@ def generate_matches():
         flash(f"An error occurred: {e}", "danger")
 
     return redirect(url_for(".admin_matches"))
-
-
-@bp.route("/merge-ghost", methods=["POST"])
-@login_required(admin_required=True)
-def merge_ghost():
-    """Merge a ghost user into a real user."""
-    target_user_id = request.form.get("target_user_id")
-    ghost_email = request.form.get("ghost_email")
-
-    if not target_user_id or not ghost_email:
-        flash("Both Target User ID and Ghost Email are required.", "danger")
-        return redirect(url_for(".admin"))
-
-    db = firestore.client()
-    real_user_ref = db.collection("users").document(target_user_id)
-
-    success = UserService.merge_ghost_user(db, real_user_ref, ghost_email)
-
-    if success:
-        flash(f"Successfully merged {ghost_email} into {target_user_id}.", "success")
-    else:
-        error_msg = f"Failed to merge {ghost_email}. Ghost account might not exist."
-        flash(error_msg, "danger")
-
-    return redirect(url_for(".admin"))
