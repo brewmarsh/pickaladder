@@ -20,12 +20,11 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          uv pip install ruff==0.14.14 --system
+        run: uv pip install -r requirements.txt mockfirestore coverage --system
       - name: Lint with ruff
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv run ruff check .
+        run: uv run --no-project ruff check .
 
   format:
     runs-on: ubuntu-latest
@@ -40,12 +39,11 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          uv pip install ruff==0.14.14 --system
+        run: uv pip install -r requirements.txt mockfirestore coverage --system
       - name: Format with ruff
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv run ruff format --check .
+        run: uv run --no-project ruff format --check .
 
   security:
     runs-on: ubuntu-latest
@@ -60,12 +58,11 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          uv pip install bandit==1.9.3 --system
+        run: uv pip install -r requirements.txt mockfirestore coverage --system
       - name: Security Analysis with Bandit
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv run bandit -r .
+        run: uv run --no-project bandit -r .
 
   typing:
     runs-on: ubuntu-latest
@@ -80,10 +77,11 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: |
-          uv sync --group dev
+        run: uv pip install -r requirements.txt mockfirestore coverage --system
       - name: Static Type Checking with mypy
-        run: uv run python -m mypy --no-incremental .
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project python -m mypy --no-incremental .
 
   vulnerabilities:
     runs-on: ubuntu-latest
@@ -99,10 +97,9 @@ jobs:
           python-version: 3.11
       - name: Install dependencies
         run: |
-          uv pip install pip-audit --system
-      - name: Upgrade pip
-        run: uv pip install --upgrade pip --system
+          uv pip install --upgrade pip --system
+          uv pip install -r requirements.txt mockfirestore coverage pip-audit --system
       - name: Scan for vulnerabilities
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv run pip-audit
+        run: uv run --no-project pip-audit

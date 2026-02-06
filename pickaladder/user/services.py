@@ -296,9 +296,8 @@ class UserService:
                     for p in participants:
                         if not p:
                             continue
-                        p_uid = (
-                            p.get("userRef").id if p.get("userRef") else p.get("user_id")
-                        )
+                        p_ref = p.get("userRef")
+                        p_uid = p_ref.id if p_ref else p.get("user_id")
                         if p_uid == user_id and p.get("status") == "pending":
                             data["id"] = doc.id
                             pending_invites.append(data)

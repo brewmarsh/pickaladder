@@ -29,7 +29,7 @@ jobs:
           UV_SYSTEM_PYTHON: 1
         run: |
           uv pip install bandit --system
-          uv run bandit -r . -f json -o bandit-results.json || true
+          uv run --no-project bandit -r . -f json -o bandit-results.json || true
           
       # Run Trivy (Vulnerability Scan)
       - name: Run Trivy
