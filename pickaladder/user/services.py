@@ -404,6 +404,8 @@ class UserService:
                                 data["date_display"] = raw_date.strftime("%b %d, %Y")
                         active_tournaments.append(data)
                         break
+        # Sort by date ascending (soonest first)
+        active_tournaments.sort(key=lambda x: x.get("date") or datetime.datetime.max)
         return active_tournaments
 
     @staticmethod
