@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from typing import cast
 
-from pickaladder.user.helpers import smart_display_name
+from pickaladder.user.utils import smart_display_name
 from pickaladder.utils import mask_email
 
 
@@ -23,7 +23,8 @@ class TestGhostDisplay(unittest.TestCase):
             "email": "march@gmail.com",
             "name": "John Doe",
         }
-        self.assertEqual(smart_display_name(user), "m...h@gmail.com")
+        # Prioritize name field for ghost users
+        self.assertEqual(smart_display_name(user), "John Doe")
 
     def test_smart_display_name_ghost_no_email_no_name(self) -> None:
         user = {"username": "ghost_ceec6a"}
@@ -31,9 +32,8 @@ class TestGhostDisplay(unittest.TestCase):
 
     def test_smart_display_name_ghost_no_email_with_name(self) -> None:
         user = {"username": "ghost_ceec6a", "name": "John Doe"}
-        # Based on literal instructions: "Otherwise, show the username"
-        # Since it's a ghost, but no email and HAS a name, it doesn't match rule 1 or 2.
-        self.assertEqual(smart_display_name(user), "ghost_ceec6a")
+        # Prioritize name field for ghost users
+        self.assertEqual(smart_display_name(user), "John Doe")
 
     def test_smart_display_name_regular_user(self) -> None:
         user = {"username": "jdoe", "email": "jdoe@example.com", "name": "John Doe"}

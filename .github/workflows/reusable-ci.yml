@@ -36,24 +36,25 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install -r requirements.txt
-          uv pip install mock-firestore coverage
+          # Synchronizes environment with pyproject.toml and uv.lock
+          uv sync --group dev
 
       - name: Enable uuid-ossp extension
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
           PGPASSWORD=postgres psql -h localhost -U postgres -p 5432 -d postgres -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
 
-      - name: Run tests
+      - name: Run tests with coverage
         env:
           DB_HOST: localhost
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
         run: |
-          uv run python -m unittest discover tests
-          uv run python -m coverage run -m unittest discover tests
-          uv run python -m coverage xml
+          # Execute coverage using the project environment synchronized by uv
+          uv run coverage run -m unittest discover tests
+          uv run coverage xml
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
