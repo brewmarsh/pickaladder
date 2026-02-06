@@ -6,7 +6,6 @@ from typing import Any
 
 from firebase_admin import firestore
 from flask import flash, g, redirect, render_template, url_for
-from google.cloud.firestore_v1.field_path import FieldPath
 
 from pickaladder.auth.decorators import login_required
 
@@ -83,7 +82,9 @@ def view_team(team_id: str) -> Any:
             team_docs = (
                 db.collection("teams")
                 .where(
-                    filter=firestore.FieldFilter(FieldPath.document_id(), "in", chunk)
+                    filter=firestore.FieldFilter(
+                        firestore.FieldPath.document_id(), "in", chunk
+                    )
                 )
                 .stream()
             )
