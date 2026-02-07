@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='dark.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}">
 </head>
-<body class="{{ 'dark-mode' if g.user and g.user.dark_mode else '' }}" data-theme="{{ 'dark' if g.user and g.user.dark_mode else 'light' }}">
+<body class="{{ 'dark-mode' if g.user and g.user.dark_mode else '' }}">
     {% include 'navbar.html' %}
     <div class="container">
         <main class="main-content">

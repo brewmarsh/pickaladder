@@ -20,6 +20,19 @@
             {{ form.email.label }}
             {{ form.email(class="form-control", value=user.email) }}
         </div>
+
+        <h4 class="mt-4 mb-3">Pickleball Ratings</h4>
+        <hr>
+        <div class="form-group">
+            {{ form.dupr_id.label }}
+            {{ form.dupr_id(class="form-control", value=user.dupr_id if user.dupr_id else '', placeholder="Found in your DUPR profile URL") }}
+            <small class="text-muted">Found in your DUPR profile URL</small>
+        </div>
+        <div class="form-group">
+            {{ form.dupr_rating.label }}
+            {{ form.dupr_rating(class="form-control", value=user.dupr_rating if user.dupr_rating else '', step="0.01", placeholder="e.g. 4.25") }}
+        </div>
+
         {{ form.submit(class="btn") }}
     </form>
 </div>
