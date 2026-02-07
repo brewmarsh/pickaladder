@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% set target_user = profile_user %}
 {% block title %}{{ profile_user | display_name }}'s Profile{% endblock %}
 {% block content %}
 <div class="mt-4">
@@ -13,8 +14,7 @@
 
                     <div class="d-flex justify-content-center align-items-center mb-3">
                         <div class="mr-3 text-center">
-                            {% set dupr = profile_user.duprRating if profile_user.duprRating is not none else profile_user.dupr_rating %}
-                            <div class="h4 mb-0 font-weight-bold">{{ dupr if dupr is not none else 'N/A' }}</div>
+                            <div class="h4 mb-0 font-weight-bold">{{ target_user.dupr_rating|default('N/A') }}</div>
                             <small class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">DUPR Rating</small>
                         </div>
                         <div class="text-left">
