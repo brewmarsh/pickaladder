@@ -18,7 +18,7 @@
                     <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
                         <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post" style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-primary" style="width: auto; margin: 0;">Accept</button>
+                            <button type="submit" class="btn btn-volt" style="width: auto; margin: 0;">Accept</button>
                         </form>
                         <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post" style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -48,11 +48,14 @@
                         <div class="stat-label text-muted">Win %</div>
                     </div>
                     <div class="vanity-stat">
-                        <div class="stat-value">{{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}</div>
+                        {# Resolved Conflict: Combine HEAD variable logic with Main's color coding #}
+                        <div class="stat-value {{ 'text-volt' if stats.streak_type == 'W' else 'text-danger' if stats.streak_type == 'L' else '' }}">
+                            {{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}
+                        </div>
                         <div class="stat-label text-muted">Current Streak</div>
                     </div>
                 </div>
-                <a href="{{ url_for('match.record_match') }}" class="btn btn-primary">Record a Match</a>
+                <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
             </div>
         </div>
 
@@ -68,11 +71,7 @@
                             <div class="game-card {{ 'game-won' if match.user_result == 'win' else 'game-lost' }}">
                                 <div class="game-date">
                                     {% if match.date and match.date != 'N/A' %}
-                                        {% if match.date is string %}
-                                            {{ match.date }}
-                                        {% else %}
-                                            {{ match.date.strftime('%b %d, %Y') }}
-                                        {% endif %}
+                                        {{ match.date if match.date is string else match.date.strftime('%b %d, %Y') }}
                                     {% else %}
                                         Date N/A
                                     {% endif %}
@@ -111,55 +110,7 @@
             {# Right Column: Competition Stack #}
             <div class="dashboard-column-right">
                 <div class="competition-stack">
-                    {# Section: Active Tournaments & Invites List #}
-                    {% if active_tournaments or pending_tournament_invites %}
-                        {# Render Invites as cards within the stack too #}
-                        {% for invite in pending_tournament_invites %}
-                            <div class="competition-card tournament-invite-card">
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div>
-                                        <div class="ranking-group-name">{{ invite.name }}</div>
-                                        <div class="text-muted small">
-                                            {{ invite.date_display or invite.date }} • {{ invite.location or 'Online' }}
-                                        </div>
-                                    </div>
-                                    <span class="badge badge-upcoming">INVITED</span>
-                                </div>
-                                <div style="display: flex; gap: 8px; margin-top: 10px;">
-                                    <form action="{{ url_for('tournament.accept_invite', tournament_id=invite.id) }}" method="post" style="flex: 1;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm" style="width: 100%; text-transform: none; font-size: 0.8rem;">Accept</button>
-                                    </form>
-                                    <form action="{{ url_for('tournament.decline_invite', tournament_id=invite.id) }}" method="post" style="flex: 1;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-danger" style="width: 100%; text-transform: none; font-size: 0.8rem;">Decline</button>
-                                    </form>
-                                </div>
-                                <a href="{{ url_for('tournament.view_tournament', tournament_id=invite.id) }}" class="btn btn-sm" style="width: 100%; margin-top: 8px; background: none; border: 1px solid var(--border-color); color: var(--text-color); text-transform: none; font-size: 0.8rem;">View Lobby</a>
-                            </div>
-                        {% endfor %}
-
-                        {% for tournament in active_tournaments %}
-                            <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="competition-card active-tournament-card">
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div>
-                                        <div class="ranking-group-name">{{ tournament.name }}</div>
-                                        <div class="text-muted small">
-                                            {{ tournament.date_display }} • {{ tournament.location or 'Online' }}
-                                        </div>
-                                    </div>
-                                    {% if tournament.status == 'Active' %}
-                                        <span class="badge badge-live">LIVE</span>
-                                    {% else %}
-                                        <span class="badge badge-upcoming">Upcoming</span>
-                                    {% endif %}
-                                </div>
-                                <span class="btn btn-sm" style="margin-top: 10px; width: 100%; display: block;">Enter Lobby</span>
-                            </a>
-                        {% endfor %}
-                    {% endif %}
-
-                    {# Section: My Groups #}
+                    {# My Groups Section #}
                     <div class="card" style="padding: 16px;">
                         <h3 style="margin-top: 0; margin-bottom: 16px;">My Groups</h3>
                         {% for ranking in group_rankings %}
@@ -188,33 +139,13 @@
                         {% endfor %}
                     </div>
 
-                    {# Section: Past Tournaments #}
-                    <div class="card" style="padding: 16px;">
-                        <h3 style="margin-top: 0; margin-bottom: 12px;">Past Tournaments</h3>
-                        <div class="past-tournaments-list">
-                            {% for tournament in past_tournaments %}
-                                <div class="past-tournament-row">
-                                    <div class="past-tournament-info">
-                                        <strong>{{ tournament.name }}</strong><br>
-                                        <small class="text-muted">{{ tournament.date_display }}</small>
-                                    </div>
-                                    <div class="past-tournament-winner">
-                                        Winner: {{ tournament.winner_name }}
-                                    </div>
-                                </div>
-                            {% else %}
-                                <p class="text-muted">No past tournaments.</p>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    {# Section: Social (Friends) #}
+                    {# Social Section #}
                     <div class="card" style="padding: 16px;">
                         <h3 style="margin-top: 0; margin-bottom: 16px;">Social</h3>
                         {% if requests %}
                             <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Friend Requests</h4>
                             <div class="table-container" style="box-shadow: none; border: 1px solid var(--border-color); margin-bottom: 16px; border-radius: 4px;">
-                                <table class="table responsive-table" style="margin-top: 0;">
+                                <table class="table" style="margin-top: 0;">
                                     <tbody>
                                         {% for request in requests %}
                                             <tr>
@@ -224,7 +155,7 @@
                                                 <td style="padding: 8px; text-align: right;">
                                                     <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                        <button type="submit" class="btn btn-sm" style="padding: 4px 8px; font-size: 0.75rem; width: auto; text-transform: none;">Accept</button>
+                                                        <button type="submit" class="btn btn-volt btn-sm" style="padding: 4px 8px; font-size: 0.75rem; width: auto; text-transform: none;">Accept</button>
                                                     </form>
                                                 </td>
                                             </tr>
@@ -243,35 +174,33 @@
                             {% else %}
                                 <p class="text-muted small">No friends yet.</p>
                             {% endfor %}
-                            {% if friends|length > 10 %}
-                                <a href="{{ url_for('user.view_community') }}" class="text-muted small" style="align-self: center;">+{{ friends|length - 10 }} more</a>
-                            {% endif %}
                         </div>
-                        <a href="{{ url_for('user.view_community') }}" class="btn btn-sm btn-outline" style="width: 100%; margin-top: 12px; background: none; border: 1px solid var(--border-color); color: var(--text-color); text-transform: none; font-size: 0.8rem;">Community Hub</a>
+                        <a href="{{ url_for('user.view_community') }}" class="btn btn-sm btn-outline-primary" style="width: 100%; margin-top: 12px; text-transform: none;">Community Hub</a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="profile-edit-section" class="collapsible-section card" style="display: none;">
+        {# Hidden Profile Edit Section #}
+        <div id="profile-edit-section" class="collapsible-section card" style="display: none; margin-top: 24px;">
             <h3>Profile Information</h3>
             <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data" class="profile-form">
                 {{ form.hidden_tag() }}
                 <div class="profile-header">
-                    <img src="{{ user.avatar_url }}" alt="Profile Picture" class="profile-picture avatar" id="profile-picture-img">
-                    <div class="form-group profile-picture-group">
+                    <img src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture avatar" id="profile-picture-img">
+                    <div class="form-group">
                         {{ form.profile_picture(class="form-control", accept="image/*") }}
                     </div>
                 </div>
-                <h4 id="user-username">@{{ user.username }}</h4>
-                <p><strong>Email:</strong> <span id="user-email">{{ user.email }}</span></p>
+                <h4>@{{ user.username }}</h4>
+                <p><strong>Email:</strong> {{ user.email }}</p>
 
                 <div class="form-group">
-                    {{ form.dupr_rating.label(for="dupr_rating_input") }}
-                    {{ form.dupr_rating(class="form-control", id="dupr_rating_input") }}
+                    {{ form.dupr_rating.label }}
+                    {{ form.dupr_rating(class="form-control") }}
                 </div>
 
-                <div class="form-group dark-mode-group">
+                <div class="form-group">
                     {{ form.dark_mode.label }}
                     <label class="switch">
                         {{ form.dark_mode() }}
@@ -279,18 +208,16 @@
                     </label>
                 </div>
 
-                <a href="{{ url_for('user.edit_profile') }}" class="btn">Edit Username and Password</a>
-                {{ form.submit(class="btn") }}
+                <a href="{{ url_for('user.edit_profile') }}" class="btn btn-secondary">Edit Credentials</a>
+                {{ form.submit(class="btn btn-volt") }}
             </form>
         </div>
     </div>
-
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Preview profile picture
     const profilePictureInput = document.querySelector('input[name="profile_picture"]');
     const profilePictureImg = document.getElementById('profile-picture-img');
 
@@ -306,7 +233,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Toggle for the profile edit section
     const editProfileToggle = document.getElementById('edit-profile-toggle');
     const profileEditSection = document.getElementById('profile-edit-section');
 

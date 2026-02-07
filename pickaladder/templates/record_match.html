@@ -16,7 +16,6 @@
             {{ form.match_type(class="form-control", onchange="toggleFields()") }}
         </div>
 
-        <!-- Team 1 / Player 1 -->
         <div class="form-group">
             {{ form.player1.label }}
             {{ form.player1(class="form-control") }}
@@ -33,7 +32,6 @@
 
         <hr>
 
-        <!-- Team 2 / Player 2 -->
         <div class="form-group">
             <label id="player2-label" for="player2">Opponent</label>
             {{ form.player2(class="form-control") }}
@@ -55,7 +53,14 @@
             {{ form.match_date.label }}
             {{ form.match_date(class="form-control") }}
         </div>
-        <button type="submit" class="btn">Record Match</button>
+
+        <div id="prediction-preview" style="display: none; margin-bottom: 20px;">
+            {% set prediction = {'team1_prob': 50, 'team2_prob': 50, 'insight': 'Calculating...'} %}
+            {% include 'match/preview.html' %}
+        </div>
+
+        <button type="submit" class="btn btn-volt">Record Match</button>
+        
         {% if tournament_id %}
             <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament_id) }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
         {% elif group_id %}
@@ -64,6 +69,7 @@
             <a href="{{ url_for('user.dashboard') }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
         {% endif %}
     </form>
+
     <script>
         document.getElementById('match_date').valueAsDate = new Date();
 
@@ -71,6 +77,7 @@
             var matchType = document.getElementById('match_type').value;
             var partnerGroup = document.getElementById('partner-group');
             var opponent2Group = document.getElementById('opponent2-group');
+            var predictionPreview = document.getElementById('prediction-preview');
 
             var player1ScoreLabel = document.getElementById('player1-score-label');
             var player2Label = document.getElementById('player2-label');
@@ -89,10 +96,10 @@
                 player2Label.innerText = 'Opponent';
                 player2ScoreLabel.innerText = 'Opponent\'s Score';
             }
+            
+            // Show prediction preview if players are selected
+            checkPredictionVisibility();
         }
-
-        // Initialize state
-        toggleFields();
 
         // Mutual Exclusivity for Player Dropdowns
         const playerDropdowns = [
@@ -101,6 +108,19 @@
             document.getElementById('player2'),
             document.getElementById('opponent2')
         ];
+
+        function checkPredictionVisibility() {
+            const p1 = document.getElementById('player1').value;
+            const p2 = document.getElementById('player2').value;
+            const preview = document.getElementById('prediction-preview');
+            
+            // Basic logic: show prediction widget if at least two opponents are selected
+            if (p1 && p2) {
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
 
         function updateDropdowns() {
             const selectedValues = playerDropdowns.map(dropdown => dropdown.value).filter(Boolean);
@@ -114,13 +134,15 @@
                     }
                 });
             });
+            checkPredictionVisibility();
         }
 
         playerDropdowns.forEach(dropdown => {
             dropdown.addEventListener('change', updateDropdowns);
         });
 
-        // Initial call to set the state
+        // Initialize state
+        toggleFields();
         updateDropdowns();
     </script>
     <script src="{{ url_for('static', filename='js/optimistic_submission.js') }}"></script>
