@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from flask import Flask
 from google.cloud.firestore import FieldFilter
 
+from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
 FIRESTORE_BATCH_LIMIT = 400
@@ -158,19 +159,30 @@ def _calculate_leaderboard_from_matches(
             continue
 
         user_data = user_doc.to_dict()
+        if user_data is None:
+            continue
+        user_data["id"] = user_id
+
         games_played = stats["games"]
         avg_score = stats["total_score"] / games_played if games_played > 0 else 0.0
-        leaderboard.append(
-            {
-                "id": user_id,
-                "name": user_data.get("name", "N/A"),
-                "wins": stats["wins"],
-                "losses": stats["losses"],
-                "games_played": stats["games"],
-                "avg_score": avg_score,
-                "form": stats.get("last_matches", []),
-            }
-        )
+
+        # Build enriched entry for template filters
+        is_ghost = user_data.get("is_ghost") or user_data.get(
+            "username", ""
+        ).startswith("ghost_")
+        entry = {
+            "id": user_id,
+            "name": smart_display_name(user_data),
+            "username": user_data.get("username"),
+            "email": user_data.get("email"),
+            "is_ghost": is_ghost,
+            "wins": stats["wins"],
+            "losses": stats["losses"],
+            "games_played": stats["games"],
+            "avg_score": avg_score,
+            "form": stats.get("last_matches", []),
+        }
+        leaderboard.append(entry)
     leaderboard.sort(
         key=operator.itemgetter("avg_score", "wins", "games_played"), reverse=True
     )

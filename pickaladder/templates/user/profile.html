@@ -1,9 +1,10 @@
 {% extends "layout.html" %}
+{% set target_user = profile_user %}
 {% block title %}{{ profile_user | display_name }}'s Profile{% endblock %}
+
 {% block content %}
 <div class="mt-4">
     <div class="dashboard-columns">
-        <!-- Left/Top Column: Summary -->
         <div class="dashboard-column-right" style="flex: 1; min-width: 300px;">
             <div class="card text-center mb-4 border-0 shadow-sm">
                 <div class="card-body">
@@ -13,23 +14,24 @@
 
                     <div class="d-flex justify-content-center align-items-center mb-3">
                         <div class="mr-3 text-center">
-                            {% set dupr = profile_user.duprRating if profile_user.duprRating is not none else profile_user.dupr_rating %}
+                            {# Resolved Conflict: Combine HEAD logic with main's target_user var #}
+                            {% set dupr = target_user.dupr_rating if target_user.dupr_rating is not none else target_user.duprRating %}
                             <div class="h4 mb-0 font-weight-bold">{{ dupr if dupr is not none else 'N/A' }}</div>
                             <small class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">DUPR Rating</small>
                         </div>
                         <div class="text-left">
-                            <span class="badge badge-success d-block mb-1" style="font-size: 0.75rem;">Win Rate: {{ "%.0f"|format(win_rate) }}%</span>
-                            <span class="badge badge-info d-block" style="font-size: 0.75rem;">Streak: {{ current_streak }}{{ streak_type if total_games > 0 else '' }}</span>
+                            <span class="badge badge-volt d-block mb-1" style="font-size: 0.75rem;">Win Rate: {{ "%.0f"|format(win_rate) }}%</span>
+                            <span class="badge {{ 'badge-volt' if streak_type == 'W' else 'badge-danger' if streak_type == 'L' else 'badge-info' }} d-block" style="font-size: 0.75rem;">Streak: {{ current_streak }}{{ streak_type if total_games > 0 else '' }}</span>
                         </div>
                     </div>
 
                     <div class="px-2">
                         {% if is_friend %}
-                            <a href="{{ url_for('match.record_match', opponent_id=profile_user.id) }}" class="btn btn-primary btn-block mb-2">Record Match</a>
+                            <a href="{{ url_for('match.record_match', opponent_id=profile_user.id) }}" class="btn btn-volt btn-block mb-2">Record Match</a>
                         {% endif %}
 
                         {% if not is_friend and not friend_request_sent and user.id != profile_user.id %}
-                            <button class="btn btn-primary btn-block mb-2" id="addFriendBtn" data-url="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}" data-csrf="{{ csrf_token() }}">Add Friend</button>
+                            <button class="btn btn-volt btn-block mb-2" id="addFriendBtn" data-url="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}" data-csrf="{{ csrf_token() }}">Add Friend</button>
                         {% elif friend_request_sent %}
                             <button class="btn btn-secondary btn-block mb-2" disabled>Friend Request Sent</button>
                         {% endif %}
@@ -41,7 +43,7 @@
                             <p class="h4 mb-0 font-weight-bold">
                                 {{ h2h_stats.wins }}-{{ h2h_stats.losses }}
                             </p>
-                            <small class="{% if h2h_stats.point_diff > 0 %}text-success{% elif h2h_stats.point_diff < 0 %}text-danger{% else %}text-muted{% endif %} font-weight-bold">
+                            <small class="{% if h2h_stats.point_diff > 0 %}text-volt{% elif h2h_stats.point_diff < 0 %}text-danger{% else %}text-muted{% endif %} font-weight-bold">
                                 ({% if h2h_stats.point_diff > 0 %}+{% endif %}{{ h2h_stats.point_diff }} points)
                             </small>
                         </div>
@@ -50,10 +52,8 @@
             </div>
         </div>
 
-        <!-- Right/Bottom Column: Feed -->
         <div class="dashboard-column-left" style="flex: 2.5; min-width: 0;">
             <div class="dashboard-columns">
-                <!-- Match History (60-70% width) -->
                 <div class="dashboard-column-left" style="flex: 2; min-width: 0;">
                     <div class="card mb-4 border-0 shadow-sm">
                         <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
@@ -61,12 +61,12 @@
                         </div>
                         <div class="card-body">
                             {% if matches %}
-                                <div class="list-group list-group-flush">
+                                <div class="list-group list-group-flush pb-5">
                                     {% for match in matches %}
                                         <div class="list-group-item clickable-row px-0 py-3 border-bottom" data-href="{{ url_for('match.view_match_page', match_id=match.id) }}">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <div class="text-truncate mr-2">
-                                                    <span class="badge {{ 'badge-success' if match.user_result == 'win' else 'badge-danger' if match.user_result == 'loss' else 'badge-secondary' }} mr-2 text-center" style="width: 28px; height: 28px; line-height: 20px; border-radius: 50%;">
+                                                    <span class="badge {{ 'badge-volt' if match.user_result == 'win' else 'badge-danger' if match.user_result == 'loss' else 'badge-secondary' }} mr-2 text-center" style="width: 28px; height: 28px; line-height: 20px; border-radius: 50%;">
                                                         {{ 'W' if match.user_result == 'win' else 'L' if match.user_result == 'loss' else 'D' }}
                                                     </span>
                                                     <span class="font-weight-bold">vs</span>
@@ -85,11 +85,7 @@
                                                 </div>
                                                 <div class="text-muted small flex-shrink-0">
                                                     {% if match.date and match.date != 'N/A' %}
-                                                        {% if match.date is string %}
-                                                            {{ match.date }}
-                                                        {% else %}
-                                                            {{ match.date.strftime('%Y-%m-%d') }}
-                                                        {% endif %}
+                                                        {{ match.date if match.date is string else match.date.strftime('%Y-%m-%d') }}
                                                     {% else %}
                                                         N/A
                                                     {% endif %}
@@ -107,7 +103,6 @@
                     </div>
                 </div>
 
-                <!-- Friends Sidebar (30-40% width) -->
                 <div class="dashboard-column-right" style="flex: 1; min-width: 0;">
                     <div class="card mb-4 border-0 shadow-sm">
                         <div class="card-header bg-white border-bottom-0 pt-4 pb-2">
@@ -124,12 +119,10 @@
                                     {% endfor %}
                                 </div>
                                 <div class="p-3">
-                                    <a href="{{ url_for('user.friend_requests') }}" class="btn btn-sm btn-outline-primary btn-block py-2" style="text-transform: none; font-weight: 600; color: var(--primary-brand); border-color: var(--primary-brand);">View All</a>
+                                    <a href="{{ url_for('user.friend_requests') }}" class="btn btn-sm btn-outline-primary btn-block py-2">View All</a>
                                 </div>
                             {% else %}
-                                <div class="p-4 text-center text-muted small">
-                                    No friends yet.
-                                </div>
+                                <div class="p-4 text-center text-muted small">No friends yet.</div>
                             {% endif %}
                         </div>
                     </div>
