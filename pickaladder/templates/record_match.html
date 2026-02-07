@@ -55,6 +55,12 @@
             {{ form.match_date.label }}
             {{ form.match_date(class="form-control") }}
         </div>
+
+        <div id="prediction-preview" style="display: none; margin-bottom: 20px;">
+            {% set prediction = {'team1_prob': 50, 'team2_prob': 50, 'insight': 'Calculating...'} %}
+            {% include 'match/preview.html' %}
+        </div>
+
         <button type="submit" class="btn">Record Match</button>
         {% if tournament_id %}
             <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament_id) }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
@@ -66,6 +72,59 @@
     </form>
     <script>
         document.getElementById('match_date').valueAsDate = new Date();
+
+        function updatePrediction() {
+            const matchType = document.getElementById('match_type').value;
+            const p1 = document.getElementById('player1').value;
+            const p2 = document.getElementById('player2').value;
+            const partner = document.getElementById('partner').value;
+            const opponent2 = document.getElementById('opponent2').value;
+
+            let team1 = p1;
+            let team2 = p2;
+
+            if (matchType === 'doubles') {
+                if (!p1 || !partner || !p2 || !opponent2) {
+                    document.getElementById('prediction-preview').style.display = 'none';
+                    return;
+                }
+                team1 = `${p1},${partner}`;
+                team2 = `${p2},${opponent2}`;
+            } else {
+                if (!p1 || !p2) {
+                    document.getElementById('prediction-preview').style.display = 'none';
+                    return;
+                }
+            }
+
+            const previewDiv = document.getElementById('prediction-preview');
+            previewDiv.style.display = 'block';
+            const insightText = previewDiv.querySelector('.insight-text');
+            insightText.textContent = 'Calculating...';
+
+            fetch(`/stats/prediction?team1_id=${team1}&team2_id=${team2}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        previewDiv.style.display = 'none';
+                        return;
+                    }
+                    const bars = previewDiv.querySelectorAll('.progress-bar');
+                    bars[0].style.width = data.team1_prob + '%';
+                    bars[0].textContent = data.team1_prob + '%';
+                    bars[0].setAttribute('aria-valuenow', data.team1_prob);
+
+                    bars[1].style.width = data.team2_prob + '%';
+                    bars[1].textContent = data.team2_prob + '%';
+                    bars[1].setAttribute('aria-valuenow', data.team2_prob);
+
+                    insightText.textContent = data.insight;
+                })
+                .catch(error => {
+                    console.error('Error fetching prediction:', error);
+                    previewDiv.style.display = 'none';
+                });
+        }
 
         function toggleFields() {
             var matchType = document.getElementById('match_type').value;
@@ -117,8 +176,13 @@
         }
 
         playerDropdowns.forEach(dropdown => {
-            dropdown.addEventListener('change', updateDropdowns);
+            dropdown.addEventListener('change', () => {
+                updateDropdowns();
+                updatePrediction();
+            });
         });
+
+        document.getElementById('match_type').addEventListener('change', updatePrediction);
 
         // Initial call to set the state
         updateDropdowns();
