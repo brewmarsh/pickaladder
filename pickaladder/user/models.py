@@ -25,6 +25,6 @@ class User(UserDict, UserMixin):
         if profile_pic:
             return str(profile_pic)
 
-        # Fallback to UI Avatars
-        name = self.get("name") or self.get("username") or "User"
-        return f"https://ui-avatars.com/api/?name={name}&background=random&color=fff"
+        # Fallback to DiceBear Avatars (avataaars style)
+        seed = self.get("username") or self.get("email") or "User"
+        return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
