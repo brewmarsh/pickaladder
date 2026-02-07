@@ -1390,6 +1390,18 @@ input[type="submit"], .btn {
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
+.card-action:hover {
+    background-color: var(--background-color);
+    cursor: pointer;
+}
+
+.friend-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    width: 100%;
+}
+
 .friend-avatar {
     width: 100px;
     height: 100px;
