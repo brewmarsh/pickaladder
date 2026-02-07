@@ -48,11 +48,11 @@
                         <div class="stat-label text-muted">Win %</div>
                     </div>
                     <div class="vanity-stat">
-                        <div class="stat-value {{ 'text-volt' if stats.streak_type == 'W' else 'text-danger' if stats.streak_type == 'L' else '' }}">{{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}</div>
+                        <div class="stat-value">{{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}</div>
                         <div class="stat-label text-muted">Current Streak</div>
                     </div>
                 </div>
-                <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
+                <a href="{{ url_for('match.record_match') }}" class="btn btn-primary">Record a Match</a>
             </div>
         </div>
 
@@ -63,7 +63,7 @@
                     <div class="header-with-button">
                         <h3>Recent Activity</h3>
                     </div>
-                    <div id="latest-games-feed" class="pb-5">
+                    <div id="latest-games-feed">
                         {% for match in matches %}
                             <div class="game-card {{ 'game-won' if match.user_result == 'win' else 'game-lost' }}">
                                 <div class="game-date">

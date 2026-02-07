@@ -15,6 +15,7 @@ from flask import (
 )
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.user.services import UserService
 
 from . import bp
 
@@ -55,8 +56,6 @@ def merge_ghost():
 
     db = firestore.client()
     real_user_ref = db.collection("users").document(target_user_id)
-
-    from pickaladder.user.services import UserService
 
     try:
         success = UserService.merge_ghost_user(db, real_user_ref, ghost_email)
