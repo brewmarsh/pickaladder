@@ -678,7 +678,7 @@ def get_head_to_head_stats(
     )
     all_matches_in_group = list(query.stream())
 
-    h2h_stats = {
+    h2h_stats: dict[str, Any] = {
         "wins": 0,
         "losses": 0,
         "point_diff": 0,
