@@ -288,7 +288,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "ownerRef": mock_user_doc,
             "members": [mock_user_doc],
         }
-        mock_db.collection("groups").document(group_id).get.return_value = mock_group_doc
+        mock_db.collection("groups").document(
+            group_id
+        ).get.return_value = mock_group_doc
 
         # Mock friends
         friend_id = "friend1"
@@ -308,13 +310,15 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         mock_db.get_all.return_value = [mock_friend_doc]
 
         # Patch helpers to simplify
-        with patch(
-            "pickaladder.group.routes.get_group_leaderboard", return_value=[]
-        ), patch(
-            "pickaladder.group.routes._fetch_recent_matches",
-            return_value=([], []),
-        ), patch(
-            "pickaladder.group.routes._fetch_group_teams", return_value=([], None)
+        with (
+            patch("pickaladder.group.routes.get_group_leaderboard", return_value=[]),
+            patch(
+                "pickaladder.group.routes._fetch_recent_matches",
+                return_value=([], []),
+            ),
+            patch(
+                "pickaladder.group.routes._fetch_group_teams", return_value=([], None)
+            ),
         ):
             response = self.client.get(
                 f"/group/{group_id}", headers=self._get_auth_headers()
