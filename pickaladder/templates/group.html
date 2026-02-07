@@ -39,25 +39,24 @@
                 </div>
 
                 <div id="players" class="tab-content" style="display: block;">
-                    <div class="leaderboard-container">
-                        <div class="leaderboard-header">
-                            <div class="leaderboard-cell">Rank</div>
-                            <div class="leaderboard-cell">Player</div>
-                            <div class="leaderboard-cell">Avg. Score</div>
-                            <div class="leaderboard-cell">Form</div>
-                            <div class="leaderboard-cell">Games</div>
-                        </div>
-                        <div class="leaderboard-body">
-                            {% for player in leaderboard %}
-                            <div class="leaderboard-row {{ 'highlight-user' if player.id == g.user['uid'] else '' }}">
-                                <div class="leaderboard-cell" data-label="Rank">
-                                    <div class="player-rank">
-                                        <span>
-                                            {% if loop.index == 1 %}🥇
-                                            {% elif loop.index == 2 %}🥈
-                                            {% elif loop.index == 3 %}🥉
-                                            {% else %}{{ loop.index }}{% endif %}
-                                        </span>
+                    <div class="table-container">
+                        <table class="table leaderboard-table-compact">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Player</th>
+                                    <th>Form</th>
+                                    <th class="text-right">Avg Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for player in leaderboard %}
+                                <tr class="{{ 'bg-primary-subtle' if player.id == g.user['uid'] else '' }}">
+                                    <td class="rank-cell">
+                                        {% if loop.index == 1 %}🥇
+                                        {% elif loop.index == 2 %}🥈
+                                        {% elif loop.index == 3 %}🥉
+                                        {% else %}#{{ loop.index }}{% endif %}
                                         <span class="rank-trend">
                                             {% if player.rank_change is number and player.rank_change > 0 %}
                                                 <span class="trend-up">▲</span>
@@ -67,81 +66,75 @@
                                                 <span class="trend-new">●</span>
                                             {% endif %}
                                         </span>
-                                    </div>
-                                </div>
-                                <div class="leaderboard-cell" data-label="Player">
-                                    <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="player-link">
-                                        <img src="{{ player | avatar_url }}" alt="{{ player.name }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                        <span class="player-name">
-                                            {{ player.name }}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="player-link-compact">
+                                            <img src="{{ player | avatar_url }}" alt="{{ player | display_name }}" class="avatar-small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                            <span class="player-name-compact">{{ player | display_name }}</span>
                                             {% if player.is_on_fire %}
                                                 <span title="{{ player.streak }} Game Streak!">🔥</span>
                                             {% endif %}
-                                        </span>
-                                    </a>
-                                </div>
-                                <div class="leaderboard-cell" data-label="Avg. Score">{{ "%.2f"|format(player.avg_score|float) }}</div>
-                                <div class="leaderboard-cell" data-label="Form">
-                                    <div class="form-dots">
-                                        {% for result in player.form %}
-                                            <span class="form-dot {{ result }}"></span>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                                <div class="leaderboard-cell" data-label="Games">{{ player.games_played }}</div>
-                            </div>
-                            {% else %}
-                            <div class="leaderboard-empty">
-                                <p>No matches have been played between members of this group yet.</p>
-                            </div>
-                            {% endfor %}
-                        </div>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="form-dots-compact">
+                                            {% for result in player.form %}
+                                                <span class="form-dot-compact {{ result }}"></span>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td class="text-right font-weight-bold">
+                                        {{ "%.2f"|format(player.avg_score|float) }}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No matches have been played yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
                 <div id="teams" class="tab-content" style="display: none;">
-                    <div class="leaderboard-container team-leaderboard">
-                        <div class="leaderboard-header">
-                            <div class="leaderboard-cell">Rank</div>
-                            <div class="leaderboard-cell">Team</div>
-                            <div class="leaderboard-cell">Stats</div>
-                            <div class="leaderboard-cell">Games</div>
-                        </div>
-                        <div class="leaderboard-body">
-                            {% for entry in team_leaderboard %}
-                            <div class="leaderboard-row">
-                                <div class="leaderboard-cell" data-label="Rank">
-                                    <div class="player-rank">
-                                        <span>
-                                            {% if loop.index == 1 %}🥇
-                                            {% elif loop.index == 2 %}🥈
-                                            {% elif loop.index == 3 %}🥉
-                                            {% else %}{{ loop.index }}{% endif %}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="leaderboard-cell" data-label="Team">
-                                    <div class="team-members">
-                                        {% for member in entry.team.member_details %}
-                                            <a href="{{ url_for('user.view_user', user_id=member.id) }}" class="player-link">
-                                                <img src="{{ member | avatar_url }}" alt="{{ member.name }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                            </a>
-                                        {% endfor %}
-                                        <span class="team-name">{{ entry.team.name }}</span>
-                                    </div>
-                                </div>
-                                <div class="leaderboard-cell" data-label="Stats">
-                                    <span style="font-weight: 500;">{{ entry.stats.wins }} - {{ entry.stats.losses }}</span>
-                                    <span class="text-muted" style="font-size: 0.9em; margin-left: 5px;">({{ "%.1f"|format(entry.stats.win_percentage) }}%)</span>
-                                </div>
-                                <div class="leaderboard-cell" data-label="Games">{{ entry.stats.games }}</div>
-                            </div>
-                            {% else %}
-                            <div class="leaderboard-empty">
-                                <p>No teams have been formed in this group yet.</p>
-                            </div>
-                            {% endfor %}
-                        </div>
+                    <div class="table-container">
+                        <table class="table leaderboard-table-compact">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Team</th>
+                                    <th class="text-right">W-L</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in team_leaderboard %}
+                                <tr>
+                                    <td class="rank-cell">
+                                        {% if loop.index == 1 %}🥇
+                                        {% elif loop.index == 2 %}🥈
+                                        {% elif loop.index == 3 %}🥉
+                                        {% else %}#{{ loop.index }}{% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="team-members-compact">
+                                            {% for member in entry.team.member_details %}
+                                                <img src="{{ member | avatar_url }}" alt="{{ member | display_name }}" class="avatar-small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                            {% endfor %}
+                                            <span class="team-name-compact">{{ entry.team.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-right font-weight-bold">
+                                        {{ entry.stats.wins }}-{{ entry.stats.losses }}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No teams formed yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -176,87 +169,73 @@
         {% if recent_matches %}
         <div class="card">
             <h3>Recent Matches</h3>
-            <div class="table-container">
-                <table class="table responsive-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Team 1</th>
-                            <th>Team 2</th>
-                            <th>Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for match in recent_matches %}
-                        <tr>
-                            <td data-label="Date">{{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate else 'N/A' }}</td>
-                            <td data-label="Team 1">
-                                {% if match.team1 %}
-                                    {{ match.team1.name }}
-                                    {% if g.user and g.user.uid in match.team1.member_ids %}
-                                        <a href="{{ url_for('teams.edit_team', team_id=match.team1.id) }}" class="icon-link" title="Edit Team Name">✏️</a>
-                                    {% endif %}
-                                {% elif match.player1 %}
-                                    {% if match.player1.id != 'unknown' %}
-                                        <a href="{{ url_for('user.view_user', user_id=match.player1.id) }}">{{ match.player1.username }}</a>
-                                    {% else %}
-                                        {{ match.player1.username }}
-                                    {% endif %}
-                                    {% if match.partner %}
-                                        &
-                                        {% if match.partner.id != 'unknown' %}
-                                            <a href="{{ url_for('user.view_user', user_id=match.partner.id) }}">{{ match.partner.username }}</a>
-                                        {% else %}
-                                            {{ match.partner.username }}
-                                        {% endif %}
-                                    {% endif %}
-                                {% else %}
-                                    Unknown
-                                {% endif %}
-                                {% if match.is_upset and match.winner == 'team1' %}
-                                    <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
-                                {% endif %}
-                            </td>
-                            <td data-label="Team 2">
+            <div class="match-history-feed">
+                {% for match in recent_matches %}
+                <div class="match-history-row">
+                    <span class="match-date-compact text-muted">{{ match.matchDate.strftime('%m/%d') if match.matchDate else 'N/A' }}</span>
+
+                    <div class="match-main-content">
+                        {% set p1_score = match.player1Score|default(0) %}
+                        {% set p2_score = match.player2Score|default(0) %}
+                        {% set p1_win = p1_score > p2_score %}
+                        {% set p2_win = p2_score > p1_score %}
+
+                        {% if p2_win %}
+                            {# Winners (Team 2) #}
+                            <div class="match-team font-weight-bold">
                                 {% if match.team2 %}
                                     {{ match.team2.name }}
-                                    {% if g.user and g.user.uid in match.team2.member_ids %}
-                                        <a href="{{ url_for('teams.edit_team', team_id=match.team2.id) }}" class="icon-link" title="Edit Team Name">✏️</a>
-                                    {% endif %}
                                 {% elif match.player2 %}
-                                    {% if match.player2.id != 'unknown' %}
-                                        <a href="{{ url_for('user.view_user', user_id=match.player2.id) }}">{{ match.player2.username }}</a>
-                                    {% else %}
-                                        {{ match.player2.username }}
-                                    {% endif %}
-                                    {% if match.opponent2 %}
-                                        &
-                                        {% if match.opponent2.id != 'unknown' %}
-                                            <a href="{{ url_for('user.view_user', user_id=match.opponent2.id) }}">{{ match.opponent2.username }}</a>
-                                        {% else %}
-                                            {{ match.opponent2.username }}
-                                        {% endif %}
-                                    {% endif %}
+                                    {{ match.player2 | display_name }}{% if match.opponent2 %} & {{ match.opponent2 | display_name }}{% endif %}
                                 {% else %}
                                     Unknown
                                 {% endif %}
-                                {% if match.is_upset and match.winner == 'team2' %}
-                                    <span title="Giant Slayer! Beat a higher-ranked opponent.">🗡️</span>
+                            </div>
+                            <div class="match-score-pill font-weight-bold">
+                                {{ p2_score }}-{{ p1_score }}
+                            </div>
+                            <div class="match-vs text-muted">vs</div>
+                            <div class="match-team">
+                                {% if match.team1 %}
+                                    {{ match.team1.name }}
+                                {% elif match.player1 %}
+                                    {{ match.player1 | display_name }}{% if match.partner %} & {{ match.partner | display_name }}{% endif %}
+                                {% else %}
+                                    Unknown
                                 {% endif %}
-                            </td>
-                            <td data-label="Score" class="{{ 'upset-score' if match.is_upset else '' }}">
-                                {{ match.player1Score }} - {{ match.player2Score }}
-                                {% if (match.player1Score - match.player2Score)|abs == 2 %}
-                                    <span class="badge badge-close-call">Close Call</span>
+                            </div>
+                        {% else %}
+                            {# Winners (Team 1) or Draw #}
+                            <div class="match-team {{ 'font-weight-bold' if p1_win else '' }}">
+                                {% if match.team1 %}
+                                    {{ match.team1.name }}
+                                {% elif match.player1 %}
+                                    {{ match.player1 | display_name }}{% if match.partner %} & {{ match.partner | display_name }}{% endif %}
+                                {% else %}
+                                    Unknown
                                 {% endif %}
-                                {% if match.is_upset %}
-                                    <span class="badge badge-upset">🔥 Upset</span>
+                            </div>
+                            <div class="match-score-pill {{ 'font-weight-bold' if p1_win else '' }}">
+                                {{ p1_score }}-{{ p2_score }}
+                            </div>
+                            <div class="match-vs text-muted">vs</div>
+                            <div class="match-team">
+                                {% if match.team2 %}
+                                    {{ match.team2.name }}
+                                {% elif match.player2 %}
+                                    {{ match.player2 | display_name }}{% if match.opponent2 %} & {{ match.opponent2 | display_name }}{% endif %}
+                                {% else %}
+                                    Unknown
                                 {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if match.is_upset %}
+                        <span class="upset-mini-badge" title="Upset! 🔥">🔥</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
             </div>
         </div>
         {% endif %}

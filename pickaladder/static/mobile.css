@@ -144,63 +144,47 @@
     }
 }
 @media (max-width: 768px) {
-    .leaderboard-header {
-        display: none;
+    .leaderboard-table-compact {
+        font-size: 0.85rem;
     }
 
-    .leaderboard-row {
-        display: grid;
-        grid-template-columns: 1fr;
-        grid-template-areas:
-            "player"
-            "stats";
-        padding: 15px;
-        margin-bottom: 10px;
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius);
+    .leaderboard-table-compact th,
+    .leaderboard-table-compact td {
+        padding: 8px 6px !important;
     }
 
-    .leaderboard-cell[data-label="Player"],
-    .leaderboard-cell[data-label="Team"] {
-        grid-area: player;
-        font-size: 1.2em;
-        margin-bottom: 15px;
+    .player-name-compact {
+        max-width: 80px;
     }
 
-    .leaderboard-cell[data-label="Rank"],
-    .leaderboard-cell[data-label="Avg. Score"],
-    .leaderboard-cell[data-label="Stats"],
-    .leaderboard-cell[data-label="Form"],
-    .leaderboard-cell[data-label="Games"] {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--border-color);
-        width: 100%;
+    .form-dots-compact {
+        gap: 2px;
     }
 
-    .leaderboard-cell:last-child {
-        border-bottom: none;
+    .form-dot-compact {
+        width: 6px;
+        height: 6px;
     }
 
-    .leaderboard-cell::before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: var(--on-surface-variant-color);
-        margin-right: 8px;
+    .match-history-row {
+        gap: 8px;
+        font-size: 0.85rem;
     }
 
-    .player-rank {
-        justify-content: flex-end;
+    .match-date-compact {
+        min-width: 35px;
     }
 
-    .highlight-user {
-        border: 2px solid var(--primary-color);
-        border-left: none; /* Override desktop style */
-        background-color: #E8F5E9; /* A light green */
+    .match-main-content {
+        gap: 4px;
     }
 
-    .team-leaderboard .leaderboard-row {
-        grid-template-columns: 1fr;
+    .match-team {
+        max-width: 90px;
+    }
+
+    .match-score-pill {
+        padding: 1px 6px;
+        font-size: 0.8rem;
     }
 }
