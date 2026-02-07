@@ -492,6 +492,20 @@ input[type="submit"], .btn {
     border-bottom: none;
 }
 
+.list-group-flush .list-group-item {
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+}
+
+.list-group-flush:first-child .list-group-item:first-child {
+    border-top: 0;
+}
+
+.list-group-flush:last-child .list-group-item:last-child {
+    border-bottom: 0;
+}
+
 /* Hero section */
 .hero {
     text-align: center;
@@ -1017,6 +1031,56 @@ input[type="submit"], .btn {
     white-space: nowrap;
 }
 
+.badge-success { background-color: var(--success-color); color: white; }
+.badge-danger { background-color: var(--danger-color); color: white; }
+.badge-info { background-color: var(--primary-brand); color: white; }
+.badge-secondary { background-color: var(--text-secondary-color); color: white; }
+
+/* Utilities */
+.d-flex { display: flex !important; }
+.flex-column { flex-direction: column !important; }
+.justify-content-center { justify-content: center !important; }
+.justify-content-between { justify-content: space-between !important; }
+.align-items-center { align-items: center !important; }
+.text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.font-weight-bold { font-weight: bold !important; }
+.font-weight-medium { font-weight: 500 !important; }
+.w-100 { width: 100% !important; }
+.h-100 { height: 100% !important; }
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: 4px !important; }
+.mb-2 { margin-bottom: 8px !important; }
+.mb-3 { margin-bottom: 16px !important; }
+.mb-4 { margin-bottom: 24px !important; }
+.mt-4 { margin-top: 24px !important; }
+.mr-2 { margin-right: 8px !important; }
+.mr-3 { margin-right: 16px !important; }
+.ml-1 { margin-left: 4px !important; }
+.px-0 { padding-left: 0 !important; padding-right: 0 !important; }
+.px-2 { padding-left: 8px !important; padding-right: 8px !important; }
+.px-4 { padding-left: 24px !important; padding-right: 24px !important; }
+.py-2 { padding-top: 8px !important; padding-bottom: 8px !important; }
+.py-3 { padding-top: 16px !important; padding-bottom: 16px !important; }
+.py-5 { padding-top: 48px !important; padding-bottom: 48px !important; }
+.p-0 { padding: 0 !important; }
+.p-3 { padding: 16px !important; }
+.p-4 { padding: 24px !important; }
+.border-0 { border: 0 !important; }
+.border-top { border-top: 1px solid var(--border-color) !important; }
+.border-bottom { border-bottom: 1px solid var(--border-color) !important; }
+.border-bottom-0 { border-bottom: 0 !important; }
+.shadow-sm { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; }
+.btn-block { width: 100%; display: block; }
+.btn-outline-primary {
+    background-color: transparent;
+    color: var(--primary-brand);
+    border: 1px solid var(--primary-brand);
+}
+.btn-outline-primary:hover {
+    background-color: var(--primary-brand);
+    color: white;
+}
+
 /* Mobile Formatting */
 @media screen and (max-width: 768px) {
     .game-item {
@@ -1324,6 +1388,18 @@ input[type="submit"], .btn {
 .friend-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.card-action:hover {
+    background-color: var(--background-color);
+    cursor: pointer;
+}
+
+.friend-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    width: 100%;
 }
 
 .friend-avatar {

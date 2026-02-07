@@ -280,17 +280,17 @@ def view_user(user_id: str) -> Any:
     matches = UserService.get_user_matches(db, user_id)
     stats = UserService.calculate_stats(matches, user_id)
 
-    # Format matches for display
-    display_items = stats["processed_matches"][:20]
-    final_matches = UserService.format_matches_for_profile(
-        db, display_items, user_id, profile_user_data
+    # Format matches for display (limit to 20)
+    display_items_docs = [m["doc"] for m in stats["processed_matches"][:20]]
+    matches_data = UserService.format_matches_for_dashboard(
+        db, display_items_docs, user_id
     )
 
     return render_template(
-        "user_profile.html",
+        "user/profile.html",
         profile_user=profile_user_data,
         friends=friends,
-        matches=final_matches,
+        matches=matches_data,
         is_friend=is_friend,
         friend_request_sent=friend_request_sent,
         record={"wins": stats["wins"], "losses": stats["losses"]},

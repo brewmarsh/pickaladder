@@ -796,6 +796,7 @@ class UserService:
                     "player2_score": m_data.get("player2Score", 0),
                     "winner": winner,
                     "date": m_data.get("matchDate", "N/A"),
+                    "match_date": m_data.get("matchDate"),
                     "is_group_match": bool(m_data.get("groupId")),
                     "match_type": m_data.get("matchType", "singles"),
                     "user_result": user_result,
