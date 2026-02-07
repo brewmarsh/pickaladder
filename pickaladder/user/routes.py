@@ -282,7 +282,9 @@ def view_user(user_id: str) -> Any:
 
     # Format matches for display (limit to 20)
     display_items_docs = [m["doc"] for m in stats["processed_matches"][:20]]
-    matches_data = UserService.format_matches_for_dashboard(db, display_items_docs, user_id)
+    matches_data = UserService.format_matches_for_dashboard(
+        db, display_items_docs, user_id
+    )
 
     return render_template(
         "user/profile.html",
