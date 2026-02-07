@@ -16,7 +16,6 @@
             {{ form.match_type(class="form-control", onchange="toggleFields()") }}
         </div>
 
-        <!-- Team 1 / Player 1 -->
         <div class="form-group">
             {{ form.player1.label }}
             {{ form.player1(class="form-control") }}
@@ -33,7 +32,6 @@
 
         <hr>
 
-        <!-- Team 2 / Player 2 -->
         <div class="form-group">
             <label id="player2-label" for="player2">Opponent</label>
             {{ form.player2(class="form-control") }}
@@ -62,6 +60,7 @@
         </div>
 
         <button type="submit" class="btn btn-volt">Record Match</button>
+        
         {% if tournament_id %}
             <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament_id) }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
         {% elif group_id %}
@@ -70,66 +69,15 @@
             <a href="{{ url_for('user.dashboard') }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
         {% endif %}
     </form>
+
     <script>
         document.getElementById('match_date').valueAsDate = new Date();
-
-        function updatePrediction() {
-            const matchType = document.getElementById('match_type').value;
-            const p1 = document.getElementById('player1').value;
-            const p2 = document.getElementById('player2').value;
-            const partner = document.getElementById('partner').value;
-            const opponent2 = document.getElementById('opponent2').value;
-
-            let team1 = p1;
-            let team2 = p2;
-
-            if (matchType === 'doubles') {
-                if (!p1 || !partner || !p2 || !opponent2) {
-                    document.getElementById('prediction-preview').style.display = 'none';
-                    return;
-                }
-                team1 = `${p1},${partner}`;
-                team2 = `${p2},${opponent2}`;
-            } else {
-                if (!p1 || !p2) {
-                    document.getElementById('prediction-preview').style.display = 'none';
-                    return;
-                }
-            }
-
-            const previewDiv = document.getElementById('prediction-preview');
-            previewDiv.style.display = 'block';
-            const insightText = previewDiv.querySelector('.insight-text');
-            insightText.textContent = 'Calculating...';
-
-            fetch(`/stats/prediction?team1_id=${team1}&team2_id=${team2}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        previewDiv.style.display = 'none';
-                        return;
-                    }
-                    const bars = previewDiv.querySelectorAll('.progress-bar');
-                    bars[0].style.width = data.team1_prob + '%';
-                    bars[0].textContent = data.team1_prob + '%';
-                    bars[0].setAttribute('aria-valuenow', data.team1_prob);
-
-                    bars[1].style.width = data.team2_prob + '%';
-                    bars[1].textContent = data.team2_prob + '%';
-                    bars[1].setAttribute('aria-valuenow', data.team2_prob);
-
-                    insightText.textContent = data.insight;
-                })
-                .catch(error => {
-                    console.error('Error fetching prediction:', error);
-                    previewDiv.style.display = 'none';
-                });
-        }
 
         function toggleFields() {
             var matchType = document.getElementById('match_type').value;
             var partnerGroup = document.getElementById('partner-group');
             var opponent2Group = document.getElementById('opponent2-group');
+            var predictionPreview = document.getElementById('prediction-preview');
 
             var player1ScoreLabel = document.getElementById('player1-score-label');
             var player2Label = document.getElementById('player2-label');
@@ -148,10 +96,10 @@
                 player2Label.innerText = 'Opponent';
                 player2ScoreLabel.innerText = 'Opponent\'s Score';
             }
+            
+            // Show prediction preview if players are selected
+            checkPredictionVisibility();
         }
-
-        // Initialize state
-        toggleFields();
 
         // Mutual Exclusivity for Player Dropdowns
         const playerDropdowns = [
@@ -160,6 +108,19 @@
             document.getElementById('player2'),
             document.getElementById('opponent2')
         ];
+
+        function checkPredictionVisibility() {
+            const p1 = document.getElementById('player1').value;
+            const p2 = document.getElementById('player2').value;
+            const preview = document.getElementById('prediction-preview');
+            
+            // Basic logic: show prediction widget if at least two opponents are selected
+            if (p1 && p2) {
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
 
         function updateDropdowns() {
             const selectedValues = playerDropdowns.map(dropdown => dropdown.value).filter(Boolean);
@@ -173,18 +134,15 @@
                     }
                 });
             });
+            checkPredictionVisibility();
         }
 
         playerDropdowns.forEach(dropdown => {
-            dropdown.addEventListener('change', () => {
-                updateDropdowns();
-                updatePrediction();
-            });
+            dropdown.addEventListener('change', updateDropdowns);
         });
 
-        document.getElementById('match_type').addEventListener('change', updatePrediction);
-
-        // Initial call to set the state
+        // Initialize state
+        toggleFields();
         updateDropdowns();
     </script>
     <script src="{{ url_for('static', filename='js/optimistic_submission.js') }}"></script>
