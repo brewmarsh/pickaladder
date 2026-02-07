@@ -7,22 +7,22 @@
             </a>
             <div class="navbar-menu">
                 {% if g.user %}
-                    <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
-                    <a href="{{ url_for('user.view_community') }}">🌍 Community</a>
-                    <a href="{{ url_for('user.friend_requests') }}" style="position: relative;">
+                    <a href="{{ url_for('user.dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'user.dashboard' }}">📈 Dashboard</a>
+                    <a href="{{ url_for('user.view_community') }}" class="nav-link {{ 'active' if request.endpoint == 'user.view_community' }}">🌍 Community</a>
+                    <a href="{{ url_for('user.friend_requests') }}" class="nav-link {{ 'active' if request.endpoint == 'user.friend_requests' }}" style="position: relative;">
                         📩 Requests
                         {% if pending_friend_requests %}
                             <span class="notification-badge">{{ pending_friend_requests|length }}</span>
                         {% endif %}
                     </a>
-                    <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
-                    <a href="{{ url_for('tournament.list_tournaments') }}" style="position: relative;">
+                    <a href="{{ url_for('group.view_groups') }}" class="nav-link {{ 'active' if request.endpoint == 'group.view_groups' }}">👨‍👩‍👧‍👦 Groups</a>
+                    <a href="{{ url_for('tournament.list_tournaments') }}" class="nav-link {{ 'active' if request.endpoint == 'tournament.list_tournaments' }}" style="position: relative;">
                         🎾 Tournaments
                         {% if pending_tournament_invites %}
                             <span class="notification-badge">{{ pending_tournament_invites|length }}</span>
                         {% endif %}
                     </a>
-                    <a href="{{ url_for('match.leaderboard') }}">🏆 Global Leaderboard</a>
+                    <a href="{{ url_for('match.leaderboard') }}" class="nav-link {{ 'active' if request.endpoint == 'match.leaderboard' }}">🏆 Global Leaderboard</a>
                 {% else %}
                     <div class="desktop-auth-buttons">
                         {% if request.endpoint != 'auth.login' %}

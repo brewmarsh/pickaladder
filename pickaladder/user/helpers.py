@@ -54,4 +54,4 @@ def smart_display_name(user: dict[str, Any]) -> str:
             return mask_email(email)
         return "Pending Invite"
 
-    return username
+    return username or name or "Unknown Player"
