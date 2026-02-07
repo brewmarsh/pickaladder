@@ -236,7 +236,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         response = self.client.get("/user/api/dashboard")
 
         self.assertEqual(response.status_code, 200)
-        data = response.json
+        data = response.get_json()
+        self.assertIsInstance(data, dict)
         matches = data["matches"]
         self.assertEqual(len(matches), 1)
         self.assertIn(
