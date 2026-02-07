@@ -27,7 +27,7 @@
     --font-score: 'Oswald', sans-serif;
 
     /* Structure */
-    --box-shadow: 0 1px 2px 0 rgba(60,64,67,0.302), 0 1px 3px 1px rgba(60,64,67,0.149);
+    --box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
     --border-radius: 8px;
 }
 
@@ -56,22 +56,23 @@ body {
     margin-bottom: 20px;
 }
 
+.navbar-brand, .navbar-menu a {
+    color: var(--text-on-primary);
+    text-decoration: none;
+}
+
 .navbar-brand {
     font-size: 1.5em;
     font-weight: 500;
-    color: var(--text-on-primary);
-    text-decoration: none;
 }
 
 .navbar-menu {
     display: flex;
     align-items: center;
-    gap: 20px; 
+    gap: 20px;
 }
 
-.navbar-menu a, .nav-link {
-    text-decoration: none;
-    color: var(--text-on-primary);
+.navbar-menu a {
     position: relative;
     padding-bottom: 4px;
 }
@@ -92,34 +93,36 @@ body {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
-    text-decoration: none;
-    display: inline-block;
-    margin-top: 10px;
     font-weight: 500;
     text-transform: uppercase;
-    transition: background-color 0.2s ease-in-out;
-    width: 100%;
+    transition: all 0.2s ease-in-out;
     text-align: center;
-    box-sizing: border-box;
+    display: inline-block;
+    width: 100%;
 }
 
-.btn-primary {
-    background-color: var(--primary-color);
-    color: var(--text-on-primary);
+.btn-primary { 
+    background-color: var(--primary-color); 
+    color: white; 
 }
 
+/* High-Energy Volt Button */
 .btn-volt {
     background-color: var(--accent-color);
     color: #111827 !important;
     font-weight: 700;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .btn-volt:hover {
-    background-color: var(--accent-hover);
+    filter: brightness(95%);
     transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
+
+.btn-danger { background-color: var(--danger-color); color: white; }
+.btn-warning { background-color: var(--warning-color); color: #111827; }
+.btn-secondary { background-color: var(--text-secondary); color: white; }
 
 /* Tables & Leaderboard */
 .table-container {
@@ -141,7 +144,7 @@ body {
 .rank-2 { color: #C0C0C0; } 
 .rank-3 { color: #CD7F32; }
 
-/* Dashboard Pro Layout (Hero Section) */
+/* Dashboard Pro Layout */
 .hero-stats-card {
     display: flex;
     justify-content: space-between;
@@ -162,7 +165,15 @@ body {
     box-shadow: var(--box-shadow);
 }
 
-/* Match History Compact Row */
+.dashboard-columns {
+    display: flex;
+    gap: 24px;
+}
+
+.dashboard-column-left { flex: 2; min-width: 0; }
+.dashboard-column-right { flex: 1; min-width: 0; }
+
+/* Match History Compact Feed */
 .match-history-row {
     display: flex;
     align-items: center;
@@ -172,26 +183,28 @@ body {
     gap: 12px;
 }
 
-.game-won { border-left: 6px solid var(--success-color) !important; }
+.game-won { border-left: 6px solid var(--accent-color) !important; }
 .game-lost { border-left: 6px solid var(--danger-color) !important; }
 
 /* Modals */
+.modal-header h5 { margin: 0; font-weight: 500; }
 .modal-content {
     background-color: var(--card-bg);
     margin: 15% auto;
-    padding: 20px;
+    padding: 24px;
     border: 1px solid var(--border-color);
     width: 80%;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
 }
+.modal-body { padding: 16px; }
 
 /* Badges */
 .badge {
-    padding: 4px 8px;
+    padding: 4px 10px;
     border-radius: 50rem;
-    font-size: 0.8em;
-    font-weight: 500;
+    font-size: 0.8rem;
+    font-weight: 600;
     display: inline-block;
 }
 
@@ -206,11 +219,75 @@ body {
 .justify-content-between { justify-content: space-between !important; }
 .align-items-center { align-items: center !important; }
 .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.w-100 { width: 100% !important; }
+.mb-0 { margin-bottom: 0 !important; }
+.mb-4 { margin-bottom: 24px !important; }
 .shadow-sm { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; }
+
+/* Toasts */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    min-width: 300px;
+}
+.toast {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+.toast::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background-color: var(--primary-color);
+}
+.toast-body { padding: 15px 20px; }
+
+/* Progress Bar */
+.progress {
+    display: flex;
+    height: 1rem;
+    overflow: hidden;
+    background-color: #e9ecef;
+    border-radius: var(--border-radius);
+}
+.progress-bar {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    background-color: var(--primary-color);
+    transition: width 0.6s ease;
+}
+
+/* Loaders */
+.loader {
+    border: 5px solid var(--bg-color);
+    border-top: 5px solid var(--primary-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 
 /* Responsive */
 @media screen and (max-width: 768px) {
     .dashboard-columns { flex-direction: column; }
+    .navbar-menu { display: none; }
     .hero-stats-card { flex-direction: column; text-align: center; }
     .leaderboard-row {
         display: flex;

@@ -14,6 +14,12 @@ class UpdateUserForm(FlaskForm):
         "Username", validators=[DataRequired(), Length(min=2, max=20)]
     )
     email = StringField("Email", validators=[DataRequired(), Email()])
+    dupr_id = StringField("DUPR ID", validators=[Optional()])
+    dupr_rating = DecimalField(
+        "Current Rating",
+        validators=[Optional()],
+        places=2,
+    )
     submit = SubmitField("Update Account")
 
 

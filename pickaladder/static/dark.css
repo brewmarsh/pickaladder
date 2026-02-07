@@ -99,6 +99,7 @@ body {
     border-bottom: 1px solid var(--primary-hover);
     padding: 10px 0;
     margin-bottom: 20px;
+    transition: background-color 0.3s ease;
 }
 
 .navbar {
@@ -117,7 +118,7 @@ body {
 .navbar-menu {
     display: flex;
     align-items: center;
-    gap: 20px; 
+    gap: 20px;
 }
 
 .navbar-menu a {
@@ -125,6 +126,7 @@ body {
     color: var(--text-on-primary);
     position: relative;
     padding-bottom: 4px;
+    transition: all 0.3s ease;
 }
 
 /* Active Nav State */
@@ -245,12 +247,16 @@ input:focus, textarea:focus, select:focus {
 /* The "Volt" Button (High Value Actions) */
 .btn-volt {
     background-color: var(--accent-color);
-    color: #111827; /* Dark Navy for contrast */
+    color: #111827 !important; /* Dark Navy for contrast */
     font-weight: 700;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
 }
 .btn-volt:hover {
     background-color: var(--accent-hover);
-    box-shadow: 0 4px 12px rgba(132, 204, 22, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
 }
 
 .btn-danger { background-color: var(--danger-color); color: white; }
@@ -342,8 +348,8 @@ input:focus, textarea:focus, select:focus {
 }
 
 .dashboard-column-left { flex: 2; min-width: 0; }
-.dashboard-column-right { 
-    flex: 1; 
+.dashboard-column-right {
+    flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -446,8 +452,8 @@ input:focus, textarea:focus, select:focus {
     padding: 10px 15px;
     border-bottom: 1px solid var(--border-color);
 }
-.rank-1 { color: #FFD700; } 
-.rank-2 { color: #C0C0C0; } 
+.rank-1 { color: #FFD700; }
+.rank-2 { color: #C0C0C0; }
 .rank-3 { color: #CD7F32; }
 
 /* Utilities */
@@ -551,7 +557,7 @@ input:focus, textarea:focus, select:focus {
     border-color: var(--border-color);
 }
 
-[data-theme="dark"] input:focus, 
+[data-theme="dark"] input:focus,
 [data-theme="dark"] select:focus {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
@@ -561,23 +567,23 @@ input:focus, textarea:focus, select:focus {
     background-color: #0F172A; /* Darker header for tables */
 }
 
-[data-theme="dark"] .nav-link.active, 
+[data-theme="dark"] .nav-link.active,
 [data-theme="dark"] .navbar-menu a.active {
     color: var(--accent-color);
 }
 
-/* Dark Mode Glow Effects */
+/* Dark Mode Glow Effects adapted from feature branch */
 [data-theme="dark"] .btn-volt {
-    box-shadow: 0 0 15px rgba(190, 242, 100, 0.4); /* Glow matching #bef264 */
+    box-shadow: 0 0 15px rgba(132, 204, 22, 0.4); 
 }
 
 [data-theme="dark"] .btn-volt:hover {
-    box-shadow: 0 0 20px rgba(190, 242, 100, 0.6);
+    box-shadow: 0 0 20px rgba(132, 204, 22, 0.6);
 }
 
 [data-theme="dark"] .text-volt,
 [data-theme="dark"] .badge-volt {
-    color: #bef264; /* Light Lime for readability on dark backgrounds */
+    color: #bef264; /* Lighter lime for better contrast on dark backgrounds */
 }
 
 /* Fixes for dark mode visibility issues */
@@ -595,4 +601,13 @@ input:focus, textarea:focus, select:focus {
     color: #d4edda;
     background-color: #155724;
     border-color: #c3e6cb;
+}
+
+[data-theme="dark"] .loader {
+    border: 5px solid var(--card-bg);
+    border-top: 5px solid var(--primary-color);
+}
+
+[data-theme="dark"] a {
+    color: #60A5FA; /* Matching primary blue variant */
 }

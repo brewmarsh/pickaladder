@@ -22,7 +22,6 @@ from . import auth as auth_bp
 from . import error_handlers
 from . import group as group_bp
 from . import match as match_bp
-from . import stats as stats_bp
 from . import teams as teams_bp
 from . import tournament as tournament_bp
 from . import user as user_bp
@@ -125,7 +124,6 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(group_bp.bp)
     app.register_blueprint(teams_bp.bp)
     app.register_blueprint(tournament_bp.bp)
-    app.register_blueprint(stats_bp.bp)
     app.register_blueprint(error_handlers.error_handlers_bp)
 
 

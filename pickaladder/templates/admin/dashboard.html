@@ -6,6 +6,22 @@
     </div>
     <div class="card-grid">
         <div class="card">
+            <h3>Account Management</h3>
+            <p>Merge a ghost account into a real user profile.</p>
+            <form action="{{ url_for('admin.merge_ghost') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label for="target_user_id">Real User ID</label>
+                    <input type="text" id="target_user_id" name="target_user_id" class="form-control" placeholder="e.g. user_123" required>
+                </div>
+                <div class="form-group">
+                    <label for="ghost_email">Ghost Account Email</label>
+                    <input type="email" id="ghost_email" name="ghost_email" class="form-control" placeholder="march@gmail.com" required>
+                </div>
+                <button type="submit" class="btn btn-warning">Merge Accounts</button>
+            </form>
+        </div>
+        <div class="card">
             <h3>Friend Graph</h3>
             <p>View a visual graph of friend connections.</p>
             <button type="button" class="btn" data-toggle="modal" data-target="#friendGraphModal">
