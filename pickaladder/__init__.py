@@ -5,6 +5,7 @@ import os
 import sys
 import uuid
 from contextlib import suppress
+from datetime import datetime
 from pathlib import Path
 
 import firebase_admin
@@ -279,9 +280,25 @@ def create_app(test_config=None):
 
     # TODO: Add type hints for Agent clarity
     @app.context_processor
-    def inject_version():
-        """Injects the application version into the template context."""
-        return dict(app_version=os.environ.get("APP_VERSION", "dev"))
+    def inject_global_context():
+        """Injects global context variables into templates."""
+        version = (
+            os.environ.get("APP_VERSION")
+            or os.environ.get("GITHUB_RUN_NUMBER")
+            or os.environ.get("RENDER_GIT_COMMIT")
+            or os.environ.get("HEROKU_SLUG_COMMIT")
+            or "dev"
+        )
+
+        # If it's a long git hash, shorten it
+        if len(version) > 10 and version != "dev":
+            version = version[:7]
+
+        return {
+            "current_year": datetime.now().year,
+            "version": version,
+            "app_version": version,
+        }
 
     # TODO: Add type hints for Agent clarity
     @app.context_processor
