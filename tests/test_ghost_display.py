@@ -23,7 +23,7 @@ class TestGhostDisplay(unittest.TestCase):
             "email": "march@gmail.com",
             "name": "John Doe",
         }
-        # Prioritize name over email for ghost users
+        # Prioritize name over email for ghost users (Align tournament tests with Service Layer refactor)
         self.assertEqual(smart_display_name(user), "John Doe")
 
     def test_smart_display_name_ghost_no_email_no_name(self) -> None:
@@ -32,7 +32,7 @@ class TestGhostDisplay(unittest.TestCase):
 
     def test_smart_display_name_ghost_no_email_with_name(self) -> None:
         user = {"username": "ghost_ceec6a", "name": "John Doe"}
-        # Prioritize name for ghost users
+        # Prioritize name for ghost users (Align tournament tests with Service Layer refactor)
         self.assertEqual(smart_display_name(user), "John Doe")
 
     def test_smart_display_name_regular_user(self) -> None:

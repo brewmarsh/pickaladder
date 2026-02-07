@@ -265,6 +265,72 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", response.get_json())
 
+    def test_view_group(self) -> None:
+        """Test the view_group route and eligible friends logic."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+        group_id = "test_group_id"
+
+        # Mock user doc/snapshot
+        mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
+        mock_user_doc.id = MOCK_USER_ID
+        mock_user_snapshot = MagicMock()
+        mock_user_snapshot.exists = True
+        mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
+        mock_user_doc.get.return_value = mock_user_snapshot
+
+        # Mock group doc/snapshot
+        mock_group_doc = MagicMock()
+        mock_group_doc.exists = True
+        mock_group_doc.id = group_id
+        mock_group_doc.to_dict.return_value = {
+            "name": "Test Group",
+            "ownerRef": mock_user_doc,
+            "members": [mock_user_doc],
+        }
+        mock_db.collection("groups").document(
+            group_id
+        ).get.return_value = mock_group_doc
+
+        # Mock friends
+        friend_id = "friend1"
+        mock_friend_ref = mock_db.collection("users").document(friend_id)
+        mock_friend_doc = MagicMock()
+        mock_friend_doc.id = friend_id
+        mock_friend_doc.exists = True
+        mock_friend_doc.to_dict.return_value = {"name": "Friend One"}
+
+        # Mocking the stream for friends query
+        mock_friends_query = mock_user_doc.collection.return_value.where.return_value
+        mock_friend_snapshot = MagicMock()
+        mock_friend_snapshot.id = friend_id
+        mock_friends_query.stream.return_value = [mock_friend_snapshot]
+
+        # Mock db.get_all for eligible friends.
+        mock_db.get_all.return_value = [mock_friend_doc]
+
+        # Patch helpers to simplify
+        with (
+            patch("pickaladder.group.routes.get_group_leaderboard", return_value=[]),
+            patch(
+                "pickaladder.group.routes._fetch_recent_matches",
+                return_value=([], []),
+            ),
+            patch(
+                "pickaladder.group.routes._fetch_group_teams", return_value=([], None)
+            ),
+        ):
+            response = self.client.get(
+                f"/group/{group_id}", headers=self._get_auth_headers()
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Test Group", response.data)
+        self.assertIn(b"Friend One", response.data)
+
+        # Verify db.get_all was called with the correct friend reference
+        mock_db.get_all.assert_any_call([mock_friend_ref])
+
 
 if __name__ == "__main__":
     unittest.main()

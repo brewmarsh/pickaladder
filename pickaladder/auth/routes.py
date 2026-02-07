@@ -14,9 +14,11 @@ from flask import (
     session,
     url_for,
 )
+from flask_login import login_user, logout_user
 from werkzeug.exceptions import UnprocessableEntity
 
 from pickaladder.errors import DuplicateResourceError
+from pickaladder.user.helpers import wrap_user
 from pickaladder.user.services import UserService
 from pickaladder.utils import EmailError, send_email
 
@@ -78,7 +80,7 @@ def register():
             )
 
             # Check for ghost user merge
-            if UserService.merge_ghost_account(db, user_doc_ref, email):
+            if UserService.merge_ghost_user(db, user_doc_ref, email):
                 # Check for tournament invites to show welcome toast
                 invites = UserService.get_pending_tournament_invites(
                     db, user_doc_ref.id
@@ -212,11 +214,15 @@ def session_login():
             user_doc_ref.set(user_info)
 
             # Check for ghost user merge
-            if UserService.merge_ghost_account(db, user_doc_ref, email):
+            if UserService.merge_ghost_user(db, user_doc_ref, email):
                 # Check for tournament invites to show welcome toast
                 invites = UserService.get_pending_tournament_invites(db, uid)
                 if invites:
                     session["show_welcome_invites"] = len(invites)
+
+        remember = request.json.get("remember", False)
+        user = wrap_user(user_info, uid=uid)
+        login_user(user, remember=remember)
 
         session["user_id"] = uid
         session["is_admin"] = user_info.get("isAdmin", False)
@@ -238,6 +244,7 @@ def logout():
     This route is for clearing any server-side session info if needed.
     """
     session.clear()
+    logout_user()
     flash("You have been logged out.", "success")
     return redirect(url_for("auth.login"))
 

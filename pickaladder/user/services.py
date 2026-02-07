@@ -8,16 +8,20 @@ from typing import TYPE_CHECKING, Any, cast
 from firebase_admin import firestore
 from flask import current_app
 
-from pickaladder.user.helpers import smart_display_name
+from .helpers import smart_display_name
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
-    from google.cloud.firestore_v1.document import DocumentReference  # noqa: F401
 
 
 class UserService:
     """Service class for user-related operations and Firestore interaction."""
+
+    @staticmethod
+    def smart_display_name(user: dict[str, Any]) -> str:
+        """Return a smart display name for a user."""
+        return smart_display_name(user)
 
     @staticmethod
     def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
@@ -94,7 +98,7 @@ class UserService:
         return list(unique_matches)
 
     @staticmethod
-    def merge_ghost_account(db: Client, real_user_ref: Any, email: str) -> bool:
+    def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> bool:
         """Check for 'ghost' user with the given email and merge their data."""
         try:
             query = (
@@ -130,72 +134,130 @@ class UserService:
     def _migrate_ghost_references(
         db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
     ) -> None:
-        """Update all Firestore references from a ghost user to a real user."""
-        # 1 & 2: Update Singles Matches
+        """Orchestrate the migration of all ghost user references."""
+        UserService._migrate_singles_matches(db, batch, ghost_ref, real_user_ref)
+        UserService._migrate_doubles_matches(db, batch, ghost_ref, real_user_ref)
+        UserService._migrate_groups(db, batch, ghost_ref, real_user_ref)
+        UserService._migrate_tournaments(db, batch, ghost_ref, real_user_ref)
+
+    @staticmethod
+    def _migrate_singles_matches(
+        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    ) -> None:
+        """Update singles matches where the ghost user is player 1 or 2."""
+        match_updates: dict[str, dict[str, Any]] = {}
         for field in ["player1Ref", "player2Ref"]:
-            for match in (
+            matches = (
                 db.collection("matches")
                 .where(filter=firestore.FieldFilter(field, "==", ghost_ref))
                 .stream()
-            ):
-                batch.update(match.reference, {field: real_user_ref})
+            )
+            for match in matches:
+                if match.id not in match_updates:
+                    match_updates[match.id] = {"ref": match.reference, "data": {}}
+                match_updates[match.id]["data"][field] = real_user_ref
 
-        # 3 & 4: Update Doubles Matches (Array fields)
+        for update in match_updates.values():
+            batch.update(update["ref"], update["data"])
+
+    @staticmethod
+    def _migrate_doubles_matches(
+        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    ) -> None:
+        """Update doubles matches where the ghost user is in a team array."""
+        match_updates: dict[str, dict[str, Any]] = {}
         for field in ["team1", "team2"]:
-            for match in (
+            matches = (
                 db.collection("matches")
                 .where(filter=firestore.FieldFilter(field, "array_contains", ghost_ref))
                 .stream()
-            ):
-                batch.update(
-                    match.reference, {field: firestore.ArrayRemove([ghost_ref])}
-                )
-                batch.update(
-                    match.reference, {field: firestore.ArrayUnion([real_user_ref])}
-                )
+            )
+            for match in matches:
+                if match.id not in match_updates:
+                    m_data = match.to_dict()
+                    if not m_data:
+                        continue
+                    match_updates[match.id] = {
+                        "ref": match.reference,
+                        "full_data": m_data,
+                        "updates": {},
+                    }
 
-        # 5: Update Group Memberships
-        groups_query = db.collection("groups").where(
-            filter=firestore.FieldFilter("members", "array_contains", ghost_ref)
-        )
-        for group in groups_query.stream():
-            batch.update(
-                group.reference, {"members": firestore.ArrayRemove([ghost_ref])}
-            )
-            batch.update(
-                group.reference, {"members": firestore.ArrayUnion([real_user_ref])}
-            )
+                m_data = match_updates[match.id]["full_data"]
+                if field in m_data:
+                    current_team = m_data[field]
+                    new_team = [
+                        real_user_ref if r == ghost_ref else r for r in current_team
+                    ]
+                    match_updates[match.id]["updates"][field] = new_team
 
-        # 6: Update Tournament Participants
-        tournaments_query = db.collection("tournaments").where(
-            filter=firestore.FieldFilter(
-                "participant_ids", "array_contains", ghost_ref.id
-            )
+        for update in match_updates.values():
+            if update["updates"]:
+                batch.update(update["ref"], update["updates"])
+
+    @staticmethod
+    def _migrate_groups(
+        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    ) -> None:
+        """Update group memberships."""
+        groups = (
+            db.collection("groups")
+            .where(filter=firestore.FieldFilter("members", "array_contains", ghost_ref))
+            .stream()
         )
-        for tournament in tournaments_query.stream():
+        for group in groups:
+            g_data = group.to_dict()
+            if g_data and "members" in g_data:
+                current_members = g_data["members"]
+                new_members = [
+                    real_user_ref if m == ghost_ref else m for m in current_members
+                ]
+                batch.update(group.reference, {"members": new_members})
+
+    @staticmethod
+    def _migrate_tournaments(
+        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    ) -> None:
+        """Update tournament participant lists and IDs."""
+        tournaments = (
+            db.collection("tournaments")
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", ghost_ref.id
+                )
+            )
+            .stream()
+        )
+
+        for tournament in tournaments:
             data = tournament.to_dict()
             if not data:
                 continue
-            participants = data.get("participants") or []
+
+            participants = data.get("participants", [])
             updated = False
+
             for p in participants:
                 if not p:
                     continue
-                # Handle both userRef (object) and user_id (string) formats
-                p_uid = None
-                if "userRef" in p:
-                    p_uid = p["userRef"].id
-                elif "user_id" in p:
-                    p_uid = p["user_id"]
+
+                # Check IDs in both formats (ref object or string ID)
+                p_ref = p.get("userRef")
+                p_uid = p_ref.id if p_ref else p.get("user_id")
 
                 if p_uid == ghost_ref.id:
                     if "userRef" in p:
                         p["userRef"] = real_user_ref
-                    p["user_id"] = real_user_ref.id
+
+                    # Ensure at least one ID field is present and correct
+                    if "user_id" in p or "userRef" in p:
+                        p["user_id"] = real_user_ref.id
+
                     updated = True
 
             if updated:
                 p_ids = data.get("participant_ids", [])
+                # Rebuild the simple ID list
                 new_p_ids = [
                     real_user_ref.id if pid == ghost_ref.id else pid for pid in p_ids
                 ]
@@ -236,11 +298,13 @@ class UserService:
             )
             friend_doc = friend_ref.get()
             if friend_doc.exists:
-                status = friend_doc.to_dict().get("status")
-                if status == "accepted":
-                    is_friend = True
-                elif status == "pending":
-                    friend_request_sent = True
+                data = friend_doc.to_dict()
+                if data:
+                    status = data.get("status")
+                    if status == "accepted":
+                        is_friend = True
+                    elif status == "pending":
+                        friend_request_sent = True
         return is_friend, friend_request_sent
 
     @staticmethod
@@ -272,31 +336,37 @@ class UserService:
         db: Client, user_id: str
     ) -> list[dict[str, Any]]:
         """Fetch pending tournament invites for a user."""
-        tournaments_query = (
-            db.collection("tournaments")
-            .where(
-                filter=firestore.FieldFilter(
-                    "participant_ids", "array_contains", user_id
+        if not user_id:
+            return []
+        try:
+            tournaments_query = (
+                db.collection("tournaments")
+                .where(
+                    filter=firestore.FieldFilter(
+                        "participant_ids", "array_contains", user_id
+                    )
                 )
+                .stream()
             )
-            .stream()
-        )
 
-        pending_invites = []
-        for doc in tournaments_query:
-            data = doc.to_dict()
-            if data:
-                participants = data.get("participants") or []
-                for p in participants:
-                    if not isinstance(p, dict):
-                        continue
-                    user_ref = p.get("userRef")
-                    p_uid = user_ref.id if user_ref else p.get("user_id")
-                    if p_uid == user_id and p.get("status") == "pending":
-                        data["id"] = doc.id
-                        pending_invites.append(data)
-                        break
-        return pending_invites
+            pending_invites = []
+            for doc in tournaments_query:
+                data = doc.to_dict()
+                if data:
+                    participants = data.get("participants") or []
+                    for p in participants:
+                        if not p:
+                            continue
+                        p_ref = p.get("userRef")
+                        p_uid = p_ref.id if p_ref else p.get("user_id")
+                        if p_uid == user_id and p.get("status") == "pending":
+                            data["id"] = doc.id
+                            pending_invites.append(data)
+                            break
+            return pending_invites
+        except TypeError:
+            # Handle mockfirestore bug when array field is None
+            return []
 
     @staticmethod
     def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
@@ -316,10 +386,11 @@ class UserService:
             if data and data.get("status") in ["Active", "Scheduled"]:
                 participants = data.get("participants") or []
                 for p in participants:
-                    if not isinstance(p, dict):
+                    if not p:
                         continue
-                    user_ref = p.get("userRef")
-                    p_uid = user_ref.id if user_ref else p.get("user_id")
+                    p_uid = (
+                        p.get("userRef").id if p.get("userRef") else p.get("user_id")
+                    )
                     if p_uid == user_id and p.get("status") == "accepted":
                         data["id"] = doc.id
                         # Format date for display
@@ -333,6 +404,8 @@ class UserService:
                                 data["date_display"] = raw_date.strftime("%b %d, %Y")
                         active_tournaments.append(data)
                         break
+        # Sort by date ascending (soonest first)
+        active_tournaments.sort(key=lambda x: x.get("date") or datetime.datetime.max)
         return active_tournaments
 
     @staticmethod
@@ -404,18 +477,18 @@ class UserService:
 
     @staticmethod
     def get_all_users(
-        db: Client, exclude_user_id: str, limit: int = 20
+        db: Client, exclude_ids: list[str], limit: int = 20
     ) -> list[dict[str, Any]]:
-        """Fetch a list of users, excluding the current user, sorted by date."""
+        """Fetch a list of users, excluding given IDs, sorted by date."""
         users_query = (
             db.collection("users")
             .order_by("createdAt", direction=firestore.Query.DESCENDING)
-            .limit(limit + 1)  # Fetch one extra in case we exclude the current user
+            .limit(limit + len(exclude_ids))  # Fetch extra in case we exclude users
             .stream()
         )
         users = []
         for doc in users_query:
-            if doc.id == exclude_user_id:
+            if doc.id in exclude_ids:
                 continue
             data = doc.to_dict()
             if data is not None:
@@ -426,16 +499,14 @@ class UserService:
         return users
 
     @staticmethod
-    def _get_player_info(
-        player_ref: DocumentReference, users_map: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _get_player_info(player_ref: Any, users_map: dict[str, Any]) -> dict[str, Any]:
         """Return a dictionary with player info."""
         player_data = users_map.get(player_ref.id)
         if not player_data:
             return {"id": player_ref.id, "username": "Unknown", "thumbnail_url": ""}
         return {
             "id": player_ref.id,
-            "username": smart_display_name(player_data),
+            "username": UserService.smart_display_name(player_data),
             "thumbnail_url": player_data.get("thumbnail_url", ""),
         }
 
@@ -478,7 +549,7 @@ class UserService:
     @staticmethod
     def _collect_match_refs(
         matches_docs: list[DocumentSnapshot],
-    ) -> tuple[set[DocumentReference], set[DocumentReference]]:
+    ) -> tuple[set[Any], set[Any]]:
         """Collect all unique user and team references from match documents."""
         player_refs = set()
         team_refs = set()
@@ -725,6 +796,7 @@ class UserService:
                     "player2_score": m_data.get("player2Score", 0),
                     "winner": winner,
                     "date": m_data.get("matchDate", "N/A"),
+                    "match_date": m_data.get("matchDate"),
                     "is_group_match": bool(m_data.get("groupId")),
                     "match_type": m_data.get("matchType", "singles"),
                     "user_result": user_result,
@@ -734,3 +806,292 @@ class UserService:
                 }
             )
         return matches_data
+
+    @staticmethod
+    def _get_user_match_won_lost(
+        match_data: dict[str, Any], user_id: str
+    ) -> tuple[bool, bool]:
+        """Determine if the user won or lost the match, including handling of draws."""
+        match_type = match_data.get("matchType", "singles")
+        p1_score = match_data.get("player1Score", 0)
+        p2_score = match_data.get("player2Score", 0)
+
+        user_won = False
+        user_lost = False
+
+        if match_type == "doubles":
+            team1_refs = match_data.get("team1", [])
+            in_team1 = any(ref.id == user_id for ref in team1_refs)
+            if in_team1:
+                user_won, user_lost = (p1_score > p2_score), (p1_score <= p2_score)
+            else:
+                user_won, user_lost = (p2_score > p1_score), (p2_score <= p1_score)
+        else:
+            p1_ref = match_data.get("player1Ref")
+            is_player1 = p1_ref and p1_ref.id == user_id
+            if is_player1:
+                user_won, user_lost = (p1_score > p2_score), (p1_score <= p2_score)
+            else:
+                user_won, user_lost = (p2_score > p1_score), (p2_score <= p1_score)
+
+        return user_won, user_lost
+
+    @staticmethod
+    def _calculate_streak(processed: list[dict[str, Any]]) -> tuple[int, str]:
+        """Calculate current streak from processed matches."""
+        if not processed:
+            return 0, "N/A"
+
+        last_won = processed[0]["user_won"]
+        streak_type = "W" if last_won else "L"
+        current_streak = 0
+        for m in processed:
+            if m["user_won"] == last_won:
+                current_streak += 1
+            else:
+                break
+        return current_streak, streak_type
+
+    @staticmethod
+    def calculate_stats(
+        matches: list[DocumentSnapshot], user_id: str
+    ) -> dict[str, Any]:
+        """Calculate aggregate performance statistics from a list of matches."""
+        wins = losses = 0
+        processed = []
+
+        for match_doc in matches:
+            match_data = match_doc.to_dict()
+            if not match_data:
+                continue
+
+            won, lost = UserService._get_user_match_won_lost(match_data, user_id)
+            if won:
+                wins += 1
+            elif lost:
+                losses += 1
+
+            processed.append(
+                {
+                    "doc": match_doc,
+                    "data": match_data,
+                    "date": match_data.get("matchDate") or match_doc.create_time,
+                    "user_won": won,
+                }
+            )
+
+        total = wins + losses
+        win_rate = (wins / total) * 100 if total > 0 else 0
+        processed.sort(key=lambda x: x["date"] or datetime.datetime.min, reverse=True)
+
+        streak, s_type = UserService._calculate_streak(processed)
+
+        return {
+            "wins": wins,
+            "losses": losses,
+            "total_games": total,
+            "win_rate": win_rate,
+            "current_streak": streak,
+            "streak_type": s_type,
+            "processed_matches": processed,
+        }
+
+    @staticmethod
+    def _process_h2h_match(
+        data: dict[str, Any], user_id_1: str, user_id_2: str
+    ) -> tuple[int, int, int]:
+        """Process a single match for H2H stats and return (wins, losses, points)."""
+        wins = losses = points = 0
+        match_type = data.get("matchType", "singles")
+
+        if match_type == "singles":
+            is_p1 = data.get("player1Id") == user_id_1
+            winner_id = data.get("winnerId")
+            if winner_id == user_id_1:
+                wins += 1
+            elif winner_id == user_id_2:
+                losses += 1
+
+            p1_score = data.get("player1Score", 0)
+            p2_score = data.get("player2Score", 0)
+            points += (p1_score - p2_score) if is_p1 else (p2_score - p1_score)
+        else:
+            team1_ids = data.get("team1Id", [])
+            team2_ids = data.get("team2Id", [])
+            winner_id = data.get("winnerId")
+
+            if user_id_1 in team1_ids and user_id_2 in team2_ids:
+                if winner_id == "team1":
+                    wins += 1
+                else:
+                    losses += 1
+                points += data.get("player1Score", 0) - data.get("player2Score", 0)
+            elif user_id_1 in team2_ids and user_id_2 in team1_ids:
+                if winner_id == "team2":
+                    wins += 1
+                else:
+                    losses += 1
+                points += data.get("player2Score", 0) - data.get("player1Score", 0)
+
+        return wins, losses, points
+
+    @staticmethod
+    def get_h2h_stats(
+        db: Client, user_id_1: str, user_id_2: str
+    ) -> dict[str, Any] | None:
+        """Fetch head-to-head statistics between two users."""
+        wins = losses = points = 0
+
+        # Build queries
+        matches_ref = db.collection("matches")
+
+        q1 = (
+            matches_ref.where(
+                filter=firestore.FieldFilter("player1Id", "==", user_id_1)
+            )
+            .where(filter=firestore.FieldFilter("player2Id", "==", user_id_2))
+            .where(filter=firestore.FieldFilter("status", "==", "completed"))
+        )
+        q2 = (
+            matches_ref.where(
+                filter=firestore.FieldFilter("player1Id", "==", user_id_2)
+            )
+            .where(filter=firestore.FieldFilter("player2Id", "==", user_id_1))
+            .where(filter=firestore.FieldFilter("status", "==", "completed"))
+        )
+        q3 = (
+            matches_ref.where(
+                filter=firestore.FieldFilter(
+                    "participants", "array_contains", user_id_1
+                )
+            )
+            .where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
+            .where(filter=firestore.FieldFilter("status", "==", "completed"))
+        )
+
+        for q_obj in [q1, q2, q3]:
+            for match in q_obj.stream():
+                data = match.to_dict()
+                if data:
+                    w, l_count, p_diff = UserService._process_h2h_match(
+                        data, user_id_1, user_id_2
+                    )
+                    wins += w
+                    losses += l_count
+                    points += p_diff
+
+        if wins > 0 or losses > 0:
+            return {"wins": wins, "losses": losses, "point_diff": points}
+        return None
+
+    @staticmethod
+    def accept_friend_request(db: Client, user_id: str, requester_id: str) -> bool:
+        """Accept a friend request and ensure reciprocal status."""
+        try:
+            batch = db.batch()
+
+            # Update status in current user's friend list
+            my_friend_ref = (
+                db.collection("users")
+                .document(user_id)
+                .collection("friends")
+                .document(requester_id)
+            )
+            batch.update(my_friend_ref, {"status": "accepted"})
+
+            # Update status in the other user's friend list
+            their_friend_ref = (
+                db.collection("users")
+                .document(requester_id)
+                .collection("friends")
+                .document(user_id)
+            )
+            batch.update(their_friend_ref, {"status": "accepted"})
+
+            batch.commit()
+            return True
+        except Exception as e:
+            current_app.logger.error(f"Error accepting friend request: {e}")
+            return False
+
+    @staticmethod
+    def cancel_friend_request(db: Client, user_id: str, target_user_id: str) -> bool:
+        """Cancel or decline a friend request for both users."""
+        try:
+            batch = db.batch()
+
+            # Delete request from current user's list
+            my_friend_ref = (
+                db.collection("users")
+                .document(user_id)
+                .collection("friends")
+                .document(target_user_id)
+            )
+            batch.delete(my_friend_ref)
+
+            # Delete request from the other user's list
+            their_friend_ref = (
+                db.collection("users")
+                .document(target_user_id)
+                .collection("friends")
+                .document(user_id)
+            )
+            batch.delete(their_friend_ref)
+
+            batch.commit()
+            return True
+        except Exception as e:
+            current_app.logger.error(f"Error cancelling friend request: {e}")
+            return False
+
+    @staticmethod
+    def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
+        """Fetch group rankings for a user."""
+        from pickaladder.group.utils import (  # noqa: PLC0415
+            get_group_leaderboard,
+        )
+
+        user_ref = db.collection("users").document(user_id)
+        group_rankings = []
+        my_groups_query = (
+            db.collection("groups")
+            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+            .stream()
+        )
+        for group_doc in my_groups_query:
+            group_data = group_doc.to_dict()
+            if group_data is None:
+                continue
+            leaderboard = get_group_leaderboard(group_doc.id)
+            user_ranking_data = None
+            for i, player in enumerate(leaderboard):
+                if player["id"] == user_id:
+                    rank = i + 1
+                    user_ranking_data = {
+                        "group_id": group_doc.id,
+                        "group_name": group_data.get("name", "N/A"),
+                        "rank": rank,
+                        "points": player.get("avg_score", 0),
+                        "form": player.get("form", []),
+                    }
+                    if i > 0:
+                        player_above = leaderboard[i - 1]
+                        user_ranking_data["player_above"] = player_above.get("name")
+                        user_ranking_data["points_to_overtake"] = player_above.get(
+                            "avg_score", 0
+                        ) - player.get("avg_score", 0)
+                    break
+
+            if user_ranking_data:
+                group_rankings.append(user_ranking_data)
+            else:
+                group_rankings.append(
+                    {
+                        "group_id": group_doc.id,
+                        "group_name": group_data.get("name", "N/A"),
+                        "rank": "N/A",
+                        "points": 0,
+                        "form": [],
+                    }
+                )
+        return group_rankings

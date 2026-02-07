@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import datetime
 import os
 import secrets
 import tempfile
@@ -22,13 +21,11 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.tournament.services import TournamentService
 from pickaladder.utils import EmailError, send_email
 
 from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm
 from .services import UserService
-from .stats import UserStats
 
 if TYPE_CHECKING:
     pass
@@ -118,6 +115,53 @@ def edit_profile() -> Any:
     return render_template("edit_profile.html", form=form, user=user_data)
 
 
+@bp.route("/requests", methods=["GET"])
+@login_required
+def friend_requests() -> Any:
+    """Display pending friend requests."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+    requests_data = UserService.get_user_pending_requests(db, user_id)
+    sent_requests = UserService.get_user_sent_requests(db, user_id)
+    return render_template(
+        "user/requests.html", requests=requests_data, sent_requests=sent_requests
+    )
+
+
+@bp.route("/requests/<string:requester_id>/accept", methods=["POST"])
+@login_required
+def accept_request(requester_id: str) -> Any:
+    """Accept a friend request and redirect back to the requests list."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+
+    # Get the requester's name for the flash message
+    requester = UserService.get_user_by_id(db, requester_id)
+    username = UserService.smart_display_name(requester) if requester else "the user"
+
+    if UserService.accept_friend_request(db, user_id, requester_id):
+        flash(f"You are now friends with {username}!", "success")
+    else:
+        flash("An error occurred while accepting the friend request.", "danger")
+
+    return redirect(url_for(".friend_requests"))
+
+
+@bp.route("/requests/<string:target_id>/cancel", methods=["POST"])
+@login_required
+def cancel_request(target_id: str) -> Any:
+    """Cancel a sent friend request."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+
+    if UserService.cancel_friend_request(db, user_id, target_id):
+        flash("Friend request cancelled.", "success")
+    else:
+        flash("An error occurred while cancelling the friend request.", "danger")
+
+    return redirect(url_for(".friend_requests"))
+
+
 # TODO: Add type hints for Agent clarity
 @bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
@@ -138,33 +182,21 @@ def dashboard() -> Any:
         form.dark_mode.data = user_data.get("dark_mode")
 
     # Fetch dashboard data for SSR
-    matches_docs = UserService.get_user_matches(db, user_id)
-    stats = UserStats.calculate(matches_docs, user_id)
+    matches_all = UserService.get_user_matches(db, user_id)
+    stats = UserService.calculate_stats(matches_all, user_id)
 
-    # Prepare formatted matches (limit to 20)
-    recent_matches_items = stats["processed_matches"][:20]
-    recent_matches_docs = [m["doc"] for m in recent_matches_items]
+    # Prepare formatted matches for the activity feed (limit to 20)
+    # calculate_stats already sorts them by date descending
+    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:20]]
     matches = UserService.format_matches_for_dashboard(db, recent_matches_docs, user_id)
 
     # Fetch friends, requests, rankings, and tournament invites
     friends = UserService.get_user_friends(db, user_id)
     requests_data = UserService.get_user_pending_requests(db, user_id)
-    group_rankings = UserStats.get_group_rankings(db, user_id)
+    group_rankings = UserService.get_group_rankings(db, user_id)
     pending_tournament_invites = UserService.get_pending_tournament_invites(db, user_id)
     active_tournaments = UserService.get_active_tournaments(db, user_id)
     past_tournaments = UserService.get_past_tournaments(db, user_id)
-
-    # Fetch and filter tournaments
-    tournaments = TournamentService.list_tournaments(user_id, db=db)
-    active_tournaments = [
-        t for t in tournaments if t.get("status") in ["Active", "Scheduled"]
-    ]
-    active_tournaments.sort(key=lambda x: x.get("date") or datetime.datetime.max)
-
-    past_tournaments = [t for t in tournaments if t.get("status") == "Completed"]
-    past_tournaments.sort(
-        key=lambda x: x.get("date") or datetime.datetime.min, reverse=True
-    )
 
     if form.validate_on_submit():
         try:
@@ -239,26 +271,26 @@ def view_user(user_id: str) -> Any:
     # H2H STATS
     h2h_stats = None
     if current_user_id != user_id:
-        h2h_stats = UserStats.get_h2h_stats(db, current_user_id, user_id)
+        h2h_stats = UserService.get_h2h_stats(db, current_user_id, user_id)
 
     # Fetch user's friends (limited for display)
     friends = UserService.get_user_friends(db, user_id, limit=10)
 
     # Fetch and process user's match history
     matches = UserService.get_user_matches(db, user_id)
-    stats = UserStats.calculate(matches, user_id)
+    stats = UserService.calculate_stats(matches, user_id)
 
-    # Format matches for display
-    display_items = stats["processed_matches"][:20]
-    final_matches = UserService.format_matches_for_profile(
-        db, display_items, user_id, profile_user_data
+    # Format matches for display (limit to 20)
+    display_items_docs = [m["doc"] for m in stats["processed_matches"][:20]]
+    matches_data = UserService.format_matches_for_dashboard(
+        db, display_items_docs, user_id
     )
 
     return render_template(
-        "user_profile.html",
+        "user/profile.html",
         profile_user=profile_user_data,
         friends=friends,
-        matches=final_matches,
+        matches=matches_data,
         is_friend=is_friend,
         friend_request_sent=friend_request_sent,
         record={"wins": stats["wins"], "losses": stats["losses"]},
@@ -284,7 +316,14 @@ def view_community() -> Any:
     friends = UserService.get_user_friends(db, current_user_id)
     incoming_requests = UserService.get_user_pending_requests(db, current_user_id)
     outgoing_requests = UserService.get_user_sent_requests(db, current_user_id)
-    all_users = UserService.get_all_users(db, current_user_id, limit=20)
+
+    # Combine all IDs to exclude from "Discover Players"
+    exclude_ids = [current_user_id]
+    exclude_ids.extend([f["id"] for f in friends])
+    exclude_ids.extend([r["id"] for r in incoming_requests])
+    exclude_ids.extend([r["id"] for r in outgoing_requests])
+
+    all_users = UserService.get_all_users(db, exclude_ids, limit=20)
     public_groups = UserService.get_public_groups(db, limit=10)
     pending_tournament_invites = UserService.get_pending_tournament_invites(
         db, current_user_id
@@ -580,24 +619,19 @@ def api_dashboard() -> Any:
     # Fetch pending friend requests
     requests_data = UserService.get_user_pending_requests(db, user_id)
 
-    # Fetch and process matches
-    matches = UserService.get_user_matches(db, user_id)
-    stats = UserStats.calculate(matches, user_id)
+    # Fetch and process matches for the dashboard data
+    matches_all = UserService.get_user_matches(db, user_id)
+    stats = UserService.calculate_stats(matches_all, user_id)
 
-    # Sort all match docs by date and take the most recent 10 for the feed
-    sorted_matches_docs = sorted(
-        matches,
-        key=lambda x: (x.to_dict() or {}).get("matchDate") or x.create_time,
-        reverse=True,
-    )[:10]
-
-    # Format matches for the dashboard feed
+    # Format the 10 most recent matches for the activity feed
+    # calculate_stats already sorted them by date descending
+    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:10]]
     matches_data = UserService.format_matches_for_dashboard(
-        db, sorted_matches_docs, user_id
+        db, recent_matches_docs, user_id
     )
 
     # Get group rankings
-    group_rankings = UserStats.get_group_rankings(db, user_id)
+    group_rankings = UserService.get_group_rankings(db, user_id)
 
     streak_display = (
         f"{stats['current_streak']}{stats['streak_type']}"

@@ -169,117 +169,31 @@ def view_group(group_id: str) -> Any:
 
     eligible_friends = []
     if eligible_friend_ids:
-        # FieldPath.document_id() must be used when filtering by document IDs
-        # with a list of strings to avoid "InvalidArgument: 400 key filter
-        # value must be a Key" errors.
-        eligible_friends_query = (
-            db.collection("users")
-            .where(
-                filter=firestore.FieldFilter(
-                    firestore.FieldPath.document_id(), "in", eligible_friend_ids
-                )
-            )
-            .stream()
-        )
-        eligible_friends = [doc for doc in eligible_friends_query]
+        # Create References: Convert the string IDs into reference objects
+        friend_refs = [
+            db.collection("users").document(uid) for uid in eligible_friend_ids
+        ]
+
+        # Batch Fetch: Use db.get_all to retrieve them in parallel
+        friend_docs = db.get_all(friend_refs)
+
+        # Filter: Ensure we only include documents that actually exist
+        eligible_friends = [doc for doc in friend_docs if doc.exists]
 
     form.friend.choices = [
         (friend.id, friend.to_dict().get("name", friend.id))
         for friend in eligible_friends
     ]
 
-    if form.validate_on_submit() and "friend" in request.form:
-        friend_id = form.friend.data
-        friend_ref = db.collection("users").document(friend_id)
-        try:
-            group_ref.update({"members": firestore.ArrayUnion([friend_ref])})
-            flash("Friend invited successfully.", "success")
-            return redirect(url_for(".view_group", group_id=group_id))
-        except Exception as e:
-            flash(f"An unexpected error occurred: {e}", "danger")
+    if response := _process_friend_invite(db, group_id, group_ref, form):
+        return response
 
     # --- Invite by Email Logic ---
     invite_email_form = InviteByEmailForm()
-    if invite_email_form.validate_on_submit() and "email" in request.form:
-        try:
-            name = invite_email_form.name.data or "Friend"
-            original_email: str = invite_email_form.email.data or ""
-            email = original_email.lower()
-
-            # Check if user exists (checking both original and lowercase to be safe)
-            users_ref = db.collection("users")
-            existing_user = None
-
-            # 1. Check lowercase
-            query_lower = users_ref.where(
-                filter=firestore.FieldFilter("email", "==", email)
-            ).limit(1)
-            docs = list(query_lower.stream())
-
-            if docs:
-                existing_user = docs[0]
-            # 2. Check original if different
-            elif original_email != email:
-                query_orig = users_ref.where(
-                    filter=firestore.FieldFilter("email", "==", original_email)
-                ).limit(1)
-                docs = list(query_orig.stream())
-                if docs:
-                    existing_user = docs[0]
-
-            if existing_user:
-                # User exists, use their stored email for the invite to ensure
-                # matching works
-                invite_email = existing_user.to_dict().get("email")
-            else:
-                # User does not exist, create a Ghost User This allows matches to
-                # be recorded against them before they register
-                invite_email = email
-                ghost_user_data = {
-                    "email": email,
-                    "name": name,
-                    "is_ghost": True,
-                    "createdAt": firestore.SERVER_TIMESTAMP,
-                    # Add a unique username-like field to avoid potential issues
-                    # if code relies on it
-                    "username": f"ghost_{secrets.token_hex(4)}",
-                }
-                # Let Firestore auto-generate the ID
-                db.collection("users").add(ghost_user_data)
-
-            token = secrets.token_urlsafe(32)
-            invite_data = {
-                "group_id": group_id,
-                "email": invite_email,
-                "name": name,
-                "inviter_id": current_user_id,
-                "created_at": firestore.SERVER_TIMESTAMP,
-                "used": False,
-                "status": "sending",
-            }
-            db.collection("group_invites").document(token).set(invite_data)
-
-            invite_url = url_for(".handle_invite", token=token, _external=True)
-            email_data = {
-                "to": email,
-                "subject": f"Join {group_data.get('name')} on pickaladder!",
-                "template": "email/group_invite.html",
-                "name": name,
-                "group_name": group_data.get("name"),
-                "invite_url": invite_url,
-                "joke": get_random_joke(),
-            }
-
-            send_invite_email_background(
-                current_app._get_current_object(),  # type: ignore[attr-defined]
-                token,
-                email_data,
-            )
-
-            flash(f"Invitation is being sent to {email}.", "toast")
-            return redirect(url_for(".view_group", group_id=group_id))
-        except Exception as e:
-            flash(f"An error occurred creating the invitation: {e}", "danger")
+    if response := _process_email_invite(
+        db, group_id, group_data, current_user_id, invite_email_form
+    ):
+        return response
 
     # --- Fetch and Calculate Data for Display ---
     leaderboard = get_group_leaderboard(group_id)
@@ -554,7 +468,7 @@ def handle_invite(token: str) -> Any:
         # Merge ghost user if exists
         invite_email = invite_data.get("email")
         if invite_email:
-            UserService.merge_ghost_account(db, user_ref, invite_email)
+            UserService.merge_ghost_user(db, user_ref, invite_email)
 
         # Add user to group
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
@@ -670,101 +584,108 @@ def _fetch_recent_matches(
     )
     recent_matches_docs = list(matches_query.stream())
 
-    # Collect all team and player references
-    team_refs = []
-    player_refs = []
-    for doc in recent_matches_docs:
-        data = doc.to_dict()
-        if ref := data.get("team1Ref"):
-            if isinstance(ref, firestore.DocumentReference):
-                team_refs.append(ref)
-        if ref := data.get("team2Ref"):
-            if isinstance(ref, firestore.DocumentReference):
-                team_refs.append(ref)
+    # Collect and fetch associated entities
+    team_refs, player_refs = _collect_refs_from_matches(recent_matches_docs)
+    teams_map = _batch_fetch_entities(db, team_refs)
+    players_map = _batch_fetch_entities(db, player_refs)
 
-        # Collect player refs for fallback and older match types
-        player_keys = [
-            "player1Ref",
-            "player2Ref",
-            "partnerRef",
-            "opponent1Ref",
-            "opponent2Ref",
-            "player1",
-            "player2",
-            "partner",
-            "opponent1",
-            "opponent2",
-        ]
-        for key in player_keys:
-            if ref := data.get(key):
-                if isinstance(ref, firestore.DocumentReference):
-                    player_refs.append(ref)
-
-    # Batch fetch Teams
-    teams_map = {}
-    if team_refs:
-        # Deduplicate
-        unique_team_refs = list(
-            {ref.path: ref for ref in team_refs if hasattr(ref, "path")}.values()
-        )
-        if unique_team_refs:
-            team_docs = db.get_all(unique_team_refs)
-            teams_map = {
-                doc.id: {**doc.to_dict(), "id": doc.id}
-                for doc in team_docs
-                if doc.exists
-            }
-
-    # Batch fetch Players
-    players_map = {}
-    if player_refs:
-        # Deduplicate
-        unique_player_refs = list(
-            {ref.path: ref for ref in player_refs if hasattr(ref, "path")}.values()
-        )
-        if unique_player_refs:
-            player_docs = db.get_all(unique_player_refs)
-            players_map = {
-                doc.id: {**doc.to_dict(), "id": doc.id}
-                for doc in player_docs
-                if doc.exists
-            }
-
+    # Enrich match data
     recent_matches = []
     for match_doc in recent_matches_docs:
-        match_data = match_doc.to_dict()
-        match_data["id"] = match_doc.id
-
-        # Attach Teams
-        if t1_ref := match_data.get("team1Ref"):
-            if isinstance(t1_ref, firestore.DocumentReference):
-                match_data["team1"] = teams_map.get(t1_ref.id)
-        if t2_ref := match_data.get("team2Ref"):
-            if isinstance(t2_ref, firestore.DocumentReference):
-                match_data["team2"] = teams_map.get(t2_ref.id)
-
-        # Populate Players (as fallback and for older match types)
-        player_keys = [
-            "player1",
-            "player2",
-            "partner",
-            "opponent1",
-            "opponent2",
-            "player1Ref",
-            "player2Ref",
-            "partnerRef",
-            "opponent1Ref",
-            "opponent2Ref",
-        ]
-        for key in player_keys:
-            ref = match_data.get(key)
-            if isinstance(ref, firestore.DocumentReference):
-                target = key.replace("Ref", "")
-                match_data[target] = players_map.get(ref.id, GUEST_USER)
-
+        match_data = _enrich_single_match(match_doc, teams_map, players_map)
         recent_matches.append(match_data)
 
-    # --- Giant Slayer Calculation ---
+    _calculate_giant_slayer_upsets(recent_matches)
+
+    return recent_matches_docs, recent_matches
+
+
+def _collect_refs_from_matches(
+    matches_docs: list[Any],
+) -> tuple[list[Any], list[Any]]:
+    """Extract team and player references from match documents."""
+    team_refs = []
+    player_refs = []
+    player_keys = [
+        "player1Ref",
+        "player2Ref",
+        "partnerRef",
+        "opponent1Ref",
+        "opponent2Ref",
+        "player1",
+        "player2",
+        "partner",
+        "opponent1",
+        "opponent2",
+    ]
+
+    for doc in matches_docs:
+        data = doc.to_dict()
+        for field in ["team1Ref", "team2Ref"]:
+            if (ref := data.get(field)) and isinstance(
+                ref, firestore.DocumentReference
+            ):
+                team_refs.append(ref)
+
+        for key in player_keys:
+            if (ref := data.get(key)) and isinstance(ref, firestore.DocumentReference):
+                player_refs.append(ref)
+
+    return team_refs, player_refs
+
+
+def _batch_fetch_entities(db: Any, refs: list[Any]) -> dict[str, Any]:
+    """Batch fetch multiple Firestore documents and return a map by ID."""
+    if not refs:
+        return {}
+
+    # Deduplicate by path
+    unique_refs = list({ref.path: ref for ref in refs if hasattr(ref, "path")}.values())
+    if not unique_refs:
+        return {}
+
+    docs = db.get_all(unique_refs)
+    return {doc.id: {**doc.to_dict(), "id": doc.id} for doc in docs if doc.exists}
+
+
+def _enrich_single_match(
+    match_doc: Any, teams_map: dict[str, Any], players_map: dict[str, Any]
+) -> dict[str, Any]:
+    """Attach team and player data to a single match dictionary."""
+    match_data = match_doc.to_dict()
+    match_data["id"] = match_doc.id
+
+    # Attach Teams
+    for field in ["team1", "team2"]:
+        if (ref := match_data.get(f"{field}Ref")) and isinstance(
+            ref, firestore.DocumentReference
+        ):
+            match_data[field] = teams_map.get(ref.id)
+
+    # Attach Players
+    player_keys = [
+        "player1",
+        "player2",
+        "partner",
+        "opponent1",
+        "opponent2",
+        "player1Ref",
+        "player2Ref",
+        "partnerRef",
+        "opponent1Ref",
+        "opponent2Ref",
+    ]
+    for key in player_keys:
+        ref = match_data.get(key)
+        if isinstance(ref, firestore.DocumentReference):
+            target = key.replace("Ref", "")
+            match_data[target] = players_map.get(ref.id, GUEST_USER)
+
+    return match_data
+
+
+def _calculate_giant_slayer_upsets(recent_matches: list[dict[str, Any]]) -> None:
+    """Identify 'giant slayer' upsets based on DUPR rating gaps."""
     for match_data in recent_matches:
         winner_player = None
         loser_player = None
@@ -782,106 +703,92 @@ def _fetch_recent_matches(
                 if (loser_rating - winner_rating) >= UPSET_THRESHOLD:
                     match_data["is_upset"] = True
 
-    return recent_matches_docs, recent_matches
-
 
 def _fetch_group_teams(
     db: Any, group_id: str, member_ids: set[str], recent_matches_docs: list[Any]
 ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
     """Calculate team leaderboard and best buds for a group."""
-    team_leaderboard = []
-    best_buds = None
-    team_stats: dict[str, dict[str, Any]] = {}  # team_id -> {wins, losses, games}
+    team_stats = _calculate_team_stats(recent_matches_docs)
+    if not team_stats:
+        return [], None
 
+    team_ids = list(team_stats.keys())
+    team_refs = [db.collection("teams").document(tid) for tid in team_ids]
+    team_docs = db.get_all(team_refs)
+
+    # Batch fetch all team member details
+    all_member_refs = []
+    enriched_team_docs = []
+    for doc in team_docs:
+        if doc.exists:
+            team_data = {**doc.to_dict(), "id": doc.id}
+            all_member_refs.extend(team_data.get("members", []))
+            enriched_team_docs.append(team_data)
+
+    members_map = _batch_fetch_entities(db, all_member_refs)
+
+    team_leaderboard = []
+    for team_data in enriched_team_docs:
+        stats = team_stats[team_data["id"]]
+        stats["win_percentage"] = (
+            (stats["wins"] / stats["games"]) * 100 if stats["games"] > 0 else 0
+        )
+
+        team_data["member_details"] = [
+            members_map[m.id]
+            for m in team_data.get("members", [])
+            if m.id in members_map
+        ]
+        team_leaderboard.append({"team": team_data, "stats": stats})
+
+    team_leaderboard.sort(key=lambda x: x["stats"]["wins"], reverse=True)
+    best_buds = _extract_best_buds(team_leaderboard)
+
+    return team_leaderboard, best_buds
+
+
+def _calculate_team_stats(recent_matches_docs: list[Any]) -> dict[str, Any]:
+    """Aggregate wins/losses per team from match history."""
+    stats = {}
     for doc in recent_matches_docs:
         data = doc.to_dict()
         if data.get("matchType") != "doubles":
             continue
 
-        t1_ref = data.get("team1Ref")
-        t2_ref = data.get("team2Ref")
-        if not t1_ref or not t2_ref:
+        t1_id = data.get("team1Ref").id if data.get("team1Ref") else None
+        t2_id = data.get("team2Ref").id if data.get("team2Ref") else None
+        if not t1_id or not t2_id:
             continue
 
-        for ref in [t1_ref, t2_ref]:
-            if ref.id not in team_stats:
-                team_stats[ref.id] = {"wins": 0, "losses": 0, "games": 0}
+        for tid in [t1_id, t2_id]:
+            if tid not in stats:
+                stats[tid] = {"wins": 0, "losses": 0, "games": 0}
 
-        p1_score = data.get("player1Score")
-        if p1_score is None:
-            p1_score = data.get("team1Score", 0)
-        p2_score = data.get("player2Score")
-        if p2_score is None:
-            p2_score = data.get("team2Score", 0)
+        p1_score = data.get("player1Score", data.get("team1Score", 0))
+        p2_score = data.get("player2Score", data.get("team2Score", 0))
 
-        team_stats[t1_ref.id]["games"] += 1
-        team_stats[t2_ref.id]["games"] += 1
+        stats[t1_id]["games"] += 1
+        stats[t2_id]["games"] += 1
 
         if p1_score > p2_score:
-            team_stats[t1_ref.id]["wins"] += 1
-            team_stats[t2_ref.id]["losses"] += 1
+            stats[t1_id]["wins"] += 1
+            stats[t2_id]["losses"] += 1
         elif p2_score > p1_score:
-            team_stats[t2_ref.id]["wins"] += 1
-            team_stats[t1_ref.id]["losses"] += 1
+            stats[t2_id]["wins"] += 1
+            stats[t1_id]["losses"] += 1
+    return stats
 
-    if team_stats:
-        team_ids = list(team_stats.keys())
-        team_refs = [db.collection("teams").document(tid) for tid in team_ids]
-        team_docs = db.get_all(team_refs)
 
-        # Batch fetch all team member details
-        all_member_refs = []
-        enriched_team_docs = []
-        for doc in team_docs:
-            if doc.exists:
-                team_data = doc.to_dict()
-                team_data["id"] = doc.id
-                if "members" in team_data:
-                    all_member_refs.extend(team_data.get("members", []))
-                enriched_team_docs.append(team_data)
-
-        members_map = {}
-        if all_member_refs:
-            unique_member_refs = list(
-                {ref.path: ref for ref in all_member_refs}.values()
-            )
-            member_docs = db.get_all(unique_member_refs)
-            members_map = {
-                doc.id: {**doc.to_dict(), "id": doc.id}
-                for doc in member_docs
-                if doc.exists
-            }
-
-        for team_data in enriched_team_docs:
-            stats = team_stats[team_data["id"]]
-            total_games = stats["games"]
-            stats["win_percentage"] = float(
-                (stats["wins"] / total_games) * 100 if total_games > 0 else 0
-            )
-
-            # Get member details
-            team_members = []
-            for member_ref in team_data.get("members", []):
-                if member_ref.id in members_map:
-                    team_members.append(members_map[member_ref.id])
-            team_data["member_details"] = team_members
-
-            team_leaderboard.append({"team": team_data, "stats": stats})
-
-        # Sort teams by Win Count descending
-        team_leaderboard.sort(key=lambda x: x["stats"]["wins"], reverse=True)
-
-        # Best Buds: Find the team with the most wins from these group matches
-        if team_leaderboard:
-            # Already sorted by wins
-            top_team = team_leaderboard[0]
-            if top_team["stats"]["wins"] > 0:
-                # For template compatibility, best_buds needs to look like a team
-                # with stats
-                best_buds = top_team["team"].copy()
-                best_buds["stats"] = top_team["stats"]
-
-    return team_leaderboard, best_buds
+def _extract_best_buds(team_leaderboard: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Identify the top-performing team for the 'Best Buds' feature."""
+    if not team_leaderboard:
+        return None
+    top_team = team_leaderboard[0]
+    if top_team["stats"]["wins"] > 0:
+        best_buds = top_team["team"].copy()
+        best_buds["stats"] = top_team["stats"]
+        return best_buds
+    return None
 
 
 def _get_pending_invites(db: Any, group_id: str) -> list[dict[str, Any]]:
@@ -923,3 +830,101 @@ def _get_pending_invites(db: Any, group_id: str) -> list[dict[str, Any]]:
     # Sort in memory to avoid composite index requirement
     pending_members.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
     return pending_members
+
+
+def _process_friend_invite(db: Any, group_id: str, group_ref: Any, form: Any) -> Any:
+    """Handle friend invitation submission."""
+    if form.validate_on_submit() and "friend" in request.form:
+        friend_id = form.friend.data
+        friend_ref = db.collection("users").document(friend_id)
+        try:
+            group_ref.update({"members": firestore.ArrayUnion([friend_ref])})
+            flash("Friend invited successfully.", "success")
+            return redirect(url_for(".view_group", group_id=group_id))
+        except Exception as e:
+            flash(f"An unexpected error occurred: {e}", "danger")
+    return None
+
+
+def _process_email_invite(
+    db: Any,
+    group_id: str,
+    group_data: dict[str, Any],
+    current_user_id: str,
+    invite_email_form: Any,
+) -> Any:
+    """Handle email invitation submission."""
+    if invite_email_form.validate_on_submit() and "email" in request.form:
+        try:
+            name = invite_email_form.name.data or "Friend"
+            original_email: str = invite_email_form.email.data or ""
+            email = original_email.lower()
+
+            # Check if user exists
+            users_ref = db.collection("users")
+            existing_user = None
+
+            # 1. Check lowercase
+            query_lower = users_ref.where(
+                filter=firestore.FieldFilter("email", "==", email)
+            ).limit(1)
+            docs = list(query_lower.stream())
+
+            if docs:
+                existing_user = docs[0]
+            # 2. Check original if different
+            elif original_email != email:
+                query_orig = users_ref.where(
+                    filter=firestore.FieldFilter("email", "==", original_email)
+                ).limit(1)
+                docs = list(query_orig.stream())
+                if docs:
+                    existing_user = docs[0]
+
+            if existing_user:
+                invite_email = existing_user.to_dict().get("email")
+            else:
+                invite_email = email
+                ghost_user_data = {
+                    "email": email,
+                    "name": name,
+                    "is_ghost": True,
+                    "createdAt": firestore.SERVER_TIMESTAMP,
+                    "username": f"ghost_{secrets.token_hex(4)}",
+                }
+                db.collection("users").add(ghost_user_data)
+
+            token = secrets.token_urlsafe(32)
+            invite_data = {
+                "group_id": group_id,
+                "email": invite_email,
+                "name": name,
+                "inviter_id": current_user_id,
+                "created_at": firestore.SERVER_TIMESTAMP,
+                "used": False,
+                "status": "sending",
+            }
+            db.collection("group_invites").document(token).set(invite_data)
+
+            invite_url = url_for(".handle_invite", token=token, _external=True)
+            email_data = {
+                "to": email,
+                "subject": f"Join {group_data.get('name')} on pickaladder!",
+                "template": "email/group_invite.html",
+                "name": name,
+                "group_name": group_data.get("name"),
+                "invite_url": invite_url,
+                "joke": get_random_joke(),
+            }
+
+            send_invite_email_background(
+                current_app._get_current_object(),  # type: ignore[attr-defined]
+                token,
+                email_data,
+            )
+
+            flash(f"Invitation is being sent to {email}.", "toast")
+            return redirect(url_for(".view_group", group_id=group_id))
+        except Exception as e:
+            flash(f"An error occurred creating the invitation: {e}", "danger")
+    return None

@@ -22,6 +22,10 @@
             {{ form.password.label }}
             {{ form.password(class="form-control", autocomplete="current-password") }}
         </div>
+        <div class="form-group form-check">
+            {{ form.remember(class="form-check-input") }}
+            {{ form.remember.label(class="form-check-label") }}
+        </div>
         {{ form.submit(class="btn") }}
     </form>
     <div class="or-separator">OR</div>
@@ -48,6 +52,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     googleSignInButton.addEventListener('click', function() {
         const provider = new firebase.auth.GoogleAuthProvider();
+        const remember = document.getElementById('remember').checked;
         firebase.auth().signInWithPopup(provider)
             .then((result) => {
                 return result.user.getIdToken();
@@ -59,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         "Content-Type": "application/json",
                         "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify({ idToken: idToken }),
+                    body: JSON.stringify({ idToken: idToken, remember: remember }),
                 });
             })
             .then(response => {
@@ -84,6 +89,7 @@ document.addEventListener('DOMContentLoaded', function () {
         event.preventDefault();
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        const remember = document.getElementById('remember').checked;
 
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
@@ -96,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         "Content-Type": "application/json",
                         "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify({ idToken: idToken }),
+                    body: JSON.stringify({ idToken: idToken, remember: remember }),
                 });
             })
             .then(response => {
