@@ -781,9 +781,9 @@ class UserService:
                 t1_name = teams_map.get(t1_ref.id, {}).get("name", "Team 1")
 
             # Fallback for doubles if team name is generic or missing
-            if (
-                t1_name == "Team 1" or t1_name.startswith("Team ")
-            ) and match_dict.get("matchType") == "doubles":
+            if (t1_name == "Team 1" or t1_name.startswith("Team ")) and match_dict.get(
+                "matchType"
+            ) == "doubles":
                 if isinstance(p1_info, list) and len(p1_info) > 0:
                     t1_name = " & ".join([p["username"] for p in p1_info])
 
@@ -792,9 +792,9 @@ class UserService:
                 t2_name = teams_map.get(t2_ref.id, {}).get("name", "Team 2")
 
             # Fallback for doubles if team name is generic or missing
-            if (
-                t2_name == "Team 2" or t2_name.startswith("Team ")
-            ) and match_dict.get("matchType") == "doubles":
+            if (t2_name == "Team 2" or t2_name.startswith("Team ")) and match_dict.get(
+                "matchType"
+            ) == "doubles":
                 if isinstance(p2_info, list) and len(p2_info) > 0:
                     t2_name = " & ".join([p["username"] for p in p2_info])
 
