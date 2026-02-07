@@ -167,12 +167,15 @@ def _calculate_leaderboard_from_matches(
         avg_score = stats["total_score"] / games_played if games_played > 0 else 0.0
 
         # Build enriched entry for template filters
+        is_ghost = user_data.get("is_ghost") or user_data.get(
+            "username", ""
+        ).startswith("ghost_")
         entry = {
             "id": user_id,
             "name": smart_display_name(user_data),
             "username": user_data.get("username"),
             "email": user_data.get("email"),
-            "is_ghost": user_data.get("is_ghost") or user_data.get("username", "").startswith("ghost_"),
+            "is_ghost": is_ghost,
             "wins": stats["wins"],
             "losses": stats["losses"],
             "games_played": stats["games"],
