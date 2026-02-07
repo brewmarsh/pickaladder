@@ -2,6 +2,8 @@
 body.dark-mode {
     --primary-brand: #3b82f6;
     --primary-brand-dark: #2563eb;
+    --primary-color: #3b82f6;
+    --accent-color: #DFFF00;
     --accent-highlight: #DFFF00;
     --success-color: #10B981;
     --text-color: #F3F4F6;
@@ -101,3 +103,14 @@ body.dark-mode .close {
     color: var(--text-secondary-color);
 }
 
+body.dark-mode .nav-link.active, body.dark-mode .navbar-menu a.active {
+    color: var(--accent-color);
+}
+
+body.dark-mode .btn-volt {
+    box-shadow: 0 0 15px rgba(223, 255, 0, 0.4);
+}
+
+body.dark-mode .btn-volt:hover {
+    box-shadow: 0 0 20px rgba(223, 255, 0, 0.6);
+}

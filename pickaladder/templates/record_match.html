@@ -61,7 +61,7 @@
             {% include 'match/preview.html' %}
         </div>
 
-        <button type="submit" class="btn">Record Match</button>
+        <button type="submit" class="btn btn-volt">Record Match</button>
         {% if tournament_id %}
             <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament_id) }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
         {% elif group_id %}

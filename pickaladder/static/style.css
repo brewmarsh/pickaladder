@@ -2,6 +2,8 @@
 :root {
     --primary-brand: #0F4C81;
     --primary-brand-dark: #0b3a64;
+    --primary-color: #0F4C81;
+    --accent-color: #DFFF00;
     --accent-highlight: #DFFF00;
     --success-color: #10B981;
     --danger-color: #EA4335; /* Google Red */
@@ -115,9 +117,18 @@ body {
     gap: 20px; /* spacing between menu items */
 }
 
-.navbar-menu a {
+.navbar-menu a, .nav-link {
     text-decoration: none;
     color: var(--on-primary-color);
+    padding: 8px 12px;
+    transition: all 0.3s ease;
+}
+
+.nav-link.active, .navbar-menu a.active {
+    color: var(--primary-color);
+    background-color: transparent;
+    border-bottom: 3px solid currentColor;
+    font-weight: 700;
 }
 
 
@@ -260,6 +271,21 @@ input[type="submit"], .btn {
 .btn-warning {
     background-color: var(--warning-color);
     color: var(--text-color);
+}
+
+.btn-volt {
+    background-color: var(--accent-color);
+    color: #111827 !important;
+    font-weight: 700;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.btn-volt:hover {
+    background-color: var(--accent-color);
+    filter: brightness(90%);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
 }
 
 /* Tables */
@@ -1100,7 +1126,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .game-won {
-    border-left: 6px solid var(--success-color) !important;
+    border-left: 6px solid var(--accent-color) !important;
 }
 
 .game-lost {
@@ -1179,6 +1205,18 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 .badge-danger { background-color: var(--danger-color); color: white; }
 .badge-info { background-color: var(--primary-brand); color: white; }
 .badge-secondary { background-color: var(--text-secondary-color); color: white; }
+
+.badge-volt {
+    background-color: var(--accent-color);
+    color: #111827 !important;
+    padding: 0.5em 0.8em;
+    border-radius: 50rem;
+    font-weight: 700;
+}
+
+.text-volt {
+    color: var(--accent-color) !important;
+}
 
 /* Utilities */
 .d-flex { display: flex !important; }
