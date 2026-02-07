@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 from mockfirestore import MockFirestore
 
 from pickaladder import create_app
-from pickaladder.tournament.services import TournamentService  # noqa: F401
+from pickaladder.tournament.services import TournamentService
 from tests.conftest import (
     MockArrayRemove,
     MockArrayUnion,
@@ -414,7 +414,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
     @patch("pickaladder.tournament.routes.TournamentService.update_tournament")
     def test_edit_tournament_mocked(self, mock_update: MagicMock) -> None:
         """Test editing tournament by mocking the service method."""
-        # Ensure TournamentService is available
+        # Ensure TournamentService is available for route logic
         self.assertIsNotNone(TournamentService)
         self._set_session_user()
         tournament_id = "test_tournament_id"

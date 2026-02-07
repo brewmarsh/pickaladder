@@ -176,9 +176,11 @@ class UserService:
             data = tournament.to_dict()
             if not data:
                 continue
-            participants = data.get("participants", [])
+            participants = data.get("participants") or []
             updated = False
             for p in participants:
+                if not p:
+                    continue
                 # Handle both userRef (object) and user_id (string) formats
                 p_uid = None
                 if "userRef" in p:
@@ -284,10 +286,13 @@ class UserService:
         for doc in tournaments_query:
             data = doc.to_dict()
             if data:
-                participants = data.get("participants", [])
+                participants = data.get("participants") or []
                 for p in participants:
-                    p_uid = p.get("userRef").id if "userRef" in p else p.get("user_id")
-                    if p_uid == user_id and p["status"] == "pending":
+                    if not isinstance(p, dict):
+                        continue
+                    user_ref = p.get("userRef")
+                    p_uid = user_ref.id if user_ref else p.get("user_id")
+                    if p_uid == user_id and p.get("status") == "pending":
                         data["id"] = doc.id
                         pending_invites.append(data)
                         break
@@ -311,11 +316,10 @@ class UserService:
             if data and data.get("status") in ["Active", "Scheduled"]:
                 participants = data.get("participants") or []
                 for p in participants:
-                    if not p:
+                    if not isinstance(p, dict):
                         continue
-                    p_uid = (
-                        p.get("userRef").id if p.get("userRef") else p.get("user_id")
-                    )
+                    user_ref = p.get("userRef")
+                    p_uid = user_ref.id if user_ref else p.get("user_id")
                     if p_uid == user_id and p.get("status") == "accepted":
                         data["id"] = doc.id
                         # Format date for display
