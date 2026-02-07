@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block title %}Merge Players{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Merge Players</h2>
+    <div class="alert alert-warning">
+        <strong>Warning:</strong> This action is irreversible. The <strong>Source Player</strong> will be deleted, and all their matches will be transferred to the <strong>Target Player</strong>.
+    </div>
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-group">
+            <label>Source Player (Will be DELETED)</label>
+            <select name="source_id" class="form-control" required>
+                <option value="">Select Player to Remove...</option>
+                {% for user in users %}
+                    <option value="{{ user.id }}">
+                        {{ user.name }} ({{ 'Ghost' if user.is_ghost else 'User' }}) - {{ user.email or 'No Email' }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Target Player (Will Keep Data)</label>
+            <select name="target_id" class="form-control" required>
+                <option value="">Select Player to Keep...</option>
+                {% for user in users %}
+                    <option value="{{ user.id }}">
+                        {{ user.name }} ({{ 'Ghost' if user.is_ghost else 'User' }}) - {{ user.email or 'No Email' }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure? This cannot be undone.')">
+            Merge & Delete Source
+        </button>
+    </form>
+</div>
+{% endblock %}
