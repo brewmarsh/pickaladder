@@ -172,6 +172,11 @@ def _register_context_processors(app: Flask) -> None:
     @app.context_processor
     def inject_global_context() -> dict[str, Any]:
         """Injects global context variables into templates."""
+        # Detect version from environment variables with the following priority:
+        # 1. APP_VERSION (explicitly set)
+        # 2. GITHUB_RUN_NUMBER (GitHub Actions build)
+        # 3. RENDER_GIT_COMMIT or HEROKU_SLUG_COMMIT (Git Hash from Render/Heroku)
+        # 4. Fallback to "dev"
         version = (
             os.environ.get("APP_VERSION")
             or os.environ.get("GITHUB_RUN_NUMBER")
