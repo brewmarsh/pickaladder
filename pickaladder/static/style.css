@@ -120,7 +120,7 @@ body {
     gap: 20px; 
 }
 
-.navbar-menu a {
+.navbar-menu a, .nav-link {
     text-decoration: none;
     color: var(--text-on-primary);
     position: relative;
@@ -245,12 +245,17 @@ input:focus, textarea:focus, select:focus {
 /* The "Volt" Button (High Value Actions) */
 .btn-volt {
     background-color: var(--accent-color);
-    color: #111827; /* Dark Navy for contrast */
+    color: #111827 !important; /* Force Dark Navy for contrast */
     font-weight: 700;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
+
 .btn-volt:hover {
     background-color: var(--accent-hover);
-    box-shadow: 0 4px 12px rgba(132, 204, 22, 0.3);
+    filter: brightness(90%);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
 }
 
 .btn-danger { background-color: var(--danger-color); color: white; }
@@ -380,6 +385,11 @@ input:focus, textarea:focus, select:focus {
     background-color: var(--accent-color);
     color: #111827; /* Dark Navy */
     font-weight: 700;
+    padding: 0.5em 0.8em;
+}
+
+.text-volt {
+    color: var(--accent-color) !important;
 }
 
 /* Typography Utilities */
@@ -420,6 +430,30 @@ input:focus, textarea:focus, select:focus {
     object-fit: cover;
     margin-bottom: 16px;
     border: 3px solid var(--border-color);
+}
+.friend-name {
+    margin: 0 0 8px 0;
+    font-size: 1.1em;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+.friend-rating {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 20px;
+    color: var(--text-secondary);
+}
+.friend-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    width: 100%;
+}
+.card-action:hover {
+    background-color: var(--bg-color);
+    cursor: pointer;
 }
 
 /* Match History */
@@ -471,7 +505,7 @@ input:focus, textarea:focus, select:focus {
 /* Mobile Formatting */
 @media screen and (max-width: 768px) {
     .dashboard-columns { flex-direction: column; }
-    .navbar-menu { display: none; } /* Assuming hamburger handles this */
+    .navbar-menu { display: none; } 
     .friend-card { padding: 16px; }
     .leaderboard-row {
         display: flex;
@@ -504,8 +538,16 @@ input:focus, textarea:focus, select:focus {
     width: 6px;
     background-color: var(--primary-color);
 }
+.toast-header {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    border-bottom: none;
+    padding-left: 20px;
+    padding-top: 15px;
+}
+.toast-body { padding: 0 20px 15px; }
 
-/* Progress Bar (for Prediction Model) */
+/* Progress Bar */
 .progress {
     display: flex;
     height: 1rem;
@@ -524,4 +566,77 @@ input:focus, textarea:focus, select:focus {
     white-space: nowrap;
     background-color: var(--primary-color);
     transition: width 0.6s ease;
+}
+
+/* Modals */
+.modal-header h5 {
+    margin: 0;
+    font-weight: 500;
+}
+.close {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+.close:hover {
+    color: var(--text-primary);
+    text-decoration: none;
+    cursor: pointer;
+}
+.modal-body { padding: 16px; }
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 40px;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+/* Loaders & Misc */
+.loader {
+    border: 5px solid var(--bg-color);
+    border-top: 5px solid var(--primary-color);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.bg-primary-subtle { background-color: #e3f2fd !important; }
+[data-theme="dark"] .bg-primary-subtle { background-color: rgba(59, 130, 246, 0.2) !important; }
+
+/* Compact Tables */
+.leaderboard-table-compact th,
+.leaderboard-table-compact td {
+    padding: 10px 12px !important;
+    vertical-align: middle;
+}
+.leaderboard-table-compact tbody tr:nth-child(odd) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+[data-theme="dark"] .leaderboard-table-compact tbody tr:nth-child(odd) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.avatar-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.match-history-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.95rem;
+    gap: 12px;
 }
