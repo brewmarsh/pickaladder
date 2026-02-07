@@ -12,7 +12,7 @@
     --surface-color: #FFFFFF;
     --on-primary-color: #ffffff;
     --border-color: #E0E0E0;
-    --font-family: 'Roboto', sans-serif;
+    --font-family: 'Inter', sans-serif;
     --box-shadow: 0 1px 2px 0 rgba(60,64,67,0.302), 0 1px 3px 1px rgba(60,64,67,0.149);
     --border-radius: 8px;
 }
@@ -603,6 +603,10 @@ input[type="submit"], .btn {
 
 .winning-score {
     font-weight: bold;
+}
+
+.font-score {
+    font-family: 'Oswald', sans-serif;
 }
 
 .clickable-row {
