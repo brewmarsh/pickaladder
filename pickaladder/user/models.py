@@ -2,9 +2,15 @@
 
 from collections import UserDict
 
+from flask_login import UserMixin
 
-class User(UserDict):
+
+class User(UserDict, UserMixin):
     """A wrapper class for user data that provides additional properties."""
+
+    def get_id(self) -> str:
+        """Return the user ID."""
+        return str(self.get("uid", ""))
 
     @property
     def avatar_url(self) -> str:
@@ -19,6 +25,6 @@ class User(UserDict):
         if profile_pic:
             return str(profile_pic)
 
-        # Fallback to UI Avatars
-        name = self.get("name") or self.get("username") or "User"
-        return f"https://ui-avatars.com/api/?name={name}&background=random&color=fff"
+        # Fallback to DiceBear Avatars (avataaars style)
+        seed = self.get("username") or self.get("email") or "User"
+        return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"

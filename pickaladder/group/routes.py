@@ -15,7 +15,6 @@ from flask import (
     request,
     url_for,
 )
-from google.cloud.firestore_v1.field_path import FieldPath
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
@@ -170,19 +169,16 @@ def view_group(group_id: str) -> Any:
 
     eligible_friends = []
     if eligible_friend_ids:
-        # FieldPath.document_id() must be used when filtering by document IDs
-        # with a list of strings to avoid "InvalidArgument: 400 key filter
-        # value must be a Key" errors.
-        eligible_friends_query = (
-            db.collection("users")
-            .where(
-                filter=firestore.FieldFilter(
-                    FieldPath.document_id(), "in", eligible_friend_ids
-                )
-            )
-            .stream()
-        )
-        eligible_friends = [doc for doc in eligible_friends_query]
+        # Create References: Convert the string IDs into reference objects
+        friend_refs = [
+            db.collection("users").document(uid) for uid in eligible_friend_ids
+        ]
+
+        # Batch Fetch: Use db.get_all to retrieve them in parallel
+        friend_docs = db.get_all(friend_refs)
+
+        # Filter: Ensure we only include documents that actually exist
+        eligible_friends = [doc for doc in friend_docs if doc.exists]
 
     form.friend.choices = [
         (friend.id, friend.to_dict().get("name", friend.id))
