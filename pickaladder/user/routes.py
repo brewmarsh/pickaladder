@@ -21,9 +21,8 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.utils import EmailError, send_email
-
 from pickaladder.constants import DUPR_PROFILE_BASE_URL
+from pickaladder.utils import EmailError, send_email
 
 from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm
@@ -84,7 +83,9 @@ def edit_profile() -> Any:
                 flash(
                     "Username already exists. Please choose a different one.", "danger"
                 )
-                return render_template("user/edit_profile.html", form=form, user=user_data)
+                return render_template(
+                    "user/edit_profile.html", form=form, user=user_data
+                )
 
         # Handle email change
         if new_email != user_data.get("email"):
@@ -107,15 +108,21 @@ def edit_profile() -> Any:
                 )
             except auth.EmailAlreadyExistsError:
                 flash("That email address is already in use.", "danger")
-                return render_template("user/edit_profile.html", form=form, user=user_data)
+                return render_template(
+                    "user/edit_profile.html", form=form, user=user_data
+                )
             except EmailError as e:
                 current_app.logger.error(f"Email error updating email: {e}")
                 flash(str(e), "danger")
-                return render_template("user/edit_profile.html", form=form, user=user_data)
+                return render_template(
+                    "user/edit_profile.html", form=form, user=user_data
+                )
             except Exception as e:
                 current_app.logger.error(f"Error updating email: {e}")
                 flash("An error occurred while updating your email.", "danger")
-                return render_template("user/edit_profile.html", form=form, user=user_data)
+                return render_template(
+                    "user/edit_profile.html", form=form, user=user_data
+                )
 
         if update_data:
             UserService.update_user_profile(db, user_id, update_data)

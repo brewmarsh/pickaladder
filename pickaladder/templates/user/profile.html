@@ -1,5 +1,4 @@
 {% extends "layout.html" %}
-{% set target_user = profile_user %}
 {% block title %}{{ profile_user | display_name }}'s Profile{% endblock %}
 {% block content %}
 <div class="mt-4">
@@ -30,7 +29,7 @@
                         </div>
                         <div class="text-left">
                             <span class="badge badge-success d-block mb-1" style="font-size: 0.75rem;">Win Rate: {{ "%.0f"|format(win_rate) }}%</span>
-                            <span class="badge {{ 'badge-success' if streak_type == 'W' else 'badge-danger' if streak_type == 'L' else 'badge-info' }} d-block" style="font-size: 0.75rem;">Streak: {{ current_streak }}{{ streak_type if total_games > 0 else '' }}</span>
+                            <span class="badge badge-info d-block" style="font-size: 0.75rem;">Streak: {{ current_streak }}{{ streak_type if total_games > 0 else '' }}</span>
                         </div>
                     </div>
 
@@ -72,7 +71,7 @@
                         </div>
                         <div class="card-body">
                             {% if matches %}
-                                <div class="list-group list-group-flush pb-5">
+                                <div class="list-group list-group-flush">
                                     {% for match in matches %}
                                         <div class="list-group-item clickable-row px-0 py-3 border-bottom" data-href="{{ url_for('match.view_match_page', match_id=match.id) }}">
                                             <div class="d-flex justify-content-between align-items-center">

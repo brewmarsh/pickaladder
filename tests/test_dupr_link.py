@@ -5,7 +5,6 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from flask import g
 from pickaladder import create_app
 from pickaladder.constants import DUPR_PROFILE_BASE_URL
 
@@ -20,7 +19,10 @@ class DuprLinkTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore_client": patch("google.cloud.firestore_v1.client.Client"),
-            "firestore_admin_client": patch("firebase_admin.firestore.client", return_value=self.mock_firestore_client),
+            "firestore_admin_client": patch(
+                "firebase_admin.firestore.client",
+                return_value=self.mock_firestore_client,
+            ),
             "auth": patch("firebase_admin.auth"),
             "storage": patch("firebase_admin.storage"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
@@ -55,19 +57,27 @@ class DuprLinkTestCase(unittest.TestCase):
             "uid": user_id,
             "username": "testuser",
             "email": "test@example.com",
-            "name": "Test User"
+            "name": "Test User",
         }
-        self.mock_firestore_client.collection.return_value.document.return_value.get.return_value = mock_user_doc
+        (
+            self.mock_firestore_client.collection.return_value.document.return_value.get.return_value
+        ) = mock_user_doc
 
         # Post data to edit_profile
-        with patch("pickaladder.user.routes.UserService.update_user_profile") as mock_update:
-            response = self.client.post("/user/edit_profile", data={
-                "name": "Updated User",
-                "username": "testuser",
-                "email": "test@example.com",
-                "dupr_id": " 12345 ",
-                "dupr_rating": "4.25"
-            }, follow_redirects=True)
+        with patch(
+            "pickaladder.user.routes.UserService.update_user_profile"
+        ) as mock_update:
+            response = self.client.post(
+                "/user/edit_profile",
+                data={
+                    "name": "Updated User",
+                    "username": "testuser",
+                    "email": "test@example.com",
+                    "dupr_id": " 12345 ",
+                    "dupr_rating": "4.25",
+                },
+                follow_redirects=True,
+            )
 
             self.assertEqual(response.status_code, 200)
             mock_update.assert_called_once()
@@ -97,7 +107,7 @@ class DuprLinkTestCase(unittest.TestCase):
             "username": "targetuser",
             "name": "Target User",
             "dupr_id": "67890",
-            "dupr_rating": 5.0
+            "dupr_rating": 5.0,
         }
 
         def get_doc(doc_id):
@@ -107,11 +117,17 @@ class DuprLinkTestCase(unittest.TestCase):
                 return mock_target_doc
             return MagicMock(exists=False)
 
-        self.mock_firestore_client.collection.return_value.document.side_effect = lambda doc_id: MagicMock(get=lambda: get_doc(doc_id))
+        self.mock_firestore_client.collection.return_value.document.side_effect = (
+            lambda doc_id: MagicMock(get=lambda: get_doc(doc_id))
+        )
 
         # Mock other dependencies
-        self.mock_firestore_client.collection.return_value.document.return_value.collection.return_value.where.return_value.limit.return_value.stream.return_value = []
-        self.mock_firestore_client.collection.return_value.where.return_value.stream.return_value = []
+        (
+            self.mock_firestore_client.collection.return_value.document.return_value.collection.return_value.where.return_value.limit.return_value.stream.return_value
+        ) = []
+        (
+            self.mock_firestore_client.collection.return_value.where.return_value.stream.return_value
+        ) = []
 
         response = self.client.get(f"/user/{target_id}")
         self.assertEqual(response.status_code, 200)
@@ -141,7 +157,7 @@ class DuprLinkTestCase(unittest.TestCase):
             "uid": target_id,
             "username": "targetuser",
             "name": "Target User",
-            "dupr_rating": 3.5
+            "dupr_rating": 3.5,
         }
 
         def get_doc(doc_id):
@@ -151,11 +167,17 @@ class DuprLinkTestCase(unittest.TestCase):
                 return mock_target_doc
             return MagicMock(exists=False)
 
-        self.mock_firestore_client.collection.return_value.document.side_effect = lambda doc_id: MagicMock(get=lambda: get_doc(doc_id))
+        self.mock_firestore_client.collection.return_value.document.side_effect = (
+            lambda doc_id: MagicMock(get=lambda: get_doc(doc_id))
+        )
 
         # Mock other dependencies
-        self.mock_firestore_client.collection.return_value.document.return_value.collection.return_value.where.return_value.limit.return_value.stream.return_value = []
-        self.mock_firestore_client.collection.return_value.where.return_value.stream.return_value = []
+        (
+            self.mock_firestore_client.collection.return_value.document.return_value.collection.return_value.where.return_value.limit.return_value.stream.return_value
+        ) = []
+        (
+            self.mock_firestore_client.collection.return_value.where.return_value.stream.return_value
+        ) = []
 
         response = self.client.get(f"/user/{target_id}")
         self.assertEqual(response.status_code, 200)

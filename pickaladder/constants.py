@@ -4,7 +4,8 @@
 DB_NAME = "pickaladder"
 
 # External Links
-DUPR_PROFILE_BASE_URL = "REPLACE_WITH_ACTUAL_DUPR_URL"  # Placeholder - confirm official base URL
+# Placeholder - confirm official base URL
+DUPR_PROFILE_BASE_URL = "REPLACE_WITH_ACTUAL_DUPR_URL"
 
 # Table names
 USERS_TABLE = "users"

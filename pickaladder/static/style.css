@@ -1,25 +1,17 @@
 /* Basic styling */
 :root {
-    /* Brand Colors */
-    --primary-color: #2563EB;       /* Royal Blue (Primary Buttons/Nav) */
-    --primary-hover: #1D4ED8;
-    --accent-color: #84CC16;        /* Electric Lime (Badges/Call-to-Action) */
-    --accent-hover: #65A30D;
-
-    /* Functional Colors */
-    --success-color: #10B981;       /* Emerald (Wins) */
-    --danger-color: #EF4444;        /* Red (Losses/Delete) */
-    --warning-color: #F59E0B;       /* Amber (Pending) */
-
-    /* Light Mode Basics */
-    --bg-color: #F3F4F6;            /* Cool Gray 100 */
-    --card-bg: #FFFFFF;
-    --text-primary: #111827;        /* Gray 900 */
-    --text-secondary: #6B7280;      /* Gray 500 */
-    --border-color: #E5E7EB;        /* Gray 200 */
-    --text-on-primary: #FFFFFF;
-
-    /* Structural Variables (Preserved) */
+    --primary-brand: #0F4C81;
+    --primary-brand-dark: #0b3a64;
+    --accent-highlight: #DFFF00;
+    --success-color: #10B981;
+    --danger-color: #EA4335; /* Google Red */
+    --warning-color: #FBBC05; /* Google Yellow */
+    --text-color: #1F2937;
+    --text-secondary-color: #616161;
+    --background-color: #F3F4F6;
+    --surface-color: #FFFFFF;
+    --on-primary-color: #ffffff;
+    --border-color: #E0E0E0;
     --font-family: 'Roboto', sans-serif;
     --box-shadow: 0 1px 2px 0 rgba(60,64,67,0.302), 0 1px 3px 1px rgba(60,64,67,0.149);
     --border-radius: 8px;
@@ -29,8 +21,8 @@ body {
     font-family: var(--font-family);
     margin: 0;
     padding: 0;
-    background-color: var(--bg-color);
-    color: var(--text-primary);
+    background-color: var(--background-color);
+    color: var(--text-color);
     line-height: 1.6;
 }
 
@@ -68,7 +60,7 @@ body {
 }
 
 .stat-card {
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 20px;
@@ -78,7 +70,7 @@ body {
 .stat-card h3 {
     margin-top: 0;
     font-size: 1.2em;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
 }
 
 .stat-card p {
@@ -98,8 +90,8 @@ body {
 
 /* Header and Navbar */
 .header {
-    background-color: var(--primary-color);
-    border-bottom: 1px solid var(--primary-hover);
+    background-color: var(--primary-brand);
+    border-bottom: 1px solid var(--primary-brand-dark);
     padding: 10px 0;
     margin-bottom: 20px;
 }
@@ -113,7 +105,7 @@ body {
 .navbar-brand {
     font-size: 1.5em;
     font-weight: 500;
-    color: var(--text-on-primary);
+    color: var(--on-primary-color);
     text-decoration: none;
 }
 
@@ -125,7 +117,7 @@ body {
 
 .navbar-menu a {
     text-decoration: none;
-    color: var(--text-on-primary);
+    color: var(--on-primary-color);
 }
 
 
@@ -155,7 +147,7 @@ body {
     max-width: 500px;
     margin: 40px auto;
     padding: 32px;
-    background: var(--card-bg);
+    background: var(--surface-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
 }
@@ -180,7 +172,7 @@ label {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     font-size: 14px;
 }
 
@@ -197,8 +189,8 @@ select {
     border-radius: 4px;
     box-sizing: border-box;
     font-size: 16px;
-    background-color: var(--bg-color);
-    color: var(--text-primary);
+    background-color: var(--background-color);
+    color: var(--text-color);
 }
 
 input[type="text"]:focus,
@@ -209,8 +201,8 @@ input[type="date"]:focus,
 textarea:focus,
 select:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    border-color: var(--primary-brand);
+    box-shadow: 0 0 0 2px rgba(15, 76, 129, 0.2);
 }
 
 textarea {
@@ -227,8 +219,8 @@ select {
 }
 
 input[type="submit"], .btn {
-    background-color: var(--primary-color);
-    color: var(--text-on-primary);
+    background-color: var(--primary-brand);
+    color: var(--on-primary-color);
     padding: 12px 24px;
     border: none;
     border-radius: 4px;
@@ -247,17 +239,18 @@ input[type="submit"], .btn {
 }
 
 .btn:hover {
-    background-color: var(--primary-hover);
+    background-color: var(--primary-brand-dark);
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
-    color: var(--text-on-primary);
+    background-color: var(--accent-highlight);
+    color: #000000;
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-hover);
-    color: var(--text-on-primary);
+    background-color: var(--accent-highlight);
+    filter: brightness(90%);
+    color: #000000;
 }
 
 .btn-danger {
@@ -266,12 +259,12 @@ input[type="submit"], .btn {
 
 .btn-warning {
     background-color: var(--warning-color);
-    color: var(--text-primary);
+    color: var(--text-color);
 }
 
 /* Tables */
 .table-container {
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     box-shadow: var(--box-shadow);
     border-radius: var(--border-radius);
     overflow: hidden;
@@ -290,8 +283,8 @@ input[type="submit"], .btn {
 }
 
 .table th {
-    background-color: var(--primary-color);
-    color: var(--text-on-primary);
+    background-color: var(--primary-brand);
+    color: var(--on-primary-color);
     font-weight: 500;
     font-size: 14px;
 }
@@ -318,7 +311,7 @@ input[type="submit"], .btn {
     display: none;
     position: absolute;
     right: 0;
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     min-width: 220px;
     box-shadow: var(--box-shadow);
     z-index: 1;
@@ -329,7 +322,7 @@ input[type="submit"], .btn {
 }
 
 .dropdown-content a {
-    color: var(--text-primary);
+    color: var(--text-color);
     padding: 10px 20px;
     text-decoration: none;
     display: block;
@@ -337,7 +330,7 @@ input[type="submit"], .btn {
 }
 
 .dropdown-content a:hover {
-    background-color: var(--bg-color);
+    background-color: var(--background-color);
 }
 
 .dropdown:hover .dropdown-content {
@@ -371,7 +364,7 @@ input[type="submit"], .btn {
 /* Admin Banner */
 .admin-banner {
     background-color: var(--warning-color);
-    color: var(--text-primary);
+    color: var(--text-color);
     text-align: center;
     padding: 4px;
     font-size: 0.9em;
@@ -380,8 +373,7 @@ input[type="submit"], .btn {
 
 /* Cards */
 .card {
-    background-color: var(--card-bg);
-    border: 1px solid var(--border-color);
+    background-color: var(--surface-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 24px;
@@ -402,7 +394,7 @@ input[type="submit"], .btn {
 
 /* Match Cards */
 .match-card {
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     margin-top: 20px;
@@ -421,7 +413,7 @@ input[type="submit"], .btn {
 }
 
 .match-date {
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     font-size: 0.9em;
 }
 
@@ -445,13 +437,13 @@ input[type="submit"], .btn {
 .score-details {
     font-size: 2.5em;
     font-weight: 500;
-    color: var(--primary-color);
+    color: var(--primary-brand);
 }
 
 .separator {
     font-size: 1.5em;
     font-weight: bold;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
 }
 
 
@@ -459,7 +451,7 @@ input[type="submit"], .btn {
 .profile-header {
     text-align: center;
     margin-bottom: 30px;
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     padding: 30px;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
@@ -471,7 +463,7 @@ input[type="submit"], .btn {
     border-radius: 50%;
     object-fit: cover;
     margin-bottom: 20px;
-    border: 4px solid var(--card-bg);
+    border: 4px solid var(--surface-color);
     box-shadow: var(--box-shadow);
 }
 
@@ -485,7 +477,7 @@ input[type="submit"], .btn {
 .list-group {
     list-style: none;
     padding: 0;
-    background: var(--card-bg);
+    background: var(--surface-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     overflow: hidden;
@@ -518,7 +510,7 @@ input[type="submit"], .btn {
 .hero {
     text-align: center;
     padding: 80px 20px;
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
 }
@@ -531,7 +523,7 @@ input[type="submit"], .btn {
 
 .hero p {
     font-size: 1.2em;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     max-width: 600px;
     margin: 20px auto;
 }
@@ -550,7 +542,7 @@ input[type="submit"], .btn {
 }
 
 .modal-content {
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     margin: 15% auto;
     padding: 20px;
     border: 1px solid var(--border-color);
@@ -573,7 +565,7 @@ input[type="submit"], .btn {
 }
 
 .close {
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     float: right;
     font-size: 28px;
     font-weight: bold;
@@ -581,7 +573,7 @@ input[type="submit"], .btn {
 
 .close:hover,
 .close:focus {
-    color: var(--text-primary);
+    color: var(--text-color);
     text-decoration: none;
     cursor: pointer;
 }
@@ -596,7 +588,7 @@ input[type="submit"], .btn {
     text-align: center;
     padding: 20px 0;
     margin-top: 40px;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     font-size: 0.9em;
 }
 
@@ -606,7 +598,7 @@ input[type="submit"], .btn {
 }
 
 .text-muted {
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
 }
 
 .winning-score {
@@ -618,7 +610,7 @@ input[type="submit"], .btn {
 }
 
 .clickable-row:hover {
-    background-color: var(--bg-color);
+    background-color: var(--background-color);
 }
 
 .header-with-button {
@@ -647,7 +639,7 @@ input[type="submit"], .btn {
 }
 
 .loader {
-    border: 5px solid var(--bg-color);
+    border: 5px solid var(--background-color);
     border-top: 5px solid var(--primary-color);
     border-radius: 50%;
     width: 50px;
@@ -662,7 +654,7 @@ input[type="submit"], .btn {
 
 .highlight-row {
     background-color: rgba(223, 255, 0, 0.1) !important;
-    border-left: 4px solid var(--accent-color);
+    border-left: 4px solid var(--accent-highlight);
     font-weight: bold;
 }
 
@@ -670,7 +662,7 @@ input[type="submit"], .btn {
     background-color: #e3f2fd !important;
 }
 
-[data-theme="dark"] .bg-primary-subtle {
+body.dark-mode .bg-primary-subtle {
     background-color: rgba(59, 130, 246, 0.2) !important;
 }
 
@@ -684,7 +676,7 @@ input[type="submit"], .btn {
     background-color: rgba(0, 0, 0, 0.02);
 }
 
-[data-theme="dark"] .leaderboard-table-compact tbody tr:nth-child(odd) {
+body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
     background-color: rgba(255, 255, 255, 0.02);
 }
 
@@ -794,7 +786,7 @@ input[type="submit"], .btn {
 }
 
 .match-score-pill {
-    background-color: var(--bg-color);
+    background-color: var(--background-color);
     padding: 2px 8px;
     border-radius: 12px;
     font-size: 0.9rem;
@@ -851,7 +843,7 @@ input[type="submit"], .btn {
 }
 .settings-icon {
     text-decoration: none;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     font-size: 1.8em;
 }
 
@@ -871,8 +863,8 @@ input[type="submit"], .btn {
 
 .toast {
     position: relative;
-    background-color: var(--card-bg);
-    color: var(--text-primary);
+    background-color: var(--surface-color);
+    color: var(--on-surface-color);
     border: none;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     border-radius: 8px;
@@ -901,8 +893,8 @@ input[type="submit"], .btn {
 }
 
 .toast-header {
-    background-color: var(--card-bg);
-    color: var(--text-primary);
+    background-color: var(--surface-color);
+    color: var(--on-surface-color);
     border-bottom: none;
     padding-left: 20px;
     padding-top: 15px;
@@ -931,7 +923,7 @@ input[type="submit"], .btn {
 
 .leaderboard-header {
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--on-surface-variant-color);
     font-size: 0.8em;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -949,7 +941,7 @@ input[type="submit"], .btn {
 }
 
 .leaderboard-row:hover {
-    background-color: var(--bg-color);
+    background-color: var(--background-color);
 }
 
 .leaderboard-cell {
@@ -1042,7 +1034,7 @@ input[type="submit"], .btn {
 .game-item {
     display: flex;
     align-items: center;
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     padding: 15px;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
@@ -1051,7 +1043,7 @@ input[type="submit"], .btn {
 
 .game-date {
     font-weight: 500;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     flex-shrink: 0; /* Prevents date from shrinking */
     width: 60px; /* Fixed width for alignment */
 }
@@ -1078,7 +1070,7 @@ input[type="submit"], .btn {
 
 .tag {
     background-color: var(--warning-color);
-    color: var(--text-primary);
+    color: var(--text-color);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.8em;
@@ -1086,7 +1078,7 @@ input[type="submit"], .btn {
 }
 
 .point-differential {
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     font-size: 0.9em;
 }
 
@@ -1094,7 +1086,7 @@ input[type="submit"], .btn {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     padding: 16px;
@@ -1116,7 +1108,7 @@ input[type="submit"], .btn {
 }
 
 .game-date {
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     font-size: 0.85rem;
     flex: 1;
 }
@@ -1133,7 +1125,7 @@ input[type="submit"], .btn {
     font-weight: bold;
     flex: 1;
     text-align: right;
-    color: var(--primary-color);
+    color: var(--primary-brand);
 }
 
 #latest-games-feed .winner {
@@ -1176,7 +1168,7 @@ input[type="submit"], .btn {
 }
 
 .badge-tournament {
-    background-color: var(--primary-color);
+    background-color: var(--primary-brand);
     color: white;
     margin-top: 5px;
     font-size: 0.75rem;
@@ -1185,8 +1177,8 @@ input[type="submit"], .btn {
 
 .badge-success { background-color: var(--success-color); color: white; }
 .badge-danger { background-color: var(--danger-color); color: white; }
-.badge-info { background-color: var(--primary-color); color: white; }
-.badge-secondary { background-color: var(--text-secondary); color: white; }
+.badge-info { background-color: var(--primary-brand); color: white; }
+.badge-secondary { background-color: var(--text-secondary-color); color: white; }
 
 /* Utilities */
 .d-flex { display: flex !important; }
@@ -1225,11 +1217,11 @@ input[type="submit"], .btn {
 .btn-block { width: 100%; display: block; }
 .btn-outline-primary {
     background-color: transparent;
-    color: var(--primary-color);
-    border: 1px solid var(--primary-color);
+    color: var(--primary-brand);
+    border: 1px solid var(--primary-brand);
 }
 .btn-outline-primary:hover {
-    background-color: var(--primary-color);
+    background-color: var(--primary-brand);
     color: white;
 }
 
@@ -1326,7 +1318,7 @@ input[type="submit"], .btn {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 24px;
@@ -1343,14 +1335,14 @@ input[type="submit"], .btn {
     font-size: 1.5rem;
     cursor: pointer;
     padding: 5px;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     transition: transform 0.2s ease-in-out;
     line-height: 1;
 }
 
 .btn-edit-gear:hover {
     transform: rotate(45deg);
-    color: var(--primary-color);
+    color: var(--primary-brand);
 }
 
 .hero-left-panel {
@@ -1364,7 +1356,7 @@ input[type="submit"], .btn {
     height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    border: 4px solid var(--card-bg);
+    border: 4px solid var(--surface-color);
     box-shadow: var(--box-shadow);
 }
 
@@ -1393,12 +1385,12 @@ input[type="submit"], .btn {
 .vanity-stat .stat-value {
     font-size: 24px;
     font-weight: 600;
-    color: var(--primary-color);
+    color: var(--primary-brand);
 }
 
 .vanity-stat .stat-label {
     font-size: 12px;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -1524,7 +1516,7 @@ input[type="submit"], .btn {
 }
 
 .friend-card {
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 20px;
@@ -1543,7 +1535,7 @@ input[type="submit"], .btn {
 }
 
 .card-action:hover {
-    background-color: var(--bg-color);
+    background-color: var(--background-color);
     cursor: pointer;
 }
 
@@ -1567,7 +1559,7 @@ input[type="submit"], .btn {
     margin: 0 0 8px 0;
     font-size: 1.1em;
     font-weight: 500;
-    color: var(--text-primary);
+    color: var(--text-color);
 }
 
 .friend-rating {
@@ -1576,7 +1568,7 @@ input[type="submit"], .btn {
     justify-content: center;
     gap: 6px;
     margin-bottom: 20px;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
 }
 
 .star-icon {
@@ -1618,7 +1610,7 @@ input[type="submit"], .btn {
 .rich-group-card {
     display: flex;
     align-items: center;
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 16px;
@@ -1690,13 +1682,13 @@ input[type="submit"], .btn {
 
 .rank-badge.rank-other {
     background-color: #E0E0E0;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
 }
 
 .group-record {
     font-weight: 500;
     font-size: 0.95rem;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
 }
 
 @media (max-width: 768px) {
@@ -1735,11 +1727,11 @@ input[type="submit"], .btn {
 }
 
 .competition-card {
-    background-color: var(--card-bg);
+    background-color: var(--surface-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 16px;
-    border-left: 6px solid var(--primary-color);
+    border-left: 6px solid var(--primary-brand);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     text-decoration: none;
     color: inherit;
@@ -1770,7 +1762,7 @@ input[type="submit"], .btn {
 }
 
 .badge-upcoming {
-    background-color: var(--primary-color);
+    background-color: var(--primary-brand);
     color: white;
 }
 
@@ -1779,7 +1771,7 @@ input[type="submit"], .btn {
     display: flex;
     flex-direction: column;
     padding: 16px;
-    background: var(--card-bg);
+    background: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     margin-bottom: 12px;
@@ -1789,7 +1781,7 @@ input[type="submit"], .btn {
 }
 
 .ranking-card:hover {
-    background-color: var(--bg-color);
+    background-color: var(--background-color);
 }
 
 .ranking-card-top {
@@ -1805,7 +1797,7 @@ input[type="submit"], .btn {
 }
 
 .rank-badge-small {
-    background: var(--bg-color);
+    background: var(--background-color);
     padding: 4px 10px;
     border-radius: 12px;
     font-weight: bold;
@@ -1814,12 +1806,12 @@ input[type="submit"], .btn {
 
 .ranking-details {
     font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: var(--text-secondary-color);
     margin-bottom: 8px;
 }
 
 .overtake-value {
-    color: var(--primary-color);
+    color: var(--primary-brand);
     font-weight: bold;
 }
 
@@ -1867,52 +1859,4 @@ input[type="submit"], .btn {
 .past-tournament-winner {
     text-align: right;
     font-weight: 500;
-}
-
-/* Utility Classes */
-.text-success {
-    color: var(--success-color) !important;
-}
-
-.text-danger {
-    color: var(--danger-color) !important;
-}
-
-.pb-5 {
-    padding-bottom: 3rem !important;
-}
-
-/* Progress Bars */
-.progress {
-    display: flex;
-    height: 1rem;
-    overflow: hidden;
-    line-height: 0;
-    font-size: 0.75rem;
-    background-color: #e9ecef;
-    border-radius: var(--border-radius);
-}
-
-.progress-bar {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    overflow: hidden;
-    color: #fff;
-    text-align: center;
-    white-space: nowrap;
-    background-color: var(--primary-color);
-    transition: width 0.6s ease;
-}
-
-.bg-primary {
-    background-color: var(--primary-color) !important;
-}
-
-.bg-danger {
-    background-color: var(--danger-color) !important;
-}
-
-.text-volt, .badge-volt {
-    color: #4D7C0F;
 }
