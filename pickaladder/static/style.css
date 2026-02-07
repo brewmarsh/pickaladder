@@ -1860,3 +1860,16 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
     text-align: right;
     font-weight: 500;
 }
+
+/* Utility Classes */
+.text-success {
+    color: var(--success-color) !important;
+}
+
+.text-danger {
+    color: var(--danger-color) !important;
+}
+
+.pb-5 {
+    padding-bottom: 3rem !important;
+}
