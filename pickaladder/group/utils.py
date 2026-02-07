@@ -170,7 +170,8 @@ def _calculate_leaderboard_from_matches(
 
 
 def _calculate_rank_changes(
-    current_leaderboard: list[dict[str, Any]], previous_leaderboard: list[dict[str, Any]]
+    current_leaderboard: list[dict[str, Any]],
+    previous_leaderboard: list[dict[str, Any]],
 ) -> None:
     """Calculate rank changes between current and previous leaderboard."""
     last_week_ranks = {
@@ -188,70 +189,57 @@ def _calculate_rank_changes(
             player["rank_change"] = "new"
 
 
-def _calculate_winning_streaks(
-    leaderboard: list[dict[str, Any]], matches: list[Any], member_refs: list[Any]
-) -> None:
-    """Calculate winning streaks for players in the leaderboard."""
-    # Pre-process matches to map users to their matches
+def _map_matches_to_users(
+    matches: list[Any], member_refs: list[Any]
+) -> dict[str, list[dict[str, Any]]]:
+    """Map matches to each user for efficient lookup."""
     user_matches_map: dict[str, list[dict[str, Any]]] = {
         ref.id: [] for ref in member_refs
     }
     for match in matches:
         data = match.to_dict()
-        match_type = data.get("matchType", "singles")
-        if match_type == "doubles":
-            for ref in data.get("team1", []):
-                if ref.id in user_matches_map:
-                    user_matches_map[ref.id].append(data)
-            for ref in data.get("team2", []):
-                if ref.id in user_matches_map:
-                    user_matches_map[ref.id].append(data)
+        team1_ids, team2_ids = _extract_team_ids(data)
+        for uid in team1_ids.union(team2_ids):
+            if uid in user_matches_map:
+                user_matches_map[uid].append(data)
+    return user_matches_map
+
+
+def _calculate_player_winning_streak(
+    user_id: str, matches_data: list[dict[str, Any]]
+) -> int:
+    """Calculate the current winning streak for a single player."""
+    streak = 0
+    for data in matches_data:
+        p1_score, p2_score = _get_match_scores(data)
+        if p1_score == p2_score:
+            break
+
+        team1_ids, team2_ids = _extract_team_ids(data)
+        won = False
+        if user_id in team1_ids:
+            won = p1_score > p2_score
+        elif user_id in team2_ids:
+            won = p2_score > p1_score
+
+        if won:
+            streak += 1
         else:
-            p1_ref = data.get("player1Ref")
-            p2_ref = data.get("player2Ref")
-            if p1_ref and p1_ref.id in user_matches_map:
-                user_matches_map[p1_ref.id].append(data)
-            if p2_ref and p2_ref.id in user_matches_map:
-                user_matches_map[p2_ref.id].append(data)
+            break
+    return streak
+
+
+def _calculate_winning_streaks(
+    leaderboard: list[dict[str, Any]], matches: list[Any], member_refs: list[Any]
+) -> None:
+    """Calculate winning streaks for players in the leaderboard."""
+    user_matches_map = _map_matches_to_users(matches, member_refs)
 
     for player in leaderboard:
-        streak = 0
         user_id = player["id"]
-
-        for match_data in user_matches_map.get(user_id, []):
-            p1_score = match_data.get("player1Score", 0)
-            p2_score = match_data.get("player2Score", 0)
-            p1_wins = p1_score > p2_score
-            p2_wins = p2_score > p1_score
-            is_draw = p1_score == p2_score
-
-            if is_draw:
-                break
-
-            user_won = False
-            match_type = match_data.get("matchType", "singles")
-            if match_type == "doubles":
-                team1_ids = [ref.id for ref in match_data.get("team1", [])]
-                team2_ids = [ref.id for ref in match_data.get("team2", [])]
-                if user_id in team1_ids and p1_wins:
-                    user_won = True
-                elif user_id in team2_ids and p2_wins:
-                    user_won = True
-            else:
-                p1_ref = match_data.get("player1Ref")
-                p2_ref = match_data.get("player2Ref")
-                if p1_ref and p1_ref.id == user_id and p1_wins:
-                    user_won = True
-                elif p2_ref and p2_ref.id == user_id and p2_wins:
-                    user_won = True
-
-            if user_won:
-                streak += 1
-            else:
-                break
-
-        player["streak"] = streak
-        player["is_on_fire"] = streak >= HOT_STREAK_THRESHOLD
+        matches_data = user_matches_map.get(user_id, [])
+        player["streak"] = _calculate_player_winning_streak(user_id, matches_data)
+        player["is_on_fire"] = player["streak"] >= HOT_STREAK_THRESHOLD
 
 
 def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
@@ -380,7 +368,9 @@ def _calculate_trend_points(
     return datasets
 
 
-def _update_trend_player_stats(player_stats: dict[str, Any], match_data: dict[str, Any]):
+def _update_trend_player_stats(
+    player_stats: dict[str, Any], match_data: dict[str, Any]
+):
     """Update running totals for trend calculation from a single match."""
     p1_score = match_data.get("player1Score", 0)
     p2_score = match_data.get("player2Score", 0)
@@ -429,9 +419,7 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
     return {"labels": unique_dates, "datasets": list(datasets_dict.values())}
 
 
-def _calculate_all_time_streaks(
-    matches: list[Any], user_ref: Any
-) -> tuple[int, int]:
+def _calculate_all_time_streaks(matches: list[Any], user_ref: Any) -> tuple[int, int]:
     """Calculate current and longest winning streaks for a user."""
     # Matches should be sorted chronologically for all-time streak
     matches.sort(key=lambda x: x.to_dict().get("matchDate") or datetime.min)
@@ -685,7 +673,9 @@ def get_head_to_head_stats(
 ) -> dict[str, Any]:
     """Calculates head-to-head statistics for two players in doubles matches."""
     db = firestore.client()
-    query = db.collection("matches").where(filter=FieldFilter("groupId", "==", group_id))
+    query = db.collection("matches").where(
+        filter=FieldFilter("groupId", "==", group_id)
+    )
     all_matches_in_group = list(query.stream())
 
     h2h_stats = {
