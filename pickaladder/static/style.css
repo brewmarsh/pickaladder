@@ -658,6 +658,150 @@ input[type="submit"], .btn {
     font-weight: bold;
 }
 
+.bg-primary-subtle {
+    background-color: #e3f2fd !important;
+}
+
+body.dark-mode .bg-primary-subtle {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.leaderboard-table-compact th,
+.leaderboard-table-compact td {
+    padding: 10px 12px !important;
+    vertical-align: middle;
+}
+
+.leaderboard-table-compact tbody tr:nth-child(odd) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.avatar-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.player-link-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.player-name-compact {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.form-dots-compact {
+    display: flex;
+    gap: 3px;
+}
+
+.form-dot-compact {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.form-dot-compact.win {
+    background-color: var(--success-color);
+}
+
+.form-dot-compact.loss {
+    background-color: #cbd5e1;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+.rank-cell {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.team-members-compact {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.team-name-compact {
+    font-weight: 500;
+    margin-left: 4px;
+}
+
+.match-history-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.match-history-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.95rem;
+    gap: 12px;
+}
+
+.match-history-row:last-child {
+    border-bottom: none;
+}
+
+.match-date-compact {
+    font-size: 0.8rem;
+    min-width: 40px;
+}
+
+.match-main-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.match-team {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+.match-team:last-child {
+    text-align: right;
+}
+
+.match-score-pill {
+    background-color: var(--background-color);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.match-vs {
+    font-size: 0.8rem;
+}
+
+.upset-mini-badge {
+    font-size: 1rem;
+    cursor: help;
+}
+
 /* Guest mobile menu hidden on desktop */
 .guest-mobile-menu {
     display: none !important;
