@@ -3,6 +3,9 @@
 # Database-related constants
 DB_NAME = "pickaladder"
 
+# External Links
+DUPR_PROFILE_BASE_URL = "REPLACE_WITH_ACTUAL_DUPR_URL"  # Placeholder - confirm official base URL
+
 # Table names
 USERS_TABLE = "users"
 FRIENDS_TABLE = "friends"

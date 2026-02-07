@@ -23,6 +23,8 @@ from werkzeug.utils import secure_filename
 from pickaladder.auth.decorators import login_required
 from pickaladder.utils import EmailError, send_email
 
+from pickaladder.constants import DUPR_PROFILE_BASE_URL
+
 from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm
 from .services import UserService
@@ -48,7 +50,6 @@ def edit_profile() -> Any:
     """Handle user profile updates for name, username, and email."""
     db = firestore.client()
     user_id = g.user["uid"]
-    user_ref = db.collection("users").document(user_id)
     user_data = g.user
     form = UpdateUserForm(data=user_data)
 
@@ -59,6 +60,15 @@ def edit_profile() -> Any:
             "name": form.name.data,
             "username": new_username,
         }
+
+        # Handle DUPR fields
+        dupr_id = form.dupr_id.data.strip() if form.dupr_id.data else None
+        update_data["dupr_id"] = dupr_id
+
+        if form.dupr_rating.data is not None:
+            update_data["dupr_rating"] = float(form.dupr_rating.data)
+        else:
+            update_data["dupr_rating"] = None
 
         # Handle username change
         if new_username != user_data.get("username"):
@@ -74,7 +84,7 @@ def edit_profile() -> Any:
                 flash(
                     "Username already exists. Please choose a different one.", "danger"
                 )
-                return render_template("edit_profile.html", form=form, user=user_data)
+                return render_template("user/edit_profile.html", form=form, user=user_data)
 
         # Handle email change
         if new_email != user_data.get("email"):
@@ -97,22 +107,22 @@ def edit_profile() -> Any:
                 )
             except auth.EmailAlreadyExistsError:
                 flash("That email address is already in use.", "danger")
-                return render_template("edit_profile.html", form=form, user=user_data)
+                return render_template("user/edit_profile.html", form=form, user=user_data)
             except EmailError as e:
                 current_app.logger.error(f"Email error updating email: {e}")
                 flash(str(e), "danger")
-                return render_template("edit_profile.html", form=form, user=user_data)
+                return render_template("user/edit_profile.html", form=form, user=user_data)
             except Exception as e:
                 current_app.logger.error(f"Error updating email: {e}")
                 flash("An error occurred while updating your email.", "danger")
-                return render_template("edit_profile.html", form=form, user=user_data)
+                return render_template("user/edit_profile.html", form=form, user=user_data)
 
         if update_data:
-            user_ref.update(update_data)
+            UserService.update_user_profile(db, user_id, update_data)
             flash("Account updated successfully.", "success")
         return redirect(url_for(".edit_profile"))
 
-    return render_template("edit_profile.html", form=form, user=user_data)
+    return render_template("user/edit_profile.html", form=form, user=user_data)
 
 
 @bp.route("/requests", methods=["GET"])
@@ -300,6 +310,7 @@ def view_user(user_id: str) -> Any:
         current_streak=stats["current_streak"],
         streak_type=stats["streak_type"],
         h2h_stats=h2h_stats,
+        dupr_url_base=DUPR_PROFILE_BASE_URL,
     )
 
 

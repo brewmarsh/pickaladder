@@ -24,6 +24,12 @@ class UserService:
         return smart_display_name(user)
 
     @staticmethod
+    def update_user_profile(db: Client, user_id: str, update_data: dict[str, Any]) -> None:
+        """Update a user's profile in Firestore."""
+        user_ref = db.collection("users").document(user_id)
+        user_ref.update(update_data)
+
+    @staticmethod
     def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
         """Fetch a user by their ID."""
         user_ref = db.collection("users").document(user_id)

@@ -13,9 +13,19 @@
 
                     <div class="d-flex justify-content-center align-items-center mb-3">
                         <div class="mr-3 text-center">
-                            {% set dupr = profile_user.duprRating if profile_user.duprRating is not none else profile_user.dupr_rating %}
-                            <div class="h4 mb-0 font-weight-bold">{{ dupr if dupr is not none else 'N/A' }}</div>
-                            <small class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">DUPR Rating</small>
+                            {% set dupr = profile_user.dupr_rating if profile_user.dupr_rating is not none else profile_user.duprRating %}
+                            <div class="h4 mb-0 font-weight-bold">
+                                {{ dupr if dupr is not none else 'Unrated' }}
+                                {% if profile_user.dupr_id %}
+                                    <a href="{{ dupr_url_base }}{{ profile_user.dupr_id }}" target="_blank" class="badge badge-primary ml-1" style="font-size: 0.7rem; vertical-align: middle;">View on DUPR</a>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">
+                                DUPR Rating
+                                {% if not profile_user.dupr_id %}
+                                    <br><a href="{{ url_for('user.edit_profile') }}" class="small">Add DUPR ID</a>
+                                {% endif %}
+                            </small>
                         </div>
                         <div class="text-left">
                             <span class="badge badge-success d-block mb-1" style="font-size: 0.75rem;">Win Rate: {{ "%.0f"|format(win_rate) }}%</span>
