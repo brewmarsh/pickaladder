@@ -1,103 +1,107 @@
 /* Dark mode styles */
-body.dark-mode {
-    --primary-brand: #3b82f6;
-    --primary-brand-dark: #2563eb;
-    --accent-highlight: #DFFF00;
-    --success-color: #10B981;
-    --text-color: #F3F4F6;
-    --text-secondary-color: #BDBDBD;
-    --background-color: #1F2937;
-    --surface-color: #2d3748;
-    --on-primary-color: #ffffff;
-    --border-color: #616161;
+[data-theme="dark"] {
+    /* Dark Mode Basics */
+    --bg-color: #0F172A;            /* Slate 900 */
+    --card-bg: #1E293B;             /* Slate 800 */
+    --text-primary: #F3F4F6;        /* Gray 100 */
+    --text-secondary: #94A3B8;      /* Slate 400 */
+    --border-color: #334155;        /* Slate 700 */
+
+    /* Adjust Primary for Dark Mode (Slightly lighter to pop) */
+    --primary-color: #3B82F6;       /* Blue 500 */
+    --primary-hover: #60A5FA;
 }
 
-body.dark-mode input[type="text"],
-body.dark-mode input[type="password"],
-body.dark-mode input[type="email"],
-body.dark-mode input[type="number"],
-body.dark-mode input[type="date"],
-body.dark-mode select {
-    background-color: var(--surface-color);
-    color: var(--text-color);
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] select {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
     border-color: var(--border-color);
 }
 
-body.dark-mode input[type="text"]:focus,
-body.dark-mode input[type="password"]:focus,
-body.dark-mode input[type="email"]:focus,
-body.dark-mode input[type="number"]:focus,
-body.dark-mode input[type="date"]:focus,
-body.dark-mode select:focus {
-    border-color: var(--primary-brand);
+[data-theme="dark"] input[type="text"]:focus,
+[data-theme="dark"] input[type="password"]:focus,
+[data-theme="dark"] input[type="email"]:focus,
+[data-theme="dark"] input[type="number"]:focus,
+[data-theme="dark"] input[type="date"]:focus,
+[data-theme="dark"] select:focus {
+    border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
 }
 
-body.dark-mode .table th {
-    background-color: #202124;
+[data-theme="dark"] .table th {
+    background-color: #0F172A;
 }
 
-body.dark-mode .dropdown-content a:hover {
-    background-color: var(--background-color);
+[data-theme="dark"] .dropdown-content a:hover {
+    background-color: var(--bg-color);
 }
 
-body.dark-mode .alert-danger {
+[data-theme="dark"] .alert-danger {
     color: #f8d7da;
     background-color: #721c24;
     border-color: #f5c6cb;
 }
 
-body.dark-mode .alert-success {
+[data-theme="dark"] .alert-success {
     color: #d4edda;
     background-color: #155724;
     border-color: #c3e6cb;
 }
 
-body.dark-mode .clickable-row:hover {
-    background-color: var(--background-color);
+[data-theme="dark"] .clickable-row:hover {
+    background-color: var(--bg-color);
 }
 
-body.dark-mode .loader {
-    border: 5px solid var(--surface-color);
-    border-top: 5px solid var(--primary-brand);
+[data-theme="dark"] .loader {
+    border: 5px solid var(--card-bg);
+    border-top: 5px solid var(--primary-color);
 }
 
-body.dark-mode a {
-    color: #8ab4f8; /* A light, high-contrast blue */
+[data-theme="dark"] a {
+    color: #60A5FA; /* A light, high-contrast blue */
 }
 
-body.dark-mode .btn {
-    color: var(--on-primary-color);
+[data-theme="dark"] .btn {
+    color: #FFFFFF;
 }
 
-body.dark-mode .btn-primary {
-    color: #000000;
+[data-theme="dark"] .btn-primary {
+    color: #FFFFFF;
 }
 
-body.dark-mode .btn-primary:hover {
-    color: #000000;
-    filter: brightness(90%);
+[data-theme="dark"] .btn-primary:hover {
+    color: #FFFFFF;
+    filter: brightness(110%);
 }
 
-body.dark-mode .dropbtn {
-    background-color: var(--surface-color);
+[data-theme="dark"] .dropbtn {
+    background-color: var(--card-bg);
 }
 
-body.dark-mode .hamburger-menu {
+[data-theme="dark"] .hamburger-menu {
     background-color: transparent;
 }
 
-body.dark-mode .header {
-    background-color: var(--primary-brand-dark);
-    border-bottom: 1px solid var(--primary-brand);
+[data-theme="dark"] .header {
+    background-color: #1E293B;
+    border-bottom: 1px solid var(--border-color);
 }
 
-body.dark-mode .navbar-brand,
-body.dark-mode .navbar-menu a {
-    color: var(--text-color);
+[data-theme="dark"] .navbar-brand,
+[data-theme="dark"] .navbar-menu a {
+    color: var(--text-primary);
 }
 
-body.dark-mode .close {
-    color: var(--text-secondary-color);
+[data-theme="dark"] .close {
+    color: var(--text-secondary);
 }
 
+[data-theme="dark"] .text-volt,
+[data-theme="dark"] .badge-volt {
+    color: #bef264;
+}

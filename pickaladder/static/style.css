@@ -1,17 +1,25 @@
 /* Basic styling */
 :root {
-    --primary-brand: #0F4C81;
-    --primary-brand-dark: #0b3a64;
-    --accent-highlight: #DFFF00;
-    --success-color: #10B981;
-    --danger-color: #EA4335; /* Google Red */
-    --warning-color: #FBBC05; /* Google Yellow */
-    --text-color: #1F2937;
-    --text-secondary-color: #616161;
-    --background-color: #F3F4F6;
-    --surface-color: #FFFFFF;
-    --on-primary-color: #ffffff;
-    --border-color: #E0E0E0;
+    /* Brand Colors */
+    --primary-color: #2563EB;       /* Royal Blue (Primary Buttons/Nav) */
+    --primary-hover: #1D4ED8;
+    --accent-color: #84CC16;        /* Electric Lime (Badges/Call-to-Action) */
+    --accent-hover: #65A30D;
+
+    /* Functional Colors */
+    --success-color: #10B981;       /* Emerald (Wins) */
+    --danger-color: #EF4444;        /* Red (Losses/Delete) */
+    --warning-color: #F59E0B;       /* Amber (Pending) */
+
+    /* Light Mode Basics */
+    --bg-color: #F3F4F6;            /* Cool Gray 100 */
+    --card-bg: #FFFFFF;
+    --text-primary: #111827;        /* Gray 900 */
+    --text-secondary: #6B7280;      /* Gray 500 */
+    --border-color: #E5E7EB;        /* Gray 200 */
+    --text-on-primary: #FFFFFF;
+
+    /* Structural Variables (Preserved) */
     --font-family: 'Roboto', sans-serif;
     --box-shadow: 0 1px 2px 0 rgba(60,64,67,0.302), 0 1px 3px 1px rgba(60,64,67,0.149);
     --border-radius: 8px;
@@ -21,8 +29,8 @@ body {
     font-family: var(--font-family);
     margin: 0;
     padding: 0;
-    background-color: var(--background-color);
-    color: var(--text-color);
+    background-color: var(--bg-color);
+    color: var(--text-primary);
     line-height: 1.6;
 }
 
@@ -60,7 +68,7 @@ body {
 }
 
 .stat-card {
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 20px;
@@ -70,7 +78,7 @@ body {
 .stat-card h3 {
     margin-top: 0;
     font-size: 1.2em;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
 }
 
 .stat-card p {
@@ -90,8 +98,8 @@ body {
 
 /* Header and Navbar */
 .header {
-    background-color: var(--primary-brand);
-    border-bottom: 1px solid var(--primary-brand-dark);
+    background-color: var(--primary-color);
+    border-bottom: 1px solid var(--primary-hover);
     padding: 10px 0;
     margin-bottom: 20px;
 }
@@ -105,7 +113,7 @@ body {
 .navbar-brand {
     font-size: 1.5em;
     font-weight: 500;
-    color: var(--on-primary-color);
+    color: var(--text-on-primary);
     text-decoration: none;
 }
 
@@ -117,7 +125,7 @@ body {
 
 .navbar-menu a {
     text-decoration: none;
-    color: var(--on-primary-color);
+    color: var(--text-on-primary);
 }
 
 
@@ -147,7 +155,7 @@ body {
     max-width: 500px;
     margin: 40px auto;
     padding: 32px;
-    background: var(--surface-color);
+    background: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
 }
@@ -172,7 +180,7 @@ label {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     font-size: 14px;
 }
 
@@ -189,8 +197,8 @@ select {
     border-radius: 4px;
     box-sizing: border-box;
     font-size: 16px;
-    background-color: var(--background-color);
-    color: var(--text-color);
+    background-color: var(--bg-color);
+    color: var(--text-primary);
 }
 
 input[type="text"]:focus,
@@ -201,8 +209,8 @@ input[type="date"]:focus,
 textarea:focus,
 select:focus {
     outline: none;
-    border-color: var(--primary-brand);
-    box-shadow: 0 0 0 2px rgba(15, 76, 129, 0.2);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 textarea {
@@ -219,8 +227,8 @@ select {
 }
 
 input[type="submit"], .btn {
-    background-color: var(--primary-brand);
-    color: var(--on-primary-color);
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
     padding: 12px 24px;
     border: none;
     border-radius: 4px;
@@ -239,18 +247,17 @@ input[type="submit"], .btn {
 }
 
 .btn:hover {
-    background-color: var(--primary-brand-dark);
+    background-color: var(--primary-hover);
 }
 
 .btn-primary {
-    background-color: var(--accent-highlight);
-    color: #000000;
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
 }
 
 .btn-primary:hover {
-    background-color: var(--accent-highlight);
-    filter: brightness(90%);
-    color: #000000;
+    background-color: var(--primary-hover);
+    color: var(--text-on-primary);
 }
 
 .btn-danger {
@@ -259,12 +266,12 @@ input[type="submit"], .btn {
 
 .btn-warning {
     background-color: var(--warning-color);
-    color: var(--text-color);
+    color: var(--text-primary);
 }
 
 /* Tables */
 .table-container {
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     box-shadow: var(--box-shadow);
     border-radius: var(--border-radius);
     overflow: hidden;
@@ -283,8 +290,8 @@ input[type="submit"], .btn {
 }
 
 .table th {
-    background-color: var(--primary-brand);
-    color: var(--on-primary-color);
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
     font-weight: 500;
     font-size: 14px;
 }
@@ -311,7 +318,7 @@ input[type="submit"], .btn {
     display: none;
     position: absolute;
     right: 0;
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     min-width: 220px;
     box-shadow: var(--box-shadow);
     z-index: 1;
@@ -322,7 +329,7 @@ input[type="submit"], .btn {
 }
 
 .dropdown-content a {
-    color: var(--text-color);
+    color: var(--text-primary);
     padding: 10px 20px;
     text-decoration: none;
     display: block;
@@ -330,7 +337,7 @@ input[type="submit"], .btn {
 }
 
 .dropdown-content a:hover {
-    background-color: var(--background-color);
+    background-color: var(--bg-color);
 }
 
 .dropdown:hover .dropdown-content {
@@ -364,7 +371,7 @@ input[type="submit"], .btn {
 /* Admin Banner */
 .admin-banner {
     background-color: var(--warning-color);
-    color: var(--text-color);
+    color: var(--text-primary);
     text-align: center;
     padding: 4px;
     font-size: 0.9em;
@@ -373,7 +380,8 @@ input[type="submit"], .btn {
 
 /* Cards */
 .card {
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 24px;
@@ -394,7 +402,7 @@ input[type="submit"], .btn {
 
 /* Match Cards */
 .match-card {
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     margin-top: 20px;
@@ -413,7 +421,7 @@ input[type="submit"], .btn {
 }
 
 .match-date {
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     font-size: 0.9em;
 }
 
@@ -437,13 +445,13 @@ input[type="submit"], .btn {
 .score-details {
     font-size: 2.5em;
     font-weight: 500;
-    color: var(--primary-brand);
+    color: var(--primary-color);
 }
 
 .separator {
     font-size: 1.5em;
     font-weight: bold;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
 }
 
 
@@ -451,7 +459,7 @@ input[type="submit"], .btn {
 .profile-header {
     text-align: center;
     margin-bottom: 30px;
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     padding: 30px;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
@@ -463,7 +471,7 @@ input[type="submit"], .btn {
     border-radius: 50%;
     object-fit: cover;
     margin-bottom: 20px;
-    border: 4px solid var(--surface-color);
+    border: 4px solid var(--card-bg);
     box-shadow: var(--box-shadow);
 }
 
@@ -477,7 +485,7 @@ input[type="submit"], .btn {
 .list-group {
     list-style: none;
     padding: 0;
-    background: var(--surface-color);
+    background: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     overflow: hidden;
@@ -510,7 +518,7 @@ input[type="submit"], .btn {
 .hero {
     text-align: center;
     padding: 80px 20px;
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
 }
@@ -523,7 +531,7 @@ input[type="submit"], .btn {
 
 .hero p {
     font-size: 1.2em;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     max-width: 600px;
     margin: 20px auto;
 }
@@ -542,7 +550,7 @@ input[type="submit"], .btn {
 }
 
 .modal-content {
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     margin: 15% auto;
     padding: 20px;
     border: 1px solid var(--border-color);
@@ -565,7 +573,7 @@ input[type="submit"], .btn {
 }
 
 .close {
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     float: right;
     font-size: 28px;
     font-weight: bold;
@@ -573,7 +581,7 @@ input[type="submit"], .btn {
 
 .close:hover,
 .close:focus {
-    color: var(--text-color);
+    color: var(--text-primary);
     text-decoration: none;
     cursor: pointer;
 }
@@ -588,7 +596,7 @@ input[type="submit"], .btn {
     text-align: center;
     padding: 20px 0;
     margin-top: 40px;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     font-size: 0.9em;
 }
 
@@ -598,7 +606,7 @@ input[type="submit"], .btn {
 }
 
 .text-muted {
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
 }
 
 .winning-score {
@@ -610,7 +618,7 @@ input[type="submit"], .btn {
 }
 
 .clickable-row:hover {
-    background-color: var(--background-color);
+    background-color: var(--bg-color);
 }
 
 .header-with-button {
@@ -639,7 +647,7 @@ input[type="submit"], .btn {
 }
 
 .loader {
-    border: 5px solid var(--background-color);
+    border: 5px solid var(--bg-color);
     border-top: 5px solid var(--primary-color);
     border-radius: 50%;
     width: 50px;
@@ -654,7 +662,7 @@ input[type="submit"], .btn {
 
 .highlight-row {
     background-color: rgba(223, 255, 0, 0.1) !important;
-    border-left: 4px solid var(--accent-highlight);
+    border-left: 4px solid var(--accent-color);
     font-weight: bold;
 }
 
@@ -662,7 +670,7 @@ input[type="submit"], .btn {
     background-color: #e3f2fd !important;
 }
 
-body.dark-mode .bg-primary-subtle {
+[data-theme="dark"] .bg-primary-subtle {
     background-color: rgba(59, 130, 246, 0.2) !important;
 }
 
@@ -676,7 +684,7 @@ body.dark-mode .bg-primary-subtle {
     background-color: rgba(0, 0, 0, 0.02);
 }
 
-body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
+[data-theme="dark"] .leaderboard-table-compact tbody tr:nth-child(odd) {
     background-color: rgba(255, 255, 255, 0.02);
 }
 
@@ -786,7 +794,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .match-score-pill {
-    background-color: var(--background-color);
+    background-color: var(--bg-color);
     padding: 2px 8px;
     border-radius: 12px;
     font-size: 0.9rem;
@@ -843,7 +851,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 .settings-icon {
     text-decoration: none;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     font-size: 1.8em;
 }
 
@@ -863,8 +871,8 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 
 .toast {
     position: relative;
-    background-color: var(--surface-color);
-    color: var(--on-surface-color);
+    background-color: var(--card-bg);
+    color: var(--text-primary);
     border: none;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     border-radius: 8px;
@@ -893,8 +901,8 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .toast-header {
-    background-color: var(--surface-color);
-    color: var(--on-surface-color);
+    background-color: var(--card-bg);
+    color: var(--text-primary);
     border-bottom: none;
     padding-left: 20px;
     padding-top: 15px;
@@ -923,7 +931,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 
 .leaderboard-header {
     font-weight: 600;
-    color: var(--on-surface-variant-color);
+    color: var(--text-secondary);
     font-size: 0.8em;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -941,7 +949,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .leaderboard-row:hover {
-    background-color: var(--background-color);
+    background-color: var(--bg-color);
 }
 
 .leaderboard-cell {
@@ -1034,7 +1042,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 .game-item {
     display: flex;
     align-items: center;
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     padding: 15px;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
@@ -1043,7 +1051,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 
 .game-date {
     font-weight: 500;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     flex-shrink: 0; /* Prevents date from shrinking */
     width: 60px; /* Fixed width for alignment */
 }
@@ -1070,7 +1078,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 
 .tag {
     background-color: var(--warning-color);
-    color: var(--text-color);
+    color: var(--text-primary);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 0.8em;
@@ -1078,7 +1086,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .point-differential {
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     font-size: 0.9em;
 }
 
@@ -1086,7 +1094,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     padding: 16px;
@@ -1108,7 +1116,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .game-date {
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     font-size: 0.85rem;
     flex: 1;
 }
@@ -1125,7 +1133,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
     font-weight: bold;
     flex: 1;
     text-align: right;
-    color: var(--primary-brand);
+    color: var(--primary-color);
 }
 
 #latest-games-feed .winner {
@@ -1168,7 +1176,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .badge-tournament {
-    background-color: var(--primary-brand);
+    background-color: var(--primary-color);
     color: white;
     margin-top: 5px;
     font-size: 0.75rem;
@@ -1177,8 +1185,8 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 
 .badge-success { background-color: var(--success-color); color: white; }
 .badge-danger { background-color: var(--danger-color); color: white; }
-.badge-info { background-color: var(--primary-brand); color: white; }
-.badge-secondary { background-color: var(--text-secondary-color); color: white; }
+.badge-info { background-color: var(--primary-color); color: white; }
+.badge-secondary { background-color: var(--text-secondary); color: white; }
 
 /* Utilities */
 .d-flex { display: flex !important; }
@@ -1217,11 +1225,11 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 .btn-block { width: 100%; display: block; }
 .btn-outline-primary {
     background-color: transparent;
-    color: var(--primary-brand);
-    border: 1px solid var(--primary-brand);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
 }
 .btn-outline-primary:hover {
-    background-color: var(--primary-brand);
+    background-color: var(--primary-color);
     color: white;
 }
 
@@ -1318,7 +1326,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 24px;
@@ -1335,14 +1343,14 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
     font-size: 1.5rem;
     cursor: pointer;
     padding: 5px;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     transition: transform 0.2s ease-in-out;
     line-height: 1;
 }
 
 .btn-edit-gear:hover {
     transform: rotate(45deg);
-    color: var(--primary-brand);
+    color: var(--primary-color);
 }
 
 .hero-left-panel {
@@ -1356,7 +1364,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
     height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    border: 4px solid var(--surface-color);
+    border: 4px solid var(--card-bg);
     box-shadow: var(--box-shadow);
 }
 
@@ -1385,12 +1393,12 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 .vanity-stat .stat-value {
     font-size: 24px;
     font-weight: 600;
-    color: var(--primary-brand);
+    color: var(--primary-color);
 }
 
 .vanity-stat .stat-label {
     font-size: 12px;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -1516,7 +1524,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .friend-card {
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 20px;
@@ -1535,7 +1543,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .card-action:hover {
-    background-color: var(--background-color);
+    background-color: var(--bg-color);
     cursor: pointer;
 }
 
@@ -1559,7 +1567,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
     margin: 0 0 8px 0;
     font-size: 1.1em;
     font-weight: 500;
-    color: var(--text-color);
+    color: var(--text-primary);
 }
 
 .friend-rating {
@@ -1568,7 +1576,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
     justify-content: center;
     gap: 6px;
     margin-bottom: 20px;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
 }
 
 .star-icon {
@@ -1610,7 +1618,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 .rich-group-card {
     display: flex;
     align-items: center;
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 16px;
@@ -1682,13 +1690,13 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 
 .rank-badge.rank-other {
     background-color: #E0E0E0;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
 }
 
 .group-record {
     font-weight: 500;
     font-size: 0.95rem;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
 }
 
 @media (max-width: 768px) {
@@ -1727,11 +1735,11 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .competition-card {
-    background-color: var(--surface-color);
+    background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     padding: 16px;
-    border-left: 6px solid var(--primary-brand);
+    border-left: 6px solid var(--primary-color);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     text-decoration: none;
     color: inherit;
@@ -1762,7 +1770,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .badge-upcoming {
-    background-color: var(--primary-brand);
+    background-color: var(--primary-color);
     color: white;
 }
 
@@ -1771,7 +1779,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
     display: flex;
     flex-direction: column;
     padding: 16px;
-    background: var(--surface-color);
+    background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     margin-bottom: 12px;
@@ -1781,7 +1789,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .ranking-card:hover {
-    background-color: var(--background-color);
+    background-color: var(--bg-color);
 }
 
 .ranking-card-top {
@@ -1797,7 +1805,7 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 }
 
 .rank-badge-small {
-    background: var(--background-color);
+    background: var(--bg-color);
     padding: 4px 10px;
     border-radius: 12px;
     font-weight: bold;
@@ -1806,12 +1814,12 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
 
 .ranking-details {
     font-size: 0.9rem;
-    color: var(--text-secondary-color);
+    color: var(--text-secondary);
     margin-bottom: 8px;
 }
 
 .overtake-value {
-    color: var(--primary-brand);
+    color: var(--primary-color);
     font-weight: bold;
 }
 
@@ -1893,14 +1901,18 @@ body.dark-mode .leaderboard-table-compact tbody tr:nth-child(odd) {
     color: #fff;
     text-align: center;
     white-space: nowrap;
-    background-color: var(--primary-brand);
+    background-color: var(--primary-color);
     transition: width 0.6s ease;
 }
 
 .bg-primary {
-    background-color: var(--primary-brand) !important;
+    background-color: var(--primary-color) !important;
 }
 
 .bg-danger {
     background-color: var(--danger-color) !important;
+}
+
+.text-volt, .badge-volt {
+    color: #4D7C0F;
 }
