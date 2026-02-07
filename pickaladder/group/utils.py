@@ -49,112 +49,73 @@ def get_random_joke() -> str:
     return secrets.choice(jokes)
 
 
-def _calculate_leaderboard_from_matches(
-    member_refs: list[Any], matches: list[Any]
-) -> list[dict[str, Any]]:
-    """Calculate the leaderboard from a list of matches."""
-    player_stats = {
+def _initialize_stats(players: list[Any]) -> dict[str, dict[str, Any]]:
+    """Initialize the stats dictionary for each player."""
+    return {
         ref.id: {
             "wins": 0,
             "losses": 0,
             "games": 0,
             "total_score": 0,
             "user_data": ref.get(),
-            "last_matches": [],  # For form calculation
+            "match_results": [],
         }
-        for ref in member_refs
+        for ref in players
     }
 
-    # Helper function to update stats
-    def update_player_stats(
-        player_id: str, score: int, is_winner: bool, is_draw: bool = False
-    ) -> None:
-        """Update individual player stats."""
-        if player_id in player_stats:
-            player_stats[player_id]["games"] += 1
-            player_stats[player_id]["total_score"] += score
-            if is_winner:
-                player_stats[player_id]["wins"] += 1
+
+def _process_single_match(stats: dict[str, dict[str, Any]], match: Any) -> None:
+    """Update raw stats and records match outcomes for players in a single match."""
+    data = match.to_dict()
+    match_type = data.get("matchType", "singles")
+    p1_score = data.get("player1Score", 0)
+    p2_score = data.get("player2Score", 0)
+
+    p1_wins = p1_score > p2_score
+    p2_wins = p2_score > p1_score
+    is_draw = p1_score == p2_score
+
+    def update_player(player_id: str, score: int, won: bool):
+        if player_id in stats:
+            s = stats[player_id]
+            s["games"] += 1
+            s["total_score"] += score
+            if won:
+                s["wins"] += 1
             elif not is_draw:
-                player_stats[player_id]["losses"] += 1
+                s["losses"] += 1
+            # Record outcome for form calculation (last 5 games)
+            s["match_results"].append("win" if won else "loss")
 
-    # Sort matches by date descending to get recent matches first
-    matches.sort(
-        key=lambda m: m.to_dict().get("matchDate") or datetime.min, reverse=True
-    )
+    if match_type == "doubles":
+        for ref in data.get("team1", []):
+            update_player(ref.id, p1_score, p1_wins)
+        for ref in data.get("team2", []):
+            update_player(ref.id, p2_score, p2_wins)
+    else:
+        p1_ref = data.get("player1Ref")
+        p2_ref = data.get("player2Ref")
+        if p1_ref:
+            update_player(p1_ref.id, p1_score, p1_wins)
+        if p2_ref:
+            update_player(p2_ref.id, p2_score, p2_wins)
 
-    for match in matches:
-        data = match.to_dict()
-        match_type = data.get("matchType", "singles")
-        p1_score = data.get("player1Score", 0)
-        p2_score = data.get("player2Score", 0)
 
-        # Determine winner
-        p1_wins = p1_score > p2_score
-        p2_wins = p2_score > p1_score
-        is_draw = p1_score == p2_score
+def _calculate_derived_stats(stats: dict[str, dict[str, Any]]) -> None:
+    """Calculate 'Win Rate %', 'Average Score', and 'Form' (last 5 games)."""
+    for s in stats.values():
+        games = s["games"]
+        s["avg_score"] = s["total_score"] / games if games > 0 else 0.0
+        s["win_rate"] = (s["wins"] / games * 100) if games > 0 else 0.0
+        # matches are processed in descending order, so first 5 are most recent
+        s["form"] = s["match_results"][:RECENT_MATCHES_LIMIT]
 
-        # Store match result for form calculation
-        if match_type == "doubles":
-            for ref in data.get("team1", []):
-                if (
-                    ref.id in player_stats
-                    and len(player_stats[ref.id]["last_matches"]) < RECENT_MATCHES_LIMIT
-                ):
-                    player_stats[ref.id]["last_matches"].append(
-                        "win" if p1_wins else "loss"
-                    )
-            for ref in data.get("team2", []):
-                if (
-                    ref.id in player_stats
-                    and len(player_stats[ref.id]["last_matches"]) < RECENT_MATCHES_LIMIT
-                ):
-                    player_stats[ref.id]["last_matches"].append(
-                        "win" if p2_wins else "loss"
-                    )
-        else:
-            p1_ref, p2_ref = data.get("player1Ref"), data.get("player2Ref")
-            if (
-                p1_ref
-                and p1_ref.id in player_stats
-                and len(player_stats[p1_ref.id]["last_matches"]) < RECENT_MATCHES_LIMIT
-            ):
-                player_stats[p1_ref.id]["last_matches"].append(
-                    "win" if p1_wins else "loss"
-                )
-            if (
-                p2_ref
-                and p2_ref.id in player_stats
-                and len(player_stats[p2_ref.id]["last_matches"]) < RECENT_MATCHES_LIMIT
-            ):
-                player_stats[p2_ref.id]["last_matches"].append(
-                    "win" if p2_wins else "loss"
-                )
 
-        if match_type == "doubles":
-            # Team 1
-            team1 = data.get("team1", [])
-            for ref in team1:
-                update_player_stats(ref.id, p1_score, p1_wins, is_draw)
-
-            # Team 2
-            team2 = data.get("team2", [])
-            for ref in team2:
-                update_player_stats(ref.id, p2_score, p2_wins, is_draw)
-
-        else:
-            # Singles
-            p1_ref = data.get("player1Ref")
-            p2_ref = data.get("player2Ref")
-
-            if p1_ref:
-                update_player_stats(p1_ref.id, p1_score, p1_wins, is_draw)
-            if p2_ref:
-                update_player_stats(p2_ref.id, p2_score, p2_wins, is_draw)
-
+def _sort_leaderboard(stats: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """Enrich stats with user data, format into a list, and sort."""
     leaderboard = []
-    for user_id, stats in player_stats.items():
-        user_doc = stats["user_data"]
+    for user_id, s in stats.items():
+        user_doc = s["user_data"]
         if not user_doc.exists:
             continue
 
@@ -162,9 +123,6 @@ def _calculate_leaderboard_from_matches(
         if user_data is None:
             continue
         user_data["id"] = user_id
-
-        games_played = stats["games"]
-        avg_score = stats["total_score"] / games_played if games_played > 0 else 0.0
 
         # Build enriched entry for template filters
         is_ghost = user_data.get("is_ghost") or user_data.get(
@@ -176,17 +134,39 @@ def _calculate_leaderboard_from_matches(
             "username": user_data.get("username"),
             "email": user_data.get("email"),
             "is_ghost": is_ghost,
-            "wins": stats["wins"],
-            "losses": stats["losses"],
-            "games_played": stats["games"],
-            "avg_score": avg_score,
-            "form": stats.get("last_matches", []),
+            "wins": s["wins"],
+            "losses": s["losses"],
+            "games_played": s["games"],
+            "avg_score": s["avg_score"],
+            "win_rate": s["win_rate"],
+            "form": s["form"],
         }
         leaderboard.append(entry)
+
     leaderboard.sort(
         key=operator.itemgetter("avg_score", "wins", "games_played"), reverse=True
     )
     return leaderboard
+
+
+def _calculate_leaderboard_from_matches(
+    matches: list[Any], players: list[Any]
+) -> list[dict[str, Any]]:
+    """Calculate the leaderboard from a list of matches using a pipeline of helpers."""
+    # Matches must be sorted descending for form calculation to work as currently
+    # implemented
+    matches.sort(
+        key=lambda m: m.to_dict().get("matchDate") or datetime.min, reverse=True
+    )
+
+    stats = _initialize_stats(players)
+
+    for match in matches:
+        _process_single_match(stats, match)
+
+    _calculate_derived_stats(stats)
+
+    return _sort_leaderboard(stats)
 
 
 def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
@@ -215,7 +195,7 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
     all_matches = list(all_matches_stream)
 
     # Calculate current leaderboard
-    current_leaderboard = _calculate_leaderboard_from_matches(member_refs, all_matches)
+    current_leaderboard = _calculate_leaderboard_from_matches(all_matches, member_refs)
 
     # Calculate leaderboard from a week ago for rank trend
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
@@ -226,7 +206,7 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
     ]
 
     last_week_leaderboard = _calculate_leaderboard_from_matches(
-        member_refs, matches_last_week
+        matches_last_week, member_refs
     )
 
     # Create a map of user_id to last week's rank
