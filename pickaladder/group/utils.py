@@ -169,6 +169,91 @@ def _calculate_leaderboard_from_matches(
     return _sort_leaderboard(stats)
 
 
+def _calculate_rank_changes(
+    current_leaderboard: list[dict[str, Any]], previous_leaderboard: list[dict[str, Any]]
+) -> None:
+    """Calculate rank changes between current and previous leaderboard."""
+    last_week_ranks = {
+        player["id"]: i + 1 for i, player in enumerate(previous_leaderboard)
+    }
+
+    for i, player in enumerate(current_leaderboard):
+        current_rank = i + 1
+        last_week_rank = last_week_ranks.get(player["id"])
+        if last_week_rank is not None:
+            # Rank is inverted: lower is better. last_week_rank=1, current_rank=2
+            # -> change is -1 (down)
+            player["rank_change"] = last_week_rank - current_rank
+        else:
+            player["rank_change"] = "new"
+
+
+def _calculate_winning_streaks(
+    leaderboard: list[dict[str, Any]], matches: list[Any], member_refs: list[Any]
+) -> None:
+    """Calculate winning streaks for players in the leaderboard."""
+    # Pre-process matches to map users to their matches
+    user_matches_map: dict[str, list[dict[str, Any]]] = {
+        ref.id: [] for ref in member_refs
+    }
+    for match in matches:
+        data = match.to_dict()
+        match_type = data.get("matchType", "singles")
+        if match_type == "doubles":
+            for ref in data.get("team1", []):
+                if ref.id in user_matches_map:
+                    user_matches_map[ref.id].append(data)
+            for ref in data.get("team2", []):
+                if ref.id in user_matches_map:
+                    user_matches_map[ref.id].append(data)
+        else:
+            p1_ref = data.get("player1Ref")
+            p2_ref = data.get("player2Ref")
+            if p1_ref and p1_ref.id in user_matches_map:
+                user_matches_map[p1_ref.id].append(data)
+            if p2_ref and p2_ref.id in user_matches_map:
+                user_matches_map[p2_ref.id].append(data)
+
+    for player in leaderboard:
+        streak = 0
+        user_id = player["id"]
+
+        for match_data in user_matches_map.get(user_id, []):
+            p1_score = match_data.get("player1Score", 0)
+            p2_score = match_data.get("player2Score", 0)
+            p1_wins = p1_score > p2_score
+            p2_wins = p2_score > p1_score
+            is_draw = p1_score == p2_score
+
+            if is_draw:
+                break
+
+            user_won = False
+            match_type = match_data.get("matchType", "singles")
+            if match_type == "doubles":
+                team1_ids = [ref.id for ref in match_data.get("team1", [])]
+                team2_ids = [ref.id for ref in match_data.get("team2", [])]
+                if user_id in team1_ids and p1_wins:
+                    user_won = True
+                elif user_id in team2_ids and p2_wins:
+                    user_won = True
+            else:
+                p1_ref = match_data.get("player1Ref")
+                p2_ref = match_data.get("player2Ref")
+                if p1_ref and p1_ref.id == user_id and p1_wins:
+                    user_won = True
+                elif p2_ref and p2_ref.id == user_id and p2_wins:
+                    user_won = True
+
+            if user_won:
+                streak += 1
+            else:
+                break
+
+        player["streak"] = streak
+        player["is_on_fire"] = streak >= HOT_STREAK_THRESHOLD
+
+
 def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
     """Calculate the leaderboard for a specific group using Firestore.
 
@@ -209,111 +294,19 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
         matches_last_week, member_refs
     )
 
-    # Create a map of user_id to last week's rank
-    last_week_ranks = {
-        player["id"]: i + 1 for i, player in enumerate(last_week_leaderboard)
-    }
+    _calculate_rank_changes(current_leaderboard, last_week_leaderboard)
 
-    # Add rank change to current leaderboard
-    for i, player in enumerate(current_leaderboard):
-        current_rank = i + 1
-        last_week_rank = last_week_ranks.get(player["id"])
-        if last_week_rank is not None:
-            # Rank is inverted: lower is better. last_week_rank=1, current_rank=2
-            # -> change is -1 (down)
-            player["rank_change"] = last_week_rank - current_rank
-        else:
-            # Player was not on the leaderboard last week, or had no rank
-            player["rank_change"] = "new"
-
-    # --- Calculate Winning Streaks ---
-    # Sort all matches by date once, descending to check recent matches first
+    # Sort matches by date descending for streak calculation
     all_matches.sort(
         key=lambda m: m.to_dict().get("matchDate") or datetime.min, reverse=True
     )
-
-    # Pre-process matches to map users to their matches
-    user_matches_map: dict[str, list[dict[str, Any]]] = {
-        ref.id: [] for ref in member_refs
-    }
-    for match in all_matches:
-        data = match.to_dict()
-        match_type = data.get("matchType", "singles")
-        if match_type == "doubles":
-            for ref in data.get("team1", []):
-                if ref.id in user_matches_map:
-                    user_matches_map[ref.id].append(data)
-            for ref in data.get("team2", []):
-                if ref.id in user_matches_map:
-                    user_matches_map[ref.id].append(data)
-        else:
-            p1_ref = data.get("player1Ref")
-            p2_ref = data.get("player2Ref")
-            if p1_ref and p1_ref.id in user_matches_map:
-                user_matches_map[p1_ref.id].append(data)
-            if p2_ref and p2_ref.id in user_matches_map:
-                user_matches_map[p2_ref.id].append(data)
-
-    for player in current_leaderboard:
-        streak = 0
-        user_id = player["id"]
-
-        for match_data in user_matches_map.get(user_id, []):
-            p1_score = match_data.get("player1Score", 0)
-            p2_score = match_data.get("player2Score", 0)
-            p1_wins = p1_score > p2_score
-            p2_wins = p2_score > p1_score
-            is_draw = p1_score == p2_score
-
-            if is_draw:
-                break  # Streak ends with a draw
-
-            user_won = False
-            match_type = match_data.get("matchType", "singles")
-            if match_type == "doubles":
-                team1_ids = [ref.id for ref in match_data.get("team1", [])]
-                team2_ids = [ref.id for ref in match_data.get("team2", [])]
-                if user_id in team1_ids:
-                    if p1_wins:
-                        user_won = True
-                elif user_id in team2_ids:
-                    if p2_wins:
-                        user_won = True
-            else:  # Singles
-                p1_ref = match_data.get("player1Ref")
-                p2_ref = match_data.get("player2Ref")
-                if p1_ref and p1_ref.id == user_id:
-                    if p1_wins:
-                        user_won = True
-                elif p2_ref and p2_ref.id == user_id:
-                    if p2_wins:
-                        user_won = True
-
-            if user_won:
-                streak += 1
-            else:
-                # As soon as a loss is found, the streak is broken
-                break
-
-        player["streak"] = streak
-        player["is_on_fire"] = streak >= HOT_STREAK_THRESHOLD
+    _calculate_winning_streaks(current_leaderboard, all_matches, member_refs)
 
     return current_leaderboard
 
 
-def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
-    """Generate data for a leaderboard trend chart."""
-    db = firestore.client()
-    matches_query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
-    )
-    # Filter and sort in Python to avoid composite index requirement
-    # Use to_dict().get() to safely handle missing fields without KeyError
-    matches = [m for m in matches_query.stream() if m.to_dict().get("matchDate")]
-    matches.sort(key=lambda x: x.to_dict().get("matchDate"))
-    if not matches:
-        return {"labels": [], "datasets": []}
-
+def _get_involved_player_data(db: Any, matches: list[Any]) -> dict[str, dict[str, Any]]:
+    """Get profile data for all players involved in matches."""
     all_player_refs = set()
     for match in matches:
         data = match.to_dict()
@@ -335,22 +328,23 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
                 "name": data.get("name", "Unknown"),
                 "profilePictureUrl": data.get("profilePictureUrl"),
             }
+    return players_data
 
-    player_stats = {ref.id: {"total_score": 0, "games": 0} for ref in all_player_refs}
-    trend_data: dict[str, Any] = {"labels": [], "datasets": {}}
 
-    for player_id, player_info in players_data.items():
-        trend_data["datasets"][player_id] = {
-            "label": player_info["name"],
+def _calculate_trend_points(
+    matches: list[Any], players_data: dict[str, Any], unique_dates: list[str]
+) -> dict[str, dict[str, Any]]:
+    """Calculate average score trend points for each player."""
+    player_stats = {pid: {"total_score": 0, "games": 0} for pid in players_data}
+    datasets = {
+        pid: {
+            "label": info["name"],
             "data": [],
             "fill": False,
-            "profilePictureUrl": player_info["profilePictureUrl"],
+            "profilePictureUrl": info["profilePictureUrl"],
         }
-
-    unique_dates = sorted(
-        list({m.to_dict().get("matchDate").strftime("%Y-%m-%d") for m in matches})
-    )
-    trend_data["labels"] = unique_dates
+        for pid, info in players_data.items()
+    }
 
     date_idx = 0
     for i, match in enumerate(matches):
@@ -358,58 +352,123 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
         match_date = data.get("matchDate").strftime("%Y-%m-%d")
 
         while date_idx < len(unique_dates) and unique_dates[date_idx] < match_date:
-            for player_id in player_stats:
-                avg_score = (
-                    player_stats[player_id]["total_score"]
-                    / player_stats[player_id]["games"]
-                    if player_stats[player_id]["games"] > 0
+            for pid in player_stats:
+                avg = (
+                    player_stats[pid]["total_score"] / player_stats[pid]["games"]
+                    if player_stats[pid]["games"] > 0
                     else None
                 )
-                trend_data["datasets"][player_id]["data"].append(avg_score)
+                datasets[pid]["data"].append(avg)
             date_idx += 1
 
-        if data.get("matchType", "singles") == "doubles":
-            for ref in data.get("team1", []):
-                player_stats[ref.id]["total_score"] += data.get("player1Score", 0)
-                player_stats[ref.id]["games"] += 1
-            for ref in data.get("team2", []):
-                player_stats[ref.id]["total_score"] += data.get("player2Score", 0)
-                player_stats[ref.id]["games"] += 1
-        else:
-            p1_ref, p2_ref = data.get("player1Ref"), data.get("player2Ref")
-            if p1_ref:
-                player_stats[p1_ref.id]["total_score"] += data.get("player1Score", 0)
-                player_stats[p1_ref.id]["games"] += 1
-            if p2_ref:
-                player_stats[p2_ref.id]["total_score"] += data.get("player2Score", 0)
-                player_stats[p2_ref.id]["games"] += 1
+        _update_trend_player_stats(player_stats, data)
 
         if (
             i == len(matches) - 1
             or matches[i + 1].to_dict().get("matchDate").strftime("%Y-%m-%d")
             != match_date
         ):
-            for player_id in player_stats:
-                avg_score = (
-                    player_stats[player_id]["total_score"]
-                    / player_stats[player_id]["games"]
-                    if player_stats[player_id]["games"] > 0
+            for pid in player_stats:
+                avg = (
+                    player_stats[pid]["total_score"] / player_stats[pid]["games"]
+                    if player_stats[pid]["games"] > 0
                     else None
                 )
-                trend_data["datasets"][player_id]["data"].append(avg_score)
+                datasets[pid]["data"].append(avg)
             date_idx += 1
 
-    for ds in trend_data["datasets"].values():
+    return datasets
+
+
+def _update_trend_player_stats(player_stats: dict[str, Any], match_data: dict[str, Any]):
+    """Update running totals for trend calculation from a single match."""
+    p1_score = match_data.get("player1Score", 0)
+    p2_score = match_data.get("player2Score", 0)
+    if match_data.get("matchType", "singles") == "doubles":
+        for ref in match_data.get("team1", []):
+            if ref.id in player_stats:
+                player_stats[ref.id]["total_score"] += p1_score
+                player_stats[ref.id]["games"] += 1
+        for ref in match_data.get("team2", []):
+            if ref.id in player_stats:
+                player_stats[ref.id]["total_score"] += p2_score
+                player_stats[ref.id]["games"] += 1
+    else:
+        p1_ref, p2_ref = match_data.get("player1Ref"), match_data.get("player2Ref")
+        if p1_ref and p1_ref.id in player_stats:
+            player_stats[p1_ref.id]["total_score"] += p1_score
+            player_stats[p1_ref.id]["games"] += 1
+        if p2_ref and p2_ref.id in player_stats:
+            player_stats[p2_ref.id]["total_score"] += p2_score
+            player_stats[p2_ref.id]["games"] += 1
+
+
+def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
+    """Generate data for a leaderboard trend chart."""
+    db = firestore.client()
+    matches_query = db.collection("matches").where(
+        filter=FieldFilter("groupId", "==", group_id)
+    )
+    matches = [m for m in matches_query.stream() if m.to_dict().get("matchDate")]
+    matches.sort(key=lambda x: x.to_dict().get("matchDate"))
+    if not matches:
+        return {"labels": [], "datasets": []}
+
+    players_data = _get_involved_player_data(db, matches)
+    unique_dates = sorted(
+        list({m.to_dict().get("matchDate").strftime("%Y-%m-%d") for m in matches})
+    )
+
+    datasets_dict = _calculate_trend_points(matches, players_data, unique_dates)
+
+    # Fill in any missing trailing dates
+    for ds in datasets_dict.values():
         while len(ds["data"]) < len(unique_dates):
             ds["data"].append(ds["data"][-1] if ds["data"] else None)
 
-    trend_data["datasets"] = list(trend_data["datasets"].values())
-    return trend_data
+    return {"labels": unique_dates, "datasets": list(datasets_dict.values())}
+
+
+def _calculate_all_time_streaks(
+    matches: list[Any], user_ref: Any
+) -> tuple[int, int]:
+    """Calculate current and longest winning streaks for a user."""
+    # Matches should be sorted chronologically for all-time streak
+    matches.sort(key=lambda x: x.to_dict().get("matchDate") or datetime.min)
+    current = longest = 0
+
+    for match in matches:
+        data = match.to_dict()
+        p1_score, p2_score = _get_match_scores(data)
+        team1_ids, team2_ids = _extract_team_ids(data)
+
+        # Handle both Ref (new) and ID (old) for user_ref comparison
+        user_participated = False
+        user_won = False
+
+        if user_ref.id in team1_ids:
+            user_participated = True
+            user_won = p1_score > p2_score
+        elif user_ref.id in team2_ids:
+            user_participated = True
+            user_won = p2_score > p1_score
+
+        if user_participated:
+            if user_won:
+                current += 1
+            else:
+                longest = max(longest, current)
+                current = 0
+
+    return current, max(longest, current)
 
 
 def get_user_group_stats(group_id: str, user_id: str) -> dict[str, Any]:
     """Calculate detailed statistics for a specific user within a group."""
     db = firestore.client()
+    leaderboard = get_group_leaderboard(group_id)
+    user_data = next((p for p in leaderboard if p["id"] == user_id), None)
+
     stats = {
         "rank": "N/A",
         "wins": 0,
@@ -418,67 +477,20 @@ def get_user_group_stats(group_id: str, user_id: str) -> dict[str, Any]:
         "longest_streak": 0,
     }
 
-    # --- Calculate Rank ---
-    leaderboard = get_group_leaderboard(group_id)
-    for i, player in enumerate(leaderboard):
-        if player["id"] == user_id:
-            stats["rank"] = i + 1
-            stats["wins"] = player.get("wins", 0)
-            stats["losses"] = player.get("losses", 0)
-            break
+    if user_data:
+        stats["rank"] = leaderboard.index(user_data) + 1
+        stats["wins"] = user_data.get("wins", 0)
+        stats["losses"] = user_data.get("losses", 0)
 
-    # --- Calculate Win Streaks ---
     matches_query = db.collection("matches").where(
         filter=FieldFilter("groupId", "==", group_id)
     )
-    user_ref = db.collection("users").document(user_id)
     all_matches = list(matches_query.stream())
-    all_matches.sort(key=lambda x: x.to_dict().get("matchDate") or datetime.min)
+    user_ref = db.collection("users").document(user_id)
 
-    current_streak = longest_streak = 0
-
-    for match in all_matches:
-        data = match.to_dict()
-        match_type = data.get("matchType", "singles")
-        p1_score = data.get("player1Score", 0)
-        p2_score = data.get("player2Score", 0)
-
-        user_is_winner = user_participated = False
-
-        if match_type == "doubles":
-            team1 = data.get("team1", [])
-            team2 = data.get("team2", [])
-            if user_ref in team1:
-                user_participated = True
-                if p1_score > p2_score:
-                    user_is_winner = True
-            elif user_ref in team2:
-                user_participated = True
-                if p2_score > p1_score:
-                    user_is_winner = True
-        else:  # Singles
-            p1_ref = data.get("player1Ref")
-            p2_ref = data.get("player2Ref")
-            if user_ref == p1_ref:
-                user_participated = True
-                if p1_score > p2_score:
-                    user_is_winner = True
-            elif user_ref == p2_ref:
-                user_participated = True
-                if p2_score > p1_score:
-                    user_is_winner = True
-
-        if user_participated:
-            if user_is_winner:
-                current_streak += 1
-            else:
-                longest_streak = max(longest_streak, current_streak)
-                current_streak = 0
-
-    longest_streak = max(longest_streak, current_streak)
-
-    stats["longest_streak"] = longest_streak
-    stats["win_streak"] = current_streak
+    curr, long = _calculate_all_time_streaks(all_matches, user_ref)
+    stats["win_streak"] = curr
+    stats["longest_streak"] = long
 
     return stats
 
@@ -570,20 +582,40 @@ def friend_group_members(db: Any, group_id: str, new_member_ref: Any) -> None:
             print(f"Error friending group members: {e}", file=sys.stderr)
 
 
+def _extract_team_ids(data: dict[str, Any]) -> tuple[set[str], set[str]]:
+    """Extract team member IDs, handling both old and new formats."""
+    team1_ids = set()
+    if "team1" in data:
+        team1_ids = {ref.id for ref in data["team1"] if hasattr(ref, "id")}
+    else:
+        team1_ids = {data.get("player1Id"), data.get("partnerId")}
+
+    team2_ids = set()
+    if "team2" in data:
+        team2_ids = {ref.id for ref in data["team2"] if hasattr(ref, "id")}
+    else:
+        team2_ids = {data.get("player2Id"), data.get("opponent2Id")}
+
+    team1_ids.discard(None)
+    team2_ids.discard(None)
+    return team1_ids, team2_ids
+
+
+def _get_match_scores(data: dict[str, Any]) -> tuple[int, int]:
+    """Get team 1 and team 2 scores, handling both singles and doubles fields."""
+    p1_score = data.get("player1Score")
+    if p1_score is None:
+        p1_score = data.get("team1Score", 0)
+    p2_score = data.get("player2Score")
+    if p2_score is None:
+        p2_score = data.get("team2Score", 0)
+    return p1_score, p2_score
+
+
 def get_partnership_stats(
     playerA_id: str, playerB_id: str, all_matches_in_group: list[Any]
 ) -> dict[str, int]:
-    """
-    Calculates the win/loss record for two players when they are partners.
-
-    Args:
-        playerA_id: The ID of the first player.
-        playerB_id: The ID of the second player.
-        all_matches_in_group: A list of match documents from Firestore.
-
-    Returns:
-        A dictionary with 'wins' and 'losses' for the partnership.
-    """
+    """Calculates the win/loss record for two players when they are partners."""
     wins = 0
     losses = 0
 
@@ -592,39 +624,15 @@ def get_partnership_stats(
         if data.get("matchType") != "doubles":
             continue
 
-        # Extract team member IDs, handling both old (IDs) and new (Refs) formats
-        team1_ids = set()
-        if "team1" in data:  # New format: list of refs
-            team1_ids = {ref.id for ref in data["team1"] if hasattr(ref, "id")}
-        else:  # Old format
-            team1_ids = {data.get("player1Id"), data.get("partnerId")}
+        team1_ids, team2_ids = _extract_team_ids(data)
+        p1_score, p2_score = _get_match_scores(data)
 
-        team2_ids = set()
-        if "team2" in data:  # New format: list of refs
-            team2_ids = {ref.id for ref in data["team2"] if hasattr(ref, "id")}
-        else:  # Old format
-            team2_ids = {data.get("player2Id"), data.get("opponent2Id")}
-
-        team1_ids.discard(None)
-        team2_ids.discard(None)
-
-        # Check for partnership
-        partnership_team1 = {playerA_id, playerB_id}.issubset(team1_ids)
-        partnership_team2 = {playerA_id, playerB_id}.issubset(team2_ids)
-
-        p1_score = data.get("player1Score")
-        if p1_score is None:
-            p1_score = data.get("team1Score", 0)
-        p2_score = data.get("player2Score")
-        if p2_score is None:
-            p2_score = data.get("team2Score", 0)
-
-        if partnership_team1:
+        if {playerA_id, playerB_id}.issubset(team1_ids):
             if p1_score > p2_score:
                 wins += 1
             elif p2_score > p1_score:
                 losses += 1
-        elif partnership_team2:
+        elif {playerA_id, playerB_id}.issubset(team2_ids):
             if p2_score > p1_score:
                 wins += 1
             elif p1_score > p2_score:
@@ -633,117 +641,76 @@ def get_partnership_stats(
     return {"wins": wins, "losses": losses}
 
 
+def _process_h2h_match(
+    match_doc: Any, playerA_id: str, playerB_id: str, stats: dict[str, Any]
+) -> None:
+    """Process a single match for head-to-head statistics."""
+    data = match_doc.to_dict()
+    team1_ids, team2_ids = _extract_team_ids(data)
+
+    player_a_is_t1 = playerA_id in team1_ids
+    player_b_is_t2 = playerB_id in team2_ids
+    player_a_is_t2 = playerA_id in team2_ids
+    player_b_is_t1 = playerB_id in team1_ids
+
+    if (player_a_is_t1 and player_b_is_t2) or (player_a_is_t2 and player_b_is_t1):
+        match_display_data = data.copy()
+        match_display_data["id"] = match_doc.id
+        match_display_data["team1_ids"] = list(team1_ids)
+        match_display_data["team2_ids"] = list(team2_ids)
+        stats["matches"].append(match_display_data)
+
+        p1_score, p2_score = _get_match_scores(data)
+
+        if player_a_is_t1:
+            diff, a_pts, b_pts = p1_score - p2_score, p1_score, p2_score
+            won = p1_score > p2_score
+            lost = p2_score > p1_score
+        else:
+            diff, a_pts, b_pts = p2_score - p1_score, p2_score, p1_score
+            won = p2_score > p1_score
+            lost = p1_score > p2_score
+
+        stats["point_diff"] += diff
+        stats["playerA_total_points"] += a_pts
+        stats["playerB_total_points"] += b_pts
+        if won:
+            stats["wins"] += 1
+        elif lost:
+            stats["losses"] += 1
+
+
 def get_head_to_head_stats(
     group_id: str, playerA_id: str, playerB_id: str
 ) -> dict[str, Any]:
-    """
-    Calculates head-to-head statistics for two players in doubles matches.
-
-    Args:
-        group_id: The ID of the group to search for matches in.
-        playerA_id: The ID of the first player.
-        playerB_id: The ID of the second player.
-
-    Returns:
-        A dictionary containing wins for player A, losses for player A,
-        a list of the matches played between them, and the point differential.
-    """
+    """Calculates head-to-head statistics for two players in doubles matches."""
     db = firestore.client()
-    matches_ref = db.collection("matches")
-
-    query = matches_ref.where(filter=FieldFilter("groupId", "==", group_id))
+    query = db.collection("matches").where(filter=FieldFilter("groupId", "==", group_id))
     all_matches_in_group = list(query.stream())
 
-    # Calculate partnership stats first
-    partnership_record = get_partnership_stats(
-        playerA_id, playerB_id, all_matches_in_group
-    )
-
-    wins = 0
-    losses = 0
-    point_diff = 0
-    playerA_total_points = 0
-    playerB_total_points = 0
-    rivalry_matches = []
+    h2h_stats = {
+        "wins": 0,
+        "losses": 0,
+        "point_diff": 0,
+        "playerA_total_points": 0,
+        "playerB_total_points": 0,
+        "matches": [],
+    }
 
     for match_doc in all_matches_in_group:
-        data = match_doc.to_dict()
+        _process_h2h_match(match_doc, playerA_id, playerB_id, h2h_stats)
 
-        # Extract team member IDs, handling both old (IDs) and new (Refs) formats
-        team1_ids = set()
-        if "team1" in data:  # New format: list of refs
-            team1_ids = {ref.id for ref in data["team1"] if hasattr(ref, "id")}
-        else:  # Old format
-            team1_ids = {data.get("player1Id"), data.get("partnerId")}
-
-        team2_ids = set()
-        if "team2" in data:  # New format: list of refs
-            team2_ids = {ref.id for ref in data["team2"] if hasattr(ref, "id")}
-        else:  # Old format
-            team2_ids = {data.get("player2Id"), data.get("opponent2Id")}
-
-        team1_ids.discard(None)
-        team2_ids.discard(None)
-
-        participants = team1_ids.union(team2_ids)
-        if playerA_id not in participants or playerB_id not in participants:
-            continue
-
-        player_a_is_team1 = playerA_id in team1_ids
-        player_b_is_team2 = playerB_id in team2_ids
-
-        player_a_is_team2 = playerA_id in team2_ids
-        player_b_is_team1 = playerB_id in team1_ids
-
-        if (player_a_is_team1 and player_b_is_team2) or (
-            player_a_is_team2 and player_b_is_team1
-        ):
-            # For display in 'Recent Clashes', we need to ensure some fields are present
-            match_display_data = data.copy()
-            match_display_data["id"] = match_doc.id
-
-            # Pass the extracted IDs back for template compatibility
-            match_display_data["team1_ids"] = list(team1_ids)
-            match_display_data["team2_ids"] = list(team2_ids)
-
-            rivalry_matches.append(match_display_data)
-
-            team1_score = data.get("player1Score")
-            if team1_score is None:
-                team1_score = data.get("team1Score", 0)
-            team2_score = data.get("player2Score")
-            if team2_score is None:
-                team2_score = data.get("team2Score", 0)
-
-            if player_a_is_team1:
-                point_diff += team1_score - team2_score
-                playerA_total_points += team1_score
-                playerB_total_points += team2_score
-                if team1_score > team2_score:
-                    wins += 1
-                elif team2_score > team1_score:
-                    losses += 1
-            else:  # Player A is on team 2
-                point_diff += team2_score - team1_score
-                playerA_total_points += team2_score
-                playerB_total_points += team1_score
-                if team2_score > team1_score:
-                    wins += 1
-                elif team1_score > team2_score:
-                    losses += 1
-
-    num_matches = len(rivalry_matches)
-    avg_points_A = playerA_total_points / num_matches if num_matches > 0 else 0
-    avg_points_B = playerB_total_points / num_matches if num_matches > 0 else 0
+    num_matches = len(h2h_stats["matches"])
+    avg_A = h2h_stats["playerA_total_points"] / num_matches if num_matches > 0 else 0
+    avg_B = h2h_stats["playerB_total_points"] / num_matches if num_matches > 0 else 0
 
     return {
-        "wins": wins,
-        "losses": losses,
-        "matches": rivalry_matches,
-        "point_diff": point_diff,
-        "avg_points_scored": {
-            "playerA": avg_points_A,
-            "playerB": avg_points_B,
-        },
-        "partnership_record": partnership_record,
+        "wins": h2h_stats["wins"],
+        "losses": h2h_stats["losses"],
+        "matches": h2h_stats["matches"],
+        "point_diff": h2h_stats["point_diff"],
+        "avg_points_scored": {"playerA": avg_A, "playerB": avg_B},
+        "partnership_record": get_partnership_stats(
+            playerA_id, playerB_id, all_matches_in_group
+        ),
     }
