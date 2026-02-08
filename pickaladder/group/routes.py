@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import secrets
 from typing import Any
 
 from firebase_admin import firestore, storage
@@ -18,25 +17,22 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.group.services.leaderboard import get_group_leaderboard
-from pickaladder.group.services.stats import (
-    get_head_to_head_stats as get_h2h_stats,
-)
-from pickaladder.group.services.stats import (
-    get_leaderboard_trend_data,
-    get_user_group_stats,
-)
-from pickaladder.group.services.tasks import (
-    friend_group_members,
-    send_invite_email_background,
-)
-# Resolved conflict: Imported both service classes and utility functions
 from pickaladder.group.services.group_service import (
     AccessDenied,
     GroupNotFound,
     GroupService,
 )
-from pickaladder.group.utils import get_random_joke
+from pickaladder.group.utils import (
+    friend_group_members,
+    get_group_leaderboard,
+    get_leaderboard_trend_data,
+    get_random_joke,
+    get_user_group_stats,
+    send_invite_email_background,
+)
+from pickaladder.group.utils import (
+    get_head_to_head_stats as get_h2h_stats,
+)
 from pickaladder.user.services import UserService
 
 from . import bp
@@ -154,11 +150,12 @@ def view_group(group_id: str) -> Any:
         try:
             name = invite_email_form.name.data or "Friend"
             email = invite_email_form.email.data
-            GroupService.invite_by_email(
-                db, group_id, context["group"]["name"], email, name, g.user["uid"]
-            )
-            flash(f"Invitation is being sent to {email.lower()}.", "toast")
-            return redirect(url_for(".view_group", group_id=group_id))
+            if email:
+                GroupService.invite_by_email(
+                    db, group_id, context["group"]["name"], email, name, g.user["uid"]
+                )
+                flash(f"Invitation is being sent to {email.lower()}.", "toast")
+                return redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
             flash(f"An error occurred creating the invitation: {e}", "danger")
 

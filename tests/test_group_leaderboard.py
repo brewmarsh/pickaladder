@@ -5,13 +5,13 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from pickaladder.group.services.leaderboard import get_group_leaderboard
+from pickaladder.group.utils import get_group_leaderboard
 
 
 class TestGroupLeaderboardSorting(unittest.TestCase):
     """Test case for the group leaderboard sorting."""
 
-    @patch("pickaladder.group.services.leaderboard.firestore")
+    @patch("pickaladder.group.utils.firestore")
     def test_leaderboard_sorting(self, mock_firestore: MagicMock) -> None:
         """Test the leaderboard is sorted by avg_score, then wins, then games_played."""
         # Mock Firestore client

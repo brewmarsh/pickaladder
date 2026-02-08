@@ -1055,7 +1055,7 @@ class UserService:
     @staticmethod
     def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch group rankings for a user."""
-        from pickaladder.group.services.leaderboard import (  # noqa: PLC0415
+        from pickaladder.group.utils import (  # noqa: PLC0415
             get_group_leaderboard,
         )
 

@@ -27,17 +27,8 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_routes": patch(
                 "pickaladder.group.routes.firestore", new=self.mock_firestore_service
             ),
-            "firestore_leaderboard": patch(
-                "pickaladder.group.services.leaderboard.firestore",
-                new=self.mock_firestore_service,
-            ),
-            "firestore_stats": patch(
-                "pickaladder.group.services.stats.firestore",
-                new=self.mock_firestore_service,
-            ),
-            "firestore_tasks": patch(
-                "pickaladder.group.services.tasks.firestore",
-                new=self.mock_firestore_service,
+            "firestore_utils": patch(
+                "pickaladder.group.utils.firestore", new=self.mock_firestore_service
             ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service

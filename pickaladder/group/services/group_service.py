@@ -116,7 +116,9 @@ class GroupService:
         }
 
     @staticmethod
-    def _get_eligible_friends(db: Any, user_ref: Any, member_ids: set[str]) -> list[Any]:
+    def _get_eligible_friends(
+        db: Any, user_ref: Any, member_ids: set[str]
+    ) -> list[Any]:
         """Fetch friends of the user who are not already in the group."""
         friends_query = (
             user_ref.collection("friends")
@@ -408,7 +410,7 @@ class GroupService:
         group_ref.update({"members": firestore.ArrayUnion([friend_ref])})
 
     @staticmethod
-    def invite_by_email(
+    def invite_by_email(  # noqa: PLR0913
         db: Any,
         group_id: str,
         group_name: str,

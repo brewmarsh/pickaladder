@@ -154,7 +154,10 @@ body {
 }
 
 .profile-picture-thumbnail {
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
+    object-fit: cover;
 }
 
 /* Forms */
@@ -355,7 +358,10 @@ input:focus, textarea:focus, select:focus {
 
 /* Profile Elements */
 .profile-picture {
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
+    object-fit: cover;
     margin-bottom: 20px;
     border: 4px solid var(--card-bg);
     box-shadow: var(--box-shadow);
