@@ -350,6 +350,7 @@ tr img {
     }
 
     /* Hide less important columns on mobile if necessary */
+    .leaderboard-row.desktop-only,
     .leaderboard-row .desktop-only {
         display: none;
     }
