@@ -29,7 +29,9 @@ from .forms import UpdateProfileForm, UpdateUserForm
 from .services import UserService
 
 if TYPE_CHECKING:
-    pass
+    from pickaladder.group.models import Group
+
+    from .models import User
 
 
 class MockPagination:
@@ -351,7 +353,7 @@ def view_community() -> Any:
     if search_term:
         term = search_term.lower()
 
-        def matches_search(user_data: dict[str, Any]) -> bool:
+        def matches_search(user_data: User | dict[str, Any]) -> bool:
             username = user_data.get("username", "").lower()
             name = user_data.get("name", "").lower()
             email = user_data.get("email", "").lower()
@@ -367,7 +369,7 @@ def view_community() -> Any:
             if term in ti.get("name", "").lower()
         ]
 
-        def group_matches_search(group_data: dict[str, Any]) -> bool:
+        def group_matches_search(group_data: Group | dict[str, Any]) -> bool:
             name = group_data.get("name", "").lower()
             description = group_data.get("description", "").lower()
             return term in name or term in description

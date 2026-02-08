@@ -27,3 +27,6 @@ class Group(FirestoreDocument, total=False):
     ownerRef: User | Any
     is_public: bool
     profilePictureUrl: str
+
+    # UI and calculated fields
+    owner: User | dict[str, Any]

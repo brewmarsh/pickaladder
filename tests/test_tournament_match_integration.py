@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import unittest
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 from firebase_admin import firestore
 
 from pickaladder import create_app
-from pickaladder.match.routes import _get_candidate_player_ids
+from pickaladder.match.services import MatchService
 from pickaladder.user.services import UserService
 
 # Mock data
@@ -74,8 +75,8 @@ class TournamentMatchIntegrationTestCase(unittest.TestCase):
         mock_tourney_snapshot.to_dict.return_value = MOCK_TOURNAMENT_DATA
         mock_tourney_doc.get.return_value = mock_tourney_snapshot
 
-        candidates = _get_candidate_player_ids(
-            MOCK_USER_ID, tournament_id=MOCK_TOURNAMENT_ID
+        candidates = MatchService.get_candidate_player_ids(
+            mock_db, MOCK_USER_ID, tournament_id=MOCK_TOURNAMENT_ID
         )
 
         self.assertEqual(candidates, {"opponent789"})
@@ -122,7 +123,7 @@ class TournamentMatchIntegrationTestCase(unittest.TestCase):
         ]
 
         formatted = UserService.format_matches_for_dashboard(
-            mock_db, [mock_match_doc], MOCK_USER_ID
+            mock_db, cast("list[Any]", [mock_match_doc]), MOCK_USER_ID
         )
 
         self.assertEqual(len(formatted), 1)

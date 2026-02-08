@@ -2,260 +2,19 @@
 
 from __future__ import annotations
 
-import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import flash, g, jsonify, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.teams.utils import get_or_create_team
 
 from . import bp
 from .forms import MatchForm
+from .services import MatchService
 
-CLOSE_CALL_THRESHOLD = 2
-
-
-# TODO: Add type hints for Agent clarity
-def _get_candidate_player_ids(
-    user_id: str,
-    group_id: str | None = None,
-    tournament_id: str | None = None,
-    include_user: bool = False,
-) -> set[str]:
-    """Fetch a set of valid opponent IDs for a user.
-
-    Optionally restricts to a group or tournament.
-    """
-    db = firestore.client()
-    candidate_player_ids: set[str] = set()
-
-    if tournament_id:
-        # If in a tournament context, candidates are tournament participants
-        tournament_ref = db.collection("tournaments").document(tournament_id)
-        tournament = tournament_ref.get()
-        if tournament.exists:
-            participant_ids = tournament.to_dict().get("participant_ids", [])
-            candidate_player_ids.update(participant_ids)
-    elif group_id:
-        # If in a group context, candidates are group members and pending invitees
-        group_ref = db.collection("groups").document(group_id)
-        group = group_ref.get()
-        if group.exists:
-            group_data = group.to_dict()
-            member_refs = group_data.get("members", [])
-            for ref in member_refs:
-                candidate_player_ids.add(ref.id)
-
-        invites_query = (
-            db.collection("group_invites")
-            .where(filter=firestore.FieldFilter("group_id", "==", group_id))
-            .where(filter=firestore.FieldFilter("used", "==", False))
-            .stream()
-        )
-        invited_emails = [doc.to_dict().get("email") for doc in invites_query]
-
-        if invited_emails:
-            for i in range(0, len(invited_emails), 30):
-                batch_emails = invited_emails[i : i + 30]
-                users_by_email = (
-                    db.collection("users")
-                    .where(filter=firestore.FieldFilter("email", "in", batch_emails))
-                    .stream()
-                )
-                for user_doc in users_by_email:
-                    candidate_player_ids.add(user_doc.id)
-    else:
-        # If not in a group context, candidates are friends and user's own invitees
-        friends_ref = db.collection("users").document(user_id).collection("friends")
-        friends_docs = friends_ref.stream()
-        for doc in friends_docs:
-            if doc.to_dict().get("status") in ["accepted", "pending"]:
-                candidate_player_ids.add(doc.id)
-
-        my_invites_query = (
-            db.collection("group_invites")
-            .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
-            .stream()
-        )
-        my_invited_emails = {doc.to_dict().get("email") for doc in my_invites_query}
-
-        if my_invited_emails:
-            my_invited_emails_list = list(my_invited_emails)
-            for i in range(0, len(my_invited_emails_list), 10):
-                batch_emails = my_invited_emails_list[i : i + 10]
-                users_by_email = (
-                    db.collection("users")
-                    .where(filter=firestore.FieldFilter("email", "in", batch_emails))
-                    .stream()
-                )
-                for user_doc in users_by_email:
-                    candidate_player_ids.add(user_doc.id)
-
-    if not include_user:
-        candidate_player_ids.discard(user_id)
-    return candidate_player_ids
-
-
-# TODO: Add type hints for Agent clarity
-def _save_match_data(
-    player_1_id: str,
-    form_data: Any,
-    group_id: str | None = None,
-    tournament_id: str | None = None,
-) -> None:
-    """Construct and save a match document to Firestore."""
-    db = firestore.client()
-    user_ref = db.collection("users").document(player_1_id)
-
-    # Handle both form objects and dictionaries
-    def get_data(key: str) -> Any:
-        if isinstance(form_data, dict):
-            return form_data.get(key)
-        return getattr(form_data, key).data
-
-    match_type = get_data("match_type")
-    match_date_input = get_data("match_date")
-
-    if isinstance(match_date_input, str) and match_date_input:
-        match_date = datetime.datetime.strptime(match_date_input, "%Y-%m-%d")
-    elif isinstance(match_date_input, datetime.date):
-        match_date = datetime.datetime.combine(match_date_input, datetime.time.min)
-    else:
-        match_date = datetime.datetime.now()
-
-    player1_score = int(get_data("player1_score"))
-    player2_score = int(get_data("player2_score"))
-
-    match_data = {
-        "player1Score": player1_score,
-        "player2Score": player2_score,
-        "matchDate": match_date,
-        "createdAt": firestore.SERVER_TIMESTAMP,
-        "matchType": match_type,
-    }
-
-    if group_id:
-        match_data["groupId"] = group_id
-    if tournament_id:
-        match_data["tournamentId"] = tournament_id
-
-    if match_type == "singles":
-        player1_ref = db.collection("users").document(get_data("player1"))
-        player2_ref = db.collection("users").document(get_data("player2"))
-        match_data["player1Ref"] = player1_ref
-        match_data["player2Ref"] = player2_ref
-    elif match_type == "doubles":
-        t1_p1_id = get_data("player1")
-        t1_p2_id = get_data("partner")
-        t2_p1_id = get_data("player2")
-        t2_p2_id = get_data("opponent2")
-
-        team1_id = get_or_create_team(t1_p1_id, t1_p2_id)
-        team2_id = get_or_create_team(t2_p1_id, t2_p2_id)
-
-        t1_p1_ref = db.collection("users").document(t1_p1_id)
-        t1_p2_ref = db.collection("users").document(t1_p2_id)
-        t2_p1_ref = db.collection("users").document(t2_p1_id)
-        t2_p2_ref = db.collection("users").document(t2_p2_id)
-
-        team1_ref = db.collection("teams").document(team1_id)
-        team2_ref = db.collection("teams").document(team2_id)
-
-        match_data["team1"] = [t1_p1_ref, t1_p2_ref]
-        match_data["team2"] = [t2_p1_ref, t2_p2_ref]
-        match_data["team1Id"] = team1_id
-        match_data["team2Id"] = team2_id
-        match_data["team1Ref"] = team1_ref
-        match_data["team2Ref"] = team2_ref
-        if player1_score > player2_score:
-            team1_ref.update({"stats.wins": firestore.Increment(1)})
-            team2_ref.update({"stats.losses": firestore.Increment(1)})
-        elif player2_score > player1_score:
-            team1_ref.update({"stats.losses": firestore.Increment(1)})
-            team2_ref.update({"stats.wins": firestore.Increment(1)})
-
-    db.collection("matches").add(match_data)
-    user_ref.update({"lastMatchRecordedType": match_type})
-
-
-# TODO: Add type hints for Agent clarity
-def get_player_record(player_ref: Any) -> dict[str, int]:
-    """Calculate the win/loss record for a given player by their document reference."""
-    db = firestore.client()
-    wins = 0
-    losses = 0
-
-    # 1. Matches where the user is player1 (Singles)
-    p1_matches_query = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("player1Ref", "==", player_ref))
-        .stream()
-    )
-    for match in p1_matches_query:
-        data = match.to_dict()
-        # Skip if it's a doubles match misclassified (shouldn't happen with
-        # correct queries but safe)
-        if data.get("matchType") == "doubles":
-            continue
-
-        if data.get("player1Score", 0) > data.get("player2Score", 0):
-            wins += 1
-        else:
-            losses += 1
-
-    # 2. Matches where the user is player2 (Singles)
-    p2_matches_query = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("player2Ref", "==", player_ref))
-        .stream()
-    )
-    for match in p2_matches_query:
-        data = match.to_dict()
-        if data.get("matchType") == "doubles":
-            continue
-
-        if data.get("player2Score", 0) > data.get("player1Score", 0):
-            wins += 1
-        else:
-            losses += 1
-
-    # 3. Matches where the user is in team1 (Doubles)
-    # Note: 'array_contains' is the correct filter operator for array membership
-    t1_matches_query = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("team1", "array_contains", player_ref))
-        .stream()
-    )
-    for match in t1_matches_query:
-        data = match.to_dict()
-        # Ensure it is actually a doubles match
-        if data.get("matchType") != "doubles":
-            continue
-
-        if data.get("player1Score", 0) > data.get("player2Score", 0):
-            wins += 1
-        else:
-            losses += 1
-
-    # 4. Matches where the user is in team2 (Doubles)
-    t2_matches_query = (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("team2", "array_contains", player_ref))
-        .stream()
-    )
-    for match in t2_matches_query:
-        data = match.to_dict()
-        if data.get("matchType") != "doubles":
-            continue
-
-        if data.get("player2Score", 0) > data.get("player1Score", 0):
-            wins += 1
-        else:
-            losses += 1
-
-    return {"wins": wins, "losses": losses}
+if TYPE_CHECKING:
+    pass
 
 
 # TODO: Add type hints for Agent clarity
@@ -264,22 +23,22 @@ def get_player_record(player_ref: Any) -> dict[str, int]:
 def view_match_page(match_id: str) -> Any:
     """Display the details of a single match."""
     db = firestore.client()
-    match_ref = db.collection("matches").document(match_id)
-    match = match_ref.get()
-    if not match.exists:
+    match_data = MatchService.get_match_by_id(db, match_id)
+    if match_data is None:
         flash("Match not found.", "danger")
         return redirect(url_for("user.dashboard"))
 
-    match_data = match.to_dict()
-    match_type = match_data.get("matchType", "singles")
+    # Cast to dict to avoid mypy Mapping.get issues with TypedDict
+    m_dict = cast("dict[str, Any]", match_data)
+    match_type = m_dict.get("matchType", "singles")
 
     context = {"match": match_data, "match_type": match_type}
 
     if match_type == "doubles":
         # Fetch team members
         # team1 and team2 are lists of refs
-        team1_refs = match_data.get("team1", [])
-        team2_refs = match_data.get("team2", [])
+        team1_refs = m_dict.get("team1", [])
+        team2_refs = m_dict.get("team2", [])
 
         team1_data = []
         for ref in team1_refs:
@@ -299,8 +58,8 @@ def view_match_page(match_id: str) -> Any:
     else:
         # Fetch player data from references
         # Handle cases where refs might be missing in corrupted data
-        player1_ref = match_data.get("player1Ref")
-        player2_ref = match_data.get("player2Ref")
+        player1_ref = m_dict.get("player1Ref")
+        player2_ref = m_dict.get("player2Ref")
 
         player1_data = {}
         player2_data = {}
@@ -311,13 +70,13 @@ def view_match_page(match_id: str) -> Any:
             player1 = player1_ref.get()
             if player1.exists:
                 player1_data = player1.to_dict()
-                player1_record = get_player_record(player1_ref)
+                player1_record = MatchService.get_player_record(db, player1_ref)
 
         if player2_ref:
             player2 = player2_ref.get()
             if player2.exists:
                 player2_data = player2.to_dict()
-                player2_record = get_player_record(player2_ref)
+                player2_record = MatchService.get_player_record(db, player2_ref)
 
         context.update(
             {
@@ -340,7 +99,9 @@ def record_match() -> Any:
     user_id = g.user["uid"]
     group_id = request.args.get("group_id")
     tournament_id = request.args.get("tournament_id")
-    candidate_player_ids = _get_candidate_player_ids(user_id, group_id, tournament_id)
+    candidate_player_ids = MatchService.get_candidate_player_ids(
+        db, user_id, group_id, tournament_id
+    )
 
     tournament_name = None
     if tournament_id:
@@ -378,7 +139,9 @@ def record_match() -> Any:
             try:
                 json_group_id = data.get("group_id") or group_id
                 json_tournament_id = data.get("tournament_id") or tournament_id
-                _save_match_data(user_id, data, json_group_id, json_tournament_id)
+                MatchService.save_match_data(
+                    db, user_id, data, json_group_id, json_tournament_id
+                )
                 return jsonify({"status": "success", "message": "Match recorded."}), 200
             except Exception as e:
                 return jsonify({"status": "error", "message": str(e)}), 500
@@ -398,8 +161,8 @@ def record_match() -> Any:
     form = MatchForm()
 
     # Fetch and populate player choices for the form dropdowns
-    player1_candidate_ids = _get_candidate_player_ids(
-        user_id, group_id, tournament_id, include_user=True
+    player1_candidate_ids = MatchService.get_candidate_player_ids(
+        db, user_id, group_id, tournament_id, include_user=True
     )
 
     player1_choices = []
@@ -471,7 +234,7 @@ def record_match() -> Any:
             )
 
         try:
-            _save_match_data(player_1_id, form, group_id, tournament_id)
+            MatchService.save_match_data(db, player_1_id, form, group_id, tournament_id)
             flash("Match recorded successfully.", "success")
             if tournament_id:
                 return redirect(
@@ -493,97 +256,6 @@ def record_match() -> Any:
 
 
 # TODO: Add type hints for Agent clarity
-def get_latest_matches(limit: int = 10) -> list[dict[str, Any]]:
-    """Fetch and process the latest matches."""
-    db = firestore.client()
-    matches_query = (
-        db.collection("matches")
-        .order_by("createdAt", direction=firestore.Query.DESCENDING)
-        .limit(limit)
-    )
-    matches = list(matches_query.stream())
-
-    player_refs = set()
-    for match in matches:
-        match_data = match.to_dict()
-        if match_data.get("matchType") == "doubles":
-            player_refs.update(match_data.get("team1", []))
-            player_refs.update(match_data.get("team2", []))
-        else:
-            if match_data.get("player1Ref"):
-                player_refs.add(match_data.get("player1Ref"))
-            if match_data.get("player2Ref"):
-                player_refs.add(match_data.get("player2Ref"))
-
-    players = {}
-    if player_refs:
-        player_docs = db.get_all(list(player_refs))
-        for doc in player_docs:
-            if doc.exists:
-                players[doc.id] = doc.to_dict().get("name", "N/A")
-
-    processed_matches = []
-    for match in matches:
-        match_data = match.to_dict()
-        match_date = match_data.get("matchDate")
-        if isinstance(match_date, datetime.datetime):
-            match_date_formatted = match_date.strftime("%b %d")
-        else:
-            # Fallback if matchDate is not a datetime object
-            match_date_formatted = "N/A"
-
-        score1 = match_data.get("player1Score", 0)
-        score2 = match_data.get("player2Score", 0)
-
-        point_diff = abs(score1 - score2)
-        close_call = point_diff <= CLOSE_CALL_THRESHOLD
-
-        processed_match = {
-            "date": match_date_formatted,
-            "point_differential": point_diff,
-            "close_call": close_call,
-        }
-
-        if match_data.get("matchType") == "doubles":
-            team1_refs = match_data.get("team1", [])
-            team2_refs = match_data.get("team2", [])
-            team1_names = " & ".join([players.get(ref.id, "N/A") for ref in team1_refs])
-            team2_names = " & ".join([players.get(ref.id, "N/A") for ref in team2_refs])
-
-            if score1 > score2:
-                processed_match["winner_name"] = team1_names
-                processed_match["loser_name"] = team2_names
-                processed_match["winner_score"] = score1
-                processed_match["loser_score"] = score2
-            else:
-                processed_match["winner_name"] = team2_names
-                processed_match["loser_name"] = team1_names
-                processed_match["winner_score"] = score2
-                processed_match["loser_score"] = score1
-        else:  # singles
-            p1_ref = match_data.get("player1Ref")
-            p2_ref = match_data.get("player2Ref")
-
-            p1_name = players.get(p1_ref.id, "N/A") if p1_ref else "N/A"
-            p2_name = players.get(p2_ref.id, "N/A") if p2_ref else "N/A"
-
-            if score1 > score2:
-                processed_match["winner_name"] = p1_name
-                processed_match["loser_name"] = p2_name
-                processed_match["winner_score"] = score1
-                processed_match["loser_score"] = score2
-            else:
-                processed_match["winner_name"] = p2_name
-                processed_match["loser_name"] = p1_name
-                processed_match["winner_score"] = score2
-                processed_match["loser_score"] = score1
-
-        processed_matches.append(processed_match)
-
-    return processed_matches
-
-
-# TODO: Add type hints for Agent clarity
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
@@ -594,37 +266,12 @@ def leaderboard() -> Any:
     """
     db = firestore.client()
     try:
-        users_query = db.collection("users").limit(50).stream()
-        players = []
-        for user in users_query:
-            user_data = user.to_dict()
-            user_ref = db.collection("users").document(user.id)
-            record = get_player_record(user_ref)
-
-            win_percentage = 0.0
-            games_played = record["wins"] + record["losses"]
-            if games_played > 0:
-                win_percentage = float((record["wins"] / games_played) * 100)
-
-            players.append(
-                {
-                    "id": user.id,
-                    "name": user_data.get("name", "N/A"),
-                    "wins": record["wins"],
-                    "losses": record["losses"],
-                    "games_played": games_played,
-                    "win_percentage": win_percentage,
-                }
-            )
-
-        # Sort players by win percentage, then by wins
-        players.sort(key=lambda p: (p["win_percentage"], p["wins"]), reverse=True)
-
+        players = MatchService.get_leaderboard_data(db)
     except Exception as e:
         players = []
         flash(f"An error occurred while fetching the leaderboard: {e}", "danger")
 
-    latest_matches = get_latest_matches()
+    latest_matches = MatchService.get_latest_matches(db)
 
     return render_template(
         "leaderboard.html",
