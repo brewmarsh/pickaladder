@@ -1,7 +1,7 @@
 """Forms for the match blueprint."""
 
 from collections.abc import Sequence
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, cast
 
 from flask_wtf import FlaskForm  # type: ignore
 from wtforms import (
@@ -89,10 +89,14 @@ class MatchForm(FlaskForm):
         if self.match_type.data == "doubles":
             has_error = False
             if not self.partner.data:
-                self.partner.errors.append("Partner is required for doubles.")
+                cast(list[str], self.partner.errors).append(
+                    "Partner is required for doubles."
+                )
                 has_error = True
             if not self.opponent2.data:
-                self.opponent2.errors.append("Opponent 2 is required for doubles.")
+                cast(list[str], self.opponent2.errors).append(
+                    "Opponent 2 is required for doubles."
+                )
                 has_error = True
 
             if has_error:
@@ -107,10 +111,10 @@ class MatchForm(FlaskForm):
             ]
             if len(players) != len(set(players)):
                 error_msg = "All players in a doubles match must be unique."
-                self.player1.errors.append(error_msg)
-                self.partner.errors.append(error_msg)
-                self.player2.errors.append(error_msg)
-                self.opponent2.errors.append(error_msg)
+                cast(list[str], self.player1.errors).append(error_msg)
+                cast(list[str], self.partner.errors).append(error_msg)
+                cast(list[str], self.player2.errors).append(error_msg)
+                cast(list[str], self.opponent2.errors).append(error_msg)
                 return False
 
         return True
