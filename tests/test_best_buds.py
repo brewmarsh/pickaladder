@@ -34,6 +34,11 @@ class BestBudsTestCase(unittest.TestCase):
             patch(
                 "pickaladder.group.routes.firestore", new=self.mock_firestore_service
             ),
+            patch(
+                "pickaladder.group.services.group_service.firestore",
+                new=self.mock_firestore_service,
+            ),
+            patch("pickaladder.group.utils.firestore", new=self.mock_firestore_service),
             patch("pickaladder.firestore", new=self.mock_firestore_service),
         ]
         for p in self.patchers:
@@ -49,8 +54,14 @@ class BestBudsTestCase(unittest.TestCase):
             p.stop()
         self.app_context.pop()
 
+    @patch(
+        "pickaladder.group.services.group_service.get_group_leaderboard",
+        return_value=[],
+    )
     @patch("pickaladder.group.routes.get_group_leaderboard", return_value=[])
-    def test_best_buds_identification(self, mock_leaderboard: MagicMock) -> None:
+    def test_best_buds_identification(
+        self, mock_leaderboard_routes: MagicMock, mock_leaderboard_service: MagicMock
+    ) -> None:
         # Set session
         with self.client.session_transaction() as sess:
             sess["user_id"] = "user1"
