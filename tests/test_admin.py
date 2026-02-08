@@ -106,7 +106,9 @@ class AdminRoutesTestCase(unittest.TestCase):
         self._login_user(MOCK_ADMIN_ID, MOCK_ADMIN_DATA, is_admin=True)
 
         # Mock UserService.get_all_users
-        with patch("pickaladder.admin.routes.UserService.get_all_users") as mock_get_users:
+        with patch(
+            "pickaladder.admin.routes.UserService.get_all_users"
+        ) as mock_get_users:
             mock_get_users.return_value = [MOCK_ADMIN_DATA, MOCK_USER_DATA]
             response = self.client.get("/admin/merge_players")
             self.assertEqual(response.status_code, 200)
