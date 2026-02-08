@@ -182,8 +182,18 @@ def _register_context_processors(app: Flask) -> None:
             or os.environ.get("GITHUB_RUN_NUMBER")
             or os.environ.get("RENDER_GIT_COMMIT")
             or os.environ.get("HEROKU_SLUG_COMMIT")
-            or "dev"
         )
+
+        if not version:
+            try:
+                version_file = Path(current_app.root_path).parent / "VERSION"
+                if version_file.exists():
+                    version = version_file.read_text().strip()
+            except Exception:
+                pass
+
+        if not version:
+            version = "dev"
 
         # If it's a long git hash, shorten it
         if len(version) > VERSION_THRESHOLD and version != "dev":
