@@ -6,7 +6,6 @@ from typing import Union
 from faker import Faker
 from firebase_admin import auth, firestore
 from flask import (
-    Response,
     flash,
     g,
     jsonify,
@@ -15,6 +14,7 @@ from flask import (
     request,
     url_for,
 )
+from werkzeug.wrappers import Response
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.user.services import UserService
@@ -115,7 +115,7 @@ def admin_delete_match(match_id: str) -> Response:
 
 @bp.route("/friend_graph_data")
 @login_required(admin_required=True)
-def friend_graph_data() -> Union[Response, str]:
+def friend_graph_data() -> Union[Response, str, tuple[Response, int]]:
     """Provide data for a network graph of users and their friendships."""
     db = firestore.client()
     try:
@@ -250,6 +250,10 @@ def merge_players() -> Union[str, Response]:
     if request.method == "POST":
         source_id = request.form.get("source_id")
         target_id = request.form.get("target_id")
+
+        if not source_id or not target_id:
+            flash("Source and Target IDs are required.", "error")
+            return redirect(url_for("admin.merge_players"))
 
         if source_id == target_id:
             flash("Source and Target cannot be the same user.", "error")

@@ -4,7 +4,6 @@ from typing import Tuple, Union  # noqa: UP035
 
 from flask import (
     Blueprint,
-    Response,
     current_app,
     flash,
     redirect,
@@ -13,6 +12,7 @@ from flask import (
     url_for,
 )
 from flask_wtf.csrf import CSRFError
+from werkzeug.wrappers import Response
 
 from .errors import AppError, DuplicateResourceError, NotFoundError, ValidationError
 
