@@ -8,6 +8,7 @@ from typing import Any
 from firebase_admin import firestore
 from flask import current_app, url_for
 
+# Resolved: Use the clearer naming from the refactor branch
 from pickaladder.group.services.match_parser import (
     _get_match_scores,
     _resolve_team_document_ids,
@@ -331,6 +332,7 @@ class GroupService:
             if data.get("matchType") != "doubles":
                 continue
 
+            # Resolved: Use new function name from refactor
             t1_id, t2_id = _resolve_team_document_ids(data)
             if not t1_id or not t2_id:
                 continue

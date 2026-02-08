@@ -68,13 +68,22 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="player-link-compact">
-                                            <img src="{{ player | avatar_url }}" alt="{{ player | display_name }}" class="avatar-small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                            <span class="player-name-compact">{{ player | display_name }}</span>
-                                            {% if player.is_on_fire %}
-                                                <span title="{{ player.streak }} Game Streak!">🔥</span>
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="player-link-compact">
+                                                <img src="{{ player | avatar_url }}" alt="{{ player | display_name }}" class="avatar-small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                                <span class="player-name-compact">{{ player | display_name }}</span>
+                                                {% if player.is_on_fire %}
+                                                    <span title="{{ player.streak }} Game Streak!">🔥</span>
+                                                {% endif %}
+                                            </a>
+                                            {% if player.id == g.user['uid'] %}
+                                                <button class="btn btn-volt small share-stats-btn"
+                                                        style="width: auto; margin-left: 10px; padding: 4px 8px; font-size: 0.7rem;"
+                                                        onclick="openBragCard('{{ player.id }}', '{{ player | display_name }}', '{{ player | avatar_url }}', '{{ loop.index }}', '{{ player.streak }}')">
+                                                    Share Stats
+                                                </button>
                                             {% endif %}
-                                        </a>
+                                        </div>
                                     </td>
                                     <td>
                                         <div class="form-dots-compact">
@@ -366,6 +375,39 @@
 </div>
 {% endif %}
 
+<!-- Brag Card Modal -->
+<div class="modal fade" id="bragCardModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 400px;">
+        <div class="modal-content" style="background: transparent; border: none; box-shadow: none;">
+            <div class="modal-body p-0">
+                <div id="bragCardContainer" class="brag-card">
+                    <div class="brag-card-header">
+                        <img id="bragCardAvatar" src="" alt="Avatar" class="brag-card-avatar">
+                        <h2 id="bragCardUsername" class="brag-card-username"></h2>
+                    </div>
+                    <div class="brag-card-main">
+                        <div id="bragCardStatLabel" class="brag-card-stat-label"></div>
+                        <div id="bragCardStatValue" class="brag-card-stat-value"></div>
+                    </div>
+                    <div class="brag-card-visual">
+                        <canvas id="bragCardSparkline"></canvas>
+                    </div>
+                    <div class="brag-card-footer">
+                        Pickaladder - {{ group.name }}
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <p class="text-white mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Screenshot this card to share!</p>
+                    <button type="button" class="btn btn-volt" data-dismiss="modal" style="width: auto;">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 function openTab(evt, tabName) {
     var i, tabcontent, tabbuttons;
@@ -381,5 +423,87 @@ function openTab(evt, tabName) {
     evt.currentTarget.className += " active";
 }
 
+let bragCardChart = null;
+
+function openBragCard(userId, username, avatar, rank, streak) {
+    document.getElementById('bragCardUsername').innerText = username;
+    document.getElementById('bragCardAvatar').src = avatar;
+
+    // Determine main stat
+    const streakNum = parseInt(streak) || 0;
+    const rankNum = parseInt(rank) || 0;
+
+    if (rankNum === 1) {
+        document.getElementById('bragCardStatLabel').innerText = 'GROUP RANKING';
+        document.getElementById('bragCardStatValue').innerText = 'RANK #1';
+    } else if (streakNum >= 3) {
+        document.getElementById('bragCardStatLabel').innerText = 'CURRENT STREAK';
+        document.getElementById('bragCardStatValue').innerText = streakNum + ' WINS';
+    } else {
+        document.getElementById('bragCardStatLabel').innerText = 'GROUP RANKING';
+        document.getElementById('bragCardStatValue').innerText = 'RANK #' + rankNum;
+    }
+
+    // Show modal
+    $('#bragCardModal').modal('show');
+
+    // Fetch trend data
+    fetch(`/group/{{ group.id }}/user-trend/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error(data.error);
+                return;
+            }
+            renderSparkline(data.dataset.data);
+        })
+        .catch(err => console.error("Error fetching trend data:", err));
+}
+
+function renderSparkline(trendData) {
+    const canvas = document.getElementById('bragCardSparkline');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    if (bragCardChart) {
+        bragCardChart.destroy();
+    }
+
+    // Filter out nulls for the sparkline
+    const cleanData = trendData.filter(v => v !== null);
+
+    // Fallback color if CSS variable is not available
+    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#c3ff00';
+
+    bragCardChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: cleanData.map((_, i) => i),
+            datasets: [{
+                data: cleanData,
+                borderColor: accentColor,
+                borderWidth: 4,
+                pointRadius: 0,
+                fill: false,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false }
+            },
+            scales: {
+                x: { display: false },
+                y: {
+                    display: false,
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+}
 </script>
 {% endblock %}

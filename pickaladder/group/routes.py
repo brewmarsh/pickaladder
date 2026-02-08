@@ -507,3 +507,23 @@ def get_rivalry_stats(group_id: str) -> Any:
         "avg_points_scored": stats["avg_points_scored"],
         "partnership_record": stats["partnership_record"],
     }
+
+
+@bp.route("/<string:group_id>/user-trend/<string:user_id>")
+@login_required
+def get_user_group_trend(group_id: str, user_id: str) -> Any:
+    """Return trend data for a specific user in a group."""
+    trend_data = get_leaderboard_trend_data(group_id)
+
+    # Filter for the specific user
+    user_dataset = next(
+        (ds for ds in trend_data["datasets"] if ds.get("id") == user_id), None
+    )
+
+    if not user_dataset:
+        return {"error": "User data not found for this group"}, 404
+
+    return {
+        "labels": trend_data["labels"],
+        "dataset": user_dataset,
+    }

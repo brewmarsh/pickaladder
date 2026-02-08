@@ -20,6 +20,7 @@ from pickaladder.core.constants import (
     HOT_STREAK_THRESHOLD,
     RECENT_MATCHES_LIMIT,
 )
+from pickaladder.group.services.match_parser import _extract_team_ids, _get_match_scores
 from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
@@ -320,6 +321,7 @@ def _calculate_trend_points(
     player_stats = {pid: {"total_score": 0, "games": 0} for pid in players_data}
     datasets = {
         pid: {
+            "id": pid,
             "label": info["name"],
             "data": [],
             "fill": False,

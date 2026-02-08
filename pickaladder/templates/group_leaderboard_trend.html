@@ -89,18 +89,25 @@
             });
         }
 
-        // Modern color palette
-        const colors = [
-            '#4E79A7', '#F28E2B', '#E15759', '#76B7B2', '#59A14F',
-            '#EDC948', '#B07AA1', '#FF9DA7', '#9C755F', '#BAB0AC'
-        ];
+        const currentUserId = "{{ g.user['uid'] }}";
+        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#84CC16';
 
-        trendData.datasets.forEach((dataset, i) => {
-            dataset.borderColor = colors[i % colors.length];
-            dataset.backgroundColor = colors[i % colors.length];
+        trendData.datasets.forEach((dataset) => {
             dataset.tension = 0.3; // Smooth curves
-            dataset.pointRadius = 5;
-            dataset.pointHoverRadius = 8;
+            if (dataset.id === currentUserId) {
+                dataset.borderColor = accentColor;
+                dataset.backgroundColor = accentColor;
+                dataset.borderWidth = 4;
+                dataset.order = 1;
+                dataset.pointRadius = 5;
+                dataset.pointHoverRadius = 8;
+            } else {
+                dataset.borderColor = '#E5E7EB';
+                dataset.backgroundColor = '#E5E7EB';
+                dataset.borderWidth = 2;
+                dataset.pointRadius = 0;
+                dataset.order = 10;
+            }
         });
 
         // Plugin to draw profile pictures on the chart
@@ -108,8 +115,11 @@
             id: 'pointAvatars',
             afterDraw: chart => {
                 const ctx = chart.ctx;
-                chart.data.datasets.forEach((dataset, i) => {
-                    const meta = chart.getDatasetMeta(i);
+                const datasets = chart.data.datasets;
+
+                // Helper to draw a single avatar
+                const drawAvatar = (dataset, index) => {
+                    const meta = chart.getDatasetMeta(index);
                     if (meta.hidden) return;
                     const lastPoint = meta.data[meta.data.length - 1];
                     if (!lastPoint) return;
@@ -117,7 +127,7 @@
                     const img = new Image();
                     img.src = dataset.profilePictureUrl || '{{ url_for('static', filename='user_icon.png') }}';
 
-                    const size = 28;
+                    const size = dataset.id === currentUserId ? 32 : 24;
                     const x = lastPoint.x + 10;
                     const y = lastPoint.y - (size / 2);
 
@@ -126,10 +136,16 @@
                     ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2, true);
                     ctx.closePath();
                     ctx.clip();
-
                     ctx.drawImage(img, x, y, size, size);
-
                     ctx.restore();
+                };
+
+                // Draw others first, then hero last so they are on top
+                datasets.forEach((dataset, i) => {
+                    if (dataset.id !== currentUserId) drawAvatar(dataset, i);
+                });
+                datasets.forEach((dataset, i) => {
+                    if (dataset.id === currentUserId) drawAvatar(dataset, i);
                 });
             }
         };
@@ -143,11 +159,7 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'bottom',
-                        labels: {
-                            usePointStyle: true,
-                            boxWidth: 8,
-                        }
+                        display: false
                     },
                     tooltip: {
                         mode: 'index',
@@ -168,22 +180,34 @@
                 },
                 scales: {
                     x: {
-                        display: true,
+                        grid: {
+                            display: false,
+                            drawBorder: false,
+                            drawOnChartArea: false,
+                            drawTicks: false,
+                            color: 'transparent',
+                            borderColor: 'transparent'
+                        },
                         title: {
                             display: true,
                             text: 'Match Date'
-                        },
-                        grid: {
-                            display: false
                         }
                     },
                     y: {
-                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: {
+                            display: false,
+                            drawBorder: false,
+                            drawOnChartArea: false,
+                            drawTicks: false,
+                            color: 'transparent',
+                            borderColor: 'transparent'
+                        },
                         title: {
                             display: true,
                             text: 'Average Score'
-                        },
-                        beginAtZero: true
+                        }
                     }
                 },
                 interaction: {
