@@ -1,66 +1,74 @@
 {% extends "layout.html" %}
 {% block title %}View Match{% endblock %}
 {% block content %}
-    <div class="match-card">
-        <div class="match-header">
-            <h2>Match Details</h2>
-            <p class="match-date">{{ match.matchDate.strftime('%Y-%m-%d') }}</p>
-        </div>
-
-        {% if match_type == 'doubles' %}
-        <!-- Doubles View -->
-        <div class="match-body">
-            <!-- Team 1 -->
-            <div class="player-details team-details">
-                <div class="team-members">
-                    {% for member in team1 %}
-                    <div class="team-member">
-                        <img src="{{ member | avatar_url }}" alt="{{ member.name }}" class="profile-picture avatar {{ 'winner-icon' if match.player1Score > match.player2Score else 'loser-icon' if match.player1Score < match.player2Score else '' }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                        <h3>{{ member.name }}</h3>
-                    </div>
-                    {% endfor %}
-                </div>
-                <p class="score-details">{{ match.player1Score }}</p>
-            </div>
-
-            <div class="separator">vs</div>
-
-            <!-- Team 2 -->
-            <div class="player-details team-details">
-                <div class="team-members">
-                    {% for member in team2 %}
-                    <div class="team-member">
-                        <img src="{{ member | avatar_url }}" alt="{{ member.name }}" class="profile-picture avatar {{ 'winner-icon' if match.player2Score > match.player1Score else 'loser-icon' if match.player2Score < match.player1Score else '' }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                        <h3>{{ member.name }}</h3>
-                    </div>
-                    {% endfor %}
-                </div>
-                <p class="score-details">{{ match.player2Score }}</p>
-            </div>
-        </div>
-
-        {% else %}
-        <!-- Singles View -->
-        <div class="match-body">
-            <div class="player-details">
-                <a href="{{ url_for('user.view_user', user_id=match.player1Ref.id) }}">
-                    <img src="{{ player1 | avatar_url }}" alt="{{ player1.name }}" class="profile-picture avatar {{ 'winner-icon' if match.player1Score > match.player2Score else 'loser-icon' if match.player1Score < match.player2Score else '' }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                    <h3>{{ player1.name }}</h3>
-                </a>
-                <p>Record: {{ player1_record.wins|int }} - {{ player1_record.losses|int }}</p>
-                <p class="score-details">{{ match.player1Score }}</p>
-            </div>
-            <div class="separator">vs</div>
-            <div class="player-details">
-                <a href="{{ url_for('user.view_user', user_id=match.player2Ref.id) }}">
-                    <img src="{{ player2 | avatar_url }}" alt="{{ player2.name }}" class="profile-picture avatar {{ 'winner-icon' if match.player2Score > match.player1Score else 'loser-icon' if match.player2Score < match.player1Score else '' }}" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                    <h3>{{ player2.name }}</h3>
-                </a>
-                <p>Record: {{ player2_record.wins|int }} - {{ player2_record.losses|int }}</p>
-                <p class="score-details">{{ match.player2Score }}</p>
-            </div>
-        </div>
-        {% endif %}
+<div class="match-card">
+    <div class="match-header">
+        <h2>Match Details</h2>
+        <p class="match-date">{{ match.matchDate.strftime('%Y-%m-%d') }}</p>
     </div>
+
+    {% if match_type == 'doubles' %}
+    <!-- Doubles View -->
+    <div class="match-body">
+        <!-- Team 1 -->
+        <div class="player-details team-details">
+            <div class="team-members">
+                {% for member in team1 %}
+                <div class="team-member">
+                    <img src="{{ member | avatar_url }}" alt="{{ member.name }}"
+                        class="avatar avatar-xl {{ 'winner-icon' if match.player1Score > match.player2Score else 'loser-icon' if match.player1Score < match.player2Score else '' }}"
+                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                    <h3>{{ member.name }}</h3>
+                </div>
+                {% endfor %}
+            </div>
+            <p class="score-details">{{ match.player1Score }}</p>
+        </div>
+
+        <div class="separator">vs</div>
+
+        <!-- Team 2 -->
+        <div class="player-details team-details">
+            <div class="team-members">
+                {% for member in team2 %}
+                <div class="team-member">
+                    <img src="{{ member | avatar_url }}" alt="{{ member.name }}"
+                        class="avatar avatar-xl {{ 'winner-icon' if match.player2Score > match.player1Score else 'loser-icon' if match.player2Score < match.player1Score else '' }}"
+                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                    <h3>{{ member.name }}</h3>
+                </div>
+                {% endfor %}
+            </div>
+            <p class="score-details">{{ match.player2Score }}</p>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Singles View -->
+    <div class="match-body">
+        <div class="player-details">
+            <a href="{{ url_for('user.view_user', user_id=match.player1Ref.id) }}">
+                <img src="{{ player1 | avatar_url }}" alt="{{ player1.name }}"
+                    class="avatar avatar-xl {{ 'winner-icon' if match.player1Score > match.player2Score else 'loser-icon' if match.player1Score < match.player2Score else '' }}"
+                    onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                <h3>{{ player1.name }}</h3>
+            </a>
+            <p>Record: {{ player1_record.wins|int }} - {{ player1_record.losses|int }}</p>
+            <p class="score-details">{{ match.player1Score }}</p>
+        </div>
+        <div class="separator">vs</div>
+        <div class="player-details">
+            <a href="{{ url_for('user.view_user', user_id=match.player2Ref.id) }}">
+                <img src="{{ player2 | avatar_url }}" alt="{{ player2.name }}"
+                    class="avatar avatar-xl {{ 'winner-icon' if match.player2Score > match.player1Score else 'loser-icon' if match.player2Score < match.player1Score else '' }}"
+                    onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                <h3>{{ player2.name }}</h3>
+            </a>
+            <p>Record: {{ player2_record.wins|int }} - {{ player2_record.losses|int }}</p>
+            <p class="score-details">{{ match.player2Score }}</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
 
 {% endblock %}

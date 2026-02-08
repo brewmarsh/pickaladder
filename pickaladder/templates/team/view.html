@@ -4,8 +4,7 @@
 <div class="page-header team-header-content">
     <div class="team-avatars">
         {% for member in members %}
-        <img src="{{ member | avatar_url }}"
-             alt="{{ member.username }}" class="profile-picture avatar">
+        <img src="{{ member | avatar_url }}" alt="{{ member.username }}" class="avatar avatar-xl">
         {% endfor %}
     </div>
     <div>
@@ -15,7 +14,8 @@
             </div>
             {# Assuming only team members can edit. Add more specific logic if needed. #}
             {% if g.user['uid'] in team.member_ids %}
-            <a href="{{ url_for('teams.rename_team', team_id=team.id) }}" title="Rename Team" class="settings-icon">✏️</a>
+            <a href="{{ url_for('teams.rename_team', team_id=team.id) }}" title="Rename Team"
+                class="settings-icon">✏️</a>
             {% endif %}
         </div>
     </div>
@@ -51,7 +51,7 @@
         <div class="card">
             <h3>Recent Matches</h3>
             <div class="table-container">
-                <table class="table responsive-table">
+                <table class="table-standard responsive-table">
                     <thead>
                         <tr>
                             <th>Date</th>
@@ -63,16 +63,19 @@
                     <tbody>
                         {% for match in recent_matches %}
                         <tr>
-                            <td data-label="Date">{{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate else 'N/A' }}</td>
+                            <td data-label="Date">{{ match.matchDate.strftime('%Y-%m-%d') if match.matchDate else 'N/A'
+                                }}</td>
                             <td data-label="Opponent">
-                                <a href="{{ url_for('teams.view_team', team_id=match.opponent.id) }}">{{ match.opponent.name }}</a>
+                                <a href="{{ url_for('teams.view_team', team_id=match.opponent.id) }}">{{
+                                    match.opponent.name }}</a>
                             </td>
                             <td data-label="Result">
                                 {% set is_team1 = match.team1Id == team.id %}
-                                {% if (match.winner == 'team1' and is_team1) or (match.winner == 'team2' and not is_team1) %}
-                                    <span class="badge badge-success">Win</span>
+                                {% if (match.winner == 'team1' and is_team1) or (match.winner == 'team2' and not
+                                is_team1) %}
+                                <span class="badge badge-success">Win</span>
                                 {% else %}
-                                    <span class="badge badge-danger">Loss</span>
+                                <span class="badge badge-danger">Loss</span>
                                 {% endif %}
                             </td>
                             <td data-label="Score">

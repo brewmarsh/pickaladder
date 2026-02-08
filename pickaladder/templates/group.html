@@ -2,23 +2,27 @@
 {% block title %}{{ group.name }}{% endblock %}
 {% block content %}
 <div class="page-header group-header-content">
-    <img src="{{ group.profilePictureUrl if group.profilePictureUrl else (url_for('static', filename='uploads/' + group.profile_picture_path) if group.profile_picture_path else url_for('static', filename='user_icon.png')) }}" alt="Group Picture" class="group-profile-picture">
+    <img src="{{ group.profilePictureUrl if group.profilePictureUrl else (url_for('static', filename='uploads/' + group.profile_picture_path) if group.profile_picture_path else url_for('static', filename='user_icon.png')) }}"
+        alt="Group Picture" class="avatar avatar-xl">
     <div>
         <div class="group-header-actions">
             <div class="group-header-title">
                 <h1>{{ group.name }}</h1>
                 {% if is_member %}
-                    <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-primary">Record a Match</a>
+                <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-primary">Record a
+                    Match</a>
                 {% endif %}
             </div>
             {% if group.ownerRef.id == current_user_id %}
-                <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="settings-icon">⚙️</a>
+            <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings"
+                class="settings-icon">⚙️</a>
             {% endif %}
         </div>
         <div class="group-meta-info">
-            <p>Owned by: <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username }}</a></p>
+            <p>Owned by: <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username
+                    }}</a></p>
             {% if group.location %}
-                <p><strong>Location:</strong> {{ group.location }}</p>
+            <p><strong>Location:</strong> {{ group.location }}</p>
             {% endif %}
         </div>
         <p class="group-description">{{ group.description or 'No description provided.' }}</p>
@@ -26,7 +30,7 @@
 </div>
 
 <div class="grid-container">
-    
+
     <div>
         <div class="card">
             <h3>Group Leaderboard</h3>
@@ -40,7 +44,7 @@
 
                 <div id="players" class="tab-content" style="display: block;">
                     <div class="table-container">
-                        <table class="table leaderboard-table-compact">
+                        <table class="table-standard responsive-table">
                             <thead>
                                 <tr>
                                     <th>Rank</th>
@@ -59,36 +63,39 @@
                                         {% else %}#{{ loop.index }}{% endif %}
                                         <span class="rank-trend">
                                             {% if player.rank_change is number and player.rank_change > 0 %}
-                                                <span class="trend-up">▲</span>
-                                            {% elif player.rank_change is number and player.rank_change < 0 %}
-                                                <span class="trend-down">▼</span>
-                                            {% elif player.rank_change == 'new' %}
-                                                <span class="trend-new">●</span>
-                                            {% endif %}
+                                            <span class="trend-up">▲</span>
+                                            {% elif player.rank_change is number and player.rank_change < 0 %} <span
+                                                class="trend-down">▼</span>
+                                        {% elif player.rank_change == 'new' %}
+                                        <span class="trend-new">●</span>
+                                        {% endif %}
                                         </span>
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center justify-content-between">
-                                            <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="player-link-compact">
-                                                <img src="{{ player | avatar_url }}" alt="{{ player | display_name }}" class="avatar-small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                            <a href="{{ url_for('user.view_user', user_id=player.id) }}"
+                                                class="player-link-compact">
+                                                <img src="{{ player | avatar_url }}" alt="{{ player | display_name }}"
+                                                    class="avatar avatar-sm"
+                                                    onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                                 <span class="player-name-compact">{{ player | display_name }}</span>
                                                 {% if player.is_on_fire %}
-                                                    <span title="{{ player.streak }} Game Streak!">🔥</span>
+                                                <span title="{{ player.streak }} Game Streak!">🔥</span>
                                                 {% endif %}
                                             </a>
                                             {% if player.id == g.user['uid'] %}
-                                                <button class="btn btn-volt small share-stats-btn"
-                                                        style="width: auto; margin-left: 10px; padding: 4px 8px; font-size: 0.7rem;"
-                                                        onclick="openBragCard('{{ player.id }}', '{{ player | display_name }}', '{{ player | avatar_url }}', '{{ loop.index }}', '{{ player.streak }}')">
-                                                    Share Stats
-                                                </button>
+                                            <button class="btn btn-volt small share-stats-btn"
+                                                style="width: auto; margin-left: 10px; padding: 4px 8px; font-size: 0.7rem;"
+                                                onclick="openBragCard('{{ player.id }}', '{{ player | display_name }}', '{{ player | avatar_url }}', '{{ loop.index }}', '{{ player.streak }}')">
+                                                Share Stats
+                                            </button>
                                             {% endif %}
                                         </div>
                                     </td>
                                     <td>
                                         <div class="form-dots-compact">
                                             {% for result in player.form %}
-                                                <span class="form-dot-compact {{ result }}"></span>
+                                            <span class="form-dot-compact {{ result }}"></span>
                                             {% endfor %}
                                         </div>
                                     </td>
@@ -124,7 +131,9 @@
                             <div>
                                 <div class="team-members-compact">
                                     {% for member in entry.team.member_details %}
-                                        <img src="{{ member | avatar_url }}" alt="{{ member | display_name }}" class="team-avatar avatar-small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                    <img src="{{ member | avatar_url }}" alt="{{ member | display_name }}"
+                                        class="avatar avatar-sm"
+                                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                     {% endfor %}
                                     <span class="team-name-compact">{{ entry.team.name }}</span>
                                 </div>
@@ -141,7 +150,8 @@
             </div>
 
             <div class="leaderboard-trend-link">
-                <a href="{{ url_for('group.view_leaderboard_trend', group_id=group.id) }}">View Leaderboard Trend Chart</a>
+                <a href="{{ url_for('group.view_leaderboard_trend', group_id=group.id) }}">View Leaderboard Trend
+                    Chart</a>
             </div>
         </div>
     </div>
@@ -152,15 +162,17 @@
             <h3>👯 Best Buds</h3>
             <div class="best-buds-container">
                 {% for member in best_buds.member_details %}
-                    <img src="{{ member | avatar_url }}" alt="{{ member.name or member.username }}" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                    {% if not loop.last %}<span class="plus-sign">+</span>{% endif %}
+                <img src="{{ member | avatar_url }}" alt="{{ member.name or member.username }}" class="avatar avatar-sm"
+                    onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                {% if not loop.last %}<span class="plus-sign">+</span>{% endif %}
                 {% endfor %}
             </div>
             <p>
                 {% if best_buds.name %}
-                    {{ best_buds.name }}
+                {{ best_buds.name }}
                 {% else %}
-                    {{ best_buds.member_details[0].name or best_buds.member_details[0].username }} & {{ best_buds.member_details[1].name or best_buds.member_details[1].username }}
+                {{ best_buds.member_details[0].name or best_buds.member_details[0].username }} & {{
+                best_buds.member_details[1].name or best_buds.member_details[1].username }}
                 {% endif %}: {{ best_buds.stats.get('wins', 0) }} Wins Together!
             </p>
         </div>
@@ -173,7 +185,8 @@
             <div class="match-history-feed">
                 {% for match in recent_matches %}
                 <div class="match-history-row">
-                    <span class="match-date-compact text-muted">{{ match.matchDate.strftime('%m/%d') if match.matchDate else 'N/A' }}</span>
+                    <span class="match-date-compact text-muted">{{ match.matchDate.strftime('%m/%d') if match.matchDate
+                        else 'N/A' }}</span>
 
                     <div class="match-main-content">
                         {% set p1_score = match.player1Score|default(0) %}
@@ -182,58 +195,62 @@
                         {% set p2_win = p2_score > p1_score %}
 
                         {% if p2_win %}
-                            {# Winners (Team 2) #}
-                            <div class="match-team font-weight-bold">
-                                {% if match.team2 %}
-                                    {{ match.team2.name }}
-                                {% elif match.player2 %}
-                                    {{ match.player2 | display_name }}{% if match.opponent2 %} & {{ match.opponent2 | display_name }}{% endif %}
-                                {% else %}
-                                    Unknown
-                                {% endif %}
-                            </div>
-                            <div class="match-score-pill font-weight-bold">
-                                {{ p2_score }}-{{ p1_score }}
-                            </div>
-                            <div class="match-vs text-muted">vs</div>
-                            <div class="match-team">
-                                {% if match.team1 %}
-                                    {{ match.team1.name }}
-                                {% elif match.player1 %}
-                                    {{ match.player1 | display_name }}{% if match.partner %} & {{ match.partner | display_name }}{% endif %}
-                                {% else %}
-                                    Unknown
-                                {% endif %}
-                            </div>
+                        {# Winners (Team 2) #}
+                        <div class="match-team font-weight-bold">
+                            {% if match.team2 %}
+                            {{ match.team2.name }}
+                            {% elif match.player2 %}
+                            {{ match.player2 | display_name }}{% if match.opponent2 %} & {{ match.opponent2 |
+                            display_name }}{% endif %}
+                            {% else %}
+                            Unknown
+                            {% endif %}
+                        </div>
+                        <div class="match-score-pill font-weight-bold">
+                            {{ p2_score }}-{{ p1_score }}
+                        </div>
+                        <div class="match-vs text-muted">vs</div>
+                        <div class="match-team">
+                            {% if match.team1 %}
+                            {{ match.team1.name }}
+                            {% elif match.player1 %}
+                            {{ match.player1 | display_name }}{% if match.partner %} & {{ match.partner | display_name
+                            }}{% endif %}
+                            {% else %}
+                            Unknown
+                            {% endif %}
+                        </div>
                         {% else %}
-                            {# Winners (Team 1) or Draw #}
-                            <div class="match-team {{ 'font-weight-bold' if p1_win else '' }}">
-                                {% if match.team1 %}
-                                    {{ match.team1.name }}
-                                {% elif match.player1 %}
-                                    {{ match.player1 | display_name }}{% if match.partner %} & {{ match.partner | display_name }}{% endif %}
-                                {% else %}
-                                    Unknown
-                                {% endif %}
-                            </div>
-                            <div class="match-score-pill {{ 'font-weight-bold' if p1_win else '' }}">
-                                {{ p1_score }}-{{ p2_score }}
-                            </div>
-                            <div class="match-vs text-muted">vs</div>
-                            <div class="match-team">
-                                {% if match.team2 %}
-                                    {{ match.team2.name }}
-                                {% elif match.player2 %}
-                                    {{ match.player2 | display_name }}{% if match.opponent2 %} & {{ match.opponent2 | display_name }}{% endif %}
-                                {% else %}
-                                    Unknown
-                                {% endif %}
-                            </div>
+                        {# Winners (Team 1) or Draw #}
+                        <div class="match-team {{ 'font-weight-bold' if p1_win else '' }}">
+                            {% if match.team1 %}
+                            {{ match.team1.name }}
+                            {% elif match.player1 %}
+                            {{ match.player1 | display_name }}{% if match.partner %} & {{ match.partner | display_name
+                            }}{% endif %}
+                            {% else %}
+                            Unknown
+                            {% endif %}
+                        </div>
+                        <div class="match-score-pill {{ 'font-weight-bold' if p1_win else '' }}">
+                            {{ p1_score }}-{{ p2_score }}
+                        </div>
+                        <div class="match-vs text-muted">vs</div>
+                        <div class="match-team">
+                            {% if match.team2 %}
+                            {{ match.team2.name }}
+                            {% elif match.player2 %}
+                            {{ match.player2 | display_name }}{% if match.opponent2 %} & {{ match.opponent2 |
+                            display_name }}{% endif %}
+                            {% else %}
+                            Unknown
+                            {% endif %}
+                        </div>
                         {% endif %}
                     </div>
 
                     {% if match.is_upset %}
-                        <span class="upset-mini-badge" title="Upset! 🔥">🔥</span>
+                    <span class="upset-mini-badge" title="Upset! 🔥">🔥</span>
                     {% endif %}
                 </div>
                 {% endfor %}
@@ -249,13 +266,13 @@
         <div class="manage-group-content">
             <h3>Members</h3>
             <div class="table-container">
-                <table class="table responsive-table">
+                <table class="table-standard responsive-table">
                     <tbody>
                         {% for member in members %}
                         <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=member.id) }}">
                             <td data-label="Avatar">
-                                <img src="{{ member | avatar_url }}"
-                                    alt="Profile Picture" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                <img src="{{ member | avatar_url }}" alt="Profile Picture" class="avatar avatar-md"
+                                    onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                             </td>
                             <td data-label="Username">{{ member.username }}</td>
                         </tr>
@@ -307,7 +324,7 @@
         <div class="manage-group-content">
             <h3>Pending Members</h3>
             <div class="table-container">
-                <table class="table responsive-table">
+                <table class="table-standard responsive-table">
                     <thead>
                         <tr>
                             <th class="pending-invites-avatar-header"></th>
@@ -323,45 +340,49 @@
                         {% for invite in pending_members %}
                         <tr>
                             <td data-label="Avatar">
-                                <img src="{{ invite | avatar_url }}"
-                                     alt="Profile Picture" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                <img src="{{ invite | avatar_url }}" alt="Profile Picture" class="avatar avatar-md"
+                                    onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                             </td>
                             <td data-label="Name">{{ invite.username or invite.name }}</td>
                             <td data-label="Email">{{ invite.email }}</td>
                             <td data-label="Status">
                                 {% if invite.status == 'failed' %}
-                                    <span class="badge danger" title="{{ invite.last_error }}">Failed</span>
+                                <span class="badge danger" title="{{ invite.last_error }}">Failed</span>
                                 {% elif invite.status == 'sending' %}
-                                    <span class="badge warning">Sending...</span>
+                                <span class="badge warning">Sending...</span>
                                 {% elif invite.status == 'sent' %}
-                                    <span class="badge success">Sent</span>
+                                <span class="badge success">Sent</span>
                                 {% else %}
-                                    <span class="badge">{{ invite.status or 'Pending' }}</span>
+                                <span class="badge">{{ invite.status or 'Pending' }}</span>
                                 {% endif %}
                             </td>
                             {% if group.ownerRef.id == current_user_id %}
                             <td data-label="Actions">
                                 <div class="pending-invites-actions">
-                                    <form method="post" action="{{ url_for('group.resend_invite', token=invite.token) }}">
+                                    <form method="post"
+                                        action="{{ url_for('group.resend_invite', token=invite.token) }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         {% if invite.status == 'failed' %}
                                         <div class="input-group pending-invites-email-group">
-                                            <input type="email" name="email" value="{{ invite.email }}" required class="form-control pending-invites-email-input">
+                                            <input type="email" name="email" value="{{ invite.email }}" required
+                                                class="form-control pending-invites-email-input">
                                         </div>
                                         {% endif %}
                                         <button type="submit" class="btn small">
                                             {% if invite.status == 'failed' %}Retry{% else %}Resend{% endif %}
                                         </button>
                                     </form>
-                                    <form method="post" action="{{ url_for('group.delete_invite', token=invite.token) }}">
+                                    <form method="post"
+                                        action="{{ url_for('group.delete_invite', token=invite.token) }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-danger small" onclick="return confirm('Cancel this invitation?')">Cancel</button>
+                                        <button type="submit" class="btn btn-danger small"
+                                            onclick="return confirm('Cancel this invitation?')">Cancel</button>
                                     </form>
                                 </div>
                                 {% if invite.status == 'failed' and invite.last_error %}
-                                    <div class="invite-error-message">
-                                        {{ invite.last_error }}
-                                    </div>
+                                <div class="invite-error-message">
+                                    {{ invite.last_error }}
+                                </div>
                                 {% endif %}
                             </td>
                             {% endif %}
@@ -397,7 +418,8 @@
                     </div>
                 </div>
                 <div class="mt-4 text-center">
-                    <p class="text-white mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Screenshot this card to share!</p>
+                    <p class="text-white mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Screenshot this card to
+                        share!</p>
                     <button type="button" class="btn btn-volt" data-dismiss="modal" style="width: auto;">Done</button>
                 </div>
             </div>
@@ -409,101 +431,101 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-function openTab(evt, tabName) {
-    var i, tabcontent, tabbuttons;
-    tabcontent = document.getElementsByClassName("tab-content");
-    for (i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-    }
-    tabbuttons = document.getElementsByClassName("tab-button");
-    for (i = 0; i < tabbuttons.length; i++) {
-        tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
-    }
-    document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.className += " active";
-}
-
-let bragCardChart = null;
-
-function openBragCard(userId, username, avatar, rank, streak) {
-    document.getElementById('bragCardUsername').innerText = username;
-    document.getElementById('bragCardAvatar').src = avatar;
-
-    // Determine main stat
-    const streakNum = parseInt(streak) || 0;
-    const rankNum = parseInt(rank) || 0;
-
-    if (rankNum === 1) {
-        document.getElementById('bragCardStatLabel').innerText = 'GROUP RANKING';
-        document.getElementById('bragCardStatValue').innerText = 'RANK #1';
-    } else if (streakNum >= 3) {
-        document.getElementById('bragCardStatLabel').innerText = 'CURRENT STREAK';
-        document.getElementById('bragCardStatValue').innerText = streakNum + ' WINS';
-    } else {
-        document.getElementById('bragCardStatLabel').innerText = 'GROUP RANKING';
-        document.getElementById('bragCardStatValue').innerText = 'RANK #' + rankNum;
+    function openTab(evt, tabName) {
+        var i, tabcontent, tabbuttons;
+        tabcontent = document.getElementsByClassName("tab-content");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tabbuttons = document.getElementsByClassName("tab-button");
+        for (i = 0; i < tabbuttons.length; i++) {
+            tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
     }
 
-    // Show modal
-    $('#bragCardModal').modal('show');
+    let bragCardChart = null;
 
-    // Fetch trend data
-    fetch(`/group/{{ group.id }}/user-trend/${userId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error(data.error);
-                return;
-            }
-            renderSparkline(data.dataset.data);
-        })
-        .catch(err => console.error("Error fetching trend data:", err));
-}
+    function openBragCard(userId, username, avatar, rank, streak) {
+        document.getElementById('bragCardUsername').innerText = username;
+        document.getElementById('bragCardAvatar').src = avatar;
 
-function renderSparkline(trendData) {
-    const canvas = document.getElementById('bragCardSparkline');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+        // Determine main stat
+        const streakNum = parseInt(streak) || 0;
+        const rankNum = parseInt(rank) || 0;
 
-    if (bragCardChart) {
-        bragCardChart.destroy();
+        if (rankNum === 1) {
+            document.getElementById('bragCardStatLabel').innerText = 'GROUP RANKING';
+            document.getElementById('bragCardStatValue').innerText = 'RANK #1';
+        } else if (streakNum >= 3) {
+            document.getElementById('bragCardStatLabel').innerText = 'CURRENT STREAK';
+            document.getElementById('bragCardStatValue').innerText = streakNum + ' WINS';
+        } else {
+            document.getElementById('bragCardStatLabel').innerText = 'GROUP RANKING';
+            document.getElementById('bragCardStatValue').innerText = 'RANK #' + rankNum;
+        }
+
+        // Show modal
+        $('#bragCardModal').modal('show');
+
+        // Fetch trend data
+        fetch(`/group/{{ group.id }}/user-trend/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+                renderSparkline(data.dataset.data);
+            })
+            .catch(err => console.error("Error fetching trend data:", err));
     }
 
-    // Filter out nulls for the sparkline
-    const cleanData = trendData.filter(v => v !== null);
+    function renderSparkline(trendData) {
+        const canvas = document.getElementById('bragCardSparkline');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
 
-    // Fallback color if CSS variable is not available
-    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#c3ff00';
+        if (bragCardChart) {
+            bragCardChart.destroy();
+        }
 
-    bragCardChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: cleanData.map((_, i) => i),
-            datasets: [{
-                data: cleanData,
-                borderColor: accentColor,
-                borderWidth: 4,
-                pointRadius: 0,
-                fill: false,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: { enabled: false }
+        // Filter out nulls for the sparkline
+        const cleanData = trendData.filter(v => v !== null);
+
+        // Fallback color if CSS variable is not available
+        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#c3ff00';
+
+        bragCardChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: cleanData.map((_, i) => i),
+                datasets: [{
+                    data: cleanData,
+                    borderColor: accentColor,
+                    borderWidth: 4,
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0.4
+                }]
             },
-            scales: {
-                x: { display: false },
-                y: {
-                    display: false,
-                    beginAtZero: false
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        display: false,
+                        beginAtZero: false
+                    }
                 }
             }
-        }
-    });
-}
+        });
+    }
 </script>
 {% endblock %}

@@ -1,37 +1,38 @@
 {% extends "layout.html" %}
 {% block title %}All Matches{% endblock %}
 {% block content %}
-    <div class="page-header">
-        <h1>All Matches</h1>
+<div class="page-header">
+    <h1>All Matches</h1>
+</div>
+<form method="get" action="{{ url_for('admin.admin_matches') }}">
+    <div class="form-group">
+        <input type="text" name="search" placeholder="Search by player name..." value="{{ search_term }}">
     </div>
-    <form method="get" action="{{ url_for('admin.admin_matches') }}">
-        <div class="form-group">
-            <input type="text" name="search" placeholder="Search by player name..." value="{{ search_term }}">
-        </div>
-        <input type="submit" value="Search" class="btn">
-    </form>
-    <div class="table-container">
-        <table class="table responsive-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Player 1</th>
-                    <th>Player 2</th>
-                    <th>Score</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for match in matches %}
-                    <tr>
-                        <td data-label="Date">{{ match.match_date.strftime('%Y-%m-%d') }}</td>
-                        <td data-label="Player 1">{{ match.player1.username }}</td>
-                        <td data-label="Player 2">{{ match.player2.username }}</td>
-                        <td data-label="Score">{{ match.player1_score }} - {{ match.player2_score }}</td>
-                        <td data-label="Actions"><a href="{{ url_for('admin.admin_delete_match', match_id=match.id) }}" class="btn btn-danger">Delete</a></td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <input type="submit" value="Search" class="btn">
+</form>
+<div class="table-container">
+    <table class="table-standard responsive-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Player 1</th>
+                <th>Player 2</th>
+                <th>Score</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for match in matches %}
+            <tr>
+                <td data-label="Date">{{ match.match_date.strftime('%Y-%m-%d') }}</td>
+                <td data-label="Player 1">{{ match.player1.username }}</td>
+                <td data-label="Player 2">{{ match.player2.username }}</td>
+                <td data-label="Score">{{ match.player1_score }} - {{ match.player2_score }}</td>
+                <td data-label="Actions"><a href="{{ url_for('admin.admin_delete_match', match_id=match.id) }}"
+                        class="btn btn-danger">Delete</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

@@ -5,243 +5,256 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='toggle.css') }}">
 {% endblock %}
 {% block content %}
-    <div id="dashboard-content">
-        {# Section: Tournament Invites (Top Priority Alert Banner) #}
-        {% if pending_tournament_invites %}
-            {% for tournament in pending_tournament_invites %}
-                <div class="game-card tournament-invite-card" style="margin-bottom: 20px; border-left: 5px solid var(--accent-color);">
-                    <div style="flex: 2;">
-                        <div style="font-weight: 600; font-size: 1.1rem; color: var(--accent-color);">🏆 You've been invited!</div>
-                        <div style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">{{ tournament.name }}</div>
-                        <div class="text-muted small">Starts {{ tournament.date }}</div>
-                    </div>
-                    <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
-                        <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post" style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-volt" style="width: auto; margin: 0;">Accept</button>
-                        </form>
-                        <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post" style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-danger" style="width: auto; margin: 0;">Decline</button>
-                        </form>
-                    </div>
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        <div class="hero-stats-card">
-            <button id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</button>
-            <div class="hero-left-panel">
-                 <img id="hero-profile-img" src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture-large">
-                 <div class="hero-name-and-edit">
-                    <h2 id="hero-username-text">{{ user.name if user.name else user.username }}</h2>
-                 </div>
-            </div>
-            <div class="hero-right-panel">
-                <div id="vanity-stats-container" class="vanity-stats-container">
-                    <div class="vanity-stat">
-                        <div class="stat-value">{{ stats.total_games }}</div>
-                        <div class="stat-label text-muted">Total Matches</div>
-                    </div>
-                    <div class="vanity-stat">
-                        <div class="stat-value">{{ stats.win_rate | round | int }}%</div>
-                        <div class="stat-label text-muted">Win %</div>
-                    </div>
-                    <div class="vanity-stat">
-                        {# Resolved Conflict: Combine HEAD variable logic with Main's color coding #}
-                        <div class="stat-value {{ 'text-volt' if stats.streak_type == 'W' else 'text-danger' if stats.streak_type == 'L' else '' }}">
-                            {{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}
-                        </div>
-                        <div class="stat-label text-muted">Current Streak</div>
-                    </div>
-                </div>
-                <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
-            </div>
+<div id="dashboard-content">
+    {# Section: Tournament Invites (Top Priority Alert Banner) #}
+    {% if pending_tournament_invites %}
+    {% for tournament in pending_tournament_invites %}
+    <div class="game-card tournament-invite-card"
+        style="margin-bottom: 20px; border-left: 5px solid var(--accent-color);">
+        <div style="flex: 2;">
+            <div style="font-weight: 600; font-size: 1.1rem; color: var(--accent-color);">🏆 You've been invited!</div>
+            <div style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">{{ tournament.name }}</div>
+            <div class="text-muted small">Starts {{ tournament.date }}</div>
         </div>
-
-        <div class="dashboard-columns">
-            {# Left Column: Recent Activity #}
-            <div class="dashboard-column-left">
-                <div class="card">
-                    <div class="header-with-button">
-                        <h3>Recent Activity</h3>
-                    </div>
-                    <div id="latest-games-feed">
-                        {% for match in matches %}
-                            <div class="game-card {{ 'game-won' if match.user_result == 'win' else 'game-lost' }}">
-                                <div class="game-date">
-                                    {% if match.date and match.date != 'N/A' %}
-                                        {{ match.date if match.date is string else match.date.strftime('%b %d, %Y') }}
-                                    {% else %}
-                                        Date N/A
-                                    {% endif %}
-                                </div>
-                                <div class="game-opponent">
-                                    {% if match.match_type == 'doubles' %}
-                                        {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
-                                        {% if in_team1 %}
-                                            {% set partner = match.player1[1] if match.player1[0].id == user.uid else match.player1[0] %}
-                                            {% set opponent_name = match.team2_name %}
-                                        {% else %}
-                                            {% set partner = match.player2[1] if match.player2[0].id == user.uid else match.player2[0] %}
-                                            {% set opponent_name = match.team1_name %}
-                                        {% endif %}
-                                        (You & {{ partner.username }}) vs {{ opponent_name }}
-                                    {% else %}
-                                        {% set is_p1 = match.player1.id == user.uid %}
-                                        {% set opponent = match.player2 if is_p1 else match.player1 %}
-                                        You vs {{ opponent.username }}
-                                    {% endif %}
-                                </div>
-                                <div class="game-score">
-                                    {{ match.player1_score }} - {{ match.player2_score }}
-                                    {% if match.tournament_name %}
-                                        <div class="badge badge-tournament">🏆 {{ match.tournament_name }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% else %}
-                            <p>No recent games to display.</p>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            {# Right Column: Competition Stack #}
-            <div class="dashboard-column-right">
-                <div class="competition-stack">
-                    {# My Groups Section #}
-                    <div class="card" style="padding: 16px;">
-                        <h3 style="margin-top: 0; margin-bottom: 16px;">My Groups</h3>
-                        {% for ranking in group_rankings %}
-                            <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}" class="ranking-card">
-                                <div class="ranking-card-top">
-                                    <span class="ranking-group-name">{{ ranking.group_name }}</span>
-                                    <span class="rank-badge-small">#{{ ranking.rank or '?' }}</span>
-                                </div>
-                                <div class="ranking-details">
-                                    {% if ranking.rank == 1 %}
-                                        Reigning Champion 👑
-                                    {% elif ranking.rank and ranking.rank > 1 %}
-                                        <span class="overtake-value">{{ "%.1f"|format(ranking.points_to_overtake) }}</span> pts to overtake <strong>{{ ranking.player_above }}</strong>
-                                    {% else %}
-                                        No rank yet
-                                    {% endif %}
-                                </div>
-                                <div class="form-dots-row">
-                                    {% for result in ranking.form %}
-                                        <span class="form-dot-small {{ result }}"></span>
-                                    {% endfor %}
-                                </div>
-                            </a>
-                        {% else %}
-                            <p class="text-muted">You are not a member of any groups.</p>
-                        {% endfor %}
-                    </div>
-
-                    {# Social Section #}
-                    <div class="card" style="padding: 16px;">
-                        <h3 style="margin-top: 0; margin-bottom: 16px;">Social</h3>
-                        {% if requests %}
-                            <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Friend Requests</h4>
-                            <div class="table-container" style="box-shadow: none; border: 1px solid var(--border-color); margin-bottom: 16px; border-radius: 4px;">
-                                <table class="table" style="margin-top: 0;">
-                                    <tbody>
-                                        {% for request in requests %}
-                                            <tr>
-                                                <td style="padding: 8px;">
-                                                    <a href="{{ url_for('user.view_user', user_id=request.id) }}" style="font-size: 0.85rem;">{{ request.username }}</a>
-                                                </td>
-                                                <td style="padding: 8px; text-align: right;">
-                                                    <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
-                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                        <button type="submit" class="btn btn-volt btn-sm" style="padding: 4px 8px; font-size: 0.75rem; width: auto; text-transform: none;">Accept</button>
-                                                    </form>
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% endif %}
-
-                        <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Your Friends</h4>
-                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                            {% for friend in friends[:10] %}
-                                <a href="{{ url_for('user.view_user', user_id=friend.id) }}" title="{{ friend.username }}">
-                                    <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="profile-picture-thumbnail">
-                                </a>
-                            {% else %}
-                                <p class="text-muted small">No friends yet.</p>
-                            {% endfor %}
-                        </div>
-                        <a href="{{ url_for('user.view_community') }}" class="btn btn-sm btn-outline-primary" style="width: 100%; margin-top: 12px; text-transform: none;">Community Hub</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {# Hidden Profile Edit Section #}
-        <div id="profile-edit-section" class="collapsible-section card" style="display: none; margin-top: 24px;">
-            <h3>Profile Information</h3>
-            <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data" class="profile-form">
-                {{ form.hidden_tag() }}
-                <div class="profile-header">
-                    <img src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture-large" id="profile-picture-img">
-                    <div class="form-group">
-                        {{ form.profile_picture(class="form-control", accept="image/*") }}
-                    </div>
-                </div>
-                <h4>@{{ user.username }}</h4>
-                <p><strong>Email:</strong> {{ user.email }}</p>
-
-                <div class="form-group">
-                    {{ form.dupr_rating.label }}
-                    {{ form.dupr_rating(class="form-control") }}
-                </div>
-
-                <div class="form-group">
-                    {{ form.dark_mode.label }}
-                    <label class="switch">
-                        {{ form.dark_mode() }}
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-
-                <a href="{{ url_for('user.edit_profile') }}" class="btn btn-secondary">Edit Credentials</a>
-                {{ form.submit(class="btn btn-volt") }}
+        <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
+            <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post"
+                style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-volt" style="width: auto; margin: 0;">Accept</button>
+            </form>
+            <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post"
+                style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger" style="width: auto; margin: 0;">Decline</button>
             </form>
         </div>
     </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="hero-stats-card">
+        <button id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</button>
+        <div class="hero-left-panel">
+            <img id="hero-profile-img" src="{{ user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl">
+            <div class="hero-name-and-edit">
+                <h2 id="hero-username-text">{{ user.name if user.name else user.username }}</h2>
+            </div>
+        </div>
+        <div class="hero-right-panel">
+            <div id="vanity-stats-container" class="vanity-stats-container">
+                <div class="vanity-stat">
+                    <div class="stat-value">{{ stats.total_games }}</div>
+                    <div class="stat-label text-muted">Total Matches</div>
+                </div>
+                <div class="vanity-stat">
+                    <div class="stat-value">{{ stats.win_rate | round | int }}%</div>
+                    <div class="stat-label text-muted">Win %</div>
+                </div>
+                <div class="vanity-stat">
+                    {# Resolved Conflict: Combine HEAD variable logic with Main's color coding #}
+                    <div
+                        class="stat-value {{ 'text-volt' if stats.streak_type == 'W' else 'text-danger' if stats.streak_type == 'L' else '' }}">
+                        {{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}
+                    </div>
+                    <div class="stat-label text-muted">Current Streak</div>
+                </div>
+            </div>
+            <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
+        </div>
+    </div>
+
+    <div class="dashboard-columns">
+        {# Left Column: Recent Activity #}
+        <div class="dashboard-column-left">
+            <div class="card">
+                <div class="header-with-button">
+                    <h3>Recent Activity</h3>
+                </div>
+                <div id="latest-games-feed">
+                    {% for match in matches %}
+                    <div class="game-card {{ 'game-won' if match.user_result == 'win' else 'game-lost' }}">
+                        <div class="game-date">
+                            {% if match.date and match.date != 'N/A' %}
+                            {{ match.date if match.date is string else match.date.strftime('%b %d, %Y') }}
+                            {% else %}
+                            Date N/A
+                            {% endif %}
+                        </div>
+                        <div class="game-opponent">
+                            {% if match.match_type == 'doubles' %}
+                            {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
+                            {% if in_team1 %}
+                            {% set partner = match.player1[1] if match.player1[0].id == user.uid else match.player1[0]
+                            %}
+                            {% set opponent_name = match.team2_name %}
+                            {% else %}
+                            {% set partner = match.player2[1] if match.player2[0].id == user.uid else match.player2[0]
+                            %}
+                            {% set opponent_name = match.team1_name %}
+                            {% endif %}
+                            (You & {{ partner.username }}) vs {{ opponent_name }}
+                            {% else %}
+                            {% set is_p1 = match.player1.id == user.uid %}
+                            {% set opponent = match.player2 if is_p1 else match.player1 %}
+                            You vs {{ opponent.username }}
+                            {% endif %}
+                        </div>
+                        <div class="game-score">
+                            {{ match.player1_score }} - {{ match.player2_score }}
+                            {% if match.tournament_name %}
+                            <div class="badge badge-tournament">🏆 {{ match.tournament_name }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <p>No recent games to display.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {# Right Column: Competition Stack #}
+        <div class="dashboard-column-right">
+            <div class="competition-stack">
+                {# My Groups Section #}
+                <div class="card" style="padding: 16px;">
+                    <h3 style="margin-top: 0; margin-bottom: 16px;">My Groups</h3>
+                    {% for ranking in group_rankings %}
+                    <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}" class="ranking-card">
+                        <div class="ranking-card-top">
+                            <span class="ranking-group-name">{{ ranking.group_name }}</span>
+                            <span class="rank-badge-small">#{{ ranking.rank or '?' }}</span>
+                        </div>
+                        <div class="ranking-details">
+                            {% if ranking.rank == 1 %}
+                            Reigning Champion 👑
+                            {% elif ranking.rank and ranking.rank > 1 %}
+                            <span class="overtake-value">{{ "%.1f"|format(ranking.points_to_overtake) }}</span> pts to
+                            overtake <strong>{{ ranking.player_above }}</strong>
+                            {% else %}
+                            No rank yet
+                            {% endif %}
+                        </div>
+                        <div class="form-dots-row">
+                            {% for result in ranking.form %}
+                            <span class="form-dot-small {{ result }}"></span>
+                            {% endfor %}
+                        </div>
+                    </a>
+                    {% else %}
+                    <p class="text-muted">You are not a member of any groups.</p>
+                    {% endfor %}
+                </div>
+
+                {# Social Section #}
+                <div class="card" style="padding: 16px;">
+                    <h3 style="margin-top: 0; margin-bottom: 16px;">Social</h3>
+                    {% if requests %}
+                    <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Friend Requests</h4>
+                    <div class="table-container"
+                        style="box-shadow: none; border: 1px solid var(--border-color); margin-bottom: 16px; border-radius: 4px;">
+                        <table class="table" style="margin-top: 0;">
+                            <tbody>
+                                {% for request in requests %}
+                                <tr>
+                                    <td style="padding: 8px;">
+                                        <a href="{{ url_for('user.view_user', user_id=request.id) }}"
+                                            style="font-size: 0.85rem;">{{ request.username }}</a>
+                                    </td>
+                                    <td style="padding: 8px; text-align: right;">
+                                        <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}"
+                                            method="post" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-volt btn-sm"
+                                                style="padding: 4px 8px; font-size: 0.75rem; width: auto; text-transform: none;">Accept</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+
+                    <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Your Friends</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        {% for friend in friends[:10] %}
+                        <a href="{{ url_for('user.view_user', user_id=friend.id) }}" title="{{ friend.username }}">
+                            <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="avatar avatar-md">
+                        </a>
+                        {% else %}
+                        <p class="text-muted small">No friends yet.</p>
+                        {% endfor %}
+                    </div>
+                    <a href="{{ url_for('user.view_community') }}" class="btn btn-sm btn-outline-primary"
+                        style="width: 100%; margin-top: 12px; text-transform: none;">Community Hub</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Hidden Profile Edit Section #}
+    <div id="profile-edit-section" class="collapsible-section card" style="display: none; margin-top: 24px;">
+        <h3>Profile Information</h3>
+        <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data" class="profile-form">
+            {{ form.hidden_tag() }}
+            <div class="profile-header">
+                <img src="{{ user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl"
+                    id="profile-picture-img">
+                <div class="form-group">
+                    {{ form.profile_picture(class="form-control", accept="image/*") }}
+                </div>
+            </div>
+            <h4>@{{ user.username }}</h4>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+
+            <div class="form-group">
+                {{ form.dupr_rating.label }}
+                {{ form.dupr_rating(class="form-control") }}
+            </div>
+
+            <div class="form-group">
+                {{ form.dark_mode.label }}
+                <label class="switch">
+                    {{ form.dark_mode() }}
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <a href="{{ url_for('user.edit_profile') }}" class="btn btn-secondary">Edit Credentials</a>
+            {{ form.submit(class="btn btn-volt") }}
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const profilePictureInput = document.querySelector('input[name="profile_picture"]');
-    const profilePictureImg = document.getElementById('profile-picture-img');
+    document.addEventListener('DOMContentLoaded', function () {
+        const profilePictureInput = document.querySelector('input[name="profile_picture"]');
+        const profilePictureImg = document.getElementById('profile-picture-img');
 
-    if (profilePictureInput) {
-        profilePictureInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    profilePictureImg.src = e.target.result;
+        if (profilePictureInput) {
+            profilePictureInput.addEventListener('change', function () {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        profilePictureImg.src = e.target.result;
+                    }
+                    reader.readAsDataURL(this.files[0]);
                 }
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
-    }
+            });
+        }
 
-    const editProfileToggle = document.getElementById('edit-profile-toggle');
-    const profileEditSection = document.getElementById('profile-edit-section');
+        const editProfileToggle = document.getElementById('edit-profile-toggle');
+        const profileEditSection = document.getElementById('profile-edit-section');
 
-    if (editProfileToggle) {
-        editProfileToggle.addEventListener('click', function() {
-            const isHidden = profileEditSection.style.display === 'none';
-            profileEditSection.style.display = isHidden ? 'block' : 'none';
-        });
-    }
-});
+        if (editProfileToggle) {
+            editProfileToggle.addEventListener('click', function () {
+                const isHidden = profileEditSection.style.display === 'none';
+                profileEditSection.style.display = isHidden ? 'block' : 'none';
+            });
+        }
+    });
 </script>
 {% endblock %}

@@ -6,54 +6,67 @@
         <div class="dashboard-column-right" style="flex: 1; min-width: 300px;">
             <div class="card text-center mb-4 border-0 shadow-sm">
                 <div class="card-body">
-                    <img src="{{ profile_user | avatar_url }}" alt="Profile Picture" class="profile-picture-large mb-3" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                    <img src="{{ profile_user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl mb-3"
+                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                     <h2 class="text-truncate px-2">{{ profile_user | display_name }}</h2>
                     <p class="text-muted">@{{ profile_user.username }}</p>
 
                     <div class="d-flex justify-content-center align-items-center mb-3">
                         <div class="mr-3 text-center">
-                            {% set dupr = profile_user.dupr_rating if profile_user.dupr_rating is not none else profile_user.duprRating %}
+                            {% set dupr = profile_user.dupr_rating if profile_user.dupr_rating is not none else
+                            profile_user.duprRating %}
                             <div class="h4 mb-0 font-weight-bold">
                                 {{ dupr if dupr is not none else 'Unrated' }}
                                 {% if profile_user.dupr_id %}
-                                    <a href="{{ dupr_url_base }}{{ profile_user.dupr_id }}" target="_blank" class="badge badge-primary ml-1" style="font-size: 0.7rem; vertical-align: middle;">View on DUPR</a>
+                                <a href="{{ dupr_url_base }}{{ profile_user.dupr_id }}" target="_blank"
+                                    class="badge badge-primary ml-1"
+                                    style="font-size: 0.7rem; vertical-align: middle;">View on DUPR</a>
                                 {% endif %}
                             </div>
                             <small class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">
                                 DUPR Rating
                                 {% if not profile_user.dupr_id %}
-                                    <br><a href="{{ url_for('user.edit_profile') }}" class="small">Add DUPR ID</a>
+                                <br><a href="{{ url_for('user.edit_profile') }}" class="small">Add DUPR ID</a>
                                 {% endif %}
                             </small>
                         </div>
                         <div class="text-left">
-                            <span class="badge badge-volt d-block mb-1" style="font-size: 0.75rem;">Win Rate: {{ "%.0f"|format(win_rate) }}%</span>
-                            <span class="badge {{ 'badge-volt' if streak_type == 'W' else 'badge-danger' if streak_type == 'L' else 'badge-info' }} d-block" style="font-size: 0.75rem;">Streak: {{ current_streak }}{{ streak_type if total_games > 0 else '' }}</span>
+                            <span class="badge badge-volt d-block mb-1" style="font-size: 0.75rem;">Win Rate: {{
+                                "%.0f"|format(win_rate) }}%</span>
+                            <span
+                                class="badge {{ 'badge-volt' if streak_type == 'W' else 'badge-danger' if streak_type == 'L' else 'badge-info' }} d-block"
+                                style="font-size: 0.75rem;">Streak: {{ current_streak }}{{ streak_type if total_games >
+                                0 else '' }}</span>
                         </div>
                     </div>
 
                     <div class="px-2">
                         {% if is_friend %}
-                            <a href="{{ url_for('match.record_match', opponent_id=profile_user.id) }}" class="btn btn-volt btn-block mb-2">Record Match</a>
+                        <a href="{{ url_for('match.record_match', opponent_id=profile_user.id) }}"
+                            class="btn btn-volt btn-block mb-2">Record Match</a>
                         {% endif %}
 
                         {% if not is_friend and not friend_request_sent and user.id != profile_user.id %}
-                            <button class="btn btn-volt btn-block mb-2" id="addFriendBtn" data-url="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}" data-csrf="{{ csrf_token() }}">Add Friend</button>
+                        <button class="btn btn-volt btn-block mb-2" id="addFriendBtn"
+                            data-url="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}"
+                            data-csrf="{{ csrf_token() }}">Add Friend</button>
                         {% elif friend_request_sent %}
-                            <button class="btn btn-secondary btn-block mb-2" disabled>Friend Request Sent</button>
+                        <button class="btn btn-secondary btn-block mb-2" disabled>Friend Request Sent</button>
                         {% endif %}
                     </div>
 
                     {% if h2h_stats %}
-                        <div class="mt-4 pt-3 border-top">
-                            <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">Vs You</h6>
-                            <p class="h4 mb-0 font-weight-bold">
-                                {{ h2h_stats.wins }}-{{ h2h_stats.losses }}
-                            </p>
-                            <small class="{% if h2h_stats.point_diff > 0 %}text-volt{% elif h2h_stats.point_diff < 0 %}text-danger{% else %}text-muted{% endif %} font-weight-bold">
-                                ({% if h2h_stats.point_diff > 0 %}+{% endif %}{{ h2h_stats.point_diff }} points)
-                            </small>
-                        </div>
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">Vs
+                            You</h6>
+                        <p class="h4 mb-0 font-weight-bold">
+                            {{ h2h_stats.wins }}-{{ h2h_stats.losses }}
+                        </p>
+                        <small
+                            class="{% if h2h_stats.point_diff > 0 %}text-volt{% elif h2h_stats.point_diff < 0 %}text-danger{% else %}text-muted{% endif %} font-weight-bold">
+                            ({% if h2h_stats.point_diff > 0 %}+{% endif %}{{ h2h_stats.point_diff }} points)
+                        </small>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -68,47 +81,52 @@
                         </div>
                         <div class="card-body">
                             {% if matches %}
-                                <div class="list-group list-group-flush">
-                                    {% for match in matches %}
-                                        <div class="list-group-item clickable-row px-0 py-3 border-bottom" data-href="{{ url_for('match.view_match_page', match_id=match.id) }}">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div class="text-truncate mr-2">
-                                                    <span class="badge {{ 'badge-volt' if match.user_result == 'win' else 'badge-danger' if match.user_result == 'loss' else 'badge-secondary' }} mr-2 text-center" style="width: 28px; height: 28px; line-height: 20px; border-radius: 50%;">
-                                                        {{ 'W' if match.user_result == 'win' else 'L' if match.user_result == 'loss' else 'D' }}
-                                                    </span>
-                                                    <span class="font-weight-bold">vs</span>
-                                                    <span class="ml-1">
-                                                        {% if match.match_type == 'doubles' %}
-                                                            {% if profile_user.id in match.player1|map(attribute='id') %}
-                                                                {{ match.team2_name }}
-                                                            {% else %}
-                                                                {{ match.team1_name }}
-                                                            {% endif %}
-                                                        {% else %}
-                                                            {% set opponent = match.player2 if match.player1.id == profile_user.id else match.player1 %}
-                                                            {{ opponent.username }}
-                                                        {% endif %}
-                                                    </span>
-                                                </div>
-                                                <div class="text-muted small flex-shrink-0">
-                                                    {% if match.date and match.date != 'N/A' %}
-                                                        {% if match.date is string %}
-                                                            {{ match.date }}
-                                                        {% else %}
-                                                            {{ match.date.strftime('%Y-%m-%d') }}
-                                                        {% endif %}
-                                                    {% else %}
-                                                        N/A
-                                                    {% endif %}
-                                                </div>
-                                            </div>
+                            <div class="list-group list-group-flush">
+                                {% for match in matches %}
+                                <div class="list-group-item clickable-row px-0 py-3 border-bottom"
+                                    data-href="{{ url_for('match.view_match_page', match_id=match.id) }}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="text-truncate mr-2">
+                                            <span
+                                                class="badge {{ 'badge-volt' if match.user_result == 'win' else 'badge-danger' if match.user_result == 'loss' else 'badge-secondary' }} mr-2 text-center"
+                                                style="width: 28px; height: 28px; line-height: 20px; border-radius: 50%;">
+                                                {{ 'W' if match.user_result == 'win' else 'L' if match.user_result ==
+                                                'loss' else 'D' }}
+                                            </span>
+                                            <span class="font-weight-bold">vs</span>
+                                            <span class="ml-1">
+                                                {% if match.match_type == 'doubles' %}
+                                                {% if profile_user.id in match.player1|map(attribute='id') %}
+                                                {{ match.team2_name }}
+                                                {% else %}
+                                                {{ match.team1_name }}
+                                                {% endif %}
+                                                {% else %}
+                                                {% set opponent = match.player2 if match.player1.id == profile_user.id
+                                                else match.player1 %}
+                                                {{ opponent.username }}
+                                                {% endif %}
+                                            </span>
                                         </div>
-                                    {% endfor %}
+                                        <div class="text-muted small flex-shrink-0">
+                                            {% if match.date and match.date != 'N/A' %}
+                                            {% if match.date is string %}
+                                            {{ match.date }}
+                                            {% else %}
+                                            {{ match.date.strftime('%Y-%m-%d') }}
+                                            {% endif %}
+                                            {% else %}
+                                            N/A
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </div>
+                                {% endfor %}
+                            </div>
                             {% else %}
-                                <div class="py-5 text-center text-muted">
-                                    <p class="mb-0">No matches recorded yet. Get out there and play!</p>
-                                </div>
+                            <div class="py-5 text-center text-muted">
+                                <p class="mb-0">No matches recorded yet. Get out there and play!</p>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
@@ -121,21 +139,24 @@
                         </div>
                         <div class="card-body p-0">
                             {% if friends %}
-                                <div class="list-group list-group-flush">
-                                    {% for friend in friends[:5] %}
-                                        <a href="{{ url_for('user.view_user', user_id=friend.id) }}" class="list-group-item list-group-item-action border-0 px-4 py-2 d-flex align-items-center">
-                                            <img src="{{ friend | avatar_url }}" alt="" class="profile-picture-thumbnail mr-3">
-                                            <div class="text-truncate font-weight-medium" style="font-size: 0.9rem;">{{ friend | display_name }}</div>
-                                        </a>
-                                    {% endfor %}
-                                </div>
-                                <div class="p-3">
-                                    <a href="{{ url_for('user.friend_requests') }}" class="btn btn-sm btn-outline-primary btn-block py-2">View All</a>
-                                </div>
+                            <div class="list-group list-group-flush">
+                                {% for friend in friends[:5] %}
+                                <a href="{{ url_for('user.view_user', user_id=friend.id) }}"
+                                    class="list-group-item list-group-item-action border-0 px-4 py-2 d-flex align-items-center">
+                                    <img src="{{ friend | avatar_url }}" alt="" class="avatar avatar-md mr-3">
+                                    <div class="text-truncate font-weight-medium" style="font-size: 0.9rem;">{{ friend |
+                                        display_name }}</div>
+                                </a>
+                                {% endfor %}
+                            </div>
+                            <div class="p-3">
+                                <a href="{{ url_for('user.friend_requests') }}"
+                                    class="btn btn-sm btn-outline-primary btn-block py-2">View All</a>
+                            </div>
                             {% else %}
-                                <div class="p-4 text-center text-muted small">
-                                    No friends yet.
-                                </div>
+                            <div class="p-4 text-center text-muted small">
+                                No friends yet.
+                            </div>
                             {% endif %}
                         </div>
                     </div>
@@ -163,21 +184,21 @@
                     },
                     body: JSON.stringify({})
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        addFriendBtn.textContent = "Friend Request Sent";
-                        addFriendBtn.disabled = true;
-                        addFriendBtn.style.backgroundColor = 'var(--text-secondary-color)';
-                        addFriendBtn.style.borderColor = 'var(--text-secondary-color)';
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    alert("An error occurred while sending the friend request.");
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            addFriendBtn.textContent = "Friend Request Sent";
+                            addFriendBtn.disabled = true;
+                            addFriendBtn.style.backgroundColor = 'var(--text-secondary-color)';
+                            addFriendBtn.style.borderColor = 'var(--text-secondary-color)';
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                        alert("An error occurred while sending the friend request.");
+                    });
             });
         }
     });

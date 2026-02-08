@@ -1,109 +1,113 @@
 {% extends "layout.html" %}
 {% block title %}Find Players{% endblock %}
 {% block content %}
-    <div class="page-header">
-        <h1>Find Players</h1>
+<div class="page-header">
+    <h1>Find Players</h1>
+</div>
+<form method="get" action="{{ url_for('user.users') }}">
+    <div class="form-group">
+        <input type="text" name="search" placeholder="Search by username or name" value="{{ search_term }}">
     </div>
-    <form method="get" action="{{ url_for('user.users') }}">
-        <div class="form-group">
-            <input type="text" name="search" placeholder="Search by username or name" value="{{ search_term }}">
-        </div>
-        <input type="submit" value="Search" class="btn">
-    </form>
+    <input type="submit" value="Search" class="btn">
+</form>
 
-    <h3 style="margin-top: 30px;">Friends of Friends</h3>
-    <div class="table-container">
-        <table class="table responsive-table">
-            <thead>
-                <tr>
-                    <th>Username</th>
-                    <th>Name</th>
-                    <th>DUPR Rating</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in fof %}
-                    <tr>
-                        <td data-label="Username">{{ user.username }}</td>
-                        <td data-label="Name">{{ user.name }}</td>
-                        <td data-label="DUPR Rating">{{ user.dupr_rating }}</td>
-                        <td data-label="Actions" class="actions-cell">
-                            <a href="{{ url_for('user.send_friend_request', friend_id=user.id) }}" class="btn add-friend-btn">Add Friend</a>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+<h3 style="margin-top: 30px;">Friends of Friends</h3>
+<div class="table-container">
+    <table class="table-standard responsive-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Name</th>
+                <th>DUPR Rating</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in fof %}
+            <tr>
+                <td data-label="Username">{{ user.username }}</td>
+                <td data-label="Name">{{ user.name }}</td>
+                <td data-label="DUPR Rating">{{ user.dupr_rating }}</td>
+                <td data-label="Actions" class="actions-cell">
+                    <a href="{{ url_for('user.send_friend_request', friend_id=user.id) }}"
+                        class="btn add-friend-btn">Add Friend</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-    <h3 style="margin-top: 30px;">All Users</h3>
-    <div class="table-container">
-        <table class="table responsive-table">
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>Username</th>
-                    <th>Name</th>
-                    <th>DUPR Rating</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user, sent_status, received_status in pagination.items %}
-                    <tr>
-                        <td data-label="Avatar">
-                            <img src="{{ user | avatar_url }}"
-                                 alt="Profile Picture" class="profile-picture-thumbnail avatar" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                        </td>
-                        <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=user.id) }}">{{ user.username }}</a></td>
-                        <td data-label="Name">{{ user.name }}</td>
-                        <td data-label="DUPR Rating">{{ user.duprRating }}</td>
-                        <td data-label="Actions" class="actions-cell">
-                            {% if sent_status == 'accepted' or received_status == 'accepted' %}
-                                <button class="btn" disabled>Friends</button>
-                            {% elif sent_status == 'pending' %}
-                                <button class="btn" disabled>Request Sent</button>
-                            {% elif received_status == 'pending' %}
-                                <a href="{{ url_for('user.friends') }}" class="btn btn-warning">Review Request</a>
-                            {% else %}
-                                <form method="post" action="{{ url_for('user.send_friend_request', friend_id=user.id) }}" style="display: inline;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn add-friend-btn">Add Friend</button>
-                                </form>
-                            {% endif %}
+<h3 style="margin-top: 30px;">All Users</h3>
+<div class="table-container">
+    <table class="table-standard responsive-table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Username</th>
+                <th>Name</th>
+                <th>DUPR Rating</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user, sent_status, received_status in pagination.items %}
+            <tr>
+                <td data-label="Avatar">
+                    <img src="{{ user | avatar_url }}" alt="Profile Picture" class="avatar avatar-md"
+                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                </td>
+                <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=user.id) }}">{{ user.username
+                        }}</a></td>
+                <td data-label="Name">{{ user.name }}</td>
+                <td data-label="DUPR Rating">{{ user.duprRating }}</td>
+                <td data-label="Actions" class="actions-cell">
+                    {% if sent_status == 'accepted' or received_status == 'accepted' %}
+                    <button class="btn" disabled>Friends</button>
+                    {% elif sent_status == 'pending' %}
+                    <button class="btn" disabled>Request Sent</button>
+                    {% elif received_status == 'pending' %}
+                    <a href="{{ url_for('user.friends') }}" class="btn btn-warning">Review Request</a>
+                    {% else %}
+                    <form method="post" action="{{ url_for('user.send_friend_request', friend_id=user.id) }}"
+                        style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn add-friend-btn">Add Friend</button>
+                    </form>
+                    {% endif %}
 
-                            {% if session['is_admin'] %}
-                                <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
-                                <a href="{{ url_for('admin.promote_user', user_id=user.id) }}" class="btn btn-warning">Promote</a>
-                                {% if not user.email_verified %}
-                                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-success">Verify</button>
-                                    </form>
-                                {% endif %}
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="5">
-                            {% if search_term %}
-                                No users found for '{{ search_term }}'.
-                            {% else %}
-                                No users found.
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                    {% if session['is_admin'] %}
+                    <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
+                    <a href="{{ url_for('admin.promote_user', user_id=user.id) }}" class="btn btn-warning">Promote</a>
+                    {% if not user.email_verified %}
+                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post"
+                        style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-success">Verify</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5">
+                    {% if search_term %}
+                    No users found for '{{ search_term }}'.
+                    {% else %}
+                    No users found.
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-    {% if pagination.pages > 1 %}
-        {% from "_pagination.html" import render_pagination %}
-        {{ render_pagination(pagination, 'user.users', query_params={'search': search_term}) }}
-    {% endif %}
+{% if pagination.pages > 1 %}
+{% from "_pagination.html" import render_pagination %}
+{{ render_pagination(pagination, 'user.users', query_params={'search': search_term}) }}
+{% endif %}
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const addFriendBtns = document.querySelectorAll(".add-friend-btn");
@@ -133,19 +137,19 @@
                     },
                     body: JSON.stringify({})
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        btn.textContent = "Friend Request Sent";
-                        btn.disabled = true;
-                    } else {
-                        alert(data.message || "An error occurred.");
-                    }
-                })
-                .catch(error => {
-                    console.error("Error:", error);
-                    alert("An error occurred while sending the friend request.");
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            btn.textContent = "Friend Request Sent";
+                            btn.disabled = true;
+                        } else {
+                            alert(data.message || "An error occurred.");
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                        alert("An error occurred while sending the friend request.");
+                    });
             });
         });
     });

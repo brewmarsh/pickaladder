@@ -4,22 +4,31 @@
 /* Basic styling & Variables */
 :root {
     /* Brand Colors (Court & Volt) */
-    --primary-color: #2563EB;       /* Royal Blue (Primary Buttons/Nav) */
+    --primary-color: #2563EB;
+    /* Royal Blue (Primary Buttons/Nav) */
     --primary-hover: #1D4ED8;
-    --accent-color: #84CC16;        /* Electric Lime (Badges/Call-to-Action) */
+    --accent-color: #84CC16;
+    /* Electric Lime (Badges/Call-to-Action) */
     --accent-hover: #65A30D;
 
     /* Functional Colors */
-    --success-color: #10B981;       /* Emerald (Wins) */
-    --danger-color: #EF4444;        /* Red (Losses/Delete) */
-    --warning-color: #F59E0B;       /* Amber (Pending) */
+    --success-color: #10B981;
+    /* Emerald (Wins) */
+    --danger-color: #EF4444;
+    /* Red (Losses/Delete) */
+    --warning-color: #F59E0B;
+    /* Amber (Pending) */
 
     /* Light Mode Basics */
-    --bg-color: #F3F4F6;            /* Cool Gray 100 */
+    --bg-color: #F3F4F6;
+    /* Cool Gray 100 */
     --card-bg: #FFFFFF;
-    --text-primary: #111827;        /* Gray 900 */
-    --text-secondary: #6B7280;      /* Gray 500 */
-    --border-color: #E5E7EB;        /* Gray 200 */
+    --text-primary: #111827;
+    /* Gray 900 */
+    --text-secondary: #6B7280;
+    /* Gray 500 */
+    --border-color: #E5E7EB;
+    /* Gray 200 */
     --text-on-primary: #FFFFFF;
 
     /* Typography */
@@ -27,7 +36,7 @@
     --font-score: 'Oswald', sans-serif;
 
     /* Structure */
-    --box-shadow: 0 1px 2px 0 rgba(60,64,67,0.302), 0 1px 3px 1px rgba(60,64,67,0.149);
+    --box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.302), 0 1px 3px 1px rgba(60, 64, 67, 0.149);
     --border-radius: 8px;
 }
 
@@ -130,9 +139,11 @@ body {
 }
 
 /* Active Nav State */
-.navbar-menu a.active, .navbar-menu a:hover {
+.navbar-menu a.active,
+.navbar-menu a:hover {
     font-weight: 500;
 }
+
 .navbar-menu a.active::after {
     content: '';
     position: absolute;
@@ -140,7 +151,8 @@ body {
     height: 3px;
     bottom: 0;
     left: 0;
-    background-color: var(--accent-color); /* Volt underline */
+    background-color: var(--accent-color);
+    /* Volt underline */
 }
 
 .navbar-user-controls {
@@ -211,7 +223,9 @@ select {
     color: var(--text-primary);
 }
 
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
@@ -240,6 +254,7 @@ input:focus, textarea:focus, select:focus {
     background-color: var(--primary-color);
     color: var(--text-on-primary);
 }
+
 .btn-primary:hover {
     background-color: var(--primary-hover);
 }
@@ -247,21 +262,34 @@ input:focus, textarea:focus, select:focus {
 /* The "Volt" Button (High Value Actions) */
 .btn-volt {
     background-color: var(--accent-color);
-    color: #111827 !important; /* Dark Navy for contrast */
+    color: #111827 !important;
+    /* Dark Navy for contrast */
     font-weight: 700;
     border: none;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
 }
+
 .btn-volt:hover {
     background-color: var(--accent-hover);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     transform: translateY(-1px);
 }
 
-.btn-danger { background-color: var(--danger-color); color: white; }
-.btn-warning { background-color: var(--warning-color); color: #111827; }
-.btn-secondary { background-color: var(--text-secondary); color: white; }
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn-warning {
+    background-color: var(--warning-color);
+    color: #111827;
+}
+
+.btn-secondary {
+    background-color: var(--text-secondary);
+    color: white;
+}
 
 /* Tables */
 .table-container {
@@ -277,7 +305,8 @@ input:focus, textarea:focus, select:focus {
     margin-top: 20px;
 }
 
-.table th, .table td {
+.table th,
+.table td {
     padding: 16px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
@@ -347,7 +376,11 @@ input:focus, textarea:focus, select:focus {
     align-items: flex-start;
 }
 
-.dashboard-column-left { flex: 2; min-width: 0; }
+.dashboard-column-left {
+    flex: 2;
+    min-width: 0;
+}
+
 .dashboard-column-right {
     flex: 1;
     min-width: 0;
@@ -370,29 +403,58 @@ input:focus, textarea:focus, select:focus {
 /* Badges */
 .badge {
     padding: 4px 8px;
-    border-radius: 50rem; /* Pill shape */
+    border-radius: 50rem;
+    /* Pill shape */
     font-size: 0.8em;
     font-weight: 500;
     display: inline-block;
 }
 
-.badge-success { background-color: var(--success-color); color: white; }
-.badge-danger { background-color: var(--danger-color); color: white; }
-.badge-info { background-color: var(--primary-color); color: white; }
-.badge-secondary { background-color: var(--text-secondary); color: white; }
+.badge-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.badge-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.badge-info {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.badge-secondary {
+    background-color: var(--text-secondary);
+    color: white;
+}
 
 /* The "Volt" Badge (High Visibility) */
 .badge-volt {
     background-color: var(--accent-color);
-    color: #111827; /* Dark Navy */
+    color: #111827;
+    /* Dark Navy */
     font-weight: 700;
 }
 
 /* Typography Utilities */
-.text-center { text-align: center; }
-.text-muted { color: var(--text-secondary); }
-.font-weight-bold { font-weight: bold !important; }
-.font-score { font-family: var(--font-score); letter-spacing: 1px; }
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: var(--text-secondary);
+}
+
+.font-weight-bold {
+    font-weight: bold !important;
+}
+
+.font-score {
+    font-family: var(--font-score);
+    letter-spacing: 1px;
+}
 
 /* Friends Grid */
 .friend-grid {
@@ -401,8 +463,18 @@ input:focus, textarea:focus, select:focus {
     grid-template-columns: repeat(2, 1fr);
     margin-top: 20px;
 }
-@media (min-width: 768px) { .friend-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 1200px) { .friend-grid { grid-template-columns: repeat(4, 1fr); } }
+
+@media (min-width: 768px) {
+    .friend-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1200px) {
+    .friend-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
 
 .friend-card {
     background-color: var(--card-bg);
@@ -415,10 +487,12 @@ input:focus, textarea:focus, select:focus {
     border: 1px solid var(--border-color);
     transition: transform 0.2s;
 }
+
 .friend-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
 .friend-avatar {
     width: 80px;
     height: 80px;
@@ -436,13 +510,23 @@ input:focus, textarea:focus, select:focus {
     border-radius: var(--border-radius);
     overflow: hidden;
 }
+
 .list-group-item {
     padding: 12px 20px;
     border-bottom: 1px solid var(--border-color);
 }
-.list-group-item:last-child { border-bottom: none; }
-.clickable-row { cursor: pointer; }
-.clickable-row:hover { background-color: var(--bg-color); }
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.clickable-row {
+    cursor: pointer;
+}
+
+.clickable-row:hover {
+    background-color: var(--bg-color);
+}
 
 /* Leaderboard */
 .leaderboard-row {
@@ -452,33 +536,101 @@ input:focus, textarea:focus, select:focus {
     padding: 10px 15px;
     border-bottom: 1px solid var(--border-color);
 }
-.rank-1 { color: #FFD700; }
-.rank-2 { color: #C0C0C0; }
-.rank-3 { color: #CD7F32; }
+
+.rank-1 {
+    color: #FFD700;
+}
+
+.rank-2 {
+    color: #C0C0C0;
+}
+
+.rank-3 {
+    color: #CD7F32;
+}
 
 /* Utilities */
-.d-flex { display: flex !important; }
-.justify-content-center { justify-content: center !important; }
-.justify-content-between { justify-content: space-between !important; }
-.align-items-center { align-items: center !important; }
-.text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.w-100 { width: 100% !important; }
-.mb-0 { margin-bottom: 0 !important; }
-.mb-2 { margin-bottom: 8px !important; }
-.mb-3 { margin-bottom: 16px !important; }
-.mb-4 { margin-bottom: 24px !important; }
-.mt-4 { margin-top: 24px !important; }
-.mr-2 { margin-right: 8px !important; }
-.mr-3 { margin-right: 16px !important; }
-.p-0 { padding: 0 !important; }
-.border-0 { border: 0 !important; }
-.shadow-sm { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; }
+.d-flex {
+    display: flex !important;
+}
+
+.justify-content-center {
+    justify-content: center !important;
+}
+
+.justify-content-between {
+    justify-content: space-between !important;
+}
+
+.align-items-center {
+    align-items: center !important;
+}
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.w-100 {
+    width: 100% !important;
+}
+
+.mb-0 {
+    margin-bottom: 0 !important;
+}
+
+.mb-2 {
+    margin-bottom: 8px !important;
+}
+
+.mb-3 {
+    margin-bottom: 16px !important;
+}
+
+.mb-4 {
+    margin-bottom: 24px !important;
+}
+
+.mt-4 {
+    margin-top: 24px !important;
+}
+
+.mr-2 {
+    margin-right: 8px !important;
+}
+
+.mr-3 {
+    margin-right: 16px !important;
+}
+
+.p-0 {
+    padding: 0 !important;
+}
+
+.border-0 {
+    border: 0 !important;
+}
+
+.shadow-sm {
+    box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075) !important;
+}
 
 /* Mobile Formatting */
 @media screen and (max-width: 768px) {
-    .dashboard-columns { flex-direction: column; }
-    .navbar-menu { display: none; } /* Assuming hamburger handles this */
-    .friend-card { padding: 16px; }
+    .dashboard-columns {
+        flex-direction: column;
+    }
+
+    .navbar-menu {
+        display: none;
+    }
+
+    /* Assuming hamburger handles this */
+    .friend-card {
+        padding: 16px;
+    }
+
     .leaderboard-row {
         display: flex;
         justify-content: space-between;
@@ -493,14 +645,16 @@ input:focus, textarea:focus, select:focus {
     z-index: 1050;
     min-width: 300px;
 }
+
 .toast {
     background-color: var(--card-bg);
     color: var(--text-primary);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     border-radius: 8px;
     overflow: hidden;
     margin-bottom: 10px;
 }
+
 .toast::before {
     content: '';
     position: absolute;
@@ -521,6 +675,7 @@ input:focus, textarea:focus, select:focus {
     background-color: #e9ecef;
     border-radius: var(--border-radius);
 }
+
 .progress-bar {
     display: flex;
     flex-direction: column;
@@ -535,14 +690,20 @@ input:focus, textarea:focus, select:focus {
 /* DARK MODE OVERRIDES */
 [data-theme="dark"] {
     /* Dark Mode Basics */
-    --bg-color: #0F172A;            /* Slate 900 */
-    --card-bg: #1E293B;             /* Slate 800 */
-    --text-primary: #F3F4F6;        /* Gray 100 */
-    --text-secondary: #94A3B8;      /* Slate 400 */
-    --border-color: #334155;        /* Slate 700 */
+    --bg-color: #0F172A;
+    /* Slate 900 */
+    --card-bg: #1E293B;
+    /* Slate 800 */
+    --text-primary: #F3F4F6;
+    /* Gray 100 */
+    --text-secondary: #94A3B8;
+    /* Slate 400 */
+    --border-color: #334155;
+    /* Slate 700 */
 
     /* Adjust Primary for Dark Mode (Slightly lighter to pop) */
-    --primary-color: #3B82F6;       /* Blue 500 */
+    --primary-color: #3B82F6;
+    /* Blue 500 */
     --primary-hover: #60A5FA;
 }
 
@@ -564,7 +725,8 @@ input:focus, textarea:focus, select:focus {
 }
 
 [data-theme="dark"] .table th {
-    background-color: #0F172A; /* Darker header for tables */
+    background-color: #0F172A;
+    /* Darker header for tables */
 }
 
 [data-theme="dark"] .nav-link.active,
@@ -574,7 +736,7 @@ input:focus, textarea:focus, select:focus {
 
 /* Dark Mode Glow Effects adapted from feature branch */
 [data-theme="dark"] .btn-volt {
-    box-shadow: 0 0 15px rgba(132, 204, 22, 0.4); 
+    box-shadow: 0 0 15px rgba(132, 204, 22, 0.4);
 }
 
 [data-theme="dark"] .btn-volt:hover {
@@ -583,7 +745,8 @@ input:focus, textarea:focus, select:focus {
 
 [data-theme="dark"] .text-volt,
 [data-theme="dark"] .badge-volt {
-    color: #bef264; /* Lighter lime for better contrast on dark backgrounds */
+    color: #bef264;
+    /* Lighter lime for better contrast on dark backgrounds */
 }
 
 /* Fixes for dark mode visibility issues */
@@ -609,5 +772,6 @@ input:focus, textarea:focus, select:focus {
 }
 
 [data-theme="dark"] a {
-    color: #60A5FA; /* Matching primary blue variant */
+    color: #60A5FA;
+    /* Matching primary blue variant */
 }

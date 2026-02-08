@@ -1,167 +1,173 @@
 {% extends "layout.html" %}
 {% block title %}Friends{% endblock %}
 {% block content %}
-    <div class="page-header">
-        <h1>Friends</h1>
-        <div>
-            <button id="invite-friend-btn" class="btn" data-csrf="{{ csrf_token() }}">Invite a Friend</button>
-            <a href="{{ url_for('user.users') }}" class="btn">Find New Friends</a>
-        </div>
+<div class="page-header">
+    <h1>Friends</h1>
+    <div>
+        <button id="invite-friend-btn" class="btn" data-csrf="{{ csrf_token() }}">Invite a Friend</button>
+        <a href="{{ url_for('user.users') }}" class="btn">Find New Friends</a>
     </div>
-    <div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
+</div>
+<div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
 
-    {% if requests or sent_requests %}
-    <div class="card requests-section" style="margin-bottom: 40px;">
-        <h3>Friend Requests</h3>
-        {% if requests %}
-            <h4>Received</h4>
-            <div class="table-container">
-                <table class="table responsive-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th style="text-align: right;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for request in requests %}
-                            <tr>
-                                <td data-label="Username">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <img src="{{ request.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ request.username }}" class="profile-picture-thumbnail">
-                                        <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
-                                    </div>
-                                </td>
-                                <td data-label="Actions" style="text-align: right;">
-                                    <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn">Accept</button>
-                                    </form>
-                                    <form action="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" method="post" style="display: inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-danger">Decline</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endif %}
-
-        {% if sent_requests %}
-            <h4 style="margin-top: 20px;">Sent</h4>
-            <div class="table-container">
-                <table class="table responsive-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for request in sent_requests %}
-                            <tr>
-                                <td data-label="Username">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <img src="{{ request.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ request.username }}" class="profile-picture-thumbnail">
-                                        <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
-                                    </div>
-                                </td>
-                                <td data-label="Status">Pending</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endif %}
+{% if requests or sent_requests %}
+<div class="card requests-section" style="margin-bottom: 40px;">
+    <h3>Friend Requests</h3>
+    {% if requests %}
+    <h4>Received</h4>
+    <div class="table-container">
+        <table class="table-standard responsive-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in requests %}
+                <tr>
+                    <td data-label="Username">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="{{ request.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
+                                alt="{{ request.username }}" class="avatar avatar-md">
+                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
+                        </div>
+                    </td>
+                    <td data-label="Actions" style="text-align: right;">
+                        <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post"
+                            style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn">Accept</button>
+                        </form>
+                        <form action="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" method="post"
+                            style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger">Decline</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     {% endif %}
 
-    <div class="friends-section">
-        <h3>Your Friends</h3>
-        <div class="friend-grid">
-            {% for friend in friends %}
-                <div class="friend-card">
-                    <div class="friend-card-content">
-                        <img src="{{ friend.profilePictureUrl or url_for('static', filename='user_icon.png') }}" alt="{{ friend.username }}" class="friend-avatar">
-                        <h3 class="friend-name">{{ friend.username }}</h3>
-                        <div class="friend-rating">
-                            <span class="star-icon">⭐</span>
-                            <span class="dupr-value">{{ friend.duprRating or 'N/A' }}</span>
+    {% if sent_requests %}
+    <h4 style="margin-top: 20px;">Sent</h4>
+    <div class="table-container">
+        <table class="table-standard responsive-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in sent_requests %}
+                <tr>
+                    <td data-label="Username">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="{{ request.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
+                                alt="{{ request.username }}" class="avatar avatar-md">
+                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
                         </div>
-                    </div>
-                    <div class="friend-card-actions">
-                        <a href="{{ url_for('match.record_match', opponent=friend.id) }}" class="btn btn-primary challenge-btn">Challenge</a>
-                    </div>
-                </div>
-            {% else %}
-                <p>You haven't added any friends yet. <a href="{{ url_for('user.users') }}">Find some here!</a></p>
-            {% endfor %}
-        </div>
+                    </td>
+                    <td data-label="Status">Pending</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="friends-section">
+    <h3>Your Friends</h3>
+    <div class="friend-grid">
+        {% for friend in friends %}
+        <div class="friend-card">
+            <div class="friend-card-content">
+                <img src="{{ friend.profilePictureUrl or url_for('static', filename='user_icon.png') }}"
+                    alt="{{ friend.username }}" class="avatar avatar-lg mb-3">
+                <h3 class="friend-name">{{ friend.username }}</h3>
+                <div class="friend-rating">
+                    <span class="star-icon">⭐</span>
+                    <span class="dupr-value">{{ friend.duprRating or 'N/A' }}</span>
+                </div>
+            </div>
+            <div class="friend-card-actions">
+                <a href="{{ url_for('match.record_match', opponent=friend.id) }}"
+                    class="btn btn-primary challenge-btn">Challenge</a>
+            </div>
+        </div>
+        {% else %}
+        <p>You haven't added any friends yet. <a href="{{ url_for('user.users') }}">Find some here!</a></p>
+        {% endfor %}
+    </div>
+</div>
 {% endblock %}
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const inviteButton = document.getElementById('invite-friend-btn');
-    const successMessage = document.getElementById('invite-success-message');
+    document.addEventListener('DOMContentLoaded', function () {
+        const inviteButton = document.getElementById('invite-friend-btn');
+        const successMessage = document.getElementById('invite-success-message');
 
-    const cannedMessages = [
-        "Tired of losing? Me too. Join me on pickaladder and let's lose together!",
-        "I found this cool app called pickaladder. It's like a ladder for pickleball, but with more losing.",
-        "You've been officially challenged to a pickleball match. First, you have to join me on pickaladder.",
-        "Let's settle this on the court. Join me on pickaladder.",
-    ];
+        const cannedMessages = [
+            "Tired of losing? Me too. Join me on pickaladder and let's lose together!",
+            "I found this cool app called pickaladder. It's like a ladder for pickleball, but with more losing.",
+            "You've been officially challenged to a pickleball match. First, you have to join me on pickaladder.",
+            "Let's settle this on the court. Join me on pickaladder.",
+        ];
 
-    inviteButton.addEventListener('click', function() {
-        const csrfToken = this.getAttribute('data-csrf');
-        fetch("{{ url_for('user.create_invite') }}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrfToken,
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            const token = data.token;
-            const inviteUrl = new URL("{{ url_for('auth.register', _external=True) }}");
-            inviteUrl.searchParams.set('invite_token', token);
+        inviteButton.addEventListener('click', function () {
+            const csrfToken = this.getAttribute('data-csrf');
+            fetch("{{ url_for('user.create_invite') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken,
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const token = data.token;
+                    const inviteUrl = new URL("{{ url_for('auth.register', _external=True) }}");
+                    inviteUrl.searchParams.set('invite_token', token);
 
-            const randomMessage = cannedMessages[Math.floor(Math.random() * cannedMessages.length)];
-            const inviteText = `${randomMessage} ${inviteUrl.href}`;
+                    const randomMessage = cannedMessages[Math.floor(Math.random() * cannedMessages.length)];
+                    const inviteText = `${randomMessage} ${inviteUrl.href}`;
 
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(inviteText).then(function() {
-                    successMessage.textContent = 'Invite message copied to clipboard!';
-                    successMessage.style.display = 'block';
-                    setTimeout(() => {
-                        successMessage.style.display = 'none';
-                    }, 3000);
-                }, function(err) {
-                    console.error('Could not copy text: ', err);
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(inviteText).then(function () {
+                            successMessage.textContent = 'Invite message copied to clipboard!';
+                            successMessage.style.display = 'block';
+                            setTimeout(() => {
+                                successMessage.style.display = 'none';
+                            }, 3000);
+                        }, function (err) {
+                            console.error('Could not copy text: ', err);
+                        });
+                    } else {
+                        const textArea = document.createElement("textarea");
+                        textArea.value = inviteText;
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+                        try {
+                            document.execCommand('copy');
+                            successMessage.textContent = 'Invite message copied to clipboard!';
+                            successMessage.style.display = 'block';
+                            setTimeout(() => {
+                                successMessage.style.display = 'none';
+                            }, 3000);
+                        } catch (err) {
+                            console.error('Fallback: Oops, unable to copy', err);
+                        }
+                        document.body.removeChild(textArea);
+                    }
                 });
-            } else {
-                const textArea = document.createElement("textarea");
-                textArea.value = inviteText;
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    successMessage.textContent = 'Invite message copied to clipboard!';
-                    successMessage.style.display = 'block';
-                    setTimeout(() => {
-                        successMessage.style.display = 'none';
-                    }, 3000);
-                } catch (err) {
-                    console.error('Fallback: Oops, unable to copy', err);
-                }
-                document.body.removeChild(textArea);
-            }
         });
     });
-});
 </script>
 {% endblock %}

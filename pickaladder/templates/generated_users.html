@@ -1,36 +1,36 @@
 {% extends "layout.html" %}
 {% block title %}Generated Users{% endblock %}
 {% block content %}
-    <div class="page-header">
-        <h1>Generated Users</h1>
-    </div>
-    <div class="table-container">
-        <table class="table responsive-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Name</th>
-                    <th>DUPR Rating</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr>
-                    <td data-label="ID">{{ user.id }}</td>
-                    <td data-label="Username">{{ user.username }}</td>
-                    <td data-label="Email">{{ user.email }}</td>
-                    <td data-label="Name">{{ user.name }}</td>
-                    <td data-label="DUPR Rating">{{ user.dupr_rating }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5">No users were generated.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    <a href="{{ url_for('admin.admin') }}" class="btn" style="margin-top: 20px;">Back to Admin</a>
+<div class="page-header">
+    <h1>Generated Users</h1>
+</div>
+<div class="table-container">
+    <table class="table-standard responsive-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Name</th>
+                <th>DUPR Rating</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td data-label="ID">{{ user.id }}</td>
+                <td data-label="Username">{{ user.username }}</td>
+                <td data-label="Email">{{ user.email }}</td>
+                <td data-label="Name">{{ user.name }}</td>
+                <td data-label="DUPR Rating">{{ user.dupr_rating }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5">No users were generated.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<a href="{{ url_for('admin.admin') }}" class="btn" style="margin-top: 20px;">Back to Admin</a>
 {% endblock %}

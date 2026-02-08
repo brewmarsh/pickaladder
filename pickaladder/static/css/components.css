@@ -109,6 +109,69 @@
     margin-top: 20px;
 }
 
+/* Responsive Table Logic (Migrated from mobile.css) */
+@media screen and (max-width: 768px) {
+    .responsive-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .responsive-table thead {
+        display: none;
+    }
+
+    .responsive-table tbody,
+    .responsive-table tr,
+    .responsive-table td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .responsive-table tr {
+        margin-bottom: 15px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 0 10px;
+    }
+
+    .responsive-table td {
+        padding-left: 50%;
+        position: relative;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+        text-align: right; /* Align content to right */
+    }
+
+    .responsive-table tr td:last-child {
+        border-bottom: none;
+    }
+
+    .responsive-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        width: 45%;
+        padding-right: 10px;
+        font-weight: bold;
+        text-align: left;
+        white-space: nowrap;
+    }
+    
+    /* Special handling for avatar cells in responsive mode */
+    .responsive-table td[data-label="Avatar"],
+    .responsive-table td[data-label="Logo"] {
+        padding-left: 10px;
+        text-align: center;
+    }
+
+    .responsive-table td[data-label="Avatar"]::before,
+    .responsive-table td[data-label="Logo"]::before {
+        display: none;
+    }
+}
+
 .table th, .table td {
     padding: 16px;
     text-align: left;
