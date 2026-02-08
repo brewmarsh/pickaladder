@@ -18,17 +18,19 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.group.utils import (
-    friend_group_members,
-    get_group_leaderboard,
-    get_leaderboard_trend_data,
-    get_random_joke,
-    get_user_group_stats,
-    send_invite_email_background,
-)
-from pickaladder.group.utils import (
+from pickaladder.group.services.leaderboard import get_group_leaderboard
+from pickaladder.group.services.stats import (
     get_head_to_head_stats as get_h2h_stats,
 )
+from pickaladder.group.services.stats import (
+    get_leaderboard_trend_data,
+    get_user_group_stats,
+)
+from pickaladder.group.services.tasks import (
+    friend_group_members,
+    send_invite_email_background,
+)
+from pickaladder.group.utils import get_random_joke
 from pickaladder.user.services import UserService
 
 from . import bp

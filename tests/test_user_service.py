@@ -106,7 +106,7 @@ class TestUserService(unittest.TestCase):
         self.assertEqual(stats["current_streak"], 1)
         self.assertEqual(stats["streak_type"], "L")
 
-    @patch("pickaladder.group.utils.get_group_leaderboard")
+    @patch("pickaladder.group.services.leaderboard.get_group_leaderboard")
     def test_get_group_rankings(self, mock_leaderboard: MagicMock) -> None:
         mock_group = MagicMock()
         mock_group.id = "group1"
