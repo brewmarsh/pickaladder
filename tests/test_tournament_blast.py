@@ -157,8 +157,8 @@ class TournamentBlastTestCase(unittest.TestCase):
         self.assertEqual(ghost_p["status"], "pending")
         self.assertEqual(ghost_p["email"], "ghost@example.com")
 
-    def test_migrate_user_references_tournaments(self) -> None:
-        """Test that _migrate_user_references correctly updates tournaments."""
+    def test_migrate_ghost_references_tournaments(self) -> None:
+        """Test that _migrate_ghost_references correctly updates tournaments."""
         mock_db = MagicMock()
         mock_batch = MagicMock()
         ghost_ref = MagicMock()
@@ -183,7 +183,7 @@ class TournamentBlastTestCase(unittest.TestCase):
         }
 
         # Set up the query chain for tournaments
-        # _migrate_user_references calls
+        # _migrate_ghost_references calls
         # db.collection("tournaments").where(...).stream()
         def collection_side_effect(name):
             mock_coll = MagicMock()
@@ -195,7 +195,7 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         mock_db.collection.side_effect = collection_side_effect
 
-        UserService._migrate_user_references(
+        UserService._migrate_ghost_references(
             mock_db, mock_batch, ghost_ref, real_user_ref
         )
 

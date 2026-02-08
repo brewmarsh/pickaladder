@@ -179,7 +179,23 @@
 }
 
 @media screen and (max-width: 768px) {
-    .hero-stats-card { flex-direction: column; text-align: center; padding-top: 40px; }
+    /* Combined Fixes: Padding from main + Photo sizing from fix branch */
+    .hero-stats-card { 
+        flex-direction: column; 
+        text-align: center; 
+        padding-top: 40px; 
+    }
+    
+    .hero-stats-card .profile-picture,
+    .hero-stats-card .profile-picture-large {
+        width: 120px !important;
+        height: 120px !important;
+        margin: 0 auto 16px auto;
+        display: block;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
     .leaderboard-row {
         display: flex;
         justify-content: space-between;

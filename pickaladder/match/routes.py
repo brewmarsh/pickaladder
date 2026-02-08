@@ -160,13 +160,15 @@ def _save_match_data(
         t2_p1_ref = db.collection("users").document(t2_p1_id)
         t2_p2_ref = db.collection("users").document(t2_p2_id)
 
+        team1_ref = db.collection("teams").document(team1_id)
+        team2_ref = db.collection("teams").document(team2_id)
+
         match_data["team1"] = [t1_p1_ref, t1_p2_ref]
         match_data["team2"] = [t2_p1_ref, t2_p2_ref]
         match_data["team1Id"] = team1_id
         match_data["team2Id"] = team2_id
-
-        team1_ref = db.collection("teams").document(team1_id)
-        team2_ref = db.collection("teams").document(team2_id)
+        match_data["team1Ref"] = team1_ref
+        match_data["team2Ref"] = team2_ref
         if player1_score > player2_score:
             team1_ref.update({"stats.wins": firestore.Increment(1)})
             team2_ref.update({"stats.losses": firestore.Increment(1)})
