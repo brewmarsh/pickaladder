@@ -326,6 +326,42 @@ body {
     100% { transform: rotate(360deg); }
 }
 
+/* Avatar System */
+/* Base Avatar Style - Applies to ALL profile images */
+.profile-picture, .profile-picture-thumbnail, .profile-picture-medium, .profile-picture-large,
+.avatar, .avatar-sm, .avatar-md, .avatar-lg, .user-avatar, .friend-avatar,
+.friend-card img, .hero-stats-card img {
+    object-fit: cover !important;  /* Fixes the "blank area" issue */
+    border-radius: 50% !important; /* Forces perfect circle */
+    flex-shrink: 0;                /* Prevents squishing in lists */
+    box-shadow: var(--box-shadow);
+    background-color: var(--bg-color); /* Fallback color */
+}
+/* Size: Small (Navbars, Lists, Friend Requests) */
+.profile-picture-thumbnail, .avatar-sm {
+    width: 48px !important;
+    height: 48px !important;
+}
+/* Size: Medium (Cards, Friend Grid) */
+.profile-picture-medium, .avatar-md, .friend-card img {
+    width: 80px !important;
+    height: 80px !important;
+}
+/* Size: Large (Profile Header - Desktop) */
+.profile-picture, .profile-picture-large, .avatar-lg {
+    width: 120px !important;
+    height: 120px !important;
+}
+
+/* Specific Mobile Override for the Dashboard Hero */
+@media screen and (max-width: 768px) {
+    .profile-picture, .profile-picture-large, .hero-stats-card img {
+        width: 100px !important;
+        height: 100px !important;
+        margin-bottom: 12px;
+    }
+}
+
 /* Responsive */
 @media screen and (max-width: 768px) {
     .dashboard-columns { flex-direction: column; }
