@@ -1,4 +1,3 @@
-
 /* Buttons */
 .btn {
     padding: 12px 24px;
@@ -77,33 +76,6 @@
 .rank-1 { color: #FFD700; }
 .rank-2 { color: #C0C0C0; }
 .rank-3 { color: #CD7F32; }
-
-/* Avatars & Profile Pictures */
-.profile-picture,
-.profile-picture-large,
-.avatar-lg {
-    width: 120px;
-    height: 120px;
-    border-radius: 50% !important;
-    object-fit: cover !important;
-}
-
-.profile-picture-medium,
-.avatar-md,
-.friend-card img {
-    width: 80px;
-    height: 80px;
-    border-radius: 50% !important;
-    object-fit: cover !important;
-}
-
-.profile-picture-thumbnail,
-.avatar-sm {
-    width: 48px;
-    height: 48px;
-    border-radius: 50% !important;
-    object-fit: cover !important;
-}
 
 /* Cards */
 .hero-stats-card {
@@ -207,7 +179,13 @@
 }
 
 @media screen and (max-width: 768px) {
-    .hero-stats-card { flex-direction: column; text-align: center; }
+    /* Combined Fixes: Padding from main + Photo sizing from fix branch */
+    .hero-stats-card { 
+        flex-direction: column; 
+        text-align: center; 
+        padding-top: 40px; 
+    }
+    
     .hero-stats-card .profile-picture,
     .hero-stats-card .profile-picture-large {
         width: 120px !important;
@@ -217,9 +195,21 @@
         object-fit: cover;
         border-radius: 50%;
     }
+
     .leaderboard-row {
         display: flex;
         justify-content: space-between;
+    }
+
+    .profile-picture-large {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 12px;
+    }
+
+    .hero-left-panel {
+        flex-direction: column;
+        width: 100%;
     }
 
     /* Prevent oversized images in cards */
