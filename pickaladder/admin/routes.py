@@ -269,31 +269,34 @@ def generate_matches():
 
     return redirect(url_for(".admin_matches"))
 
-@bp.route('/merge_players', methods=['GET', 'POST'])
+
+@bp.route("/merge_players", methods=["GET", "POST"])
 @login_required(admin_required=True)
 def merge_players():
     """Merge two player accounts (Source -> Target). Source is deleted."""
     users = UserService.get_all_users(firestore.client())
-    
-    # Sort users for the dropdown (Real users first, then Ghosts)
-    sorted_users = sorted(users, key=lambda u: (u.get('is_ghost', False), u.get('name', '').lower()))
 
-    if request.method == 'POST':
-        source_id = request.form.get('source_id')
-        target_id = request.form.get('target_id')
+    # Sort users for the dropdown (Real users first, then Ghosts)
+    sorted_users = sorted(
+        users, key=lambda u: (u.get("is_ghost", False), u.get("name", "").lower())
+    )
+
+    if request.method == "POST":
+        source_id = request.form.get("source_id")
+        target_id = request.form.get("target_id")
 
         if source_id == target_id:
-            flash('Source and Target cannot be the same user.', 'error')
-            return redirect(url_for('admin.merge_players'))
+            flash("Source and Target cannot be the same user.", "error")
+            return redirect(url_for("admin.merge_players"))
 
         try:
             # Call the service to perform the deep merge
             # Note: You need to ensure merge_users is available in UserService
             UserService.merge_users(firestore.client(), source_id, target_id)
-            flash('Players merged successfully. Source account deleted.', 'success')
+            flash("Players merged successfully. Source account deleted.", "success")
         except Exception as e:
-            flash(f'Error merging players: {str(e)}', 'error')
-        
-        return redirect(url_for('admin.merge_players'))
+            flash(f"Error merging players: {str(e)}", "error")
 
-    return render_template('admin/merge_players.html', users=sorted_users)
+        return redirect(url_for("admin.merge_players"))
+
+    return render_template("admin/merge_players.html", users=sorted_users)
