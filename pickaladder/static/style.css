@@ -8,7 +8,7 @@
     --primary-hover: #1D4ED8;
     --accent-color: #84CC16;        /* Electric Lime */
     --accent-hover: #65A30D;
-    
+
     --success-color: #10B981;
     --danger-color: #EF4444;
     --warning-color: #F59E0B;
@@ -122,9 +122,12 @@ body {
     box-sizing: border-box;
 }
 
-.btn-primary { 
-    background-color: var(--primary-color); 
-    color: white; 
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+.btn-primary:hover {
+    background-color: var(--primary-hover);
 }
 
 /* High-Energy Volt Button */
@@ -179,8 +182,8 @@ body {
     border-bottom: 1px solid var(--border-color);
 }
 
-.rank-1 { color: #FFD700; } 
-.rank-2 { color: #C0C0C0; } 
+.rank-1 { color: #FFD700; }
+.rank-2 { color: #C0C0C0; }
 .rank-3 { color: #CD7F32; }
 
 /* Dashboard Pro Layout */

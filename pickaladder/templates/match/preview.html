@@ -1,19 +1,19 @@
 <div class="card bg-light mb-3">
     <div class="card-body p-3">
         <h6 class="card-title text-center text-muted text-uppercase small mb-3">Match Forecast</h6>
-        
+
         <div class="d-flex align-items-center justify-content-between mb-2">
             <span class="font-weight-bold text-primary">Team 1</span>
             <span class="font-weight-bold text-danger">Team 2</span>
         </div>
 
         <div class="progress" style="height: 10px;">
-            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ prediction.team1_prob }}%" 
+            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ prediction.team1_prob }}%"
                  aria-valuenow="{{ prediction.team1_prob }}" aria-valuemin="0" aria-valuemax="100"></div>
-            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ prediction.team2_prob }}%" 
+            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ prediction.team2_prob }}%"
                  aria-valuenow="{{ prediction.team2_prob }}" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
-        
+
         <div class="d-flex justify-content-between mt-1 small text-muted">
             <span>{{ prediction.team1_prob }}% Win Prob</span>
             <span>{{ prediction.team2_prob }}% Win Prob</span>

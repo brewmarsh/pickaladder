@@ -574,7 +574,7 @@ input:focus, textarea:focus, select:focus {
 
 /* Dark Mode Glow Effects adapted from feature branch */
 [data-theme="dark"] .btn-volt {
-    box-shadow: 0 0 15px rgba(132, 204, 22, 0.4); 
+    box-shadow: 0 0 15px rgba(132, 204, 22, 0.4);
 }
 
 [data-theme="dark"] .btn-volt:hover {

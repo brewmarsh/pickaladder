@@ -60,7 +60,7 @@
         </div>
 
         <button type="submit" class="btn btn-volt">Record Match</button>
-        
+
         {% if tournament_id %}
             <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament_id) }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
         {% elif group_id %}
@@ -96,7 +96,7 @@
                 player2Label.innerText = 'Opponent';
                 player2ScoreLabel.innerText = 'Opponent\'s Score';
             }
-            
+
             // Show prediction preview if players are selected
             checkPredictionVisibility();
         }
@@ -113,7 +113,7 @@
             const p1 = document.getElementById('player1').value;
             const p2 = document.getElementById('player2').value;
             const preview = document.getElementById('prediction-preview');
-            
+
             // Basic logic: show prediction widget if at least two opponents are selected
             if (p1 && p2) {
                 preview.style.display = 'block';
