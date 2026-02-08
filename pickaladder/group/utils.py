@@ -23,7 +23,7 @@ from pickaladder.core.constants import (
 from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
-from .services.match_parser import _extract_team_ids
+from .services.match_parser import _extract_team_ids, _get_match_scores
 
 
 def get_random_joke() -> str:
@@ -554,17 +554,6 @@ def friend_group_members(db: Any, group_id: str, new_member_ref: Any) -> None:
             batch.commit()
         except Exception as e:
             print(f"Error friending group members: {e}", file=sys.stderr)
-
-
-def _get_match_scores(data: dict[str, Any]) -> tuple[int, int]:
-    """Get team 1 and team 2 scores, handling both singles and doubles fields."""
-    p1_score = data.get("player1Score")
-    if p1_score is None:
-        p1_score = data.get("team1Score", 0)
-    p2_score = data.get("player2Score")
-    if p2_score is None:
-        p2_score = data.get("team2Score", 0)
-    return p1_score, p2_score
 
 
 def get_partnership_stats(
