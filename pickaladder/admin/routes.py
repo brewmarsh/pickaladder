@@ -45,30 +45,50 @@ def admin() -> Union[str, Response]:
     )
 
 
-@bp.route("/merge-ghost", methods=["POST"])
+@bp.route("/merge-ghost", methods=["GET", "POST"])
 @login_required(admin_required=True)
-def merge_ghost() -> Response:
+def merge_ghost() -> Union[str, Response]:
     """Merge a ghost account into a real user profile."""
-    target_user_id = request.form.get("target_user_id")
-    ghost_email = request.form.get("ghost_email")
-
-    if not target_user_id or not ghost_email:
-        flash("Target User ID and Ghost Email are required.", "danger")
-        return redirect(url_for(".admin"))
+    if not g.user or not g.user.get("isAdmin"):
+        flash("You are not authorized to view this page.", "danger")
+        return redirect(url_for("auth.login"))
 
     db = firestore.client()
-    real_user_ref = db.collection("users").document(target_user_id)
 
-    try:
-        success = UserService.merge_ghost_user(db, real_user_ref, ghost_email)
-        if success:
+    if request.method == "POST":
+        ghost_user_id = request.form.get("ghost_user_id")
+        target_user_id = request.form.get("target_user_id")
+
+        if not ghost_user_id or not target_user_id:
+            flash("Both Ghost User and Target User are required.", "danger")
+            return redirect(url_for(".merge_ghost"))
+
+        if ghost_user_id == target_user_id:
+            flash("Source and Target cannot be the same user.", "danger")
+            return redirect(url_for(".merge_ghost"))
+
+        try:
+            UserService.merge_users(db, ghost_user_id, target_user_id)
             flash("Ghost user merged successfully", "success")
-        else:
-            flash("Merge failed or ghost user not found", "danger")
-    except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        except Exception as e:
+            flash(f"An error occurred: {e}", "danger")
 
-    return redirect(url_for(".admin"))
+        return redirect(url_for(".admin"))
+
+    # GET: Fetch all users and filter them
+    users = UserService.get_all_users(db)
+    ghosts = [u for u in users if u.get("is_ghost") is True]
+    real_users = [u for u in users if not u.get("is_ghost")]
+
+    return render_template(
+        "admin/merge_ghost.html",
+        ghosts=sorted(
+            ghosts, key=lambda u: u.get("username", u.get("name", "")).lower()
+        ),
+        real_users=sorted(
+            real_users, key=lambda u: u.get("username", u.get("name", "")).lower()
+        ),
+    )
 
 
 @bp.route("/toggle_email_verification", methods=["POST"])
@@ -261,7 +281,6 @@ def merge_players() -> Union[str, Response]:
 
         try:
             # Call the service to perform the deep merge
-            # Note: You need to ensure merge_users is available in UserService
             UserService.merge_users(firestore.client(), source_id, target_id)
             flash("Players merged successfully. Source account deleted.", "success")
         except Exception as e:

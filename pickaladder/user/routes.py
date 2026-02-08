@@ -21,7 +21,7 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.constants import DUPR_PROFILE_BASE_URL
+from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
 from pickaladder.utils import EmailError, send_email
 
 from . import bp
