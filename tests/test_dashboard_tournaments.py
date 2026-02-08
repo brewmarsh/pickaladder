@@ -12,7 +12,7 @@ from pickaladder.user.services import UserService
 class DashboardTournamentsTestCase(unittest.TestCase):
     """Test case for fetching dashboard tournaments."""
 
-    def test_get_active_tournaments(self):
+    def test_get_active_tournaments(self) -> None:
         """Test getting active tournaments."""
         user_id = "user123"
         mock_db = MagicMock()
@@ -61,7 +61,7 @@ class DashboardTournamentsTestCase(unittest.TestCase):
         self.assertEqual(active[1]["name"], "Scheduled Tournament")
         self.assertIn("date_display", active[0])
 
-    def test_get_active_tournaments_sorting(self):
+    def test_get_active_tournaments_sorting(self) -> None:
         """Test that active tournaments are sorted by date ascending."""
         user_id = "user123"
         mock_db = MagicMock()
@@ -97,7 +97,7 @@ class DashboardTournamentsTestCase(unittest.TestCase):
         self.assertEqual(active[0]["name"], "Earlier Tournament")
         self.assertEqual(active[1]["name"], "Later Tournament")
 
-    def test_get_past_tournaments(self):
+    def test_get_past_tournaments(self) -> None:
         """Test getting past tournaments."""
         user_id = "user123"
         mock_db = MagicMock()

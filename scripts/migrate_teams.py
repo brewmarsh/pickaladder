@@ -9,10 +9,13 @@ This script migrates existing doubles matches to use the new Team data model.
 - Includes a verification step at the end to confirm the migration.
 """
 
+from __future__ import annotations
+
 import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -28,7 +31,7 @@ sys.path.insert(0, str(project_root))
 TEAM_SIZE = 2
 
 
-def initialize_firebase():
+def initialize_firebase() -> bool:
     """Initializes the Firebase Admin SDK."""
     cred = None
     # Try loading from file (for local dev)
@@ -59,7 +62,7 @@ def initialize_firebase():
     return True
 
 
-def get_or_create_team(db, team_members):
+def get_or_create_team(db: Any, team_members: list[Any] | None) -> Any:
     """
     Retrieves a team if it exists, otherwise creates it.
     A team is uniquely identified by its members.
@@ -83,7 +86,7 @@ def get_or_create_team(db, team_members):
         return create_team_document(db, team_members)
 
 
-def migrate_matches_to_teams():
+def migrate_matches_to_teams() -> None:
     """Main migration logic."""
     if os.environ.get("MOCK_DB"):
         db = MockFirestore()
@@ -165,7 +168,7 @@ def migrate_matches_to_teams():
         print("\n--- No new matches were migrated, skipping verification ---")
 
 
-def verify_migration(db, match_id):
+def verify_migration(db: Any, match_id: str) -> None:
     """Fetches one migrated match and its team to verify the changes."""
     print(f"Verifying match with ID: {match_id}")
     match_ref = db.collection("matches").document(match_id)

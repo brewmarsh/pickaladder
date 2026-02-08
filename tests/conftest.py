@@ -1,39 +1,44 @@
 """Common utilities for tests."""
 
 import unittest.mock
+from typing import Any, Iterator, Optional
 
 from mockfirestore import CollectionReference, Query
 from mockfirestore.document import DocumentReference
 
 
 class MockArrayUnion:
-    def __init__(self, values):
+    def __init__(self, values: list[Any]) -> None:
         self.values = values
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Any]:
         return iter(self.values)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.values)
 
 
 class MockArrayRemove:
-    def __init__(self, values):
+    def __init__(self, values: list[Any]) -> None:
         self.values = values
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Any]:
         return iter(self.values)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.values)
 
 
-def patch_mockfirestore():
+def patch_mockfirestore() -> None:
     """Apply monkeypatches to mockfirestore to support FieldFilter and equality."""
 
     def collection_where(
-        self, field_path=None, op_string=None, value=None, filter=None
-    ):  # noqa: E501
+        self: Any,
+        field_path: Optional[str] = None,
+        op_string: Optional[str] = None,
+        value: Any = None,
+        filter: Any = None,
+    ) -> Any:  # noqa: E501
         if filter:
             return self._where(filter.field_path, filter.op_string, filter.value)
         return self._where(field_path, op_string, value)
@@ -42,7 +47,13 @@ def patch_mockfirestore():
         CollectionReference._where = CollectionReference.where
         CollectionReference.where = collection_where
 
-    def query_where(self, field_path=None, op_string=None, value=None, filter=None):
+    def query_where(
+        self: Any,
+        field_path: Optional[str] = None,
+        op_string: Optional[str] = None,
+        value: Any = None,
+        filter: Any = None,
+    ) -> Any:
         if filter:
             return self._where(filter.field_path, filter.op_string, filter.value)
         return self._where(field_path, op_string, value)
@@ -51,7 +62,7 @@ def patch_mockfirestore():
         Query._where = Query.where
         Query.where = query_where
 
-    def doc_ref_eq(self, other):
+    def doc_ref_eq(self: Any, other: Any) -> bool:
         if not isinstance(other, DocumentReference):
             return False
         return self._path == other._path
@@ -66,7 +77,7 @@ def patch_mockfirestore():
     if not hasattr(DocumentReference, "_orig_update"):
         DocumentReference._orig_update = DocumentReference.update
 
-        def patched_update(self, data):
+        def patched_update(self: Any, data: dict[str, Any]) -> Any:
             current_data = self.get().to_dict() or {}
             new_data = {}
             for k, v in data.items():
@@ -95,23 +106,23 @@ def patch_mockfirestore():
 
 
 class MockBatch:
-    def __init__(self, db):
+    def __init__(self, db: Any) -> None:
         self.db = db
-        self.updates = []
+        self.updates: list[tuple[Any, Any]] = []
         self.commit = unittest.mock.MagicMock(side_effect=self._real_commit)
 
-    def update(self, ref, data):
+    def update(self, ref: Any, data: Any) -> None:
         self.updates.append((ref, data))
 
-    def set(self, ref, data, merge=False):
+    def set(self, ref: Any, data: Any, merge: bool = False) -> None:
         # For set with merge=True, it's like update.
         # For simplicity in tests, we just update.
         self.updates.append((ref, data))
 
-    def delete(self, ref):
+    def delete(self, ref: Any) -> None:
         self.updates.append((ref, "DELETE"))
 
-    def _real_commit(self):
+    def _real_commit(self) -> None:
         for ref, data in self.updates:
             if data == "DELETE":
                 ref.delete()

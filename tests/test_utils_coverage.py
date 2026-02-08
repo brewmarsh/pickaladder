@@ -464,7 +464,7 @@ class TestUtilsCoverage(unittest.TestCase):
         # Make the thread run synchronously
         thread = MagicMock()
 
-        def run_thread_success():
+        def run_thread_success() -> None:
             mock_thread.call_args[1]["target"]()
 
         thread.start.side_effect = run_thread_success
@@ -498,7 +498,7 @@ class TestUtilsCoverage(unittest.TestCase):
         # Make the thread run synchronously
         thread = MagicMock()
 
-        def run_thread_failure():
+        def run_thread_failure() -> None:
             mock_thread.call_args[1]["target"]()
 
         thread.start.side_effect = run_thread_failure
