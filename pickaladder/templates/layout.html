@@ -32,11 +32,11 @@
         <main class="main-content">
             {% if session.get('show_welcome_invites') %}
             <script>
-                document.addEventListener('DOMContentLoaded', funct ion () {
-                    const count = {{ session.pop('show_welcome_invit
-                s')
-                                showToast(`Welcome to Pickaladder! You have ${count} tournament invites waiting for you on your dashboard!`, 'success');
-    });
+                document.addEventListener('DOMContentLoaded', function () {
+                    const count = {{ session.pop('show_welcome_invites')
+                }};
+                showToast(`Welcome to Pickaladder! You have ${count} tournament invites waiting for you on your dashboard!`, 'success');
+                });
             </script>
             {% endif %}
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -80,7 +80,7 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        $(document ). ready(function () {
+        $(document).ready(function () {
             $('.toast').toast('show');
         });
 
@@ -137,7 +137,7 @@
                 const retryButton = document.createElement('button');
                 retryButton.className = 'btn btn-sm btn-link';
                 retryButton.innerText = 'Retry';
-                retryButton. onclick = function () {
+                retryButton.onclick = function () {
                     window.optimisticSubmission.retrySubmission(toastId);
                 };
                 toastBody.appendChild(document.createElement('br'));
@@ -163,34 +163,34 @@
         if (hamburger) {
             hamburger.addEventListene r('click', function () {
                 document.querySelector('.dropdown-content').classList.toggle('active');
-        })    </script>
+            })    </script>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "{{ firebase_api_key|default('', true) }}",
-            authDomain: "pickaladder.firebaseapp.com",
-            projectId: "pickaladder",
-            storageBucket: "pickaladder.appspot.com",
-            messagingSenderId: "402457219675",
-            appId: "1:402457219675:web:a346e2dc0dfa732d31e57e",
-            measurementId: "G-E28CXCXTSK"
-        };
-        // Intercept fetch to add the auth token
-        const originalFetch = window.fetch;
-        window.fetch = function (url, options) {
-            const token = localStorage.getItem('firebaseIdToken');
-            if (token) {
-                options = options || {};
-                options.headers = options.headers || {};
-                options.headers['Authorization'] = 'Bearer ' + token;
-            }
-            return originalFetch(url, options);
-        };
+            const firebaseConfig = {
+                apiKey: "{{ firebase_api_key|default('', true) }}",
+                authDomain: "pickaladder.firebaseapp.com",
+                projectId: "pickaladder",
+                storageBucket: "pickaladder.appspot.com",
+                messagingSenderId: "402457219675",
+                appId: "1:402457219675:web:a346e2dc0dfa732d31e57e",
+                measurementId: "G-E28CXCXTSK"
+            };
+            // Intercept fetch to add the auth token
+            const originalFetch = window.fetch;
+            window.fetch = function (url, options) {
+                const token = localStorage.getItem('firebaseIdToken');
+                if (token) {
+                    options = options || {};
+                    options.headers = options.headers || {};
+                    options.headers['Authorization'] = 'Bearer ' + token;
+                }
+                return originalFetch(url, options);
+            };
 
-        // Initialize Firebase
-        firebase.initializeAirebag);
+            // Initialize Firebase
+            firebase.initializeAirebag);
     </script>
 
     {% block scripts %}{% endblock %}
