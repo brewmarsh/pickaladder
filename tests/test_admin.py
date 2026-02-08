@@ -59,6 +59,7 @@ class AdminRoutesTestCase(unittest.TestCase):
         """Simulate a user login by setting the session and mocking Firestore."""
         with self.client.session_transaction() as sess:
             sess["user_id"] = user_id
+            sess["_user_id"] = user_id
             sess["is_admin"] = is_admin
 
         mock_db = self.mock_firestore_service.client.return_value
@@ -99,6 +100,26 @@ class AdminRoutesTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"You are not authorized to view this page.", response.data)
         self.assertNotIn(b"Admin Panel", response.data)
+
+    def test_merge_players_accessible_to_admin(self) -> None:
+        """Ensure an admin user can access the merge players page."""
+        self._login_user(MOCK_ADMIN_ID, MOCK_ADMIN_DATA, is_admin=True)
+
+        # Mock UserService.get_all_users
+        with patch(
+            "pickaladder.admin.routes.UserService.get_all_users"
+        ) as mock_get_users:
+            mock_get_users.return_value = [MOCK_ADMIN_DATA, MOCK_USER_DATA]
+            response = self.client.get("/admin/merge_players")
+            self.assertEqual(response.status_code, 200)
+
+    def test_merge_players_inaccessible_to_non_admin(self) -> None:
+        """Ensure a non-admin user cannot access the merge players page."""
+        self._login_user(MOCK_USER_ID, MOCK_USER_DATA, is_admin=False)
+
+        response = self.client.get("/admin/merge_players")
+        # The new decorator uses abort(403)
+        self.assertEqual(response.status_code, 403)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,5 @@
 """Admin routes for the application."""
 
-import random
-
-from faker import Faker
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -18,8 +15,7 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.user.services import UserService
 
 from . import bp
-
-MIN_USERS_FOR_MATCH_GENERATION = 2
+from .utils import admin_required
 
 
 # TODO: Add type hints for Agent clarity
@@ -194,80 +190,6 @@ def verify_user(user_id):
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for("user.users"))
-
-
-# TODO: Add type hints for Agent clarity
-@bp.route("/generate_users", methods=["POST"])
-def generate_users():
-    """Generate a number of fake users for testing."""
-    db = firestore.client()
-    fake = Faker()
-    users_to_create = 10
-    new_users = []
-    try:
-        for _ in range(users_to_create):
-            username = fake.user_name()
-            email = fake.email()
-            password = fake.password(
-                length=12,
-                special_chars=True,
-                digits=True,
-                upper_case=True,
-                lower_case=True,
-            )
-
-            # Create user in Auth
-            user_record = auth.create_user(email=email, password=password)
-
-            # Create user in Firestore
-            user_doc = {
-                "username": username,
-                "email": email,
-                "name": fake.name(),
-                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec
-                "isAdmin": False,
-                "createdAt": firestore.SERVER_TIMESTAMP,
-            }
-            db.collection("users").document(user_record.uid).set(user_doc)
-            new_users.append({"uid": user_record.uid, **user_doc})
-
-        flash(f"{len(new_users)} users generated successfully.", "success")
-    except Exception as e:
-        flash(f"An error occurred while generating users: {e}", "danger")
-
-    return render_template("generated_users.html", users=new_users)
-
-
-# TODO: Add type hints for Agent clarity
-@bp.route("/generate_matches", methods=["POST"])
-def generate_matches():
-    """Generate random matches between existing users."""
-    db = firestore.client()
-    fake = Faker()
-    try:
-        users = list(db.collection("users").limit(20).stream())
-        if len(users) < MIN_USERS_FOR_MATCH_GENERATION:
-            flash("Not enough users to generate matches.", "warning")
-            return redirect(url_for(".admin"))
-
-        matches_to_create = 10
-        for _ in range(matches_to_create):
-            p1, p2 = random.sample(users, 2)  # nosec
-            db.collection("matches").add(
-                {
-                    "player1Ref": p1.reference,
-                    "player2Ref": p2.reference,
-                    "player1Score": random.randint(5, 11),  # nosec
-                    "player2Score": random.randint(5, 11),  # nosec
-                    "matchDate": fake.date_between(start_date="-1y", end_date="today"),
-                    "createdAt": firestore.SERVER_TIMESTAMP,
-                }
-            )
-        flash(f"{matches_to_create} random matches generated.", "success")
-    except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
-
-    return redirect(url_for(".admin_matches"))
 
 
 @bp.route("/merge_players", methods=["GET", "POST"])
