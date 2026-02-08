@@ -18,6 +18,7 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.user.services import UserService
 
 from . import bp
+from .utils import admin_required
 
 MIN_USERS_FOR_MATCH_GENERATION = 2
 
