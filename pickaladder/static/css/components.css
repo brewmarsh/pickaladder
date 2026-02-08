@@ -256,7 +256,7 @@
 }
 
 @media screen and (max-width: 768px) {
-    /* Merged: General mobile adjustments from HEAD/Main */
+    /* Merged: General mobile adjustments from HEAD */
     .card { padding: 16px; border-radius: var(--radius-md); }
     .score-display { font-size: 1.4rem; }
     .table-standard th, .table-standard td { padding: 12px 8px; }
@@ -308,8 +308,7 @@
         flex-shrink: 0;
     }
 }
-
-/* Brag Card Styles (New Feature) */
+/* Brag Card Styles */
 .brag-card {
     background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
     border: 2px solid var(--accent-color);

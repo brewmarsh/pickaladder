@@ -24,8 +24,6 @@ from pickaladder.group.services.match_parser import _extract_team_ids, _get_matc
 from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
-from .services.match_parser import _extract_team_ids, _get_match_scores
-
 
 def get_random_joke() -> str:
     """Return a random sport/dad joke."""

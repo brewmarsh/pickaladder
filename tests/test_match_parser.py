@@ -20,6 +20,11 @@ class TestMatchParser(unittest.TestCase):
         ids = _resolve_team_ids(data, "team1", "player1", "partner")
         self.assertEqual(ids, {"user1", "user2"})
 
+    def test_resolve_team_ids_list_dicts(self) -> None:
+        data = {"team1": [{"id": "user1"}, {"id": "user2"}]}
+        ids = _resolve_team_ids(data, "team1", "player1", "partner")
+        self.assertEqual(ids, {"user1", "user2"})
+
     def test_resolve_team_ids_list_strings(self) -> None:
         data = {"team1": ["user1", "user2"]}
         ids = _resolve_team_ids(data, "team1", "player1", "partner")
@@ -27,6 +32,11 @@ class TestMatchParser(unittest.TestCase):
 
     def test_resolve_team_ids_individual_refs(self) -> None:
         data = {"player1Ref": MockRef("user1"), "partnerRef": MockRef("user2")}
+        ids = _resolve_team_ids(data, "team1", "player1", "partner")
+        self.assertEqual(ids, {"user1", "user2"})
+
+    def test_resolve_team_ids_individual_dicts(self) -> None:
+        data = {"player1Ref": {"id": "user1"}, "partnerId": {"id": "user2"}}
         ids = _resolve_team_ids(data, "team1", "player1", "partner")
         self.assertEqual(ids, {"user1", "user2"})
 
