@@ -135,7 +135,12 @@ class UserService:
                 return False
 
             ghost_doc = ghost_docs[0]
+            current_app.logger.info(
+                f"Merging ghost user {ghost_doc.id} to {real_user_ref.id}"
+            )
+
             UserService.merge_users(db, ghost_doc.id, real_user_ref.id)
+            current_app.logger.info("Ghost user merge completed successfully.")
             return True
 
         except Exception as e:
@@ -498,6 +503,7 @@ class UserService:
         """Fetch a list of users, excluding given IDs, sorted by date."""
         if exclude_ids is None:
             exclude_ids = []
+
         users_query = (
             db.collection("users")
             .order_by("createdAt", direction=firestore.Query.DESCENDING)
@@ -506,7 +512,7 @@ class UserService:
         )
         users = []
         for doc in users_query:
-            if doc.id in exclude_ids:
+            if exclude_ids and doc.id in exclude_ids:
                 continue
             data = doc.to_dict()
             if data is not None:
