@@ -18,6 +18,7 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.user.services import UserService
 
 from . import bp
+from .services import AdminService
 
 MIN_USERS_FOR_MATCH_GENERATION = 2
 
@@ -71,17 +72,12 @@ def merge_ghost():
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/toggle_email_verification", methods=["POST"])
+@login_required(admin_required=True)
 def toggle_email_verification():
     """Toggle the global setting for requiring email verification."""
     db = firestore.client()
-    setting_ref = db.collection("settings").document("enforceEmailVerification")
     try:
-        setting = setting_ref.get()
-        current_value = (
-            setting.to_dict().get("value", False) if setting.exists else False
-        )
-        new_value = not current_value
-        setting_ref.set({"value": new_value})
+        new_value = AdminService.toggle_setting(db, "enforceEmailVerification")
         new_status = "enabled" if new_value else "disabled"
         flash(f"Email verification requirement has been {new_status}.", "success")
     except Exception as e:
@@ -121,42 +117,25 @@ def admin_delete_match(match_id):
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/friend_graph_data")
+@login_required(admin_required=True)
 def friend_graph_data():
     """Provide data for a network graph of users and their friendships."""
     db = firestore.client()
-    users = db.collection("users").stream()
-    nodes = []
-    edges = []
-    for user in users:
-        user_data = user.to_dict()
-        nodes.append({"id": user.id, "label": user_data.get("username", user.id)})
-        # Fetch friends for this user
-        friends_query = (
-            db.collection("users")
-            .document(user.id)
-            .collection("friends")
-            .where(filter=firestore.FieldFilter("status", "==", "accepted"))
-            .stream()
-        )
-        for friend in friends_query:
-            # Add edge only once
-            if user.id < friend.id:
-                edges.append({"from": user.id, "to": friend.id})
-    return jsonify({"nodes": nodes, "edges": edges})
+    try:
+        graph_data = AdminService.build_friend_graph(db)
+        return jsonify(graph_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])
+@login_required(admin_required=True)
 def delete_user(user_id):
     """Delete a user from Firebase Auth and Firestore."""
     db = firestore.client()
     try:
-        # Delete from Firebase Auth
-        auth.delete_user(user_id)
-        # Delete from Firestore
-        db.collection("users").document(user_id).delete()
-        # Note: This doesn't clean up references in matches/groups, which would
-        # require a more complex cleanup process (e.g., a Cloud Function).
+        AdminService.delete_user(db, user_id)
         flash("User deleted successfully.", "success")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
@@ -165,13 +144,12 @@ def delete_user(user_id):
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/promote_user/<string:user_id>", methods=["POST"])
+@login_required(admin_required=True)
 def promote_user(user_id):
     """Promote a user to admin status."""
     db = firestore.client()
     try:
-        user_ref = db.collection("users").document(user_id)
-        user_ref.update({"isAdmin": True})
-        username = user_ref.get().to_dict().get("username", "user")
+        username = AdminService.promote_user(db, user_id)
         flash(f"{username} has been promoted to admin.", "success")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
@@ -185,11 +163,7 @@ def verify_user(user_id):
     """Manually verify a user's email."""
     db = firestore.client()
     try:
-        auth.update_user(user_id, email_verified=True)
-        user_ref = db.collection("users").document(user_id)
-        # Update the local user document to reflect the change immediately in the UI
-        # assuming the UI checks this field.
-        user_ref.update({"email_verified": True})
+        AdminService.verify_user(db, user_id)
         flash("User email verified successfully.", "success")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
