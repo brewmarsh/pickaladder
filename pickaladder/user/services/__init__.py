@@ -112,6 +112,15 @@ from .merging import (
     merge_users as _merge_users,
 )
 
+from .dashboard import (
+    get_dashboard_data as _get_dashboard_data,
+)
+from .profile import (
+    check_username_availability as _check_username_availability,
+    update_email_address as _update_email_address,
+    upload_profile_picture as _upload_profile_picture,
+)
+
 __all__ = ["UserService", "firestore"]
 
 
@@ -155,3 +164,7 @@ class UserService:
     accept_friend_request = staticmethod(_accept_friend_request)
     cancel_friend_request = staticmethod(_cancel_friend_request)
     get_group_rankings = staticmethod(_get_group_rankings)
+    check_username_availability = staticmethod(_check_username_availability)
+    update_email_address = staticmethod(_update_email_address)
+    upload_profile_picture = staticmethod(_upload_profile_picture)
+    get_dashboard_data = staticmethod(_get_dashboard_data)

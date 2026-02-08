@@ -7,7 +7,6 @@ import secrets
 import tempfile
 from typing import TYPE_CHECKING, Any
 
-from firebase_admin import auth, firestore, storage
 from flask import (
     current_app,
     flash,
@@ -18,11 +17,9 @@ from flask import (
     request,
     url_for,
 )
-from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
-from pickaladder.utils import EmailError, send_email
 
 from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm
@@ -73,15 +70,7 @@ def edit_profile() -> Any:
 
         # Handle username change
         if new_username != user_data.get("username"):
-            users_ref = db.collection("users")
-            existing_user = (
-                users_ref.where(
-                    filter=firestore.FieldFilter("username", "==", new_username)
-                )
-                .limit(1)
-                .stream()
-            )
-            if len(list(existing_user)) > 0:
+            if not UserService.check_username_availability(db, new_username):
                 flash(
                     "Username already exists. Please choose a different one.", "danger"
                 )
@@ -91,37 +80,15 @@ def edit_profile() -> Any:
 
         # Handle email change
         if new_email != user_data.get("email"):
-            try:
-                auth.update_user(user_id, email=new_email, email_verified=False)
-                verification_link = auth.generate_email_verification_link(new_email)
-                send_email(
-                    to=new_email,
-                    subject="Verify Your New Email Address",
-                    template="email/verify_email.html",
-                    user={"username": new_username},
-                    verification_link=verification_link,
-                )
+            success, message = UserService.update_email_address(
+                user_id, new_email, new_username
+            )
+            if success:
                 update_data["email"] = new_email
                 update_data["email_verified"] = False
-                flash(
-                    "Your email has been updated. Please check your new email "
-                    "address to verify it.",
-                    "info",
-                )
-            except auth.EmailAlreadyExistsError:
-                flash("That email address is already in use.", "danger")
-                return render_template(
-                    "user/edit_profile.html", form=form, user=user_data
-                )
-            except EmailError as e:
-                current_app.logger.error(f"Email error updating email: {e}")
-                flash(str(e), "danger")
-                return render_template(
-                    "user/edit_profile.html", form=form, user=user_data
-                )
-            except Exception as e:
-                current_app.logger.error(f"Error updating email: {e}")
-                flash("An error occurred while updating your email.", "danger")
+                flash(message, "info")
+            else:
+                flash(message, "danger")
                 return render_template(
                     "user/edit_profile.html", form=form, user=user_data
                 )
@@ -200,22 +167,7 @@ def dashboard() -> Any:
         form.dupr_rating.data = user_data.get("duprRating")
         form.dark_mode.data = user_data.get("dark_mode")
 
-    # Fetch dashboard data for SSR
-    matches_all = UserService.get_user_matches(db, user_id)
-    stats = UserService.calculate_stats(matches_all, user_id)
-
-    # Prepare formatted matches for the activity feed (limit to 20)
-    # calculate_stats already sorts them by date descending
-    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:20]]
-    matches = UserService.format_matches_for_dashboard(db, recent_matches_docs, user_id)
-
-    # Fetch friends, requests, rankings, and tournament invites
-    friends = UserService.get_user_friends(db, user_id)
-    requests_data = UserService.get_user_pending_requests(db, user_id)
-    group_rankings = UserService.get_group_rankings(db, user_id)
-    pending_tournament_invites = UserService.get_pending_tournament_invites(db, user_id)
-    active_tournaments = UserService.get_active_tournaments(db, user_id)
-    past_tournaments = UserService.get_past_tournaments(db, user_id)
+    dashboard_data = UserService.get_dashboard_data(db, user_id)
 
     if form.validate_on_submit():
         try:
@@ -225,22 +177,12 @@ def dashboard() -> Any:
             if form.dupr_rating.data is not None:
                 update_data["duprRating"] = float(form.dupr_rating.data)
 
-            profile_picture_file = form.profile_picture.data
-            if profile_picture_file:
-                filename = secure_filename(
-                    profile_picture_file.filename or "profile.jpg"
+            if form.profile_picture.data:
+                public_url = UserService.upload_profile_picture(
+                    user_id, form.profile_picture.data
                 )
-                bucket = storage.bucket()
-                blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
-
-                with tempfile.NamedTemporaryFile(
-                    suffix=os.path.splitext(filename)[1]
-                ) as temp_file:
-                    profile_picture_file.save(temp_file.name)
-                    blob.upload_from_filename(temp_file.name)
-
-                blob.make_public()
-                update_data["profilePictureUrl"] = blob.public_url
+                if public_url:
+                    update_data["profilePictureUrl"] = public_url
 
             user_ref.update(update_data)
             flash("Profile updated successfully.", "success")
@@ -257,14 +199,14 @@ def dashboard() -> Any:
         "user_dashboard.html",
         form=form,
         user=user_data,
-        matches=matches,
-        stats=stats,
-        friends=friends,
-        requests=requests_data,
-        group_rankings=group_rankings,
-        pending_tournament_invites=pending_tournament_invites,
-        active_tournaments=active_tournaments,
-        past_tournaments=past_tournaments,
+        matches=dashboard_data["matches"],
+        stats=dashboard_data["stats"],
+        friends=dashboard_data["friends"],
+        requests=dashboard_data["requests"],
+        group_rankings=dashboard_data["group_rankings"],
+        pending_tournament_invites=dashboard_data["pending_tournament_invites"],
+        active_tournaments=dashboard_data["active_tournaments"],
+        past_tournaments=dashboard_data["past_tournaments"],
     )
 
 
@@ -631,27 +573,9 @@ def api_dashboard() -> Any:
     """Provide dashboard data as JSON, including matches and group rankings."""
     db = firestore.client()
     user_id = g.user["uid"]
-    user_data = UserService.get_user_by_id(db, user_id)
 
-    # Fetch friends
-    friends_data = UserService.get_user_friends(db, user_id)
-
-    # Fetch pending friend requests
-    requests_data = UserService.get_user_pending_requests(db, user_id)
-
-    # Fetch and process matches for the dashboard data
-    matches_all = UserService.get_user_matches(db, user_id)
-    stats = UserService.calculate_stats(matches_all, user_id)
-
-    # Format the 10 most recent matches for the activity feed
-    # calculate_stats already sorted them by date descending
-    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:10]]
-    matches_data = UserService.format_matches_for_dashboard(
-        db, recent_matches_docs, user_id
-    )
-
-    # Get group rankings
-    group_rankings = UserService.get_group_rankings(db, user_id)
+    dashboard_data = UserService.get_dashboard_data(db, user_id)
+    stats = dashboard_data["stats"]
 
     streak_display = (
         f"{stats['current_streak']}{stats['streak_type']}"
@@ -661,11 +585,11 @@ def api_dashboard() -> Any:
 
     return jsonify(
         {
-            "user": user_data,
-            "friends": friends_data,
-            "requests": requests_data,
-            "matches": matches_data,
-            "group_rankings": group_rankings,
+            "user": dashboard_data["user"],
+            "friends": dashboard_data["friends"],
+            "requests": dashboard_data["requests"],
+            "matches": dashboard_data["matches"],
+            "group_rankings": dashboard_data["group_rankings"],
             "stats": {
                 "total_matches": stats["total_games"],
                 "win_percentage": stats["win_rate"],
