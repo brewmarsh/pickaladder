@@ -23,6 +23,7 @@ from pickaladder.core.constants import (
 from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
+# Resolved: Import the extracted match parsing logic
 from .services.match_parser import _extract_team_ids, _get_match_scores
 
 
