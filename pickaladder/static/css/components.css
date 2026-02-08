@@ -262,12 +262,12 @@
     .table-standard th, .table-standard td { padding: 12px 8px; }
 
     /* Merged: Specific dashboard hero fixes from Main */
-    .hero-stats-card { 
-        flex-direction: column; 
-        text-align: center; 
-        padding-top: 40px; 
+    .hero-stats-card {
+        flex-direction: column;
+        text-align: center;
+        padding-top: 40px;
     }
-    
+
     .hero-stats-card .profile-picture,
     .hero-stats-card .profile-picture-large {
         width: 120px !important;
