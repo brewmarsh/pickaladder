@@ -5,8 +5,11 @@ import secrets
 import tempfile
 from typing import TYPE_CHECKING, Any, cast
 
-from firebase_admin import auth, firestore, storage
+from firebase_admin import auth, storage
+from flask import current_app
+from werkzeug.utils import secure_filename
 
+from pickaladder.user.services import firestore as service_firestore
 from pickaladder.utils import send_email
 
 from ..helpers import smart_display_name as _smart_display_name
@@ -44,8 +47,6 @@ def get_all_users(
     db: Client, exclude_ids: list[str] | None = None, limit: int = 20
 ) -> list[dict[str, Any]]:
     """Fetch a list of users, excluding given IDs, sorted by date."""
-    from pickaladder.user.services import firestore as service_firestore  # noqa: PLC0415
-
     if exclude_ids is None:
         exclude_ids = []
 
@@ -72,10 +73,6 @@ def process_profile_update(
     db: Client, user_id: str, form_data: Any, current_user_data: dict[str, Any]
 ) -> dict[str, Any]:
     """Handle complex profile updates, including email change and verification."""
-    from flask import current_app
-
-    from pickaladder.user.services import firestore as service_firestore
-
     new_email = form_data.email.data
     new_username = form_data.username.data
     update_data: dict[str, Any] = {
@@ -142,9 +139,7 @@ def search_users(
     db: Client, current_user_id: str, search_term: str
 ) -> list[tuple[dict[str, Any], str | None, str | None]]:
     """Search for users and return their friend status with the current user."""
-    from pickaladder.user.services import firestore as service_firestore
-
-    query = db.collection("users")
+    query: Any = db.collection("users")
     if search_term:
         query = query.where(
             filter=service_firestore.FieldFilter("username", ">=", search_term)
@@ -178,8 +173,6 @@ def search_users(
 
 def create_invite_token(db: Client, user_id: str) -> str:
     """Generate and store a unique invite token."""
-    from pickaladder.user.services import firestore as service_firestore
-
     token = secrets.token_urlsafe(16)
     db.collection("invites").document(token).set(
         {
@@ -195,8 +188,6 @@ def update_dashboard_profile(
     db: Client, user_id: str, form_data: Any, profile_picture_file: Any = None
 ) -> None:
     """Update user profile from dashboard form, including image upload."""
-    from werkzeug.utils import secure_filename
-
     update_data: dict[str, Any] = {"dark_mode": bool(form_data.dark_mode.data)}
     if form_data.dupr_rating.data is not None:
         update_data["duprRating"] = float(form_data.dupr_rating.data)

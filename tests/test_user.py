@@ -34,7 +34,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
-            "storage": patch("pickaladder.user.routes.storage"),
+            "storage_service": patch("pickaladder.user.services.core.storage"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
 
@@ -97,7 +97,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         """Test successfully uploading a profile picture."""
         self._set_session_user()
         mock_user_doc = self._mock_firestore_user()
-        mock_storage = self.mocks["storage"]
+        mock_storage = self.mocks["storage_service"]
         mock_bucket = mock_storage.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
         mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test.jpg"

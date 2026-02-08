@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-import os
-import secrets
-import tempfile
 from typing import TYPE_CHECKING, Any
 
-from firebase_admin import auth, firestore, storage
+from firebase_admin import firestore
 from flask import (
-    current_app,
     flash,
     g,
     jsonify,
@@ -18,7 +14,6 @@ from flask import (
     request,
     url_for,
 )
-from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
@@ -28,109 +23,137 @@ from .forms import UpdateProfileForm, UpdateUserForm
 from .services import UserService
 
 if TYPE_CHECKING:
-    from pickaladder.group.models import Group
-
-    from .models import User
+    pass
 
 
 class MockPagination:
     """A mock pagination object."""
 
-    # TODO: Add type hints for Agent clarity
     def __init__(self, items: list[Any]) -> None:
         """Initialize the mock pagination object."""
         self.items = items
         self.pages = 1
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/edit_profile", methods=["GET", "POST"])
 @login_required
 def edit_profile() -> Any:
-    """Handle user profile updates for name, username, and email."""
+    """Handle user profile updates."""
+    form = UpdateUserForm(data=g.user)
+    if form.validate_on_submit():
+        res = UserService.process_profile_update(
+            firestore.client(), g.user["uid"], form, g.user
+        )
+        if res["success"]:
+            if "info" in res:
+                flash(res["info"], "info")
+            flash("Account updated successfully.", "success")
+            return redirect(url_for(".edit_profile"))
+        flash(res["error"], "danger")
+    return render_template("user/edit_profile.html", form=form, user=g.user)
+
+
+@bp.route("/dashboard", methods=["GET", "POST"])
+@login_required
+def dashboard() -> Any:
+    """Render user dashboard and handle profile updates."""
     db = firestore.client()
     user_id = g.user["uid"]
-    user_data = g.user
-    form = UpdateUserForm(data=user_data)
+    form = UpdateProfileForm()
+
+    if request.method == "GET":
+        form.dupr_rating.data = g.user.get("duprRating")
+        form.dark_mode.data = g.user.get("dark_mode")
+
+    data = UserService.get_dashboard_data(db, user_id)
 
     if form.validate_on_submit():
-        new_email = form.email.data
-        new_username = form.username.data
-        update_data: dict[str, Any] = {
-            "name": form.name.data,
-            "username": new_username,
-        }
+        UserService.update_dashboard_profile(
+            db, user_id, form, form.profile_picture.data
+        )
+        flash("Profile updated successfully.", "success")
+        return redirect(url_for(".dashboard"))
 
-        # Handle DUPR fields
-        dupr_id = form.dupr_id.data.strip() if form.dupr_id.data else None
-        update_data["dupr_id"] = dupr_id
+    return render_template("user_dashboard.html", form=form, user=g.user, **data)
 
-        if form.dupr_rating.data is not None:
-            update_data["dupr_rating"] = float(form.dupr_rating.data)
-        else:
-            update_data["dupr_rating"] = None
 
-        # Handle username change
-        if new_username != user_data.get("username"):
-            users_ref = db.collection("users")
-            existing_user = (
-                users_ref.where(
-                    filter=firestore.FieldFilter("username", "==", new_username)
-                )
-                .limit(1)
-                .stream()
-            )
-            if len(list(existing_user)) > 0:
-                flash(
-                    "Username already exists. Please choose a different one.", "danger"
-                )
-                return render_template(
-                    "user/edit_profile.html", form=form, user=user_data
-                )
+@bp.route("/<string:user_id>")
+@login_required
+def view_user(user_id: str) -> Any:
+    """Display a user's public profile."""
+    db = firestore.client()
+    data = UserService.get_user_profile_data(db, g.user["uid"], user_id)
+    if not data:
+        flash("User not found.", "danger")
+        return redirect(url_for(".users"))
+    return render_template(
+        "user/profile.html",
+        user=g.user,
+        dupr_url_base=DUPR_PROFILE_BASE_URL,
+        record={"wins": data["stats"]["wins"], "losses": data["stats"]["losses"]},
+        total_games=data["stats"]["total_games"],
+        win_rate=data["stats"]["win_rate"],
+        current_streak=data["stats"]["current_streak"],
+        streak_type=data["stats"]["streak_type"],
+        **data,
+    )
 
-        # Handle email change
-        if new_email != user_data.get("email"):
-            try:
-                auth.update_user(user_id, email=new_email, email_verified=False)
-                verification_link = auth.generate_email_verification_link(new_email)
-                send_email(
-                    to=new_email,
-                    subject="Verify Your New Email Address",
-                    template="email/verify_email.html",
-                    user={"username": new_username},
-                    verification_link=verification_link,
-                )
-                update_data["email"] = new_email
-                update_data["email_verified"] = False
-                flash(
-                    "Your email has been updated. Please check your new email "
-                    "address to verify it.",
-                    "info",
-                )
-            except auth.EmailAlreadyExistsError:
-                flash("That email address is already in use.", "danger")
-                return render_template(
-                    "user/edit_profile.html", form=form, user=user_data
-                )
-            except EmailError as e:
-                current_app.logger.error(f"Email error updating email: {e}")
-                flash(str(e), "danger")
-                return render_template(
-                    "user/edit_profile.html", form=form, user=user_data
-                )
-            except Exception as e:
-                current_app.logger.error(f"Error updating email: {e}")
-                flash("An error occurred while updating your email.", "danger")
-                return render_template(
-                    "user/edit_profile.html", form=form, user=user_data
-                )
 
-        if update_data:
-            UserService.update_user_profile(db, user_id, update_data)
-            flash("Account updated successfully.", "success")
-        return redirect(url_for(".edit_profile"))
+@bp.route("/community")
+@login_required
+def view_community() -> Any:
+    """Render the community hub."""
+    db = firestore.client()
+    search_term = request.args.get("search", "").strip()
+    data = UserService.get_community_data(db, g.user["uid"], search_term)
+    return render_template(
+        "community.html", search_term=search_term, user=g.user, **data
+    )
 
-    return render_template("user/edit_profile.html", form=form, user=user_data)
+
+@bp.route("/users")
+@login_required
+def users() -> Any:
+    """List and allows searching for users."""
+    search_term = request.args.get("search", "")
+    user_items = UserService.search_users(
+        firestore.client(), g.user["uid"], search_term
+    )
+    return render_template(
+        "users.html",
+        pagination=MockPagination(user_items),
+        search_term=search_term,
+        fof=[],
+    )
+
+
+@bp.route("/send_friend_request/<string:friend_id>", methods=["POST"])
+@login_required
+def send_friend_request(friend_id: str) -> Any:
+    """Send a friend request."""
+    if g.user["uid"] == friend_id:
+        flash("You cannot send a friend request to yourself.", "danger")
+        return redirect(url_for(".users"))
+
+    success = UserService.send_friend_request(
+        firestore.client(), g.user["uid"], friend_id
+    )
+    if success:
+        flash("Friend request sent.", "success")
+    else:
+        flash("An error occurred while sending the friend request.", "danger")
+
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"success": success})
+    return redirect(url_for(".users"))
+
+
+@bp.route("/friends")
+@login_required
+def friends() -> Any:
+    """Display the user's friends and pending requests."""
+    data = UserService.get_friends_page_data(firestore.client(), g.user["uid"])
+    return render_template("friends/index.html", **data)
 
 
 @bp.route("/requests", methods=["GET"])
@@ -139,555 +162,69 @@ def friend_requests() -> Any:
     """Display pending friend requests."""
     db = firestore.client()
     user_id = g.user["uid"]
-    requests_data = UserService.get_user_pending_requests(db, user_id)
-    sent_requests = UserService.get_user_sent_requests(db, user_id)
     return render_template(
-        "user/requests.html", requests=requests_data, sent_requests=sent_requests
+        "user/requests.html",
+        requests=UserService.get_user_pending_requests(db, user_id),
+        sent_requests=UserService.get_user_sent_requests(db, user_id),
     )
 
 
 @bp.route("/requests/<string:requester_id>/accept", methods=["POST"])
+@bp.route("/accept_friend_request/<string:requester_id>", methods=["POST"])
 @login_required
 def accept_request(requester_id: str) -> Any:
-    """Accept a friend request and redirect back to the requests list."""
+    """Accept a friend request."""
     db = firestore.client()
-    user_id = g.user["uid"]
-
-    # Get the requester's name for the flash message
     requester = UserService.get_user_by_id(db, requester_id)
-    username = UserService.smart_display_name(requester) if requester else "the user"
+    name = UserService.smart_display_name(requester) if requester else "the user"
 
-    if UserService.accept_friend_request(db, user_id, requester_id):
-        flash(f"You are now friends with {username}!", "success")
+    if UserService.accept_friend_request(db, g.user["uid"], requester_id):
+        flash(f"You are now friends with {name}!", "success")
     else:
-        flash("An error occurred while accepting the friend request.", "danger")
+        flash("An error occurred.", "danger")
 
-    return redirect(url_for(".friend_requests"))
+    return redirect(request.referrer or url_for(".friend_requests"))
 
 
 @bp.route("/requests/<string:target_id>/cancel", methods=["POST"])
+@bp.route("/decline_friend_request/<string:target_id>", methods=["POST"])
 @login_required
 def cancel_request(target_id: str) -> Any:
-    """Cancel a sent friend request."""
-    db = firestore.client()
-    user_id = g.user["uid"]
-
-    if UserService.cancel_friend_request(db, user_id, target_id):
-        flash("Friend request cancelled.", "success")
+    """Cancel or decline a friend request."""
+    if UserService.cancel_friend_request(firestore.client(), g.user["uid"], target_id):
+        flash("Friend request processed.", "success")
     else:
-        flash("An error occurred while cancelling the friend request.", "danger")
+        flash("An error occurred.", "danger")
+    return redirect(request.referrer or url_for(".friend_requests"))
 
-    return redirect(url_for(".friend_requests"))
 
-
-# TODO: Add type hints for Agent clarity
-@bp.route("/dashboard", methods=["GET", "POST"])
-@login_required
-def dashboard() -> Any:
-    """Render the user dashboard and handles profile updates.
-
-    On GET, it displays the dashboard with the profile form.
-    On POST, it processes the profile update form.
-    """
-    db = firestore.client()
-    user_id = g.user["uid"]
-    user_ref = db.collection("users").document(user_id)
-    user_data = g.user
-
-    form = UpdateProfileForm()
-    if request.method == "GET":
-        form.dupr_rating.data = user_data.get("duprRating")
-        form.dark_mode.data = user_data.get("dark_mode")
-
-    # Fetch dashboard data for SSR
-    matches_all = UserService.get_user_matches(db, user_id)
-    stats = UserService.calculate_stats(matches_all, user_id)
-
-    # Prepare formatted matches for the activity feed (limit to 20)
-    # calculate_stats already sorts them by date descending
-    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:20]]
-    matches = UserService.format_matches_for_dashboard(db, recent_matches_docs, user_id)
-
-    # Fetch friends, requests, rankings, and tournament invites
-    friends = UserService.get_user_friends(db, user_id)
-    requests_data = UserService.get_user_pending_requests(db, user_id)
-    group_rankings = UserService.get_group_rankings(db, user_id)
-    pending_tournament_invites = UserService.get_pending_tournament_invites(db, user_id)
-    active_tournaments = UserService.get_active_tournaments(db, user_id)
-    past_tournaments = UserService.get_past_tournaments(db, user_id)
-
-    if form.validate_on_submit():
-        try:
-            update_data: dict[str, Any] = {
-                "dark_mode": bool(form.dark_mode.data),
-            }
-            if form.dupr_rating.data is not None:
-                update_data["duprRating"] = float(form.dupr_rating.data)
-
-            profile_picture_file = form.profile_picture.data
-            if profile_picture_file:
-                filename = secure_filename(
-                    profile_picture_file.filename or "profile.jpg"
-                )
-                bucket = storage.bucket()
-                blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
-
-                with tempfile.NamedTemporaryFile(
-                    suffix=os.path.splitext(filename)[1]
-                ) as temp_file:
-                    profile_picture_file.save(temp_file.name)
-                    blob.upload_from_filename(temp_file.name)
-
-                blob.make_public()
-                update_data["profilePictureUrl"] = blob.public_url
-
-            user_ref.update(update_data)
-            flash("Profile updated successfully.", "success")
-            return redirect(url_for(".dashboard"))
-        except Exception as e:
-            current_app.logger.error(f"Error updating profile: {e}")
-            flash(f"An error occurred: {e}", "danger")
-    else:
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f"Error in {getattr(form, field).label.text}: {error}", "danger")
-
-    return render_template(
-        "user_dashboard.html",
-        form=form,
-        user=user_data,
-        matches=matches,
-        stats=stats,
-        friends=friends,
-        requests=requests_data,
-        group_rankings=group_rankings,
-        pending_tournament_invites=pending_tournament_invites,
-        active_tournaments=active_tournaments,
-        past_tournaments=past_tournaments,
-    )
-
-
-# TODO: Add type hints for Agent clarity
-@bp.route("/<string:user_id>")
-@login_required
-def view_user(user_id: str) -> Any:
-    """Display a user's public profile."""
-    db = firestore.client()
-    profile_user_data = UserService.get_user_by_id(db, user_id)
-
-    if not profile_user_data:
-        flash("User not found.", "danger")
-        return redirect(url_for(".users"))
-
-    current_user_id = g.user["uid"]
-
-    # Fetch friendship status
-    is_friend, friend_request_sent = UserService.get_friendship_info(
-        db, current_user_id, user_id
-    )
-
-    # H2H STATS
-    h2h_stats = None
-    if current_user_id != user_id:
-        h2h_stats = UserService.get_h2h_stats(db, current_user_id, user_id)
-
-    # Fetch user's friends (limited for display)
-    friends = UserService.get_user_friends(db, user_id, limit=10)
-
-    # Fetch and process user's match history
-    matches = UserService.get_user_matches(db, user_id)
-    stats = UserService.calculate_stats(matches, user_id)
-
-    # Format matches for display (limit to 20)
-    display_items_docs = [m["doc"] for m in stats["processed_matches"][:20]]
-    matches_data = UserService.format_matches_for_dashboard(
-        db, display_items_docs, user_id
-    )
-
-    return render_template(
-        "user/profile.html",
-        profile_user=profile_user_data,
-        friends=friends,
-        matches=matches_data,
-        is_friend=is_friend,
-        friend_request_sent=friend_request_sent,
-        record={"wins": stats["wins"], "losses": stats["losses"]},
-        user=g.user,
-        total_games=stats["total_games"],
-        win_rate=stats["win_rate"],
-        current_streak=stats["current_streak"],
-        streak_type=stats["streak_type"],
-        h2h_stats=h2h_stats,
-        dupr_url_base=DUPR_PROFILE_BASE_URL,
-    )
-
-
-# TODO: Add type hints for Agent clarity
-@bp.route("/community")
-@login_required
-def view_community() -> Any:
-    """Render the community hub with friends, requests, and other users."""
-    db = firestore.client()
-    current_user_id = g.user["uid"]
-    search_term = request.args.get("search", "").strip()
-
-    # Fetch all data sets
-    friends = UserService.get_user_friends(db, current_user_id)
-    incoming_requests = UserService.get_user_pending_requests(db, current_user_id)
-    outgoing_requests = UserService.get_user_sent_requests(db, current_user_id)
-
-    # Combine all IDs to exclude from "Discover Players"
-    exclude_ids = [current_user_id]
-    exclude_ids.extend([f["id"] for f in friends])
-    exclude_ids.extend([r["id"] for r in incoming_requests])
-    exclude_ids.extend([r["id"] for r in outgoing_requests])
-
-    all_users = UserService.get_all_users(db, exclude_ids, limit=20)
-    public_groups = UserService.get_public_groups(db, limit=10)
-    pending_tournament_invites = UserService.get_pending_tournament_invites(
-        db, current_user_id
-    )
-
-    # Search logic: filter all lists if search_term is present
-    if search_term:
-        term = search_term.lower()
-
-        def matches_search(user_data: User | dict[str, Any]) -> bool:
-            username = user_data.get("username", "").lower()
-            name = user_data.get("name", "").lower()
-            email = user_data.get("email", "").lower()
-            return term in username or term in name or term in email
-
-        friends = [f for f in friends if matches_search(f)]
-        incoming_requests = [r for r in incoming_requests if matches_search(r)]
-        outgoing_requests = [r for r in outgoing_requests if matches_search(r)]
-        all_users = [u for u in all_users if matches_search(u)]
-        pending_tournament_invites = [
-            ti
-            for ti in pending_tournament_invites
-            if term in ti.get("name", "").lower()
-        ]
-
-        def group_matches_search(group_data: Group | dict[str, Any]) -> bool:
-            name = group_data.get("name", "").lower()
-            description = group_data.get("description", "").lower()
-            return term in name or term in description
-
-        public_groups = [g for g in public_groups if group_matches_search(g)]
-
-    return render_template(
-        "community.html",
-        friends=friends,
-        incoming_requests=incoming_requests,
-        outgoing_requests=outgoing_requests,
-        all_users=all_users,
-        public_groups=public_groups,
-        pending_tournament_invites=pending_tournament_invites,
-        search_term=search_term,
-        user=g.user,
-    )
-
-
-@bp.route("/users")
-@login_required
-def users() -> Any:
-    """List and allows searching for users."""
-    db = firestore.client()
-    current_user_id = g.user["uid"]
-    search_term = request.args.get("search", "")
-    query = db.collection("users")
-
-    if search_term:
-        # Firestore doesn't support case-insensitive search natively.
-        # This searches for an exact username match.
-        query = query.where(
-            filter=firestore.FieldFilter("username", ">=", search_term)
-        ).where(filter=firestore.FieldFilter("username", "<=", search_term + "\uf8ff"))
-
-    all_users_docs = [
-        doc for doc in query.limit(20).stream() if doc.id != current_user_id
-    ]
-
-    # Get all friend relationships for the current user to check status efficiently
-    friends_ref = db.collection("users").document(current_user_id).collection("friends")
-    friends_docs = friends_ref.stream()
-    friend_statuses = {doc.id: doc.to_dict() for doc in friends_docs}
-
-    user_items = []
-    for user_doc in all_users_docs:
-        user_data = user_doc.to_dict()
-        user_data["id"] = user_doc.id  # Add document ID to the dictionary
-
-        sent_status = None
-        received_status = None
-
-        friend_data = friend_statuses.get(user_doc.id)
-        if friend_data:
-            status = friend_data.get("status")
-            initiator = friend_data.get("initiator")
-
-            if initiator:
-                sent_status = status
-            else:
-                received_status = status
-
-        user_items.append((user_data, sent_status, received_status))
-
-    # The template expects a pagination object with an 'items' attribute.
-    # We are not implementing full pagination, just adapting to the template.
-    pagination = MockPagination(user_items)
-
-    # The template also iterates over 'fof' (friends of friends)
-    fof: list[dict[str, Any]] = []
-
-    return render_template(
-        "users.html", pagination=pagination, search_term=search_term, fof=fof
-    )
-
-
-# TODO: Add type hints for Agent clarity
-@bp.route("/send_friend_request/<string:friend_id>", methods=["POST"])
-@login_required
-def send_friend_request(friend_id: str) -> Any:
-    """Send a friend request to another user."""
-    db = firestore.client()
-    current_user_id = g.user["uid"]
-    if current_user_id == friend_id:
-        flash("You cannot send a friend request to yourself.", "danger")
-        return redirect(url_for(".users"))
-
-    # Use a batch to ensure both documents are created or neither is.
-    batch = db.batch()
-
-    # Create pending request in current user's friend list
-    my_friend_ref = (
-        db.collection("users")
-        .document(current_user_id)
-        .collection("friends")
-        .document(friend_id)
-    )
-    batch.set(my_friend_ref, {"status": "pending", "initiator": True})
-
-    # Create pending request in target user's friend list
-    their_friend_ref = (
-        db.collection("users")
-        .document(friend_id)
-        .collection("friends")
-        .document(current_user_id)
-    )
-    batch.set(their_friend_ref, {"status": "pending", "initiator": False})
-
-    try:
-        batch.commit()
-        flash("Friend request sent.", "success")
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return jsonify({"success": True})
-    except Exception as e:
-        current_app.logger.error(f"Error sending friend request: {e}")
-        flash("An error occurred while sending the friend request.", "danger")
-        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            return jsonify({"success": False, "message": str(e)})
-
-    return redirect(url_for(".users"))
-
-
-# TODO: Add type hints for Agent clarity
-@bp.route("/friends")
-@login_required
-def friends() -> Any:
-    """Display the user's friends and pending requests."""
-    db = firestore.client()
-    current_user_id = g.user["uid"]
-    friends_ref = db.collection("users").document(current_user_id).collection("friends")
-
-    # Fetch accepted friends
-    accepted_docs = friends_ref.where(
-        filter=firestore.FieldFilter("status", "==", "accepted")
-    ).stream()
-    accepted_ids = [doc.id for doc in accepted_docs]
-    accepted_friends = []
-    if accepted_ids:
-        refs = [db.collection("users").document(uid) for uid in accepted_ids]
-        docs = db.get_all(refs)
-        accepted_friends = [
-            {"id": doc.id, **doc.to_dict()} for doc in docs if doc.exists
-        ]
-
-    # Fetch pending requests (where the other user was the initiator)
-    requests_docs = (
-        friends_ref.where(filter=firestore.FieldFilter("status", "==", "pending"))
-        .where(filter=firestore.FieldFilter("initiator", "==", False))
-        .stream()
-    )
-    request_ids = [doc.id for doc in requests_docs]
-    pending_requests = []
-    if request_ids:
-        refs = [db.collection("users").document(uid) for uid in request_ids]
-        docs = db.get_all(refs)
-        pending_requests = [
-            {"id": doc.id, **doc.to_dict()} for doc in docs if doc.exists
-        ]
-
-    # Fetch sent requests (where the current user was the initiator)
-    sent_docs = (
-        friends_ref.where(filter=firestore.FieldFilter("status", "==", "pending"))
-        .where(filter=firestore.FieldFilter("initiator", "==", True))
-        .stream()
-    )
-    sent_ids = [doc.id for doc in sent_docs]
-    sent_requests = []
-    if sent_ids:
-        refs = [db.collection("users").document(uid) for uid in sent_ids]
-        docs = db.get_all(refs)
-        sent_requests = [{"id": doc.id, **doc.to_dict()} for doc in docs if doc.exists]
-
-    return render_template(
-        "friends/index.html",
-        friends=accepted_friends,
-        requests=pending_requests,
-        sent_requests=sent_requests,
-    )
-
-
-# TODO: Add type hints for Agent clarity
-@bp.route("/accept_friend_request/<string:friend_id>", methods=["POST"])
-@login_required
-def accept_friend_request(friend_id: str) -> Any:
-    """Accept a friend request."""
-    db = firestore.client()
-    current_user_id = g.user["uid"]
-    batch = db.batch()
-
-    # Update status in current user's friend list
-    my_friend_ref = (
-        db.collection("users")
-        .document(current_user_id)
-        .collection("friends")
-        .document(friend_id)
-    )
-    batch.update(my_friend_ref, {"status": "accepted"})
-
-    # Update status in the other user's friend list
-    their_friend_ref = (
-        db.collection("users")
-        .document(friend_id)
-        .collection("friends")
-        .document(current_user_id)
-    )
-    batch.update(their_friend_ref, {"status": "accepted"})
-
-    try:
-        batch.commit()
-        flash("Friend request accepted.", "success")
-    except Exception as e:
-        current_app.logger.error(f"Error accepting friend request: {e}")
-        flash("An error occurred while accepting the request.", "danger")
-
-    return redirect(url_for(".friends"))
-
-
-# TODO: Add type hints for Agent clarity
-@bp.route("/decline_friend_request/<string:friend_id>", methods=["POST"])
-@login_required
-def decline_friend_request(friend_id: str) -> Any:
-    """Decline a friend request."""
-    db = firestore.client()
-    current_user_id = g.user["uid"]
-    batch = db.batch()
-
-    # Delete request from current user's list
-    my_friend_ref = (
-        db.collection("users")
-        .document(current_user_id)
-        .collection("friends")
-        .document(friend_id)
-    )
-    batch.delete(my_friend_ref)
-
-    # Delete request from the other user's list
-    their_friend_ref = (
-        db.collection("users")
-        .document(friend_id)
-        .collection("friends")
-        .document(current_user_id)
-    )
-    batch.delete(their_friend_ref)
-
-    try:
-        batch.commit()
-        flash("Friend request declined.", "success")
-    except Exception as e:
-        current_app.logger.error(f"Error declining friend request: {e}")
-        flash("An error occurred while declining the request.", "danger")
-
-    return redirect(url_for(".friends"))
-
-
-# TODO: Add type hints for Agent clarity
 @bp.route("/api/dashboard")
 @login_required
 def api_dashboard() -> Any:
-    """Provide dashboard data as JSON, including matches and group rankings."""
-    db = firestore.client()
+    """Provide dashboard data as JSON."""
     user_id = g.user["uid"]
-    user_data = UserService.get_user_by_id(db, user_id)
-
-    # Fetch friends
-    friends_data = UserService.get_user_friends(db, user_id)
-
-    # Fetch pending friend requests
-    requests_data = UserService.get_user_pending_requests(db, user_id)
-
-    # Fetch and process matches for the dashboard data
-    matches_all = UserService.get_user_matches(db, user_id)
-    stats = UserService.calculate_stats(matches_all, user_id)
-
-    # Format the 10 most recent matches for the activity feed
-    # calculate_stats already sorted them by date descending
-    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:10]]
-    matches_data = UserService.format_matches_for_dashboard(
-        db, recent_matches_docs, user_id
-    )
-
-    # Get group rankings
-    group_rankings = UserService.get_group_rankings(db, user_id)
-
-    streak_display = (
-        f"{stats['current_streak']}{stats['streak_type']}"
-        if stats["processed_matches"]
-        else "N/A"
-    )
-
+    data = UserService.get_dashboard_data(firestore.client(), user_id)
+    streak = data["stats"]["current_streak"]
+    s_type = data["stats"]["streak_type"]
     return jsonify(
         {
-            "user": user_data,
-            "friends": friends_data,
-            "requests": requests_data,
-            "matches": matches_data,
-            "group_rankings": group_rankings,
+            "user": UserService.get_user_by_id(firestore.client(), user_id),
+            "friends": data["friends"],
+            "requests": data["requests"],
+            "matches": data["matches"],
+            "group_rankings": data["group_rankings"],
             "stats": {
-                "total_matches": stats["total_games"],
-                "win_percentage": stats["win_rate"],
-                "current_streak": streak_display,
+                "total_matches": data["stats"]["total_games"],
+                "win_percentage": data["stats"]["win_rate"],
+                "current_streak": f"{streak}{s_type}" if data["matches"] else "N/A",
             },
         }
     )
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/api/create_invite", methods=["POST"])
 @login_required
 def create_invite() -> Any:
-    """Generate a unique invite token and stores it in Firestore."""
-    db = firestore.client()
-    user_id = g.user["uid"]
-    token = secrets.token_urlsafe(16)
-    invite_ref = db.collection("invites").document(token)
-    invite_ref.set(
-        {
-            "userId": user_id,
-            "createdAt": firestore.SERVER_TIMESTAMP,
-            "used": False,
-        }
-    )
+    """Generate a unique invite token."""
+    token = UserService.create_invite_token(firestore.client(), g.user["uid"])
     return jsonify({"token": token})

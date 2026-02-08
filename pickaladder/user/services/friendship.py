@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 from flask import current_app
 
+from pickaladder.user.services import firestore as service_firestore
+
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
@@ -13,11 +15,9 @@ def get_user_friends(
     db: Client, user_id: str, limit: int | None = None
 ) -> list[dict[str, Any]]:
     """Fetch a user's friends."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
-
     user_ref = db.collection("users").document(user_id)
     query = user_ref.collection("friends").where(
-        filter=firestore.FieldFilter("status", "==", "accepted")
+        filter=service_firestore.FieldFilter("status", "==", "accepted")
     )
     if limit:
         query = query.limit(limit)
@@ -64,13 +64,11 @@ def get_friendship_info(
 
 def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending friend requests where the user is the recipient."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
-
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")
-        .where(filter=firestore.FieldFilter("status", "==", "pending"))
-        .where(filter=firestore.FieldFilter("initiator", "==", False))
+        .where(filter=service_firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=service_firestore.FieldFilter("initiator", "==", False))
         .stream()
     )
     request_ids = [doc.id for doc in requests_query]
@@ -90,13 +88,11 @@ def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending friend requests where the user is the initiator."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
-
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")
-        .where(filter=firestore.FieldFilter("status", "==", "pending"))
-        .where(filter=firestore.FieldFilter("initiator", "==", True))
+        .where(filter=service_firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=service_firestore.FieldFilter("initiator", "==", True))
         .stream()
     )
     request_ids = [doc.id for doc in requests_query]
@@ -172,3 +168,79 @@ def cancel_friend_request(db: Client, user_id: str, target_user_id: str) -> bool
     except Exception as e:
         current_app.logger.error(f"Error cancelling friend request: {e}")
         return False
+
+
+def send_friend_request(db: Client, user_id: str, friend_id: str) -> bool:
+    """Send a friend request and ensure reciprocal pending status."""
+    try:
+        batch = db.batch()
+
+        # Create pending request in current user's friend list
+        my_friend_ref = (
+            db.collection("users")
+            .document(user_id)
+            .collection("friends")
+            .document(friend_id)
+        )
+        batch.set(my_friend_ref, {"status": "pending", "initiator": True})
+
+        # Create pending request in target user's friend list
+        their_friend_ref = (
+            db.collection("users")
+            .document(friend_id)
+            .collection("friends")
+            .document(user_id)
+        )
+        batch.set(their_friend_ref, {"status": "pending", "initiator": False})
+
+        batch.commit()
+        return True
+    except Exception as e:
+        current_app.logger.error(f"Error sending friend request: {e}")
+        return False
+
+
+def get_friends_page_data(db: Client, user_id: str) -> dict[str, Any]:
+    """Fetch all data for the friends list page."""
+    friends_ref = db.collection("users").document(user_id).collection("friends")
+
+    def fetch_from_ids(ids: list[str]) -> list[dict[str, Any]]:
+        if not ids:
+            return []
+        refs = [db.collection("users").document(uid) for uid in ids]
+        docs = cast(list["DocumentSnapshot"], db.get_all(refs))
+        return [{"id": doc.id, **(doc.to_dict() or {})} for doc in docs if doc.exists]
+
+    # Fetch accepted friends
+    accepted_ids = [
+        doc.id
+        for doc in friends_ref.where(
+            filter=service_firestore.FieldFilter("status", "==", "accepted")
+        ).stream()
+    ]
+
+    # Fetch pending requests (incoming)
+    request_ids = [
+        doc.id
+        for doc in friends_ref.where(
+            filter=service_firestore.FieldFilter("status", "==", "pending")
+        )
+        .where(filter=service_firestore.FieldFilter("initiator", "==", False))
+        .stream()
+    ]
+
+    # Fetch sent requests (outgoing)
+    sent_ids = [
+        doc.id
+        for doc in friends_ref.where(
+            filter=service_firestore.FieldFilter("status", "==", "pending")
+        )
+        .where(filter=service_firestore.FieldFilter("initiator", "==", True))
+        .stream()
+    ]
+
+    return {
+        "friends": fetch_from_ids(accepted_ids),
+        "requests": fetch_from_ids(request_ids),
+        "sent_requests": fetch_from_ids(sent_ids),
+    }

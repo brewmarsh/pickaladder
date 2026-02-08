@@ -64,11 +64,12 @@ class DuprLinkTestCase(unittest.TestCase):
         ) = mock_user_doc
 
         # Post data to edit_profile
-        with patch(
-            "pickaladder.user.services.core.update_user_profile"
-        ) as mock_update, patch(
-            "pickaladder.user.services.UserService.update_user_profile",
-            new=mock_update,
+        with (
+            patch("pickaladder.user.services.core.update_user_profile") as mock_update,
+            patch(
+                "pickaladder.user.services.UserService.update_user_profile",
+                new=mock_update,
+            ),
         ):
             response = self.client.post(
                 "/user/edit_profile",
