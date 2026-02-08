@@ -7,6 +7,7 @@ import secrets
 import tempfile
 from typing import TYPE_CHECKING, Any
 
+from firebase_admin import firestore
 from flask import (
     current_app,
     flash,

@@ -27,7 +27,7 @@ class DuprLinkTestCase(unittest.TestCase):
             "auth": patch("firebase_admin.auth"),
             "storage": patch("firebase_admin.storage"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
-            "send_email": patch("pickaladder.user.routes.send_email"),
+            "send_email": patch("pickaladder.user.services.profile.send_email"),
         }
         self.mocks = {name: p.start() for name, p in patchers.items()}
         for p in patchers.values():
