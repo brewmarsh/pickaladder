@@ -24,3 +24,9 @@ firebase_credentials.json
 nginx/ssl/self-signed.crt
 nginx/ssl/self-signed.key
 serviceAccountKey.json
+.venv/
+venv/
+env/
+.env
+.pytest_cache/
+.mypy_cache/
