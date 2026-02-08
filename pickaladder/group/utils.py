@@ -67,9 +67,7 @@ def _initialize_stats(players: list[Any]) -> dict[str, dict[str, Any]]:
 def _process_single_match(stats: dict[str, dict[str, Any]], match: Any) -> None:
     """Update raw stats and records match outcomes for players in a single match."""
     data = match.to_dict()
-    match_type = data.get("matchType", "singles")
-    p1_score = data.get("player1Score", 0)
-    p2_score = data.get("player2Score", 0)
+    p1_score, p2_score = _get_match_scores(data)
 
     p1_wins = p1_score > p2_score
     p2_wins = p2_score > p1_score
@@ -87,18 +85,11 @@ def _process_single_match(stats: dict[str, dict[str, Any]], match: Any) -> None:
             # Record outcome for form calculation (last 5 games)
             s["match_results"].append("win" if won else "loss")
 
-    if match_type == "doubles":
-        for ref in data.get("team1", []):
-            update_player(ref.id, p1_score, p1_wins)
-        for ref in data.get("team2", []):
-            update_player(ref.id, p2_score, p2_wins)
-    else:
-        p1_ref = data.get("player1Ref")
-        p2_ref = data.get("player2Ref")
-        if p1_ref:
-            update_player(p1_ref.id, p1_score, p1_wins)
-        if p2_ref:
-            update_player(p2_ref.id, p2_score, p2_wins)
+    team1_ids, team2_ids = _extract_team_ids(data)
+    for uid in team1_ids:
+        update_player(uid, p1_score, p1_wins)
+    for uid in team2_ids:
+        update_player(uid, p2_score, p2_wins)
 
 
 def _calculate_derived_stats(stats: dict[str, dict[str, Any]]) -> None:
@@ -372,25 +363,17 @@ def _update_trend_player_stats(
     player_stats: dict[str, Any], match_data: dict[str, Any]
 ):
     """Update running totals for trend calculation from a single match."""
-    p1_score = match_data.get("player1Score", 0)
-    p2_score = match_data.get("player2Score", 0)
-    if match_data.get("matchType", "singles") == "doubles":
-        for ref in match_data.get("team1", []):
-            if ref.id in player_stats:
-                player_stats[ref.id]["total_score"] += p1_score
-                player_stats[ref.id]["games"] += 1
-        for ref in match_data.get("team2", []):
-            if ref.id in player_stats:
-                player_stats[ref.id]["total_score"] += p2_score
-                player_stats[ref.id]["games"] += 1
-    else:
-        p1_ref, p2_ref = match_data.get("player1Ref"), match_data.get("player2Ref")
-        if p1_ref and p1_ref.id in player_stats:
-            player_stats[p1_ref.id]["total_score"] += p1_score
-            player_stats[p1_ref.id]["games"] += 1
-        if p2_ref and p2_ref.id in player_stats:
-            player_stats[p2_ref.id]["total_score"] += p2_score
-            player_stats[p2_ref.id]["games"] += 1
+    p1_score, p2_score = _get_match_scores(match_data)
+    team1_ids, team2_ids = _extract_team_ids(match_data)
+
+    for uid in team1_ids:
+        if uid in player_stats:
+            player_stats[uid]["total_score"] += p1_score
+            player_stats[uid]["games"] += 1
+    for uid in team2_ids:
+        if uid in player_stats:
+            player_stats[uid]["total_score"] += p2_score
+            player_stats[uid]["games"] += 1
 
 
 def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
@@ -574,33 +557,43 @@ def _extract_team_ids(data: dict[str, Any]) -> tuple[set[str], set[str]]:
     """Extract team member IDs, handling Refs, IDs, and legacy formats."""
     t1 = set()
     if "team1" in data:
-        # Handle list of refs in 'team1'
-        t1.update(r.id for r in data["team1"] if hasattr(r, "id"))
-    
+        # Handle list of refs or strings in 'team1'
+        team1 = data["team1"]
+        if isinstance(team1, list):
+            for r in team1:
+                if hasattr(r, "id"):
+                    t1.add(r.id)
+                elif isinstance(r, str):
+                    t1.add(r)
+
     # Check individual fields for Team 1
-    for field in ["player1Ref", "partnerRef"]:
+    for field in ["player1Ref", "partnerRef", "player1Id", "partnerId"]:
         val = data.get(field)
-        if val and hasattr(val, "id"): 
-            t1.add(val.id)
-    for field in ["player1Id", "partnerId"]:
-        val = data.get(field)
-        if val: 
-            t1.add(val)
+        if val:
+            if hasattr(val, "id"):
+                t1.add(val.id)
+            elif isinstance(val, str):
+                t1.add(val)
 
     t2 = set()
     if "team2" in data:
-        # Handle list of refs in 'team2'
-        t2.update(r.id for r in data["team2"] if hasattr(r, "id"))
-    
+        # Handle list of refs or strings in 'team2'
+        team2 = data["team2"]
+        if isinstance(team2, list):
+            for r in team2:
+                if hasattr(r, "id"):
+                    t2.add(r.id)
+                elif isinstance(r, str):
+                    t2.add(r)
+
     # Check individual fields for Team 2
-    for field in ["player2Ref", "opponent2Ref"]:
+    for field in ["player2Ref", "opponent2Ref", "player2Id", "opponent2Id"]:
         val = data.get(field)
-        if val and hasattr(val, "id"): 
-            t2.add(val.id)
-    for field in ["player2Id", "opponent2Id"]:
-        val = data.get(field)
-        if val: 
-            t2.add(val)
+        if val:
+            if hasattr(val, "id"):
+                t2.add(val.id)
+            elif isinstance(val, str):
+                t2.add(val)
 
     return t1, t2
 

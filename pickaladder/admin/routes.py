@@ -270,8 +270,7 @@ def generate_matches():
     return redirect(url_for(".admin_matches"))
 
 @bp.route('/merge_players', methods=['GET', 'POST'])
-@login_required
-@admin_required
+@login_required(admin_required=True)
 def merge_players():
     """Merge two player accounts (Source -> Target). Source is deleted."""
     users = UserService.get_all_users(firestore.client())
