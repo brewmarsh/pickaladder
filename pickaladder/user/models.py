@@ -13,6 +13,11 @@ class User(UserDict, UserMixin):
         return str(self.get("uid", ""))
 
     @property
+    def is_admin(self) -> bool:
+        """Return whether the user is an admin."""
+        return bool(self.get("isAdmin", False))
+
+    @property
     def avatar_url(self) -> str:
         """Return a deterministic avatar URL based on the user ID."""
         # Try to get the user ID from various common keys

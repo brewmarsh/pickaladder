@@ -154,12 +154,24 @@ def _register_context_processors(app: Flask) -> None:
             try:
                 db = firestore.client()
                 return {
-                    "pending_friend_requests": UserService.get_user_pending_requests(db, g.user["uid"]),
-                    "pending_tournament_invites": UserService.get_pending_tournament_invites(db, g.user["uid"])
+                    "pending_friend_requests": UserService.get_user_pending_requests(
+                        db, g.user["uid"]
+                    ),
+                    "pending_tournament_invites": (
+                        UserService.get_pending_tournament_invites(db, g.user["uid"])
+                    ),
                 }
             except Exception as e:
                 current_app.logger.error(f"Error fetching notifications: {e}")
         return {"pending_friend_requests": [], "pending_tournament_invites": []}
+
+    @app.context_processor
+    def inject_firebase_api_key() -> dict[str, Any]:
+        """Injects the Firebase API key into the template context."""
+        firebase_api_key = current_app.config.get(
+            "FIREBASE_API_KEY"
+        ) or current_app.config.get("GOOGLE_API_KEY")
+        return dict(firebase_api_key=firebase_api_key)
 
 
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
@@ -227,13 +239,14 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 session.clear()
 
     _register_context_processors(app)
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1) # type: ignore
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore
 
     return app
 
 
 def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
     """Load and process application configuration."""
+
     def _clean(env_var):
         val = os.environ.get(env_var)
         return val.strip().replace(" ", "").strip("'").strip('"') if val else None
@@ -244,11 +257,14 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
         GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
         MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
         MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
-        MAIL_USE_TLS=(os.environ.get("MAIL_USE_TLS") or "true").lower() in ("true", "1", "t"),
-        MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower() in ("true", "1", "t"),
+        MAIL_USE_TLS=(os.environ.get("MAIL_USE_TLS") or "true").lower()
+        in ("true", "1", "t"),
+        MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower()
+        in ("true", "1", "t"),
         MAIL_USERNAME=_clean("MAIL_USERNAME"),
         MAIL_PASSWORD=_clean("MAIL_PASSWORD"),
-        MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER") or "noreply@pickaladder.com",
+        MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
+        or "noreply@pickaladder.com",
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
     )
 
