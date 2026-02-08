@@ -5,13 +5,14 @@ from typing import TYPE_CHECKING, Any
 from flask import current_app
 
 if TYPE_CHECKING:
-    from google.cloud.firestore_v1.client import Client
     from firebase_admin import firestore as _firestore
+    from google.cloud.firestore_v1.client import Client
 
 
 def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> bool:
     """Check for 'ghost' user with the given email and merge their data."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     try:
         query = (
             db.collection("users")
@@ -66,7 +67,8 @@ def _migrate_singles_matches(
     db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update singles matches where the user is player 1 or 2."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     match_updates: dict[str, dict[str, Any]] = {}
     for field in ["player1Ref", "player2Ref"]:
         matches = (
@@ -88,7 +90,7 @@ def _migrate_doubles_matches(
 ) -> None:
     """Update doubles matches where the user is in a team array."""
     from pickaladder.teams.services import TeamService  # noqa: PLC0415
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
 
     match_updates: dict[str, dict[str, Any]] = {}
     for field in ["team1", "team2"]:
@@ -117,9 +119,7 @@ def _migrate_doubles_matches(
                 match_updates[match.id]["updates"][field] = new_team
 
                 # Update team ID resolution logic
-                partner_ref = next(
-                    (r for r in current_team if r != ghost_ref), None
-                )
+                partner_ref = next((r for r in current_team if r != ghost_ref), None)
                 if partner_ref:
                     new_team_id = TeamService.get_or_create_team(
                         db, real_user_ref.id, partner_ref.id
@@ -140,7 +140,8 @@ def _migrate_groups(
     db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update group memberships."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     groups = (
         db.collection("groups")
         .where(filter=firestore.FieldFilter("members", "array_contains", ghost_ref))
@@ -160,7 +161,8 @@ def _migrate_tournaments(
     db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update tournament participant lists and IDs."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     tournaments = (
         db.collection("tournaments")
         .where(

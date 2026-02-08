@@ -12,7 +12,8 @@ if TYPE_CHECKING:
 
 def get_user_matches(db: Client, user_id: str) -> list[DocumentSnapshot]:
     """Fetch all matches involving a user."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     user_ref = db.collection("users").document(user_id)
     matches_as_p1 = (
         db.collection("matches")
@@ -78,9 +79,7 @@ def _get_user_match_result(
     if match_data.get("matchType") == "doubles":
         team1_refs = match_data.get("team1", [])
         in_team1 = any(ref.id == user_id for ref in team1_refs)
-        if (in_team1 and winner == "player1") or (
-            not in_team1 and winner == "player2"
-        ):
+        if (in_team1 and winner == "player1") or (not in_team1 and winner == "player2"):
             user_won = True
     else:
         p1_ref = match_data.get("player1Ref")
@@ -238,9 +237,7 @@ def format_matches_for_dashboard(
     tournaments_map: dict[str, dict[str, Any]] = {}
     if tournament_ids:
         tournament_refs = [
-            db.collection("tournaments").document(tid)
-            for tid in tournament_ids
-            if tid
+            db.collection("tournaments").document(tid) for tid in tournament_ids if tid
         ]
         tournament_docs = db.get_all(tournament_refs)
         for doc in tournament_docs:
@@ -256,29 +253,21 @@ def format_matches_for_dashboard(
         match_dict: dict[str, Any] = m_data
 
         winner = _get_match_winner_slot(match_dict)
-        user_result = _get_user_match_result(
-            match_dict, user_id, winner
-        )
+        user_result = _get_user_match_result(match_dict, user_id, winner)
 
         p1_info: dict[str, Any] | list[dict[str, Any]]
         p2_info: dict[str, Any] | list[dict[str, Any]]
 
         if match_dict.get("matchType") == "doubles":
             p1_info = [
-                _get_player_info(r, users_map)
-                for r in match_dict.get("team1", [])
+                _get_player_info(r, users_map) for r in match_dict.get("team1", [])
             ]
             p2_info = [
-                _get_player_info(r, users_map)
-                for r in match_dict.get("team2", [])
+                _get_player_info(r, users_map) for r in match_dict.get("team2", [])
             ]
         else:
-            p1_info = _get_player_info(
-                match_dict["player1Ref"], users_map
-            )
-            p2_info = _get_player_info(
-                match_dict["player2Ref"], users_map
-            )
+            p1_info = _get_player_info(match_dict["player1Ref"], users_map)
+            p2_info = _get_player_info(match_dict["player2Ref"], users_map)
 
         t1_name = "Team 1"
         t2_name = "Team 2"
@@ -357,9 +346,7 @@ def _calculate_streak(processed: list[dict[str, Any]]) -> tuple[int, str]:
     return current_streak, streak_type
 
 
-def calculate_stats(
-    matches: list[DocumentSnapshot], user_id: str
-) -> dict[str, Any]:
+def calculate_stats(matches: list[DocumentSnapshot], user_id: str) -> dict[str, Any]:
     """Calculate aggregate performance statistics from a list of matches."""
     wins = losses = 0
     processed = []
@@ -440,35 +427,28 @@ def _process_h2h_match(
     return wins, losses, points
 
 
-def get_h2h_stats(
-    db: Client, user_id_1: str, user_id_2: str
-) -> dict[str, Any] | None:
+def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] | None:
     """Fetch head-to-head statistics between two users."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     wins = losses = points = 0
 
     # Build queries
     matches_ref = db.collection("matches")
 
     q1 = (
-        matches_ref.where(
-            filter=firestore.FieldFilter("player1Id", "==", user_id_1)
-        )
+        matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_1))
         .where(filter=firestore.FieldFilter("player2Id", "==", user_id_2))
         .where(filter=firestore.FieldFilter("status", "==", "completed"))
     )
     q2 = (
-        matches_ref.where(
-            filter=firestore.FieldFilter("player1Id", "==", user_id_2)
-        )
+        matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_2))
         .where(filter=firestore.FieldFilter("player2Id", "==", user_id_1))
         .where(filter=firestore.FieldFilter("status", "==", "completed"))
     )
     q3 = (
         matches_ref.where(
-            filter=firestore.FieldFilter(
-                "participants", "array_contains", user_id_1
-            )
+            filter=firestore.FieldFilter("participants", "array_contains", user_id_1)
         )
         .where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
         .where(filter=firestore.FieldFilter("status", "==", "completed"))
@@ -478,9 +458,7 @@ def get_h2h_stats(
         for match in q_obj.stream():
             data = match.to_dict()
             if data:
-                w, l_count, p_diff = _process_h2h_match(
-                    data, user_id_1, user_id_2
-                )
+                w, l_count, p_diff = _process_h2h_match(data, user_id_1, user_id_2)
                 wins += w
                 losses += l_count
                 points += p_diff

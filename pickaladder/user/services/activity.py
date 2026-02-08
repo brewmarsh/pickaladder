@@ -9,7 +9,8 @@ if TYPE_CHECKING:
 
 def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch all groups the user is a member of."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     user_ref = db.collection("users").document(user_id)
     groups_query = (
         db.collection("groups")
@@ -25,11 +26,10 @@ def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
     return groups
 
 
-def get_pending_tournament_invites(
-    db: Client, user_id: str
-) -> list[dict[str, Any]]:
+def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending tournament invites for a user."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     if not user_id:
         return []
     try:
@@ -65,13 +65,12 @@ def get_pending_tournament_invites(
 
 def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch active tournaments for a user."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     tournaments_query = (
         db.collection("tournaments")
         .where(
-            filter=firestore.FieldFilter(
-                "participant_ids", "array_contains", user_id
-            )
+            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id)
         )
         .stream()
     )
@@ -83,9 +82,7 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
             for p in participants:
                 if not p:
                     continue
-                p_uid = (
-                    p.get("userRef").id if p.get("userRef") else p.get("user_id")
-                )
+                p_uid = p.get("userRef").id if p.get("userRef") else p.get("user_id")
                 if p_uid == user_id and p.get("status") == "accepted":
                     data["id"] = doc.id
                     # Format date for display
@@ -106,17 +103,15 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch past (completed) tournaments for a user."""
-    from pickaladder.user.services import firestore
     from pickaladder.tournament.utils import (  # noqa: PLC0415
         get_tournament_standings,
     )
+    from pickaladder.user.services import firestore  # noqa: PLC0415
 
     tournaments_query = (
         db.collection("tournaments")
         .where(
-            filter=firestore.FieldFilter(
-                "participant_ids", "array_contains", user_id
-            )
+            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id)
         )
         .stream()
     )
@@ -133,9 +128,7 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
             raw_date = data.get("date")
             if raw_date is not None:
                 if hasattr(raw_date, "to_datetime"):
-                    data["date_display"] = raw_date.to_datetime().strftime(
-                        "%b %d, %Y"
-                    )
+                    data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
                 elif isinstance(raw_date, datetime.datetime):
                     data["date_display"] = raw_date.strftime("%b %d, %Y")
 
@@ -150,7 +143,8 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     """Fetch a list of public groups, enriched with owner data."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     # Query for public groups
     public_groups_query = (
         db.collection("groups")
@@ -193,10 +187,10 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
 
 def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch group rankings for a user."""
-    from pickaladder.user.services import firestore
     from pickaladder.group.utils import (  # noqa: PLC0415
         get_group_leaderboard,
     )
+    from pickaladder.user.services import firestore  # noqa: PLC0415
 
     user_ref = db.collection("users").document(user_id)
     group_rankings = []

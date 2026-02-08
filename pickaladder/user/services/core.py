@@ -37,7 +37,8 @@ def get_all_users(
     db: Client, exclude_ids: list[str] | None = None, limit: int = 20
 ) -> list[dict[str, Any]]:
     """Fetch a list of users, excluding given IDs, sorted by date."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     if exclude_ids is None:
         exclude_ids = []
 

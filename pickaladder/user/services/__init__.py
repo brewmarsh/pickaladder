@@ -1,51 +1,118 @@
 from firebase_admin import firestore
+
+from .activity import (
+    get_active_tournaments as _get_active_tournaments,
+)
+from .activity import (
+    get_group_rankings as _get_group_rankings,
+)
+from .activity import (
+    get_past_tournaments as _get_past_tournaments,
+)
+from .activity import (
+    get_pending_tournament_invites as _get_pending_tournament_invites,
+)
+from .activity import (
+    get_public_groups as _get_public_groups,
+)
+from .activity import (
+    get_user_groups as _get_user_groups,
+)
 from .core import (
     get_all_users as _get_all_users,
+)
+from .core import (
     get_user_by_id as _get_user_by_id,
+)
+from .core import (
     smart_display_name as _smart_display_name,
+)
+from .core import (
     update_user_profile as _update_user_profile,
 )
 from .friendship import (
-    get_user_friends as _get_user_friends,
-    get_friendship_info as _get_friendship_info,
-    get_user_pending_requests as _get_user_pending_requests,
-    get_user_sent_requests as _get_user_sent_requests,
     accept_friend_request as _accept_friend_request,
+)
+from .friendship import (
     cancel_friend_request as _cancel_friend_request,
 )
-from .merging import (
-    merge_users as _merge_users,
-    merge_ghost_user as _merge_ghost_user,
-    _migrate_user_references as _migrate_user_references,
-    _migrate_singles_matches as _migrate_singles_matches,
-    _migrate_doubles_matches as _migrate_doubles_matches,
-    _migrate_groups as _migrate_groups,
-    _migrate_tournaments as _migrate_tournaments,
+from .friendship import (
+    get_friendship_info as _get_friendship_info,
+)
+from .friendship import (
+    get_user_friends as _get_user_friends,
+)
+from .friendship import (
+    get_user_pending_requests as _get_user_pending_requests,
+)
+from .friendship import (
+    get_user_sent_requests as _get_user_sent_requests,
+)
+from .match_stats import (
+    _calculate_streak as _calculate_streak,
+)
+from .match_stats import (
+    _collect_match_refs as _collect_match_refs,
+)
+from .match_stats import (
+    _fetch_match_entities as _fetch_match_entities,
+)
+from .match_stats import (
+    _get_match_winner_slot as _get_match_winner_slot,
+)
+from .match_stats import (
+    _get_player_info as _get_player_info,
+)
+from .match_stats import (
+    _get_profile_match_alignment as _get_profile_match_alignment,
+)
+from .match_stats import (
+    _get_user_match_result as _get_user_match_result,
+)
+from .match_stats import (
+    _get_user_match_won_lost as _get_user_match_won_lost,
+)
+from .match_stats import (
+    _process_h2h_match as _process_h2h_match,
+)
+from .match_stats import (
+    calculate_stats as _calculate_stats,
+)
+from .match_stats import (
+    format_matches_for_dashboard as _format_matches_for_dashboard,
+)
+from .match_stats import (
+    format_matches_for_profile as _format_matches_for_profile,
+)
+from .match_stats import (
+    get_h2h_stats as _get_h2h_stats,
 )
 from .match_stats import (
     get_user_matches as _get_user_matches,
-    calculate_stats as _calculate_stats,
-    format_matches_for_dashboard as _format_matches_for_dashboard,
-    format_matches_for_profile as _format_matches_for_profile,
-    get_h2h_stats as _get_h2h_stats,
-    _get_match_winner_slot as _get_match_winner_slot,
-    _get_user_match_result as _get_user_match_result,
-    _calculate_streak as _calculate_streak,
-    _process_h2h_match as _process_h2h_match,
-    _fetch_match_entities as _fetch_match_entities,
-    _collect_match_refs as _collect_match_refs,
-    _get_user_match_won_lost as _get_user_match_won_lost,
-    _get_profile_match_alignment as _get_profile_match_alignment,
-    _get_player_info as _get_player_info,
 )
-from .activity import (
-    get_active_tournaments as _get_active_tournaments,
-    get_past_tournaments as _get_past_tournaments,
-    get_user_groups as _get_user_groups,
-    get_group_rankings as _get_group_rankings,
-    get_pending_tournament_invites as _get_pending_tournament_invites,
-    get_public_groups as _get_public_groups,
+from .merging import (
+    _migrate_doubles_matches as _migrate_doubles_matches,
 )
+from .merging import (
+    _migrate_groups as _migrate_groups,
+)
+from .merging import (
+    _migrate_singles_matches as _migrate_singles_matches,
+)
+from .merging import (
+    _migrate_tournaments as _migrate_tournaments,
+)
+from .merging import (
+    _migrate_user_references as _migrate_user_references,
+)
+from .merging import (
+    merge_ghost_user as _merge_ghost_user,
+)
+from .merging import (
+    merge_users as _merge_users,
+)
+
+__all__ = ["UserService", "firestore"]
 
 
 class UserService:

@@ -13,7 +13,8 @@ def get_user_friends(
     db: Client, user_id: str, limit: int | None = None
 ) -> list[dict[str, Any]]:
     """Fetch a user's friends."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     user_ref = db.collection("users").document(user_id)
     query = user_ref.collection("friends").where(
         filter=firestore.FieldFilter("status", "==", "accepted")
@@ -63,7 +64,8 @@ def get_friendship_info(
 
 def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending friend requests where the user is the recipient."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")
@@ -88,7 +90,8 @@ def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending friend requests where the user is the initiator."""
-    from pickaladder.user.services import firestore
+    from pickaladder.user.services import firestore  # noqa: PLC0415
+
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")
