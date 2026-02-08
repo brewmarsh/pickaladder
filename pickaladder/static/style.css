@@ -174,6 +174,18 @@ body {
     font-weight: 500;
 }
 
+/* Leaderboard & Table Avatars */
+.leaderboard-row img,
+.table img,
+.team-avatar,
+tr img {
+    width: 40px !important;
+    height: 40px !important;
+    object-fit: cover !important;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
 .leaderboard-row {
     display: grid;
     grid-template-columns: 50px 1fr 100px 100px 80px;
@@ -332,8 +344,14 @@ body {
     .navbar-menu { display: none; }
     .hero-stats-card { flex-direction: column; text-align: center; }
     .leaderboard-row {
-        display: flex;
-        justify-content: space-between;
+        grid-template-columns: 40px 1fr 60px !important; /* Rank | Team/Player | Score */
+        gap: 10px;
+        display: grid;
+    }
+
+    /* Hide less important columns on mobile if necessary */
+    .leaderboard-row .desktop-only {
+        display: none;
     }
 
     /* Prevent oversized images in cards */

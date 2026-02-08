@@ -99,42 +99,34 @@
 
                 <div id="teams" class="tab-content" style="display: none;">
                     <div class="table-container">
-                        <table class="table leaderboard-table-compact">
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Team</th>
-                                    <th class="text-right">W-L</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for entry in team_leaderboard %}
-                                <tr>
-                                    <td class="rank-cell">
-                                        {% if loop.index == 1 %}🥇
-                                        {% elif loop.index == 2 %}🥈
-                                        {% elif loop.index == 3 %}🥉
-                                        {% else %}#{{ loop.index }}{% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="team-members-compact">
-                                            {% for member in entry.team.member_details %}
-                                                <img src="{{ member | avatar_url }}" alt="{{ member | display_name }}" class="avatar-small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                            {% endfor %}
-                                            <span class="team-name-compact">{{ entry.team.name }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="text-right font-weight-bold">
-                                        {{ entry.stats.wins }}-{{ entry.stats.losses }}
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="3" class="text-center">No teams formed yet.</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                        <div class="leaderboard-row header desktop-only">
+                            <div class="font-weight-bold">Rank</div>
+                            <div class="font-weight-bold">Team</div>
+                            <div class="text-right font-weight-bold">W-L</div>
+                        </div>
+                        {% for entry in team_leaderboard %}
+                        <div class="leaderboard-row">
+                            <div class="rank-cell">
+                                {% if loop.index == 1 %}🥇
+                                {% elif loop.index == 2 %}🥈
+                                {% elif loop.index == 3 %}🥉
+                                {% else %}#{{ loop.index }}{% endif %}
+                            </div>
+                            <div>
+                                <div class="team-members-compact">
+                                    {% for member in entry.team.member_details %}
+                                        <img src="{{ member | avatar_url }}" alt="{{ member | display_name }}" class="team-avatar avatar-small" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                    {% endfor %}
+                                    <span class="team-name-compact">{{ entry.team.name }}</span>
+                                </div>
+                            </div>
+                            <div class="text-right font-weight-bold">
+                                {{ entry.stats.wins }}-{{ entry.stats.losses }}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="p-3 text-center">No teams formed yet.</div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
