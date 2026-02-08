@@ -22,7 +22,6 @@ from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
-from pickaladder.utils import EmailError, send_email
 
 from . import bp
 from .forms import UpdateProfileForm, UpdateUserForm

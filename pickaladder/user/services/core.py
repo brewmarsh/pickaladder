@@ -1,6 +1,13 @@
 from __future__ import annotations
 
+import os
+import secrets
+import tempfile
 from typing import TYPE_CHECKING, Any, cast
+
+from firebase_admin import auth, firestore, storage
+
+from pickaladder.utils import send_email
 
 from ..helpers import smart_display_name as _smart_display_name
 
@@ -37,14 +44,14 @@ def get_all_users(
     db: Client, exclude_ids: list[str] | None = None, limit: int = 20
 ) -> list[dict[str, Any]]:
     """Fetch a list of users, excluding given IDs, sorted by date."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
+    from pickaladder.user.services import firestore as service_firestore  # noqa: PLC0415
 
     if exclude_ids is None:
         exclude_ids = []
 
     users_query = (
         db.collection("users")
-        .order_by("createdAt", direction=firestore.Query.DESCENDING)
+        .order_by("createdAt", direction=service_firestore.Query.DESCENDING)
         .limit(limit + len(exclude_ids))  # Fetch extra in case we exclude users
         .stream()
     )
@@ -59,3 +66,149 @@ def get_all_users(
         if len(users) >= limit:
             break
     return users
+
+
+def process_profile_update(
+    db: Client, user_id: str, form_data: Any, current_user_data: dict[str, Any]
+) -> dict[str, Any]:
+    """Handle complex profile updates, including email change and verification."""
+    from flask import current_app
+
+    from pickaladder.user.services import firestore as service_firestore
+
+    new_email = form_data.email.data
+    new_username = form_data.username.data
+    update_data: dict[str, Any] = {
+        "name": form_data.name.data,
+        "username": new_username,
+    }
+
+    dupr_id = form_data.dupr_id.data.strip() if form_data.dupr_id.data else None
+    update_data["dupr_id"] = dupr_id
+    update_data["dupr_rating"] = (
+        float(form_data.dupr_rating.data)
+        if form_data.dupr_rating.data is not None
+        else None
+    )
+
+    # Handle username change
+    if new_username != current_user_data.get("username"):
+        existing_user = (
+            db.collection("users")
+            .where(filter=service_firestore.FieldFilter("username", "==", new_username))
+            .limit(1)
+            .stream()
+        )
+        if len(list(existing_user)) > 0:
+            return {
+                "success": False,
+                "error": "Username already exists. Please choose a different one.",
+            }
+
+    # Handle email change
+    if new_email != current_user_data.get("email"):
+        try:
+            auth.update_user(user_id, email=new_email, email_verified=False)
+            verification_link = auth.generate_email_verification_link(new_email)
+            send_email(
+                to=new_email,
+                subject="Verify Your New Email Address",
+                template="email/verify_email.html",
+                user={"username": new_username},
+                verification_link=verification_link,
+            )
+            update_data["email"] = new_email
+            update_data["email_verified"] = False
+            update_user_profile(db, user_id, update_data)
+            return {
+                "success": True,
+                "info": "Your email has been updated. Please check your new email "
+                "address to verify it.",
+            }
+        except auth.EmailAlreadyExistsError:
+            return {"success": False, "error": "That email address is already in use."}
+        except Exception as e:
+            current_app.logger.error(f"Error updating email: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while updating your email.",
+            }
+
+    update_user_profile(db, user_id, update_data)
+    return {"success": True}
+
+
+def search_users(
+    db: Client, current_user_id: str, search_term: str
+) -> list[tuple[dict[str, Any], str | None, str | None]]:
+    """Search for users and return their friend status with the current user."""
+    from pickaladder.user.services import firestore as service_firestore
+
+    query = db.collection("users")
+    if search_term:
+        query = query.where(
+            filter=service_firestore.FieldFilter("username", ">=", search_term)
+        ).where(
+            filter=service_firestore.FieldFilter(
+                "username", "<=", search_term + "\uf8ff"
+            )
+        )
+
+    all_users_docs = [
+        doc for doc in query.limit(20).stream() if doc.id != current_user_id
+    ]
+
+    friends_ref = db.collection("users").document(current_user_id).collection("friends")
+    friend_statuses = {doc.id: doc.to_dict() for doc in friends_ref.stream()}
+
+    user_items = []
+    for user_doc in all_users_docs:
+        user_data = user_doc.to_dict() or {}
+        user_data["id"] = user_doc.id
+        sent_status = received_status = None
+        if friend_data := friend_statuses.get(user_doc.id):
+            status = friend_data.get("status")
+            if friend_data.get("initiator"):
+                sent_status = status
+            else:
+                received_status = status
+        user_items.append((user_data, sent_status, received_status))
+    return user_items
+
+
+def create_invite_token(db: Client, user_id: str) -> str:
+    """Generate and store a unique invite token."""
+    from pickaladder.user.services import firestore as service_firestore
+
+    token = secrets.token_urlsafe(16)
+    db.collection("invites").document(token).set(
+        {
+            "userId": user_id,
+            "createdAt": service_firestore.SERVER_TIMESTAMP,
+            "used": False,
+        }
+    )
+    return token
+
+
+def update_dashboard_profile(
+    db: Client, user_id: str, form_data: Any, profile_picture_file: Any = None
+) -> None:
+    """Update user profile from dashboard form, including image upload."""
+    from werkzeug.utils import secure_filename
+
+    update_data: dict[str, Any] = {"dark_mode": bool(form_data.dark_mode.data)}
+    if form_data.dupr_rating.data is not None:
+        update_data["duprRating"] = float(form_data.dupr_rating.data)
+
+    if profile_picture_file:
+        filename = secure_filename(profile_picture_file.filename or "profile.jpg")
+        bucket = storage.bucket()
+        blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
+        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1]) as tmp:
+            profile_picture_file.save(tmp.name)
+            blob.upload_from_filename(tmp.name)
+        blob.make_public()
+        update_data["profilePictureUrl"] = blob.public_url
+
+    update_user_profile(db, user_id, update_data)
