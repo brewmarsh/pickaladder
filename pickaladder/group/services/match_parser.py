@@ -24,13 +24,12 @@ def _resolve_team_ids(
                 team_ids.add(r)
 
     # 2. Check individual fields for the team
-    # e.g., player1Ref, partnerRef, player1Id, partnerId
-    # or player2Ref, opponent2Ref, player2Id, opponent2Id
     fields = [
         f"{player_prefix}Ref",
         f"{partner_prefix}Ref",
         f"{player_prefix}Id",
         f"{partner_prefix}Id",
+        f"{team_key}Ref",
     ]
     for field in fields:
         val = data.get(field)
@@ -60,4 +59,27 @@ def _get_match_scores(data: dict[str, Any]) -> tuple[int, int]:
     p2_score = data.get("player2Score")
     if p2_score is None:
         p2_score = data.get("team2Score", 0)
-    return p1_score, p2_score
+    return int(p1_score or 0), int(p2_score or 0)
+
+
+def _resolve_team_document_ids(data: dict[str, Any]) -> tuple[str | None, str | None]:
+    """Extract Team document IDs if available."""
+    t1_id = None
+    t1_ref = data.get("team1Ref")
+    if t1_ref and hasattr(t1_ref, "id"):
+        t1_id = t1_ref.id
+    elif isinstance(t1_ref, str):
+        t1_id = t1_ref
+    else:
+        t1_id = data.get("team1Id")
+
+    t2_id = None
+    t2_ref = data.get("team2Ref")
+    if t2_ref and hasattr(t2_ref, "id"):
+        t2_id = t2_ref.id
+    elif isinstance(t2_ref, str):
+        t2_id = t2_ref
+    else:
+        t2_id = data.get("team2Id")
+
+    return t1_id, t2_id
