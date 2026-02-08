@@ -4,7 +4,7 @@ import unittest
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
-from pickaladder.user.services import UserService
+from pickaladder.user import UserService
 
 
 class TestUserService(unittest.TestCase):

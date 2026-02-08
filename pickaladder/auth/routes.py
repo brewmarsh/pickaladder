@@ -19,7 +19,7 @@ from werkzeug.exceptions import UnprocessableEntity
 
 from pickaladder.errors import DuplicateResourceError
 from pickaladder.user.helpers import wrap_user
-from pickaladder.user.services import UserService
+from pickaladder.user import UserService
 from pickaladder.utils import EmailError, send_email
 
 from . import bp

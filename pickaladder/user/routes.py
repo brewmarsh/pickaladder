@@ -29,7 +29,7 @@ from .forms import UpdateProfileForm, UpdateUserForm
 from .services import UserService
 
 if TYPE_CHECKING:
-    from pickaladder.group.models import Group
+    from pickaladder.group import Group
 
     from .models import User
 

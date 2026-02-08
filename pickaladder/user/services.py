@@ -14,9 +14,9 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
-    from pickaladder.group.models import Group
-    from pickaladder.match.models import Match
-    from pickaladder.tournament.models import Tournament
+    from pickaladder.group import Group
+    from pickaladder.match import Match
+    from pickaladder.tournament import Tournament
 
     from .models import User, UserRanking, UserStats
 

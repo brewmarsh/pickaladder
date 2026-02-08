@@ -13,8 +13,9 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
-    from pickaladder.match.models import Match
-    from pickaladder.user.models import User
+    from pickaladder.user import User
+
+    from .models import Match
 
 
 CLOSE_CALL_THRESHOLD = 2

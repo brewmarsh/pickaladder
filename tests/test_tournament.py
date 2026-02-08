@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 from mockfirestore import MockFirestore
 
 from pickaladder import create_app
-from pickaladder.tournament.services import TournamentService  # noqa: F401
+from pickaladder.tournament import TournamentService  # noqa: F401
 from tests.conftest import (
     MockArrayRemove,
     MockArrayUnion,

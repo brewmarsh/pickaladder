@@ -17,12 +17,14 @@ from flask import (
 from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.group.services.group_service import (
+from pickaladder.user import UserService
+
+from .services.group_service import (
     AccessDenied,
     GroupNotFound,
     GroupService,
 )
-from pickaladder.group.utils import (
+from .utils import (
     friend_group_members,
     get_group_leaderboard,
     get_leaderboard_trend_data,
@@ -33,7 +35,6 @@ from pickaladder.group.utils import (
 from pickaladder.group.utils import (
     get_head_to_head_stats as get_h2h_stats,
 )
-from pickaladder.user.services import UserService
 
 from . import bp
 from .forms import GroupForm, InviteByEmailForm, InviteFriendForm

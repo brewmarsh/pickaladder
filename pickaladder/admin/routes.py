@@ -17,7 +17,7 @@ from flask import (
 from werkzeug.wrappers import Response
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.user.services import UserService
+from pickaladder.user import UserService
 
 from . import bp
 from .services import AdminService
