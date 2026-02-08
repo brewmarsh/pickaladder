@@ -1,12 +1,15 @@
 """Decorators for the auth blueprint."""
 
 from functools import wraps
+from typing import Any, Callable, Optional
 
 from flask import flash, redirect, session, url_for
 
 
 # TODO: Add type hints for Agent clarity
-def login_required(f=None, admin_required=False):
+def login_required(
+    f: Optional[Callable[..., Any]] = None, admin_required: bool = False
+) -> Callable[..., Any]:
     """Redirect to the login page if the user is not logged in.
 
     Usage:
@@ -20,10 +23,10 @@ def login_required(f=None, admin_required=False):
     """
 
     # TODO: Add type hints for Agent clarity
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         # TODO: Add type hints for Agent clarity
         @wraps(func)
-        def decorated_function(*args, **kwargs):
+        def decorated_function(*args: Any, **kwargs: Any) -> Any:
             """TODO: Add docstring for AI context."""
             if "user_id" not in session:
                 return redirect(url_for("auth.login"))

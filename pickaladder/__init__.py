@@ -189,7 +189,7 @@ def _register_context_processors(app: Flask) -> None:
                 version_file = Path(current_app.root_path).parent / "VERSION"
                 if version_file.exists():
                     version = version_file.read_text().strip()
-            except Exception:
+            except Exception:  # nosec B110
                 pass
 
         if not version:

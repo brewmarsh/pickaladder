@@ -1,14 +1,19 @@
 """Forms for the match blueprint."""
 
+from collections.abc import Sequence
+from typing import Any, Callable, Optional, cast
+
 from flask_wtf import FlaskForm  # type: ignore
 from wtforms import (
     DateField,
+    Field,
     HiddenField,
     IntegerField,
     SelectField,
     ValidationError,
 )
-from wtforms.validators import DataRequired, InputRequired, Optional
+from wtforms.validators import DataRequired, InputRequired
+from wtforms.validators import Optional as OptionalValidator
 
 MIN_WINNING_SCORE = 11
 MIN_WIN_MARGIN = 2
@@ -24,19 +29,21 @@ class MatchForm(FlaskForm):
         validators=[DataRequired()],
     )
     player1 = SelectField("Team 1 Player 1", validators=[DataRequired()])
-    partner = SelectField("Partner", validators=[Optional()])
+    partner = SelectField("Partner", validators=[OptionalValidator()])
     player2 = SelectField("Opponent / Opponent 1", validators=[DataRequired()])
-    opponent2 = SelectField("Opponent 2", validators=[Optional()])
+    opponent2 = SelectField("Opponent 2", validators=[OptionalValidator()])
     player1_score = IntegerField("Your / Team 1 Score", validators=[InputRequired()])
     player2_score = IntegerField(
         "Opponent / Team 2 Score", validators=[InputRequired()]
     )
     match_date = DateField("Date", validators=[DataRequired()])
-    group_id = HiddenField("Group ID", validators=[Optional()])
-    tournament_id = HiddenField("Tournament ID", validators=[Optional()])
+    group_id = HiddenField("Group ID", validators=[OptionalValidator()])
+    tournament_id = HiddenField("Tournament ID", validators=[OptionalValidator()])
 
     # TODO: Add type hints for Agent clarity
-    def validate_player1_score(self, field):
+    def validate_player1_score(
+        self, field: Field, form: Optional[FlaskForm] = None
+    ) -> None:
         """Validate that the score is not negative."""
         if field.data is None:
             return
@@ -44,7 +51,9 @@ class MatchForm(FlaskForm):
             raise ValidationError("Scores cannot be negative.")
 
     # TODO: Add type hints for Agent clarity
-    def validate_player2_score(self, field):
+    def validate_player2_score(
+        self, field: Field, form: Optional[FlaskForm] = None
+    ) -> None:
         """Validate that the score is not negative."""
         if field.data is None:
             return
@@ -70,7 +79,9 @@ class MatchForm(FlaskForm):
             )
 
     # TODO: Add type hints for Agent clarity
-    def validate(self, extra_validators=None):
+    def validate(
+        self, extra_validators: Optional[Sequence[Callable[..., Any]]] = None
+    ) -> bool:
         """Validate the form for singles or doubles."""
         if not super().validate(extra_validators=extra_validators):
             return False
@@ -78,10 +89,14 @@ class MatchForm(FlaskForm):
         if self.match_type.data == "doubles":
             has_error = False
             if not self.partner.data:
-                self.partner.errors.append("Partner is required for doubles.")
+                cast(list[str], self.partner.errors).append(
+                    "Partner is required for doubles."
+                )
                 has_error = True
             if not self.opponent2.data:
-                self.opponent2.errors.append("Opponent 2 is required for doubles.")
+                cast(list[str], self.opponent2.errors).append(
+                    "Opponent 2 is required for doubles."
+                )
                 has_error = True
 
             if has_error:
@@ -96,10 +111,10 @@ class MatchForm(FlaskForm):
             ]
             if len(players) != len(set(players)):
                 error_msg = "All players in a doubles match must be unique."
-                self.player1.errors.append(error_msg)
-                self.partner.errors.append(error_msg)
-                self.player2.errors.append(error_msg)
-                self.opponent2.errors.append(error_msg)
+                cast(list[str], self.player1.errors).append(error_msg)
+                cast(list[str], self.partner.errors).append(error_msg)
+                cast(list[str], self.player2.errors).append(error_msg)
+                cast(list[str], self.opponent2.errors).append(error_msg)
                 return False
 
         return True

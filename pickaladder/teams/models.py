@@ -1,9 +1,11 @@
 """Data models for the teams feature."""
 
+from typing import Any
+
 from firebase_admin import firestore
 
 
-def create_team_document(db, team_members):
+def create_team_document(db: Any, team_members: list[Any]) -> Any:
     """
     Creates a new team document in Firestore.
 
