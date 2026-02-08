@@ -572,34 +572,34 @@ def friend_group_members(db: Any, group_id: str, new_member_ref: Any) -> None:
 
 def _extract_team_ids(data: dict[str, Any]) -> tuple[set[str], set[str]]:
     """Extract team member IDs, handling Refs, IDs, and legacy formats."""
-    t1 = set()
+    t1: set[str] = set()
     if "team1" in data:
         # Handle list of refs in 'team1'
         t1.update(r.id for r in data["team1"] if hasattr(r, "id"))
-    
+
     # Check individual fields for Team 1
     for field in ["player1Ref", "partnerRef"]:
         val = data.get(field)
-        if val and hasattr(val, "id"): 
+        if val and hasattr(val, "id"):
             t1.add(val.id)
     for field in ["player1Id", "partnerId"]:
         val = data.get(field)
-        if val: 
+        if val:
             t1.add(val)
 
-    t2 = set()
+    t2: set[str] = set()
     if "team2" in data:
         # Handle list of refs in 'team2'
         t2.update(r.id for r in data["team2"] if hasattr(r, "id"))
-    
+
     # Check individual fields for Team 2
     for field in ["player2Ref", "opponent2Ref"]:
         val = data.get(field)
-        if val and hasattr(val, "id"): 
+        if val and hasattr(val, "id"):
             t2.add(val.id)
     for field in ["player2Id", "opponent2Id"]:
         val = data.get(field)
-        if val: 
+        if val:
             t2.add(val)
 
     return t1, t2
