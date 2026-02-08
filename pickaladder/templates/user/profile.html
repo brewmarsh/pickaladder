@@ -6,7 +6,7 @@
         <div class="dashboard-column-right" style="flex: 1; min-width: 300px;">
             <div class="card text-center mb-4 border-0 shadow-sm">
                 <div class="card-body">
-                    <img src="{{ profile_user | avatar_url }}" alt="Profile Picture" class="profile-picture avatar mb-3" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                    <img src="{{ profile_user | avatar_url }}" alt="Profile Picture" class="profile-picture-large mb-3" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                     <h2 class="text-truncate px-2">{{ profile_user | display_name }}</h2>
                     <p class="text-muted">@{{ profile_user.username }}</p>
 
@@ -124,7 +124,7 @@
                                 <div class="list-group list-group-flush">
                                     {% for friend in friends[:5] %}
                                         <a href="{{ url_for('user.view_user', user_id=friend.id) }}" class="list-group-item list-group-item-action border-0 px-4 py-2 d-flex align-items-center">
-                                            <img src="{{ friend | avatar_url }}" alt="" class="profile-picture-thumbnail mr-3" style="width: 32px; height: 32px;">
+                                            <img src="{{ friend | avatar_url }}" alt="" class="profile-picture-thumbnail mr-3">
                                             <div class="text-truncate font-weight-medium" style="font-size: 0.9rem;">{{ friend | display_name }}</div>
                                         </a>
                                     {% endfor %}

@@ -15,14 +15,15 @@ if TYPE_CHECKING:
     from flask import Flask
 from google.cloud.firestore import FieldFilter
 
+from pickaladder.core.constants import (
+    FIRESTORE_BATCH_LIMIT,
+    HOT_STREAK_THRESHOLD,
+    RECENT_MATCHES_LIMIT,
+)
 from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
 from .services.match_parser import _extract_team_ids
-
-FIRESTORE_BATCH_LIMIT = 400
-RECENT_MATCHES_LIMIT = 5
-HOT_STREAK_THRESHOLD = 3
 
 
 def get_random_joke() -> str:

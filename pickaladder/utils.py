@@ -8,9 +8,9 @@ from typing import Any
 from flask import current_app, render_template
 from flask_mail import Message
 
-from .extensions import mail
+from pickaladder.core.constants import SMTP_AUTH_ERROR_CODE
 
-SMTP_AUTH_ERROR_CODE = 534
+from .extensions import mail
 
 
 class EmailError(Exception):
