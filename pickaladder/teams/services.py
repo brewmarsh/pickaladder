@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
 
@@ -34,18 +35,21 @@ class TeamService:
             user_a_ref = db.collection("users").document(user_a_id)
             user_b_ref = db.collection("users").document(user_b_id)
 
-            user_a_doc = user_a_ref.get()
-            user_b_doc = user_b_ref.get()
+            user_a_doc = cast("DocumentSnapshot", user_a_ref.get())
+            user_b_doc = cast("DocumentSnapshot", user_b_ref.get())
 
-            user_a_name = user_a_doc.to_dict().get("name", "Player A")
-            user_b_name = user_b_doc.to_dict().get("name", "Player B")
+            user_a_data = user_a_doc.to_dict() or {}
+            user_b_data = user_b_doc.to_dict() or {}
+
+            user_a_name = user_a_data.get("name", "Player A")
+            user_b_name = user_b_data.get("name", "Player B")
 
             new_team_data = {
                 "member_ids": member_ids,
                 "members": [user_a_ref, user_b_ref],
                 "name": f"{user_a_name} & {user_b_name}",
                 "stats": {"wins": 0, "losses": 0, "elo": 1200},
-                "created_at": firestore.SERVER_TIMESTAMP,
+                "createdAt": firestore.SERVER_TIMESTAMP,
             }
             # Add the new team to the 'teams' collection
             new_team_ref = teams_ref.document()
@@ -88,11 +92,11 @@ class TeamService:
 
             if existing_teams:
                 # Merge current team stats into existing team
-                existing_team = existing_teams[0]
-                e_data = existing_team.to_dict()
+                existing_team = cast("DocumentSnapshot", existing_teams[0])
+                e_data = existing_team.to_dict() or {}
 
-                t_stats = team_data.get("stats", {})
-                e_stats = e_data.get("stats", {})
+                t_stats: dict[str, Any] = team_data.get("stats", {})
+                e_stats: dict[str, Any] = e_data.get("stats", {})
 
                 new_wins = e_stats.get("wins", 0) + t_stats.get("wins", 0)
                 new_losses = e_stats.get("losses", 0) + t_stats.get("losses", 0)
