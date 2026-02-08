@@ -571,22 +571,38 @@ def friend_group_members(db: Any, group_id: str, new_member_ref: Any) -> None:
 
 
 def _extract_team_ids(data: dict[str, Any]) -> tuple[set[str], set[str]]:
-    """Extract team member IDs, handling both old and new formats."""
-    team1_ids = set()
+    """Extract team member IDs, handling Refs, IDs, and legacy formats."""
+    t1 = set()
     if "team1" in data:
-        team1_ids = {ref.id for ref in data["team1"] if hasattr(ref, "id")}
-    else:
-        team1_ids = {data.get("player1Id"), data.get("partnerId")}
+        # Handle list of refs in 'team1'
+        t1.update(r.id for r in data["team1"] if hasattr(r, "id"))
+    
+    # Check individual fields for Team 1
+    for field in ["player1Ref", "partnerRef"]:
+        val = data.get(field)
+        if val and hasattr(val, "id"): 
+            t1.add(val.id)
+    for field in ["player1Id", "partnerId"]:
+        val = data.get(field)
+        if val: 
+            t1.add(val)
 
-    team2_ids = set()
+    t2 = set()
     if "team2" in data:
-        team2_ids = {ref.id for ref in data["team2"] if hasattr(ref, "id")}
-    else:
-        team2_ids = {data.get("player2Id"), data.get("opponent2Id")}
+        # Handle list of refs in 'team2'
+        t2.update(r.id for r in data["team2"] if hasattr(r, "id"))
+    
+    # Check individual fields for Team 2
+    for field in ["player2Ref", "opponent2Ref"]:
+        val = data.get(field)
+        if val and hasattr(val, "id"): 
+            t2.add(val.id)
+    for field in ["player2Id", "opponent2Id"]:
+        val = data.get(field)
+        if val: 
+            t2.add(val)
 
-    team1_ids.discard(None)
-    team2_ids.discard(None)
-    return team1_ids, team2_ids
+    return t1, t2
 
 
 def _get_match_scores(data: dict[str, Any]) -> tuple[int, int]:

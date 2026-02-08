@@ -3,24 +3,32 @@
 
 /* Basic styling & Variables */
 :root {
-    /* Brand Colors (Court & Volt) */
+    /* --- NEW "COURT & VOLT" SYSTEM --- */
     --primary-color: #2563EB;       /* Royal Blue */
     --primary-hover: #1D4ED8;
     --accent-color: #84CC16;        /* Electric Lime */
     --accent-hover: #65A30D;
-
-    /* Functional Colors */
+    
     --success-color: #10B981;
     --danger-color: #EF4444;
     --warning-color: #F59E0B;
 
-    /* Light Mode Basics */
     --bg-color: #F3F4F6;            /* Cool Gray 100 */
     --card-bg: #FFFFFF;
     --text-primary: #111827;        /* Gray 900 */
     --text-secondary: #6B7280;      /* Gray 500 */
     --border-color: #E5E7EB;        /* Gray 200 */
     --text-on-primary: #FFFFFF;
+
+    /* --- BACKWARD COMPATIBILITY BRIDGE (Do Not Remove Yet) --- */
+    /* This maps old variable names to the new system so the UI doesn't break */
+    --primary-brand: var(--primary-color);
+    --primary-brand-dark: var(--primary-hover);
+    --surface-color: var(--card-bg);
+    --background-color: var(--bg-color);
+    --text-color: var(--text-primary);
+    --text-secondary-color: var(--text-secondary);
+    --accent-highlight: var(--accent-color);
 
     /* Typography */
     --font-family: 'Inter', sans-serif;
@@ -56,6 +64,12 @@ body {
     margin-bottom: 20px;
 }
 
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .navbar-brand, .navbar-menu a {
     color: var(--text-on-primary);
     text-decoration: none;
@@ -87,6 +101,12 @@ body {
     background-color: var(--accent-color);
 }
 
+.navbar-user-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
 /* Buttons */
 .btn {
     padding: 12px 24px;
@@ -99,6 +119,7 @@ body {
     text-align: center;
     display: inline-block;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .btn-primary { 
@@ -130,6 +151,24 @@ body {
     box-shadow: var(--box-shadow);
     border-radius: var(--border-radius);
     overflow: hidden;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.table th, .table td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table th {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+    font-weight: 500;
 }
 
 .leaderboard-row {
