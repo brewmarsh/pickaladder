@@ -10,7 +10,7 @@ from flask import current_app, url_for
 
 from pickaladder.group.services.match_parser import (
     _get_match_scores,
-    _resolve_team_ids,
+    _resolve_team_document_ids,
 )
 from pickaladder.group.utils import (
     get_group_leaderboard,
@@ -331,7 +331,7 @@ class GroupService:
             if data.get("matchType") != "doubles":
                 continue
 
-            t1_id, t2_id = _resolve_team_ids(data)
+            t1_id, t2_id = _resolve_team_document_ids(data)
             if not t1_id or not t2_id:
                 continue
 
