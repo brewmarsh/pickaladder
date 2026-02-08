@@ -36,3 +36,24 @@ class Match(FirestoreDocument, Score, total=False):
     status: str
     winnerId: str
     participants: list[str]
+
+    # UI and calculated fields
+    player1: User | list[User] | dict[str, Any]
+    player2: User | list[User] | dict[str, Any]
+    player1_score: int
+    player2_score: int
+    winner: str
+    date: str
+    match_date: Any
+    is_group_match: bool
+    match_type: str
+    user_result: str
+    team1_name: str
+    team2_name: str
+    tournament_name: str
+    point_differential: int
+    close_call: bool
+    winner_name: str
+    loser_name: str
+    winner_score: int
+    loser_score: int

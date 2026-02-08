@@ -14,31 +14,37 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
+    from pickaladder.group.models import Group
+    from pickaladder.match.models import Match
+    from pickaladder.tournament.models import Tournament
+
+    from .models import User, UserRanking, UserStats
+
 
 class UserService:
     """Service class for user-related operations and Firestore interaction."""
 
     @staticmethod
-    def smart_display_name(user: dict[str, Any]) -> str:
+    def smart_display_name(user: User | dict[str, Any]) -> str:
         """Return a smart display name for a user."""
         return smart_display_name(user)
 
     @staticmethod
     def update_user_profile(
-        db: Client, user_id: str, update_data: dict[str, Any]
+        db: Client, user_id: str, update_data: User | dict[str, Any]
     ) -> None:
         """Update a user's profile in Firestore."""
         user_ref = db.collection("users").document(user_id)
         user_ref.update(update_data)
 
     @staticmethod
-    def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
+    def get_user_by_id(db: Client, user_id: str) -> User | None:
         """Fetch a user by their ID."""
         user_ref = db.collection("users").document(user_id)
         user_doc = cast("DocumentSnapshot", user_ref.get())
         if not user_doc.exists:
             return None
-        data = user_doc.to_dict()
+        data = cast("User", user_doc.to_dict())
         if data is None:
             return None
         data["id"] = user_id
@@ -47,7 +53,7 @@ class UserService:
     @staticmethod
     def get_user_friends(
         db: Client, user_id: str, limit: int | None = None
-    ) -> list[dict[str, Any]]:
+    ) -> list[User]:
         """Fetch a user's friends."""
         user_ref = db.collection("users").document(user_id)
         query = user_ref.collection("friends").where(
@@ -63,16 +69,18 @@ class UserService:
 
         refs = [db.collection("users").document(fid) for fid in friend_ids]
         friend_docs = cast(list["DocumentSnapshot"], db.get_all(refs))
-        results = []
+        results: list[User] = []
         for doc in friend_docs:
             if doc.exists:
                 data = doc.to_dict()
                 if data is not None:
-                    results.append({"id": doc.id, **data})
+                    user_data = cast("User", data)
+                    user_data["id"] = doc.id
+                    results.append(user_data)
         return results
 
     @staticmethod
-    def get_user_matches(db: Client, user_id: str) -> list[DocumentSnapshot]:
+    def get_user_matches(db: Client, user_id: str) -> list[Match]:
         """Fetch all matches involving a user."""
         user_ref = db.collection("users").document(user_id)
         matches_as_p1 = (
@@ -103,7 +111,12 @@ class UserService:
             + list(matches_as_t2)
         )
         unique_matches = {match.id: match for match in all_matches}.values()
-        return list(unique_matches)
+        results: list[Match] = []
+        for match in unique_matches:
+            data = cast("Match", match.to_dict() or {})
+            data["id"] = match.id
+            results.append(data)
+        return results
 
     @staticmethod
     def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> bool:
@@ -301,7 +314,7 @@ class UserService:
                 )
 
     @staticmethod
-    def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
+    def get_user_groups(db: Client, user_id: str) -> list[Group]:
         """Fetch all groups the user is a member of."""
         user_ref = db.collection("users").document(user_id)
         groups_query = (
@@ -309,9 +322,9 @@ class UserService:
             .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
             .stream()
         )
-        groups = []
+        groups: list[Group] = []
         for doc in groups_query:
-            data = doc.to_dict()
+            data = cast("Group", doc.to_dict())
             if data:
                 data["id"] = doc.id
                 groups.append(data)
@@ -342,7 +355,7 @@ class UserService:
         return is_friend, friend_request_sent
 
     @staticmethod
-    def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
+    def get_user_pending_requests(db: Client, user_id: str) -> list[User]:
         """Fetch pending friend requests where the user is the recipient."""
         user_ref = db.collection("users").document(user_id)
         requests_query = (
@@ -357,18 +370,18 @@ class UserService:
 
         refs = [db.collection("users").document(uid) for uid in request_ids]
         request_docs = cast(list["DocumentSnapshot"], db.get_all(refs))
-        results = []
+        results: list[User] = []
         for doc in request_docs:
             if doc.exists:
                 data = doc.to_dict()
                 if data is not None:
-                    results.append({"id": doc.id, **data})
+                    user_data = cast("User", data)
+                    user_data["id"] = doc.id
+                    results.append(user_data)
         return results
 
     @staticmethod
-    def get_pending_tournament_invites(
-        db: Client, user_id: str
-    ) -> list[dict[str, Any]]:
+    def get_pending_tournament_invites(db: Client, user_id: str) -> list[Tournament]:
         """Fetch pending tournament invites for a user."""
         if not user_id:
             return []
@@ -403,7 +416,7 @@ class UserService:
             return []
 
     @staticmethod
-    def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
+    def get_active_tournaments(db: Client, user_id: str) -> list[Tournament]:
         """Fetch active tournaments for a user."""
         tournaments_query = (
             db.collection("tournaments")
@@ -443,7 +456,7 @@ class UserService:
         return active_tournaments
 
     @staticmethod
-    def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
+    def get_past_tournaments(db: Client, user_id: str) -> list[Tournament]:
         """Fetch past (completed) tournaments for a user."""
         from pickaladder.tournament.utils import (  # noqa: PLC0415
             get_tournament_standings,
@@ -486,7 +499,7 @@ class UserService:
         return past_tournaments
 
     @staticmethod
-    def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
+    def get_user_sent_requests(db: Client, user_id: str) -> list[User]:
         """Fetch pending friend requests where the user is the initiator."""
         user_ref = db.collection("users").document(user_id)
         requests_query = (
@@ -501,18 +514,20 @@ class UserService:
 
         refs = [db.collection("users").document(uid) for uid in request_ids]
         request_docs = cast(list["DocumentSnapshot"], db.get_all(refs))
-        results = []
+        results: list[User] = []
         for doc in request_docs:
             if doc.exists:
                 data = doc.to_dict()
                 if data is not None:
-                    results.append({"id": doc.id, **data})
+                    user_data = cast("User", data)
+                    user_data["id"] = doc.id
+                    results.append(user_data)
         return results
 
     @staticmethod
     def get_all_users(
         db: Client, exclude_ids: list[str] | None = None, limit: int = 20
-    ) -> list[dict[str, Any]]:
+    ) -> list[User]:
         """Fetch a list of users, excluding given IDs, sorted by date."""
         if exclude_ids is None:
             exclude_ids = []
@@ -523,14 +538,15 @@ class UserService:
             .limit(limit + len(exclude_ids))  # Fetch extra in case we exclude users
             .stream()
         )
-        users = []
+        users: list[User] = []
         for doc in users_query:
             if exclude_ids and doc.id in exclude_ids:
                 continue
             data = doc.to_dict()
             if data is not None:
-                data["id"] = doc.id
-                users.append(data)
+                user_data = cast("User", data)
+                user_data["id"] = doc.id
+                users.append(user_data)
             if len(users) >= limit:
                 break
         return users
@@ -585,13 +601,17 @@ class UserService:
 
     @staticmethod
     def _collect_match_refs(
-        matches_docs: list[DocumentSnapshot],
+        matches_docs: list[DocumentSnapshot] | list[Match],
     ) -> tuple[set[Any], set[Any]]:
         """Collect all unique user and team references from match documents."""
         player_refs = set()
         team_refs = set()
         for match_doc in matches_docs:
-            match = match_doc.to_dict()
+            if hasattr(match_doc, "to_dict"):
+                match = cast("DocumentSnapshot", match_doc).to_dict()
+            else:
+                match = cast("dict[str, Any]", match_doc)
+
             if match is None:
                 continue
             if match.get("player1Ref"):
@@ -608,7 +628,7 @@ class UserService:
 
     @staticmethod
     def _fetch_match_entities(
-        db: Client, matches_docs: list[DocumentSnapshot]
+        db: Client, matches_docs: list[DocumentSnapshot] | list[Match]
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         """Fetch all users and teams involved in a list of matches."""
         player_refs, team_refs = UserService._collect_match_refs(matches_docs)
@@ -688,8 +708,8 @@ class UserService:
         db: Client,
         display_items: list[dict[str, Any]],
         user_id: str,
-        profile_user_data: dict[str, Any],
-    ) -> list[dict[str, Any]]:
+        profile_user_data: User | dict[str, Any],
+    ) -> list[Match]:
         """Format matches for the public profile view with consistent alignment."""
         matches_docs = [item["doc"] for item in display_items]
         users_map, _ = UserService._fetch_match_entities(db, matches_docs)
@@ -714,7 +734,7 @@ class UserService:
         return final_matches
 
     @staticmethod
-    def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
+    def get_public_groups(db: Client, limit: int = 10) -> list[Group]:
         """Fetch a list of public groups, enriched with owner data."""
         # Query for public groups
         public_groups_query = (
@@ -757,15 +777,18 @@ class UserService:
 
     @staticmethod
     def format_matches_for_dashboard(
-        db: Client, matches_docs: list[DocumentSnapshot], user_id: str
-    ) -> list[dict[str, Any]]:
+        db: Client, matches_docs: list[DocumentSnapshot] | list[Match], user_id: str
+    ) -> list[Match]:
         """Enrich match documents with user and team data for dashboard display."""
         users_map, teams_map = UserService._fetch_match_entities(db, matches_docs)
 
         # Batch fetch tournament names
         tournament_ids = set()
         for m in matches_docs:
-            m_data = m.to_dict()
+            if hasattr(m, "to_dict"):
+                m_data = cast("DocumentSnapshot", m).to_dict()
+            else:
+                m_data = cast("dict[str, Any]", m)
             if m_data and (tid := m_data.get("tournamentId")):
                 tournament_ids.add(tid)
         tournaments_map: dict[str, dict[str, Any]] = {}
@@ -783,7 +806,13 @@ class UserService:
         matches_data = []
 
         for match_doc in matches_docs:
-            m_data = match_doc.to_dict()
+            if hasattr(match_doc, "to_dict"):
+                m_data = cast("DocumentSnapshot", match_doc).to_dict()
+                m_id = cast("DocumentSnapshot", match_doc).id
+            else:
+                m_data = cast("dict[str, Any]", match_doc)
+                m_id = m_data.get("id", "")
+
             if m_data is None:
                 continue
             match_dict: dict[str, Any] = m_data
@@ -825,22 +854,25 @@ class UserService:
                 tournament_name = tournaments_map.get(t_id, {}).get("name")
 
             matches_data.append(
-                {
-                    "id": match_doc.id,
-                    "player1": p1_info,
-                    "player2": p2_info,
-                    "player1_score": m_data.get("player1Score", 0),
-                    "player2_score": m_data.get("player2Score", 0),
-                    "winner": winner,
-                    "date": m_data.get("matchDate", "N/A"),
-                    "match_date": m_data.get("matchDate"),
-                    "is_group_match": bool(m_data.get("groupId")),
-                    "match_type": m_data.get("matchType", "singles"),
-                    "user_result": user_result,
-                    "team1_name": t1_name,
-                    "team2_name": t2_name,
-                    "tournament_name": tournament_name,
-                }
+                cast(
+                    "Match",
+                    {
+                        "id": m_id,
+                        "player1": p1_info,
+                        "player2": p2_info,
+                        "player1_score": m_data.get("player1Score", 0),
+                        "player2_score": m_data.get("player2Score", 0),
+                        "winner": winner,
+                        "date": m_data.get("matchDate", "N/A"),
+                        "match_date": m_data.get("matchDate"),
+                        "is_group_match": bool(m_data.get("groupId")),
+                        "match_type": m_data.get("matchType", "singles"),
+                        "user_result": user_result,
+                        "team1_name": t1_name,
+                        "team2_name": t2_name,
+                        "tournament_name": tournament_name,
+                    },
+                )
             )
         return matches_data
 
@@ -891,14 +923,22 @@ class UserService:
 
     @staticmethod
     def calculate_stats(
-        matches: list[DocumentSnapshot], user_id: str
-    ) -> dict[str, Any]:
+        matches: list[DocumentSnapshot] | list[Match], user_id: str
+    ) -> UserStats:
         """Calculate aggregate performance statistics from a list of matches."""
         wins = losses = 0
         processed = []
 
         for match_doc in matches:
-            match_data = match_doc.to_dict()
+            if hasattr(match_doc, "to_dict"):
+                match_data = cast("DocumentSnapshot", match_doc).to_dict()
+                m_id = cast("DocumentSnapshot", match_doc).id
+                create_time = cast("DocumentSnapshot", match_doc).create_time
+            else:
+                match_data = cast("dict[str, Any]", match_doc)
+                m_id = match_data.get("id", "")
+                create_time = None
+
             if not match_data:
                 continue
 
@@ -912,7 +952,7 @@ class UserService:
                 {
                     "doc": match_doc,
                     "data": match_data,
-                    "date": match_data.get("matchDate") or match_doc.create_time,
+                    "date": match_data.get("matchDate") or create_time,
                     "user_won": won,
                 }
             )
@@ -923,15 +963,18 @@ class UserService:
 
         streak, s_type = UserService._calculate_streak(processed)
 
-        return {
-            "wins": wins,
-            "losses": losses,
-            "total_games": total,
-            "win_rate": win_rate,
-            "current_streak": streak,
-            "streak_type": s_type,
-            "processed_matches": processed,
-        }
+        return cast(
+            "UserStats",
+            {
+                "wins": wins,
+                "losses": losses,
+                "total_games": total,
+                "win_rate": win_rate,
+                "current_streak": streak,
+                "streak_type": s_type,
+                "processed_matches": processed,
+            },
+        )
 
     @staticmethod
     def _process_h2h_match(
@@ -1082,7 +1125,7 @@ class UserService:
             return False
 
     @staticmethod
-    def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
+    def get_group_rankings(db: Client, user_id: str) -> list[UserRanking]:
         """Fetch group rankings for a user."""
         from pickaladder.group.utils import (  # noqa: PLC0415
             get_group_leaderboard,
