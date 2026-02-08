@@ -331,6 +331,15 @@ body {
     .dashboard-columns { flex-direction: column; }
     .navbar-menu { display: none; }
     .hero-stats-card { flex-direction: column; text-align: center; }
+    .hero-stats-card .profile-picture,
+    .hero-stats-card .profile-picture-large {
+        width: 120px !important;
+        height: 120px !important;
+        margin: 0 auto 16px auto;
+        display: block;
+        object-fit: cover;
+        border-radius: 50%;
+    }
     .leaderboard-row {
         display: flex;
         justify-content: space-between;
