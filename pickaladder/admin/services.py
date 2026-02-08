@@ -1,5 +1,7 @@
 """Service layer for admin-related operations."""
 
+from typing import Any, Dict, List  # noqa: UP035
+
 from firebase_admin import auth, firestore
 
 
@@ -7,7 +9,7 @@ class AdminService:
     """Service class for admin-related operations."""
 
     @staticmethod
-    def build_friend_graph(db):
+    def build_friend_graph(db: Any) -> Dict[str, List[Dict[str, Any]]]:  # noqa: UP006
         """Build a dictionary of nodes and edges for a friendship graph."""
         users = db.collection("users").stream()
         nodes = []
@@ -30,7 +32,7 @@ class AdminService:
         return {"nodes": nodes, "edges": edges}
 
     @staticmethod
-    def toggle_setting(db, setting_key):
+    def toggle_setting(db: Any, setting_key: str) -> bool:
         """Toggle a boolean setting in the Firestore 'settings' collection."""
         setting_ref = db.collection("settings").document(setting_key)
         setting = setting_ref.get()
@@ -42,7 +44,7 @@ class AdminService:
         return new_value
 
     @staticmethod
-    def delete_user(db, user_id):
+    def delete_user(db: Any, user_id: str) -> None:
         """Delete a user from Firebase Auth and Firestore."""
         # Delete from Firebase Auth
         auth.delete_user(user_id)
@@ -50,14 +52,14 @@ class AdminService:
         db.collection("users").document(user_id).delete()
 
     @staticmethod
-    def promote_user(db, user_id):
+    def promote_user(db: Any, user_id: str) -> str:
         """Promote a user to admin status in Firestore."""
         user_ref = db.collection("users").document(user_id)
         user_ref.update({"isAdmin": True})
         return user_ref.get().to_dict().get("username", "user")
 
     @staticmethod
-    def verify_user(db, user_id):
+    def verify_user(db: Any, user_id: str) -> None:
         """Manually verify a user's email in Auth and Firestore."""
         auth.update_user(user_id, email_verified=True)
         user_ref = db.collection("users").document(user_id)

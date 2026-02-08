@@ -1,6 +1,7 @@
 """Admin routes for the application."""
 
 import random
+from typing import Union
 
 from faker import Faker
 from firebase_admin import auth, firestore
@@ -13,6 +14,7 @@ from flask import (
     request,
     url_for,
 )
+from werkzeug.wrappers import Response
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.user.services import UserService
@@ -23,10 +25,9 @@ from .services import AdminService
 MIN_USERS_FOR_MATCH_GENERATION = 2
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/")
 @login_required(admin_required=True)
-def admin():
+def admin() -> Union[str, Response]:
     """Render the main admin dashboard."""
     # Authorization check is now here, after g.user is guaranteed to be loaded.
     if not g.user or not g.user.get("isAdmin"):
@@ -46,7 +47,7 @@ def admin():
 
 @bp.route("/merge-ghost", methods=["POST"])
 @login_required(admin_required=True)
-def merge_ghost():
+def merge_ghost() -> Response:
     """Merge a ghost account into a real user profile."""
     target_user_id = request.form.get("target_user_id")
     ghost_email = request.form.get("ghost_email")
@@ -70,10 +71,9 @@ def merge_ghost():
     return redirect(url_for(".admin"))
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/toggle_email_verification", methods=["POST"])
 @login_required(admin_required=True)
-def toggle_email_verification():
+def toggle_email_verification() -> Response:
     """Toggle the global setting for requiring email verification."""
     db = firestore.client()
     try:
@@ -85,10 +85,9 @@ def toggle_email_verification():
     return redirect(url_for(".admin"))
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/matches")
 @login_required(admin_required=True)
-def admin_matches():
+def admin_matches() -> str:
     """Display a list of all matches."""
     db = firestore.client()
     matches_query = (
@@ -101,10 +100,9 @@ def admin_matches():
     return render_template("admin/matches.html", matches=matches)
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/delete_match/<string:match_id>", methods=["POST"])
 @login_required(admin_required=True)
-def admin_delete_match(match_id):
+def admin_delete_match(match_id: str) -> Response:
     """Delete a match document from Firestore."""
     db = firestore.client()
     try:
@@ -115,10 +113,9 @@ def admin_delete_match(match_id):
     return redirect(url_for(".admin_matches"))
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/friend_graph_data")
 @login_required(admin_required=True)
-def friend_graph_data():
+def friend_graph_data() -> Union[Response, str, tuple[Response, int]]:
     """Provide data for a network graph of users and their friendships."""
     db = firestore.client()
     try:
@@ -128,10 +125,9 @@ def friend_graph_data():
         return jsonify({"error": str(e)}), 500
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
-def delete_user(user_id):
+def delete_user(user_id: str) -> Response:
     """Delete a user from Firebase Auth and Firestore."""
     db = firestore.client()
     try:
@@ -142,10 +138,9 @@ def delete_user(user_id):
     return redirect(url_for("user.users"))
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/promote_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
-def promote_user(user_id):
+def promote_user(user_id: str) -> Response:
     """Promote a user to admin status."""
     db = firestore.client()
     try:
@@ -156,10 +151,9 @@ def promote_user(user_id):
     return redirect(url_for("user.users"))
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/verify_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
-def verify_user(user_id):
+def verify_user(user_id: str) -> Response:
     """Manually verify a user's email."""
     db = firestore.client()
     try:
@@ -170,9 +164,8 @@ def verify_user(user_id):
     return redirect(url_for("user.users"))
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/generate_users", methods=["POST"])
-def generate_users():
+def generate_users() -> str:
     """Generate a number of fake users for testing."""
     db = firestore.client()
     fake = Faker()
@@ -212,9 +205,8 @@ def generate_users():
     return render_template("generated_users.html", users=new_users)
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/generate_matches", methods=["POST"])
-def generate_matches():
+def generate_matches() -> Response:
     """Generate random matches between existing users."""
     db = firestore.client()
     fake = Faker()
@@ -246,9 +238,9 @@ def generate_matches():
 
 @bp.route("/merge_players", methods=["GET", "POST"])
 @login_required(admin_required=True)
-def merge_players():
+def merge_players() -> Union[str, Response]:
     """Merge two player accounts (Source -> Target). Source is deleted."""
-    users = UserService.get_all_users(firestore.client())
+    users = UserService.get_all_users(firestore.client(), exclude_ids=[])
 
     # Sort users for the dropdown (Real users first, then Ghosts)
     sorted_users = sorted(
@@ -258,6 +250,10 @@ def merge_players():
     if request.method == "POST":
         source_id = request.form.get("source_id")
         target_id = request.form.get("target_id")
+
+        if not source_id or not target_id:
+            flash("Source and Target IDs are required.", "error")
+            return redirect(url_for("admin.merge_players"))
 
         if source_id == target_id:
             flash("Source and Target cannot be the same user.", "error")
