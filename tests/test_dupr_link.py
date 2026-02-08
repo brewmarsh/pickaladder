@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
@@ -110,7 +111,7 @@ class DuprLinkTestCase(unittest.TestCase):
             "dupr_rating": 5.0,
         }
 
-        def get_doc(doc_id):
+        def get_doc(doc_id: str) -> Any:
             if doc_id == user_id:
                 return mock_viewer_doc
             if doc_id == target_id:
@@ -160,7 +161,7 @@ class DuprLinkTestCase(unittest.TestCase):
             "dupr_rating": 3.5,
         }
 
-        def get_doc(doc_id):
+        def get_doc(doc_id: str) -> Any:
             if doc_id == user_id:
                 return mock_viewer_doc
             if doc_id == target_id:

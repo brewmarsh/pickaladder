@@ -42,7 +42,7 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         # Mock FieldFilter
         class MockFieldFilter:
-            def __init__(self, field_path, op_string, value):
+            def __init__(self, field_path: str, op_string: str, value: Any) -> None:
                 self.field_path = field_path
                 self.op_string = op_string
                 self.value = value
@@ -185,7 +185,7 @@ class TournamentBlastTestCase(unittest.TestCase):
         # Set up the query chain for tournaments
         # _migrate_ghost_references calls
         # db.collection("tournaments").where(...).stream()
-        def collection_side_effect(name):
+        def collection_side_effect(name: str) -> Any:
             mock_coll = MagicMock()
             if name == "tournaments":
                 mock_coll.where.return_value.stream.return_value = [mock_tournament_doc]

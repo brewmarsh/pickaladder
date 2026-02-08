@@ -187,6 +187,7 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
 
 def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch group rankings for a user."""
+    from typing import cast  # noqa: PLC0415
     from pickaladder.group.utils import (  # noqa: PLC0415
         get_group_leaderboard,
     )
