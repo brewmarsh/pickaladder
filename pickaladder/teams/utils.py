@@ -5,7 +5,7 @@ from firebase_admin import firestore
 from .services import TeamService
 
 
-def get_or_create_team(user_a_id, user_b_id):
+def get_or_create_team(user_a_id: str, user_b_id: str) -> str:
     """
     Retrieves a team for two users, creating one if it doesn't exist.
     """

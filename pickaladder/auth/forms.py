@@ -1,11 +1,13 @@
 """Forms for the auth blueprint."""
 
 import re
+from typing import Optional
 
 from flask_wtf import FlaskForm  # type: ignore
 from wtforms import (
     BooleanField,
     DecimalField,
+    Field,
     PasswordField,
     StringField,
     SubmitField,
@@ -69,7 +71,7 @@ class RegisterForm(FlaskForm):
     submit = SubmitField("Register")
 
     # TODO: Add type hints for Agent clarity
-    def validate_password(self, field):
+    def validate_password(self, field: Field, form: Optional[FlaskForm] = None) -> None:
         """Validate password complexity."""
         if not re.search(r"[A-Z]", field.data):
             raise ValidationError(
@@ -103,7 +105,7 @@ class ChangePasswordForm(FlaskForm):
     submit = SubmitField("Change Password")
 
     # TODO: Add type hints for Agent clarity
-    def validate_password(self, field):
+    def validate_password(self, field: Field, form: Optional[FlaskForm] = None) -> None:
         """Validate password complexity."""
         if not re.search(r"[A-Z]", field.data):
             raise ValidationError(

@@ -1,9 +1,11 @@
 """Routes for authentication."""
 
 import re
+from typing import Any, Union
 
 from firebase_admin import auth, firestore
 from flask import (
+    Response,
     current_app,
     flash,
     g,
@@ -28,7 +30,7 @@ from .forms import ChangePasswordForm, LoginForm, RegisterForm
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/register", methods=["GET", "POST"])
-def register():
+def register() -> Union[Response, str]:
     """Register a new user."""
     invite_token = request.args.get("invite_token")
     if invite_token:
@@ -138,7 +140,7 @@ def register():
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/login", methods=["GET", "POST"])
-def login():
+def login() -> Union[Response, str]:
     """Render the login page.
 
     The actual login process is handled by the Firebase client-side SDK.
@@ -162,7 +164,7 @@ def login():
 
 
 # TODO: Add type hints for Agent clarity
-def _generate_unique_username(db, base_username):
+def _generate_unique_username(db: Any, base_username: str) -> str:
     """Generate a unique username by appending a number if the base username exists."""
     username = base_username
     i = 1
@@ -179,7 +181,7 @@ def _generate_unique_username(db, base_username):
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/session_login", methods=["POST"])
-def session_login():
+def session_login() -> Response:
     """Handle session login.
 
     This endpoint is called from the client-side after a successful Firebase login.
@@ -237,7 +239,7 @@ def session_login():
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/logout")
-def logout():
+def logout() -> Response:
     """Log the user out.
 
     The actual logout is handled by the Firebase client-side SDK.
@@ -251,7 +253,7 @@ def logout():
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/install", methods=["GET", "POST"])
-def install():
+def install() -> Union[Response, str]:
     """Install the application by creating an admin user."""
     db = firestore.client()
     # Check if an admin user already exists
@@ -328,7 +330,7 @@ def install():
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/change_password", methods=["GET", "POST"])
-def change_password():
+def change_password() -> Union[Response, str]:
     """Render the change password page.
 
     The actual password change is handled by the Firebase client-side SDK.
