@@ -56,14 +56,34 @@ class BestBudsTestCase(unittest.TestCase):
             p.stop()
         self.app_context.pop()
 
-    @patch(
-        "pickaladder.group.services.group_service.get_group_leaderboard",
-        return_value=[],
-    )
-    @patch("pickaladder.group.routes.get_group_leaderboard", return_value=[])
+    @patch("pickaladder.group.services.group_service.get_group_leaderboard")
+    @patch("pickaladder.group.routes.get_group_leaderboard")
     def test_best_buds_identification(
         self, mock_leaderboard_routes: MagicMock, mock_leaderboard_service: MagicMock
     ) -> None:
+        # 1. Setup the mocks to prevent the "Default Firebase App" crash
+        mock_data = [
+            {
+                "id": "user1",
+                "name": "Alice",
+                "wins": 10,
+                "losses": 2,
+                "avg_score": 11.0,
+                "form": ["W", "W", "W", "W", "W"],
+            },
+            {
+                "id": "user2",
+                "name": "Bob",
+                "wins": 8,
+                "losses": 4,
+                "avg_score": 9.5,
+                "form": ["W", "L", "W", "W", "L"],
+            },
+        ]
+        mock_leaderboard_service.return_value = mock_data
+        mock_leaderboard_routes.return_value = mock_data
+
+        # 2. Proceed with the logic test from 'main'
         # Set session
         with self.client.session_transaction() as sess:
             sess["user_id"] = "user1"
