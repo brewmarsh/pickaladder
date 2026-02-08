@@ -8,6 +8,10 @@ from typing import Any
 from firebase_admin import firestore
 from flask import current_app, url_for
 
+from pickaladder.group.services.match_parser import (
+    _get_match_scores,
+    _resolve_team_ids,
+)
 from pickaladder.group.utils import (
     get_group_leaderboard,
     get_random_joke,
@@ -327,8 +331,7 @@ class GroupService:
             if data.get("matchType") != "doubles":
                 continue
 
-            t1_id = data.get("team1Ref").id if data.get("team1Ref") else None
-            t2_id = data.get("team2Ref").id if data.get("team2Ref") else None
+            t1_id, t2_id = _resolve_team_ids(data)
             if not t1_id or not t2_id:
                 continue
 
@@ -336,8 +339,7 @@ class GroupService:
                 if tid not in stats:
                     stats[tid] = {"wins": 0, "losses": 0, "games": 0}
 
-            p1_score = data.get("player1Score", data.get("team1Score", 0))
-            p2_score = data.get("player2Score", data.get("team2Score", 0))
+            p1_score, p2_score = _get_match_scores(data)
 
             stats[t1_id]["games"] += 1
             stats[t2_id]["games"] += 1
