@@ -27,7 +27,7 @@ class DuprLinkTestCase(unittest.TestCase):
             "auth": patch("firebase_admin.auth"),
             "storage": patch("firebase_admin.storage"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
-            "send_email": patch("pickaladder.user.services.profile.send_email"),
+            "send_email": patch("pickaladder.user.services.core.send_email"),
         }
         self.mocks = {name: p.start() for name, p in patchers.items()}
         for p in patchers.values():
@@ -65,9 +65,13 @@ class DuprLinkTestCase(unittest.TestCase):
         ) = mock_user_doc
 
         # Post data to edit_profile
-        with patch(
-            "pickaladder.user.routes.UserService.update_user_profile"
-        ) as mock_update:
+        with (
+            patch("pickaladder.user.services.core.update_user_profile") as mock_update,
+            patch(
+                "pickaladder.user.services.UserService.update_user_profile",
+                new=mock_update,
+            ),
+        ):
             response = self.client.post(
                 "/user/edit_profile",
                 data={
@@ -185,3 +189,7 @@ class DuprLinkTestCase(unittest.TestCase):
 
         self.assertIn(b"Add DUPR ID", response.data)
         self.assertIn(b"3.5", response.data)
+
+
+if __name__ == "__main__":
+    unittest.main()

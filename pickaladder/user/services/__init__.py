@@ -4,6 +4,12 @@ from .activity import (
     get_active_tournaments as _get_active_tournaments,
 )
 from .activity import (
+    get_community_data as _get_community_data,
+)
+from .activity import (
+    get_dashboard_data as _get_dashboard_data,
+)
+from .activity import (
     get_group_rankings as _get_group_rankings,
 )
 from .activity import (
@@ -18,6 +24,12 @@ from .activity import (
 from .activity import (
     get_user_groups as _get_user_groups,
 )
+from .activity import (
+    get_user_profile_data as _get_user_profile_data,
+)
+from .core import (
+    create_invite_token as _create_invite_token,
+)
 from .core import (
     get_all_users as _get_all_users,
 )
@@ -25,7 +37,16 @@ from .core import (
     get_user_by_id as _get_user_by_id,
 )
 from .core import (
+    process_profile_update as _process_profile_update,
+)
+from .core import (
+    search_users as _search_users,
+)
+from .core import (
     smart_display_name as _smart_display_name,
+)
+from .core import (
+    update_dashboard_profile as _update_dashboard_profile,
 )
 from .core import (
     update_user_profile as _update_user_profile,
@@ -35,6 +56,9 @@ from .friendship import (
 )
 from .friendship import (
     cancel_friend_request as _cancel_friend_request,
+)
+from .friendship import (
+    get_friends_page_data as _get_friends_page_data,
 )
 from .friendship import (
     get_friendship_info as _get_friendship_info,
@@ -47,6 +71,9 @@ from .friendship import (
 )
 from .friendship import (
     get_user_sent_requests as _get_user_sent_requests,
+)
+from .friendship import (
+    send_friend_request as _send_friend_request,
 )
 from .match_stats import (
     _calculate_streak as _calculate_streak,
@@ -167,4 +194,12 @@ class UserService:
     check_username_availability = staticmethod(_check_username_availability)
     update_email_address = staticmethod(_update_email_address)
     upload_profile_picture = staticmethod(_upload_profile_picture)
+    process_profile_update = staticmethod(_process_profile_update)
     get_dashboard_data = staticmethod(_get_dashboard_data)
+    get_user_profile_data = staticmethod(_get_user_profile_data)
+    get_community_data = staticmethod(_get_community_data)
+    search_users = staticmethod(_search_users)
+    get_friends_page_data = staticmethod(_get_friends_page_data)
+    send_friend_request = staticmethod(_send_friend_request)
+    create_invite_token = staticmethod(_create_invite_token)
+    update_dashboard_profile = staticmethod(_update_dashboard_profile)

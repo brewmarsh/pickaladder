@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
+
+from pickaladder.user.services import firestore as service_firestore
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
@@ -9,12 +11,12 @@ if TYPE_CHECKING:
 
 def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch all groups the user is a member of."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
-
     user_ref = db.collection("users").document(user_id)
     groups_query = (
         db.collection("groups")
-        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .where(
+            filter=service_firestore.FieldFilter("members", "array_contains", user_ref)
+        )
         .stream()
     )
     groups = []
@@ -28,15 +30,13 @@ def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending tournament invites for a user."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
-
     if not user_id:
         return []
     try:
         tournaments_query = (
             db.collection("tournaments")
             .where(
-                filter=firestore.FieldFilter(
+                filter=service_firestore.FieldFilter(
                     "participant_ids", "array_contains", user_id
                 )
             )
@@ -65,12 +65,12 @@ def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, A
 
 def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch active tournaments for a user."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
-
     tournaments_query = (
         db.collection("tournaments")
         .where(
-            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id)
+            filter=service_firestore.FieldFilter(
+                "participant_ids", "array_contains", user_id
+            )
         )
         .stream()
     )
@@ -103,15 +103,14 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch past (completed) tournaments for a user."""
-    from pickaladder.tournament.utils import (  # noqa: PLC0415
-        get_tournament_standings,
-    )
-    from pickaladder.user.services import firestore  # noqa: PLC0415
+    from pickaladder.tournament.utils import get_tournament_standings
 
     tournaments_query = (
         db.collection("tournaments")
         .where(
-            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id)
+            filter=service_firestore.FieldFilter(
+                "participant_ids", "array_contains", user_id
+            )
         )
         .stream()
     )
@@ -143,13 +142,11 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     """Fetch a list of public groups, enriched with owner data."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
-
     # Query for public groups
     public_groups_query = (
         db.collection("groups")
-        .where(filter=firestore.FieldFilter("is_public", "==", True))
-        .order_by("createdAt", direction=firestore.Query.DESCENDING)
+        .where(filter=service_firestore.FieldFilter("is_public", "==", True))
+        .order_by("createdAt", direction=service_firestore.Query.DESCENDING)
         .limit(limit)
     )
     public_group_docs = list(public_groups_query.stream())
@@ -192,12 +189,15 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
         get_group_leaderboard,
     )
     from pickaladder.user.services import firestore  # noqa: PLC0415
+    from pickaladder.user.models import UserRanking  # noqa: PLC0415
 
     user_ref = db.collection("users").document(user_id)
     group_rankings = []
     my_groups_query = (
         db.collection("groups")
-        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .where(
+            filter=service_firestore.FieldFilter("members", "array_contains", user_ref)
+        )
         .stream()
     )
     for group_doc in my_groups_query:
@@ -237,3 +237,131 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
                 }
             )
     return group_rankings
+
+
+def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
+    """Aggregate all data required for the user dashboard."""
+    from .friendship import get_user_friends, get_user_pending_requests
+    from .match_stats import (
+        calculate_stats,
+        format_matches_for_dashboard,
+        get_user_matches,
+    )
+
+    # Fetch dashboard data
+    matches_all = get_user_matches(db, user_id)
+    stats = calculate_stats(matches_all, user_id)
+
+    # Activity feed matches
+    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:20]]
+    matches = format_matches_for_dashboard(db, recent_matches_docs, user_id)
+
+    return {
+        "matches": matches,
+        "stats": stats,
+        "friends": get_user_friends(db, user_id),
+        "requests": get_user_pending_requests(db, user_id),
+        "group_rankings": get_group_rankings(db, user_id),
+        "pending_tournament_invites": get_pending_tournament_invites(db, user_id),
+        "active_tournaments": get_active_tournaments(db, user_id),
+        "past_tournaments": get_past_tournaments(db, user_id),
+    }
+
+
+def get_user_profile_data(
+    db: Client, current_user_id: str, target_user_id: str
+) -> dict[str, Any] | None:
+    """Fetch all data for a user's public profile."""
+    from .core import get_user_by_id
+    from .friendship import get_friendship_info, get_user_friends
+    from .match_stats import (
+        calculate_stats,
+        format_matches_for_dashboard,
+        get_h2h_stats,
+        get_user_matches,
+    )
+
+    profile_user_data = get_user_by_id(db, target_user_id)
+    if not profile_user_data:
+        return None
+
+    is_friend, friend_request_sent = get_friendship_info(
+        db, current_user_id, target_user_id
+    )
+
+    h2h_stats = None
+    if current_user_id != target_user_id:
+        h2h_stats = get_h2h_stats(db, current_user_id, target_user_id)
+
+    matches = get_user_matches(db, target_user_id)
+    stats = calculate_stats(matches, target_user_id)
+    display_items_docs = [m["doc"] for m in stats["processed_matches"][:20]]
+    matches_data = format_matches_for_dashboard(db, display_items_docs, target_user_id)
+
+    return {
+        "profile_user": profile_user_data,
+        "is_friend": is_friend,
+        "friend_request_sent": friend_request_sent,
+        "h2h_stats": h2h_stats,
+        "friends": get_user_friends(db, target_user_id, limit=10),
+        "matches": matches_data,
+        "stats": stats,
+    }
+
+
+def get_community_data(db: Client, user_id: str, search_term: str) -> dict[str, Any]:
+    """Fetch and filter community hub data."""
+    from .core import get_all_users
+    from .friendship import (
+        get_user_friends,
+        get_user_pending_requests,
+        get_user_sent_requests,
+    )
+
+    friends = get_user_friends(db, user_id)
+    incoming_requests = get_user_pending_requests(db, user_id)
+    outgoing_requests = get_user_sent_requests(db, user_id)
+
+    exclude_ids = [user_id]
+    exclude_ids.extend([f["id"] for f in friends])
+    exclude_ids.extend([r["id"] for r in incoming_requests])
+    exclude_ids.extend([r["id"] for r in outgoing_requests])
+
+    all_users = get_all_users(db, exclude_ids, limit=20)
+    public_groups = get_public_groups(db, limit=10)
+    pending_tournament_invites = get_pending_tournament_invites(db, user_id)
+
+    if search_term:
+        term = search_term.lower()
+
+        def matches_search(u: dict[str, Any]) -> bool:
+            return (
+                term in u.get("username", "").lower()
+                or term in u.get("name", "").lower()
+                or term in u.get("email", "").lower()
+            )
+
+        friends = [f for f in friends if matches_search(f)]
+        incoming_requests = [r for r in incoming_requests if matches_search(r)]
+        outgoing_requests = [r for r in outgoing_requests if matches_search(r)]
+        all_users = [u for u in all_users if matches_search(u)]
+        pending_tournament_invites = [
+            ti
+            for ti in pending_tournament_invites
+            if term in ti.get("name", "").lower()
+        ]
+        public_groups = [
+            g
+            for g in public_groups
+            if term in g.get("name", "").lower()
+            or term in g.get("description", "").lower()
+        ]
+
+    return {
+        "friends": friends,
+        "incoming_requests": incoming_requests,
+        "outgoing_requests": outgoing_requests,
+        "all_users": all_users,
+        "public_groups": public_groups,
+        "pending_tournament_invites": pending_tournament_invites,
+    }

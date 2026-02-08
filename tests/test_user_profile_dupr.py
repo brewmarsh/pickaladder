@@ -22,7 +22,7 @@ class UserProfileDuprTestCase(unittest.TestCase):
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
-            "storage": patch("pickaladder.user.services.profile.storage"),
+
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
         self.mocks = {name: p.start() for name, p in patchers.items()}
