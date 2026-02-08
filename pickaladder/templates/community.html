@@ -130,7 +130,7 @@
                     <div class="friend-card card-action">
                         <a href="{{ url_for('user.view_user', user_id=friend.id) }}" class="friend-card-link">
                             <div class="friend-card-content">
-                                <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="friend-avatar">
+                            <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="profile-picture-medium">
                                 <h3 class="friend-name">{{ friend.name or friend.username }}</h3>
                                 {% if friend.name and friend.name != friend.username %}
                                     <p class="text-muted" style="margin-top: -5px; font-size: 0.85em;">@{{ friend.username }}</p>
@@ -160,7 +160,7 @@
                     <div class="friend-card card-action">
                         <a href="{{ url_for('user.view_user', user_id=user_data.id) }}" class="friend-card-link">
                             <div class="friend-card-content">
-                                <img src="{{ user_data | avatar_url }}" alt="{{ user_data.username }}" class="friend-avatar">
+                                <img src="{{ user_data | avatar_url }}" alt="{{ user_data.username }}" class="profile-picture-medium">
                                 <h3 class="friend-name">{{ user_data.name or user_data.username }}</h3>
                                 {% if user_data.name and user_data.name != user_data.username %}
                                     <p class="text-muted" style="margin-top: -5px; font-size: 0.85em;">@{{ user_data.username }}</p>
