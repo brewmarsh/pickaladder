@@ -9,7 +9,6 @@ from unittest.mock import MagicMock, patch
 # INSIGHT #2: Explicitly import submodules to defeat lazy loading
 # and ensure patch targets exist before the test runner tries to find them.
 from pickaladder import create_app
-from pickaladder.user.services import UserService  # noqa: F401
 
 # Mock user payloads for consistent test data
 MOCK_USER_ID = "user1"

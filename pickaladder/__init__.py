@@ -57,13 +57,45 @@ def _configure_mail_logging(app: Flask) -> None:
             f"DEBUG: Mail Password loaded: {bool(app.config.get('MAIL_PASSWORD'))}",
             file=sys.stderr,
         )
+        print(
+            f"DEBUG: Mail Config - User: {app.config.get('MAIL_USERNAME')}",
+            file=sys.stderr,
+        )
+        print(
+            f"DEBUG: Mail Config - Server: {app.config.get('MAIL_SERVER')}",
+            file=sys.stderr,
+        )
+        print(
+            f"DEBUG: Mail Config - Port: {app.config.get('MAIL_PORT')}", file=sys.stderr
+        )
+        print(
+            f"DEBUG: Mail Config - TLS: {app.config.get('MAIL_USE_TLS')}",
+            file=sys.stderr,
+        )
+        print(
+            f"DEBUG: Mail Config - SSL: {app.config.get('MAIL_USE_SSL')}",
+            file=sys.stderr,
+        )
         pwd = app.config.get("MAIL_PASSWORD")
-        if pwd and len(pwd) != APP_PASSWORD_LENGTH:
+        if pwd:
             print(
-                f"DEBUG: Mail Config - Warning: Password length {len(pwd)} "
-                "does not match standard App Password length.",
+                f"DEBUG: Mail Config - Password Length: {len(pwd)}",
                 file=sys.stderr,
             )
+            if len(pwd) == APP_PASSWORD_LENGTH:
+                print(
+                    "DEBUG: Password length matches standard App Password length "
+                    f"({APP_PASSWORD_LENGTH}).",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    "DEBUG: Password length DOES NOT match standard App Password "
+                    f"length ({APP_PASSWORD_LENGTH}). Possible regular password used?",
+                    file=sys.stderr,
+                )
+        else:
+            print("DEBUG: Mail Config - No Password set!", file=sys.stderr)
 
 
 def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
@@ -71,6 +103,7 @@ def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
     cred = None
     project_id = None
 
+    # First, try to load from environment variable (for production)
     cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
     if cred_json:
         with suppress(json.JSONDecodeError, ValueError):
@@ -78,13 +111,17 @@ def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
             project_id = cred_info.get("project_id")
             cred = credentials.Certificate(cred_info)
 
+    # If env var fails or is not present, try loading from file (for local dev)
     if not cred:
         cred_path = Path(__file__).parent.parent / "firebase_credentials.json"
         if cred_path.exists():
             with suppress(json.JSONDecodeError, ValueError):
-                project_id = json.load(cred_path.open()).get("project_id")
+                with cred_path.open() as f:
+                    cred_info = json.load(f)
+                project_id = cred_info.get("project_id")
                 cred = credentials.Certificate(str(cred_path))
 
+    # If both methods fail, fallback to default credentials
     if not cred:
         with suppress(Exception):
             cred = credentials.ApplicationDefault()
@@ -100,6 +137,7 @@ def _initialize_firebase(app: Flask) -> None:
 
     cred, project_id = _get_firebase_credentials(app)
 
+    # Initialize the app if credentials were found
     if cred and not firebase_admin._apps:
         try:
             storage_bucket = os.environ.get("FIREBASE_STORAGE_BUCKET")
@@ -112,6 +150,7 @@ def _initialize_firebase(app: Flask) -> None:
 
             firebase_admin.initialize_app(cred, firebase_options)
         except ValueError:
+            # This can happen if the app is already initialized, which is fine.
             app.logger.info("Firebase app already initialized.")
 
 
@@ -132,6 +171,12 @@ def _register_context_processors(app: Flask) -> None:
 
     @app.context_processor
     def inject_global_context() -> dict[str, Any]:
+        """Injects global context variables into templates."""
+        # Detect version from environment variables with the following priority:
+        # 1. APP_VERSION (explicitly set)
+        # 2. GITHUB_RUN_NUMBER (GitHub Actions build)
+        # 3. RENDER_GIT_COMMIT or HEROKU_SLUG_COMMIT (Git Hash from Render/Heroku)
+        # 4. Fallback to "dev"
         version = (
             os.environ.get("APP_VERSION")
             or os.environ.get("GITHUB_RUN_NUMBER")
@@ -139,6 +184,8 @@ def _register_context_processors(app: Flask) -> None:
             or os.environ.get("HEROKU_SLUG_COMMIT")
             or "dev"
         )
+
+        # If it's a long git hash, shorten it
         if len(version) > VERSION_THRESHOLD and version != "dev":
             version = version[:VERSION_SHORT_LENGTH]
 
@@ -149,21 +196,32 @@ def _register_context_processors(app: Flask) -> None:
         }
 
     @app.context_processor
-    def inject_notifications() -> dict[str, Any]:
+    def inject_pending_friend_requests() -> dict[str, Any]:
+        """Injects pending friend requests into the template context."""
         if g.user:
             try:
                 db = firestore.client()
-                return {
-                    "pending_friend_requests": UserService.get_user_pending_requests(
-                        db, g.user["uid"]
-                    ),
-                    "pending_tournament_invites": (
-                        UserService.get_pending_tournament_invites(db, g.user["uid"])
-                    ),
-                }
+                pending_requests = UserService.get_user_pending_requests(
+                    db, g.user["uid"]
+                )
+                return dict(pending_friend_requests=pending_requests)
             except Exception as e:
-                current_app.logger.error(f"Error fetching notifications: {e}")
-        return {"pending_friend_requests": [], "pending_tournament_invites": []}
+                current_app.logger.error(f"Error fetching friend requests: {e}")
+        return dict(pending_friend_requests=[])
+
+    @app.context_processor
+    def inject_pending_tournament_invites() -> dict[str, Any]:
+        """Injects pending tournament invites into the template context."""
+        if g.user:
+            try:
+                db = firestore.client()
+                pending_invites = UserService.get_pending_tournament_invites(
+                    db, g.user["uid"]
+                )
+                return dict(pending_tournament_invites=pending_invites)
+            except Exception as e:
+                current_app.logger.error(f"Error fetching tournament invites: {e}")
+        return dict(pending_tournament_invites=[])
 
     @app.context_processor
     def inject_firebase_api_key() -> dict[str, Any]:
@@ -184,10 +242,13 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     )
     app.url_map.converters["uuid"] = UUIDConverter
 
+    # Load configuration
     _load_app_config(app, test_config)
+
     _configure_mail_logging(app)
     _initialize_firebase(app)
 
+    # Ensure the instance folder exists
     with suppress(OSError):
         Path(app.instance_path).mkdir(parents=True, exist_ok=True)
 
@@ -199,6 +260,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @login_manager.user_loader
     def load_user(user_id: str) -> Any:
+        """Load user by ID for Flask-Login."""
         try:
             db = firestore.client()
             user_doc = db.collection("users").document(user_id).get()
@@ -214,42 +276,55 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     @app.template_filter("avatar_url")
     def avatar_url_filter(user: dict[str, Any]) -> str:
+        """Return the avatar URL for a user."""
         if not user:
             return ""
         wrapped = wrap_user(user)
         return wrapped.avatar_url if wrapped else ""
 
     _register_blueprints(app)
+
+    # make url_for('index') == url_for('auth.login')
     app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
 
     @app.before_request
     def load_logged_in_user() -> None:
+        """Load user from session."""
         user_id = session.get("user_id")
         g.user = None
-        if user_id:
-            try:
-                db = firestore.client()
-                user_doc = db.collection("users").document(user_id).get()
-                if user_doc.exists:
-                    g.user = wrap_user(user_doc.to_dict(), uid=user_id)
-                else:
-                    session.clear()
-            except Exception as e:
-                current_app.logger.error(f"Error loading user: {e}")
+        if user_id is None:
+            return
+
+        try:
+            db = firestore.client()
+            user_doc = db.collection("users").document(user_id).get()
+            if user_doc.exists:
+                g.user = wrap_user(user_doc.to_dict(), uid=user_id)
+            else:
                 session.clear()
+                current_app.logger.warning(
+                    f"User {user_id} in session but not found in Firestore."
+                )
+        except Exception as e:
+            current_app.logger.error(f"Error loading user from session: {e}")
+            session.clear()
 
     _register_context_processors(app)
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore
+
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
 
     return app
 
 
 def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
     """Load and process application configuration."""
+    mail_username = os.environ.get("MAIL_USERNAME")
+    if mail_username:
+        mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
 
-    def _clean(env_var):
-        val = os.environ.get(env_var)
-        return val.strip().replace(" ", "").strip("'").strip('"') if val else None
+    mail_password = os.environ.get("MAIL_PASSWORD")
+    if mail_password:
+        mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
 
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
@@ -261,8 +336,8 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
         in ("true", "1", "t"),
         MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower()
         in ("true", "1", "t"),
-        MAIL_USERNAME=_clean("MAIL_USERNAME"),
-        MAIL_PASSWORD=_clean("MAIL_PASSWORD"),
+        MAIL_USERNAME=mail_username,
+        MAIL_PASSWORD=mail_password,
         MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
         or "noreply@pickaladder.com",
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),

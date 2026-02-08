@@ -16,9 +16,8 @@ class UserProfileDuprTestCase(unittest.TestCase):
         self.mock_firestore_service = MagicMock()
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_client": patch(
-                "firebase_admin.firestore.client",
-                return_value=self.mock_firestore_service.client.return_value,
+            "firestore": patch(
+                "pickaladder.user.routes.firestore", new=self.mock_firestore_service
             ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
@@ -59,7 +58,7 @@ class UserProfileDuprTestCase(unittest.TestCase):
         mock_user_doc.to_dict.return_value = {
             "username": "target_user",
             "name": "Target User",
-            "duprRating": 4.5,
+            "dupr_rating": 4.5,
             "profilePictureUrl": "http://example.com/pic.jpg",
         }
 

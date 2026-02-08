@@ -126,6 +126,9 @@ body {
     background-color: var(--primary-color); 
     color: white; 
 }
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
 
 /* High-Energy Volt Button */
 .btn-volt {

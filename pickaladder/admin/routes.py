@@ -18,7 +18,6 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.user.services import UserService
 
 from . import bp
-from .utils import admin_required
 
 MIN_USERS_FOR_MATCH_GENERATION = 2
 
@@ -272,8 +271,7 @@ def generate_matches():
 
 
 @bp.route("/merge_players", methods=["GET", "POST"])
-@login_required
-@admin_required
+@login_required(admin_required=True)
 def merge_players():
     """Merge two player accounts (Source -> Target). Source is deleted."""
     users = UserService.get_all_users(firestore.client())
