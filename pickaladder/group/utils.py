@@ -555,7 +555,7 @@ def friend_group_members(db: Any, group_id: str, new_member_ref: Any) -> None:
 
 def _extract_team_ids(data: dict[str, Any]) -> tuple[set[str], set[str]]:
     """Extract team member IDs, handling Refs, IDs, and legacy formats."""
-    t1: set[str] = set()
+    t1 = set()
     if "team1" in data:
         # Handle list of refs or strings in 'team1'
         team1 = data["team1"]
@@ -575,7 +575,7 @@ def _extract_team_ids(data: dict[str, Any]) -> tuple[set[str], set[str]]:
             elif isinstance(val, str):
                 t1.add(val)
 
-    t2: set[str] = set()
+    t2 = set()
     if "team2" in data:
         # Handle list of refs or strings in 'team2'
         team2 = data["team2"]

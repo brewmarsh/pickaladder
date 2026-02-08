@@ -51,19 +51,6 @@ def patch_mockfirestore():
         Query._where = Query.where
         Query.where = query_where
 
-    # Fix array_contains_any and array_contains in mockfirestore.Query
-    if not hasattr(Query, "_original_compare_func"):
-        Query._original_compare_func = Query._compare_func
-
-        def patched_compare_func(self, op):
-            if op == "array_contains":
-                return lambda x, y: x is not None and y in x
-            if op == "array_contains_any":
-                return lambda x, y: x is not None and any(val in y for val in (x or []))
-            return self._original_compare_func(op)
-
-        Query._compare_func = patched_compare_func
-
     def doc_ref_eq(self, other):
         if not isinstance(other, DocumentReference):
             return False

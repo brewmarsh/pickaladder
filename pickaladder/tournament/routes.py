@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 from typing import Any
 
+from firebase_admin import firestore  # noqa: F401
 from flask import (
     flash,
     g,
