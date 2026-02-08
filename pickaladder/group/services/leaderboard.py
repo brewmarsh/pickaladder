@@ -10,6 +10,7 @@ from firebase_admin import firestore
 from google.cloud.firestore import FieldFilter
 
 from pickaladder.user.helpers import smart_display_name
+
 from .match_parser import _extract_team_ids, _get_match_scores
 
 RECENT_MATCHES_LIMIT = 5
