@@ -106,6 +106,20 @@ class UserService:
         return list(unique_matches)
 
     @staticmethod
+    def merge_users(db: Client, source_id: str, target_id: str) -> None:
+        """Merge two player accounts (Source -> Target). Source is deleted."""
+        source_ref = db.collection("users").document(source_id)
+        target_ref = db.collection("users").document(target_id)
+
+        current_app.logger.info(f"Merging user {source_id} into {target_id}")
+
+        batch = db.batch()
+        UserService._migrate_user_references(db, batch, source_ref, target_ref)
+        batch.delete(source_ref)
+        batch.commit()
+        current_app.logger.info("User merge completed successfully.")
+
+    @staticmethod
     def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> bool:
         """Check for 'ghost' user with the given email and merge their data."""
         try:
@@ -121,17 +135,7 @@ class UserService:
                 return False
 
             ghost_doc = ghost_docs[0]
-            current_app.logger.info(
-                f"Merging ghost user {ghost_doc.id} to {real_user_ref.id}"
-            )
-
-            batch = db.batch()
-            UserService._migrate_ghost_references(
-                db, batch, ghost_doc.reference, real_user_ref
-            )
-            batch.delete(ghost_doc.reference)
-            batch.commit()
-            current_app.logger.info("Ghost user merge completed successfully.")
+            UserService.merge_users(db, ghost_doc.id, real_user_ref.id)
             return True
 
         except Exception as e:
@@ -139,45 +143,45 @@ class UserService:
             return False
 
     @staticmethod
-    def _migrate_ghost_references(
-        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    def _migrate_user_references(
+        db: Client, batch: firestore.WriteBatch, source_ref: Any, target_ref: Any
     ) -> None:
-        """Orchestrate the migration of all ghost user references."""
-        UserService._migrate_singles_matches(db, batch, ghost_ref, real_user_ref)
-        UserService._migrate_doubles_matches(db, batch, ghost_ref, real_user_ref)
-        UserService._migrate_groups(db, batch, ghost_ref, real_user_ref)
-        UserService._migrate_tournaments(db, batch, ghost_ref, real_user_ref)
+        """Orchestrate the migration of all user references from source to target."""
+        UserService._migrate_singles_matches(db, batch, source_ref, target_ref)
+        UserService._migrate_doubles_matches(db, batch, source_ref, target_ref)
+        UserService._migrate_groups(db, batch, source_ref, target_ref)
+        UserService._migrate_tournaments(db, batch, source_ref, target_ref)
 
     @staticmethod
     def _migrate_singles_matches(
-        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+        db: Client, batch: firestore.WriteBatch, source_ref: Any, target_ref: Any
     ) -> None:
-        """Update singles matches where the ghost user is player 1 or 2."""
+        """Update singles matches where the user is player 1 or 2."""
         match_updates: dict[str, dict[str, Any]] = {}
         for field in ["player1Ref", "player2Ref"]:
             matches = (
                 db.collection("matches")
-                .where(filter=firestore.FieldFilter(field, "==", ghost_ref))
+                .where(filter=firestore.FieldFilter(field, "==", source_ref))
                 .stream()
             )
             for match in matches:
                 if match.id not in match_updates:
                     match_updates[match.id] = {"ref": match.reference, "data": {}}
-                match_updates[match.id]["data"][field] = real_user_ref
+                match_updates[match.id]["data"][field] = target_ref
 
         for update in match_updates.values():
             batch.update(update["ref"], update["data"])
 
     @staticmethod
     def _migrate_doubles_matches(
-        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+        db: Client, batch: firestore.WriteBatch, source_ref: Any, target_ref: Any
     ) -> None:
-        """Update doubles matches where the ghost user is in a team array."""
+        """Update doubles matches where the user is in a team array."""
         match_updates: dict[str, dict[str, Any]] = {}
         for field in ["team1", "team2"]:
             matches = (
                 db.collection("matches")
-                .where(filter=firestore.FieldFilter(field, "array_contains", ghost_ref))
+                .where(filter=firestore.FieldFilter(field, "array_contains", source_ref))
                 .stream()
             )
             for match in matches:
@@ -195,7 +199,7 @@ class UserService:
                 if field in m_data:
                     current_team = m_data[field]
                     new_team = [
-                        real_user_ref if r == ghost_ref else r for r in current_team
+                        target_ref if r == source_ref else r for r in current_team
                     ]
                     match_updates[match.id]["updates"][field] = new_team
 
@@ -205,12 +209,12 @@ class UserService:
 
     @staticmethod
     def _migrate_groups(
-        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+        db: Client, batch: firestore.WriteBatch, source_ref: Any, target_ref: Any
     ) -> None:
         """Update group memberships."""
         groups = (
             db.collection("groups")
-            .where(filter=firestore.FieldFilter("members", "array_contains", ghost_ref))
+            .where(filter=firestore.FieldFilter("members", "array_contains", source_ref))
             .stream()
         )
         for group in groups:
@@ -218,20 +222,20 @@ class UserService:
             if g_data and "members" in g_data:
                 current_members = g_data["members"]
                 new_members = [
-                    real_user_ref if m == ghost_ref else m for m in current_members
+                    target_ref if m == source_ref else m for m in current_members
                 ]
                 batch.update(group.reference, {"members": new_members})
 
     @staticmethod
     def _migrate_tournaments(
-        db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+        db: Client, batch: firestore.WriteBatch, source_ref: Any, target_ref: Any
     ) -> None:
         """Update tournament participant lists and IDs."""
         tournaments = (
             db.collection("tournaments")
             .where(
                 filter=firestore.FieldFilter(
-                    "participant_ids", "array_contains", ghost_ref.id
+                    "participant_ids", "array_contains", source_ref.id
                 )
             )
             .stream()
@@ -253,13 +257,13 @@ class UserService:
                 p_ref = p.get("userRef")
                 p_uid = p_ref.id if p_ref else p.get("user_id")
 
-                if p_uid == ghost_ref.id:
+                if p_uid == source_ref.id:
                     if "userRef" in p:
-                        p["userRef"] = real_user_ref
+                        p["userRef"] = target_ref
 
                     # Ensure at least one ID field is present and correct
                     if "user_id" in p or "userRef" in p:
-                        p["user_id"] = real_user_ref.id
+                        p["user_id"] = target_ref.id
 
                     updated = True
 
@@ -267,7 +271,7 @@ class UserService:
                 p_ids = data.get("participant_ids", [])
                 # Rebuild the simple ID list
                 new_p_ids = [
-                    real_user_ref.id if pid == ghost_ref.id else pid for pid in p_ids
+                    target_ref.id if pid == source_ref.id else pid for pid in p_ids
                 ]
                 batch.update(
                     tournament.reference,
@@ -485,9 +489,11 @@ class UserService:
 
     @staticmethod
     def get_all_users(
-        db: Client, exclude_ids: list[str], limit: int = 20
+        db: Client, exclude_ids: list[str] | None = None, limit: int = 100
     ) -> list[dict[str, Any]]:
         """Fetch a list of users, excluding given IDs, sorted by date."""
+        if exclude_ids is None:
+            exclude_ids = []
         users_query = (
             db.collection("users")
             .order_by("createdAt", direction=firestore.Query.DESCENDING)
