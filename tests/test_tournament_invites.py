@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
-from pickaladder.user.services import UserService
+from pickaladder.user import UserService
 
 # Mock user payloads
 MOCK_USER_ID = "user1"

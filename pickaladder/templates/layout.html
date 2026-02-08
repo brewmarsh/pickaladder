@@ -33,9 +33,8 @@
             {% if session.get('show_welcome_invites') %}
             <script>
                 document.addEventListener('DOMContentLoaded', function () {
-                    const count = {{ session.pop('show_welcome_invites')
-                }};
-                showToast(`Welcome to Pickaladder! You have ${count} tournament invites waiting for you on your dashboard!`, 'success');
+                    const count = {{ session.pop('show_welcome_invites') }};
+                    showToast(`Welcome to Pickaladder! You have ${count} tournament invites waiting for you on your dashboard!`, 'success');
                 });
             </script>
             {% endif %}
@@ -161,36 +160,38 @@
 
         const hamburger = document.querySelector('.hamburger-menu');
         if (hamburger) {
-            hamburger.addEventListene r('click', function () {
+            hamburger.addEventListener('click', function () {
                 document.querySelector('.dropdown-content').classList.toggle('active');
-            })    </script>
+            });
+        }
+    </script>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script>
-            const firebaseConfig = {
-                apiKey: "{{ firebase_api_key|default('', true) }}",
-                authDomain: "pickaladder.firebaseapp.com",
-                projectId: "pickaladder",
-                storageBucket: "pickaladder.appspot.com",
-                messagingSenderId: "402457219675",
-                appId: "1:402457219675:web:a346e2dc0dfa732d31e57e",
-                measurementId: "G-E28CXCXTSK"
-            };
-            // Intercept fetch to add the auth token
-            const originalFetch = window.fetch;
-            window.fetch = function (url, options) {
-                const token = localStorage.getItem('firebaseIdToken');
-                if (token) {
-                    options = options || {};
-                    options.headers = options.headers || {};
-                    options.headers['Authorization'] = 'Bearer ' + token;
-                }
-                return originalFetch(url, options);
-            };
+        const firebaseConfig = {
+            apiKey: "{{ firebase_api_key|default('', true) }}",
+            authDomain: "pickaladder.firebaseapp.com",
+            projectId: "pickaladder",
+            storageBucket: "pickaladder.appspot.com",
+            messagingSenderId: "402457219675",
+            appId: "1:402457219675:web:a346e2dc0dfa732d31e57e",
+            measurementId: "G-E28CXCXTSK"
+        };
+        // Intercept fetch to add the auth token
+        const originalFetch = window.fetch;
+        window.fetch = function (url, options) {
+            const token = localStorage.getItem('firebaseIdToken');
+            if (token) {
+                options = options || {};
+                options.headers = options.headers || {};
+                options.headers['Authorization'] = 'Bearer ' + token;
+            }
+            return originalFetch(url, options);
+        };
 
-            // Initialize Firebase
-            firebase.initializeAirebag);
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
     </script>
 
     {% block scripts %}{% endblock %}

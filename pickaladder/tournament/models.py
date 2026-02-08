@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 from pickaladder.core.types import FirestoreDocument
 
 if TYPE_CHECKING:
-    from pickaladder.user.models import User
+    from pickaladder.user import User
 
 
 class Participant(TypedDict, total=False):

@@ -217,7 +217,7 @@ class TournamentService:
         )
 
         # Groups for dropdown
-        from pickaladder.user.services import UserService  # noqa: PLC0415
+        from pickaladder.user import UserService  # noqa: PLC0415
 
         user_groups = UserService.get_user_groups(db, user_uid)
 

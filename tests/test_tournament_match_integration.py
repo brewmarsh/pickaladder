@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 from firebase_admin import firestore
 
 from pickaladder import create_app
-from pickaladder.match.services import MatchService
-from pickaladder.user.services import UserService
+from pickaladder.match import MatchService
+from pickaladder.user import UserService
 
 # Mock data
 MOCK_USER_ID = "user123"
