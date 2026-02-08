@@ -1,4 +1,4 @@
-"""Tests for the tournament blueprint using mockfirestore."""
+"""Tests for the tournament blueprint using mockfirestore and mocked services."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 from mockfirestore import MockFirestore
 
 from pickaladder import create_app
-from pickaladder.tournament.services import TournamentService  # noqa: F401
+from pickaladder.tournament.services import TournamentService
 from tests.conftest import (
     MockArrayRemove,
     MockArrayUnion,
@@ -202,7 +202,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             .get()
             .to_dict()
         )
-        self.assertEqual(data["matchType"], "singles")  # Should not have changed
+        # Should not have changed matchType because matches exist
+        self.assertEqual(data["matchType"], "singles")
 
     def test_list_tournaments(self) -> None:
         """Test listing tournaments."""
@@ -409,6 +410,56 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn(
             b"You can only invite members from groups you belong to.", response.data
         )
+
+    @patch("pickaladder.tournament.routes.TournamentService.update_tournament")
+    def test_edit_tournament_mocked(self, mock_update: MagicMock) -> None:
+        """Test editing tournament by mocking the service method."""
+        # Ensure TournamentService is available for route logic
+        self.assertIsNotNone(TournamentService)
+        self._set_session_user()
+        tournament_id = "test_tournament_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+
+        # We still need the tournament in DB for get_tournament_details
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Original Name",
+                "date": datetime.datetime(2024, 6, 1),
+                "location": "Original Location",
+                "matchType": "singles",
+                "ownerRef": user_ref,
+                "organizer_id": MOCK_USER_ID,
+            }
+        )
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/edit",
+            headers=self._get_auth_headers(),
+            data={
+                "name": "Updated Name",
+                "date": "2024-07-01",
+                "location": "Updated Location",
+                "match_type": "doubles",
+            },
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        mock_update.assert_called_once()
+
+    @patch("pickaladder.tournament.routes.TournamentService.list_tournaments")
+    def test_list_tournaments_mocked(self, mock_list: MagicMock) -> None:
+        """Test listing tournaments by mocking the service method."""
+        self._set_session_user()
+        mock_list.return_value = [{"id": "t1", "name": "Mocked Tournament"}]
+
+        response = self.client.get(
+            "/tournaments/",
+            headers=self._get_auth_headers(),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Mocked Tournament", response.data)
+        mock_list.assert_called_once_with(MOCK_USER_ID)
 
 
 if __name__ == "__main__":

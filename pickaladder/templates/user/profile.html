@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}{{ profile_user | display_name }}'s Profile{% endblock %}
+
 {% block content %}
 <div class="mt-4">
     <div class="dashboard-columns">
@@ -12,6 +13,7 @@
 
                     <div class="d-flex justify-content-center align-items-center mb-3">
                         <div class="mr-3 text-center">
+                            {# Resolved Conflict: Combine flexible key checking with main's DUPR ID link UI #}
                             {% set dupr = profile_user.dupr_rating if profile_user.dupr_rating is not none else profile_user.duprRating %}
                             <div class="h4 mb-0 font-weight-bold">
                                 {{ dupr if dupr is not none else 'Unrated' }}
@@ -21,7 +23,7 @@
                             </div>
                             <small class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">
                                 DUPR Rating
-                                {% if not profile_user.dupr_id %}
+                                {% if not profile_user.dupr_id and user.id == profile_user.id %}
                                     <br><a href="{{ url_for('user.edit_profile') }}" class="small">Add DUPR ID</a>
                                 {% endif %}
                             </small>
