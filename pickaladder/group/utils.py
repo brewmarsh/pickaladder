@@ -20,6 +20,7 @@ from pickaladder.core.constants import (
     HOT_STREAK_THRESHOLD,
     RECENT_MATCHES_LIMIT,
 )
+# Resolved: Keep the imports from the service refactor
 from pickaladder.group.services.match_parser import _extract_team_ids, _get_match_scores
 from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
