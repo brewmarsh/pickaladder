@@ -18,6 +18,8 @@ from google.cloud.firestore import FieldFilter
 from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
+from .services.match_parser import _extract_team_ids
+
 FIRESTORE_BATCH_LIMIT = 400
 RECENT_MATCHES_LIMIT = 5
 HOT_STREAK_THRESHOLD = 3
@@ -551,51 +553,6 @@ def friend_group_members(db: Any, group_id: str, new_member_ref: Any) -> None:
             batch.commit()
         except Exception as e:
             print(f"Error friending group members: {e}", file=sys.stderr)
-
-
-def _extract_team_ids(data: dict[str, Any]) -> tuple[set[str], set[str]]:
-    """Extract team member IDs, handling Refs, IDs, and legacy formats."""
-    t1 = set()
-    if "team1" in data:
-        # Handle list of refs or strings in 'team1'
-        team1 = data["team1"]
-        if isinstance(team1, list):
-            for r in team1:
-                if hasattr(r, "id"):
-                    t1.add(r.id)
-                elif isinstance(r, str):
-                    t1.add(r)
-
-    # Check individual fields for Team 1
-    for field in ["player1Ref", "partnerRef", "player1Id", "partnerId"]:
-        val = data.get(field)
-        if val:
-            if hasattr(val, "id"):
-                t1.add(val.id)
-            elif isinstance(val, str):
-                t1.add(val)
-
-    t2 = set()
-    if "team2" in data:
-        # Handle list of refs or strings in 'team2'
-        team2 = data["team2"]
-        if isinstance(team2, list):
-            for r in team2:
-                if hasattr(r, "id"):
-                    t2.add(r.id)
-                elif isinstance(r, str):
-                    t2.add(r)
-
-    # Check individual fields for Team 2
-    for field in ["player2Ref", "opponent2Ref", "player2Id", "opponent2Id"]:
-        val = data.get(field)
-        if val:
-            if hasattr(val, "id"):
-                t2.add(val.id)
-            elif isinstance(val, str):
-                t2.add(val)
-
-    return t1, t2
 
 
 def _get_match_scores(data: dict[str, Any]) -> tuple[int, int]:
