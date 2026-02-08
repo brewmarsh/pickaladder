@@ -335,18 +335,4 @@ body {
         display: flex;
         justify-content: space-between;
     }
-
-    /* Prevent oversized images in cards */
-    .card img, .group-card img {
-        max-width: 100%;
-        height: auto;
-        object-fit: cover;
-    }
-
-    /* Force consistent group avatars in lists */
-    .group-profile-picture, .group-avatar, .group-avatar-large {
-        width: 60px !important;
-        height: 60px !important;
-        flex-shrink: 0;
-    }
 }

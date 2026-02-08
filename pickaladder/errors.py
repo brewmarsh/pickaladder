@@ -4,7 +4,8 @@
 class AppError(Exception):
     """Base application error class."""
 
-    def __init__(self, message: str, status_code: int = 400) -> None:
+    # TODO: Add type hints for Agent clarity
+    def __init__(self, message, status_code=400):
         """Initialize the error."""
         super().__init__(message)
         self.status_code = status_code
@@ -14,7 +15,8 @@ class AppError(Exception):
 class ValidationError(AppError):
     """Raised when user input fails validation."""
 
-    def __init__(self, message: str = "Validation failed.") -> None:
+    # TODO: Add type hints for Agent clarity
+    def __init__(self, message="Validation failed."):
         """Initialize the error."""
         super().__init__(message, 400)
 
@@ -22,7 +24,8 @@ class ValidationError(AppError):
 class DuplicateResourceError(AppError):
     """Raised when trying to create a resource that already exists."""
 
-    def __init__(self, message: str = "Resource already exists.") -> None:
+    # TODO: Add type hints for Agent clarity
+    def __init__(self, message="Resource already exists."):
         """Initialize the error."""
         super().__init__(message, 409)
 
@@ -30,6 +33,7 @@ class DuplicateResourceError(AppError):
 class NotFoundError(AppError):
     """Raised when a resource is not found."""
 
-    def __init__(self, message: str = "Resource not found.") -> None:
+    # TODO: Add type hints for Agent clarity
+    def __init__(self, message="Resource not found."):
         """Initialize the error."""
         super().__init__(message, 404)

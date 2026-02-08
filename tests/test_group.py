@@ -311,17 +311,13 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
 
         # Patch helpers to simplify
         with (
+            patch("pickaladder.group.routes.get_group_leaderboard", return_value=[]),
             patch(
-                "pickaladder.group.services.group_service.get_group_leaderboard",
-                return_value=[],
-            ),
-            patch(
-                "pickaladder.group.services.group_service.GroupService._fetch_recent_matches",
+                "pickaladder.group.routes._fetch_recent_matches",
                 return_value=([], []),
             ),
             patch(
-                "pickaladder.group.services.group_service.GroupService._fetch_group_teams",
-                return_value=([], None),
+                "pickaladder.group.routes._fetch_group_teams", return_value=([], None)
             ),
         ):
             response = self.client.get(
