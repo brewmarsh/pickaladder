@@ -107,13 +107,14 @@ class UserService:
 
     @staticmethod
     def merge_users(db: Client, source_id: str, target_id: str) -> None:
-        """Merge two player accounts (Source -> Target). Source is deleted."""
+        """Perform a deep merge of two user accounts. Source is deleted."""
         source_ref = db.collection("users").document(source_id)
         target_ref = db.collection("users").document(target_id)
 
         current_app.logger.info(f"Merging user {source_id} into {target_id}")
 
         batch = db.batch()
+        # Use the generic reference migration helper
         UserService._migrate_user_references(db, batch, source_ref, target_ref)
         batch.delete(source_ref)
         batch.commit()
@@ -135,6 +136,10 @@ class UserService:
                 return False
 
             ghost_doc = ghost_docs[0]
+            current_app.logger.info(
+                f"Merging ghost user {ghost_doc.id} to {real_user_ref.id}"
+            )
+
             UserService.merge_users(db, ghost_doc.id, real_user_ref.id)
             return True
 
@@ -489,11 +494,12 @@ class UserService:
 
     @staticmethod
     def get_all_users(
-        db: Client, exclude_ids: list[str] | None = None, limit: int = 100
+        db: Client, exclude_ids: list[str] | None = None, limit: int = 20
     ) -> list[dict[str, Any]]:
         """Fetch a list of users, excluding given IDs, sorted by date."""
         if exclude_ids is None:
             exclude_ids = []
+
         users_query = (
             db.collection("users")
             .order_by("createdAt", direction=firestore.Query.DESCENDING)
@@ -502,7 +508,7 @@ class UserService:
         )
         users = []
         for doc in users_query:
-            if doc.id in exclude_ids:
+            if exclude_ids and doc.id in exclude_ids:
                 continue
             data = doc.to_dict()
             if data is not None:
