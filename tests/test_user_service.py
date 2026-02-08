@@ -97,7 +97,9 @@ class TestUserService(unittest.TestCase):
         }
         mock_match2.create_time = 200
 
-        stats = UserService.calculate_stats([mock_match1, mock_match2], self.user_id)
+        stats = UserService.calculate_stats(
+            cast("list[Any]", [mock_match1, mock_match2]), self.user_id
+        )
         self.assertEqual(stats["wins"], 1)
         self.assertEqual(stats["losses"], 1)
         self.assertEqual(stats["total_games"], 2)

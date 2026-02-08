@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import flash, g, jsonify, redirect, render_template, request, url_for
@@ -14,6 +13,9 @@ from . import bp
 from .forms import MatchForm
 from .services import MatchService
 
+if TYPE_CHECKING:
+    pass
+
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:match_id>")
@@ -22,19 +24,21 @@ def view_match_page(match_id: str) -> Any:
     """Display the details of a single match."""
     db = firestore.client()
     match_data = MatchService.get_match_by_id(db, match_id)
-    if not match_data:
+    if match_data is None:
         flash("Match not found.", "danger")
         return redirect(url_for("user.dashboard"))
 
-    match_type = match_data.get("matchType", "singles")
+    # Cast to dict to avoid mypy Mapping.get issues with TypedDict
+    m_dict = cast("dict[str, Any]", match_data)
+    match_type = m_dict.get("matchType", "singles")
 
     context = {"match": match_data, "match_type": match_type}
 
     if match_type == "doubles":
         # Fetch team members
         # team1 and team2 are lists of refs
-        team1_refs = match_data.get("team1", [])
-        team2_refs = match_data.get("team2", [])
+        team1_refs = m_dict.get("team1", [])
+        team2_refs = m_dict.get("team2", [])
 
         team1_data = []
         for ref in team1_refs:
@@ -54,8 +58,8 @@ def view_match_page(match_id: str) -> Any:
     else:
         # Fetch player data from references
         # Handle cases where refs might be missing in corrupted data
-        player1_ref = match_data.get("player1Ref")
-        player2_ref = match_data.get("player2Ref")
+        player1_ref = m_dict.get("player1Ref")
+        player2_ref = m_dict.get("player2Ref")
 
         player1_data = {}
         player2_data = {}

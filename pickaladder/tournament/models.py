@@ -32,3 +32,7 @@ class Tournament(FirestoreDocument, total=False):
     ownerRef: User | Any
     participants: list[Participant]
     participant_ids: list[str]
+
+    # UI and calculated fields
+    date_display: str
+    winner_name: str

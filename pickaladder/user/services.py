@@ -35,7 +35,7 @@ class UserService:
     ) -> None:
         """Update a user's profile in Firestore."""
         user_ref = db.collection("users").document(user_id)
-        user_ref.update(update_data)
+        user_ref.update(cast("dict[Any, Any]", update_data))
 
     @staticmethod
     def get_user_by_id(db: Client, user_id: str) -> User | None:
@@ -290,7 +290,7 @@ class UserService:
 
                 # Check IDs in both formats (ref object or string ID)
                 p_ref = p.get("userRef")
-                p_uid = p_ref.id if p_ref else p.get("user_id")
+                p_uid = getattr(p_ref, "id", None) if p_ref else p.get("user_id")
 
                 if p_uid == ghost_ref.id:
                     if "userRef" in p:
@@ -396,16 +396,18 @@ class UserService:
                 .stream()
             )
 
-            pending_invites = []
+            pending_invites: list[Tournament] = []
             for doc in tournaments_query:
-                data = doc.to_dict()
+                data = cast("Tournament", doc.to_dict())
                 if data:
                     participants = data.get("participants") or []
                     for p in participants:
                         if not p:
                             continue
                         p_ref = p.get("userRef")
-                        p_uid = p_ref.id if p_ref else p.get("user_id")
+                        p_uid = (
+                            getattr(p_ref, "id", None) if p_ref else p.get("user_id")
+                        )
                         if p_uid == user_id and p.get("status") == "pending":
                             data["id"] = doc.id
                             pending_invites.append(data)
@@ -427,16 +429,18 @@ class UserService:
             )
             .stream()
         )
-        active_tournaments = []
+        active_tournaments: list[Tournament] = []
         for doc in tournaments_query:
-            data = doc.to_dict()
+            data = cast("Tournament", doc.to_dict())
             if data and data.get("status") in ["Active", "Scheduled"]:
                 participants = data.get("participants") or []
                 for p in participants:
                     if not p:
                         continue
                     p_uid = (
-                        p.get("userRef").id if p.get("userRef") else p.get("user_id")
+                        getattr(p.get("userRef"), "id", None)
+                        if p.get("userRef")
+                        else p.get("user_id")
                     )
                     if p_uid == user_id and p.get("status") == "accepted":
                         data["id"] = doc.id
@@ -471,9 +475,9 @@ class UserService:
             )
             .stream()
         )
-        past_tournaments = []
+        past_tournaments: list[Tournament] = []
         for doc in tournaments_query:
-            data = doc.to_dict()
+            data = cast("Tournament", doc.to_dict())
             if data and data.get("status") == "Completed":
                 data["id"] = doc.id
                 # Find winner
@@ -714,7 +718,7 @@ class UserService:
         matches_docs = [item["doc"] for item in display_items]
         users_map, _ = UserService._fetch_match_entities(db, matches_docs)
         profile_username = profile_user_data.get("username", "Unknown")
-        final_matches = []
+        final_matches: list[Match] = []
 
         for item in display_items:
             data = item["data"]
@@ -723,13 +727,16 @@ class UserService:
             )
 
             final_matches.append(
-                {
-                    "id": item["doc"].id,
-                    "match_date": data.get("matchDate"),
-                    "player1_score": data.get("player1Score", 0),
-                    "player2_score": data.get("player2Score", 0),
-                    **alignment,
-                }
+                cast(
+                    "Match",
+                    {
+                        "id": item["doc"].id,
+                        "match_date": data.get("matchDate"),
+                        "player1_score": data.get("player1Score", 0),
+                        "player2_score": data.get("player2Score", 0),
+                        **alignment,
+                    },
+                )
             )
         return final_matches
 
@@ -748,8 +755,8 @@ class UserService:
         # Enrich groups with owner data
         owner_refs = []
         for doc in public_group_docs:
-            data = doc.to_dict()
-            if data and (ref := data.get("ownerRef")):
+            g_data = doc.to_dict()
+            if g_data and (ref := g_data.get("ownerRef")):
                 owner_refs.append(ref)
         unique_owner_refs = list({ref for ref in owner_refs if ref})
 
@@ -760,15 +767,16 @@ class UserService:
 
         guest_user = {"username": "Guest", "id": "unknown"}
 
-        enriched_groups = []
+        enriched_groups: list[Group] = []
         for doc in public_group_docs:
-            data = doc.to_dict()
+            data = cast("Group", doc.to_dict())
             if data is None:
                 continue
             data["id"] = doc.id
             owner_ref = data.get("ownerRef")
-            if owner_ref and owner_ref.id in owners_data:
-                data["owner"] = owners_data[owner_ref.id]
+            o_id = str(getattr(owner_ref, "id", ""))
+            if owner_ref and o_id in owners_data:
+                data["owner"] = cast("User", owners_data[o_id])
             else:
                 data["owner"] = guest_user
             enriched_groups.append(data)
@@ -932,11 +940,9 @@ class UserService:
         for match_doc in matches:
             if hasattr(match_doc, "to_dict"):
                 match_data = cast("DocumentSnapshot", match_doc).to_dict()
-                m_id = cast("DocumentSnapshot", match_doc).id
                 create_time = cast("DocumentSnapshot", match_doc).create_time
             else:
                 match_data = cast("dict[str, Any]", match_doc)
-                m_id = match_data.get("id", "")
                 create_time = None
 
             if not match_data:
@@ -1132,7 +1138,7 @@ class UserService:
         )
 
         user_ref = db.collection("users").document(user_id)
-        group_rankings = []
+        group_rankings: list[UserRanking] = []
         my_groups_query = (
             db.collection("groups")
             .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
@@ -1163,15 +1169,18 @@ class UserService:
                     break
 
             if user_ranking_data:
-                group_rankings.append(user_ranking_data)
+                group_rankings.append(cast("UserRanking", user_ranking_data))
             else:
                 group_rankings.append(
-                    {
-                        "group_id": group_doc.id,
-                        "group_name": group_data.get("name", "N/A"),
-                        "rank": "N/A",
-                        "points": 0,
-                        "form": [],
-                    }
+                    cast(
+                        "UserRanking",
+                        {
+                            "group_id": group_doc.id,
+                            "group_name": group_data.get("name", "N/A"),
+                            "rank": "N/A",
+                            "points": 0,
+                            "form": [],
+                        },
+                    )
                 )
         return group_rankings

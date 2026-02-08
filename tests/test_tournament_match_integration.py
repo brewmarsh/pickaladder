@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 from firebase_admin import firestore
@@ -122,7 +123,7 @@ class TournamentMatchIntegrationTestCase(unittest.TestCase):
         ]
 
         formatted = UserService.format_matches_for_dashboard(
-            mock_db, [mock_match_doc], MOCK_USER_ID
+            mock_db, cast("list[Any]", [mock_match_doc]), MOCK_USER_ID
         )
 
         self.assertEqual(len(formatted), 1)
