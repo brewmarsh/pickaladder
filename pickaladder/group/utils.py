@@ -319,6 +319,7 @@ def _calculate_trend_points(
     player_stats = {pid: {"total_score": 0, "games": 0} for pid in players_data}
     datasets = {
         pid: {
+            "id": pid,
             "label": info["name"],
             "data": [],
             "fill": False,
