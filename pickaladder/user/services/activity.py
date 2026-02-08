@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
+    from pickaladder.user.models import UserRanking
+
 
 def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch all groups the user is a member of."""
@@ -185,15 +187,18 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     return enriched_groups
 
 
-def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
+def get_group_rankings(db: Client, user_id: str) -> list[UserRanking]:
     """Fetch group rankings for a user."""
+    from typing import cast
+
     from pickaladder.group.utils import (  # noqa: PLC0415
         get_group_leaderboard,
     )
+    from pickaladder.user.models import UserRanking  # noqa: PLC0415
     from pickaladder.user.services import firestore  # noqa: PLC0415
 
     user_ref = db.collection("users").document(user_id)
-    group_rankings = []
+    group_rankings: list[UserRanking] = []
     my_groups_query = (
         db.collection("groups")
         .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
@@ -224,15 +229,18 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
                 break
 
         if user_ranking_data:
-            group_rankings.append(user_ranking_data)
+            group_rankings.append(cast(UserRanking, user_ranking_data))
         else:
             group_rankings.append(
-                {
-                    "group_id": group_doc.id,
-                    "group_name": group_data.get("name", "N/A"),
-                    "rank": "N/A",
-                    "points": 0,
-                    "form": [],
-                }
+                cast(
+                    UserRanking,
+                    {
+                        "group_id": group_doc.id,
+                        "group_name": group_data.get("name", "N/A"),
+                        "rank": "N/A",
+                        "points": 0,
+                        "form": [],
+                    },
+                )
             )
     return group_rankings
