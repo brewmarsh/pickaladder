@@ -5,8 +5,8 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from pickaladder.group.services.leaderboard import get_group_leaderboard
-from pickaladder.group.services.stats import (
+from pickaladder.group.utils import (
+    get_group_leaderboard,
     get_head_to_head_stats,
     get_partnership_stats,
 )
@@ -15,7 +15,7 @@ from pickaladder.group.services.stats import (
 class TestGroupUtils(unittest.TestCase):
     """Test case for the group utils."""
 
-    @patch("pickaladder.group.services.leaderboard.firestore")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard(self, mock_firestore: MagicMock) -> None:
         """Test the get_group_leaderboard function."""
         # Mock Firestore client
@@ -132,7 +132,7 @@ class TestGroupUtils(unittest.TestCase):
         self.assertEqual(stats["wins"], 1)
         self.assertEqual(stats["losses"], 1)
 
-    @patch("pickaladder.group.services.stats.firestore")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_head_to_head_stats(self, mock_firestore: MagicMock) -> None:
         """Test the get_head_to_head_stats function with mixed formats."""
         mock_db = mock_firestore.client.return_value

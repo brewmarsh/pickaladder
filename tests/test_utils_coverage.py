@@ -4,16 +4,14 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
-from pickaladder.group.services.leaderboard import get_group_leaderboard
-from pickaladder.group.services.stats import (
-    get_leaderboard_trend_data,
-    get_user_group_stats,
-)
-from pickaladder.group.services.tasks import (
+from pickaladder.group.utils import (
     friend_group_members,
+    get_group_leaderboard,
+    get_leaderboard_trend_data,
+    get_random_joke,
+    get_user_group_stats,
     send_invite_email_background,
 )
-from pickaladder.group.utils import get_random_joke
 
 
 class TestUtilsCoverage(unittest.TestCase):
@@ -22,7 +20,7 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertIsInstance(joke, str)
         self.assertGreater(len(joke), 0)
 
-    @patch("pickaladder.group.services.leaderboard.firestore")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_doubles(self, mock_firestore: MagicMock) -> None:
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -83,7 +81,7 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(player4_stats["losses"], 1)
         self.assertEqual(player4_stats["avg_score"], 5)
 
-    @patch("pickaladder.group.services.leaderboard.firestore")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_draw(self, mock_firestore: MagicMock) -> None:
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -132,7 +130,7 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(player2_stats["losses"], 0)
         self.assertEqual(player2_stats["games_played"], 1)
 
-    @patch("pickaladder.group.services.leaderboard.firestore")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_no_members(self, mock_firestore: MagicMock) -> None:
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -145,7 +143,7 @@ class TestUtilsCoverage(unittest.TestCase):
         leaderboard = get_group_leaderboard("group1")
         self.assertEqual(leaderboard, [])
 
-    @patch("pickaladder.group.services.leaderboard.firestore")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_no_matches(self, mock_firestore: MagicMock) -> None:
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -182,8 +180,8 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(player2_stats["losses"], 0)
         self.assertEqual(player2_stats["games_played"], 0)
 
-    @patch("pickaladder.group.services.leaderboard.datetime")
-    @patch("pickaladder.group.services.leaderboard.firestore")
+    @patch("pickaladder.group.utils.datetime")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_rank_change(
         self, mock_firestore: MagicMock, mock_datetime: MagicMock
     ) -> None:
@@ -245,7 +243,7 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(player1_stats["rank_change"], 1)  # Was 2nd, now 1st
         self.assertEqual(player2_stats["rank_change"], -1)  # Was 1st, now 2nd
 
-    @patch("pickaladder.group.services.leaderboard.firestore")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_winning_streak(
         self, mock_firestore: MagicMock
     ) -> None:
@@ -291,7 +289,7 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(player1_stats["streak"], 5)
         self.assertTrue(player1_stats["is_on_fire"])
 
-    @patch("pickaladder.group.services.stats.firestore")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_leaderboard_trend_data_no_matches(
         self, mock_firestore: MagicMock
     ) -> None:
@@ -303,7 +301,7 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(trend_data["labels"], [])
         self.assertEqual(trend_data["datasets"], [])
 
-    @patch("pickaladder.group.services.stats.firestore")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_leaderboard_trend_data_with_matches(
         self, mock_firestore: MagicMock
     ) -> None:
@@ -365,8 +363,8 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(user1_data["data"], [11.0, 8.0])
         self.assertEqual(user2_data["data"], [5.0, 8.0])
 
-    @patch("pickaladder.group.services.stats.get_group_leaderboard")
-    @patch("pickaladder.group.services.stats.firestore")
+    @patch("pickaladder.group.utils.get_group_leaderboard")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_user_group_stats(
         self, mock_firestore: MagicMock, mock_get_group_leaderboard: MagicMock
     ) -> None:
@@ -403,8 +401,8 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(stats["win_streak"], 3)
         self.assertEqual(stats["longest_streak"], 3)
 
-    @patch("pickaladder.group.services.stats.get_group_leaderboard")
-    @patch("pickaladder.group.services.stats.firestore")
+    @patch("pickaladder.group.utils.get_group_leaderboard")
+    @patch("pickaladder.group.utils.firestore")
     def test_get_user_group_stats_invalid_user(
         self, mock_firestore: MagicMock, mock_get_group_leaderboard: MagicMock
     ) -> None:
@@ -448,9 +446,9 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(mock_batch.set.call_count, 4)
         mock_batch.commit.assert_called_once()
 
-    @patch("pickaladder.group.services.tasks.threading.Thread")
-    @patch("pickaladder.group.services.tasks.send_email")
-    @patch("pickaladder.group.services.tasks.firestore")
+    @patch("pickaladder.group.utils.threading.Thread")
+    @patch("pickaladder.group.utils.send_email")
+    @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_success(
         self,
         mock_firestore: MagicMock,
@@ -481,9 +479,9 @@ class TestUtilsCoverage(unittest.TestCase):
             {"status": "sent", "last_error": mock_firestore.DELETE_FIELD}
         )
 
-    @patch("pickaladder.group.services.tasks.threading.Thread")
-    @patch("pickaladder.group.services.tasks.send_email")
-    @patch("pickaladder.group.services.tasks.firestore")
+    @patch("pickaladder.group.utils.threading.Thread")
+    @patch("pickaladder.group.utils.send_email")
+    @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_failure(
         self,
         mock_firestore: MagicMock,

@@ -27,17 +27,8 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_routes": patch(
                 "pickaladder.group.routes.firestore", new=self.mock_firestore_service
             ),
-            "firestore_leaderboard": patch(
-                "pickaladder.group.services.leaderboard.firestore",
-                new=self.mock_firestore_service,
-            ),
-            "firestore_stats": patch(
-                "pickaladder.group.services.stats.firestore",
-                new=self.mock_firestore_service,
-            ),
-            "firestore_tasks": patch(
-                "pickaladder.group.services.tasks.firestore",
-                new=self.mock_firestore_service,
+            "firestore_utils": patch(
+                "pickaladder.group.utils.firestore", new=self.mock_firestore_service
             ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
@@ -320,13 +311,17 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
 
         # Patch helpers to simplify
         with (
-            patch("pickaladder.group.routes.get_group_leaderboard", return_value=[]),
             patch(
-                "pickaladder.group.routes._fetch_recent_matches",
+                "pickaladder.group.services.group_service.get_group_leaderboard",
+                return_value=[],
+            ),
+            patch(
+                "pickaladder.group.services.group_service.GroupService._fetch_recent_matches",
                 return_value=([], []),
             ),
             patch(
-                "pickaladder.group.routes._fetch_group_teams", return_value=([], None)
+                "pickaladder.group.services.group_service.GroupService._fetch_group_teams",
+                return_value=([], None),
             ),
         ):
             response = self.client.get(
