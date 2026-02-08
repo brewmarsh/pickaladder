@@ -169,7 +169,7 @@
                         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                             {% for friend in friends[:10] %}
                                 <a href="{{ url_for('user.view_user', user_id=friend.id) }}" title="{{ friend.username }}">
-                                    <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="profile-picture-thumbnail" style="width: 32px; height: 32px; margin: 0;">
+                                    <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="profile-picture-thumbnail">
                                 </a>
                             {% else %}
                                 <p class="text-muted small">No friends yet.</p>
@@ -187,7 +187,7 @@
             <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data" class="profile-form">
                 {{ form.hidden_tag() }}
                 <div class="profile-header">
-                    <img src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture avatar" id="profile-picture-img">
+                    <img src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture-large" id="profile-picture-img">
                     <div class="form-group">
                         {{ form.profile_picture(class="form-control", accept="image/*") }}
                     </div>
