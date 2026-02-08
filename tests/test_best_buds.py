@@ -40,6 +40,8 @@ class BestBudsTestCase(unittest.TestCase):
             ),
             patch("pickaladder.group.utils.firestore", new=self.mock_firestore_service),
             patch("pickaladder.firestore", new=self.mock_firestore_service),
+            patch("firebase_admin.initialize_app"),
+            patch("firebase_admin.get_app"),
         ]
         for p in self.patchers:
             p.start()
