@@ -136,11 +136,14 @@ class UserService:
     @staticmethod
     def merge_users(db: Client, source_id: str, target_id: str) -> None:
         """Perform a deep merge of two user accounts. Source is deleted."""
+        from pickaladder.teams.services import TeamService  # noqa: PLC0415
+
         source_ref = db.collection("users").document(source_id)
         target_ref = db.collection("users").document(target_id)
 
         batch = db.batch()
         UserService._migrate_ghost_references(db, batch, source_ref, target_ref)
+        TeamService.migrate_user_teams(db, batch, source_id, target_id)
         batch.delete(source_ref)
         batch.commit()
 
@@ -179,6 +182,8 @@ class UserService:
         db: Client, batch: firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
     ) -> None:
         """Update doubles matches where the ghost user is in a team array."""
+        from pickaladder.teams.services import TeamService  # noqa: PLC0415
+
         match_updates: dict[str, dict[str, Any]] = {}
         for field in ["team1", "team2"]:
             matches = (
@@ -204,6 +209,21 @@ class UserService:
                         real_user_ref if r == ghost_ref else r for r in current_team
                     ]
                     match_updates[match.id]["updates"][field] = new_team
+
+                    # Update team ID resolution logic
+                    partner_ref = next(
+                        (r for r in current_team if r != ghost_ref), None
+                    )
+                    if partner_ref:
+                        new_team_id = TeamService.get_or_create_team(
+                            db, real_user_ref.id, partner_ref.id
+                        )
+                        id_field = "team1Id" if field == "team1" else "team2Id"
+                        ref_field = "team1Ref" if field == "team1" else "team2Ref"
+                        match_updates[match.id]["updates"][id_field] = new_team_id
+                        match_updates[match.id]["updates"][ref_field] = db.collection(
+                            "teams"
+                        ).document(new_team_id)
 
         for update in match_updates.values():
             if update["updates"]:

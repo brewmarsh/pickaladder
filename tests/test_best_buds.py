@@ -40,6 +40,8 @@ class BestBudsTestCase(unittest.TestCase):
             ),
             patch("pickaladder.group.utils.firestore", new=self.mock_firestore_service),
             patch("pickaladder.firestore", new=self.mock_firestore_service),
+            patch("firebase_admin.initialize_app"),
+            patch("firebase_admin.get_app"),
         ]
         for p in self.patchers:
             p.start()
@@ -59,6 +61,7 @@ class BestBudsTestCase(unittest.TestCase):
     def test_best_buds_identification(
         self, mock_leaderboard_routes: MagicMock, mock_leaderboard_service: MagicMock
     ) -> None:
+        # 1. Setup the mocks to prevent the "Default Firebase App" crash
         mock_data = [
             {
                 "id": "user1",
@@ -80,6 +83,7 @@ class BestBudsTestCase(unittest.TestCase):
         mock_leaderboard_service.return_value = mock_data
         mock_leaderboard_routes.return_value = mock_data
 
+        # 2. Proceed with the logic test from 'main'
         # Set session
         with self.client.session_transaction() as sess:
             sess["user_id"] = "user1"
@@ -186,9 +190,8 @@ class BestBudsTestCase(unittest.TestCase):
             "matchDate": datetime.now(),
         }
         (
-            mock_db.collection(
-                "matches"
-            ).where.return_value.order_by.return_value.limit.return_value.stream.return_value
+            mock_db.collection("matches")
+            .where.return_value.order_by.return_value.limit.return_value.stream.return_value
         ) = [match_doc] * 10
 
         # Mock friends query for the invite form
