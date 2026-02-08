@@ -34,6 +34,11 @@ class BestBudsTestCase(unittest.TestCase):
             patch(
                 "pickaladder.group.routes.firestore", new=self.mock_firestore_service
             ),
+            patch(
+                "pickaladder.group.services.group_service.firestore",
+                new=self.mock_firestore_service,
+            ),
+            patch("pickaladder.group.utils.firestore", new=self.mock_firestore_service),
             patch("pickaladder.firestore", new=self.mock_firestore_service),
         ]
         for p in self.patchers:
@@ -50,8 +55,11 @@ class BestBudsTestCase(unittest.TestCase):
         self.app_context.pop()
 
     @patch("pickaladder.group.services.group_service.get_group_leaderboard")
-    def test_best_buds_identification(self, mock_get_leaderboard: MagicMock) -> None:
-        mock_get_leaderboard.return_value = [
+    @patch("pickaladder.group.routes.get_group_leaderboard")
+    def test_best_buds_identification(
+        self, mock_leaderboard_routes: MagicMock, mock_leaderboard_service: MagicMock
+    ) -> None:
+        mock_data = [
             {
                 "id": "user1",
                 "name": "Alice",
@@ -69,6 +77,8 @@ class BestBudsTestCase(unittest.TestCase):
                 "form": ["W", "L", "W", "W", "L"],
             },
         ]
+        mock_leaderboard_service.return_value = mock_data
+        mock_leaderboard_routes.return_value = mock_data
 
         # Set session
         with self.client.session_transaction() as sess:

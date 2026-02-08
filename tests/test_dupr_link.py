@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
-from pickaladder.constants import DUPR_PROFILE_BASE_URL
+from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
 
 
 class DuprLinkTestCase(unittest.TestCase):
