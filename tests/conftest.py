@@ -1,7 +1,8 @@
 """Common utilities for tests."""
 
 import unittest.mock
-from typing import Any, Iterator, Optional
+from collections.abc import Iterator
+from typing import Any, Optional
 
 from mockfirestore import CollectionReference, Query
 from mockfirestore.document import DocumentReference
