@@ -1,13 +1,14 @@
 """Main entry point for the application."""
 
+from typing import Response, Union
+
 from pickaladder import create_app
 
 app = create_app()
 
 
-# TODO: Add type hints for Agent clarity
 @app.route("/health")
-def health_check():
+def health_check() -> Union[str, Response]:
     """Perform a simple health check."""
     return "OK", 200
 
