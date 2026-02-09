@@ -47,23 +47,13 @@
                             onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                     </button>
                     <div class="dropdown-content">
-                        <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
-                        <a href="{{ url_for('user.view_community') }}" style="position: relative;">
-                            🌍 Community
-                            {% if pending_friend_requests %}
-                            <span class="notification-badge" style="top: 10px; right: 10px;">{{ pending_friend_requests|length }}</span>
-                            {% endif %}
-                        </a>
-                        <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
-                        <a href="{{ url_for('tournament.list_tournaments') }}">🎾 Tournaments</a>
-                        <a href="{{ url_for('match.leaderboard') }}">🏆 Global Leaderboard</a>
-                        <hr>
-                        <a href="{{ url_for('auth.change_password') }}">🔑 Change Password</a>
-                        <a href="{{ url_for('auth.logout') }}">🚪 Logout</a>
+                        <a href="{{ url_for('user.view_user', user_id=g.user['uid']) }}">👤 My Profile</a>
+                        <a href="{{ url_for('auth.change_password') }}">🔑 Settings / Change Password</a>
                         {% if session.get('is_admin') %}
-                        <hr>
                         <a href="{{ url_for('admin.admin') }}">👑 Admin</a>
                         {% endif %}
+                        <div class="dropdown-divider"></div>
+                        <a href="{{ url_for('auth.logout') }}">🚪 Logout</a>
                     </div>
                 </div>
                 {% else %}

@@ -29,6 +29,7 @@
 .align-items-center { align-items: center !important; }
 .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .w-100 { width: 100% !important; }
+.w-auto { width: auto !important; }
 .mb-0 { margin-bottom: 0 !important; }
 .mb-4 { margin-bottom: 24px !important; }
 .shadow-sm { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; }
