@@ -74,9 +74,6 @@ def dashboard() -> Any:
         flash("Profile updated successfully.", "success")
         return redirect(url_for(".dashboard"))
 
-    # Explicitly remove 'user' from data to avoid conflict with g.user
-    data.pop("user", None)
-
     return render_template("user_dashboard.html", form=form, user=g.user, **data)
 
 
