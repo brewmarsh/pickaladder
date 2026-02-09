@@ -103,7 +103,7 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch past (completed) tournaments for a user."""
-    from pickaladder.tournament.utils import get_tournament_standings  # noqa: PLC0415
+    from pickaladder.tournament.utils import get_tournament_standings
 
     tournaments_query = (
         db.collection("tournaments")
@@ -240,9 +240,9 @@ def get_user_profile_data(
     db: Client, current_user_id: str, target_user_id: str
 ) -> dict[str, Any] | None:
     """Fetch all data for a user's public profile."""
-    from .core import get_user_by_id  # noqa: PLC0415
-    from .friendship import get_friendship_info, get_user_friends  # noqa: PLC0415
-    from .match_stats import (  # noqa: PLC0415
+    from .core import get_user_by_id
+    from .friendship import get_friendship_info, get_user_friends
+    from .match_stats import (
         calculate_stats,
         format_matches_for_dashboard,
         get_h2h_stats,
@@ -279,8 +279,8 @@ def get_user_profile_data(
 
 def get_community_data(db: Client, user_id: str, search_term: str) -> dict[str, Any]:
     """Fetch and filter community hub data."""
-    from .core import get_all_users  # noqa: PLC0415
-    from .friendship import (  # noqa: PLC0415
+    from .core import get_all_users
+    from .friendship import (
         get_user_friends,
         get_user_pending_requests,
         get_user_sent_requests,

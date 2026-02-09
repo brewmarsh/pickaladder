@@ -118,7 +118,7 @@ def get_head_to_head_stats(
 
 def _calculate_all_time_streaks(matches: list[Any], user_ref: Any) -> tuple[int, int]:
     """Calculate current and longest winning streaks for a user."""
-    from datetime import datetime  # noqa: PLC0415
+    from datetime import datetime
 
     matches.sort(key=lambda x: x.to_dict().get("matchDate") or datetime.min)
     current = longest = 0
@@ -150,9 +150,7 @@ def _calculate_all_time_streaks(matches: list[Any], user_ref: Any) -> tuple[int,
 
 def get_user_group_stats(group_id: str, user_id: str) -> dict[str, Any]:
     """Calculate detailed statistics for a specific user within a group."""
-    from pickaladder.group.services.leaderboard import (  # noqa: PLC0415
-        get_group_leaderboard,
-    )
+    from pickaladder.group.services.leaderboard import get_group_leaderboard
 
     db = firestore.client()
     leaderboard = get_group_leaderboard(group_id)
