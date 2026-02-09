@@ -19,8 +19,8 @@ from flask_login import login_user, logout_user
 from werkzeug.exceptions import UnprocessableEntity
 
 from pickaladder.errors import DuplicateResourceError
-from pickaladder.user.helpers import wrap_user
 from pickaladder.user import UserService
+from pickaladder.user.helpers import wrap_user
 from pickaladder.utils import EmailError, send_email
 
 from . import bp
