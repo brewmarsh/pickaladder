@@ -29,6 +29,7 @@ from .services.group_service import (
     GroupNotFound,
     GroupService,
 )
+# Resolved: Import all utility functions from .utils to match current file structure
 from .utils import (
     friend_group_members,
     get_group_leaderboard,
