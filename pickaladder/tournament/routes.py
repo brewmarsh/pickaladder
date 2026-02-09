@@ -18,10 +18,9 @@ from flask import (
 from pickaladder.auth.decorators import login_required
 from pickaladder.user.helpers import smart_display_name
 
-from .services import TournamentService
-
 from . import bp
 from .forms import InvitePlayerForm, TournamentForm
+from .services import TournamentService
 
 
 @bp.route("/", methods=["GET"])

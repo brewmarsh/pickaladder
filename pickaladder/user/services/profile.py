@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from firebase_admin import auth, storage
 from flask import current_app

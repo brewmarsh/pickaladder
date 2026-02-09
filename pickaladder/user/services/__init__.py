@@ -7,9 +7,6 @@ from .activity import (
     get_community_data as _get_community_data,
 )
 from .activity import (
-    get_dashboard_data as _get_dashboard_data,
-)
-from .activity import (
     get_group_rankings as _get_group_rankings,
 )
 from .activity import (
@@ -50,6 +47,9 @@ from .core import (
 )
 from .core import (
     update_user_profile as _update_user_profile,
+)
+from .dashboard import (
+    get_dashboard_data as _get_dashboard_data,
 )
 from .friendship import (
     accept_friend_request as _accept_friend_request,
@@ -138,13 +138,13 @@ from .merging import (
 from .merging import (
     merge_users as _merge_users,
 )
-
-from .dashboard import (
-    get_dashboard_data as _get_dashboard_data,
-)
 from .profile import (
     check_username_availability as _check_username_availability,
+)
+from .profile import (
     update_email_address as _update_email_address,
+)
+from .profile import (
     upload_profile_picture as _upload_profile_picture,
 )
 

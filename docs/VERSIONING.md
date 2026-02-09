@@ -58,7 +58,7 @@ The system supports two tag formats:
 
 - **Production releases**: `v0.9.0`, `v1.0.0`, `v1.2.3`
   - Pattern: `v[MAJOR].[MINOR].[PATCH]`
-  
+
 - **Beta releases**: `v0.9.0-beta.1`, `v1.0.0-beta.2`
   - Pattern: `v[MAJOR].[MINOR].[PATCH]-beta.[INCREMENT]`
 
