@@ -36,13 +36,13 @@ if this_python < min_version:
     sys.exit(1)
 
 
-import argparse
-import importlib
-import os.path
-import pkgutil
-import shutil
-import tempfile
-from base64 import b85decode
+import argparse  # noqa: E402
+import importlib  # noqa: E402
+import os.path  # noqa: E402
+import pkgutil  # noqa: E402
+import shutil  # noqa: E402
+import tempfile  # noqa: E402
+from base64 import b85decode  # noqa: E402
 
 
 def include_setuptools(args):

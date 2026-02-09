@@ -41,7 +41,6 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
-            "storage_routes": patch("pickaladder.group.routes.storage"),
             "storage_service": patch(
                 "pickaladder.group.services.group_service.storage"
             ),
