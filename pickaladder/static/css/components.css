@@ -318,6 +318,23 @@
     100% { transform: rotate(360deg); }
 }
 
+/* Typography & Utilities */
+.fs-3 { font-size: 1.75rem !important; }
+.fw-bold { font-weight: var(--fw-bold) !important; }
+.gap-4 { gap: 1.5rem !important; }
+.text-volt { color: var(--accent-color) !important; }
+
+.vanity-stats-container {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.vanity-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 @media screen and (max-width: 768px) {
     /* Merged: General mobile adjustments from HEAD */
     .card { padding: 16px; border-radius: var(--radius-md); }
@@ -352,9 +369,17 @@
         margin-bottom: 12px;
     }
 
-    .hero-left-panel {
-        flex-direction: column;
+    .hero-left-panel, .hero-middle-panel, .hero-right-panel {
         width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .hero-right-panel {
+        margin-bottom: 0;
+    }
+
+    .vanity-stats-container {
+        gap: 1rem !important;
     }
 
     /* Prevent oversized images in cards */
