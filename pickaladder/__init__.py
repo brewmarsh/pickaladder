@@ -172,28 +172,17 @@ def _register_context_processors(app: Flask) -> None:
     @app.context_processor
     def inject_global_context() -> dict[str, Any]:
         """Injects global context variables into templates."""
-        # Detect version from environment variables with the following priority:
-        # 1. APP_VERSION (explicitly set)
-        # 2. GITHUB_RUN_NUMBER (GitHub Actions build)
-        # 3. RENDER_GIT_COMMIT or HEROKU_SLUG_COMMIT (Git Hash from Render/Heroku)
-        # 4. Fallback to "dev"
-        version = (
-            os.environ.get("APP_VERSION")
-            or os.environ.get("GITHUB_RUN_NUMBER")
-            or os.environ.get("RENDER_GIT_COMMIT")
-            or os.environ.get("HEROKU_SLUG_COMMIT")
-        )
+        version = current_app.config.get("APP_VERSION")
 
-        if not version:
-            try:
-                version_file = Path(current_app.root_path).parent / "VERSION"
-                if version_file.exists():
-                    version = version_file.read_text().strip()
-            except Exception:  # nosec B110
-                pass
-
-        if not version:
-            version = "dev"
+        # Fallback to environment variables if still at default "dev"
+        if version == "dev":
+            version = (
+                os.environ.get("APP_VERSION")
+                or os.environ.get("GITHUB_RUN_NUMBER")
+                or os.environ.get("RENDER_GIT_COMMIT")
+                or os.environ.get("HEROKU_SLUG_COMMIT")
+                or "dev"
+            )
 
         # If it's a long git hash, shorten it
         if len(version) > VERSION_THRESHOLD and version != "dev":
@@ -201,8 +190,8 @@ def _register_context_processors(app: Flask) -> None:
 
         return {
             "current_year": datetime.now().year,
-            "version": version,
             "app_version": version,
+            "version": version,
         }
 
     @app.context_processor
@@ -251,6 +240,13 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         static_url_path="/static",
     )
     app.url_map.converters["uuid"] = UUIDConverter
+
+    # Read version
+    try:
+        version_file = Path(app.root_path).parent / "VERSION"
+        app.config["APP_VERSION"] = version_file.read_text().strip()
+    except FileNotFoundError:
+        app.config["APP_VERSION"] = "dev"
 
     # Load configuration
     _load_app_config(app, test_config)

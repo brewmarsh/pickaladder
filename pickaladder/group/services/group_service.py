@@ -1,4 +1,3 @@
-```python
 """Service layer for group operations and data orchestration."""
 
 from __future__ import annotations
