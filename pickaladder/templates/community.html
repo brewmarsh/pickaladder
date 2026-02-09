@@ -7,6 +7,46 @@
 </div>
 <div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
 
+{% if incoming_requests %}
+<div class="card requests-section" style="margin-bottom: 40px; border-left: 6px solid var(--accent-color);">
+    <h3>Pending Friend Requests</h3>
+    <div class="table-container">
+        <table class="table-standard responsive-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in incoming_requests %}
+                <tr>
+                    <td data-label="User">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
+                            <a href="{{ url_for('user.view_user', user_id=request.id) }}"><strong>{{ request | smart_display_name }}</strong></a>
+                        </div>
+                    </td>
+                    <td data-label="Actions" style="text-align: right;">
+                        <form action="{{ url_for('user.accept_request', requester_id=request.id) }}" method="post"
+                            style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-primary">Confirm</button>
+                        </form>
+                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post"
+                            style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger">Decline</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 <form method="get" action="{{ url_for('user.view_community') }}" class="search-form" style="margin-bottom: 30px;">
     <div class="form-group" style="display: flex; gap: 10px;">
         <input type="text" name="search" placeholder="Search by username, name, or email" value="{{ search_term }}"
@@ -58,75 +98,6 @@
 </div>
 {% endif %}
 
-{% if incoming_requests or outgoing_requests %}
-<div class="card requests-section" style="margin-bottom: 40px;">
-    <h3>Friend Requests</h3>
-    {% if incoming_requests %}
-    <h4>Received</h4>
-    <div class="table-container">
-        <table class="table-standard responsive-table">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th style="text-align: right;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for request in incoming_requests %}
-                <tr>
-                    <td data-label="Username">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
-                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
-                        </div>
-                    </td>
-                    <td data-label="Actions" style="text-align: right;">
-                        <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post"
-                            style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn">Accept</button>
-                        </form>
-                        <form action="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" method="post"
-                            style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-danger">Decline</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-
-    {% if outgoing_requests %}
-    <h4 style="margin-top: 20px;">Sent</h4>
-    <div class="table-container">
-        <table class="table-standard responsive-table">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for request in outgoing_requests %}
-                <tr>
-                    <td data-label="Username">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
-                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
-                        </div>
-                    </td>
-                    <td data-label="Status">Pending</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-</div>
-{% endif %}
 
 <div class="friends-section" style="margin-bottom: 40px;">
     <h3>Your Friends</h3>
@@ -235,6 +206,40 @@
     <p>No public groups found.</p>
     {% endif %}
 </div>
+
+{% if outgoing_requests %}
+<div class="card requests-section" style="margin-top: 40px;">
+    <h3>Sent Friend Requests</h3>
+    <div class="table-container">
+        <table class="table-standard responsive-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in outgoing_requests %}
+                <tr>
+                    <td data-label="User">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
+                            <a href="{{ url_for('user.view_user', user_id=request.id) }}"><strong>{{ request | smart_display_name }}</strong></a>
+                        </div>
+                    </td>
+                    <td data-label="Actions" style="text-align: right;">
+                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger">Cancel</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

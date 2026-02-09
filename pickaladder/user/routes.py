@@ -160,14 +160,8 @@ def friends() -> Any:
 @bp.route("/requests", methods=["GET"])
 @login_required
 def friend_requests() -> Any:
-    """Display pending friend requests."""
-    db = firestore.client()
-    user_id = g.user["uid"]
-    return render_template(
-        "user/requests.html",
-        requests=UserService.get_user_pending_requests(db, user_id),
-        sent_requests=UserService.get_user_sent_requests(db, user_id),
-    )
+    """Deprecated: Redirects to the community hub."""
+    return redirect(url_for(".view_community"))
 
 
 @bp.route("/requests/<string:requester_id>/accept", methods=["POST"])
@@ -184,7 +178,7 @@ def accept_request(requester_id: str) -> Any:
     else:
         flash("An error occurred.", "danger")
 
-    return redirect(request.referrer or url_for(".friend_requests"))
+    return redirect(request.referrer or url_for(".view_community"))
 
 
 @bp.route("/requests/<string:target_id>/cancel", methods=["POST"])
@@ -196,7 +190,7 @@ def cancel_request(target_id: str) -> Any:
         flash("Friend request processed.", "success")
     else:
         flash("An error occurred.", "danger")
-    return redirect(request.referrer or url_for(".friend_requests"))
+    return redirect(request.referrer or url_for(".view_community"))
 
 
 @bp.route("/api/dashboard")
