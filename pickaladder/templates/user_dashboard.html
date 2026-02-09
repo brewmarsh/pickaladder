@@ -19,12 +19,12 @@
         <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
             <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post"
                 style="display: inline;">
-                {{ form.hidden_tag() }}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-volt" style="width: auto; margin: 0;">Accept</button>
             </form>
             <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post"
                 style="display: inline;">
-                {{ form.hidden_tag() }}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-danger" style="width: auto; margin: 0;">Decline</button>
             </form>
         </div>
@@ -164,7 +164,7 @@
                                     <td style="padding: 8px; text-align: right;">
                                         <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}"
                                             method="post" style="display: inline;">
-                                            {{ form.hidden_tag() }}
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-volt btn-sm"
                                                 style="padding: 4px 8px; font-size: 0.75rem; width: auto; text-transform: none;">Accept</button>
                                         </form>
