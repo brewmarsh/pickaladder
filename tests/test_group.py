@@ -30,10 +30,21 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_utils": patch(
                 "pickaladder.group.utils.firestore", new=self.mock_firestore_service
             ),
+            "firestore_stats": patch(
+                "pickaladder.group.services.stats.firestore",
+                new=self.mock_firestore_service,
+            ),
+            "firestore_leaderboard": patch(
+                "pickaladder.group.services.leaderboard.firestore",
+                new=self.mock_firestore_service,
+            ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
             "storage_routes": patch("pickaladder.group.routes.storage"),
+            "storage_service": patch(
+                "pickaladder.group.services.group_service.storage"
+            ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
 
@@ -118,7 +129,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         mock_doc_ref.update = MagicMock()
 
         # Mock storage
-        mock_storage = self.mocks["storage_routes"]
+        mock_storage = self.mocks["storage_service"]
         mock_bucket = mock_storage.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
         mock_blob.public_url = "http://mock-storage-url/img.jpg"
