@@ -207,12 +207,25 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
     def test_list_tournaments(self) -> None:
         """Test listing tournaments."""
         self._set_session_user()
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+        # Create a tournament to ensure the list is not empty
+        self.mock_db.collection("tournaments").add({
+            "name": "Test Tournament",
+            "date": "2024-06-01",
+            "location": "Courtside",
+            "matchType": "singles",
+            "ownerRef": user_ref,
+            "participant_ids": [MOCK_USER_ID]
+        })
+
         response = self.client.get(
             "/tournaments/",
             headers=self._get_auth_headers(),
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Tournaments", response.data)
+        self.assertIn(b"tournament-grid", response.data)
+        self.assertIn(b"tournament-card", response.data)
 
     def test_view_tournament_with_invitable_users(self) -> None:
         """Test that only non-participant players are in the invitable list."""

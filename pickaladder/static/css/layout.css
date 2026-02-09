@@ -82,6 +82,16 @@ body {
     margin-top: 20px;
 }
 
+.tournament-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.tournament-card {
+    height: 100%;
+}
+
 @media screen and (max-width: 768px) {
     .dashboard-columns { flex-direction: column; }
     .navbar-menu { display: none; }

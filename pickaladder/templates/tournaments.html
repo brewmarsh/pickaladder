@@ -10,9 +10,9 @@
     </div>
     <div class="card-body">
         {% if tournaments %}
-            <div class="friend-grid">
+            <div class="tournament-grid">
                 {% for tournament in tournaments %}
-                    <div class="friend-card clickable-row" data-href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}">
+                    <div class="tournament-card friend-card clickable-row" data-href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}">
                         <div class="friend-info">
                             <h3>{{ tournament.name }}</h3>
                             <p class="text-muted">{{ tournament.date }} | {{ tournament.location }}</p>
