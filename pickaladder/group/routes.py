@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from firebase_admin import firestore
+from firebase_admin import firestore, storage
 from flask import (
     current_app,
     flash,
@@ -14,8 +14,12 @@ from flask import (
     request,
     url_for,
 )
+from werkzeug.utils import secure_filename
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.group.utils import (
+    get_head_to_head_stats as get_h2h_stats,
+)
 from pickaladder.user import UserService
 
 from . import bp
@@ -25,12 +29,13 @@ from .services.group_service import (
     GroupNotFound,
     GroupService,
 )
-from .services.leaderboard import get_leaderboard_trend_data
-from .services.stats import (
-    get_head_to_head_stats as get_h2h_stats,
-)
-from .services.stats import (
+from .utils import (
+    friend_group_members,
+    get_group_leaderboard,
+    get_leaderboard_trend_data,
+    get_random_joke,
     get_user_group_stats,
+    send_invite_email_background,
 )
 
 UPSET_THRESHOLD = 0.25
@@ -44,7 +49,60 @@ DOUBLES_TEAM_SIZE = 2
 def view_groups() -> Any:
     """Display the user's groups."""
     db = firestore.client()
-    enriched_my_groups = GroupService.get_user_groups(db, g.user["uid"])
+
+    # Get user's groups
+    user_ref = db.collection("users").document(g.user["uid"])
+    my_groups_query = db.collection("groups").where(
+        filter=firestore.FieldFilter("members", "array_contains", user_ref)
+    )
+    my_group_docs = list(my_groups_query.stream())
+
+    # --- Enrich groups with owner data ---
+    owner_refs = [
+        group.to_dict().get("ownerRef")
+        for group in my_group_docs
+        if group.to_dict().get("ownerRef")
+    ]
+    unique_owner_refs = list({ref for ref in owner_refs if ref})
+
+    owners_data = {}
+    if unique_owner_refs:
+        owner_docs = db.get_all(unique_owner_refs)
+        owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
+
+    # TODO: Add type hints for Agent clarity
+    def enrich_group(group_doc: Any) -> dict[str, Any]:
+        """Attach owner data and user stats to a group dictionary."""
+        group_data: dict[str, Any] = group_doc.to_dict()
+        group_id = group_doc.id
+        group_data["id"] = group_id
+
+        # Member count
+        members = group_data.get("members", [])
+        group_data["member_count"] = len(members)
+
+        # Current User's Stats for this group
+        leaderboard = get_group_leaderboard(group_id)
+        current_user_id = g.user["uid"]
+        user_entry = next((p for p in leaderboard if p["id"] == current_user_id), None)
+
+        if user_entry:
+            group_data["user_rank"] = leaderboard.index(user_entry) + 1
+            group_data["user_record"] = (
+                f"{user_entry.get('wins', 0)}W - {user_entry.get('losses', 0)}L"
+            )
+        else:
+            group_data["user_rank"] = "N/A"
+            group_data["user_record"] = "0W - 0L"
+
+        owner_ref = group_data.get("ownerRef")
+        if owner_ref and owner_ref.id in owners_data:
+            group_data["owner"] = owners_data[owner_ref.id]
+        else:
+            group_data["owner"] = GUEST_USER
+        return group_data
+
+    enriched_my_groups = [{"group": enrich_group(doc)} for doc in my_group_docs]
 
     return render_template(
         "groups.html",
@@ -117,10 +175,38 @@ def create_group() -> Any:
     form = GroupForm()
     if form.validate_on_submit():
         db = firestore.client()
+        user_ref = db.collection("users").document(g.user["uid"])
         try:
-            group_id = GroupService.create_group(
-                db, g.user["uid"], form.data, form.profile_picture.data
-            )
+            group_data = {
+                "name": form.name.data,
+                "description": form.description.data,
+                "location": form.location.data,
+                "is_public": form.is_public.data,
+                "ownerRef": user_ref,
+                "members": [user_ref],  # Owner is the first member
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
+            timestamp, new_group_ref = db.collection("groups").add(group_data)
+            group_id = new_group_ref.id
+
+            profile_picture_file = form.profile_picture.data
+            if profile_picture_file:
+                try:
+                    filename = secure_filename(
+                        profile_picture_file.filename or "group_profile.jpg"
+                    )
+                    bucket = storage.bucket()
+                    blob = bucket.blob(f"group_pictures/{group_id}/{filename}")
+
+                    blob.upload_from_file(profile_picture_file)
+                    blob.make_public()
+
+                    new_group_ref.update({"profilePictureUrl": blob.public_url})
+                except Exception as e:
+                    current_app.logger.error(f"Error uploading group image: {e}")
+                    flash("Group created, but failed to upload image.", "warning")
+                    return redirect(url_for(".view_group", group_id=group_id))
+
             flash("Group created successfully.", "success")
             return redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
@@ -142,17 +228,36 @@ def edit_group(group_id: str) -> Any:
 
     group_data = group.to_dict()
     group_data["id"] = group.id
+    owner_ref = group_data.get("ownerRef")
+    if not owner_ref or owner_ref.id != g.user["uid"]:
+        flash("You do not have permission to edit this group.", "danger")
+        return redirect(url_for(".view_group", group_id=group.id))
 
     form = GroupForm(data=group_data)
     if form.validate_on_submit():
         try:
-            GroupService.update_group(
-                db, group_id, g.user["uid"], form.data, form.profile_picture.data
-            )
+            update_data = {
+                "name": form.name.data,
+                "description": form.description.data,
+                "location": form.location.data,
+                "is_public": form.is_public.data,
+            }
+
+            profile_picture_file = form.profile_picture.data
+            if profile_picture_file:
+                filename = secure_filename(
+                    profile_picture_file.filename or "group_profile.jpg"
+                )
+                bucket = storage.bucket()
+                blob = bucket.blob(f"group_pictures/{group_id}/{filename}")
+
+                blob.upload_from_file(profile_picture_file)
+                blob.make_public()
+
+                update_data["profilePictureUrl"] = blob.public_url
+
+            group_ref.update(update_data)
             flash("Group updated successfully.", "success")
-            return redirect(url_for(".view_group", group_id=group.id))
-        except AccessDenied:
-            flash("You do not have permission to edit this group.", "danger")
             return redirect(url_for(".view_group", group_id=group.id))
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
@@ -205,10 +310,10 @@ def resend_invite(token: str) -> Any:
         "name": data.get("name"),
         "group_name": group.to_dict().get("name"),
         "invite_url": invite_url,
-        "joke": GroupService.get_random_joke(),
+        "joke": get_random_joke(),
     }
 
-    GroupService.send_invite_email_background(
+    send_invite_email_background(
         current_app._get_current_object(),  # type: ignore[attr-defined]
         token,
         email_data,
@@ -308,7 +413,7 @@ def handle_invite(token: str) -> Any:
         invite_ref.update({"used": True, "used_by": g.user["uid"]})
 
         # Friend other group members
-        GroupService.friend_group_members(db, group_id, user_ref)
+        friend_group_members(db, group_id, user_ref)
 
         flash("Welcome to the team!", "success")
         return redirect(url_for(".view_group", group_id=group_id))
@@ -355,7 +460,7 @@ def join_group(group_id: str) -> Any:
 
     try:
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
-        GroupService.friend_group_members(db, group_id, user_ref)
+        friend_group_members(db, group_id, user_ref)
         flash("Successfully joined the group.", "success")
     except Exception as e:
         flash(f"An error occurred while trying to join the group: {e}", "danger")
