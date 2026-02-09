@@ -33,11 +33,6 @@ from .utils import (
     get_user_group_stats,
     send_invite_email_background,
 )
-from .utils import (
-    friend_group_members,
-    get_random_joke,
-    send_invite_email_background,
-)
 
 UPSET_THRESHOLD = 0.25
 GUEST_USER = {"username": "Guest", "id": "unknown"}

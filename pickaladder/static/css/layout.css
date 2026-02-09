@@ -1,4 +1,3 @@
-
 body {
     font-family: var(--font-family);
     margin: 0;
@@ -82,6 +81,7 @@ body {
     margin-top: 20px;
 }
 
+/* Resolved: Included both Groups and Tournament grid styles */
 .groups-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -114,6 +114,16 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-top: 16px;
+}
+
+.tournament-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.tournament-card {
+    height: 100%;
 }
 
 @media screen and (max-width: 768px) {
