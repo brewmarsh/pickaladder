@@ -11,11 +11,9 @@
                 <a href="{{ url_for('user.dashboard') }}"
                     class="nav-link {{ 'active' if request.endpoint == 'user.dashboard' }}">📈 Dashboard</a>
                 <a href="{{ url_for('user.view_community') }}"
-                    class="nav-link {{ 'active' if request.endpoint == 'user.view_community' }}">🌍 Community</a>
-                <a href="{{ url_for('user.friend_requests') }}"
-                    class="nav-link {{ 'active' if request.endpoint == 'user.friend_requests' }}"
+                    class="nav-link {{ 'active' if request.endpoint == 'user.view_community' or request.endpoint == 'user.friend_requests' }}"
                     style="position: relative;">
-                    📩 Requests
+                    🌍 Community
                     {% if pending_friend_requests %}
                     <span class="notification-badge">{{ pending_friend_requests|length }}</span>
                     {% endif %}
@@ -50,8 +48,12 @@
                     </button>
                     <div class="dropdown-content">
                         <a href="{{ url_for('user.dashboard') }}">📈 Dashboard</a>
-                        <a href="{{ url_for('user.view_community') }}">🌍 Community</a>
-                        <a href="{{ url_for('user.friend_requests') }}">📩 Friend Requests</a>
+                        <a href="{{ url_for('user.view_community') }}" style="position: relative;">
+                            🌍 Community
+                            {% if pending_friend_requests %}
+                            <span class="notification-badge" style="top: 10px; right: 10px;">{{ pending_friend_requests|length }}</span>
+                            {% endif %}
+                        </a>
                         <a href="{{ url_for('group.view_groups') }}">👨‍👩‍👧‍👦 Groups</a>
                         <a href="{{ url_for('tournament.list_tournaments') }}">🎾 Tournaments</a>
                         <a href="{{ url_for('match.leaderboard') }}">🏆 Global Leaderboard</a>
