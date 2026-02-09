@@ -68,6 +68,5 @@ def handle_csrf_error(e: CSRFError) -> Union[Response, str]:
     submission.
     """
     current_app.logger.warning(f"CSRF Error: {e.description}")
-    flash("Your session may have expired. Please try your action again.", "warning")
-    # Redirect to the previous page or a default page if the referrer is not available
-    return redirect(request.referrer or url_for("user.dashboard"))
+    flash("Your session has expired. Please try again.", "info")
+    return redirect(url_for("auth.login"))
