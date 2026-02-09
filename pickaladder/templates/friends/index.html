@@ -34,15 +34,16 @@
                         </div>
                     </td>
                     <td data-label="Actions" style="text-align: right;">
-                        <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post"
+                        <form action="{{ url_for('user.accept_request', requester_id=request.id) }}" method="post"
                             style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn">Accept</button>
                         </form>
-                        <form action="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" method="post"
+                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post"
                             style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-danger">Decline</button>
+                            <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Are you sure you want to decline this friend request?');">Decline</button>
                         </form>
                     </td>
                 </tr>
@@ -59,7 +60,7 @@
             <thead>
                 <tr>
                     <th>User</th>
-                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -72,7 +73,14 @@
                             <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
                         </div>
                     </td>
-                    <td data-label="Status">Pending</td>
+                    <td data-label="Actions" style="text-align: right;">
+                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post"
+                            style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Are you sure you want to cancel this friend request?');">Cancel</button>
+                        </form>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

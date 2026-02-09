@@ -34,6 +34,12 @@
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-primary">Confirm</button>
                         </form>
+                        <form action="{{ url_for('user.cancel_request', target_id=request_user.id) }}" method="post"
+                            style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Are you sure you want to decline this friend request?');">Decline</button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}
@@ -72,7 +78,8 @@
                         <form action="{{ url_for('user.cancel_request', target_id=request_user.id) }}" method="post"
                             style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-outline-danger">Cancel</button>
+                            <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Are you sure you want to cancel this friend request?');">Cancel</button>
                         </form>
                     </td>
                 </tr>
