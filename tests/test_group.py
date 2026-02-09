@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 from io import BytesIO
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 # Pre-emptive imports to ensure patch targets exist.
@@ -284,19 +285,19 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
     def test_view_groups(self) -> None:
         """Test the view_groups route renders correctly."""
         self._set_session_user()
-        mock_db = self.mock_firestore_service.client.return_value
 
         # Mock GroupService.get_user_groups return value
-        mock_group = {
+        mock_owner = MagicMock()
+        mock_owner.id = MOCK_USER_ID
+        mock_group: dict[str, Any] = {
             "id": "group1",
             "name": "Test Group",
             "profilePictureUrl": None,
             "member_count": 5,
             "user_rank": 1,
             "user_record": "10-2",
-            "ownerRef": MagicMock(),
+            "ownerRef": mock_owner,
         }
-        mock_group["ownerRef"].id = MOCK_USER_ID
 
         with patch(
             "pickaladder.group.services.group_service.GroupService.get_user_groups",
@@ -306,7 +307,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Groups</h1>", response.data)
-        self.assertIn(b"d-flex justify-content-between align-items-center mb-4", response.data)
+        self.assertIn(
+            b"d-flex justify-content-between align-items-center mb-4", response.data
+        )
         self.assertIn(b"btn btn-primary", response.data)
         self.assertIn(b"+ Create Group", response.data)
 
