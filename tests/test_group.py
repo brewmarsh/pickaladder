@@ -21,6 +21,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
         self.mock_firestore_service = MagicMock()
+        self.mock_storage_service = MagicMock()
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
@@ -33,7 +34,22 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
-            "storage_routes": patch("pickaladder.group.routes.storage"),
+            "firestore_stats": patch(
+                "pickaladder.group.services.stats.firestore",
+                new=self.mock_firestore_service,
+            ),
+            "firestore_leaderboard": patch(
+                "pickaladder.group.services.leaderboard.firestore",
+                new=self.mock_firestore_service,
+            ),
+            "firestore_group_service": patch(
+                "pickaladder.group.services.group_service.firestore",
+                new=self.mock_firestore_service,
+            ),
+            "storage_service": patch(
+                "pickaladder.group.services.group_service.storage",
+                new=self.mock_storage_service,
+            ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
 
@@ -118,7 +134,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         mock_doc_ref.update = MagicMock()
 
         # Mock storage
-        mock_storage = self.mocks["storage_routes"]
+        mock_storage = self.mocks["storage_service"]
         mock_bucket = mock_storage.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
         mock_blob.public_url = "http://mock-storage-url/img.jpg"
