@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
-from pickaladder.teams.utils import get_or_create_team
+from pickaladder.teams.services import TeamService
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
@@ -167,8 +167,8 @@ class MatchService:
             t2_p1_id = get_data("player2")
             t2_p2_id = get_data("opponent2")
 
-            team1_id = get_or_create_team(t1_p1_id, t1_p2_id)
-            team2_id = get_or_create_team(t2_p1_id, t2_p2_id)
+            team1_id = TeamService.get_or_create_team(db, t1_p1_id, t1_p2_id)
+            team2_id = TeamService.get_or_create_team(db, t2_p1_id, t2_p2_id)
 
             t1_p1_ref = db.collection("users").document(t1_p1_id)
             t1_p2_ref = db.collection("users").document(t1_p2_id)
