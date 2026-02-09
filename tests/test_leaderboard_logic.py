@@ -50,7 +50,9 @@ class TestLeaderboardLogic(unittest.TestCase):
         # u1: 6 games (should stay)
         # u2: 4 games (should be filtered)
         # u3: 0 games (should be filtered)
-        def get_record_side_effect(db: MagicMock, user_ref: MagicMock) -> dict[str, int]:
+        def get_record_side_effect(
+            db: MagicMock, user_ref: MagicMock
+        ) -> dict[str, int]:
             """Side effect to return different records for different users."""
             if user_ref.id == "u1":
                 return {"wins": 4, "losses": 2}

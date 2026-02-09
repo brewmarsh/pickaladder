@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
+from pickaladder.core.constants import GLOBAL_LEADERBOARD_MIN_GAMES
 from pickaladder.teams.services import TeamService
 
 if TYPE_CHECKING:
@@ -299,9 +300,9 @@ class MatchService:
             user_data["games_played"] = games_played
             user_data["win_percentage"] = win_percentage
 
-            # Only include players with at least 5 games played to ensure
+            # Only include players with at least minimum games played to ensure
             # a representative leaderboard and filter inactive players.
-            if games_played >= 5:
+            if games_played >= GLOBAL_LEADERBOARD_MIN_GAMES:
                 players.append(user_data)
 
         # Sort players by win percentage, then by wins
