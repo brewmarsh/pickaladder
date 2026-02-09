@@ -528,6 +528,29 @@ class GroupService:
         return pending_members
 
     @staticmethod
+    def get_random_joke() -> str:
+        """Fetch a random joke from utils."""
+        from pickaladder.group.utils import get_random_joke
+
+        return get_random_joke()
+
+    @staticmethod
+    def send_invite_email_background(
+        app: Any, token: str, email_data: dict[str, Any]
+    ) -> None:
+        """Send an invite email in the background."""
+        from pickaladder.group.utils import send_invite_email_background
+
+        send_invite_email_background(app, token, email_data)
+
+    @staticmethod
+    def friend_group_members(db: Any, group_id: str, new_member_ref: Any) -> None:
+        """Automatically create friend relationships between group members."""
+        from pickaladder.group.utils import friend_group_members
+
+        friend_group_members(db, group_id, new_member_ref)
+
+    @staticmethod
     def invite_friend(db: Any, group_id: str, friend_id: str) -> None:
         """Add a friend to a group."""
         group_ref = db.collection("groups").document(group_id)
@@ -544,12 +567,6 @@ class GroupService:
         current_user_id: str,
     ) -> None:
         """Create a group invitation and send an email."""
-        # FIX: Moved imports here to avoid circular dependency with utils
-        from pickaladder.group.utils import (
-            get_random_joke,
-            send_invite_email_background,
-        )
-
         original_email = email
         email = original_email.lower()
 
@@ -604,10 +621,10 @@ class GroupService:
             "name": name,
             "group_name": group_name,
             "invite_url": invite_url,
-            "joke": get_random_joke(),
+            "joke": GroupService.get_random_joke(),
         }
 
-        send_invite_email_background(
+        GroupService.send_invite_email_background(
             current_app._get_current_object(),  # type: ignore[attr-defined]
             token,
             email_data,
