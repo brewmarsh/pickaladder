@@ -236,35 +236,6 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     return group_rankings
 
 
-def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
-    """Aggregate all data required for the user dashboard."""
-    from .friendship import get_user_friends, get_user_pending_requests  # noqa: PLC0415
-    from .match_stats import (  # noqa: PLC0415
-        calculate_stats,
-        format_matches_for_dashboard,
-        get_user_matches,
-    )
-
-    # Fetch dashboard data
-    matches_all = get_user_matches(db, user_id)
-    stats = calculate_stats(matches_all, user_id)
-
-    # Activity feed matches
-    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:20]]
-    matches = format_matches_for_dashboard(db, recent_matches_docs, user_id)
-
-    return {
-        "matches": matches,
-        "stats": stats,
-        "friends": get_user_friends(db, user_id),
-        "requests": get_user_pending_requests(db, user_id),
-        "group_rankings": get_group_rankings(db, user_id),
-        "pending_tournament_invites": get_pending_tournament_invites(db, user_id),
-        "active_tournaments": get_active_tournaments(db, user_id),
-        "past_tournaments": get_past_tournaments(db, user_id),
-    }
-
-
 def get_user_profile_data(
     db: Client, current_user_id: str, target_user_id: str
 ) -> dict[str, Any] | None:
