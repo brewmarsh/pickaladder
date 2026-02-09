@@ -298,7 +298,11 @@ class MatchService:
             user_data["losses"] = record["losses"]
             user_data["games_played"] = games_played
             user_data["win_percentage"] = win_percentage
-            players.append(user_data)
+
+            # Only include players with at least 5 games played to ensure
+            # a representative leaderboard and filter inactive players.
+            if games_played >= 5:
+                players.append(user_data)
 
         # Sort players by win percentage, then by wins
         players.sort(
