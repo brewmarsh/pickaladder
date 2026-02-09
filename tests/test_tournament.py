@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import unittest
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from mockfirestore import MockFirestore
@@ -41,7 +42,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         # Mock FieldFilter and other constants
         class MockFieldFilter:
-            def __init__(self, field_path, op_string, value):
+            def __init__(self, field_path: str, op_string: str, value: Any) -> None:
                 self.field_path = field_path
                 self.op_string = op_string
                 self.value = value
@@ -207,12 +208,27 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
     def test_list_tournaments(self) -> None:
         """Test listing tournaments."""
         self._set_session_user()
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+        # Create a tournament to ensure the list is not empty
+        self.mock_db.collection("tournaments").add(
+            {
+                "name": "Test Tournament",
+                "date": "2024-06-01",
+                "location": "Courtside",
+                "matchType": "singles",
+                "ownerRef": user_ref,
+                "participant_ids": [MOCK_USER_ID],
+            }
+        )
+
         response = self.client.get(
             "/tournaments/",
             headers=self._get_auth_headers(),
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Tournaments", response.data)
+        self.assertIn(b"tournament-grid", response.data)
+        self.assertIn(b"tournament-card", response.data)
 
     def test_view_tournament_with_invitable_users(self) -> None:
         """Test that only non-participant players are in the invitable list."""
