@@ -1,22 +1,25 @@
 {% extends "layout.html" %}
 {% block title %}Community Hub{% endblock %}
 {% block content %}
-<div class="page-header header-with-button">
-    <h1>Community Hub</h1>
-    <button id="invite-friend-btn" class="btn" data-csrf="{{ csrf_token() }}">Invite a Friend</button>
+<div class="d-flex align-items-center mb-4">
+    <h1 class="mb-0 mr-3">Community Hub</h1>
+    <button id="invite-friend-btn" class="btn btn-primary w-auto" style="margin-top: 0;" data-csrf="{{ csrf_token() }}">Invite a Friend</button>
 </div>
 <div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
 
-<form method="get" action="{{ url_for('user.view_community') }}" class="search-form" style="margin-bottom: 30px;">
-    <div class="form-group" style="display: flex; gap: 10px;">
-        <input type="text" name="search" placeholder="Search by username, name, or email" value="{{ search_term }}"
-            style="flex-grow: 1;">
-        <input type="submit" value="Search" class="btn btn-primary">
-        {% if search_term %}
-        <a href="{{ url_for('user.view_community') }}" class="btn">Clear</a>
-        {% endif %}
-    </div>
-</form>
+<div class="mx-auto mb-4" style="max-width: 600px;">
+    <form method="get" action="{{ url_for('user.view_community') }}" class="search-form">
+        <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Search by username, name, or email" value="{{ search_term }}">
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-primary">🔍</button>
+                {% if search_term %}
+                <a href="{{ url_for('user.view_community') }}" class="btn btn-secondary">Clear</a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
 
 {% if pending_tournament_invites %}
 <div class="card tournament-invites-section" style="margin-bottom: 40px; border-left: 6px solid var(--primary-brand);">
