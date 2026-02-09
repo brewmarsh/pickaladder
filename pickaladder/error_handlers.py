@@ -8,7 +8,6 @@ from flask import (
     flash,
     redirect,
     render_template,
-    request,
     url_for,
 )
 from flask_wtf.csrf import CSRFError

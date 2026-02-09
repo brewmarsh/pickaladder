@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from pickaladder.user.services import firestore as service_firestore
 
@@ -103,7 +103,7 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch past (completed) tournaments for a user."""
-    from pickaladder.tournament.utils import get_tournament_standings
+    from pickaladder.tournament.utils import get_tournament_standings  # noqa: PLC0415
 
     tournaments_query = (
         db.collection("tournaments")
@@ -184,12 +184,9 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
 
 def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch group rankings for a user."""
-    from typing import cast  # noqa: PLC0415
     from pickaladder.group.utils import (  # noqa: PLC0415
         get_group_leaderboard,
     )
-    from pickaladder.user.services import firestore  # noqa: PLC0415
-    from pickaladder.user.models import UserRanking  # noqa: PLC0415
 
     user_ref = db.collection("users").document(user_id)
     group_rankings = []
@@ -241,8 +238,8 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     """Aggregate all data required for the user dashboard."""
-    from .friendship import get_user_friends, get_user_pending_requests
-    from .match_stats import (
+    from .friendship import get_user_friends, get_user_pending_requests  # noqa: PLC0415
+    from .match_stats import (  # noqa: PLC0415
         calculate_stats,
         format_matches_for_dashboard,
         get_user_matches,
@@ -272,9 +269,9 @@ def get_user_profile_data(
     db: Client, current_user_id: str, target_user_id: str
 ) -> dict[str, Any] | None:
     """Fetch all data for a user's public profile."""
-    from .core import get_user_by_id
-    from .friendship import get_friendship_info, get_user_friends
-    from .match_stats import (
+    from .core import get_user_by_id  # noqa: PLC0415
+    from .friendship import get_friendship_info, get_user_friends  # noqa: PLC0415
+    from .match_stats import (  # noqa: PLC0415
         calculate_stats,
         format_matches_for_dashboard,
         get_h2h_stats,
@@ -311,8 +308,8 @@ def get_user_profile_data(
 
 def get_community_data(db: Client, user_id: str, search_term: str) -> dict[str, Any]:
     """Fetch and filter community hub data."""
-    from .core import get_all_users
-    from .friendship import (
+    from .core import get_all_users  # noqa: PLC0415
+    from .friendship import (  # noqa: PLC0415
         get_user_friends,
         get_user_pending_requests,
         get_user_sent_requests,
