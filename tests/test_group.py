@@ -281,6 +281,35 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", response.get_json())
 
+    def test_view_groups(self) -> None:
+        """Test the view_groups route renders correctly."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+
+        # Mock GroupService.get_user_groups return value
+        mock_group = {
+            "id": "group1",
+            "name": "Test Group",
+            "profilePictureUrl": None,
+            "member_count": 5,
+            "user_rank": 1,
+            "user_record": "10-2",
+            "ownerRef": MagicMock(),
+        }
+        mock_group["ownerRef"].id = MOCK_USER_ID
+
+        with patch(
+            "pickaladder.group.services.group_service.GroupService.get_user_groups",
+            return_value=[{"group": mock_group}],
+        ):
+            response = self.client.get("/group/", headers=self._get_auth_headers())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Groups</h1>", response.data)
+        self.assertIn(b"d-flex justify-content-between align-items-center mb-4", response.data)
+        self.assertIn(b"btn btn-primary", response.data)
+        self.assertIn(b"+ Create Group", response.data)
+
     def test_view_group(self) -> None:
         """Test the view_group route and eligible friends logic."""
         self._set_session_user()
