@@ -20,11 +20,6 @@ from pickaladder.group.services.match_parser import (
 from pickaladder.group.services.stats import (
     get_head_to_head_stats as get_h2h_stats,
 )
-from pickaladder.group.utils import (
-    friend_group_members,
-    get_random_joke,
-    send_invite_email_background,
-)
 
 UPSET_THRESHOLD = 0.25
 GUEST_USER = {"username": "Guest", "id": "unknown"}
@@ -97,7 +92,10 @@ class GroupService:
 
     @staticmethod
     def create_group(
-        db: Any, user_id: str, form_data: dict[str, Any], profile_picture: FileStorage | None = None
+        db: Any,
+        user_id: str,
+        form_data: dict[str, Any],
+        profile_picture: FileStorage | None = None,
     ) -> str:
         """Create a new group and return its ID."""
         user_ref = db.collection("users").document(user_id)
@@ -122,7 +120,11 @@ class GroupService:
 
     @staticmethod
     def update_group(
-        db: Any, group_id: str, user_id: str, form_data: dict[str, Any], profile_picture: FileStorage | None = None
+        db: Any,
+        group_id: str,
+        user_id: str,
+        form_data: dict[str, Any],
+        profile_picture: FileStorage | None = None,
     ) -> None:
         """Update an existing group's details."""
         group_ref = db.collection("groups").document(group_id)
@@ -611,34 +613,59 @@ class GroupService:
     def get_random_joke() -> str:
         """Return a random sport/dad joke."""
         jokes = [
-            "Why did the pickleball player get arrested? Because he was caught smashing!",
-            "What do you call a girl standing in the middle of a tennis court? Annette.",
-            "Why are fish never good at tennis? Because they don't like getting close to the net.",
+            (
+                "Why did the pickleball player get arrested? "
+                "Because he was caught smashing!"
+            ),
+            (
+                "What do you call a girl standing in the middle of a tennis court? "
+                "Annette."
+            ),
+            (
+                "Why are fish never good at tennis? "
+                "Because they don't like getting close to the net."
+            ),
             "What is a tennis player's favorite city? Volley-wood.",
-            "Why do tennis players never get married? Because love means nothing to them.",
+            (
+                "Why do tennis players never get married? "
+                "Because love means nothing to them."
+            ),
             "What time does a tennis player go to bed? Ten-ish.",
-            "Why did the pickleball hit the net? It wanted to see what was on the other side.",
+            (
+                "Why did the pickleball hit the net? "
+                "It wanted to see what was on the other side."
+            ),
             "How is a pickleball game like a waiter? They both serve.",
-            "Why should you never fall in love with a tennis player? To them, 'Love' means nothing.",
+            (
+                "Why should you never fall in love with a tennis player? "
+                "To them, 'Love' means nothing."
+            ),
             "What do you serve but not eat? A tennis ball.",
         ]
         return secrets.choice(jokes)
 
     @staticmethod
-    def send_invite_email_background(app: Flask, invite_token: str, email_data: dict[str, Any]) -> None:
+    def send_invite_email_background(
+        app: Flask, invite_token: str, email_data: dict[str, Any]
+    ) -> None:
         """Send an invite email in a background thread."""
 
         def task() -> None:
             """Perform the email sending task in the background."""
-            from pickaladder.utils import send_email
+            from pickaladder.utils import send_email  # noqa: PLC0415
+
             with app.app_context():
                 db = firestore.client()
                 invite_ref = db.collection("group_invites").document(invite_token)
                 try:
                     send_email(**email_data)
-                    invite_ref.update({"status": "sent", "last_error": firestore.DELETE_FIELD})
+                    invite_ref.update(
+                        {"status": "sent", "last_error": firestore.DELETE_FIELD}
+                    )
                 except Exception as e:
-                    print(f"ERROR: Background invite email failed: {e}", file=sys.stderr)
+                    print(
+                        f"ERROR: Background invite email failed: {e}", file=sys.stderr
+                    )
                     invite_ref.update({"status": "failed", "last_error": str(e)})
 
         thread = threading.Thread(target=task)
@@ -657,7 +684,8 @@ class GroupService:
         if not member_refs:
             return
 
-        from pickaladder.core.constants import FIRESTORE_BATCH_LIMIT
+        from pickaladder.core.constants import FIRESTORE_BATCH_LIMIT  # noqa: PLC0415
+
         batch = db.batch()
         new_member_id = new_member_ref.id
         operation_count = 0
@@ -666,11 +694,23 @@ class GroupService:
             if member_ref.id == new_member_id:
                 continue
 
-            new_member_friend_ref = new_member_ref.collection("friends").document(member_ref.id)
-            existing_member_friend_ref = member_ref.collection("friends").document(new_member_id)
+            new_member_friend_ref = new_member_ref.collection("friends").document(
+                member_ref.id
+            )
+            existing_member_friend_ref = member_ref.collection("friends").document(
+                new_member_id
+            )
 
-            batch.set(new_member_friend_ref, {"status": "accepted", "initiator": True}, merge=True)
-            batch.set(existing_member_friend_ref, {"status": "accepted", "initiator": False}, merge=True)
+            batch.set(
+                new_member_friend_ref,
+                {"status": "accepted", "initiator": True},
+                merge=True,
+            )
+            batch.set(
+                existing_member_friend_ref,
+                {"status": "accepted", "initiator": False},
+                merge=True,
+            )
             operation_count += 2
 
             if operation_count >= FIRESTORE_BATCH_LIMIT:

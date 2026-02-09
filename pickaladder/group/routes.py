@@ -18,6 +18,8 @@ from flask import (
 from pickaladder.auth.decorators import login_required
 from pickaladder.user import UserService
 
+from . import bp
+from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
 from .services.group_service import (
     AccessDenied,
     GroupNotFound,
@@ -26,11 +28,10 @@ from .services.group_service import (
 from .services.leaderboard import get_leaderboard_trend_data
 from .services.stats import (
     get_head_to_head_stats as get_h2h_stats,
+)
+from .services.stats import (
     get_user_group_stats,
 )
-
-from . import bp
-from .forms import GroupForm, InviteByEmailForm, InviteFriendForm
 
 UPSET_THRESHOLD = 0.25
 GUEST_USER = {"username": "Guest", "id": "unknown"}
