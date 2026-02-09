@@ -35,7 +35,10 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             ),
             "storage_routes": patch("pickaladder.group.routes.storage"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
-            "leaderboard": patch("pickaladder.group.services.group_service.get_group_leaderboard", return_value=[]),
+            "leaderboard": patch(
+                "pickaladder.group.services.group_service.get_group_leaderboard",
+                return_value=[],
+            ),
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}

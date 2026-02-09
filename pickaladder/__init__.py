@@ -26,8 +26,8 @@ from . import teams as teams_bp
 from . import tournament as tournament_bp
 from . import user as user_bp
 from .extensions import csrf, login_manager, mail
-from .user.helpers import smart_display_name, wrap_user
 from .user import UserService
+from .user.helpers import smart_display_name, wrap_user
 
 APP_PASSWORD_LENGTH = 16
 VERSION_THRESHOLD = 10
@@ -172,7 +172,7 @@ def _register_context_processors(app: Flask) -> None:
     @app.context_processor
     def inject_global_context() -> dict[str, Any]:
         """Injects global context variables into templates."""
-        version = current_app.config.get("APP_VERSION")
+        version = current_app.config.get("APP_VERSION") or "dev"
 
         # Fallback to environment variables if still at default "dev"
         if version == "dev":
