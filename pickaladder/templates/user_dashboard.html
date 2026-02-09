@@ -33,9 +33,11 @@
     {% endif %}
 
     <div class="hero-stats-card">
-        <button id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</button>
+        <a href="javascript:void(0)" id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</a>
         <div class="hero-left-panel">
-            <img id="hero-profile-img" src="{{ user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl">
+            <div class="profile-picture-container avatar-xl">
+                <img id="hero-profile-img" src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture">
+            </div>
             <div class="hero-name-and-edit">
                 <h2 id="hero-username-text">{{ user.name if user.name else user.username }}</h2>
             </div>
