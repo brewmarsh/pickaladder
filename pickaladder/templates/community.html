@@ -7,6 +7,46 @@
 </div>
 <div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
 
+{% if incoming_requests %}
+<div class="card card-notification incoming-requests-section" style="margin-bottom: 40px;">
+    <h3>Pending Friend Requests <span class="badge badge-volt">{{ incoming_requests|length }}</span></h3>
+    <div class="table-container">
+        <table class="table-standard responsive-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in incoming_requests %}
+                <tr>
+                    <td data-label="Username">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
+                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
+                        </div>
+                    </td>
+                    <td data-label="Actions" style="text-align: right;">
+                        <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post"
+                            style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success">Accept</button>
+                        </form>
+                        <form action="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" method="post"
+                            style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger">Decline</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 <form method="get" action="{{ url_for('user.view_community') }}" class="search-form" style="margin-bottom: 30px;">
     <div class="form-group" style="display: flex; gap: 10px;">
         <input type="text" name="search" placeholder="Search by username, name, or email" value="{{ search_term }}"
@@ -58,48 +98,9 @@
 </div>
 {% endif %}
 
-{% if incoming_requests or outgoing_requests %}
+{% if outgoing_requests %}
 <div class="card requests-section" style="margin-bottom: 40px;">
     <h3>Friend Requests</h3>
-    {% if incoming_requests %}
-    <h4>Received</h4>
-    <div class="table-container">
-        <table class="table-standard responsive-table">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th style="text-align: right;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for request in incoming_requests %}
-                <tr>
-                    <td data-label="Username">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
-                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
-                        </div>
-                    </td>
-                    <td data-label="Actions" style="text-align: right;">
-                        <form action="{{ url_for('user.accept_friend_request', friend_id=request.id) }}" method="post"
-                            style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn">Accept</button>
-                        </form>
-                        <form action="{{ url_for('user.decline_friend_request', friend_id=request.id) }}" method="post"
-                            style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-danger">Decline</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-
-    {% if outgoing_requests %}
     <h4 style="margin-top: 20px;">Sent</h4>
     <div class="table-container">
         <table class="table-standard responsive-table">
@@ -124,7 +125,6 @@
             </tbody>
         </table>
     </div>
-    {% endif %}
 </div>
 {% endif %}
 
