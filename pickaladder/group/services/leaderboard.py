@@ -41,7 +41,7 @@ def _process_single_match(stats: dict[str, dict[str, Any]], match: Any) -> None:
     p2_wins = p2_score > p1_score
     is_draw = p1_score == p2_score
 
-    def update_player(player_id: str, score: int, won: bool):
+    def update_player(player_id: str, score: int, won: bool) -> None:
         if player_id in stats:
             s = stats[player_id]
             s["games"] += 1
@@ -313,7 +313,7 @@ def _calculate_trend_points(
 
 def _update_trend_player_stats(
     player_stats: dict[str, Any], match_data: dict[str, Any]
-):
+) -> None:
     """Update running totals for trend calculation from a single match."""
     p1_score, p2_score = _get_match_scores(match_data)
     team1_ids, team2_ids = _extract_team_ids(match_data)

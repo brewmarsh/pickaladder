@@ -26,11 +26,12 @@ from .services.group_service import (
     GroupService,
 )
 from .services.leaderboard import get_leaderboard_trend_data
-from .services.stats import (
-    get_head_to_head_stats as get_h2h_stats,
-)
-from .services.stats import (
+from .services.stats import get_head_to_head_stats
+from .utils import (
+    friend_group_members,
+    get_random_joke,
     get_user_group_stats,
+    send_invite_email_background,
 )
 
 UPSET_THRESHOLD = 0.25
@@ -205,10 +206,10 @@ def resend_invite(token: str) -> Any:
         "name": data.get("name"),
         "group_name": group.to_dict().get("name"),
         "invite_url": invite_url,
-        "joke": GroupService.get_random_joke(),
+        "joke": get_random_joke(),
     }
 
-    GroupService.send_invite_email_background(
+    send_invite_email_background(
         current_app._get_current_object(),  # type: ignore[attr-defined]
         token,
         email_data,
@@ -308,7 +309,7 @@ def handle_invite(token: str) -> Any:
         invite_ref.update({"used": True, "used_by": g.user["uid"]})
 
         # Friend other group members
-        GroupService.friend_group_members(db, group_id, user_ref)
+        friend_group_members(db, group_id, user_ref)
 
         flash("Welcome to the team!", "success")
         return redirect(url_for(".view_group", group_id=group_id))
@@ -355,7 +356,7 @@ def join_group(group_id: str) -> Any:
 
     try:
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
-        GroupService.friend_group_members(db, group_id, user_ref)
+        friend_group_members(db, group_id, user_ref)
         flash("Successfully joined the group.", "success")
     except Exception as e:
         flash(f"An error occurred while trying to join the group: {e}", "danger")
@@ -392,7 +393,7 @@ def get_rivalry_stats(group_id: str) -> Any:
     if not playerA_id or not playerB_id:
         return {"error": "playerA_id and playerB_id are required"}, 400
 
-    stats = get_h2h_stats(group_id, playerA_id, playerB_id)
+    stats = get_head_to_head_stats(group_id, playerA_id, playerB_id)
 
     return {
         "wins": stats["wins"],
