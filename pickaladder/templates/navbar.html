@@ -11,11 +11,9 @@
                 <a href="{{ url_for('user.dashboard') }}"
                     class="nav-link {{ 'active' if request.endpoint == 'user.dashboard' }}">📈 Dashboard</a>
                 <a href="{{ url_for('user.view_community') }}"
-                    class="nav-link {{ 'active' if request.endpoint == 'user.view_community' }}">🌍 Community</a>
-                <a href="{{ url_for('user.friend_requests') }}"
-                    class="nav-link {{ 'active' if request.endpoint == 'user.friend_requests' }}"
+                    class="nav-link {{ 'active' if request.endpoint == 'user.view_community' or request.endpoint == 'user.friend_requests' }}"
                     style="position: relative;">
-                    📩 Requests
+                    🌍 Community
                     {% if pending_friend_requests %}
                     <span class="notification-badge">{{ pending_friend_requests|length }}</span>
                     {% endif %}
