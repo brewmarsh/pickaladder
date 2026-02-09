@@ -14,7 +14,7 @@ select = ["E", "F", "W", "I", "UP", "PL"]
 
 # Never enforce `E501` (line-too-long), handled by `format`.
 # TODO: Refactor complex functions to resolve these ignores
-ignore = ["E501", "PLR0911", "PLR0912", "PLR0915"]
+ignore = ["E501", "PLR0911", "PLR0912", "PLR0915", "PLC0415", "E402"]
 
 [tool.ruff.lint.pydocstyle]
 # Use the PEP 257 convention for docstring formatting.

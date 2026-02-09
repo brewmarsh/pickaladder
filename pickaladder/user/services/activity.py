@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from pickaladder.user.services import firestore as service_firestore
 
@@ -184,12 +184,9 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
 
 def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch group rankings for a user."""
-    from typing import cast  # noqa: PLC0415
     from pickaladder.group.utils import (  # noqa: PLC0415
         get_group_leaderboard,
     )
-    from pickaladder.user.services import firestore  # noqa: PLC0415
-    from pickaladder.user.models import UserRanking  # noqa: PLC0415
 
     user_ref = db.collection("users").document(user_id)
     group_rankings = []
@@ -237,35 +234,6 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
                 }
             )
     return group_rankings
-
-
-def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
-    """Aggregate all data required for the user dashboard."""
-    from .friendship import get_user_friends, get_user_pending_requests
-    from .match_stats import (
-        calculate_stats,
-        format_matches_for_dashboard,
-        get_user_matches,
-    )
-
-    # Fetch dashboard data
-    matches_all = get_user_matches(db, user_id)
-    stats = calculate_stats(matches_all, user_id)
-
-    # Activity feed matches
-    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:20]]
-    matches = format_matches_for_dashboard(db, recent_matches_docs, user_id)
-
-    return {
-        "matches": matches,
-        "stats": stats,
-        "friends": get_user_friends(db, user_id),
-        "requests": get_user_pending_requests(db, user_id),
-        "group_rankings": get_group_rankings(db, user_id),
-        "pending_tournament_invites": get_pending_tournament_invites(db, user_id),
-        "active_tournaments": get_active_tournaments(db, user_id),
-        "past_tournaments": get_past_tournaments(db, user_id),
-    }
 
 
 def get_user_profile_data(
