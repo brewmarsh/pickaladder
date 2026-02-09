@@ -27,7 +27,12 @@ from .services.group_service import (
 )
 from .services.leaderboard import get_leaderboard_trend_data
 from .services.stats import get_head_to_head_stats
-from .utils import friend_group_members, get_user_group_stats
+from .utils import (
+    friend_group_members,
+    get_random_joke,
+    get_user_group_stats,
+    send_invite_email_background,
+)
 
 UPSET_THRESHOLD = 0.25
 GUEST_USER = {"username": "Guest", "id": "unknown"}
@@ -201,10 +206,10 @@ def resend_invite(token: str) -> Any:
         "name": data.get("name"),
         "group_name": group.to_dict().get("name"),
         "invite_url": invite_url,
-        "joke": GroupService.get_random_joke(),
+        "joke": get_random_joke(),
     }
 
-    GroupService.send_invite_email_background(
+    send_invite_email_background(
         current_app._get_current_object(),  # type: ignore[attr-defined]
         token,
         email_data,
