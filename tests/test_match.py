@@ -36,9 +36,6 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             "firestore": patch(
                 "pickaladder.match.routes.firestore", new=self.mock_firestore_service
             ),
-            "firestore_services": patch(
-                "pickaladder.match.services.firestore", new=self.mock_firestore_service
-            ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
@@ -113,7 +110,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
     @patch("pickaladder.match.routes.MatchService.get_match_by_id")
-    @patch("pickaladder.match.services.MatchService.get_candidate_player_ids")
+    @patch("pickaladder.match.routes.MatchService.get_candidate_player_ids")
     def test_record_match(
         self, mock_get_candidate_player_ids: MagicMock, mock_get_match: MagicMock
     ) -> None:
@@ -145,7 +142,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         mock_matches_collection = mock_db.collection("matches")
 
-        # Mock the match data for the summary page (needed because we follow redirect)
+        # Mock the match data for the summary page
         mock_get_match.return_value = {
             "id": "match_123",
             "matchType": "singles",
@@ -171,10 +168,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match recorded successfully.", response.data)
-        
-        # Verify we landed on the summary page
         self.assertIn(b"Match Summary", response.data)
-        
         # Check that the match was saved (using either add or document().set())
         self.assertTrue(
             mock_matches_collection.add.called
@@ -213,6 +207,74 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn(b"11 - 5", response.data)
         user_name = cast(str, MOCK_USER_DATA["name"])
         self.assertIn(user_name.encode(), response.data)
+
+    @patch("pickaladder.match.routes.MatchService.get_match_by_id")
+    def test_view_match_summary_doubles(self, mock_get_match: MagicMock) -> None:
+        """Test viewing the match summary page for a doubles match."""
+        self._set_session_user()
+        mock_match_id = "match_doubles"
+
+        p1_ref = MagicMock(id=MOCK_USER_ID)
+        p2_ref = MagicMock(id="partner_id")
+        opp1_ref = MagicMock(id=MOCK_OPPONENT_ID)
+        opp2_ref = MagicMock(id="opponent2_id")
+
+        mock_get_match.return_value = {
+            "id": mock_match_id,
+            "matchType": "doubles",
+            "player1Score": 11,
+            "player2Score": 5,
+            "team1": [p1_ref, p2_ref],
+            "team2": [opp1_ref, opp2_ref],
+            "matchDate": datetime.datetime.now(),
+        }
+
+        # Mock participant fetching
+        mock_db = self.mock_firestore_service.client.return_value
+
+        # Setup mock users
+        user_doc = MagicMock()
+        user_doc.exists = True
+        user_doc.to_dict.return_value = {"name": "Some User"}
+        mock_db.get_all.return_value = [user_doc, user_doc]
+
+        response = self.client.get(
+            f"/match/summary/{mock_match_id}", headers=self._get_auth_headers()
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Match Summary", response.data)
+        self.assertIn(b"11 - 5", response.data)
+        self.assertIn(b"Winners", response.data)
+        self.assertIn(b"Losers", response.data)
+
+    def test_record_match_rematch_param(self) -> None:
+        """Test that player2 param pre-fills the form."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+
+        # Mock necessary Firestore calls for page load
+        mock_user_snapshot = MagicMock(exists=True)
+        mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
+        mock_db.collection("users").document(MOCK_USER_ID).get.return_value = (
+            mock_user_snapshot
+        )
+
+        # Mock get_candidate_player_ids
+        with patch(
+            "pickaladder.match.routes.MatchService.get_candidate_player_ids"
+        ) as mock_get_candidates:
+            mock_get_candidates.return_value = {MOCK_OPPONENT_ID}
+            # Mock get_all for choices
+            opp_doc = MagicMock(exists=True, id=MOCK_OPPONENT_ID)
+            opp_doc.to_dict.return_value = MOCK_OPPONENT_DATA
+            mock_db.get_all.return_value = [opp_doc]
+
+            response = self.client.get(
+                f"/match/record?player2={MOCK_OPPONENT_ID}",
+                headers=self._get_auth_headers(),
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(MOCK_OPPONENT_ID.encode(), response.data)
 
     def test_pending_invites_query_uses_correct_field(self) -> None:
         """Test that pending invites are queried using 'inviter_id'."""

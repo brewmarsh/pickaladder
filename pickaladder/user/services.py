@@ -82,24 +82,16 @@ class UserService:
         """Fetch all matches involving a user."""
         user_ref = db.collection("users").document(user_id)
         matches_as_p1 = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
-            .stream()
+            db.collection("matches").where("player1Ref", "==", user_ref).stream()
         )
         matches_as_p2 = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("player2Ref", "==", user_ref))
-            .stream()
+            db.collection("matches").where("player2Ref", "==", user_ref).stream()
         )
         matches_as_t1 = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("team1", "array_contains", user_ref))
-            .stream()
+            db.collection("matches").where("team1", "array_contains", user_ref).stream()
         )
         matches_as_t2 = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("team2", "array_contains", user_ref))
-            .stream()
+            db.collection("matches").where("team2", "array_contains", user_ref).stream()
         )
 
         all_matches = (
@@ -109,13 +101,8 @@ class UserService:
             + list(matches_as_t2)
         )
         unique_matches = {match.id: match for match in all_matches}.values()
-        sorted_matches = sorted(
-            unique_matches,
-            key=lambda m: (m.to_dict() or {}).get("matchDate") or m.create_time,
-            reverse=True,
-        )
         results: list[Match] = []
-        for match in sorted_matches:
+        for match in unique_matches:
             data = cast("Match", match.to_dict() or {})
             data["id"] = match.id
             results.append(data)
@@ -1183,62 +1170,6 @@ class UserService:
                 opponents_map[doc.id] = d
 
         return [opponents_map[oid] for oid in opponent_ids if oid in opponents_map]
-
-    @staticmethod
-    def get_recent_partners(
-        db: Client, user_id: str, matches: list[Any], limit: int = 4
-    ) -> list[User]:
-        """Identify recent unique doubles partners."""
-        partner_ids: list[str] = []
-        for m in matches:
-            if hasattr(m, "to_dict"):
-                data = m.to_dict()
-            else:
-                data = m
-
-            if not data or data.get("matchType") != "doubles":
-                continue
-
-            team1_refs = data.get("team1", [])
-            team2_refs = data.get("team2", [])
-
-            partner_id = None
-            # Check if user is in team 1
-            if any(getattr(ref, "id", None) == user_id for ref in team1_refs):
-                # Teammate is the other person in team 1
-                for ref in team1_refs:
-                    rid = getattr(ref, "id", None)
-                    if rid and rid != user_id:
-                        partner_id = rid
-                        break
-            # Check if user is in team 2
-            elif any(getattr(ref, "id", None) == user_id for ref in team2_refs):
-                # Teammate is the other person in team 2
-                for ref in team2_refs:
-                    rid = getattr(ref, "id", None)
-                    if rid and rid != user_id:
-                        partner_id = rid
-                        break
-
-            if partner_id and partner_id not in partner_ids:
-                partner_ids.append(partner_id)
-                if len(partner_ids) >= limit:
-                    break
-
-        if not partner_ids:
-            return []
-
-        refs = [db.collection("users").document(pid) for pid in partner_ids]
-        docs = db.get_all(refs)
-        partners_map = {}
-        for doc in docs:
-            if doc.exists:
-                d = cast("User", doc.to_dict())
-                d["id"] = doc.id
-                d["uid"] = doc.id
-                partners_map[doc.id] = d
-
-        return [partners_map[pid] for pid in partner_ids if pid in partners_map]
 
     @staticmethod
     def get_group_rankings(db: Client, user_id: str) -> list[UserRanking]:

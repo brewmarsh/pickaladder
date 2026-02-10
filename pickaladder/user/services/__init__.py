@@ -121,9 +121,6 @@ from .match_stats import (
     get_recent_opponents as _get_recent_opponents,
 )
 from .match_stats import (
-    get_recent_partners as _get_recent_partners,
-)
-from .match_stats import (
     get_user_matches as _get_user_matches,
 )
 from .merging import (
@@ -199,7 +196,6 @@ class UserService:
     _process_h2h_match = staticmethod(_process_h2h_match)
     get_h2h_stats = staticmethod(_get_h2h_stats)
     get_recent_opponents = staticmethod(_get_recent_opponents)
-    get_recent_partners = staticmethod(_get_recent_partners)
     accept_friend_request = staticmethod(_accept_friend_request)
     cancel_friend_request = staticmethod(_cancel_friend_request)
     get_group_rankings = staticmethod(_get_group_rankings)
