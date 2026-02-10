@@ -230,9 +230,7 @@ def record_match() -> Any:
                     )
                 )
             if active_group_id:
-                return redirect(
-                    url_for("group.view_group", group_id=active_group_id)
-                )
+                return redirect(url_for("group.view_group", group_id=active_group_id))
             return redirect(url_for("user.dashboard"))
         except ValueError as e:
             flash(str(e), "danger")

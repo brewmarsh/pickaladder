@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, cast, Callable
+import logging
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from firebase_admin import firestore
 
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 
     from pickaladder.user import User
 
+    from .forms import MatchForm
     from .models import Match
 
 
@@ -110,7 +112,8 @@ class MatchService:
             )
 
         # Save to database
-        _, new_match_ref = db.collection("matches").add(match_doc_data)
+        new_match_ref = db.collection("matches").document()
+        new_match_ref.set(match_doc_data)
 
         # Update stats
         MatchService._update_player_stats(
@@ -151,7 +154,7 @@ class MatchService:
         }
 
     @staticmethod
-    def _update_player_stats(
+    def _update_player_stats(  # noqa: PLR0913
         user_ref: Any,
         match_type: str,
         player1_score: int,
@@ -202,9 +205,9 @@ class MatchService:
                     match_data["is_upset"] = True
                 elif winner == "team2" and (p1_rating - p2_rating) >= UPSET_THRESHOLD:
                     match_data["is_upset"] = True
-        except Exception:
+        except Exception as e:
             # Ensure upset logic failure doesn't block match recording
-            pass
+            logging.error(f"Error applying upset logic: {e}")
 
     @staticmethod
     def get_candidate_player_ids(
@@ -294,7 +297,6 @@ class MatchService:
         if not include_user:
             candidate_player_ids.discard(user_id)
         return candidate_player_ids
-
 
     @staticmethod
     def get_player_record(db: Client, player_ref: Any) -> dict[str, int]:
