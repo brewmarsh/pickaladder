@@ -1,0 +1,209 @@
+{% extends "layout.html" %}
+{% block title %}Design System Styleguide{% endblock %}
+
+{% block content %}
+<div class="styleguide-container">
+    <div class="page-header">
+        <h1>Design System Styleguide</h1>
+        <p class="text-muted">A living documentation of the pickaladder UI components.</p>
+    </div>
+
+    <!-- Typography Section -->
+    <section class="mb-4">
+        <h2>Typography</h2>
+        <div class="card">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1>Heading 1</h1>
+                    <h2>Heading 2</h2>
+                    <h3>Heading 3</h3>
+                    <h4>Heading 4</h4>
+                    <h5>Heading 5</h5>
+                    <h6>Heading 6</h6>
+                    <p>This is a standard paragraph using the Inter font family. It is designed for readability and clarity across the application.</p>
+                </div>
+                <div class="col-md-6">
+                    <pre><code>&lt;h1&gt;Heading 1&lt;/h1&gt;
+&lt;h2&gt;Heading 2&lt;/h2&gt;
+&lt;h3&gt;Heading 3&lt;/h3&gt;
+&lt;h4&gt;Heading 4&lt;/h4&gt;
+&lt;h5&gt;Heading 5&lt;/h5&gt;
+&lt;h6&gt;Heading 6&lt;/h6&gt;
+&lt;p&gt;Paragraph text&lt;/p&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Buttons Section -->
+    <section class="mb-4">
+        <h2>Buttons</h2>
+        <div class="card">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="d-flex flex-column gap-3">
+                        <div>
+                            <button class="btn btn-primary w-auto">Primary Button</button>
+                        </div>
+                        <div>
+                            <button class="btn btn-volt w-auto">Volt Button</button>
+                        </div>
+                        <div>
+                            <button class="btn btn-outline-primary w-auto">Outline Button</button>
+                        </div>
+                        <div>
+                            <button class="btn btn-danger w-auto">Danger Button</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <pre><code>&lt;button class="btn btn-primary"&gt;Primary Button&lt;/button&gt;
+&lt;button class="btn btn-volt"&gt;Volt Button&lt;/button&gt;
+&lt;button class="btn btn-outline-primary"&gt;Outline Button&lt;/button&gt;
+&lt;button class="btn btn-danger"&gt;Danger Button&lt;/button&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Badges Section -->
+    <section class="mb-4">
+        <h2>Badges</h2>
+        <div class="card">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="d-flex gap-2">
+                        <span class="badge badge-success">Success</span>
+                        <span class="badge badge-danger">Danger</span>
+                        <span class="badge badge-volt">Volt</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <pre><code>&lt;span class="badge badge-success"&gt;Success&lt;/span&gt;
+&lt;span class="badge badge-danger"&gt;Danger&lt;/span&gt;
+&lt;span class="badge badge-volt"&gt;Volt&lt;/span&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cards Section -->
+    <section class="mb-4">
+        <h2>Cards</h2>
+
+        <h3>Standard Card</h3>
+        <div class="card mb-3">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-header">Card Header</div>
+                        <div class="card-body">
+                            This is the content of a standard card. It uses the <code>.card</code> class.
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <pre><code>&lt;div class="card"&gt;
+    &lt;div class="card-header"&gt;Card Header&lt;/div&gt;
+    &lt;div class="card-body"&gt;
+        Card content goes here.
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <h3>Hero Stats Card</h3>
+        <div class="card">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="hero-stats-card">
+                        <a href="javascript:void(0)" class="btn-edit-gear" title="Edit Profile">⚙️</a>
+                        <div class="hero-left-panel">
+                            <div class="profile-picture-container avatar-xl">
+                                <img src="{{ url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture">
+                            </div>
+                            <div class="hero-name-and-edit">
+                                <h2>Styleguide User</h2>
+                            </div>
+                        </div>
+                        <div class="hero-right-panel">
+                            <div class="vanity-stats-container">
+                                <div class="vanity-stat">
+                                    <div class="stat-value">42</div>
+                                    <div class="stat-label text-muted">Total Matches</div>
+                                </div>
+                                <div class="vanity-stat">
+                                    <div class="stat-value">65%</div>
+                                    <div class="stat-label text-muted">Win %</div>
+                                </div>
+                                <div class="vanity-stat">
+                                    <div class="stat-value text-volt">5W</div>
+                                    <div class="stat-label text-muted">Current Streak</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-volt w-auto">Record a Match</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <pre><code>&lt;div class="hero-stats-card"&gt;
+    &lt;a href="#" class="btn-edit-gear"&gt;⚙️&lt;/a&gt;
+    &lt;div class="hero-left-panel"&gt;
+        &lt;div class="profile-picture-container avatar-xl"&gt;
+            &lt;img src="..." class="profile-picture"&gt;
+        &lt;/div&gt;
+        &lt;div class="hero-name-and-edit"&gt;
+            &lt;h2&gt;Username&lt;/h2&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class="hero-right-panel"&gt;
+        &lt;div class="vanity-stats-container"&gt;
+            &lt;div class="vanity-stat"&gt;
+                &lt;div class="stat-value"&gt;42&lt;/div&gt;
+                &lt;div class="stat-label text-muted"&gt;Total Matches&lt;/div&gt;
+            &lt;/div&gt;
+            &lt;!-- More stats --&gt;
+        &lt;/div&gt;
+        &lt;button class="btn btn-volt w-auto"&gt;Record a Match&lt;/button&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    .styleguide-container {
+        padding: 20px 0;
+    }
+    .styleguide-container section h2 {
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    pre {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        margin: 0;
+        overflow-x: auto;
+    }
+    [data-theme="dark"] pre {
+        background-color: #0f172a;
+        color: #f3f4f6;
+    }
+    .flex-column { flex-direction: column !important; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-3 { gap: 1rem; }
+    .row { display: flex; flex-wrap: wrap; margin-right: -15px; margin-left: -15px; }
+    .col-md-6 { flex: 0 0 50%; max-width: 50%; padding-right: 15px; padding-left: 15px; }
+    .col-12 { flex: 0 0 100%; max-width: 100%; padding-right: 15px; padding-left: 15px; }
+    @media (max-width: 768px) {
+        .col-md-6 { flex: 0 0 100%; max-width: 100%; }
+        .hero-right-panel { margin-top: 20px; }
+    }
+</style>
+{% endblock %}
