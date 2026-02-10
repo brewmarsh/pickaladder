@@ -123,7 +123,8 @@ def view_match_summary(match_id: str) -> Any:
             context["winners"] = team2_data
             context["losers"] = team1_data
 
-        # Determine opponent_id for rematch (target the team that doesn't contain the user)
+        # Determine opponent_id for rematch
+        # (target the team that doesn't contain the user)
         team1_ids = [ref.id for ref in team1_refs]
         if current_user_id in team1_ids:
             context["opponent_id"] = team2_refs[0].id if team2_refs else None
