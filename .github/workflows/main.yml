@@ -19,3 +19,11 @@ jobs:
       pull-requests: write
     uses: ./.github/workflows/reusable-versioning.yml
     secrets: inherit
+
+  deploy:
+    needs: versioning
+    uses: ./.github/workflows/deploy.yml
+    with:
+      version: ${{ needs.versioning.outputs.version }}
+      image_tag: ghcr.io/${{ github.repository }}:${{ github.sha }}
+    secrets: inherit
