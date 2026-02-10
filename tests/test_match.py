@@ -108,8 +108,11 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
+    @patch("pickaladder.match.routes.MatchService.get_match_by_id")
     @patch("pickaladder.match.routes.MatchService.get_candidate_player_ids")
-    def test_record_match(self, mock_get_candidate_player_ids: MagicMock) -> None:
+    def test_record_match(
+        self, mock_get_candidate_player_ids: MagicMock, mock_get_match: MagicMock
+    ) -> None:
         """Test recording a new match."""
 
         def get_candidates_side_effect(
@@ -138,6 +141,17 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         mock_matches_collection = mock_db.collection("matches")
 
+        # Mock the match data for the summary page
+        mock_get_match.return_value = {
+            "id": "match_123",
+            "matchType": "singles",
+            "player1Score": 11,
+            "player2Score": 5,
+            "player1Ref": MagicMock(id=MOCK_USER_ID),
+            "player2Ref": MagicMock(id=MOCK_OPPONENT_ID),
+            "matchDate": datetime.datetime.now(),
+        }
+
         response = self.client.post(
             "/match/record",
             headers=self._get_auth_headers(),
@@ -153,11 +167,44 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match recorded successfully.", response.data)
+        self.assertIn(b"Match Summary", response.data)
         # Check that the match was saved (using either add or document().set())
         self.assertTrue(
             mock_matches_collection.add.called
             or mock_matches_collection.document.called
         )
+
+    @patch("pickaladder.match.routes.MatchService.get_match_by_id")
+    def test_view_match_summary(self, mock_get_match: MagicMock) -> None:
+        """Test viewing the match summary page."""
+        self._set_session_user()
+        mock_match_id = "match_123"
+
+        mock_get_match.return_value = {
+            "id": mock_match_id,
+            "matchType": "singles",
+            "player1Score": 11,
+            "player2Score": 5,
+            "player1Ref": MagicMock(id=MOCK_USER_ID),
+            "player2Ref": MagicMock(id=MOCK_OPPONENT_ID),
+            "matchDate": datetime.datetime.now(),
+        }
+
+        # Mock participant fetching
+        mock_db = self.mock_firestore_service.client.return_value
+        mock_user_doc = mock_db.collection("users").document.return_value
+        mock_user_snapshot = MagicMock()
+        mock_user_snapshot.exists = True
+        mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
+        mock_user_doc.get.return_value = mock_user_snapshot
+
+        response = self.client.get(
+            f"/match/summary/{mock_match_id}", headers=self._get_auth_headers()
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Match Summary", response.data)
+        self.assertIn(b"11 - 5", response.data)
+        self.assertIn(MOCK_USER_DATA["name"].encode(), response.data)
 
     def test_pending_invites_query_uses_correct_field(self) -> None:
         """Test that pending invites are queried using 'inviter_id'."""

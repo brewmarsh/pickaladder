@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% block title %}Match Summary{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <!-- Hero Section: Score -->
+    <div class="card hero-stats-card mb-4">
+        <div class="hero-middle-panel text-center">
+            <h1 class="display-4 fw-bold mb-0">Match Summary</h1>
+            <div class="score-display mt-3">
+                {{ match.player1Score }} - {{ match.player2Score }}
+            </div>
+            <p class="text-secondary mt-2">{{ match.matchDate.strftime('%B %d, %Y') if match.matchDate else '' }}</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <!-- Winners Card -->
+        <div class="col-md-8 mb-4">
+            <div class="card hero-stats-card mx-auto" style="max-width: 600px;">
+                <div class="hero-middle-panel w-100">
+                    <h3 class="text-success fw-bold mb-4"><i class="fas fa-trophy mr-2"></i> Winners</h3>
+                    <div class="d-flex justify-content-center gap-4 flex-wrap">
+                        {% for winner in winners %}
+                        <div class="text-center">
+                            <div class="profile-picture-container mx-auto mb-2" style="width: 100px; height: 100px;">
+                                <img src="{{ winner | avatar_url }}" alt="{{ winner.name }}" class="profile-picture"
+                                     onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                            </div>
+                            <h4 class="mb-0">{{ winner.name }}</h4>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Losers Card -->
+        <div class="col-md-8 mb-4">
+            <div class="card hero-stats-card mx-auto" style="max-width: 600px;">
+                <div class="hero-middle-panel w-100">
+                    <h3 class="text-secondary fw-bold mb-4">Losers</h3>
+                    <div class="d-flex justify-content-center gap-4 flex-wrap">
+                        {% for loser in losers %}
+                        <div class="text-center">
+                            <div class="profile-picture-container mx-auto mb-2" style="width: 100px; height: 100px;">
+                                <img src="{{ loser | avatar_url }}" alt="{{ loser.name }}" class="profile-picture"
+                                     onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                            </div>
+                            <h4 class="mb-0">{{ loser.name }}</h4>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex justify-content-center gap-4 mt-4 flex-wrap">
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-primary w-auto">
+            <i class="fas fa-home mr-2"></i> Back to Dashboard
+        </a>
+        <button onclick="navigator.clipboard.writeText(window.location.href); showToast('Link copied to clipboard!', 'success');" class="btn btn-outline-primary w-auto">
+            <i class="fas fa-copy mr-2"></i> Copy Result Link
+        </button>
+        {% if opponent_id %}
+        <a href="{{ url_for('match.record_match', player2=opponent_id) }}" class="btn btn-volt w-auto">
+            <i class="fas fa-redo mr-2"></i> Rematch!
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
