@@ -4,8 +4,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 from flask import current_app
 
-from pickaladder.user.services import firestore as service_firestore
-
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
@@ -211,8 +209,7 @@ def get_friends_page_data(db: Client, user_id: str) -> dict[str, Any]:
 
     # Fetch accepted friends
     accepted_ids = [
-        doc.id
-        for doc in friends_ref.where("status", "==", "accepted").stream()
+        doc.id for doc in friends_ref.where("status", "==", "accepted").stream()
     ]
 
     # Fetch pending requests (incoming)

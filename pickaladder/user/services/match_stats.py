@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from .core import smart_display_name
 
@@ -14,28 +14,18 @@ if TYPE_CHECKING:
 
 def get_user_matches(db: Client, user_id: str) -> list[DocumentSnapshot]:
     """Fetch all matches involving a user."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
-
     user_ref = db.collection("users").document(user_id)
     matches_as_p1 = (
-        db.collection("matches")
-        .where("player1Ref", "==", user_ref)
-        .stream()
+        db.collection("matches").where("player1Ref", "==", user_ref).stream()
     )
     matches_as_p2 = (
-        db.collection("matches")
-        .where("player2Ref", "==", user_ref)
-        .stream()
+        db.collection("matches").where("player2Ref", "==", user_ref).stream()
     )
     matches_as_t1 = (
-        db.collection("matches")
-        .where("team1", "array_contains", user_ref)
-        .stream()
+        db.collection("matches").where("team1", "array_contains", user_ref).stream()
     )
     matches_as_t2 = (
-        db.collection("matches")
-        .where("team2", "array_contains", user_ref)
-        .stream()
+        db.collection("matches").where("team2", "array_contains", user_ref).stream()
     )
 
     all_matches = (
@@ -408,7 +398,9 @@ def get_recent_opponents(
                 d["uid"] = doc.id
                 opponents_map[doc.id] = d
 
-    return [opponents_map[oid] for oid in opponent_ids if oid in opponents_map]
+    return [
+        cast("User", opponents_map[oid]) for oid in opponent_ids if oid in opponents_map
+    ]
 
 
 def _calculate_streak(processed: list[dict[str, Any]]) -> tuple[int, str]:
@@ -510,8 +502,6 @@ def _process_h2h_match(
 
 def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] | None:
     """Fetch head-to-head statistics between two users."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
-
     wins = losses = points = 0
 
     # Build queries

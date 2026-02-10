@@ -82,24 +82,16 @@ class UserService:
         """Fetch all matches involving a user."""
         user_ref = db.collection("users").document(user_id)
         matches_as_p1 = (
-            db.collection("matches")
-            .where("player1Ref", "==", user_ref)
-            .stream()
+            db.collection("matches").where("player1Ref", "==", user_ref).stream()
         )
         matches_as_p2 = (
-            db.collection("matches")
-            .where("player2Ref", "==", user_ref)
-            .stream()
+            db.collection("matches").where("player2Ref", "==", user_ref).stream()
         )
         matches_as_t1 = (
-            db.collection("matches")
-            .where("team1", "array_contains", user_ref)
-            .stream()
+            db.collection("matches").where("team1", "array_contains", user_ref).stream()
         )
         matches_as_t2 = (
-            db.collection("matches")
-            .where("team2", "array_contains", user_ref)
-            .stream()
+            db.collection("matches").where("team2", "array_contains", user_ref).stream()
         )
 
         all_matches = (
@@ -175,11 +167,7 @@ class UserService:
         """Update singles matches where the ghost user is player 1 or 2."""
         match_updates: dict[str, dict[str, Any]] = {}
         for field in ["player1Ref", "player2Ref"]:
-            matches = (
-                db.collection("matches")
-                .where(field, "==", ghost_ref)
-                .stream()
-            )
+            matches = db.collection("matches").where(field, "==", ghost_ref).stream()
             for match in matches:
                 if match.id not in match_updates:
                     match_updates[match.id] = {"ref": match.reference, "data": {}}
@@ -266,9 +254,7 @@ class UserService:
         """Update tournament participant lists and IDs."""
         tournaments = (
             db.collection("tournaments")
-            .where(
-                    "participant_ids", "array_contains", ghost_ref.id
-                )
+            .where("participant_ids", "array_contains", ghost_ref.id)
             .stream()
         )
 
@@ -384,9 +370,7 @@ class UserService:
         try:
             tournaments_query = (
                 db.collection("tournaments")
-                .where(
-                        "participant_ids", "array_contains", user_id
-                    )
+                .where("participant_ids", "array_contains", user_id)
                 .stream()
             )
 
@@ -416,9 +400,7 @@ class UserService:
         """Fetch active tournaments for a user."""
         tournaments_query = (
             db.collection("tournaments")
-            .where(
-                    "participant_ids", "array_contains", user_id
-                )
+            .where("participant_ids", "array_contains", user_id)
             .stream()
         )
         active_tournaments: list[Tournament] = []
@@ -460,9 +442,7 @@ class UserService:
 
         tournaments_query = (
             db.collection("tournaments")
-            .where(
-                    "participant_ids", "array_contains", user_id
-                )
+            .where("participant_ids", "array_contains", user_id)
             .stream()
         )
         past_tournaments: list[Tournament] = []
@@ -1032,9 +1012,7 @@ class UserService:
             .where("status", "==", "completed")
         )
         q3 = (
-            matches_ref.where(
-                    "participants", "array_contains", user_id_1
-                )
+            matches_ref.where("participants", "array_contains", user_id_1)
             .where("matchType", "==", "doubles")
             .where("status", "==", "completed")
         )
@@ -1135,7 +1113,8 @@ class UserService:
             processed.append({"won": won, "lost": lost, "date": date})
 
         processed.sort(
-            key=lambda x: x["date"] if x["date"] else datetime.datetime.min, reverse=True
+            key=lambda x: x["date"] or datetime.datetime.min,
+            reverse=True,
         )
 
         streak = 0

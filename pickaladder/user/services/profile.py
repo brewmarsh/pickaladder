@@ -10,7 +10,6 @@ from firebase_admin import auth, storage
 from flask import current_app
 from werkzeug.utils import secure_filename
 
-from pickaladder.user.services import firestore
 from pickaladder.utils import EmailError, send_email
 
 if TYPE_CHECKING:
@@ -21,11 +20,7 @@ if TYPE_CHECKING:
 def check_username_availability(db: Client, username: str) -> bool:
     """Check if a username is available."""
     users_ref = db.collection("users")
-    existing_user = (
-        users_ref.where("username", "==", username)
-        .limit(1)
-        .stream()
-    )
+    existing_user = users_ref.where("username", "==", username).limit(1).stream()
     return len(list(existing_user)) == 0
 
 

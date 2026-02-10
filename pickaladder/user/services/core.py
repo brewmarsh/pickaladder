@@ -9,7 +9,6 @@ from firebase_admin import auth, storage
 from flask import current_app
 from werkzeug.utils import secure_filename
 
-from pickaladder.user.services import firestore as service_firestore
 from pickaladder.utils import send_email
 
 from ..helpers import smart_display_name as _smart_display_name
@@ -47,12 +46,14 @@ def get_all_users(
     db: Client, exclude_ids: list[str] | None = None, limit: int = 20
 ) -> list[dict[str, Any]]:
     """Fetch a list of users, excluding given IDs, sorted by date."""
+    from firebase_admin import firestore
+
     if exclude_ids is None:
         exclude_ids = []
 
     users_query = (
         db.collection("users")
-        .order_by("createdAt", direction=service_firestore.Query.DESCENDING)
+        .order_by("createdAt", direction=firestore.Query.DESCENDING)
         .limit(limit + len(exclude_ids))  # Fetch extra in case we exclude users
         .stream()
     )
@@ -142,8 +143,8 @@ def search_users(
     query: Any = db.collection("users")
     if search_term:
         query = query.where("username", ">=", search_term).where(
-                "username", "<=", search_term + "\uf8ff"
-            )
+            "username", "<=", search_term + "\uf8ff"
+        )
 
     all_users_docs = [
         doc for doc in query.limit(20).stream() if doc.id != current_user_id
@@ -169,11 +170,13 @@ def search_users(
 
 def create_invite_token(db: Client, user_id: str) -> str:
     """Generate and store a unique invite token."""
+    from firebase_admin import firestore
+
     token = secrets.token_urlsafe(16)
     db.collection("invites").document(token).set(
         {
             "userId": user_id,
-            "createdAt": service_firestore.SERVER_TIMESTAMP,
+            "createdAt": firestore.SERVER_TIMESTAMP,
             "used": False,
         }
     )
