@@ -3,6 +3,7 @@
 .mx-auto { margin-left: auto !important; margin-right: auto !important; }
 .gap-4 { gap: 1.5rem !important; }
 .justify-content-center { justify-content: center !important; }
+.text-center { text-align: center !important; }
 
 /* Buttons */
 .btn {
@@ -246,6 +247,14 @@
     border-bottom: 1px solid var(--border-color);
 }
 
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.table td[data-label="Result"] {
+    text-align: center;
+}
+
 .table th {
     background-color: var(--primary-color);
     color: var(--text-on-primary);
@@ -337,9 +346,17 @@
 /* Profile Picture Fix */
 .profile-picture-container {
     overflow: hidden;
-    border-radius: 50%;
+    border-radius: 50% !important;
     flex-shrink: 0;
     background-color: var(--bg-color);
+    display: block;
+}
+
+.profile-picture-container img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block;
 }
 
 /* Specificity override to fix masking and size */
@@ -354,9 +371,9 @@
 
 /* --- 5. Avatar System (Consolidated) --- */
 .profile-picture {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
 }
 
 .avatar {
@@ -370,6 +387,7 @@
 .vanity-stats-container {
     display: flex;
     justify-content: center;
+    gap: 2rem;
 }
 
 @media screen and (max-width: 768px) {

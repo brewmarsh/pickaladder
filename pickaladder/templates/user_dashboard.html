@@ -42,7 +42,6 @@
         </div>
         <div class="hero-middle-panel text-center">
             <h2 id="hero-username-text" class="mb-2">{{ user.name if user.name else user.username }}</h2>
-            <!-- Vanity Stats Row -->
             <div class="vanity-stats-container justify-content-center gap-4">
                 <div class="vanity-stat">
                     <div class="stat-value fs-3 fw-bold">{{ stats.total_games }}</div>
@@ -93,18 +92,18 @@
     <div class="dashboard-columns">
         {# Left Column: Recent Activity #}
         <div class="dashboard-column-left">
+            {% if matches %}
             <div class="card">
                 <div class="header-with-button">
                     <h3>Recent Activity</h3>
                 </div>
                 <div id="latest-games-feed">
-                    {% if matches %}
-                    <table class="table">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
                                 <th>Date</th>
                                 <th>Matchup</th>
-                                <th>Result</th>
+                                <th class="text-center">Result</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -146,7 +145,7 @@
                                         <strong>You</strong> vs {{ opponent.username }}
                                     {% endif %}
                                 </td>
-                                <td data-label="Result">
+                                <td data-label="Result" class="text-center">
                                     {% if match.user_result == 'win' %}
                                     <span class="badge badge-success">W</span>
                                     {% else %}
@@ -161,17 +160,24 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    {% else %}
-                    <p class="text-muted" style="padding: 20px; text-align: center;">No recent matches found.</p>
-                    {% endif %}
                 </div>
             </div>
+            {% else %}
+            <div class="card text-center p-5">
+                <h4 class="card-header" style="border-bottom: none;">Ready to climb?</h4>
+                <p>Record your first match to establish your ranking.</p>
+                <div class="mt-4">
+                    <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         {# Right Column: Competition Stack #}
         <div class="dashboard-column-right">
             <div class="competition-stack">
                 {# My Groups Section #}
+                {% if group_rankings %}
                 <div class="card" style="padding: 16px;">
                     <h3 style="margin-top: 0; margin-bottom: 16px;">My Groups</h3>
                     {% for ranking in group_rankings %}
@@ -196,10 +202,18 @@
                             {% endfor %}
                         </div>
                     </a>
-                    {% else %}
-                    <p class="text-muted">You are not a member of any groups.</p>
                     {% endfor %}
                 </div>
+                {% else %}
+                <div class="card text-center p-5">
+                    <h4 class="card-header" style="border-bottom: none;">Find your squad</h4>
+                    <p>Join a group or create one to start a leaderboard.</p>
+                    <div class="mt-4 d-flex flex-column gap-2">
+                        <a href="{{ url_for('group.view_groups') }}" class="btn btn-volt">Find Groups</a>
+                        <a href="{{ url_for('group.create_group') }}" class="btn btn-outline-primary">Create Group</a>
+                    </div>
+                </div>
+                {% endif %}
 
                 {# Social Section #}
                 <div class="card" style="padding: 16px;">
