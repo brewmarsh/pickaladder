@@ -1,10 +1,10 @@
-name: Reusable CI
+name: Run Tests
 
 on:
   workflow_call:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -37,6 +37,14 @@ jobs:
       - name: Install dependencies
         run: uv pip install -r requirements.txt -r requirements-test.txt coverage --system
 
+      - name: Install Playwright
+        run: uv pip install playwright pytest-playwright --system
+
+      - name: Install Playwright Browsers
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project playwright install --with-deps
+
       - name: Enable uuid-ossp extension
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
@@ -53,6 +61,7 @@ jobs:
           uv run --no-project python -m pytest
           uv run --no-project python -m coverage run -m pytest
           uv run --no-project python -m coverage xml
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:

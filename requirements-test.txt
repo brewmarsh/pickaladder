@@ -2,3 +2,5 @@ mock-firestore==0.11.0
 pytest==9.0.2
 pytest-flask==1.3.0
 pytest-mock
+playwright
+pytest-playwright
