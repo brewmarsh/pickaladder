@@ -11,7 +11,7 @@
                 <a href="{{ url_for('user.dashboard') }}"
                     class="nav-link {{ 'active' if request.endpoint == 'user.dashboard' }}">📈 Dashboard</a>
                 <a href="{{ url_for('user.view_community') }}"
-                    class="nav-link {{ 'active' if request.endpoint == 'user.view_community' or request.endpoint == 'user.friend_requests' }}"
+                    class="nav-link {{ 'active' if request.endpoint == 'user.view_community' }}"
                     style="position: relative;">
                     🌍 Community
                     {% if incoming_requests_count > 0 %}
@@ -29,7 +29,7 @@
                     {% endif %}
                 </a>
                 <a href="{{ url_for('match.leaderboard') }}"
-                    class="nav-link {{ 'active' if request.endpoint == 'match.leaderboard' }}">🏆 Global Leaderboard</a>
+                    class="nav-link {{ 'active' if request.endpoint == 'match.leaderboard' }}">🏆 Leaderboard</a>
                 {% else %}
                 <div class="desktop-auth-buttons">
                     {% if request.endpoint != 'auth.login' %}

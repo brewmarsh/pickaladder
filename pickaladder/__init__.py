@@ -214,10 +214,13 @@ def _register_context_processors(app: Flask) -> None:
                 pending_requests = UserService.get_user_pending_requests(
                     db, g.user["uid"]
                 )
-                return dict(incoming_requests_count=len(pending_requests))
+                return dict(
+                    incoming_requests_count=len(pending_requests),
+                    pending_friend_requests=pending_requests,
+                )
             except Exception as e:
                 current_app.logger.error(f"Error fetching friend requests: {e}")
-        return dict(incoming_requests_count=0)
+        return dict(incoming_requests_count=0, pending_friend_requests=[])
 
     @app.context_processor
     def inject_pending_tournament_invites() -> dict[str, Any]:
