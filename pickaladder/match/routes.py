@@ -97,6 +97,72 @@ def view_match_page(match_id: str) -> Any:
 
 
 # TODO: Add type hints for Agent clarity
+@bp.route("/summary/<string:match_id>")
+@login_required
+def view_match_summary(match_id: str) -> Any:
+    """Display a summary of a match."""
+    db = firestore.client()
+    match_data = MatchService.get_match_by_id(db, match_id)
+    if match_data is None:
+        flash("Match not found.", "danger")
+        return redirect(url_for("user.dashboard"))
+
+    m_dict = cast("dict[str, Any]", match_data)
+    match_type = m_dict.get("matchType", "singles")
+    p1_score = m_dict.get("player1Score", 0)
+    p2_score = m_dict.get("player2Score", 0)
+    current_user_id = g.user["uid"]
+
+    context: dict[str, Any] = {"match": match_data, "match_type": match_type}
+
+    if match_type == "doubles":
+        team1_refs = m_dict.get("team1", [])
+        team2_refs = m_dict.get("team2", [])
+
+        team1_data = [d.to_dict() for d in db.get_all(team1_refs) if d.exists]
+        team2_data = [d.to_dict() for d in db.get_all(team2_refs) if d.exists]
+
+        if p1_score > p2_score:
+            context["winners"] = team1_data
+            context["losers"] = team2_data
+        else:
+            context["winners"] = team2_data
+            context["losers"] = team1_data
+
+        # Determine opponent_id for rematch
+        # (target the team that doesn't contain the user)
+        team1_ids = [ref.id for ref in team1_refs]
+        if current_user_id in team1_ids:
+            context["opponent_id"] = team2_refs[0].id if team2_refs else None
+        else:
+            context["opponent_id"] = team1_refs[0].id if team1_refs else None
+    else:
+        player1_ref = m_dict.get("player1Ref")
+        player2_ref = m_dict.get("player2Ref")
+
+        refs = [r for r in [player1_ref, player2_ref] if r]
+        docs = {d.id: d.to_dict() for d in db.get_all(refs) if d.exists}
+
+        player1_data = docs.get(player1_ref.id) if player1_ref else {}
+        player2_data = docs.get(player2_ref.id) if player2_ref else {}
+
+        if p1_score > p2_score:
+            context["winners"] = [player1_data]
+            context["losers"] = [player2_data]
+        else:
+            context["winners"] = [player2_data]
+            context["losers"] = [player1_data]
+
+        # Determine opponent_id for rematch
+        if player1_ref and player1_ref.id == current_user_id:
+            context["opponent_id"] = player2_ref.id if player2_ref else None
+        else:
+            context["opponent_id"] = player1_ref.id if player1_ref else None
+
+    return render_template("match/summary.html", **context)
+
+
+# TODO: Add type hints for Agent clarity
 @bp.route("/record", methods=["GET", "POST"])
 @login_required
 def record_match() -> Any:
@@ -137,7 +203,7 @@ def record_match() -> Any:
         form.group_id.data = group_id
         form.tournament_id.data = tournament_id
 
-        # Support pre-populating multiple players (Rematch logic)
+        # Support pre-populating multiple players (Rematch logic from Main)
         match_type = request.args.get("match_type")
         if match_type:
             form.match_type.data = match_type
@@ -178,20 +244,30 @@ def record_match() -> Any:
             data["tournament_id"] = tournament_id
 
         try:
-            MatchService.process_match_submission(db, data, g.user)
+            # Capture the ID from the service call (Feature Branch Logic)
+            match_id = MatchService.process_match_submission(db, data, g.user)
+            
             if request.is_json:
-                return jsonify({"status": "success", "message": "Match recorded."}), 200
+                return jsonify({
+                    "status": "success", 
+                    "message": "Match recorded.",
+                    "match_id": match_id
+                }), 200
 
             flash("Match recorded successfully.", "success")
             active_tid = form.tournament_id.data or tournament_id
             active_gid = form.group_id.data or group_id
+            
             if active_tid:
                 return redirect(
                     url_for("tournament.view_tournament", tournament_id=active_tid)
                 )
             if active_gid:
                 return redirect(url_for("group.view_group", group_id=active_gid))
-            return redirect(url_for("user.dashboard"))
+            
+            # Redirect to the new summary view (Feature Branch Logic)
+            return redirect(url_for("match.view_match_summary", match_id=match_id))
+            
         except ValueError as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400

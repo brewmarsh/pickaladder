@@ -1,26 +1,11 @@
-{% macro brand_logo() %}
-<a href="{{ url_for('user.dashboard') }}" class="navbar-brand" style="display: flex; align-items: center;">
-    <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" alt="pickaladder logo"
-        style="height: 24px; margin-right: 8px;">
-    pickaladder
-</a>
-{% endmacro %}
-
 <header class="header">
     <div class="container">
-        <!-- Mobile Header -->
-        <div class="d-flex justify-content-between align-items-center d-lg-none w-100">
-            {{ brand_logo() }}
-            <button class="hamburger-menu">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-        </div>
-
-        <!-- Desktop Navbar -->
-        <nav class="navbar d-none d-lg-flex">
-            {{ brand_logo() }}
+        <nav class="navbar">
+            <a href="{{ url_for('user.dashboard') }}" class="navbar-brand" style="display: flex; align-items: center;">
+                <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" alt="pickaladder logo"
+                    style="height: 24px; margin-right: 8px;">
+                pickaladder
+            </a>
             <div class="navbar-menu">
                 {% if g.user %}
                 <a href="{{ url_for('user.dashboard') }}"
@@ -79,9 +64,14 @@
                     </div>
                 </div>
                 {% endif %}
+                <button class="hamburger-menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
             </div>
         </nav>
-        <div id="myLinks" class="mobile-nav d-lg-none">
+        <div id="myLinks" class="mobile-nav">
             {% if g.user %}
             <a href="{{ url_for('user.dashboard') }}" class="mobile-nav-link"><i class="fas fa-home me-2"></i> Dashboard</a>
             <a href="{{ url_for('user.view_community') }}" class="mobile-nav-link" style="position: relative;">
