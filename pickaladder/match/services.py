@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
@@ -103,7 +103,11 @@ class MatchService:
             MatchService._apply_upset_logic(match_doc_data, p1_ref, p2_ref)
 
         elif match_type == "doubles":
-            res = MatchService._resolve_teams(db, get_val)
+            partner_id = get_val("partner")
+            opponent2_id = get_val("opponent2")
+            res = MatchService._resolve_teams(
+                db, p1_id, partner_id, p2_id, opponent2_id
+            )
             match_doc_data.update(res)
             team1_ref = res.get("team1Ref")
             team2_ref = res.get("team2Ref")
@@ -125,14 +129,12 @@ class MatchService:
     @staticmethod
     def _resolve_teams(
         db: Client,
-        get_val: Callable[[str], Any],
+        t1_p1_id: str,
+        t1_p2_id: str,
+        t2_p1_id: str,
+        t2_p2_id: str,
     ) -> dict[str, Any]:
         """Resolve and create/fetch teams for doubles matches."""
-        t1_p1_id = get_val("player1")
-        t1_p2_id = get_val("partner")
-        t2_p1_id = get_val("player2")
-        t2_p2_id = get_val("opponent2")
-
         team1_id = TeamService.get_or_create_team(db, t1_p1_id, t1_p2_id)
         team2_id = TeamService.get_or_create_team(db, t2_p1_id, t2_p2_id)
 
