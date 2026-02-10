@@ -357,6 +357,13 @@ select:focus {
     background-color: var(--bg-color);
 }
 
+.dropdown-divider {
+    height: 1px;
+    margin: 8px 0;
+    overflow: hidden;
+    background-color: var(--border-color);
+}
+
 .dropdown:hover .dropdown-content {
     display: block;
 }
