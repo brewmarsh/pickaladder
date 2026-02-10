@@ -110,14 +110,14 @@
                         <tbody>
                             {% for match in matches %}
                             <tr>
-                                <td class="text-muted">
+                                <td class="text-muted" data-label="Date">
                                     {% if match.date and match.date != 'N/A' %}
                                     {{ match.date if match.date is string else match.date.strftime('%b %d') }}
                                     {% else %}
                                     Date N/A
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td data-label="Matchup">
                                     {% if match.match_type == 'doubles' %}
                                         {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
                                         {% if in_team1 %}
@@ -146,7 +146,7 @@
                                         <strong>You</strong> vs {{ opponent.username }}
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td data-label="Result">
                                     {% if match.user_result == 'win' %}
                                     <span class="badge badge-success">W</span>
                                     {% else %}
