@@ -3,6 +3,13 @@
 .mx-auto { margin-left: auto !important; margin-right: auto !important; }
 .gap-4 { gap: 1.5rem !important; }
 .justify-content-center { justify-content: center !important; }
+.d-none { display: none !important; }
+
+@media screen and (min-width: 992px) {
+    body .d-lg-none { display: none !important; }
+    body .d-lg-flex { display: flex !important; }
+    body .d-lg-block { display: block !important; }
+}
 
 /* Buttons */
 .btn {
