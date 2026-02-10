@@ -9,23 +9,20 @@
     {# Section: Tournament Invites (Top Priority Alert Banner) #}
     {% if pending_tournament_invites %}
     {% for tournament in pending_tournament_invites %}
-    <div class="game-card tournament-invite-card"
-        style="margin-bottom: 20px; border-left: 5px solid var(--accent-color);">
-        <div style="flex: 2;">
-            <div style="font-weight: 600; font-size: 1.1rem; color: var(--accent-color);">🏆 You've been invited!</div>
-            <div style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">{{ tournament.name }}</div>
+    <div class="tournament-invite-card">
+        <div class="flex-2">
+            <div class="fw-medium text-volt fs-5">🏆 You've been invited!</div>
+            <div class="fw-bold fs-4 mt-1">{{ tournament.name }}</div>
             <div class="text-muted small">Starts {{ tournament.date }}</div>
         </div>
-        <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
-            <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post"
-                style="display: inline;">
+        <div class="flex-1 d-flex justify-content-end gap-2 align-items-center">
+            <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-volt" style="width: auto; margin: 0;">Accept</button>
+                <button type="submit" class="btn btn-volt w-auto mb-0">Accept</button>
             </form>
-            <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post"
-                style="display: inline;">
+            <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-danger" style="width: auto; margin: 0;">Decline</button>
+                <button type="submit" class="btn btn-danger w-auto mb-0">Decline</button>
             </form>
         </div>
     </div>
@@ -76,7 +73,7 @@
     {% if recent_opponents %}
     <div class="card mb-4">
         <div class="card-body">
-            <h4 class="card-header" style="border-bottom: none; margin-bottom: 0; padding-left: 0;">Jump Back In</h4>
+            <h4 class="card-header card-header-clean">Jump Back In</h4>
             <div class="text-muted small mb-3">Recent Opponents</div>
             <div class="d-flex gap-3 mt-3">
                 {% for opponent in recent_opponents %}
@@ -178,7 +175,7 @@
             <div class="competition-stack">
                 {# My Groups Section #}
                 {% if group_rankings %}
-                <div class="card" style="padding: 16px;">
+                <div class="card card-compact">
                     <h3 style="margin-top: 0; margin-bottom: 16px;">My Groups</h3>
                     {% for ranking in group_rankings %}
                     <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}" class="ranking-card">
@@ -216,7 +213,7 @@
                 {% endif %}
 
                 {# Social Section #}
-                <div class="card" style="padding: 16px;">
+                <div class="card card-compact">
                     <h3 style="margin-top: 0; margin-bottom: 16px;">Social</h3>
                     {% if requests %}
                     <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Friend Requests</h4>
