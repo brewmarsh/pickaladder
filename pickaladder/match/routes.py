@@ -156,11 +156,17 @@ def record_match() -> Any:
         if p4:
             form.opponent2.data = p4
 
+        # Support explicit partner_id (from Main branch)
+        partner_id = request.args.get("partner_id")
+        if partner_id:
+            form.partner.data = partner_id
+
         # Backward compatibility for single opponent
         opponent_id = request.args.get("opponent") or request.args.get("opponent_id")
         if opponent_id and not p3:
             form.player2.data = opponent_id
 
+        # Fallback: If no match_type specified, use user's last recorded type
         if not match_type:
             user_doc = db.collection("users").document(user_id).get()
             if user_doc.exists:
