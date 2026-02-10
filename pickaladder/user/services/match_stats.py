@@ -12,20 +12,31 @@ if TYPE_CHECKING:
     from ..models import User
 
 
+from firebase_admin import firestore
+
+
 def get_user_matches(db: Client, user_id: str) -> list[DocumentSnapshot]:
     """Fetch all matches involving a user."""
     user_ref = db.collection("users").document(user_id)
     matches_as_p1 = (
-        db.collection("matches").where("player1Ref", "==", user_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
+        .stream()
     )
     matches_as_p2 = (
-        db.collection("matches").where("player2Ref", "==", user_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player2Ref", "==", user_ref))
+        .stream()
     )
     matches_as_t1 = (
-        db.collection("matches").where("team1", "array_contains", user_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("team1", "array_contains", user_ref))
+        .stream()
     )
     matches_as_t2 = (
-        db.collection("matches").where("team2", "array_contains", user_ref).stream()
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("team2", "array_contains", user_ref))
+        .stream()
     )
 
     all_matches = (
