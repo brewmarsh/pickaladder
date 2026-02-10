@@ -82,16 +82,24 @@ class UserService:
         """Fetch all matches involving a user."""
         user_ref = db.collection("users").document(user_id)
         matches_as_p1 = (
-            db.collection("matches").where("player1Ref", "==", user_ref).stream()
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
+            .stream()
         )
         matches_as_p2 = (
-            db.collection("matches").where("player2Ref", "==", user_ref).stream()
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("player2Ref", "==", user_ref))
+            .stream()
         )
         matches_as_t1 = (
-            db.collection("matches").where("team1", "array_contains", user_ref).stream()
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("team1", "array_contains", user_ref))
+            .stream()
         )
         matches_as_t2 = (
-            db.collection("matches").where("team2", "array_contains", user_ref).stream()
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("team2", "array_contains", user_ref))
+            .stream()
         )
 
         all_matches = (
@@ -101,8 +109,13 @@ class UserService:
             + list(matches_as_t2)
         )
         unique_matches = {match.id: match for match in all_matches}.values()
+        sorted_matches = sorted(
+            unique_matches,
+            key=lambda m: (m.to_dict().get("matchDate") or m.create_time),
+            reverse=True,
+        )
         results: list[Match] = []
-        for match in unique_matches:
+        for match in sorted_matches:
             data = cast("Match", match.to_dict() or {})
             data["id"] = match.id
             results.append(data)
