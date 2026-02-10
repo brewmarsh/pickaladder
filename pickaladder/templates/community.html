@@ -372,6 +372,10 @@
                             btn.textContent = "Request Sent";
                             btn.disabled = true;
                             btn.classList.remove('btn-primary');
+                            if (typeof showToast === 'function') {
+                                showToast("Friend Request Sent!", "success");
+                            }
+                            window.location.reload();
                         } else {
                             alert(data.message || "An error occurred.");
                         }

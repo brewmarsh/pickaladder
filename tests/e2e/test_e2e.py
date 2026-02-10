@@ -70,7 +70,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # Click Add Friend for Admin User
     page.click("button:has-text('Add Friend')")
-    expect(page.locator("button:has-text('Request Sent')")).to_be_visible(timeout=5000)
+    # After reload, the user should be in the "Sent Friend Requests" section
+    expect(page.locator(".requests-section", has_text="admin")).to_be_visible(
+        timeout=5000
+    )
 
     # Logout User 2, Login Admin
     page.click(".dropbtn", force=True)
