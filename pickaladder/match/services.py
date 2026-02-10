@@ -281,8 +281,7 @@ class MatchService:
     @staticmethod
     def get_leaderboard_data(db: Client, limit: int = 50) -> list[User]:
         """Fetch data for the global leaderboard."""
-        # Removing limit from query to ensure we can find top players from whole base
-        users_query = db.collection("users").stream()
+        users_query = db.collection("users").limit(limit).stream()
         players: list[User] = []
         for user in users_query:
             u_snap = cast("DocumentSnapshot", user)
@@ -310,7 +309,7 @@ class MatchService:
         players.sort(
             key=lambda p: (p.get("win_percentage", 0), p.get("wins", 0)), reverse=True
         )
-        return players[:limit]
+        return players
 
     @staticmethod
     def get_latest_matches(db: Client, limit: int = 10) -> list[Match]:

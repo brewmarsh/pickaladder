@@ -67,7 +67,7 @@
                     {% elif sent_status == 'pending' %}
                     <button class="btn" disabled>Request Sent</button>
                     {% elif received_status == 'pending' %}
-                    <a href="{{ url_for('user.view_community') }}" class="btn btn-warning">Review Request</a>
+                    <a href="{{ url_for('user.friends') }}" class="btn btn-warning">Review Request</a>
                     {% else %}
                     <form method="post" action="{{ url_for('user.send_friend_request', friend_id=user.id) }}"
                         style="display: inline;">

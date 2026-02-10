@@ -311,7 +311,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             b"d-flex justify-content-between align-items-center mb-4", response.data
         )
         self.assertIn(b"btn btn-primary", response.data)
-        self.assertIn(b"Create Group", response.data)
+        self.assertIn(b"+ Create Group", response.data)
 
     def test_view_group(self) -> None:
         """Test the view_group route and eligible friends logic."""

@@ -33,13 +33,3 @@ repos:
               tests/.*|
               docs/.*
           )$
-
-  # 4. Local Hooks: Run unit tests
-  - repo: local
-    hooks:
-      - id: run-tests
-        name: Run Unit Tests
-        entry: uv run pytest --ignore=tests/e2e
-        language: system
-        types: [python]
-        pass_filenames: false

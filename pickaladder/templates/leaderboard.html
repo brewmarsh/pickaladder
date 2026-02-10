@@ -3,14 +3,14 @@
 {% block content %}
     <div class="page-header">
         <h1>Global Leaderboard</h1>
-        <p>Top Players by Win Percentage</p>
+        <p>Top players by Win Percentage</p>
     </div>
     <div class="table-container">
-        <table class="table table-standard responsive-table">
+        <table class="table-standard responsive-table">
             <thead>
                 <tr>
                     <th>Rank</th>
-                    <th>Player</th>
+                    <th>PLAYER</th>
                     <th class="text-right">Win Percentage</th>
                     <th class="text-right">Games Played</th>
                 </tr>
@@ -19,7 +19,7 @@
                 {% for player in players %}
                 <tr class="{{ 'highlight-row' if player.id == current_user_id else '' }}">
                     <td data-label="Rank" class="{% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">{{ loop.index }}</td>
-                    <td data-label="Player"><a href="{{ url_for('user.view_user', user_id=player.id) }}">{{ player.name }}</a></td>
+                    <td data-label="PLAYER"><a href="{{ url_for('user.view_user', user_id=player.id) }}">{{ player.name }}</a></td>
                     <td data-label="Win Percentage" class="text-right">{{ "%.1f"|format(player.win_percentage|float) }}%</td>
                     <td data-label="Games Played" class="text-right">{{ player.games_played }}</td>
                 </tr>
@@ -30,28 +30,26 @@
     <div class="page-header">
         <h2>Latest Games</h2>
     </div>
-    <div class="table-container">
-        <table class="table table-standard">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Matchup</th>
-                    <th>Result</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for match in latest_matches %}
-                <tr>
-                    <td data-label="Date">{{ match.date }}</td>
-                    <td data-label="Matchup">
-                        <strong class="winner">{{ match.winner_name }}</strong> vs {{ match.loser_name }}
-                    </td>
-                    <td data-label="Result">
-                        {{ match.winner_score }} - {{ match.loser_score }}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="latest-games-container">
+        {% for match in latest_matches %}
+        <div class="game-item">
+            <div class="game-date">{{ match.date }}</div>
+            <div class="game-matchup">
+                <div>
+                    <strong class="winner">{{ match.winner_name }}</strong> defeated {{ match.loser_name }}
+                </div>
+                <div class="game-score">
+                    {{ match.winner_score }} - {{ match.loser_score }}
+                </div>
+            </div>
+            <div class="game-details">
+                {% if match.close_call %}
+                    <span class="tag">Close Call</span>
+                {% else %}
+                    <span class="point-differential">{{ match.point_differential }} pt diff</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
     </div>
 {% endblock %}

@@ -24,14 +24,8 @@
                 <tr>
                     <td data-label="Username">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="{{ request | avatar_url }}" alt="{% if request.username.startswith('ghost_') %}{{ request.email or 'Invited User (Pending)' }}{% else %}{{ request.username }}{% endif %}" class="avatar avatar-md">
-                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">
-                                {% if request.username.startswith('ghost_') %}
-                                    {{ request.email or "Invited User (Pending)" }}
-                                {% else %}
-                                    {{ request.username }}
-                                {% endif %}
-                            </a>
+                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
+                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
                         </div>
                     </td>
                     <td data-label="Actions" style="text-align: right;">
@@ -54,7 +48,9 @@
     </div>
 </div>
 {% else %}
-<p class="text-muted text-center mb-4">No new requests.</p>
+<div class="card" style="text-align: center; margin-bottom: 40px;">
+    <p class="text-muted">No new friend requests.</p>
+</div>
 {% endif %}
 
 {# 2. SEARCH BAR #}
@@ -71,48 +67,6 @@
         </div>
     </form>
 </div>
-
-{# 3. SENT REQUESTS #}
-{% if outgoing_requests %}
-<div class="card requests-section" style="margin-top: 40px;">
-    <h3>Sent Friend Requests</h3>
-    <div class="table-container">
-        <table class="table-standard responsive-table">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th style="text-align: right;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for request in outgoing_requests %}
-                <tr>
-                    <td data-label="User">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="{{ request | avatar_url }}" alt="{% if request.username.startswith('ghost_') %}{{ request.email or 'Invited User (Pending)' }}{% else %}{{ request.username }}{% endif %}" class="avatar avatar-md">
-                            <a href="{{ url_for('user.view_user', user_id=request.id) }}"><strong>
-                                {% if request.username.startswith('ghost_') %}
-                                    {{ request.email or "Invited User (Pending)" }}
-                                {% else %}
-                                    {{ request | smart_display_name }}
-                                {% endif %}
-                            </strong></a>
-                        </div>
-                    </td>
-                    <td data-label="Actions" style="text-align: right;">
-                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('Are you sure you want to cancel this friend request?');">Cancel</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
 
 {# 3. TOURNAMENT INVITES #}
 {% if pending_tournament_invites %}
@@ -164,15 +118,9 @@
         <div class="friend-card card-action">
             <a href="{{ url_for('user.view_user', user_id=friend.id) }}" class="friend-card-link">
                 <div class="friend-card-content">
-                    <img src="{{ friend | avatar_url }}" alt="{% if friend.username.startswith('ghost_') %}{{ friend.email or 'Invited User (Pending)' }}{% else %}{{ friend.username }}{% endif %}" class="avatar avatar-lg">
-                    <h3 class="friend-name">
-                        {% if friend.username.startswith('ghost_') %}
-                            {{ friend.email or "Invited User (Pending)" }}
-                        {% else %}
-                            {{ friend.name or friend.username }}
-                        {% endif %}
-                    </h3>
-                    {% if not friend.username.startswith('ghost_') and friend.name and friend.name != friend.username %}
+                    <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="avatar avatar-lg">
+                    <h3 class="friend-name">{{ friend.name or friend.username }}</h3>
+                    {% if friend.name and friend.name != friend.username %}
                     <p class="text-muted" style="margin-top: -5px; font-size: 0.85em;">@{{ friend.username }}</p>
                     {% endif %}
                     <div class="friend-rating">
@@ -201,15 +149,9 @@
         <div class="friend-card card-action">
             <a href="{{ url_for('user.view_user', user_id=user_data.id) }}" class="friend-card-link">
                 <div class="friend-card-content">
-                    <img src="{{ user_data | avatar_url }}" alt="{% if user_data.username.startswith('ghost_') %}{{ user_data.email or 'Invited User (Pending)' }}{% else %}{{ user_data.username }}{% endif %}" class="avatar avatar-lg">
-                    <h3 class="friend-name">
-                        {% if user_data.username.startswith('ghost_') %}
-                            {{ user_data.email or "Invited User (Pending)" }}
-                        {% else %}
-                            {{ user_data.name or user_data.username }}
-                        {% endif %}
-                    </h3>
-                    {% if not user_data.username.startswith('ghost_') and user_data.name and user_data.name != user_data.username %}
+                    <img src="{{ user_data | avatar_url }}" alt="{{ user_data.username }}" class="avatar avatar-lg">
+                    <h3 class="friend-name">{{ user_data.name or user_data.username }}</h3>
+                    {% if user_data.name and user_data.name != user_data.username %}
                     <p class="text-muted" style="margin-top: -5px; font-size: 0.85em;">@{{ user_data.username }}</p>
                     {% endif %}
                     <div class="friend-rating">
@@ -257,13 +199,7 @@
                         <a href="{{ url_for('group.view_group', group_id=group.id) }}"><strong>{{ group.name
                                 }}</strong></a>
                     </td>
-                    <td data-label="Owner">
-                        {% if group.owner.username.startswith('ghost_') %}
-                            {{ group.owner.email or "Invited User (Pending)" }}
-                        {% else %}
-                            {{ group.owner.username }}
-                        {% endif %}
-                    </td>
+                    <td data-label="Owner">{{ group.owner.username }}</td>
                     <td data-label="Description"><small>{{ group.description or '' }}</small></td>
                     <td data-label="Actions" class="actions-cell" style="text-align: right;">
                         <form action="{{ url_for('group.join_group', group_id=group.id) }}" method="post"
@@ -282,6 +218,43 @@
     {% endif %}
 </div>
 
+{# 4. SENT REQUESTS #}
+{% if outgoing_requests %}
+<div class="card requests-section" style="margin-top: 40px;">
+    <h3>Sent Friend Requests</h3>
+    <div class="table-container">
+        <table class="table-standard responsive-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in outgoing_requests %}
+                <tr>
+                    <td data-label="User">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
+                            <a href="{{ url_for('user.view_user', user_id=request.id) }}"><strong>{{ request | smart_display_name }}</strong></a>
+                        </div>
+                    </td>
+                    <td data-label="Actions" style="text-align: right;">
+                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Are you sure you want to cancel this friend request?');">Cancel</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<p class="text-muted" style="margin-top: 20px;">You haven't sent any requests yet. Use the search bar to find friends!</p>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
