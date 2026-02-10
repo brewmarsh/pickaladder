@@ -46,6 +46,11 @@
         </table>
     </div>
 </div>
+{% else %}
+{# Resolved: Added empty state from feature branch #}
+<div class="card" style="text-align: center; margin-bottom: 40px;">
+    <p class="text-muted">No new friend requests.</p>
+</div>
 {% endif %}
 
 {# 2. SEARCH BAR - New Polished UI from Refactor Branch #}
@@ -245,6 +250,8 @@
         </table>
     </div>
 </div>
+{% else %}
+<p class="text-muted" style="margin-top: 20px;">You haven't sent any requests yet. Use the search bar to find friends!</p>
 {% endif %}
 {% endblock %}
 
