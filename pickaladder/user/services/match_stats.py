@@ -47,7 +47,7 @@ def get_user_matches(db: Client, user_id: str) -> list[DocumentSnapshot]:
     unique_matches = {match.id: match for match in all_matches}.values()
     return sorted(
         unique_matches,
-        key=lambda m: ((m.to_dict() or {}).get("matchDate") or m.create_time),
+        key=lambda m: (m.to_dict() or {}).get("matchDate") or m.create_time,
         reverse=True,
     )
 

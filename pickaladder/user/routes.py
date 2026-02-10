@@ -125,7 +125,7 @@ def view_user(user_id: str) -> Any:
     unique_matches = {m.id: m for m in all_matches}.values()
     sorted_matches = sorted(
         unique_matches,
-        key=lambda m: ((m.to_dict() or {}).get("matchDate") or m.create_time),
+        key=lambda m: (m.to_dict() or {}).get("matchDate") or m.create_time,
         reverse=True,
     )
 
