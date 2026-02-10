@@ -11,14 +11,11 @@ from mockfirestore import MockFirestore
 
 from pickaladder import create_app
 from pickaladder.tournament import TournamentService  # noqa: F401
-from tests.conftest import (
+from tests.mock_utils import (
     MockArrayRemove,
     MockArrayUnion,
     MockBatch,
-    patch_mockfirestore,
 )
-
-patch_mockfirestore()
 
 # Mock user payloads
 MOCK_USER_ID = "user1"
