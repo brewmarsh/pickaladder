@@ -46,7 +46,7 @@ jobs:
           uv run --no-project agent-score score --diff $TARGET_BRANCH --report readiness_report.md
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: agent-readiness-report
           path: readiness_report.md
