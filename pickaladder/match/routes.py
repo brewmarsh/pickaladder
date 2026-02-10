@@ -137,12 +137,12 @@ def record_match() -> Any:
 
         if form.validate():
             try:
-                json_group_id = data.get("group_id") or group_id
-                json_tournament_id = data.get("tournament_id") or tournament_id
-                MatchService.save_match_data(
-                    db, user_id, data, json_group_id, json_tournament_id
+                MatchService.process_match_submission(
+                    db, user_id, data, group_id, tournament_id
                 )
                 return jsonify({"status": "success", "message": "Match recorded."}), 200
+            except ValueError as e:
+                return jsonify({"status": "error", "message": str(e)}), 400
             except Exception as e:
                 return jsonify({"status": "error", "message": str(e)}), 500
         else:
@@ -213,36 +213,29 @@ def record_match() -> Any:
 
     if form.validate_on_submit():
         player_1_id = request.form.get("player1") or user_id
-        group_id = form.group_id.data or group_id
-        tournament_id = form.tournament_id.data or tournament_id
-
-        # Uniqueness check
-        player_ids = [player_1_id, form.player2.data]
-        if form.match_type.data == "doubles":
-            player_ids.extend([form.partner.data, form.opponent2.data])
-
-        # Filter out empty values and check for duplicates
-        active_players = [p for p in player_ids if p]
-        if len(active_players) != len(set(active_players)):
-            flash("All players must be unique.", "danger")
-            return render_template(
-                "record_match.html",
-                form=form,
-                group_id=group_id,
-                tournament_id=tournament_id,
-                tournament_name=tournament_name,
-            )
+        # Use values from form or fallback to args
+        active_group_id = form.group_id.data or group_id
+        active_tournament_id = form.tournament_id.data or tournament_id
 
         try:
-            MatchService.save_match_data(db, player_1_id, form, group_id, tournament_id)
+            MatchService.process_match_submission(
+                db, player_1_id, form, active_group_id, active_tournament_id
+            )
             flash("Match recorded successfully.", "success")
-            if tournament_id:
+            if active_tournament_id:
                 return redirect(
-                    url_for("tournament.view_tournament", tournament_id=tournament_id)
+                    url_for(
+                        "tournament.view_tournament",
+                        tournament_id=active_tournament_id,
+                    )
                 )
-            if group_id:
-                return redirect(url_for("group.view_group", group_id=group_id))
+            if active_group_id:
+                return redirect(
+                    url_for("group.view_group", group_id=active_group_id)
+                )
             return redirect(url_for("user.dashboard"))
+        except ValueError as e:
+            flash(str(e), "danger")
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
 
