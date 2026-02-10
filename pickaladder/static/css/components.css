@@ -298,7 +298,7 @@
     font-size: 0.75rem;
     font-weight: var(--fw-bold);
     text-transform: uppercase;
-    letter-spacing: 0.025em;
+    letter-spacing: 0.05em;
     line-height: 1;
     white-space: nowrap;
 }
@@ -313,6 +313,10 @@
 .badge-warning { background-color: var(--warning-color); color: var(--text-primary); }
 .badge-danger  { background-color: var(--danger-color); color: white; }
 .badge-neutral { background-color: var(--bg-color); color: var(--text-secondary); border: 1px solid var(--border-color); }
+
+/* Match History Badges */
+.badge-won { background-color: var(--success-color); color: white; }
+.badge-lost { background-color: var(--text-secondary); color: white; }
 
 /* Settings Icon */
 .btn-edit-gear {
@@ -334,7 +338,14 @@
     color: var(--primary-color);
 }
 
-/* Profile Picture Fix */
+/* --- 5. Avatar System (Consolidated) --- */
+.avatar, .profile-picture, .group-card-img-small {
+    border-radius: 50% !important;
+    object-fit: cover;
+    aspect-ratio: 1 / 1; /* Enforces perfect circle */
+}
+
+/* Profile Picture Container Fix */
 .profile-picture-container {
     overflow: hidden;
     border-radius: 50%;
@@ -346,24 +357,9 @@
 .hero-stats-card .profile-picture-container .profile-picture {
     width: 100%;
     height: 100%;
-    object-fit: cover;
     display: block;
     border: none;
     margin: 0;
-}
-
-/* --- 5. Avatar System (Consolidated) --- */
-.profile-picture {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.avatar {
-    object-fit: cover;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background-color: var(--bg-color);
 }
 
 /* Vanity Stats */
