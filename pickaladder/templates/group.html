@@ -1,31 +1,35 @@
 {% extends "layout.html" %}
 {% block title %}{{ group.name }}{% endblock %}
 {% block content %}
-<div class="page-header group-header-content">
-    <img src="{{ group.profilePictureUrl if group.profilePictureUrl else (url_for('static', filename='uploads/' + group.profile_picture_path) if group.profile_picture_path else url_for('static', filename='user_icon.png')) }}"
-        alt="Group Picture" class="avatar avatar-xl">
-    <div>
-        <div class="group-header-actions">
-            <div class="group-header-title">
-                <h1>{{ group.name }}</h1>
-                {% if is_member %}
-                <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-primary">Record a
-                    Match</a>
-                {% endif %}
-            </div>
-            {% if group.ownerRef.id == current_user_id %}
-            <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings"
-                class="settings-icon">⚙️</a>
-            {% endif %}
+<div class="card hero-stats-card">
+    {% if group.ownerRef.id == current_user_id %}
+    <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="btn-edit-gear">⚙️</a>
+    {% endif %}
+
+    <div class="hero-left-panel">
+        <div class="profile-picture-container avatar-xl">
+            <img src="{{ group.profilePictureUrl if group.profilePictureUrl else (url_for('static', filename='uploads/' + group.profile_picture_path) if group.profile_picture_path else url_for('static', filename='user_icon.png')) }}"
+                alt="Group Picture" class="profile-picture">
         </div>
+    </div>
+
+    <div class="hero-middle-panel text-center">
+        <h1>{{ group.name }}</h1>
         <div class="group-meta-info">
-            <p>Owned by: <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username
-                    }}</a></p>
-            {% if group.location %}
-            <p><strong>Location:</strong> {{ group.location }}</p>
-            {% endif %}
+            <p>
+                Owned by: <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username }}</a>
+                {% if group.location %}
+                • Location: {{ group.location }}
+                {% endif %}
+            </p>
         </div>
         <p class="group-description">{{ group.description or 'No description provided.' }}</p>
+    </div>
+
+    <div class="hero-right-panel">
+        {% if is_member %}
+        <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-volt w-auto">Record a Match</a>
+        {% endif %}
     </div>
 </div>
 

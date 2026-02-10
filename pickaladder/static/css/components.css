@@ -116,6 +116,17 @@
     position: relative;
 }
 
+.hero-left-panel, .hero-middle-panel, .hero-right-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.hero-middle-panel {
+    flex: 2;
+}
+
 /* --- 2. Data Display (Tables) --- */
 .table-standard {
     width: 100%;
@@ -212,6 +223,18 @@
     .responsive-table td[data-label="Avatar"]::before,
     .responsive-table td[data-label="Logo"]::before {
         display: none;
+    }
+
+    /* Hero Card Mobile Stacking */
+    .hero-stats-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+
+    .hero-left-panel, .hero-middle-panel, .hero-right-panel {
+        width: 100%;
+        margin-bottom: 0;
     }
 }
 
