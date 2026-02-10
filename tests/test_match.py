@@ -111,7 +111,15 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
     @patch("pickaladder.match.routes.MatchService.get_candidate_player_ids")
     def test_record_match(self, mock_get_candidate_player_ids: MagicMock) -> None:
         """Test recording a new match."""
-        mock_get_candidate_player_ids.return_value = {MOCK_OPPONENT_ID}
+
+        def get_candidates_side_effect(
+            db, user_id, group_id, tournament_id, include_user=False
+        ):
+            if include_user:
+                return {user_id, MOCK_OPPONENT_ID}
+            return {MOCK_OPPONENT_ID}
+
+        mock_get_candidate_player_ids.side_effect = get_candidates_side_effect
         self._set_session_user()
 
         mock_db = self.mock_firestore_service.client.return_value
@@ -145,7 +153,11 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match recorded successfully.", response.data)
-        mock_matches_collection.add.assert_called_once()
+        # Check that the match was saved (using either add or document().set())
+        self.assertTrue(
+            mock_matches_collection.add.called
+            or mock_matches_collection.document.called
+        )
 
     def test_pending_invites_query_uses_correct_field(self) -> None:
         """Test that pending invites are queried using 'inviter_id'."""

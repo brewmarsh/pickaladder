@@ -4,27 +4,26 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">🎾 Tournaments</h2>
+    <h1 class="mb-0">Tournaments</h1>
     <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary w-auto">Create Tournament</a>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        {% if tournaments %}
-            <div class="tournament-grid">
-                {% for tournament in tournaments %}
-                    <div class="tournament-card friend-card clickable-row" data-href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}">
-                        <div class="friend-info">
-                            <h3>{{ tournament.name }}</h3>
-                            <p class="text-muted">{{ tournament.date }} | {{ tournament.location }}</p>
-                            <span class="badge badge-info">{{ tournament.matchType|capitalize }}</span>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p class="text-center text-muted">No tournaments found. Create one to get started!</p>
-        {% endif %}
+{% if tournaments %}
+    <div class="tournament-grid">
+        {% for tournament in tournaments %}
+            <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="card tournament-card">
+                <h3>{{ tournament.name }}</h3>
+                <p class="text-muted">
+                    {{ tournament.date }} | {{ tournament.location }} | {{ tournament.matchType|capitalize }}
+                </p>
+            </a>
+        {% endfor %}
     </div>
-</div>
+{% else %}
+    <div class="card">
+        <div class="card-body">
+            No tournaments found
+        </div>
+    </div>
+{% endif %}
 {% endblock %}

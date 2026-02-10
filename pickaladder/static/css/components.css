@@ -1,6 +1,8 @@
 /* --- 0. Layout Utilities --- */
 .w-auto { width: auto !important; }
 .mx-auto { margin-left: auto !important; margin-right: auto !important; }
+.gap-4 { gap: 1.5rem !important; }
+.justify-content-center { justify-content: center !important; }
 
 /* Buttons */
 .btn {
@@ -116,6 +118,17 @@
     position: relative;
 }
 
+.hero-left-panel, .hero-middle-panel, .hero-right-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.hero-middle-panel {
+    flex: 2;
+}
+
 /* --- 2. Data Display (Tables) --- */
 .table-standard {
     width: 100%;
@@ -213,6 +226,18 @@
     .responsive-table td[data-label="Logo"]::before {
         display: none;
     }
+
+    /* Hero Card Mobile Stacking */
+    .hero-stats-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+
+    .hero-left-panel, .hero-middle-panel, .hero-right-panel {
+        width: 100%;
+        margin-bottom: 0;
+    }
 }
 
 .table th, .table td {
@@ -291,9 +316,9 @@
 
 /* Settings Icon */
 .btn-edit-gear {
-    position: absolute;
-    top: 20px;
-    right: 20px;
+    position: absolute !important;
+    top: 20px !important;
+    right: 20px !important;
     color: var(--text-secondary);
     text-decoration: none;
     font-size: 1.25rem;
@@ -317,11 +342,14 @@
     background-color: var(--bg-color);
 }
 
-.profile-picture-container .profile-picture {
+/* Specificity override to fix masking and size */
+.hero-stats-card .profile-picture-container .profile-picture {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    border: none;
+    margin: 0;
 }
 
 /* --- 5. Avatar System (Consolidated) --- */
@@ -330,6 +358,24 @@
     border-radius: 50%;
     flex-shrink: 0;
     background-color: var(--bg-color);
+}
+
+/* Vanity Stats */
+.vanity-stats-container {
+    display: flex;
+    justify-content: center;
+}
+
+@media screen and (max-width: 768px) {
+    .vanity-stats-container {
+        gap: 1rem !important;
+    }
+}
+
+.vanity-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 .avatar-sm { width: 32px; height: 32px; }
 .avatar-md { width: 48px; height: 48px; }
@@ -375,3 +421,26 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+}
+
+/* --- 6. Input Groups (Design System) --- */
+.input-group {
+    display: flex;
+    width: 100%;
+}
+
+.input-group .form-control {
+    flex: 1 1 auto;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group-append {
+    display: flex;
+}
+
+.input-group-append .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    width: auto;
+}

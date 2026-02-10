@@ -9,7 +9,7 @@ on:
 jobs:
   ci:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
-    uses: ./.github/workflows/reusable-ci.yml
+    uses: ./.github/workflows/run_tests.yaml
 
   versioning:
     needs: ci
@@ -20,4 +20,3 @@ jobs:
     with:
       namespace: "beta"
     secrets: inherit
-

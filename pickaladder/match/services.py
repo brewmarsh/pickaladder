@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
@@ -16,14 +17,199 @@ if TYPE_CHECKING:
 
     from pickaladder.user import User
 
+    from .forms import MatchForm
     from .models import Match
 
 
 CLOSE_CALL_THRESHOLD = 2
+UPSET_THRESHOLD = 0.25
 
 
 class MatchService:
     """Service class for match-related operations."""
+
+    @staticmethod
+    def process_match_submission(
+        db: Client,
+        player_1_id: str,
+        data: dict[str, Any] | MatchForm,
+        group_id: str | None = None,
+        tournament_id: str | None = None,
+    ) -> str:
+        """Process and record a match submission."""
+        user_ref = db.collection("users").document(player_1_id)
+
+        # Helper to get data from either dict or form
+        def get_val(key: str) -> Any:
+            if isinstance(data, dict):
+                return data.get(key)
+            field = getattr(data, key, None)
+            return field.data if field else None
+
+        match_type = get_val("match_type") or "singles"
+
+        # Uniqueness check
+        p1_id = get_val("player1") or player_1_id
+        p2_id = get_val("player2")
+        player_ids = [p1_id, p2_id]
+        if match_type == "doubles":
+            player_ids.extend([get_val("partner"), get_val("opponent2")])
+
+        active_players = [p for p in player_ids if p]
+        if len(active_players) != len(set(active_players)):
+            raise ValueError("All players must be unique.")
+
+        # Determine Date
+        match_date_input = get_val("match_date")
+        if isinstance(match_date_input, str) and match_date_input:
+            match_date = datetime.datetime.strptime(match_date_input, "%Y-%m-%d")
+        elif isinstance(match_date_input, datetime.date):
+            match_date = datetime.datetime.combine(match_date_input, datetime.time.min)
+        else:
+            match_date = datetime.datetime.now()
+
+        player1_score = int(get_val("player1_score") or 0)
+        player2_score = int(get_val("player2_score") or 0)
+
+        match_doc_data: dict[str, Any] = {
+            "player1Score": player1_score,
+            "player2Score": player2_score,
+            "matchDate": match_date,
+            "createdAt": firestore.SERVER_TIMESTAMP,
+            "matchType": match_type,
+        }
+
+        # Add IDs if present
+        gid = group_id or get_val("group_id")
+        tid = tournament_id or get_val("tournament_id")
+        if gid:
+            match_doc_data["groupId"] = gid
+        if tid:
+            match_doc_data["tournamentId"] = tid
+
+        team1_ref = None
+        team2_ref = None
+
+        if match_type == "singles":
+            p1_ref = db.collection("users").document(p1_id)
+            p2_ref = db.collection("users").document(p2_id)
+            match_doc_data["player1Ref"] = p1_ref
+            match_doc_data["player2Ref"] = p2_ref
+            match_doc_data["winner"] = (
+                "team1" if player1_score > player2_score else "team2"
+            )
+
+            # Apply DUPR upset logic
+            MatchService._apply_upset_logic(match_doc_data, p1_ref, p2_ref)
+
+        elif match_type == "doubles":
+            partner_id = get_val("partner")
+            opponent2_id = get_val("opponent2")
+            res = MatchService._resolve_teams(
+                db, p1_id, partner_id, p2_id, opponent2_id
+            )
+            match_doc_data.update(res)
+            team1_ref = res.get("team1Ref")
+            team2_ref = res.get("team2Ref")
+            match_doc_data["winner"] = (
+                "team1" if player1_score > player2_score else "team2"
+            )
+
+        # Save to database
+        new_match_ref = db.collection("matches").document()
+        new_match_ref.set(match_doc_data)
+
+        # Update stats
+        MatchService._update_player_stats(
+            user_ref, match_type, player1_score, player2_score, team1_ref, team2_ref
+        )
+
+        return new_match_ref.id
+
+    @staticmethod
+    def _resolve_teams(
+        db: Client,
+        t1_p1_id: str,
+        t1_p2_id: str,
+        t2_p1_id: str,
+        t2_p2_id: str,
+    ) -> dict[str, Any]:
+        """Resolve and create/fetch teams for doubles matches."""
+        team1_id = TeamService.get_or_create_team(db, t1_p1_id, t1_p2_id)
+        team2_id = TeamService.get_or_create_team(db, t2_p1_id, t2_p2_id)
+
+        t1_p1_ref = db.collection("users").document(t1_p1_id)
+        t1_p2_ref = db.collection("users").document(t1_p2_id)
+        t2_p1_ref = db.collection("users").document(t2_p1_id)
+        t2_p2_ref = db.collection("users").document(t2_p2_id)
+
+        team1_ref = db.collection("teams").document(team1_id)
+        team2_ref = db.collection("teams").document(team2_id)
+
+        return {
+            "team1": [t1_p1_ref, t1_p2_ref],
+            "team2": [t2_p1_ref, t2_p2_ref],
+            "team1Id": team1_id,
+            "team2Id": team2_id,
+            "team1Ref": team1_ref,
+            "team2Ref": team2_ref,
+        }
+
+    @staticmethod
+    def _update_player_stats(  # noqa: PLR0913
+        user_ref: Any,
+        match_type: str,
+        player1_score: int,
+        player2_score: int,
+        team1_ref: Any = None,
+        team2_ref: Any = None,
+    ) -> None:
+        """Update wins/losses and user's last match type."""
+        if match_type == "doubles" and team1_ref and team2_ref:
+            if player1_score > player2_score:
+                team1_ref.update({"stats.wins": firestore.Increment(1)})
+                team2_ref.update({"stats.losses": firestore.Increment(1)})
+            elif player2_score > player1_score:
+                team1_ref.update({"stats.losses": firestore.Increment(1)})
+                team2_ref.update({"stats.wins": firestore.Increment(1)})
+
+        user_ref.update({"lastMatchRecordedType": match_type})
+
+    @staticmethod
+    def _apply_upset_logic(
+        match_data: dict[str, Any], p1_ref: Any, p2_ref: Any
+    ) -> None:
+        """Calculate if match is an upset based on DUPR and update match_data."""
+        try:
+            p1_doc = p1_ref.get()
+            p2_doc = p2_ref.get()
+
+            if not p1_doc.exists or not p2_doc.exists:
+                return
+
+            p1_data = p1_doc.to_dict() or {}
+            p2_data = p2_doc.to_dict() or {}
+
+            # Handle multiple possible DUPR rating keys, ensuring safety with mocks
+            def get_rating(d: Any) -> float:
+                val = d.get("dupr_rating") or d.get("duprRating")
+                try:
+                    return float(val) if val is not None else 0.0
+                except (ValueError, TypeError):
+                    return 0.0
+
+            p1_rating = get_rating(p1_data)
+            p2_rating = get_rating(p2_data)
+
+            if p1_rating > 0 and p2_rating > 0:
+                winner = match_data.get("winner")
+                if winner == "team1" and (p2_rating - p1_rating) >= UPSET_THRESHOLD:
+                    match_data["is_upset"] = True
+                elif winner == "team2" and (p1_rating - p2_rating) >= UPSET_THRESHOLD:
+                    match_data["is_upset"] = True
+        except Exception as e:
+            # Ensure upset logic failure doesn't block match recording
+            logging.error(f"Error applying upset logic: {e}")
 
     @staticmethod
     def get_candidate_player_ids(
@@ -115,87 +301,6 @@ class MatchService:
         return candidate_player_ids
 
     @staticmethod
-    def save_match_data(
-        db: Client,
-        player_1_id: str,
-        form_data: Any,
-        group_id: str | None = None,
-        tournament_id: str | None = None,
-    ) -> None:
-        """Construct and save a match document to Firestore."""
-        user_ref = db.collection("users").document(player_1_id)
-
-        # Handle both form objects and dictionaries
-        def get_data(key: str) -> Any:
-            if isinstance(form_data, dict):
-                return form_data.get(key)
-            return getattr(form_data, key).data
-
-        match_type = get_data("match_type")
-        match_date_input = get_data("match_date")
-
-        if isinstance(match_date_input, str) and match_date_input:
-            match_date = datetime.datetime.strptime(match_date_input, "%Y-%m-%d")
-        elif isinstance(match_date_input, datetime.date):
-            match_date = datetime.datetime.combine(match_date_input, datetime.time.min)
-        else:
-            match_date = datetime.datetime.now()
-
-        player1_score = int(get_data("player1_score"))
-        player2_score = int(get_data("player2_score"))
-
-        match_data: dict[str, Any] = {
-            "player1Score": player1_score,
-            "player2Score": player2_score,
-            "matchDate": match_date,
-            "createdAt": firestore.SERVER_TIMESTAMP,
-            "matchType": match_type,
-        }
-
-        if group_id:
-            match_data["groupId"] = group_id
-        if tournament_id:
-            match_data["tournamentId"] = tournament_id
-
-        if match_type == "singles":
-            player1_ref = db.collection("users").document(get_data("player1"))
-            player2_ref = db.collection("users").document(get_data("player2"))
-            match_data["player1Ref"] = player1_ref
-            match_data["player2Ref"] = player2_ref
-        elif match_type == "doubles":
-            t1_p1_id = get_data("player1")
-            t1_p2_id = get_data("partner")
-            t2_p1_id = get_data("player2")
-            t2_p2_id = get_data("opponent2")
-
-            team1_id = TeamService.get_or_create_team(db, t1_p1_id, t1_p2_id)
-            team2_id = TeamService.get_or_create_team(db, t2_p1_id, t2_p2_id)
-
-            t1_p1_ref = db.collection("users").document(t1_p1_id)
-            t1_p2_ref = db.collection("users").document(t1_p2_id)
-            t2_p1_ref = db.collection("users").document(t2_p1_id)
-            t2_p2_ref = db.collection("users").document(t2_p2_id)
-
-            team1_ref = db.collection("teams").document(team1_id)
-            team2_ref = db.collection("teams").document(team2_id)
-
-            match_data["team1"] = [t1_p1_ref, t1_p2_ref]
-            match_data["team2"] = [t2_p1_ref, t2_p2_ref]
-            match_data["team1Id"] = team1_id
-            match_data["team2Id"] = team2_id
-            match_data["team1Ref"] = team1_ref
-            match_data["team2Ref"] = team2_ref
-            if player1_score > player2_score:
-                team1_ref.update({"stats.wins": firestore.Increment(1)})
-                team2_ref.update({"stats.losses": firestore.Increment(1)})
-            elif player2_score > player1_score:
-                team1_ref.update({"stats.losses": firestore.Increment(1)})
-                team2_ref.update({"stats.wins": firestore.Increment(1)})
-
-        db.collection("matches").add(match_data)
-        user_ref.update({"lastMatchRecordedType": match_type})
-
-    @staticmethod
     def get_player_record(db: Client, player_ref: Any) -> dict[str, int]:
         """Calculate win/loss record for a player by doc reference."""
         wins = 0
@@ -281,7 +386,8 @@ class MatchService:
     @staticmethod
     def get_leaderboard_data(db: Client, limit: int = 50) -> list[User]:
         """Fetch data for the global leaderboard."""
-        users_query = db.collection("users").limit(limit).stream()
+        # Removing limit from query to ensure we can find top players from whole base
+        users_query = db.collection("users").stream()
         players: list[User] = []
         for user in users_query:
             u_snap = cast("DocumentSnapshot", user)
@@ -309,7 +415,7 @@ class MatchService:
         players.sort(
             key=lambda p: (p.get("win_percentage", 0), p.get("wins", 0)), reverse=True
         )
-        return players
+        return players[:limit]
 
     @staticmethod
     def get_latest_matches(db: Client, limit: int = 10) -> list[Match]:
