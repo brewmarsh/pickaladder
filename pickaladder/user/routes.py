@@ -72,6 +72,7 @@ def dashboard() -> Any:
     all_match_docs = [m["doc"] for m in processed_matches]
     current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
     recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
+    recent_partners = UserService.get_recent_partners(db, user_id, all_match_docs)
 
     if form.validate_on_submit():
         UserService.update_dashboard_profile(
@@ -86,6 +87,7 @@ def dashboard() -> Any:
         form=form,
         current_streak=current_streak,
         recent_opponents=recent_opponents,
+        recent_partners=recent_partners,
         **data,
     )
 
@@ -95,7 +97,43 @@ def dashboard() -> Any:
 def view_user(user_id: str) -> Any:
     """Display a user's public profile."""
     db = firestore.client()
-    data = UserService.get_user_profile_data(db, g.user["uid"], user_id)
+
+    # FETCH MATCHES (using FieldFilter as requested by task)
+    user_ref = db.collection("users").document(user_id)
+    matches_p1 = (
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
+        .stream()
+    )
+    matches_p2 = (
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("player2Ref", "==", user_ref))
+        .stream()
+    )
+    matches_t1 = (
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("team1", "array_contains", user_ref))
+        .stream()
+    )
+    matches_t2 = (
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("team2", "array_contains", user_ref))
+        .stream()
+    )
+
+    all_matches = (
+        list(matches_p1) + list(matches_p2) + list(matches_t1) + list(matches_t2)
+    )
+    unique_matches = {m.id: m for m in all_matches}.values()
+    sorted_matches = sorted(
+        unique_matches,
+        key=lambda m: (m.to_dict() or {}).get("matchDate") or m.create_time,
+        reverse=True,
+    )
+
+    data = UserService.get_user_profile_data(
+        db, g.user["uid"], user_id, matches=sorted_matches
+    )
     if not data:
         flash("User not found.", "danger")
         return redirect(url_for(".users"))

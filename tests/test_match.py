@@ -36,6 +36,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             "firestore": patch(
                 "pickaladder.match.routes.firestore", new=self.mock_firestore_service
             ),
+            "firestore_services": patch(
+                "pickaladder.match.services.firestore", new=self.mock_firestore_service
+            ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
@@ -110,7 +113,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
     @patch("pickaladder.match.routes.MatchService.get_match_by_id")
-    @patch("pickaladder.match.routes.MatchService.get_candidate_player_ids")
+    @patch("pickaladder.match.services.MatchService.get_candidate_player_ids")
     def test_record_match(
         self, mock_get_candidate_player_ids: MagicMock, mock_get_match: MagicMock
     ) -> None:
@@ -142,7 +145,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         mock_matches_collection = mock_db.collection("matches")
 
-        # Mock the match data for the summary page
+        # Mock the match data for the summary page (needed because we follow redirect)
         mock_get_match.return_value = {
             "id": "match_123",
             "matchType": "singles",
@@ -168,7 +171,10 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match recorded successfully.", response.data)
+        
+        # Verify we landed on the summary page
         self.assertIn(b"Match Summary", response.data)
+        
         # Check that the match was saved (using either add or document().set())
         self.assertTrue(
             mock_matches_collection.add.called

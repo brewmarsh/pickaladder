@@ -3,6 +3,8 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
+from firebase_admin import firestore
+
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
@@ -11,7 +13,11 @@ def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch all groups the user is a member of."""
     user_ref = db.collection("users").document(user_id)
     groups_query = (
-        db.collection("groups").where("members", "array_contains", user_ref).stream()
+        db.collection("groups")
+        .where(
+            filter=firestore.FieldFilter("members", "array_contains", user_ref),
+        )
+        .stream()
     )
     groups = []
     for doc in groups_query:
@@ -29,7 +35,11 @@ def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, A
     try:
         tournaments_query = (
             db.collection("tournaments")
-            .where("participant_ids", "array_contains", user_id)
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_id
+                ),
+            )
             .stream()
         )
 
@@ -57,7 +67,9 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch active tournaments for a user."""
     tournaments_query = (
         db.collection("tournaments")
-        .where("participant_ids", "array_contains", user_id)
+        .where(
+            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id),
+        )
         .stream()
     )
     active_tournaments = []
@@ -93,7 +105,9 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
     tournaments_query = (
         db.collection("tournaments")
-        .where("participant_ids", "array_contains", user_id)
+        .where(
+            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id),
+        )
         .stream()
     )
     past_tournaments = []
@@ -124,12 +138,10 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     """Fetch a list of public groups, enriched with owner data."""
-    from firebase_admin import firestore
-
     # Query for public groups
     public_groups_query = (
         db.collection("groups")
-        .where("is_public", "==", True)
+        .where(filter=firestore.FieldFilter("is_public", "==", True))
         .order_by("createdAt", direction=firestore.Query.DESCENDING)
         .limit(limit)
     )
@@ -175,7 +187,11 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     user_ref = db.collection("users").document(user_id)
     group_rankings = []
     my_groups_query = (
-        db.collection("groups").where("members", "array_contains", user_ref).stream()
+        db.collection("groups")
+        .where(
+            filter=firestore.FieldFilter("members", "array_contains", user_ref),
+        )
+        .stream()
     )
     for group_doc in my_groups_query:
         group_data = group_doc.to_dict()
@@ -217,7 +233,10 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 
 def get_user_profile_data(
-    db: Client, current_user_id: str, target_user_id: str
+    db: Client,
+    current_user_id: str,
+    target_user_id: str,
+    matches: list[Any] | None = None,
 ) -> dict[str, Any] | None:
     """Fetch all data for a user's public profile."""
     from .core import get_user_by_id
@@ -241,7 +260,8 @@ def get_user_profile_data(
     if current_user_id != target_user_id:
         h2h_stats = get_h2h_stats(db, current_user_id, target_user_id)
 
-    matches = get_user_matches(db, target_user_id)
+    if matches is None:
+        matches = get_user_matches(db, target_user_id)
     stats = calculate_stats(matches, target_user_id)
     display_items_docs = [m["doc"] for m in stats["processed_matches"][:20]]
     matches_data = format_matches_for_dashboard(db, display_items_docs, target_user_id)
