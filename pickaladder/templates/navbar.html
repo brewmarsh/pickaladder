@@ -14,8 +14,8 @@
                     class="nav-link {{ 'active' if request.endpoint == 'user.view_community' or request.endpoint == 'user.friend_requests' }}"
                     style="position: relative;">
                     🌍 Community
-                    {% if pending_friend_requests %}
-                    <span class="notification-badge">{{ pending_friend_requests|length }}</span>
+                    {% if incoming_requests_count > 0 %}
+                    <span class="notification-badge">{{ incoming_requests_count }}</span>
                     {% endif %}
                 </a>
                 <a href="{{ url_for('group.view_groups') }}"
