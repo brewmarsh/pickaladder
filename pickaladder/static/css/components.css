@@ -444,3 +444,20 @@
     border-bottom-left-radius: 0;
     width: auto;
 }
+
+/* Page Header Standardization */
+.page-header-actions h1 {
+    margin-bottom: 0 !important;
+}
+
+.btn-action {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: auto !important;
+}
+
+.btn-action i {
+    font-size: 0.9em;
+}
