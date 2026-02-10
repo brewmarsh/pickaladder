@@ -1,6 +1,8 @@
 /* --- 0. Layout Utilities --- */
 .w-auto { width: auto !important; }
 .mx-auto { margin-left: auto !important; margin-right: auto !important; }
+.gap-4 { gap: 1.5rem !important; }
+.justify-content-center { justify-content: center !important; }
 
 /* Buttons */
 .btn {
@@ -291,9 +293,9 @@
 
 /* Settings Icon */
 .btn-edit-gear {
-    position: absolute;
-    top: 20px;
-    right: 20px;
+    position: absolute !important;
+    top: 20px !important;
+    right: 20px !important;
     color: var(--text-secondary);
     text-decoration: none;
     font-size: 1.25rem;
@@ -317,11 +319,14 @@
     background-color: var(--bg-color);
 }
 
-.profile-picture-container .profile-picture {
+/* Specificity override to fix masking and size */
+.hero-stats-card .profile-picture-container .profile-picture {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    border: none;
+    margin: 0;
 }
 
 /* --- 5. Avatar System (Consolidated) --- */
@@ -330,6 +335,24 @@
     border-radius: 50%;
     flex-shrink: 0;
     background-color: var(--bg-color);
+}
+
+/* Vanity Stats */
+.vanity-stats-container {
+    display: flex;
+    justify-content: center;
+}
+
+@media screen and (max-width: 768px) {
+    .vanity-stats-container {
+        gap: 1rem !important;
+    }
+}
+
+.vanity-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 .avatar-sm { width: 32px; height: 32px; }
 .avatar-md { width: 48px; height: 48px; }

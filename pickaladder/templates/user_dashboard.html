@@ -42,7 +42,8 @@
         </div>
         <div class="hero-middle-panel text-center">
             <h2 id="hero-username-text" class="mb-2">{{ user.name if user.name else user.username }}</h2>
-            <div id="vanity-stats-container" class="vanity-stats-container justify-content-center gap-4">
+            <!-- Vanity Stats Row -->
+            <div class="vanity-stats-container justify-content-center gap-4">
                 <div class="vanity-stat">
                     <div class="stat-value fs-3 fw-bold">{{ stats.total_games }}</div>
                     <div class="stat-label text-muted small">Matches</div>
@@ -52,9 +53,8 @@
                     <div class="stat-label text-muted small">Win %</div>
                 </div>
                 <div class="vanity-stat">
-                    <div
-                        class="stat-value fs-3 fw-bold {{ 'text-volt' if stats.streak_type == 'W' else 'text-danger' if stats.streak_type == 'L' else '' }}">
-                        {{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}
+                    <div class="stat-value fs-3 fw-bold {{ 'text-volt' if stats.streak_type == 'W' else 'text-danger' if stats.streak_type == 'L' else '' }}">
+                        {% if stats.total_games > 0 %}{{ stats.current_streak }}{{ stats.streak_type }}{% else %}N/A{% endif %}
                     </div>
                     <div class="stat-label text-muted small">Streak</div>
                 </div>
@@ -106,7 +106,7 @@
                                             {% set user_score = match.player2_score %}
                                             {% set opp_score = match.player1_score %}
                                         {% endif %}
-                                        <strong>You & {{ partner.username }}</strong> <span class="text-muted">vs</span> {{ opponent_name }}
+                                        <strong>You & {{ partner.username }}</strong> vs {{ opponent_name }}
                                     {% else %}
                                         {% set is_p1 = match.player1.id == user.uid %}
                                         {% if is_p1 %}
@@ -118,7 +118,7 @@
                                             {% set user_score = match.player2_score %}
                                             {% set opp_score = match.player1_score %}
                                         {% endif %}
-                                        <strong>You</strong> <span class="text-muted">vs</span> {{ opponent.username }}
+                                        <strong>You</strong> vs {{ opponent.username }}
                                     {% endif %}
                                 </td>
                                 <td>
@@ -137,7 +137,7 @@
                         </tbody>
                     </table>
                     {% else %}
-                    <p>No recent games to display.</p>
+                    <p class="text-muted" style="padding: 20px; text-align: center;">No recent matches found.</p>
                     {% endif %}
                 </div>
             </div>
