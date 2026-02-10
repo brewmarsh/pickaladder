@@ -206,13 +206,14 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("text=Pickleballers")
     with page.expect_navigation():
-        page.click("text=Edit Group")
+        page.click('[data-testid="group-settings-btn"]')
     page.fill("input[name='location']", "New Court")
     with page.expect_navigation():
         page.click("input[value='Update Group']")
     expect(page.locator("text=New Court")).to_be_visible()
 
     # 11. Invite Email to Group
+    page.click("summary:has-text('Manage Group & Members')")
     page.fill("form[action*='group'] input[name='name']", "New Guy")
     page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
     with page.expect_navigation():
