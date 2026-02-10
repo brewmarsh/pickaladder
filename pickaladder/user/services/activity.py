@@ -14,7 +14,9 @@ def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
     user_ref = db.collection("users").document(user_id)
     groups_query = (
         db.collection("groups")
-        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .where(
+            filter=firestore.FieldFilter("members", "array_contains", user_ref),
+        )
         .stream()
     )
     groups = []
@@ -33,7 +35,11 @@ def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, A
     try:
         tournaments_query = (
             db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("participant_ids", "array_contains", user_id))
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_id
+                ),
+            )
             .stream()
         )
 
@@ -61,7 +67,9 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch active tournaments for a user."""
     tournaments_query = (
         db.collection("tournaments")
-        .where(filter=firestore.FieldFilter("participant_ids", "array_contains", user_id))
+        .where(
+            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id),
+        )
         .stream()
     )
     active_tournaments = []
@@ -97,7 +105,9 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
     tournaments_query = (
         db.collection("tournaments")
-        .where(filter=firestore.FieldFilter("participant_ids", "array_contains", user_id))
+        .where(
+            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id),
+        )
         .stream()
     )
     past_tournaments = []
@@ -178,7 +188,9 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     group_rankings = []
     my_groups_query = (
         db.collection("groups")
-        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .where(
+            filter=firestore.FieldFilter("members", "array_contains", user_ref),
+        )
         .stream()
     )
     for group_doc in my_groups_query:
