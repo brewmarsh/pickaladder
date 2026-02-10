@@ -425,7 +425,7 @@ class MatchService:
 
             # Only include players with more than 4 games played to ensure
             # a representative leaderboard and filter inactive players.
-            if games_played > 4:
+            if games_played >= GLOBAL_LEADERBOARD_MIN_GAMES:
                 players.append(user_data)
 
         # Sort players by win percentage, then by games played
