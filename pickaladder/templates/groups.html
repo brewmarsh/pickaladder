@@ -1,20 +1,18 @@
 {% extends "layout.html" %}
 {% block title %}Groups{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Groups</h1>
-    <a href="{{ url_for('group.create_group') }}" class="btn">Create New Group</a>
+    <a href="{{ url_for('group.create_group') }}" class="btn btn-primary"> + Create Group</a>
 </div>
 
-<div class="groups-list">
-    <h3>Your Groups</h3>
+<h3>Your Groups</h3>
+<div class="groups-grid">
     {% for membership in my_groups %}
         {% set group = membership.group %}
-        <a href="{{ url_for('group.view_group', group_id=group.id) }}" class="rich-group-card">
-            <div class="rich-group-left">
-                <img src="{{ group.profilePictureUrl if group.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="Group Picture" class="group-avatar-large">
-            </div>
-            <div class="rich-group-middle">
+        <a href="{{ url_for('group.view_group', group_id=group.id) }}" class="card group-card">
+            <img src="{{ group.profilePictureUrl if group.profilePictureUrl else url_for('static', filename='user_icon.png') }}" alt="{{ group.name }}" class="group-card-img">
+            <div class="card-body">
                 <div class="group-name-bold">{{ group.name }}</div>
                 <div class="group-role text-muted">
                     {% if group.ownerRef and group.ownerRef.id == g.user['uid'] %}
@@ -24,16 +22,16 @@
                     {% endif %}
                     • {{ group.member_count }} Members
                 </div>
-            </div>
-            <div class="rich-group-right">
-                <div class="rank-badge
-                    {% if group.user_rank == 1 %}rank-1
-                    {% elif group.user_rank == 2 %}rank-2
-                    {% elif group.user_rank == 3 %}rank-3
-                    {% else %}rank-other{% endif %}">
-                    #{{ group.user_rank }}
+                <div class="group-card-stats">
+                    <div class="rank-badge
+                        {% if group.user_rank == 1 %}rank-1
+                        {% elif group.user_rank == 2 %}rank-2
+                        {% elif group.user_rank == 3 %}rank-3
+                        {% else %}rank-other{% endif %}">
+                        #{{ group.user_rank }}
+                    </div>
+                    <div class="group-record">{{ group.user_record }}</div>
                 </div>
-                <div class="group-record">{{ group.user_record }}</div>
             </div>
         </a>
     {% else %}

@@ -30,6 +30,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.fill("input[name='password']", "password")
         page.click("input[value='Login']")
 
+    page.click("#edit-profile-toggle")
     expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(
         timeout=10000
     )
@@ -56,6 +57,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("input[name='password']", "MyPassword123")
     page.click("input[value='Login']")
 
+    page.click("#edit-profile-toggle")
     expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(
         timeout=10000
     )

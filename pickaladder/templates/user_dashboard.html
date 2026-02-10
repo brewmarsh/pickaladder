@@ -33,32 +33,34 @@
     {% endif %}
 
     <div class="hero-stats-card">
-        <button id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</button>
+        <a href="javascript:void(0)" id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</a>
         <div class="hero-left-panel">
-            <img id="hero-profile-img" src="{{ user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl">
-            <div class="hero-name-and-edit">
-                <h2 id="hero-username-text">{{ user.name if user.name else user.username }}</h2>
+            {# Resolved: Use the container pattern from main for better image fitting #}
+            <div class="profile-picture-container avatar-xl">
+                <img id="hero-profile-img" src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture">
+            </div>
+        </div>
+        <div class="hero-middle-panel text-center">
+            <h2 id="hero-username-text" class="mb-2">{{ user.name if user.name else user.username }}</h2>
+            <div id="vanity-stats-container" class="vanity-stats-container justify-content-center gap-4">
+                <div class="vanity-stat">
+                    <div class="stat-value fs-3 fw-bold">{{ stats.total_games }}</div>
+                    <div class="stat-label text-muted small">Matches</div>
+                </div>
+                <div class="vanity-stat">
+                    <div class="stat-value fs-3 fw-bold">{{ stats.win_rate | round | int }}%</div>
+                    <div class="stat-label text-muted small">Win %</div>
+                </div>
+                <div class="vanity-stat">
+                    <div
+                        class="stat-value fs-3 fw-bold {{ 'text-volt' if stats.streak_type == 'W' else 'text-danger' if stats.streak_type == 'L' else '' }}">
+                        {{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}
+                    </div>
+                    <div class="stat-label text-muted small">Streak</div>
+                </div>
             </div>
         </div>
         <div class="hero-right-panel">
-            <div id="vanity-stats-container" class="vanity-stats-container">
-                <div class="vanity-stat">
-                    <div class="stat-value">{{ stats.total_games }}</div>
-                    <div class="stat-label text-muted">Total Matches</div>
-                </div>
-                <div class="vanity-stat">
-                    <div class="stat-value">{{ stats.win_rate | round | int }}%</div>
-                    <div class="stat-label text-muted">Win %</div>
-                </div>
-                <div class="vanity-stat">
-                    {# Resolved Conflict: Combine HEAD variable logic with Main's color coding #}
-                    <div
-                        class="stat-value {{ 'text-volt' if stats.streak_type == 'W' else 'text-danger' if stats.streak_type == 'L' else '' }}">
-                        {{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}
-                    </div>
-                    <div class="stat-label text-muted">Current Streak</div>
-                </div>
-            </div>
             <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
         </div>
     </div>
@@ -71,44 +73,72 @@
                     <h3>Recent Activity</h3>
                 </div>
                 <div id="latest-games-feed">
-                    {% for match in matches %}
-                    <div class="game-card {{ 'game-won' if match.user_result == 'win' else 'game-lost' }}">
-                        <div class="game-date">
-                            {% if match.date and match.date != 'N/A' %}
-                            {{ match.date if match.date is string else match.date.strftime('%b %d, %Y') }}
-                            {% else %}
-                            Date N/A
-                            {% endif %}
-                        </div>
-                        <div class="game-opponent">
-                            {% if match.match_type == 'doubles' %}
-                            {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
-                            {% if in_team1 %}
-                            {% set partner = match.player1[1] if match.player1[0].id == user.uid else match.player1[0]
-                            %}
-                            {% set opponent_name = match.team2_name %}
-                            {% else %}
-                            {% set partner = match.player2[1] if match.player2[0].id == user.uid else match.player2[0]
-                            %}
-                            {% set opponent_name = match.team1_name %}
-                            {% endif %}
-                            (You & {{ partner.username }}) vs {{ opponent_name }}
-                            {% else %}
-                            {% set is_p1 = match.player1.id == user.uid %}
-                            {% set opponent = match.player2 if is_p1 else match.player1 %}
-                            You vs {{ opponent.username }}
-                            {% endif %}
-                        </div>
-                        <div class="game-score">
-                            {{ match.player1_score }} - {{ match.player2_score }}
-                            {% if match.tournament_name %}
-                            <div class="badge badge-tournament">🏆 {{ match.tournament_name }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
+                    {% if matches %}
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Matchup</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for match in matches %}
+                            <tr>
+                                <td class="text-muted">
+                                    {% if match.date and match.date != 'N/A' %}
+                                    {{ match.date if match.date is string else match.date.strftime('%b %d') }}
+                                    {% else %}
+                                    Date N/A
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if match.match_type == 'doubles' %}
+                                        {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
+                                        {% if in_team1 %}
+                                            {% set partner = match.player1[1] if match.player1[0].id == user.uid else match.player1[0] %}
+                                            {% set opponent_name = match.team2_name %}
+                                            {% set user_score = match.player1_score %}
+                                            {% set opp_score = match.player2_score %}
+                                        {% else %}
+                                            {% set partner = match.player2[1] if match.player2[0].id == user.uid else match.player2[0] %}
+                                            {% set opponent_name = match.team1_name %}
+                                            {% set user_score = match.player2_score %}
+                                            {% set opp_score = match.player1_score %}
+                                        {% endif %}
+                                        <strong>You & {{ partner.username }}</strong> <span class="text-muted">vs</span> {{ opponent_name }}
+                                    {% else %}
+                                        {% set is_p1 = match.player1.id == user.uid %}
+                                        {% if is_p1 %}
+                                            {% set opponent = match.player2 %}
+                                            {% set user_score = match.player1_score %}
+                                            {% set opp_score = match.player2_score %}
+                                        {% else %}
+                                            {% set opponent = match.player1 %}
+                                            {% set user_score = match.player2_score %}
+                                            {% set opp_score = match.player1_score %}
+                                        {% endif %}
+                                        <strong>You</strong> <span class="text-muted">vs</span> {{ opponent.username }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if match.user_result == 'win' %}
+                                    <span class="badge badge-success">W</span>
+                                    {% else %}
+                                    <span class="badge badge-danger">L</span>
+                                    {% endif %}
+                                    {{ user_score }} - {{ opp_score }}
+                                    {% if match.tournament_name %}
+                                    <div class="text-muted small" style="margin-top: 4px;">🏆 {{ match.tournament_name }}</div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                     {% else %}
                     <p>No recent games to display.</p>
-                    {% endfor %}
+                    {% endif %}
                 </div>
             </div>
         </div>

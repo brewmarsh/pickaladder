@@ -50,5 +50,8 @@ MIGRATION_NAME = "migration_name"
 RECENT_MATCHES_LIMIT = 5
 HOT_STREAK_THRESHOLD = 3
 
+# Leaderboard-related constants
+GLOBAL_LEADERBOARD_MIN_GAMES = 5
+
 # Email-related constants
 SMTP_AUTH_ERROR_CODE = 534

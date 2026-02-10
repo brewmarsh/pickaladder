@@ -1,23 +1,74 @@
 {% extends "layout.html" %}
 {% block title %}Community Hub{% endblock %}
 {% block content %}
-<div class="page-header header-with-button">
-    <h1>Community Hub</h1>
-    <button id="invite-friend-btn" class="btn" data-csrf="{{ csrf_token() }}">Invite a Friend</button>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Community Hub</h1>
+    <button id="invite-friend-btn" class="btn btn-primary w-auto" data-csrf="{{ csrf_token() }}">Invite a Friend</button>
 </div>
 <div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
 
-<form method="get" action="{{ url_for('user.view_community') }}" class="search-form" style="margin-bottom: 30px;">
-    <div class="form-group" style="display: flex; gap: 10px;">
-        <input type="text" name="search" placeholder="Search by username, name, or email" value="{{ search_term }}"
-            style="flex-grow: 1;">
-        <input type="submit" value="Search" class="btn btn-primary">
-        {% if search_term %}
-        <a href="{{ url_for('user.view_community') }}" class="btn">Clear</a>
-        {% endif %}
+{# 1. INCOMING REQUESTS - High Visibility Notification #}
+{% if incoming_requests %}
+<div class="card card-notification incoming-requests-section" style="margin-bottom: 40px;">
+    <h3>Pending Friend Requests <span class="badge badge-volt">{{ incoming_requests|length }}</span></h3>
+    <div class="table-container">
+        <table class="table-standard responsive-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in incoming_requests %}
+                <tr>
+                    <td data-label="Username">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
+                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
+                        </div>
+                    </td>
+                    <td data-label="Actions" style="text-align: right;">
+                        <form action="{{ url_for('user.accept_request', requester_id=request.id) }}" method="post"
+                            style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success">Accept</button>
+                        </form>
+                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post"
+                            style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Are you sure you want to decline this friend request?');">Decline</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-</form>
+</div>
+{% else %}
+<div class="card" style="text-align: center; margin-bottom: 40px;">
+    <p class="text-muted">No new friend requests.</p>
+</div>
+{% endif %}
 
+{# 2. SEARCH BAR #}
+<div class="mx-auto mb-4" style="max-width: 600px;">
+    <form method="get" action="{{ url_for('user.view_community') }}" class="search-form">
+        <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Search by username, name, or email" value="{{ search_term }}">
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-primary">🔍</button>
+                {% if search_term %}
+                <a href="{{ url_for('user.view_community') }}" class="btn btn-secondary">Clear</a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+{# 3. TOURNAMENT INVITES #}
 {% if pending_tournament_invites %}
 <div class="card tournament-invites-section" style="margin-bottom: 40px; border-left: 6px solid var(--primary-brand);">
     <h3>Tournament Invites</h3>
@@ -42,12 +93,13 @@
                         <form action="{{ url_for('tournament.accept_invite', tournament_id=invite.id) }}" method="post"
                             style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn">Accept</button>
+                            <button type="submit" class="btn btn-volt btn-sm">Accept</button>
                         </form>
                         <form action="{{ url_for('tournament.decline_invite', tournament_id=invite.id) }}" method="post"
                             style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-danger">Decline</button>
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Are you sure you want to decline this tournament invite?');">Decline</button>
                         </form>
                     </td>
                 </tr>
@@ -55,84 +107,6 @@
             </tbody>
         </table>
     </div>
-</div>
-{% endif %}
-
-{% if incoming_requests or outgoing_requests %}
-<div class="card requests-section" style="margin-bottom: 40px;">
-    <h3>Friend Requests</h3>
-    {% if incoming_requests %}
-    <h4>Received</h4>
-    <div class="table-container">
-        <table class="table-standard responsive-table">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th style="text-align: right;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for request in incoming_requests %}
-                <tr>
-                    <td data-label="Username">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
-                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
-                        </div>
-                    </td>
-                    <td data-label="Actions" style="text-align: right;">
-                        <form action="{{ url_for('user.accept_request', requester_id=request.id) }}" method="post"
-                            style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn">Accept</button>
-                        </form>
-                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post"
-                            style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-outline-danger"
-                                onclick="return confirm('Are you sure you want to decline this friend request?');">Decline</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-
-    {% if outgoing_requests %}
-    <h4 style="margin-top: 20px;">Sent</h4>
-    <div class="table-container">
-        <table class="table-standard responsive-table">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th style="text-align: right;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for request in outgoing_requests %}
-                <tr>
-                    <td data-label="Username">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
-                            <a href="{{ url_for('user.view_user', user_id=request.id) }}">{{ request.username }}</a>
-                        </div>
-                    </td>
-                    <td data-label="Actions" style="text-align: right;">
-                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post"
-                            style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-outline-danger"
-                                onclick="return confirm('Are you sure you want to cancel this friend request?');">Cancel</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
 </div>
 {% endif %}
 
@@ -243,6 +217,44 @@
     <p>No public groups found.</p>
     {% endif %}
 </div>
+
+{# 4. SENT REQUESTS #}
+{% if outgoing_requests %}
+<div class="card requests-section" style="margin-top: 40px;">
+    <h3>Sent Friend Requests</h3>
+    <div class="table-container">
+        <table class="table-standard responsive-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in outgoing_requests %}
+                <tr>
+                    <td data-label="User">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="{{ request | avatar_url }}" alt="{{ request.username }}" class="avatar avatar-md">
+                            <a href="{{ url_for('user.view_user', user_id=request.id) }}"><strong>{{ request | smart_display_name }}</strong></a>
+                        </div>
+                    </td>
+                    <td data-label="Actions" style="text-align: right;">
+                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Are you sure you want to cancel this friend request?');">Cancel</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<p class="text-muted" style="margin-top: 20px;">You haven't sent any requests yet. Use the search bar to find friends!</p>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

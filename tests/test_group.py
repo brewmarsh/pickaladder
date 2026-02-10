@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 from io import BytesIO
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 # Pre-emptive imports to ensure patch targets exist.
@@ -31,9 +32,6 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_utils": patch(
                 "pickaladder.group.utils.firestore", new=self.mock_firestore_service
             ),
-            "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
-            ),
             "firestore_stats": patch(
                 "pickaladder.group.services.stats.firestore",
                 new=self.mock_firestore_service,
@@ -41,6 +39,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_leaderboard": patch(
                 "pickaladder.group.services.leaderboard.firestore",
                 new=self.mock_firestore_service,
+            ),
+            "firestore_app": patch(
+                "pickaladder.firestore", new=self.mock_firestore_service
             ),
             "firestore_group_service": patch(
                 "pickaladder.group.services.group_service.firestore",
@@ -280,6 +281,37 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", response.get_json())
+
+    def test_view_groups(self) -> None:
+        """Test the view_groups route renders correctly."""
+        self._set_session_user()
+
+        # Mock GroupService.get_user_groups return value
+        mock_owner = MagicMock()
+        mock_owner.id = MOCK_USER_ID
+        mock_group: dict[str, Any] = {
+            "id": "group1",
+            "name": "Test Group",
+            "profilePictureUrl": None,
+            "member_count": 5,
+            "user_rank": 1,
+            "user_record": "10-2",
+            "ownerRef": mock_owner,
+        }
+
+        with patch(
+            "pickaladder.group.services.group_service.GroupService.get_user_groups",
+            return_value=[{"group": mock_group}],
+        ):
+            response = self.client.get("/group/", headers=self._get_auth_headers())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Groups</h1>", response.data)
+        self.assertIn(
+            b"d-flex justify-content-between align-items-center mb-4", response.data
+        )
+        self.assertIn(b"btn btn-primary", response.data)
+        self.assertIn(b"+ Create Group", response.data)
 
     def test_view_group(self) -> None:
         """Test the view_group route and eligible friends logic."""
