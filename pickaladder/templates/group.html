@@ -3,7 +3,8 @@
 {% block content %}
 <div class="card hero-stats-card">
     {% if group.ownerRef.id == current_user_id %}
-    <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="btn-edit-gear">⚙️</a>
+    <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="btn-edit-gear"
+        data-testid="group-settings-btn">⚙️</a>
     {% endif %}
 
     <div class="hero-left-panel">
