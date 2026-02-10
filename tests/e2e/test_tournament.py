@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from playwright.sync_api import Page, expect
@@ -62,7 +63,12 @@ def test_tournament_flow(
     ).set({"status": "accepted"})
 
     page.reload()
-    page.screenshot(path="/home/jules/verification/tournament_invite.png")
+    # Create the directory safely in the current workspace
+    verify_dir = "verification"
+    os.makedirs(verify_dir, exist_ok=True)
+
+    # Save with a relative path
+    page.screenshot(path=os.path.join(verify_dir, "tournament_invite.png"))
     expect(page.locator("select[name='user_id']")).to_contain_text("friend_user")
 
     # 3. Check Directions button
