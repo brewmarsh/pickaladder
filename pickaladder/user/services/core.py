@@ -9,7 +9,6 @@ from firebase_admin import auth, storage
 from flask import current_app
 from werkzeug.utils import secure_filename
 
-from pickaladder.user.services import firestore as service_firestore
 from pickaladder.utils import send_email
 
 from ..helpers import smart_display_name as _smart_display_name
@@ -47,12 +46,14 @@ def get_all_users(
     db: Client, exclude_ids: list[str] | None = None, limit: int = 20
 ) -> list[dict[str, Any]]:
     """Fetch a list of users, excluding given IDs, sorted by date."""
+    from firebase_admin import firestore
+
     if exclude_ids is None:
         exclude_ids = []
 
     users_query = (
         db.collection("users")
-        .order_by("createdAt", direction=service_firestore.Query.DESCENDING)
+        .order_by("createdAt", direction=firestore.Query.DESCENDING)
         .limit(limit + len(exclude_ids))  # Fetch extra in case we exclude users
         .stream()
     )
@@ -92,7 +93,7 @@ def process_profile_update(
     if new_username != current_user_data.get("username"):
         existing_user = (
             db.collection("users")
-            .where(filter=service_firestore.FieldFilter("username", "==", new_username))
+            .where("username", "==", new_username)
             .limit(1)
             .stream()
         )
@@ -141,12 +142,8 @@ def search_users(
     """Search for users and return their friend status with the current user."""
     query: Any = db.collection("users")
     if search_term:
-        query = query.where(
-            filter=service_firestore.FieldFilter("username", ">=", search_term)
-        ).where(
-            filter=service_firestore.FieldFilter(
-                "username", "<=", search_term + "\uf8ff"
-            )
+        query = query.where("username", ">=", search_term).where(
+            "username", "<=", search_term + "\uf8ff"
         )
 
     all_users_docs = [
@@ -173,11 +170,13 @@ def search_users(
 
 def create_invite_token(db: Client, user_id: str) -> str:
     """Generate and store a unique invite token."""
+    from firebase_admin import firestore
+
     token = secrets.token_urlsafe(16)
     db.collection("invites").document(token).set(
         {
             "userId": user_id,
-            "createdAt": service_firestore.SERVER_TIMESTAMP,
+            "createdAt": firestore.SERVER_TIMESTAMP,
             "used": False,
         }
     )

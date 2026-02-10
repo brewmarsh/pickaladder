@@ -103,6 +103,9 @@ from .match_stats import (
     _process_h2h_match as _process_h2h_match,
 )
 from .match_stats import (
+    calculate_current_streak as _calculate_current_streak,
+)
+from .match_stats import (
     calculate_stats as _calculate_stats,
 )
 from .match_stats import (
@@ -113,6 +116,9 @@ from .match_stats import (
 )
 from .match_stats import (
     get_h2h_stats as _get_h2h_stats,
+)
+from .match_stats import (
+    get_recent_opponents as _get_recent_opponents,
 )
 from .match_stats import (
     get_user_matches as _get_user_matches,
@@ -185,9 +191,11 @@ class UserService:
     format_matches_for_dashboard = staticmethod(_format_matches_for_dashboard)
     _get_user_match_won_lost = staticmethod(_get_user_match_won_lost)
     _calculate_streak = staticmethod(_calculate_streak)
+    calculate_current_streak = staticmethod(_calculate_current_streak)
     calculate_stats = staticmethod(_calculate_stats)
     _process_h2h_match = staticmethod(_process_h2h_match)
     get_h2h_stats = staticmethod(_get_h2h_stats)
+    get_recent_opponents = staticmethod(_get_recent_opponents)
     accept_friend_request = staticmethod(_accept_friend_request)
     cancel_friend_request = staticmethod(_cancel_friend_request)
     get_group_rankings = staticmethod(_get_group_rankings)

@@ -200,7 +200,7 @@ def record_match() -> Any:
         form.player1.data = user_id
         form.group_id.data = group_id
         form.tournament_id.data = tournament_id
-        opponent_id = request.args.get("opponent")
+        opponent_id = request.args.get("opponent") or request.args.get("opponent_id")
         if opponent_id:
             form.player2.data = opponent_id
         user_ref = db.collection("users").document(user_id)

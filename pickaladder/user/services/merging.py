@@ -11,13 +11,12 @@ if TYPE_CHECKING:
 
 def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> bool:
     """Check for 'ghost' user with the given email and merge their data."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
 
     try:
         query = (
             db.collection("users")
-            .where(filter=firestore.FieldFilter("email", "==", email.lower()))
-            .where(filter=firestore.FieldFilter("is_ghost", "==", True))
+            .where("email", "==", email.lower())
+            .where("is_ghost", "==", True)
             .limit(1)
         )
 
@@ -67,15 +66,10 @@ def _migrate_singles_matches(
     db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update singles matches where the user is player 1 or 2."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
 
     match_updates: dict[str, dict[str, Any]] = {}
     for field in ["player1Ref", "player2Ref"]:
-        matches = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter(field, "==", ghost_ref))
-            .stream()
-        )
+        matches = db.collection("matches").where(field, "==", ghost_ref).stream()
         for match in matches:
             if match.id not in match_updates:
                 match_updates[match.id] = {"ref": match.reference, "data": {}}
@@ -90,14 +84,11 @@ def _migrate_doubles_matches(
 ) -> None:
     """Update doubles matches where the user is in a team array."""
     from pickaladder.teams.services import TeamService  # noqa: PLC0415
-    from pickaladder.user.services import firestore  # noqa: PLC0415
 
     match_updates: dict[str, dict[str, Any]] = {}
     for field in ["team1", "team2"]:
         matches = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter(field, "array_contains", ghost_ref))
-            .stream()
+            db.collection("matches").where(field, "array_contains", ghost_ref).stream()
         )
         for match in matches:
             if match.id not in match_updates:
@@ -140,12 +131,9 @@ def _migrate_groups(
     db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update group memberships."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
 
     groups = (
-        db.collection("groups")
-        .where(filter=firestore.FieldFilter("members", "array_contains", ghost_ref))
-        .stream()
+        db.collection("groups").where("members", "array_contains", ghost_ref).stream()
     )
     for group in groups:
         g_data = group.to_dict()
@@ -161,15 +149,10 @@ def _migrate_tournaments(
     db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update tournament participant lists and IDs."""
-    from pickaladder.user.services import firestore  # noqa: PLC0415
 
     tournaments = (
         db.collection("tournaments")
-        .where(
-            filter=firestore.FieldFilter(
-                "participant_ids", "array_contains", ghost_ref.id
-            )
-        )
+        .where("participant_ids", "array_contains", ghost_ref.id)
         .stream()
     )
 
