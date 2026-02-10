@@ -1,18 +1,10 @@
 {% extends "layout.html" %}
 {% block title %}Community Hub{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4 page-header-actions">
-    <h1>Community Hub</h1>
-    <button id="invite-friend-btn" class="btn btn-primary btn-action" data-csrf="{{ csrf_token() }}">
-        <i class="fas fa-user-plus"></i> Invite Friend
-    </button>
-</div>
-<div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
-
-{# 1. INCOMING REQUESTS - High Visibility Notification #}
-{% if incoming_requests %}
+{# 1. PENDING REQUESTS - High Visibility Notification #}
+{% if pending_friend_requests %}
 <div class="card card-notification incoming-requests-section" style="margin-bottom: 40px;">
-    <h3>Pending Friend Requests <span class="badge badge-volt">{{ incoming_requests|length }}</span></h3>
+    <h3>Pending Friend Requests <span class="badge badge-volt">{{ pending_friend_requests|length }}</span></h3>
     <div class="table-container">
         <table class="table-standard responsive-table">
             <thead>
@@ -22,7 +14,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for request in incoming_requests %}
+                {% for request in pending_friend_requests %}
                 <tr>
                     <td data-label="Username">
                         <div style="display: flex; align-items: center; gap: 10px;">
@@ -37,17 +29,19 @@
                         </div>
                     </td>
                     <td data-label="Actions" style="text-align: right;">
-                        <form action="{{ url_for('user.accept_request', requester_id=request.id) }}" method="post"
-                            style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-success">Accept</button>
-                        </form>
-                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post"
-                            style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-outline-danger"
-                                onclick="return confirm('Are you sure you want to decline this friend request?');">Decline</button>
-                        </form>
+                        <div class="d-flex flex-wrap gap-2 justify-content-end">
+                            <form action="{{ url_for('user.accept_request', requester_id=request.id) }}" method="post"
+                                style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-success w-auto">Accept</button>
+                            </form>
+                            <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post"
+                                style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-danger w-auto"
+                                    onclick="return confirm('Are you sure you want to decline this friend request?');">Decline</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -55,9 +49,15 @@
         </table>
     </div>
 </div>
-{% else %}
-<p class="text-muted text-center mb-4">No new requests.</p>
 {% endif %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 page-header-actions">
+    <h1>Community Hub</h1>
+    <button id="invite-friend-btn" class="btn btn-primary btn-action w-auto" data-csrf="{{ csrf_token() }}">
+        <i class="fas fa-user-plus"></i> Invite Friend
+    </button>
+</div>
+<div id="invite-success-message" class="alert alert-success" style="display: none;"></div>
 
 {# 2. SEARCH BAR #}
 <div class="mx-auto mb-4" style="max-width: 600px;">

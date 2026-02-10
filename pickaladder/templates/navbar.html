@@ -84,7 +84,12 @@
         <div id="myLinks" class="mobile-nav d-lg-none">
             {% if g.user %}
             <a href="{{ url_for('user.dashboard') }}" class="mobile-nav-link"><i class="fas fa-home me-2"></i> Dashboard</a>
-            <a href="{{ url_for('user.view_community') }}" class="mobile-nav-link"><i class="fas fa-users me-2"></i> Community</a>
+            <a href="{{ url_for('user.view_community') }}" class="mobile-nav-link" style="position: relative;">
+                <i class="fas fa-users me-2"></i> Community
+                {% if incoming_requests_count > 0 %}
+                <span class="notification-badge" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%);">{{ incoming_requests_count }}</span>
+                {% endif %}
+            </a>
             <a href="{{ url_for('group.view_groups') }}" class="mobile-nav-link"><i class="fas fa-layer-group me-2"></i> Groups</a>
             <a href="{{ url_for('tournament.list_tournaments') }}" class="mobile-nav-link"><i class="fas fa-trophy me-2"></i> Tournaments</a>
             <a href="{{ url_for('match.leaderboard') }}" class="mobile-nav-link"><i class="fas fa-chart-line me-2"></i> Leaderboard</a>

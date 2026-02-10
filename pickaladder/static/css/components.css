@@ -1,6 +1,7 @@
 /* --- 0. Layout Utilities --- */
 .w-auto { width: auto !important; }
 .mx-auto { margin-left: auto !important; margin-right: auto !important; }
+.gap-2 { gap: 0.5rem !important; }
 .gap-4 { gap: 1.5rem !important; }
 .justify-content-center { justify-content: center !important; }
 .d-none { display: none !important; }
@@ -234,6 +235,21 @@
         display: none;
     }
 
+    .responsive-table td[data-label="Actions"] {
+        display: block !important;
+        text-align: right !important;
+        padding-left: 15px !important;
+        height: auto !important;
+    }
+
+    .responsive-table td[data-label="Actions"]::before {
+        position: static !important;
+        display: block !important;
+        margin-bottom: 10px !important;
+        text-align: left !important;
+        width: 100% !important;
+    }
+
     /* Hero Card Mobile Stacking */
     .hero-stats-card {
         flex-direction: column;
@@ -324,6 +340,24 @@
 /* Match History Badges */
 .badge-won { background-color: var(--success-color); color: white; }
 .badge-lost { background-color: var(--text-secondary); color: white; }
+
+.notification-badge {
+    position: absolute;
+    top: -8px;
+    right: -12px;
+    background-color: var(--accent-color);
+    color: var(--text-primary);
+    border-radius: 50%;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    border: 1px solid var(--primary-color);
+    padding: 2px;
+}
 
 /* Settings Icon */
 .btn-edit-gear {
@@ -436,22 +470,33 @@
 .input-group {
     display: flex;
     width: 100%;
+    align-items: stretch;
 }
 
-.input-group .form-control {
+.input-group .form-control,
+.input-group input[type="text"] {
     flex: 1 1 auto;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    margin-bottom: 0 !important;
+    height: auto;
 }
 
 .input-group-append {
     display: flex;
 }
 
-.input-group-append .btn {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    width: auto;
+.input-group-append .btn,
+.input-group-append button {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    width: auto !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 }
 
 /* Page Header Standardization */
