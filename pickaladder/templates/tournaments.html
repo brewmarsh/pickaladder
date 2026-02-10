@@ -3,9 +3,11 @@
 {% block title %}Tournaments{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0">Tournaments</h1>
-    <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary w-auto">Create Tournament</a>
+<div class="d-flex justify-content-between align-items-center mb-4 page-header-actions">
+    <h1>Tournaments</h1>
+    <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary btn-action">
+        <i class="fas fa-trophy"></i> Create Tournament
+    </a>
 </div>
 
 {% if tournaments %}

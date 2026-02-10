@@ -71,7 +71,7 @@
                 </button>
             </div>
         </nav>
-        <div id="mobile-nav" class="mobile-nav">
+        <div id="myLinks" class="mobile-nav">
             {% if g.user %}
             <a href="{{ url_for('user.dashboard') }}" class="mobile-nav-link"><i class="fas fa-home me-2"></i> Dashboard</a>
             <a href="{{ url_for('user.view_community') }}" class="mobile-nav-link"><i class="fas fa-users me-2"></i> Community</a>
