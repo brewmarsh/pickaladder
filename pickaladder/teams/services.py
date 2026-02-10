@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
+from google.cloud.firestore_v1.field_path import FieldPath
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
@@ -134,7 +135,25 @@ class TeamService:
         team_data = team.to_dict() or {}
         team_data["id"] = team.id
 
-        # Fetch members' data
+        # Decomposed calls with efficient data passing
+        members = TeamService._fetch_team_members(db, team_data)
+        recent_matches = TeamService._fetch_team_matches(db, team_id)
+        stats = TeamService._calculate_team_stats(team_id, team_data, recent_matches)
+
+        return {
+            "team": team_data,
+            "members": members,
+            "recent_matches": recent_matches,
+            "win_percentage": stats.get("win_percentage", 0),
+            "streak": stats.get("streak", 0),
+            "streak_type": stats.get("streak_type"),
+        }
+
+    @staticmethod
+    def _fetch_team_members(
+        db: Client, team_data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """Fetch member data from team references."""
         member_refs = team_data.get("members", [])
         members = []
         if member_refs:
@@ -145,8 +164,11 @@ class TeamService:
                     data = shot.to_dict() or {}
                     data["id"] = shot.id
                     members.append(data)
+        return members
 
-        # Fetch recent matches involving this team
+    @staticmethod
+    def _fetch_team_matches(db: Client, team_id: str) -> list[dict[str, Any]]:
+        """Fetch recent matches and opponent details for a team."""
         matches_ref = db.collection("matches")
         query1 = (
             matches_ref.where(filter=firestore.FieldFilter("team1Id", "==", team_id))
@@ -192,7 +214,7 @@ class TeamService:
                     db.collection("teams")
                     .where(
                         filter=firestore.FieldFilter(
-                            firestore.FieldPath.document_id(), "in", chunk
+                            FieldPath.document_id(), "in", chunk
                         )
                     )
                     .stream()
@@ -219,7 +241,13 @@ class TeamService:
 
             recent_matches.append(match_data)
 
-        # Calculate aggregate stats
+        return recent_matches
+
+    @staticmethod
+    def _calculate_team_stats(
+        team_id: str, team_data: dict[str, Any], matches: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Calculate win percentage and streak information."""
         stats = team_data.get("stats", {})
         wins = stats.get("wins", 0)
         losses = stats.get("losses", 0)
@@ -229,8 +257,8 @@ class TeamService:
         # Calculate streak from sorted matches (newest to oldest)
         streak = 0
         streak_type = None
-        if recent_matches:
-            last_match = recent_matches[0]
+        if matches:
+            last_match = matches[0]
             winner = last_match.get("winner")
             is_team1 = last_match.get("team1Id") == team_id
             if (winner == "team1" and is_team1) or (winner == "team2" and not is_team1):
@@ -238,7 +266,7 @@ class TeamService:
             else:
                 streak_type = "L"
 
-            for match in recent_matches:
+            for match in matches:
                 winner = match.get("winner")
                 is_team1 = match.get("team1Id") == team_id
                 current_match_type = (
@@ -253,9 +281,8 @@ class TeamService:
                     break
 
         return {
-            "team": team_data,
-            "members": members,
-            "recent_matches": recent_matches,
+            "wins": wins,
+            "losses": losses,
             "win_percentage": win_percentage,
             "streak": streak,
             "streak_type": streak_type,
