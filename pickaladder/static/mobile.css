@@ -196,4 +196,52 @@
         padding: 1px 6px;
         font-size: 0.8rem;
     }
+
+    /* Improved Responsive Table for Mobile (Card View) */
+    .responsive-table td {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 10px 15px !important;
+    }
+
+    .responsive-table td::before {
+        position: static !important;
+        width: auto !important;
+        margin-right: 10px !important;
+        padding-right: 0 !important;
+        font-weight: 700 !important;
+    }
+
+    /* Leaderboard Rank Badges for Mobile Accessibility */
+    .responsive-table td[data-label="Rank"].rank-1,
+    .responsive-table td[data-label="Rank"].rank-2,
+    .responsive-table td[data-label="Rank"].rank-3 {
+        background-color: #111827 !important;
+        padding: 12px 15px !important;
+        border-radius: 8px 8px 0 0;
+        border-bottom: none !important;
+    }
+
+    .responsive-table td[data-label="Rank"].rank-1 { color: #FFD700 !important; }
+    .responsive-table td[data-label="Rank"].rank-2 { color: #C0C0C0 !important; }
+    .responsive-table td[data-label="Rank"].rank-3 { color: #CD7F32 !important; }
+
+    .responsive-table td[data-label="Rank"].rank-1::before,
+    .responsive-table td[data-label="Rank"].rank-2::before,
+    .responsive-table td[data-label="Rank"].rank-3::before {
+        color: #FFFFFF !important;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+
+    /* Ensure Labels are Bold and Distinct */
+    .responsive-table td[data-label="Win Percentage"]::before,
+    .responsive-table td[data-label="Games Played"]::before {
+        color: var(--text-secondary) !important;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
 }
