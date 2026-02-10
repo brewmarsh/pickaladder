@@ -22,22 +22,27 @@ def test_tournament_flow(
         page.fill("input[name='email']", "admin@example.com")
         page.fill("input[name='password']", "password")
         page.fill("input[name='name']", "Admin User")
-        page.click("input[value='Create Admin']")
+        with page.expect_navigation():
+            page.click("input[value='Create Admin']")
         page.wait_for_url("**/auth/login")
 
     page.wait_for_selector("input[name='email']")
     page.fill("input[name='email']", "admin@example.com")
     page.fill("input[name='password']", "password")
-    page.click(".btn:has-text('Login')")
+    with page.expect_navigation():
+        page.click(".btn:has-text('Login')")
 
     # 2. Create a Tournament
-    page.click("text=Tournaments")
-    page.click("text=Create Tournament")
+    with page.expect_navigation():
+        page.click("text=Tournaments")
+    with page.expect_navigation():
+        page.click("text=Create Tournament")
     page.fill("input[name='name']", "Winter Open")
     page.fill("input[name='date']", "2026-12-01")
     page.fill("input[name='location']", "Central Park")
     page.select_option("select[name='match_type']", value="singles")
-    page.click("button:has-text('Create Tournament')")
+    with page.expect_navigation():
+        page.click("button:has-text('Create Tournament')")
 
     expect(page.locator("h2")).to_contain_text("Winter Open")
     expect(page.locator(".badge-warning", has_text="Active")).to_be_visible()
@@ -68,7 +73,8 @@ def test_tournament_flow(
     )
 
     # 4. Complete Tournament (as owner)
-    page.click("text=Complete Tournament")
+    with page.expect_navigation():
+        page.click("text=Complete Tournament")
 
     expect(page.locator(".badge-success", has_text="Completed")).to_be_visible()
     # Podium is only shown if there are matches, but we verified the flow works.
