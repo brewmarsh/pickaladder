@@ -217,7 +217,10 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 
 def get_user_profile_data(
-    db: Client, current_user_id: str, target_user_id: str
+    db: Client,
+    current_user_id: str,
+    target_user_id: str,
+    matches: list[Any] | None = None,
 ) -> dict[str, Any] | None:
     """Fetch all data for a user's public profile."""
     from .core import get_user_by_id
@@ -241,7 +244,8 @@ def get_user_profile_data(
     if current_user_id != target_user_id:
         h2h_stats = get_h2h_stats(db, current_user_id, target_user_id)
 
-    matches = get_user_matches(db, target_user_id)
+    if matches is None:
+        matches = get_user_matches(db, target_user_id)
     stats = calculate_stats(matches, target_user_id)
     display_items_docs = [m["doc"] for m in stats["processed_matches"][:20]]
     matches_data = format_matches_for_dashboard(db, display_items_docs, target_user_id)
