@@ -1,7 +1,8 @@
-
 import os
+
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import expect
+
 
 @pytest.fixture
 def seeded_data(mock_db):
@@ -17,7 +18,7 @@ def seeded_data(mock_db):
         "name": "Test User",
         "dark_mode": False,
         "isAdmin": True,
-        "createdAt": "2023-01-01T00:00:00"
+        "createdAt": "2023-01-01T00:00:00",
     }
     mock_db.collection("users").document(user_id).set(user_data)
 
@@ -29,16 +30,18 @@ def seeded_data(mock_db):
         "ownerRef": mock_db.collection("users").document(user_id),
         "isPublic": True,
         "member_count": 5,
-        "members": [mock_db.collection("users").document(user_id)]
+        "members": [mock_db.collection("users").document(user_id)],
     }
     mock_db.collection("groups").document(group_id).set(group_data)
 
     # Membership
-    mock_db.collection("memberships").add({
-        "groupRef": mock_db.collection("groups").document(group_id),
-        "userRef": mock_db.collection("users").document(user_id),
-        "role": "owner"
-    })
+    mock_db.collection("memberships").add(
+        {
+            "groupRef": mock_db.collection("groups").document(group_id),
+            "userRef": mock_db.collection("users").document(user_id),
+            "role": "owner",
+        }
+    )
 
     # Create a tournament
     tournament_id = "tourney1"
@@ -47,11 +50,12 @@ def seeded_data(mock_db):
         "date": "2023-07-01",
         "location": "Central Park",
         "matchType": "doubles",
-        "ownerRef": mock_db.collection("users").document(user_id)
+        "ownerRef": mock_db.collection("users").document(user_id),
     }
     mock_db.collection("tournaments").document(tournament_id).set(tournament_data)
 
     return user_id
+
 
 def test_mobile_layout(page_with_firebase, app_server, seeded_data):
     page = page_with_firebase
