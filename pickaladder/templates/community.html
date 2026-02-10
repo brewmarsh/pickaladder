@@ -161,7 +161,7 @@
     {% if friends %}
     <div class="friend-grid">
         {% for friend in friends %}
-        <div class="friend-card card-action">
+        <div class="friend-card card-action" data-testid="friend-card-{{ friend.username }}">
             <a href="{{ url_for('user.view_user', user_id=friend.id) }}" class="friend-card-link">
                 <div class="friend-card-content">
                     <img src="{{ friend | avatar_url }}" alt="{% if friend.username.startswith('ghost_') %}{{ friend.email or 'Invited User (Pending)' }}{% else %}{{ friend.username }}{% endif %}" class="avatar avatar-lg">

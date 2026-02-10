@@ -16,7 +16,7 @@
         {{ form.hidden_tag() }}
         <div class="form-group">
             {{ form.email.label }}
-            {{ form.email(class="form-control", autocomplete="email") }}
+            {{ form.email(class="form-control", autocomplete="email", data_testid="login-email") }}
         </div>
         <div class="form-group">
             {{ form.password.label }}
@@ -26,7 +26,7 @@
             {{ form.remember(class="form-check-input") }}
             {{ form.remember.label(class="form-check-label") }}
         </div>
-        {{ form.submit(class="btn") }}
+        {{ form.submit(class="btn", data_testid="login-submit") }}
     </form>
     <div class="or-separator">OR</div>
     <button id="google-signin-btn" class="btn btn-google">Sign in with Google</button>
