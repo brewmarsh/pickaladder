@@ -144,6 +144,10 @@ class MockSentinel:
         self.values = values
         self.op = op
 
+    def __iter__(self) -> Any:
+        """Make sentinel iterable for logic that expects a list."""
+        return iter(self.values)
+
 
 def mock_array_union(values: list[Any]) -> MockSentinel:
     """Mock ArrayUnion."""
@@ -341,6 +345,13 @@ def app_server(
     p7 = patch.object(
         firebase_admin.firestore, "SERVER_TIMESTAMP", "2023-01-01T00:00:00"
     )
+    p8 = patch.object(
+        firebase_admin.firestore, "ArrayUnion", side_effect=mock_array_union
+    )
+    p9 = patch.object(
+        firebase_admin.firestore, "ArrayRemove", side_effect=mock_array_remove
+    )
+    p10 = patch.object(firebase_admin.firestore, "FieldFilter", MockFieldFilter)
 
     p1.start()
     p2.start()
@@ -349,6 +360,9 @@ def app_server(
     p5.start()
     p6.start()
     p7.start()
+    p8.start()
+    p9.start()
+    p10.start()
 
     os.environ["SECRET_KEY"] = "dev"  # nosec
     os.environ["MAIL_USERNAME"] = "test"  # nosec
@@ -375,6 +389,9 @@ def app_server(
     p5.stop()
     p6.stop()
     p7.stop()
+    p8.stop()
+    p9.stop()
+    p10.stop()
 
 
 @pytest.fixture
