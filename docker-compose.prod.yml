@@ -8,6 +8,8 @@ services:
       - /root/serviceAccountKey.json:/app/serviceAccountKey.json:ro
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json
+      - APP_VERSION=${APP_VERSION}
+      - GITHUB_SHA=${GITHUB_SHA}
     # The following file must exist on the production server for the container to start.
     # It contains all the necessary environment variables for the application.
     env_file:
