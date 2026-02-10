@@ -10,6 +10,21 @@ jobs:
   quality-gate:
     name: Quality Gate
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -19,11 +34,32 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Install Dependencies
-        run: uv sync
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: uv pip install -r requirements.txt -r requirements-test.txt coverage --system
+
+      - name: Install Playwright
+        run: uv pip install playwright pytest-playwright --system
 
       - name: Install Playwright Browsers
+        env:
+          UV_SYSTEM_PYTHON: 1
         run: uv run --no-project playwright install --with-deps
 
+      - name: Enable uuid-ossp extension
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+          PGPASSWORD=postgres psql -h localhost -U postgres -p 5432 -d postgres -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+
       - name: Run Tests
+        env:
+          DB_HOST: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+          UV_SYSTEM_PYTHON: 1
         run: uv run --no-project python -m pytest
