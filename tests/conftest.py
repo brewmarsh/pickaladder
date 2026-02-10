@@ -61,3 +61,15 @@ def mock_db_auth() -> Iterator[unittest.mock.MagicMock]:
     mock_auth = MockFirestoreBuilder.patch_db_auth()
     with unittest.mock.patch("firebase_admin.auth", new=mock_auth):
         yield mock_auth
+
+
+@pytest.fixture
+def browser_context_args(browser_context_args: dict[str, Any]) -> dict[str, Any]:
+    """Enforce desktop viewport for E2E tests."""
+    return {
+        **browser_context_args,
+        "viewport": {
+            "width": 1920,
+            "height": 1080,
+        },
+    }
