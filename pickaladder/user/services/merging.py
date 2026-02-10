@@ -16,8 +16,8 @@ def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> bool:
     try:
         query = (
             db.collection("users")
-            .where(filter=firestore.FieldFilter("email", "==", email.lower()))
-            .where(filter=firestore.FieldFilter("is_ghost", "==", True))
+            .where("email", "==", email.lower())
+            .where("is_ghost", "==", True)
             .limit(1)
         )
 
@@ -73,7 +73,7 @@ def _migrate_singles_matches(
     for field in ["player1Ref", "player2Ref"]:
         matches = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter(field, "==", ghost_ref))
+            .where(field, "==", ghost_ref)
             .stream()
         )
         for match in matches:
@@ -96,7 +96,7 @@ def _migrate_doubles_matches(
     for field in ["team1", "team2"]:
         matches = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter(field, "array_contains", ghost_ref))
+            .where(field, "array_contains", ghost_ref)
             .stream()
         )
         for match in matches:
@@ -144,7 +144,7 @@ def _migrate_groups(
 
     groups = (
         db.collection("groups")
-        .where(filter=firestore.FieldFilter("members", "array_contains", ghost_ref))
+        .where("members", "array_contains", ghost_ref)
         .stream()
     )
     for group in groups:
@@ -166,10 +166,8 @@ def _migrate_tournaments(
     tournaments = (
         db.collection("tournaments")
         .where(
-            filter=firestore.FieldFilter(
                 "participant_ids", "array_contains", ghost_ref.id
             )
-        )
         .stream()
     )
 

@@ -22,7 +22,7 @@ def check_username_availability(db: Client, username: str) -> bool:
     """Check if a username is available."""
     users_ref = db.collection("users")
     existing_user = (
-        users_ref.where(filter=firestore.FieldFilter("username", "==", username))
+        users_ref.where("username", "==", username)
         .limit(1)
         .stream()
     )

@@ -14,9 +14,7 @@ def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
     user_ref = db.collection("users").document(user_id)
     groups_query = (
         db.collection("groups")
-        .where(
-            filter=service_firestore.FieldFilter("members", "array_contains", user_ref)
-        )
+        .where("members", "array_contains", user_ref)
         .stream()
     )
     groups = []
@@ -36,10 +34,8 @@ def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, A
         tournaments_query = (
             db.collection("tournaments")
             .where(
-                filter=service_firestore.FieldFilter(
                     "participant_ids", "array_contains", user_id
                 )
-            )
             .stream()
         )
 
@@ -68,10 +64,8 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     tournaments_query = (
         db.collection("tournaments")
         .where(
-            filter=service_firestore.FieldFilter(
                 "participant_ids", "array_contains", user_id
             )
-        )
         .stream()
     )
     active_tournaments = []
@@ -108,10 +102,8 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     tournaments_query = (
         db.collection("tournaments")
         .where(
-            filter=service_firestore.FieldFilter(
                 "participant_ids", "array_contains", user_id
             )
-        )
         .stream()
     )
     past_tournaments = []
@@ -145,7 +137,7 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     # Query for public groups
     public_groups_query = (
         db.collection("groups")
-        .where(filter=service_firestore.FieldFilter("is_public", "==", True))
+        .where("is_public", "==", True)
         .order_by("createdAt", direction=service_firestore.Query.DESCENDING)
         .limit(limit)
     )
@@ -192,9 +184,7 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     group_rankings = []
     my_groups_query = (
         db.collection("groups")
-        .where(
-            filter=service_firestore.FieldFilter("members", "array_contains", user_ref)
-        )
+        .where("members", "array_contains", user_ref)
         .stream()
     )
     for group_doc in my_groups_query:

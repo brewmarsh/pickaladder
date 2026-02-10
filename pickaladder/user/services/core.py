@@ -92,7 +92,7 @@ def process_profile_update(
     if new_username != current_user_data.get("username"):
         existing_user = (
             db.collection("users")
-            .where(filter=service_firestore.FieldFilter("username", "==", new_username))
+            .where("username", "==", new_username)
             .limit(1)
             .stream()
         )
@@ -141,13 +141,9 @@ def search_users(
     """Search for users and return their friend status with the current user."""
     query: Any = db.collection("users")
     if search_term:
-        query = query.where(
-            filter=service_firestore.FieldFilter("username", ">=", search_term)
-        ).where(
-            filter=service_firestore.FieldFilter(
+        query = query.where("username", ">=", search_term).where(
                 "username", "<=", search_term + "\uf8ff"
             )
-        )
 
     all_users_docs = [
         doc for doc in query.limit(20).stream() if doc.id != current_user_id

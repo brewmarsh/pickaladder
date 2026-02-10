@@ -56,9 +56,7 @@ class UserService:
     ) -> list[User]:
         """Fetch a user's friends."""
         user_ref = db.collection("users").document(user_id)
-        query = user_ref.collection("friends").where(
-            filter=firestore.FieldFilter("status", "==", "accepted")
-        )
+        query = user_ref.collection("friends").where("status", "==", "accepted")
         if limit:
             query = query.limit(limit)
 
@@ -85,22 +83,22 @@ class UserService:
         user_ref = db.collection("users").document(user_id)
         matches_as_p1 = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
+            .where("player1Ref", "==", user_ref)
             .stream()
         )
         matches_as_p2 = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter("player2Ref", "==", user_ref))
+            .where("player2Ref", "==", user_ref)
             .stream()
         )
         matches_as_t1 = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter("team1", "array_contains", user_ref))
+            .where("team1", "array_contains", user_ref)
             .stream()
         )
         matches_as_t2 = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter("team2", "array_contains", user_ref))
+            .where("team2", "array_contains", user_ref)
             .stream()
         )
 
@@ -124,8 +122,8 @@ class UserService:
         try:
             query = (
                 db.collection("users")
-                .where(filter=firestore.FieldFilter("email", "==", email.lower()))
-                .where(filter=firestore.FieldFilter("is_ghost", "==", True))
+                .where("email", "==", email.lower())
+                .where("is_ghost", "==", True)
                 .limit(1)
             )
 
@@ -179,7 +177,7 @@ class UserService:
         for field in ["player1Ref", "player2Ref"]:
             matches = (
                 db.collection("matches")
-                .where(filter=firestore.FieldFilter(field, "==", ghost_ref))
+                .where(field, "==", ghost_ref)
                 .stream()
             )
             for match in matches:
@@ -201,7 +199,7 @@ class UserService:
         for field in ["team1", "team2"]:
             matches = (
                 db.collection("matches")
-                .where(filter=firestore.FieldFilter(field, "array_contains", ghost_ref))
+                .where(field, "array_contains", ghost_ref)
                 .stream()
             )
             for match in matches:
@@ -249,7 +247,7 @@ class UserService:
         """Update group memberships."""
         groups = (
             db.collection("groups")
-            .where(filter=firestore.FieldFilter("members", "array_contains", ghost_ref))
+            .where("members", "array_contains", ghost_ref)
             .stream()
         )
         for group in groups:
@@ -269,10 +267,8 @@ class UserService:
         tournaments = (
             db.collection("tournaments")
             .where(
-                filter=firestore.FieldFilter(
                     "participant_ids", "array_contains", ghost_ref.id
                 )
-            )
             .stream()
         )
 
@@ -319,7 +315,7 @@ class UserService:
         user_ref = db.collection("users").document(user_id)
         groups_query = (
             db.collection("groups")
-            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+            .where("members", "array_contains", user_ref)
             .stream()
         )
         groups: list[Group] = []
@@ -360,8 +356,8 @@ class UserService:
         user_ref = db.collection("users").document(user_id)
         requests_query = (
             user_ref.collection("friends")
-            .where(filter=firestore.FieldFilter("status", "==", "pending"))
-            .where(filter=firestore.FieldFilter("initiator", "==", False))
+            .where("status", "==", "pending")
+            .where("initiator", "==", False)
             .stream()
         )
         request_ids = [doc.id for doc in requests_query]
@@ -389,10 +385,8 @@ class UserService:
             tournaments_query = (
                 db.collection("tournaments")
                 .where(
-                    filter=firestore.FieldFilter(
                         "participant_ids", "array_contains", user_id
                     )
-                )
                 .stream()
             )
 
@@ -423,10 +417,8 @@ class UserService:
         tournaments_query = (
             db.collection("tournaments")
             .where(
-                filter=firestore.FieldFilter(
                     "participant_ids", "array_contains", user_id
                 )
-            )
             .stream()
         )
         active_tournaments: list[Tournament] = []
@@ -469,10 +461,8 @@ class UserService:
         tournaments_query = (
             db.collection("tournaments")
             .where(
-                filter=firestore.FieldFilter(
                     "participant_ids", "array_contains", user_id
                 )
-            )
             .stream()
         )
         past_tournaments: list[Tournament] = []
@@ -508,8 +498,8 @@ class UserService:
         user_ref = db.collection("users").document(user_id)
         requests_query = (
             user_ref.collection("friends")
-            .where(filter=firestore.FieldFilter("status", "==", "pending"))
-            .where(filter=firestore.FieldFilter("initiator", "==", True))
+            .where("status", "==", "pending")
+            .where("initiator", "==", True)
             .stream()
         )
         request_ids = [doc.id for doc in requests_query]
@@ -746,7 +736,7 @@ class UserService:
         # Query for public groups
         public_groups_query = (
             db.collection("groups")
-            .where(filter=firestore.FieldFilter("is_public", "==", True))
+            .where("is_public", "==", True)
             .order_by("createdAt", direction=firestore.Query.DESCENDING)
             .limit(limit)
         )
@@ -1032,27 +1022,21 @@ class UserService:
         matches_ref = db.collection("matches")
 
         q1 = (
-            matches_ref.where(
-                filter=firestore.FieldFilter("player1Id", "==", user_id_1)
-            )
-            .where(filter=firestore.FieldFilter("player2Id", "==", user_id_2))
-            .where(filter=firestore.FieldFilter("status", "==", "completed"))
+            matches_ref.where("player1Id", "==", user_id_1)
+            .where("player2Id", "==", user_id_2)
+            .where("status", "==", "completed")
         )
         q2 = (
-            matches_ref.where(
-                filter=firestore.FieldFilter("player1Id", "==", user_id_2)
-            )
-            .where(filter=firestore.FieldFilter("player2Id", "==", user_id_1))
-            .where(filter=firestore.FieldFilter("status", "==", "completed"))
+            matches_ref.where("player1Id", "==", user_id_2)
+            .where("player2Id", "==", user_id_1)
+            .where("status", "==", "completed")
         )
         q3 = (
             matches_ref.where(
-                filter=firestore.FieldFilter(
                     "participants", "array_contains", user_id_1
                 )
-            )
-            .where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
-            .where(filter=firestore.FieldFilter("status", "==", "completed"))
+            .where("matchType", "==", "doubles")
+            .where("status", "==", "completed")
         )
 
         for q_obj in [q1, q2, q3]:
@@ -1131,6 +1115,84 @@ class UserService:
             return False
 
     @staticmethod
+    def calculate_current_streak(user_id: str, matches: list[Any]) -> int:
+        """Calculate current win streak for a user."""
+        processed = []
+        for m in matches:
+            if hasattr(m, "to_dict"):
+                data = m.to_dict()
+                date = data.get("matchDate") if data else None
+                if date is None:
+                    date = getattr(m, "create_time", None)
+            else:
+                data = m
+                date = data.get("matchDate") or data.get("date")
+
+            if not data:
+                continue
+
+            won, lost = UserService._get_user_match_won_lost(data, user_id)
+            processed.append({"won": won, "lost": lost, "date": date})
+
+        processed.sort(
+            key=lambda x: x["date"] if x["date"] else datetime.datetime.min, reverse=True
+        )
+
+        streak = 0
+        for m in processed:
+            if m["won"]:
+                streak += 1
+            elif m["lost"]:
+                break
+        return streak
+
+    @staticmethod
+    def get_recent_opponents(
+        db: Client, user_id: str, matches: list[Any], limit: int = 4
+    ) -> list[User]:
+        """Identify recent unique 1v1 opponents."""
+        opponent_ids: list[str] = []
+        for m in matches:
+            if hasattr(m, "to_dict"):
+                data = m.to_dict()
+            else:
+                data = m
+
+            if not data or data.get("matchType") == "doubles":
+                continue
+
+            p1_ref = data.get("player1Ref")
+            p2_ref = data.get("player2Ref")
+
+            opp_id = None
+            if p1_ref and p1_ref.id == user_id:
+                if p2_ref:
+                    opp_id = p2_ref.id
+            elif p2_ref and p2_ref.id == user_id:
+                if p1_ref:
+                    opp_id = p1_ref.id
+
+            if opp_id and opp_id not in opponent_ids:
+                opponent_ids.append(opp_id)
+                if len(opponent_ids) >= limit:
+                    break
+
+        if not opponent_ids:
+            return []
+
+        refs = [db.collection("users").document(oid) for oid in opponent_ids]
+        docs = db.get_all(refs)
+        opponents_map = {}
+        for doc in docs:
+            if doc.exists:
+                d = cast("User", doc.to_dict())
+                d["id"] = doc.id
+                d["uid"] = doc.id
+                opponents_map[doc.id] = d
+
+        return [opponents_map[oid] for oid in opponent_ids if oid in opponents_map]
+
+    @staticmethod
     def get_group_rankings(db: Client, user_id: str) -> list[UserRanking]:
         """Fetch group rankings for a user."""
         from pickaladder.group.utils import (  # noqa: PLC0415
@@ -1141,7 +1203,7 @@ class UserService:
         group_rankings: list[UserRanking] = []
         my_groups_query = (
             db.collection("groups")
-            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+            .where("members", "array_contains", user_ref)
             .stream()
         )
         for group_doc in my_groups_query:

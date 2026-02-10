@@ -67,6 +67,12 @@ def dashboard() -> Any:
 
     data = UserService.get_dashboard_data(db, user_id)
 
+    # Calculate engagement features
+    processed_matches = data.get("stats", {}).get("processed_matches", [])
+    all_match_docs = [m["doc"] for m in processed_matches]
+    current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
+    recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
+
     if form.validate_on_submit():
         UserService.update_dashboard_profile(
             db, user_id, form, form.profile_picture.data
@@ -75,7 +81,13 @@ def dashboard() -> Any:
         return redirect(url_for(".dashboard"))
 
     # FIX: Removed explicit 'user=g.user' to avoid conflict with **data['user']
-    return render_template("user_dashboard.html", form=form, **data)
+    return render_template(
+        "user_dashboard.html",
+        form=form,
+        current_streak=current_streak,
+        recent_opponents=recent_opponents,
+        **data,
+    )
 
 
 @bp.route("/<string:user_id>")

@@ -9,6 +9,8 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
+    from ..models import User
+
 
 def get_user_matches(db: Client, user_id: str) -> list[DocumentSnapshot]:
     """Fetch all matches involving a user."""
@@ -17,22 +19,22 @@ def get_user_matches(db: Client, user_id: str) -> list[DocumentSnapshot]:
     user_ref = db.collection("users").document(user_id)
     matches_as_p1 = (
         db.collection("matches")
-        .where(filter=firestore.FieldFilter("player1Ref", "==", user_ref))
+        .where("player1Ref", "==", user_ref)
         .stream()
     )
     matches_as_p2 = (
         db.collection("matches")
-        .where(filter=firestore.FieldFilter("player2Ref", "==", user_ref))
+        .where("player2Ref", "==", user_ref)
         .stream()
     )
     matches_as_t1 = (
         db.collection("matches")
-        .where(filter=firestore.FieldFilter("team1", "array_contains", user_ref))
+        .where("team1", "array_contains", user_ref)
         .stream()
     )
     matches_as_t2 = (
         db.collection("matches")
-        .where(filter=firestore.FieldFilter("team2", "array_contains", user_ref))
+        .where("team2", "array_contains", user_ref)
         .stream()
     )
 
@@ -330,6 +332,85 @@ def _get_user_match_won_lost(
     return user_won, user_lost
 
 
+def calculate_current_streak(user_id: str, matches: list[Any]) -> int:
+    """Calculate current win streak for a user."""
+    processed = []
+    for m in matches:
+        if hasattr(m, "to_dict"):
+            data = m.to_dict()
+            date = data.get("matchDate") if data else None
+            if date is None:
+                date = getattr(m, "create_time", None)
+        else:
+            data = m
+            date = data.get("matchDate") or data.get("date")
+
+        if not data:
+            continue
+
+        won, lost = _get_user_match_won_lost(data, user_id)
+        processed.append({"won": won, "lost": lost, "date": date})
+
+    processed.sort(
+        key=lambda x: x["date"] if x["date"] else datetime.datetime.min, reverse=True
+    )
+
+    streak = 0
+    for m in processed:
+        if m["won"]:
+            streak += 1
+        elif m["lost"]:
+            break
+    return streak
+
+
+def get_recent_opponents(
+    db: Client, user_id: str, matches: list[Any], limit: int = 4
+) -> list[User]:
+    """Identify recent unique 1v1 opponents."""
+    opponent_ids: list[str] = []
+    for m in matches:
+        if hasattr(m, "to_dict"):
+            data = m.to_dict()
+        else:
+            data = m
+
+        if not data or data.get("matchType") == "doubles":
+            continue
+
+        p1_ref = data.get("player1Ref")
+        p2_ref = data.get("player2Ref")
+
+        opp_id = None
+        if p1_ref and p1_ref.id == user_id:
+            if p2_ref:
+                opp_id = p2_ref.id
+        elif p2_ref and p2_ref.id == user_id:
+            if p1_ref:
+                opp_id = p1_ref.id
+
+        if opp_id and opp_id not in opponent_ids:
+            opponent_ids.append(opp_id)
+            if len(opponent_ids) >= limit:
+                break
+
+    if not opponent_ids:
+        return []
+
+    refs = [db.collection("users").document(oid) for oid in opponent_ids]
+    docs = db.get_all(refs)
+    opponents_map = {}
+    for doc in docs:
+        if doc.exists:
+            d = doc.to_dict()
+            if d:
+                d["id"] = doc.id
+                d["uid"] = doc.id
+                opponents_map[doc.id] = d
+
+    return [opponents_map[oid] for oid in opponent_ids if oid in opponents_map]
+
+
 def _calculate_streak(processed: list[dict[str, Any]]) -> tuple[int, str]:
     """Calculate current streak from processed matches."""
     if not processed:
@@ -437,21 +518,19 @@ def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] 
     matches_ref = db.collection("matches")
 
     q1 = (
-        matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_1))
-        .where(filter=firestore.FieldFilter("player2Id", "==", user_id_2))
-        .where(filter=firestore.FieldFilter("status", "==", "completed"))
+        matches_ref.where("player1Id", "==", user_id_1)
+        .where("player2Id", "==", user_id_2)
+        .where("status", "==", "completed")
     )
     q2 = (
-        matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_2))
-        .where(filter=firestore.FieldFilter("player2Id", "==", user_id_1))
-        .where(filter=firestore.FieldFilter("status", "==", "completed"))
+        matches_ref.where("player1Id", "==", user_id_2)
+        .where("player2Id", "==", user_id_1)
+        .where("status", "==", "completed")
     )
     q3 = (
-        matches_ref.where(
-            filter=firestore.FieldFilter("participants", "array_contains", user_id_1)
-        )
-        .where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
-        .where(filter=firestore.FieldFilter("status", "==", "completed"))
+        matches_ref.where("participants", "array_contains", user_id_1)
+        .where("matchType", "==", "doubles")
+        .where("status", "==", "completed")
     )
 
     for q_obj in [q1, q2, q3]:
