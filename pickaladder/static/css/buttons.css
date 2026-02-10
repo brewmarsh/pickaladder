@@ -1,0 +1,107 @@
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    text-transform: uppercase;
+    transition: all 0.2s ease-in-out;
+    text-align: center;
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+/* High-Energy Volt Button */
+.btn-volt {
+    background-color: var(--accent-color);
+    color: var(--text-primary) !important;
+    font-weight: 700;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-volt:hover {
+    filter: brightness(95%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-danger { background-color: var(--danger-color); color: white; }
+.btn-danger:hover { filter: brightness(90%); }
+.btn-warning { background-color: var(--warning-color); color: var(--text-primary); }
+.btn-warning:hover { filter: brightness(90%); }
+.btn-secondary { background-color: var(--text-secondary); color: white; }
+.btn-secondary:hover { filter: brightness(90%); }
+.btn-success { background-color: var(--success-color); color: white; }
+.btn-success:hover { filter: brightness(90%); }
+
+.btn-outline-primary {
+    background-color: transparent !important;
+    border: 1px solid var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+.btn-outline-primary:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.btn-outline-danger {
+    background-color: transparent !important;
+    border: 1px solid var(--danger-color) !important;
+    color: var(--danger-color) !important;
+}
+.btn-outline-danger:hover {
+    background-color: var(--danger-color) !important;
+    color: white !important;
+}
+
+.btn-outline-secondary {
+    background-color: transparent !important;
+    border: 1px solid var(--text-secondary) !important;
+    color: var(--text-secondary) !important;
+}
+.btn-outline-secondary:hover {
+    background-color: var(--text-secondary) !important;
+    color: white !important;
+}
+
+/* Settings Icon */
+.btn-edit-gear {
+    position: absolute !important;
+    top: 20px !important;
+    right: 20px !important;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 1.25rem;
+    transition: color 0.2s;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.btn-edit-gear:hover {
+    color: var(--primary-color);
+}
+
+.btn-action {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: auto !important;
+}
+
+.btn-action i {
+    font-size: 0.9em;
+}
