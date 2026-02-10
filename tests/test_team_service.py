@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import unittest
 from unittest.mock import MagicMock
-from mockfirestore import MockFirestore
+
 from firebase_admin import firestore
+from mockfirestore import MockFirestore
+
 from pickaladder.teams.services import TeamService
 from tests.conftest import patch_mockfirestore
+
 
 class TestTeamService(unittest.TestCase):
     def setUp(self) -> None:
@@ -35,7 +38,7 @@ class TestTeamService(unittest.TestCase):
             "name": "Team A",
             "member_ids": ["user1", "user2"],
             "members": [user1_ref, user2_ref],
-            "stats": {"wins": 10, "losses": 5, "elo": 1300}
+            "stats": {"wins": 10, "losses": 5, "elo": 1300},
         }
         team_ref.set(team_data)
 
@@ -47,14 +50,16 @@ class TestTeamService(unittest.TestCase):
         # Create a match
         match_id = "match1"
         match_ref = self.db.collection("matches").document(match_id)
-        match_ref.set({
-            "team1Id": team_id,
-            "team2Id": opponent_team_id,
-            "winner": "team1",
-            "matchDate": firestore.SERVER_TIMESTAMP,
-            "player1_score": 11,
-            "player2_score": 5
-        })
+        match_ref.set(
+            {
+                "team1Id": team_id,
+                "team2Id": opponent_team_id,
+                "winner": "team1",
+                "matchDate": firestore.SERVER_TIMESTAMP,
+                "player1_score": 11,
+                "player2_score": 5,
+            }
+        )
 
         data = TeamService.get_team_dashboard_data(self.db, team_id)
 
@@ -63,7 +68,9 @@ class TestTeamService(unittest.TestCase):
             self.assertEqual(data["team"]["name"], "Team A")
             self.assertEqual(len(data["members"]), 2)
             self.assertEqual(len(data["recent_matches"]), 1)
-            self.assertEqual(data["recent_matches"][0]["opponent"]["id"], opponent_team_id)
+            self.assertEqual(
+                data["recent_matches"][0]["opponent"]["id"], opponent_team_id
+            )
             self.assertEqual(data["win_percentage"], (10 / 15) * 100)
             self.assertEqual(data["streak"], 1)
             self.assertEqual(data["streak_type"], "W")
@@ -71,6 +78,7 @@ class TestTeamService(unittest.TestCase):
     def test_get_team_dashboard_data_not_found(self) -> None:
         data = TeamService.get_team_dashboard_data(self.db, "nonexistent")
         self.assertIsNone(data)
+
 
 if __name__ == "__main__":
     unittest.main()
