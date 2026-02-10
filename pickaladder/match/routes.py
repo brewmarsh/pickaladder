@@ -120,9 +120,13 @@ def record_match() -> Any:
             if doc.exists:
                 all_names[doc.id] = doc.to_dict().get("name", doc.id)
 
-    form.player1.choices = [(uid, all_names.get(uid, uid)) for uid in p1_candidates]
-    other_choices = [(uid, all_names.get(uid, uid)) for uid in other_candidates]
-    form.player2.choices = form.partner.choices = form.opponent2.choices = other_choices
+    form.player1.choices = [  # type: ignore[assignment]
+        (uid, str(all_names.get(uid, uid))) for uid in p1_candidates
+    ]
+    other_choices = [
+        (uid, str(all_names.get(uid, uid))) for uid in other_candidates
+    ]
+    form.player2.choices = form.partner.choices = form.opponent2.choices = other_choices  # type: ignore[assignment]
 
     if request.method == "GET":
         form.player1.data = user_id
@@ -138,8 +142,8 @@ def record_match() -> Any:
             )
 
     if form.validate_on_submit():
-        # Ensure group_id and tournament_id from request args are preserved if not in form data
-        # especially relevant for JSON submissions that might omit them
+        # Ensure group_id and tournament_id from request args are preserved
+        # if not in form data, especially relevant for JSON submissions.
         data = form.data
         if not data.get("group_id"):
             data["group_id"] = group_id

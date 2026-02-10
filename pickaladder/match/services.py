@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from pickaladder.user import User
     from pickaladder.user.models import UserSession
 
-    from .forms import MatchForm
     from .models import Match
 
 
