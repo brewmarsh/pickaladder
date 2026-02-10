@@ -1,36 +1,34 @@
 {% extends "layout.html" %}
 {% block title %}{{ tournament.name }}{% endblock %}
 {% block content %}
-<div class="hero-stats-card">
+<div class="card hero-stats-card">
+    {% if is_owner %}
+        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" title="Edit Tournament">⚙️</a>
+    {% endif %}
     <div class="hero-left-panel">
-        <div class="hero-name-and-edit">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <h2 style="margin: 0;">{{ tournament.name }}</h2>
-                {% if is_owner %}
-                    <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn btn-outline btn-sm">Edit Details</a>
-                {% endif %}
+        <h2 class="mb-2">{{ tournament.name }}</h2>
+        <p class="text-muted mb-2">{{ tournament.date_display or tournament.date }}</p>
+        <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}">
+            {{ tournament.status or 'Active' }}
+        </span>
+    </div>
+    <div class="hero-middle-panel text-center">
+        <div class="vanity-stats-container justify-content-center gap-4">
+            <div class="vanity-stat">
+                <div class="stat-value fs-3 fw-bold">{{ participants|length }}</div>
+                <div class="stat-label text-muted small">Participants</div>
             </div>
-            <p class="text-muted">{{ tournament.date_display or tournament.date }} | {{ tournament.location }}</p>
-            <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}">
-                {{ tournament.status or 'Active' }}
-            </span>
+            <div class="vanity-stat">
+                <div class="stat-value fs-3 fw-bold">{{ tournament.matchType|capitalize }}</div>
+                <div class="stat-label text-muted small">Match Type</div>
+            </div>
         </div>
     </div>
     <div class="hero-right-panel">
-        <div class="vanity-stats-container">
-            <div class="vanity-stat">
-                <div class="stat-value">{{ participants|length }}</div>
-                <div class="stat-label text-muted">Participants</div>
-            </div>
-            <div class="vanity-stat">
-                <div class="stat-value">{{ tournament.matchType|capitalize }}</div>
-                <div class="stat-label text-muted">Match Type</div>
-            </div>
-        </div>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.location|urlencode }}" target="_blank" class="btn btn-warning" style="width: auto;">📍 Directions</a>
+        <div class="d-flex flex-column gap-2 align-items-end">
+            <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.location|urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm w-auto">📍 Directions</a>
             {% if tournament.status != 'Completed' %}
-                <a href="{{ url_for('match.record_match', tournament_id=tournament.id) }}" class="btn btn-primary" style="width: auto;">Record Match</a>
+                <a href="{{ url_for('match.record_match', tournament_id=tournament.id) }}" class="btn btn-primary btn-sm w-auto">Record Match</a>
             {% endif %}
         </div>
     </div>
@@ -76,7 +74,7 @@
         <div class="card">
             <h3>Standings</h3>
             <div class="table-container">
-                <table class="table">
+                <table class="table-standard responsive-table">
                     <thead>
                         <tr>
                             <th>Rank</th>
@@ -89,11 +87,11 @@
                     <tbody>
                         {% for entry in standings %}
                         <tr class="{{ 'highlight-row' if loop.index <= 3 and tournament.status == 'Completed' }}">
-                            <td>{{ loop.index }}</td>
-                            <td>{{ entry.name }}</td>
-                            <td>{{ entry.wins }}</td>
-                            <td>{{ entry.losses }}</td>
-                            <td>
+                            <td data-label="Rank">{{ loop.index }}</td>
+                            <td data-label="{{ 'Team' if tournament.matchType == 'doubles' else 'Player' }}">{{ entry.name }}</td>
+                            <td data-label="Wins">{{ entry.wins }}</td>
+                            <td data-label="Losses">{{ entry.losses }}</td>
+                            <td data-label="Win %">
                                 {% set total = entry.wins + entry.losses %}
                                 {{ (entry.wins / total * 100)|round(1) if total > 0 else 0 }}%
                             </td>
@@ -109,7 +107,7 @@
         <div class="card" style="margin-top: 24px;">
             <h3>Participants</h3>
             <div class="table-container">
-                <table class="table">
+                <table class="table-standard responsive-table">
                     <thead>
                         <tr>
                             <th>Player</th>
@@ -120,18 +118,18 @@
                     <tbody>
                         {% for p in participants %}
                             <tr>
-                                <td>
+                                <td data-label="Player">
                                     <div style="display: flex; align-items: center; gap: 10px;">
                                         <img src="{{ p.user | avatar_url }}" alt="Avatar" class="friend-avatar" style="width: 32px; height: 32px;" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                         <span>{{ p.display_name }}</span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     <span class="badge {{ 'badge-success' if p.status == 'accepted' else 'badge-warning' if p.status == 'pending' else 'badge-info' }}">
                                         {{ 'Confirmed' if p.status == 'accepted' else 'Pending' if p.status == 'pending' else 'Invited (Email)' }}
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Action">
                                     {% if p.user.id == g.user.uid and p.status == 'pending' %}
                                         <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -151,7 +149,7 @@
         {% if is_owner %}
             {% if tournament.status != 'Completed' %}
             <div class="card" style="margin-bottom: 24px;">
-                <h4>Tournament Management</h4>
+                <h4 class="card-header">Tournament Management</h4>
                 <form action="{{ url_for('tournament.complete_tournament', tournament_id=tournament.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to complete this tournament? This will notify all participants of the final results.');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger" style="margin-top: 10px;">Complete Tournament</button>
@@ -159,9 +157,7 @@
             </div>
 
             <div class="card" style="margin-bottom: 24px;">
-                <div class="card-header" style="padding: 0; border-bottom: none; margin-bottom: 15px;">
-                    <h4 style="margin: 0;">Invite Player</h4>
-                </div>
+                <h4 class="card-header">Invite Player</h4>
                 <div class="card-body" style="padding: 0;">
                     <form action="{{ url_for('tournament.invite_player', tournament_id=tournament.id) }}" method="POST">
                         {{ invite_form.csrf_token }}
@@ -175,9 +171,7 @@
             </div>
 
             <div class="card" style="margin-bottom: 24px;">
-                <div class="card-header" style="padding: 0; border-bottom: none; margin-bottom: 15px;">
-                    <h4 style="margin: 0;">Invite Group</h4>
-                </div>
+                <h4 class="card-header">Invite Group</h4>
                 <div class="card-body" style="padding: 0;">
                     <form action="{{ url_for('tournament.invite_group', tournament_id=tournament.id) }}" method="POST">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -198,7 +192,7 @@
         {% endif %}
 
         <div class="card">
-            <h4>Quick Info</h4>
+            <h4 class="card-header">Quick Info</h4>
             <p><strong>Date:</strong> {{ tournament.date_display or tournament.date }}</p>
             <p><strong>Location:</strong> {{ tournament.location }}</p>
             <p><strong>Format:</strong> {{ tournament.matchType|capitalize }}</p>
