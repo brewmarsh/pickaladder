@@ -35,6 +35,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             "firestore": patch(
                 "pickaladder.match.routes.firestore", new=self.mock_firestore_service
             ),
+            "firestore_services": patch(
+                "pickaladder.match.services.firestore", new=self.mock_firestore_service
+            ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
@@ -108,7 +111,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
-    @patch("pickaladder.match.routes.MatchService.get_candidate_player_ids")
+    @patch("pickaladder.match.services.MatchService.get_candidate_player_ids")
     def test_record_match(self, mock_get_candidate_player_ids: MagicMock) -> None:
         """Test recording a new match."""
 

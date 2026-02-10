@@ -99,102 +99,30 @@ def record_match() -> Any:
     user_id = g.user["uid"]
     group_id = request.args.get("group_id")
     tournament_id = request.args.get("tournament_id")
-    candidate_player_ids = MatchService.get_candidate_player_ids(
+
+    # JSON handling merged into form data
+    form_data = request.get_json() if request.is_json else None
+    form = MatchForm(data=form_data)
+
+    # Populate choices for validation and UI
+    p1_candidates = MatchService.get_candidate_player_ids(
+        db, user_id, group_id, tournament_id, include_user=True
+    )
+    other_candidates = MatchService.get_candidate_player_ids(
         db, user_id, group_id, tournament_id
     )
 
-    tournament_name = None
-    if tournament_id:
-        tournament_doc = db.collection("tournaments").document(tournament_id).get()
-        if tournament_doc.exists:
-            tournament_name = tournament_doc.to_dict().get("name")
+    all_uids = p1_candidates | other_candidates
+    all_names = {}
+    if all_uids:
+        candidate_refs = [db.collection("users").document(uid) for uid in all_uids]
+        for doc in db.get_all(candidate_refs):
+            if doc.exists:
+                all_names[doc.id] = doc.to_dict().get("name", doc.id)
 
-    if request.method == "POST" and request.is_json:
-        data = request.get_json()
-        form = MatchForm(data=data)
-
-        # Security check: Ensure all selected players are valid candidates
-        selected_players: set[str | None] = {data.get("player2")}
-        if data.get("match_type") == "doubles":
-            selected_players.add(data.get("partner"))
-            selected_players.add(data.get("opponent2"))
-
-        if not all(
-            p in candidate_player_ids for p in selected_players if p is not None
-        ):
-            return (
-                jsonify({"status": "error", "message": "Invalid opponent selected."}),
-                403,
-            )
-
-        # Populate choices for validation to work
-        choices: list[tuple[str, str]] = [(p_id, "") for p_id in candidate_player_ids]
-        form.player1.choices = choices  # type: ignore[assignment]
-        form.player2.choices = choices  # type: ignore[assignment]
-        if data.get("match_type") == "doubles":
-            form.partner.choices = choices  # type: ignore[assignment]
-            form.opponent2.choices = choices  # type: ignore[assignment]
-
-        if form.validate():
-            try:
-                MatchService.process_match_submission(
-                    db, user_id, data, group_id, tournament_id
-                )
-                return jsonify({"status": "success", "message": "Match recorded."}), 200
-            except ValueError as e:
-                return jsonify({"status": "error", "message": str(e)}), 400
-            except Exception as e:
-                return jsonify({"status": "error", "message": str(e)}), 500
-        else:
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "message": "Validation failed",
-                        "errors": form.errors,
-                    }
-                ),
-                400,
-            )
-
-    # Standard GET request or form submission
-    form = MatchForm()
-
-    # Fetch and populate player choices for the form dropdowns
-    player1_candidate_ids = MatchService.get_candidate_player_ids(
-        db, user_id, group_id, tournament_id, include_user=True
-    )
-
-    player1_choices = []
-    if player1_candidate_ids:
-        candidate_refs = [
-            db.collection("users").document(uid) for uid in player1_candidate_ids
-        ]
-        users = db.get_all(candidate_refs)
-        for user_doc in users:
-            if user_doc.exists:
-                player1_choices.append(
-                    (user_doc.id, user_doc.to_dict().get("name", user_doc.id))
-                )
-
-    form.player1.choices = player1_choices  # type: ignore[assignment]
-
-    player_choices = []
-    if candidate_player_ids:
-        # Batch fetch user data for choices
-        candidate_refs = [
-            db.collection("users").document(uid) for uid in candidate_player_ids
-        ]
-        users = db.get_all(candidate_refs)
-        for user_doc in users:
-            if user_doc.exists:
-                player_choices.append(
-                    (user_doc.id, user_doc.to_dict().get("name", user_doc.id))
-                )
-
-    form.player2.choices = player_choices  # type: ignore[assignment]
-    form.partner.choices = player_choices  # type: ignore[assignment]
-    form.opponent2.choices = player_choices  # type: ignore[assignment]
+    form.player1.choices = [(uid, all_names.get(uid, uid)) for uid in p1_candidates]
+    other_choices = [(uid, all_names.get(uid, uid)) for uid in other_candidates]
+    form.player2.choices = form.partner.choices = form.opponent2.choices = other_choices
 
     if request.method == "GET":
         form.player1.data = user_id
@@ -203,39 +131,50 @@ def record_match() -> Any:
         opponent_id = request.args.get("opponent") or request.args.get("opponent_id")
         if opponent_id:
             form.player2.data = opponent_id
-        user_ref = db.collection("users").document(user_id)
-        user_snapshot = user_ref.get()
-        if user_snapshot.exists:
-            user_data = user_snapshot.to_dict()
-            last_match_type = user_data.get("lastMatchRecordedType")
-            if last_match_type:
-                form.match_type.data = last_match_type
+        user_doc = db.collection("users").document(user_id).get()
+        if user_doc.exists:
+            form.match_type.data = user_doc.to_dict().get(
+                "lastMatchRecordedType", "singles"
+            )
 
     if form.validate_on_submit():
-        player_1_id = request.form.get("player1") or user_id
-        # Use values from form or fallback to args
-        active_group_id = form.group_id.data or group_id
-        active_tournament_id = form.tournament_id.data or tournament_id
+        # Ensure group_id and tournament_id from request args are preserved if not in form data
+        # especially relevant for JSON submissions that might omit them
+        data = form.data
+        if not data.get("group_id"):
+            data["group_id"] = group_id
+        if not data.get("tournament_id"):
+            data["tournament_id"] = tournament_id
 
         try:
-            MatchService.process_match_submission(
-                db, player_1_id, form, active_group_id, active_tournament_id
-            )
+            MatchService.process_match_submission(db, data, g.user)
+            if request.is_json:
+                return jsonify({"status": "success", "message": "Match recorded."}), 200
+
             flash("Match recorded successfully.", "success")
-            if active_tournament_id:
+            active_tid = form.tournament_id.data or tournament_id
+            active_gid = form.group_id.data or group_id
+            if active_tid:
                 return redirect(
-                    url_for(
-                        "tournament.view_tournament",
-                        tournament_id=active_tournament_id,
-                    )
+                    url_for("tournament.view_tournament", tournament_id=active_tid)
                 )
-            if active_group_id:
-                return redirect(url_for("group.view_group", group_id=active_group_id))
+            if active_gid:
+                return redirect(url_for("group.view_group", group_id=active_gid))
             return redirect(url_for("user.dashboard"))
         except ValueError as e:
+            if request.is_json:
+                return jsonify({"status": "error", "message": str(e)}), 400
             flash(str(e), "danger")
         except Exception as e:
+            if request.is_json:
+                return jsonify({"status": "error", "message": str(e)}), 500
             flash(f"An unexpected error occurred: {e}", "danger")
+
+    tournament_name = None
+    if tournament_id:
+        t_doc = db.collection("tournaments").document(tournament_id).get()
+        if t_doc.exists:
+            tournament_name = t_doc.to_dict().get("name")
 
     return render_template(
         "record_match.html",
