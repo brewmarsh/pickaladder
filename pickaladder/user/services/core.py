@@ -5,7 +5,7 @@ import secrets
 import tempfile
 from typing import TYPE_CHECKING, Any, cast
 
-from firebase_admin import auth, storage
+from firebase_admin import auth, firestore, storage
 from flask import current_app
 from werkzeug.utils import secure_filename
 
@@ -46,8 +46,6 @@ def get_all_users(
     db: Client, exclude_ids: list[str] | None = None, limit: int = 20
 ) -> list[dict[str, Any]]:
     """Fetch a list of users, excluding given IDs, sorted by date."""
-    from firebase_admin import firestore
-
     if exclude_ids is None:
         exclude_ids = []
 
@@ -170,8 +168,6 @@ def search_users(
 
 def create_invite_token(db: Client, user_id: str) -> str:
     """Generate and store a unique invite token."""
-    from firebase_admin import firestore
-
     token = secrets.token_urlsafe(16)
     db.collection("invites").document(token).set(
         {

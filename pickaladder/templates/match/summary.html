@@ -1,0 +1,139 @@
+{% extends "layout.html" %}
+{% block title %}Match Summary{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="page-header text-center mb-5">
+        <h1>Match Summary</h1>
+        <p class="text-muted">{{ match.matchDate.strftime('%B %d, %Y') }}</p>
+    </div>
+
+    {% if match_type == 'doubles' %}
+    <!-- Doubles View -->
+    <div class="row justify-content-center">
+        {% if match.player1Score > match.player2Score %}
+            {% set winners = team1 %}
+            {% set losers = team2 %}
+            {% set winner_score = match.player1Score %}
+            {% set loser_score = match.player2Score %}
+        {% else %}
+            {% set winners = team2 %}
+            {% set losers = team1 %}
+            {% set winner_score = match.player2Score %}
+            {% set loser_score = match.player1Score %}
+        {% endif %}
+
+        <div class="col-md-6 mb-4">
+            <div class="card text-center h-100 border-success shadow-sm">
+                <div class="card-body">
+                    <div class="badge badge-success mb-3">Winners</div>
+                    <div class="d-flex justify-content-center gap-2 mb-3">
+                        {% for player in winners %}
+                        <img src="{{ player | avatar_url }}" alt="{{ player.name }}" class="avatar avatar-lg"
+                             onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                        {% endfor %}
+                    </div>
+                    <h3 class="mb-1">{{ winners[0].name }} & {{ winners[1].name }}</h3>
+                    <div class="score-display score-win mt-3">{{ winner_score }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="badge badge-neutral mb-3">Losers</div>
+                    <div class="d-flex justify-content-center gap-2 mb-3">
+                        {% for player in losers %}
+                        <img src="{{ player | avatar_url }}" alt="{{ player.name }}" class="avatar avatar-lg"
+                             onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                        {% endfor %}
+                    </div>
+                    <h3 class="mb-1 text-muted">{{ losers[0].name }} & {{ losers[1].name }}</h3>
+                    <div class="score-display score-loss mt-3">{{ loser_score }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-5">
+        <a href="{{ url_for('match.record_match', match_type='doubles', player1=team1[0].id, player2=team1[1].id, player3=team2[0].id, player4=team2[1].id) }}"
+           class="btn btn-volt btn-lg w-auto px-5" data-testid="rematch-btn">Rematch!</a>
+    </div>
+
+    {% else %}
+    <!-- Singles View -->
+    <div class="row justify-content-center">
+        {% if match.player1Score > match.player2Score %}
+            {% set winner = player1 %}
+            {% set winner_record = player1_record %}
+            {% set winner_score = match.player1Score %}
+            {% set loser = player2 %}
+            {% set loser_record = player2_record %}
+            {% set loser_score = match.player2Score %}
+        {% else %}
+            {% set winner = player2 %}
+            {% set winner_record = player2_record %}
+            {% set winner_score = match.player2Score %}
+            {% set loser = player1 %}
+            {% set loser_record = player1_record %}
+            {% set loser_score = match.player1Score %}
+        {% endif %}
+
+        <div class="col-md-5 mb-4">
+            <div class="card text-center h-100 border-success shadow-sm">
+                <div class="card-body">
+                    <div class="badge badge-success mb-3">Winner</div>
+                    <a href="{{ url_for('user.view_user', user_id=winner.id) if winner.id else '#' }}">
+                        <img src="{{ winner | avatar_url }}" alt="{{ winner.name }}"
+                            class="avatar avatar-xl mb-3"
+                            onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                        <h3>{{ winner.name }}</h3>
+                    </a>
+                    <p class="text-muted">Record: {{ winner_record.wins|int }} - {{ winner_record.losses|int }}</p>
+                    <div class="score-display score-win">{{ winner_score }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-center justify-content-center mb-4">
+            <div class="h2 text-muted">VS</div>
+        </div>
+
+        <div class="col-md-5 mb-4">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="badge badge-neutral mb-3">Loser</div>
+                    <a href="{{ url_for('user.view_user', user_id=loser.id) if loser.id else '#' }}">
+                        <img src="{{ loser | avatar_url }}" alt="{{ loser.name }}"
+                            class="avatar avatar-xl mb-3"
+                            onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                        <h3>{{ loser.name }}</h3>
+                    </a>
+                    <p class="text-muted">Record: {{ loser_record.wins|int }} - {{ loser_record.losses|int }}</p>
+                    <div class="score-display score-loss">{{ loser_score }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-5">
+        <a href="{{ url_for('match.record_match', match_type='singles', player1=match.player1Ref.id, player2=match.player2Ref.id) }}"
+           class="btn btn-volt btn-lg w-auto px-5">Rematch!</a>
+    </div>
+    {% endif %}
+
+    <div class="text-center mt-3">
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-outline-secondary w-auto px-5">Back to Dashboard</a>
+    </div>
+</div>
+
+<style>
+    .gap-2 { gap: 0.5rem !important; }
+    .border-success { border-color: var(--success-color) !important; border-width: 2px !important; }
+    .score-display { font-size: 3rem; }
+    @media (max-width: 768px) {
+        .col-md-2 { display: none !important; }
+        .score-display { font-size: 2.5rem; }
+    }
+</style>
+{% endblock %}

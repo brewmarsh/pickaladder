@@ -74,32 +74,18 @@
     </div>
 
     {# Jump Back In Section #}
-    {% if recent_opponents or recent_partners %}
+    {% if recent_opponents %}
     <div class="card mb-4">
         <div class="card-body">
             <h4 class="card-header" style="border-bottom: none; margin-bottom: 0; padding-left: 0;">Jump Back In</h4>
-
-            {% if recent_opponents %}
             <div class="text-muted small mb-3">Recent Opponents</div>
-            <div class="d-flex gap-3 mt-3 {% if recent_partners %}mb-4{% endif %}">
+            <div class="d-flex gap-3 mt-3">
                 {% for opponent in recent_opponents %}
                 <a href="{{ url_for('match.record_match', opponent_id=opponent.uid) }}" title="{{ opponent.name or opponent.username }}">
                     <img src="{{ opponent | avatar_url }}" alt="{{ opponent.username }}" class="avatar avatar-lg">
                 </a>
                 {% endfor %}
             </div>
-            {% endif %}
-
-            {% if recent_partners %}
-            <div class="text-muted small mb-3">Your Squad</div>
-            <div class="d-flex gap-3 mt-3">
-                {% for partner in recent_partners %}
-                <a href="{{ url_for('match.record_match', match_type='doubles', partner_id=partner.uid) }}" title="{{ partner.name or partner.username }}">
-                    <img src="{{ partner | avatar_url }}" alt="{{ partner.username }}" class="avatar avatar-lg">
-                </a>
-                {% endfor %}
-            </div>
-            {% endif %}
         </div>
     </div>
     {% endif %}

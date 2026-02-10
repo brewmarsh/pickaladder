@@ -44,13 +44,17 @@ def view_match_page(match_id: str) -> Any:
         for ref in team1_refs:
             p = ref.get()
             if p.exists:
-                team1_data.append(p.to_dict())
+                p_data = p.to_dict()
+                p_data["id"] = p.id
+                team1_data.append(p_data)
 
         team2_data = []
         for ref in team2_refs:
             p = ref.get()
             if p.exists:
-                team2_data.append(p.to_dict())
+                p_data = p.to_dict()
+                p_data["id"] = p.id
+                team2_data.append(p_data)
 
         context["team1"] = team1_data
         context["team2"] = team2_data
@@ -70,12 +74,14 @@ def view_match_page(match_id: str) -> Any:
             player1 = player1_ref.get()
             if player1.exists:
                 player1_data = player1.to_dict()
+                player1_data["id"] = player1.id
                 player1_record = MatchService.get_player_record(db, player1_ref)
 
         if player2_ref:
             player2 = player2_ref.get()
             if player2.exists:
                 player2_data = player2.to_dict()
+                player2_data["id"] = player2.id
                 player2_record = MatchService.get_player_record(db, player2_ref)
 
         context.update(
@@ -87,7 +93,7 @@ def view_match_page(match_id: str) -> Any:
             }
         )
 
-    return render_template("view_match.html", **context)
+    return render_template("match/summary.html", **context)
 
 
 # TODO: Add type hints for Agent clarity
@@ -130,18 +136,32 @@ def record_match() -> Any:
         form.player1.data = user_id
         form.group_id.data = group_id
         form.tournament_id.data = tournament_id
-        opponent_id = request.args.get("opponent") or request.args.get("opponent_id")
-        if opponent_id:
-            form.player2.data = opponent_id
 
-        partner_id = request.args.get("partner_id")
-        if partner_id:
-            form.partner.data = partner_id
-
+        # Support pre-populating multiple players (Rematch logic)
         match_type = request.args.get("match_type")
         if match_type:
             form.match_type.data = match_type
-        else:
+
+        p1 = request.args.get("player1")
+        p2 = request.args.get("player2")
+        p3 = request.args.get("player3")
+        p4 = request.args.get("player4")
+
+        if p1:
+            form.player1.data = p1
+        if p2:
+            form.partner.data = p2
+        if p3:
+            form.player2.data = p3
+        if p4:
+            form.opponent2.data = p4
+
+        # Backward compatibility for single opponent
+        opponent_id = request.args.get("opponent") or request.args.get("opponent_id")
+        if opponent_id and not p3:
+            form.player2.data = opponent_id
+
+        if not match_type:
             user_doc = db.collection("users").document(user_id).get()
             if user_doc.exists:
                 form.match_type.data = user_doc.to_dict().get(

@@ -1,17 +1,7 @@
 name: Run Tests
 
 on:
-  push:
-    branches: [ "main", "beta" ]
-  pull_request:
-    branches: [ "main", "beta" ]
-  workflow_dispatch:
   workflow_call:
-
-# Cancel in-progress runs on the same branch
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   test:
