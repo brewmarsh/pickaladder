@@ -79,10 +79,10 @@
             <a href="{{ url_for('tournament.list_tournaments') }}" class="mobile-nav-link"><i class="fas fa-trophy me-2"></i> Tournaments</a>
             <a href="{{ url_for('match.leaderboard') }}" class="mobile-nav-link"><i class="fas fa-chart-line me-2"></i> Leaderboard</a>
             <div class="mobile-nav-divider"></div>
-            <a href="{{ url_for('user.view_user', user_id=g.user['uid']) }}" class="mobile-nav-link">👤 My Profile</a>
-            <a href="{{ url_for('auth.change_password') }}" class="mobile-nav-link">🔑 Settings</a>
+            <a href="{{ url_for('user.view_user', user_id=g.user['uid']) }}" class="mobile-nav-link"><i class="fas fa-user me-2"></i> My Profile</a>
+            <a href="{{ url_for('auth.change_password') }}" class="mobile-nav-link"><i class="fas fa-cog me-2"></i> Settings</a>
             {% if session.get('is_admin') %}
-            <a href="{{ url_for('admin.admin') }}" class="mobile-nav-link">👑 Admin</a>
+            <a href="{{ url_for('admin.admin') }}" class="mobile-nav-link"><i class="fas fa-user-shield me-2"></i> Admin</a>
             {% endif %}
             <a href="{{ url_for('auth.logout') }}" class="mobile-nav-link"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
             {% else %}

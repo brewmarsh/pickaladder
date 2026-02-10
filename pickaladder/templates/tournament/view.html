@@ -87,7 +87,7 @@
                     <tbody>
                         {% for entry in standings %}
                         <tr class="{{ 'highlight-row' if loop.index <= 3 and tournament.status == 'Completed' }}">
-                            <td data-label="Rank">{{ loop.index }}</td>
+                            <td data-label="Rank"><span class="mobile-rank-badge">{{ loop.index }}</span></td>
                             <td data-label="{{ 'Team' if tournament.matchType == 'doubles' else 'Player' }}">{{ entry.name }}</td>
                             <td data-label="Wins">{{ entry.wins }}</td>
                             <td data-label="Losses">{{ entry.losses }}</td>
