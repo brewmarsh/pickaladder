@@ -5,6 +5,7 @@ import unittest
 from typing import Any
 from unittest.mock import MagicMock
 
+from pickaladder.user.services import UserService
 from pickaladder.user.services.match_stats import (
     calculate_current_streak,
     get_recent_opponents,
@@ -142,6 +143,49 @@ class TestEngagementFeatures(unittest.TestCase):
         self.assertEqual(opponents[1]["id"], "user3")
         # Check if uid is set as requested
         self.assertEqual(opponents[0]["uid"], "user2")
+
+    def test_get_recent_partners(self) -> None:
+        matches: list[dict[str, Any]] = [
+            {
+                "matchType": "doubles",
+                "team1": [MagicMock(id="user1"), MagicMock(id="user2")],
+                "team2": [MagicMock(id="user3"), MagicMock(id="user4")],
+            },  # Partner: user2
+            {
+                "matchType": "doubles",
+                "team1": [MagicMock(id="user5"), MagicMock(id="user6")],
+                "team2": [MagicMock(id="user7"), MagicMock(id="user1")],
+            },  # Partner: user7
+            {
+                "matchType": "singles",
+                "player1Ref": MagicMock(id="user1"),
+                "player2Ref": MagicMock(id="user2"),
+            },  # Ignored
+            {
+                "matchType": "doubles",
+                "team1": [MagicMock(id="user1"), MagicMock(id="user2")],
+                "team2": [MagicMock(id="user5"), MagicMock(id="user6")],
+            },  # Duplicate user2
+        ]
+
+        mock_doc2 = MagicMock()
+        mock_doc2.exists = True
+        mock_doc2.id = "user2"
+        mock_doc2.to_dict.return_value = {"username": "user2"}
+
+        mock_doc7 = MagicMock()
+        mock_doc7.exists = True
+        mock_doc7.id = "user7"
+        mock_doc7.to_dict.return_value = {"username": "user7"}
+
+        self.db.get_all.return_value = [mock_doc2, mock_doc7]
+
+        partners = UserService.get_recent_partners(self.db, self.user_id, matches, limit=4)
+
+        self.assertEqual(len(partners), 2)
+        self.assertEqual(partners[0]["id"], "user2")
+        self.assertEqual(partners[1]["id"], "user7")
+        self.assertEqual(partners[0]["uid"], "user2")
 
 
 if __name__ == "__main__":

@@ -403,6 +403,65 @@ def get_recent_opponents(
     ]
 
 
+def get_recent_partners(
+    db: Client, user_id: str, matches: list[Any], limit: int = 4
+) -> list[User]:
+    """Identify recent unique doubles partners."""
+    partner_ids: list[str] = []
+    for m in matches:
+        if hasattr(m, "to_dict"):
+            data = m.to_dict()
+        else:
+            data = m
+
+        if not data or data.get("matchType") != "doubles":
+            continue
+
+        team1_refs = data.get("team1", [])
+        team2_refs = data.get("team2", [])
+
+        partner_id = None
+        # Check if user is in team 1
+        if any(getattr(ref, "id", None) == user_id for ref in team1_refs):
+            # Teammate is the other person in team 1
+            for ref in team1_refs:
+                rid = getattr(ref, "id", None)
+                if rid and rid != user_id:
+                    partner_id = rid
+                    break
+        # Check if user is in team 2
+        elif any(getattr(ref, "id", None) == user_id for ref in team2_refs):
+            # Teammate is the other person in team 2
+            for ref in team2_refs:
+                rid = getattr(ref, "id", None)
+                if rid and rid != user_id:
+                    partner_id = rid
+                    break
+
+        if partner_id and partner_id not in partner_ids:
+            partner_ids.append(partner_id)
+            if len(partner_ids) >= limit:
+                break
+
+    if not partner_ids:
+        return []
+
+    refs = [db.collection("users").document(pid) for pid in partner_ids]
+    docs = db.get_all(refs)
+    partners_map = {}
+    for doc in docs:
+        if doc.exists:
+            d = doc.to_dict()
+            if d:
+                d["id"] = doc.id
+                d["uid"] = doc.id
+                partners_map[doc.id] = d
+
+    return [
+        cast("User", partners_map[pid]) for pid in partner_ids if pid in partners_map
+    ]
+
+
 def _calculate_streak(processed: list[dict[str, Any]]) -> tuple[int, str]:
     """Calculate current streak from processed matches."""
     if not processed:
