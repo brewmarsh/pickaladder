@@ -24,14 +24,13 @@ from . import match as match_bp
 from . import teams as teams_bp
 from . import tournament as tournament_bp
 from . import user as user_bp
-from .extensions import csrf, login_manager, mail
 from .context_processors import (
     inject_firebase_api_key,
     inject_global_context,
     inject_incoming_requests_count,
     inject_pending_tournament_invites,
 )
-from .user import UserService
+from .extensions import csrf, login_manager, mail
 from .user.helpers import smart_display_name, wrap_user
 
 APP_PASSWORD_LENGTH = 16
