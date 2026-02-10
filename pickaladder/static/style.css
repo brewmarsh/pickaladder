@@ -38,3 +38,8 @@
 .text-left { text-align: left !important; }
 .text-center { text-align: center !important; }
 .text-right { text-align: right !important; }
+
+/* Text Utilities */
+.fw-bold { font-weight: var(--fw-bold) !important; }
+.text-primary { color: var(--primary-color) !important; }
+.text-muted { color: var(--text-secondary) !important; }

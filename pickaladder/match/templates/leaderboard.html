@@ -3,13 +3,13 @@
 {% block content %}
     <div class="page-header">
         <h1>Global Leaderboard</h1>
-        <p>Top Players by Win Percentage</p>
+        <p class="subtitle">Top Players by Win Percentage</p>
     </div>
     <div class="table-container">
-        <table class="table table-standard responsive-table">
+        <table class="table-standard responsive-table">
             <thead>
                 <tr>
-                    <th>Rank</th>
+                    <th class="text-center">Rank</th>
                     <th>Player</th>
                     <th class="text-right">Win Percentage</th>
                     <th class="text-right">Games Played</th>
@@ -22,7 +22,7 @@
                         <span class="mobile-rank-badge">{{ loop.index }}</span>
                     </td>
                     <td data-label="Player"><a href="{{ url_for('user.view_user', user_id=player.id) }}">{{ player.name }}</a></td>
-                    <td data-label="Win Percentage" class="text-right">{{ "%.1f"|format(player.win_percentage|float) }}%</td>
+                    <td data-label="Win Percentage" class="text-right">{{ "%.1f"|format(player.win_percentage) }}%</td>
                     <td data-label="Games Played" class="text-right">{{ player.games_played }}</td>
                 </tr>
                 {% endfor %}
@@ -33,7 +33,7 @@
         <h2>Latest Games</h2>
     </div>
     <div class="table-container">
-        <table class="table table-standard">
+        <table class="table-standard">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -46,7 +46,7 @@
                 <tr>
                     <td data-label="Date">{{ match.date }}</td>
                     <td data-label="Matchup">
-                        <strong class="winner">{{ match.winner_name }}</strong> vs {{ match.loser_name }}
+                        <span class="fw-bold text-primary">{{ match.winner_name }}</span> <span class="text-muted">vs</span> {{ match.loser_name }}
                     </td>
                     <td data-label="Result">
                         {{ match.winner_score }} - {{ match.loser_score }}

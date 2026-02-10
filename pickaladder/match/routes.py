@@ -227,7 +227,8 @@ def leaderboard() -> Any:
     """
     db = firestore.client()
     try:
-        players = MatchService.get_leaderboard_data(db)
+        # Exclude players with 0 games and sort by Win Percentage
+        players = MatchService.get_leaderboard_data(db, min_games=1)
     except Exception as e:
         players = []
         flash(f"An error occurred while fetching the leaderboard: {e}", "danger")
