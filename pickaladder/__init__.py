@@ -7,7 +7,6 @@ import os
 import sys
 import uuid
 from contextlib import suppress
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -25,13 +24,16 @@ from . import match as match_bp
 from . import teams as teams_bp
 from . import tournament as tournament_bp
 from . import user as user_bp
+from .context_processors import (
+    inject_firebase_api_key,
+    inject_global_context,
+    inject_incoming_requests_count,
+    inject_pending_tournament_invites,
+)
 from .extensions import csrf, login_manager, mail
-from .user import UserService
 from .user.helpers import smart_display_name, wrap_user
 
 APP_PASSWORD_LENGTH = 16
-VERSION_THRESHOLD = 10
-VERSION_SHORT_LENGTH = 7
 
 
 class UUIDConverter(BaseConverter):
@@ -168,82 +170,10 @@ def _register_blueprints(app: Flask) -> None:
 
 def _register_context_processors(app: Flask) -> None:
     """Register all context processors for the application."""
-
-    @app.context_processor
-    def inject_global_context() -> dict[str, Any]:
-        """Injects global context variables into templates."""
-        # Detect version from environment variables with the following priority:
-        # 1. APP_VERSION (explicitly set)
-        # 2. GITHUB_SHA or GITHUB_RUN_NUMBER (GitHub Actions build)
-        # 3. RENDER_GIT_COMMIT or HEROKU_SLUG_COMMIT (Git Hash from Render/Heroku)
-        # 4. Fallback to "dev"
-        version = (
-            os.environ.get("APP_VERSION")
-            or os.environ.get("GITHUB_SHA")
-            or os.environ.get("GITHUB_RUN_NUMBER")
-            or os.environ.get("RENDER_GIT_COMMIT")
-            or os.environ.get("HEROKU_SLUG_COMMIT")
-        )
-
-        if not version:
-            try:
-                version_file = Path(current_app.root_path).parent / "VERSION"
-                if version_file.exists():
-                    version = version_file.read_text().strip()
-            except Exception:  # nosec B110
-                pass
-
-        if not version:
-            version = "dev"
-
-        # If it's a long git hash, shorten it
-        if len(version) > VERSION_THRESHOLD and version != "dev":
-            version = version[:VERSION_SHORT_LENGTH]
-
-        return {
-            "current_year": datetime.now().year,
-            "version": version,
-            "app_version": version,
-        }
-
-    @app.context_processor
-    def inject_incoming_requests_count() -> dict[str, Any]:
-        """Injects incoming friend requests count into the template context."""
-        if g.user:
-            try:
-                db = firestore.client()
-                pending_requests = UserService.get_user_pending_requests(
-                    db, g.user["uid"]
-                )
-                return dict(
-                    incoming_requests_count=len(pending_requests),
-                    pending_friend_requests=pending_requests,
-                )
-            except Exception as e:
-                current_app.logger.error(f"Error fetching friend requests: {e}")
-        return dict(incoming_requests_count=0, pending_friend_requests=[])
-
-    @app.context_processor
-    def inject_pending_tournament_invites() -> dict[str, Any]:
-        """Injects pending tournament invites into the template context."""
-        if g.user:
-            try:
-                db = firestore.client()
-                pending_invites = UserService.get_pending_tournament_invites(
-                    db, g.user["uid"]
-                )
-                return dict(pending_tournament_invites=pending_invites)
-            except Exception as e:
-                current_app.logger.error(f"Error fetching tournament invites: {e}")
-        return dict(pending_tournament_invites=[])
-
-    @app.context_processor
-    def inject_firebase_api_key() -> dict[str, Any]:
-        """Injects the Firebase API key into the template context."""
-        firebase_api_key = current_app.config.get(
-            "FIREBASE_API_KEY"
-        ) or current_app.config.get("GOOGLE_API_KEY")
-        return dict(firebase_api_key=firebase_api_key)
+    app.context_processor(inject_global_context)
+    app.context_processor(inject_incoming_requests_count)
+    app.context_processor(inject_pending_tournament_invites)
+    app.context_processor(inject_firebase_api_key)
 
 
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
