@@ -270,3 +270,10 @@ def merge_players() -> Union[str, Response]:
         return redirect(url_for("admin.merge_players"))
 
     return render_template("admin/merge_players.html", users=sorted_users)
+
+
+@bp.route("/styleguide")
+@login_required(admin_required=True)
+def styleguide() -> str:
+    """Render the design system styleguide."""
+    return render_template("admin/styleguide.html")
