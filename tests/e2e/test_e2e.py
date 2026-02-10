@@ -63,17 +63,14 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     )
 
     # 3. Add Friend (User 2 invites Admin)
-    page.click("text=Friends")
-    page.click("text=Find New Friends")
+    page.click("text=Community")
 
     page.fill("input[name='search']", "admin")
-    page.click("input[value='Search']")
+    page.click("button:has-text('🔍')")
 
     # Click Add Friend for Admin User
     page.click("button:has-text('Add Friend')")
-    expect(page.locator("button:has-text('Friend Request Sent')")).to_be_visible(
-        timeout=5000
-    )
+    expect(page.locator("button:has-text('Request Sent')")).to_be_visible(timeout=5000)
 
     # Logout User 2, Login Admin
     page.click(".dropbtn")
@@ -84,7 +81,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.click("input[value='Login']")
 
     # Accept Friend Request
-    page.click("text=Friends")
+    page.click("text=Community")
     expect(page.locator("text=user2")).to_be_visible()
     page.click("button:has-text('Accept')")
     expect(page.locator("text=user2")).to_be_visible()

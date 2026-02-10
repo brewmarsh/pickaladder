@@ -108,7 +108,7 @@ Query._compare_func = query_compare_func
 original_get_by_field_path = DocumentSnapshot._get_by_field_path
 
 
-def get_by_field_path(self, field_path: str):
+def get_by_field_path(self: DocumentSnapshot, field_path: str) -> Any:
     """Handle __name__ field path."""
     if field_path == "__name__":
         return self.id
@@ -322,22 +322,33 @@ def app_server(
     importlib.import_module("firebase_admin.firestore")
 
     p1 = patch("firebase_admin.initialize_app")
+    import firebase_admin.auth
+    import firebase_admin.firestore
 
-    mock_firestore_module = MagicMock()
-    mock_firestore_module.client.return_value = mock_db
-    mock_firestore_module.FieldFilter = MockFieldFilter
-    mock_firestore_module.ArrayRemove = MagicMock(side_effect=mock_array_remove)
-    mock_firestore_module.ArrayUnion = MagicMock(side_effect=mock_array_union)
-    mock_firestore_module.Query.DESCENDING = "DESCENDING"
-    mock_firestore_module.Query.ASCENDING = "ASCENDING"
-    mock_firestore_module.SERVER_TIMESTAMP = "2023-01-01T00:00:00"
-
-    p2 = patch("firebase_admin.firestore", new=mock_firestore_module)
-    p3 = patch("firebase_admin.auth", new=mock_auth)
+    p2 = patch.object(firebase_admin.firestore, "client", return_value=mock_db)
+    p3 = patch.object(
+        firebase_admin.auth, "create_user", side_effect=mock_auth.create_user
+    )
+    p4 = patch.object(
+        firebase_admin.auth, "verify_id_token", side_effect=mock_auth.verify_id_token
+    )
+    p5 = patch.object(firebase_admin.auth, "get_user", side_effect=mock_auth.get_user)
+    p6 = patch.object(
+        firebase_admin.auth,
+        "generate_email_verification_link",
+        side_effect=mock_auth.generate_email_verification_link,
+    )
+    p7 = patch.object(
+        firebase_admin.firestore, "SERVER_TIMESTAMP", "2023-01-01T00:00:00"
+    )
 
     p1.start()
     p2.start()
     p3.start()
+    p4.start()
+    p5.start()
+    p6.start()
+    p7.start()
 
     os.environ["SECRET_KEY"] = "dev"  # nosec
     os.environ["MAIL_USERNAME"] = "test"  # nosec
@@ -360,6 +371,10 @@ def app_server(
     p1.stop()
     p2.stop()
     p3.stop()
+    p4.stop()
+    p5.stop()
+    p6.stop()
+    p7.stop()
 
 
 @pytest.fixture
