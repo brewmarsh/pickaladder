@@ -82,13 +82,13 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # Accept Friend Request
     page.click("text=Community")
-    expect(page.locator("text=user2")).to_be_visible()
+    expect(page.locator(".incoming-requests-section", has_text="user2")).to_be_visible()
     page.click("button:has-text('Accept')")
-    expect(page.locator("text=user2")).to_be_visible()
+    expect(page.locator(".friend-card", has_text="user2")).to_be_visible()
 
     # 4. Create Group
     page.click("text=Groups")
-    page.click("text=Create New Group")
+    page.click("text=Create Group")
     page.fill("input[name='name']", "Pickleballers")
     page.fill("input[name='location']", "Test Court")
     page.click("input[value='Create Group']")
@@ -96,6 +96,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     expect(page.locator("h1")).to_contain_text("Pickleballers")
 
     # 5. Invite Friend to Group
+    page.click("summary:has-text('Manage Group & Members')")
     page.select_option("select[name='friend']", value="user2")
     page.click("input[value='Invite Friend']")
 
@@ -114,10 +115,11 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     # 6. Score Individual Game (User 2 vs Admin)
     page.goto(f"{base_url}/match/record")
     page.select_option("select[name='match_type']", value="singles")
+    page.select_option("select[name='player1']", value="user2")
     page.select_option("select[name='player2']", value="admin")
     page.fill("input[name='player1_score']", "11")
     page.fill("input[name='player2_score']", "9")
-    page.click("input[value='Record Match']")
+    page.click("button:has-text('Record Match')")
 
     # Check flash message
     expect(page.locator(".alert-success")).to_contain_text(
@@ -128,10 +130,11 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.click("text=Groups")
     page.click("text=Pickleballers")
     page.click("a:has-text('Record a Match')")
+    page.select_option("select[name='player1']", value="user2")
     page.select_option("select[name='player2']", value="admin")
     page.fill("input[name='player1_score']", "5")
     page.fill("input[name='player2_score']", "11")
-    page.click("input[value='Record Match']")
+    page.click("button:has-text('Record Match')")
 
     expect(page.locator("h1")).to_contain_text("Pickleballers")
     expect(page.locator(".alert-success")).to_contain_text(
@@ -139,11 +142,11 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     )
 
     # Check Global Leaderboard (Req: "see the leaderboard")
-    page.click("text=Global Leaderboard")
+    page.click("text=Leaderboard")
     expect(page.locator("h1")).to_contain_text("Global Leaderboard")
     # Verify players are listed
-    expect(page.locator("td", has_text="Admin User")).to_be_visible()
-    expect(page.locator("td", has_text="User Two")).to_be_visible()
+    expect(page.locator("td", has_text="Admin User").first).to_be_visible()
+    expect(page.locator("td", has_text="User Two").first).to_be_visible()
 
     # 8. Delete Group Game & 9. Delete Individual Game
     # Needs Admin access

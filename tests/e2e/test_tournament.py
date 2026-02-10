@@ -25,6 +25,7 @@ def test_tournament_flow(
         page.click("input[value='Create Admin']")
         page.wait_for_url("**/auth/login")
 
+    page.wait_for_selector("input[name='email']")
     page.fill("input[name='email']", "admin@example.com")
     page.fill("input[name='password']", "password")
     page.click(".btn:has-text('Login')")

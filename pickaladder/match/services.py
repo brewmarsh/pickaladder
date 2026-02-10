@@ -62,11 +62,15 @@ class MatchService:
         # Determine Date
         match_date_input = get_val("match_date")
         if isinstance(match_date_input, str) and match_date_input:
-            match_date = datetime.datetime.strptime(match_date_input, "%Y-%m-%d")
+            match_date = datetime.datetime.strptime(
+                match_date_input, "%Y-%m-%d"
+            ).replace(tzinfo=datetime.timezone.utc)
         elif isinstance(match_date_input, datetime.date):
-            match_date = datetime.datetime.combine(match_date_input, datetime.time.min)
+            match_date = datetime.datetime.combine(
+                match_date_input, datetime.time.min
+            ).replace(tzinfo=datetime.timezone.utc)
         else:
-            match_date = datetime.datetime.now()
+            match_date = datetime.datetime.now(datetime.timezone.utc)
 
         player1_score = int(get_val("player1_score") or 0)
         player2_score = int(get_val("player2_score") or 0)
@@ -223,7 +227,7 @@ class MatchService:
 
         Optionally restricts to a group or tournament.
         """
-        candidate_player_ids: set[str] = set()
+        candidate_player_ids: set[str] = {user_id}
 
         if tournament_id:
             # If in a tournament context, candidates are tournament participants
