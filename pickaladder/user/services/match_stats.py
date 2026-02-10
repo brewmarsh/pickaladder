@@ -14,6 +14,9 @@ if TYPE_CHECKING:
     from ..models import User
 
 
+from firebase_admin import firestore
+
+
 def get_user_matches(db: Client, user_id: str) -> list[DocumentSnapshot]:
     """Fetch all matches involving a user."""
     user_ref = db.collection("users").document(user_id)
