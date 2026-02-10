@@ -206,18 +206,21 @@ def _register_context_processors(app: Flask) -> None:
         }
 
     @app.context_processor
-    def inject_pending_friend_requests() -> dict[str, Any]:
-        """Injects pending friend requests into the template context."""
+    def inject_incoming_requests_count() -> dict[str, Any]:
+        """Injects incoming friend requests count into the template context."""
         if g.user:
             try:
                 db = firestore.client()
                 pending_requests = UserService.get_user_pending_requests(
                     db, g.user["uid"]
                 )
-                return dict(pending_friend_requests=pending_requests)
+                return dict(
+                    incoming_requests_count=len(pending_requests),
+                    pending_friend_requests=pending_requests,
+                )
             except Exception as e:
                 current_app.logger.error(f"Error fetching friend requests: {e}")
-        return dict(pending_friend_requests=[])
+        return dict(incoming_requests_count=0, pending_friend_requests=[])
 
     @app.context_processor
     def inject_pending_tournament_invites() -> dict[str, Any]:
