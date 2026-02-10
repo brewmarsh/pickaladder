@@ -244,4 +244,23 @@
         font-size: 0.75rem;
         letter-spacing: 0.05em;
     }
+
+    /* Visual Polish Upgrades */
+    h1 {
+        font-size: 1.75rem !important;
+    }
+
+    .main-content .btn {
+        width: 100% !important;
+        display: block !important;
+        margin-bottom: 12px !important;
+    }
+
+    .mobile-rank-badge {
+        background-color: #333;
+        color: #FFD700;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: bold;
+    }
 }

@@ -63,10 +63,12 @@
                                 {% for player in leaderboard %}
                                 <tr class="{{ 'bg-primary-subtle' if player.id == g.user['uid'] else '' }}">
                                     <td data-label="Rank" class="rank-cell text-center">
-                                        {% if loop.index == 1 %}🥇
-                                        {% elif loop.index == 2 %}🥈
-                                        {% elif loop.index == 3 %}🥉
-                                        {% else %}#{{ loop.index }}{% endif %}
+                                        <span class="mobile-rank-badge">
+                                            {% if loop.index == 1 %}🥇
+                                            {% elif loop.index == 2 %}🥈
+                                            {% elif loop.index == 3 %}🥉
+                                            {% else %}#{{ loop.index }}{% endif %}
+                                        </span>
                                         <span class="rank-trend">
                                             {% if player.rank_change is number and player.rank_change > 0 %}
                                             <span class="trend-up">▲</span>
@@ -129,10 +131,12 @@
                                 {% for entry in team_leaderboard %}
                                 <tr>
                                     <td data-label="Rank" class="rank-cell text-center">
-                                        {% if loop.index == 1 %}🥇
-                                        {% elif loop.index == 2 %}🥈
-                                        {% elif loop.index == 3 %}🥉
-                                        {% else %}#{{ loop.index }}{% endif %}
+                                        <span class="mobile-rank-badge">
+                                            {% if loop.index == 1 %}🥇
+                                            {% elif loop.index == 2 %}🥈
+                                            {% elif loop.index == 3 %}🥉
+                                            {% else %}#{{ loop.index }}{% endif %}
+                                        </span>
                                     </td>
                                     <td data-label="Team" class="text-left">
                                         <div class="team-members-compact">
