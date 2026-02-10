@@ -423,14 +423,15 @@ class MatchService:
             user_data["games_played"] = games_played
             user_data["win_percentage"] = win_percentage
 
-            # Only include players with at least minimum games played to ensure
+            # Only include players with more than 4 games played to ensure
             # a representative leaderboard and filter inactive players.
             if games_played >= GLOBAL_LEADERBOARD_MIN_GAMES:
                 players.append(user_data)
 
-        # Sort players by win percentage, then by wins
+        # Sort players by win percentage, then by games played
         players.sort(
-            key=lambda p: (p.get("win_percentage", 0), p.get("wins", 0)), reverse=True
+            key=lambda p: (p.get("win_percentage", 0), p.get("games_played", 0)),
+            reverse=True,
         )
         return players[:limit]
 
