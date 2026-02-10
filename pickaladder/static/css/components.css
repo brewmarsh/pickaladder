@@ -36,8 +36,43 @@
 }
 
 .btn-danger { background-color: var(--danger-color); color: white; }
+.btn-danger:hover { filter: brightness(90%); }
 .btn-warning { background-color: var(--warning-color); color: #111827; }
+.btn-warning:hover { filter: brightness(90%); }
 .btn-secondary { background-color: var(--text-secondary); color: white; }
+.btn-secondary:hover { filter: brightness(90%); }
+.btn-success { background-color: var(--success-color); color: white; }
+.btn-success:hover { filter: brightness(90%); }
+
+.btn-outline-primary {
+    background-color: transparent !important;
+    border: 1px solid var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+.btn-outline-primary:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.btn-outline-danger {
+    background-color: transparent !important;
+    border: 1px solid var(--danger-color) !important;
+    color: var(--danger-color) !important;
+}
+.btn-outline-danger:hover {
+    background-color: var(--danger-color) !important;
+    color: white !important;
+}
+
+.btn-outline-secondary {
+    background-color: transparent !important;
+    border: 1px solid var(--text-secondary) !important;
+    color: var(--text-secondary) !important;
+}
+.btn-outline-secondary:hover {
+    background-color: var(--text-secondary) !important;
+    color: white !important;
+}
 
 /* --- 1. Surface System (Cards) --- */
 .card {
@@ -51,6 +86,10 @@
     transition: box-shadow 0.2s ease;
 }
 .card:hover { box-shadow: var(--shadow-md); }
+.card-notification {
+    background-color: #eff6ff;
+    border: 1px solid var(--primary-color);
+}
 .card-compact { padding: 16px; }
 .card-header {
     background-color: transparent;
@@ -246,6 +285,41 @@
 .badge-danger  { background-color: var(--danger-color); color: white; }
 .badge-neutral { background-color: var(--bg-color); color: var(--text-secondary); border: 1px solid var(--border-color); }
 
+/* Settings Icon */
+.btn-edit-gear {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 1.25rem;
+    transition: color 0.2s;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.btn-edit-gear:hover {
+    color: var(--primary-color);
+}
+
+/* Profile Picture Fix */
+.profile-picture-container {
+    overflow: hidden;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: var(--bg-color);
+}
+
+.profile-picture-container .profile-picture {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 /* --- 5. Avatar System (Consolidated) --- */
 .profile-picture, .avatar {
     object-fit: cover;
@@ -318,6 +392,23 @@
     100% { transform: rotate(360deg); }
 }
 
+/* Typography & Utilities */
+.fs-3 { font-size: 1.75rem !important; }
+.fw-bold { font-weight: var(--fw-bold) !important; }
+.gap-4 { gap: 1.5rem !important; }
+.text-volt { color: var(--accent-color) !important; }
+
+.vanity-stats-container {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.vanity-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 @media screen and (max-width: 768px) {
     /* Merged: General mobile adjustments from HEAD */
     .card { padding: 16px; border-radius: var(--radius-md); }
@@ -331,14 +422,13 @@
         padding-top: 40px;
     }
 
+    .hero-stats-card .profile-picture-container,
     .hero-stats-card .profile-picture,
     .hero-stats-card .profile-picture-large {
         width: 120px !important;
         height: 120px !important;
         margin: 0 auto 16px auto;
         display: block;
-        object-fit: cover;
-        border-radius: 50%;
     }
 
     .leaderboard-row {
@@ -352,9 +442,17 @@
         margin-bottom: 12px;
     }
 
-    .hero-left-panel {
-        flex-direction: column;
+    .hero-left-panel, .hero-middle-panel, .hero-right-panel {
         width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .hero-right-panel {
+        margin-bottom: 0;
+    }
+
+    .vanity-stats-container {
+        gap: 1rem !important;
     }
 
     /* Prevent oversized images in cards */
@@ -448,3 +546,6 @@
     padding-top: 15px;
     margin-top: auto;
 }
+
+/* --- Utilities --- */
+.text-right { text-align: right !important; }
