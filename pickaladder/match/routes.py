@@ -133,11 +133,20 @@ def record_match() -> Any:
         opponent_id = request.args.get("opponent") or request.args.get("opponent_id")
         if opponent_id:
             form.player2.data = opponent_id
-        user_doc = db.collection("users").document(user_id).get()
-        if user_doc.exists:
-            form.match_type.data = user_doc.to_dict().get(
-                "lastMatchRecordedType", "singles"
-            )
+
+        partner_id = request.args.get("partner_id")
+        if partner_id:
+            form.partner.data = partner_id
+
+        match_type = request.args.get("match_type")
+        if match_type:
+            form.match_type.data = match_type
+        else:
+            user_doc = db.collection("users").document(user_id).get()
+            if user_doc.exists:
+                form.match_type.data = user_doc.to_dict().get(
+                    "lastMatchRecordedType", "singles"
+                )
 
     if form.validate_on_submit():
         # Ensure group_id and tournament_id from request args are preserved

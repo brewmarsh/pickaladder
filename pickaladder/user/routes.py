@@ -72,6 +72,7 @@ def dashboard() -> Any:
     all_match_docs = [m["doc"] for m in processed_matches]
     current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
     recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
+    recent_partners = UserService.get_recent_partners(db, user_id, all_match_docs)
 
     if form.validate_on_submit():
         UserService.update_dashboard_profile(
@@ -86,6 +87,7 @@ def dashboard() -> Any:
         form=form,
         current_streak=current_streak,
         recent_opponents=recent_opponents,
+        recent_partners=recent_partners,
         **data,
     )
 
