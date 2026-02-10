@@ -16,8 +16,8 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
     from pickaladder.user import User
+    from pickaladder.user.models import UserSession
 
-    from .forms import MatchForm
     from .models import Match
 
 
@@ -31,36 +31,51 @@ class MatchService:
     @staticmethod
     def process_match_submission(
         db: Client,
-        player_1_id: str,
-        data: dict[str, Any] | MatchForm,
-        group_id: str | None = None,
-        tournament_id: str | None = None,
+        form_data: dict[str, Any],
+        current_user: UserSession,
     ) -> str:
         """Process and record a match submission."""
-        user_ref = db.collection("users").document(player_1_id)
+        user_id = current_user["uid"]
+        user_ref = db.collection("users").document(user_id)
 
-        # Helper to get data from either dict or form
-        def get_val(key: str) -> Any:
-            if isinstance(data, dict):
-                return data.get(key)
-            field = getattr(data, key, None)
-            return field.data if field else None
-
-        match_type = get_val("match_type") or "singles"
+        match_type = form_data.get("match_type") or "singles"
+        p1_id = form_data.get("player1") or user_id
+        p2_id = form_data.get("player2")
+        partner_id = form_data.get("partner")
+        opponent2_id = form_data.get("opponent2")
 
         # Uniqueness check
-        p1_id = get_val("player1") or player_1_id
-        p2_id = get_val("player2")
         player_ids = [p1_id, p2_id]
         if match_type == "doubles":
-            player_ids.extend([get_val("partner"), get_val("opponent2")])
+            player_ids.extend([partner_id, opponent2_id])
 
         active_players = [p for p in player_ids if p]
         if len(active_players) != len(set(active_players)):
             raise ValueError("All players must be unique.")
 
+        # Candidate Validation
+        group_id = form_data.get("group_id")
+        tournament_id = form_data.get("tournament_id")
+
+        candidate_ids = MatchService.get_candidate_player_ids(
+            db, user_id, group_id, tournament_id
+        )
+        player1_candidates = MatchService.get_candidate_player_ids(
+            db, user_id, group_id, tournament_id, include_user=True
+        )
+
+        if p1_id not in player1_candidates:
+            raise ValueError("Invalid Team 1 Player 1 selected.")
+        if p2_id not in candidate_ids:
+            raise ValueError("Invalid Opponent 1 selected.")
+        if match_type == "doubles":
+            if partner_id not in candidate_ids:
+                raise ValueError("Invalid Partner selected.")
+            if opponent2_id not in candidate_ids:
+                raise ValueError("Invalid Opponent 2 selected.")
+
         # Determine Date
-        match_date_input = get_val("match_date")
+        match_date_input = form_data.get("match_date")
         if isinstance(match_date_input, str) and match_date_input:
             match_date = datetime.datetime.strptime(
                 match_date_input, "%Y-%m-%d"
@@ -72,8 +87,8 @@ class MatchService:
         else:
             match_date = datetime.datetime.now(datetime.timezone.utc)
 
-        player1_score = int(get_val("player1_score") or 0)
-        player2_score = int(get_val("player2_score") or 0)
+        player1_score = int(form_data.get("player1_score") or 0)
+        player2_score = int(form_data.get("player2_score") or 0)
 
         match_doc_data: dict[str, Any] = {
             "player1Score": player1_score,
@@ -84,12 +99,10 @@ class MatchService:
         }
 
         # Add IDs if present
-        gid = group_id or get_val("group_id")
-        tid = tournament_id or get_val("tournament_id")
-        if gid:
-            match_doc_data["groupId"] = gid
-        if tid:
-            match_doc_data["tournamentId"] = tid
+        if group_id:
+            match_doc_data["groupId"] = group_id
+        if tournament_id:
+            match_doc_data["tournamentId"] = tournament_id
 
         team1_ref = None
         team2_ref = None
@@ -107,10 +120,8 @@ class MatchService:
             MatchService._apply_upset_logic(match_doc_data, p1_ref, p2_ref)
 
         elif match_type == "doubles":
-            partner_id = get_val("partner")
-            opponent2_id = get_val("opponent2")
             res = MatchService._resolve_teams(
-                db, p1_id, partner_id, p2_id, opponent2_id
+                db, p1_id, cast(str, partner_id), p2_id, cast(str, opponent2_id)
             )
             match_doc_data.update(res)
             team1_ref = res.get("team1Ref")
