@@ -123,9 +123,7 @@ def record_match() -> Any:
     form.player1.choices = [  # type: ignore[assignment]
         (uid, str(all_names.get(uid, uid))) for uid in p1_candidates
     ]
-    other_choices = [
-        (uid, str(all_names.get(uid, uid))) for uid in other_candidates
-    ]
+    other_choices = [(uid, str(all_names.get(uid, uid))) for uid in other_candidates]
     form.player2.choices = form.partner.choices = form.opponent2.choices = other_choices  # type: ignore[assignment]
 
     if request.method == "GET":
