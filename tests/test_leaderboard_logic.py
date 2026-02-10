@@ -41,7 +41,7 @@ class TestLeaderboardLogic(unittest.TestCase):
         user3.id = "u3"
         user3.to_dict.return_value = {"name": "User 3"}
 
-        mock_db.collection.return_value.limit.return_value.stream.return_value = [
+        mock_db.collection.return_value.stream.return_value = [
             user1,
             user2,
             user3,

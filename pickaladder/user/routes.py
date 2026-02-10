@@ -106,9 +106,26 @@ def view_community() -> Any:
     """Render the community hub."""
     db = firestore.client()
     search_term = request.args.get("search", "").strip()
+
+    incoming_requests = UserService.get_user_pending_requests(db, g.user["uid"])
+    outgoing_requests = UserService.get_user_sent_requests(db, g.user["uid"])
+
     data = UserService.get_community_data(db, g.user["uid"], search_term)
+
+    # Filter out incoming/outgoing requests from data to avoid multiple values error
+    filtered_data = {
+        k: v
+        for k, v in data.items()
+        if k not in ["incoming_requests", "outgoing_requests"]
+    }
+
     return render_template(
-        "community.html", search_term=search_term, user=g.user, **data
+        "community.html",
+        search_term=search_term,
+        user=g.user,
+        incoming_requests=incoming_requests,
+        outgoing_requests=outgoing_requests,
+        **filtered_data,
     )
 
 
@@ -152,9 +169,8 @@ def send_friend_request(friend_id: str) -> Any:
 @bp.route("/friends")
 @login_required
 def friends() -> Any:
-    """Display the user's friends and pending requests."""
-    data = UserService.get_friends_page_data(firestore.client(), g.user["uid"])
-    return render_template("friends/index.html", **data)
+    """Deprecated: Redirects to the community hub."""
+    return redirect(url_for(".view_community"))
 
 
 @bp.route("/requests", methods=["GET"])

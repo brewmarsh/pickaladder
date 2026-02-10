@@ -33,3 +33,8 @@
 .mb-0 { margin-bottom: 0 !important; }
 .mb-4 { margin-bottom: 24px !important; }
 .shadow-sm { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; }
+
+/* Alignment Utilities */
+.text-left { text-align: left !important; }
+.text-center { text-align: center !important; }
+.text-right { text-align: right !important; }

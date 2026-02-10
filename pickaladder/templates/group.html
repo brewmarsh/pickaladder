@@ -1,31 +1,35 @@
 {% extends "layout.html" %}
 {% block title %}{{ group.name }}{% endblock %}
 {% block content %}
-<div class="page-header group-header-content">
-    <img src="{{ group.profilePictureUrl if group.profilePictureUrl else (url_for('static', filename='uploads/' + group.profile_picture_path) if group.profile_picture_path else url_for('static', filename='user_icon.png')) }}"
-        alt="Group Picture" class="avatar avatar-xl">
-    <div>
-        <div class="group-header-actions">
-            <div class="group-header-title">
-                <h1>{{ group.name }}</h1>
-                {% if is_member %}
-                <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-primary">Record a
-                    Match</a>
-                {% endif %}
-            </div>
-            {% if group.ownerRef.id == current_user_id %}
-            <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings"
-                class="settings-icon">⚙️</a>
-            {% endif %}
+<div class="card hero-stats-card">
+    {% if group.ownerRef.id == current_user_id %}
+    <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="btn-edit-gear">⚙️</a>
+    {% endif %}
+
+    <div class="hero-left-panel">
+        <div class="profile-picture-container avatar-xl">
+            <img src="{{ group.profilePictureUrl if group.profilePictureUrl else (url_for('static', filename='uploads/' + group.profile_picture_path) if group.profile_picture_path else url_for('static', filename='user_icon.png')) }}"
+                alt="Group Picture" class="profile-picture">
         </div>
+    </div>
+
+    <div class="hero-middle-panel text-center">
+        <h1>{{ group.name }}</h1>
         <div class="group-meta-info">
-            <p>Owned by: <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username
-                    }}</a></p>
-            {% if group.location %}
-            <p><strong>Location:</strong> {{ group.location }}</p>
-            {% endif %}
+            <p>
+                Owned by: <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username }}</a>
+                {% if group.location %}
+                • Location: {{ group.location }}
+                {% endif %}
+            </p>
         </div>
         <p class="group-description">{{ group.description or 'No description provided.' }}</p>
+    </div>
+
+    <div class="hero-right-panel">
+        {% if is_member %}
+        <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-volt w-auto">Record a Match</a>
+        {% endif %}
     </div>
 </div>
 
@@ -36,6 +40,7 @@
             <h3>Group Leaderboard</h3>
             <p>A live ranking of all group members.</p>
 
+            {% if recent_matches %}
             <div class="tab-container">
                 <div class="tab-buttons">
                     <button class="tab-button active" onclick="openTab(event, 'players')">Players</button>
@@ -44,19 +49,19 @@
 
                 <div id="players" class="tab-content" style="display: block;">
                     <div class="table-container">
-                        <table class="table-standard responsive-table">
+                        <table class="table table-standard responsive-table">
                             <thead>
                                 <tr>
-                                    <th>Rank</th>
-                                    <th>Player</th>
-                                    <th>Form</th>
+                                    <th class="text-center">Rank</th>
+                                    <th class="text-left">Player</th>
+                                    <th class="text-right">Form</th>
                                     <th class="text-right">Avg Score</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for player in leaderboard %}
                                 <tr class="{{ 'bg-primary-subtle' if player.id == g.user['uid'] else '' }}">
-                                    <td class="rank-cell">
+                                    <td data-label="Rank" class="rank-cell text-center">
                                         {% if loop.index == 1 %}🥇
                                         {% elif loop.index == 2 %}🥈
                                         {% elif loop.index == 3 %}🥉
@@ -71,7 +76,7 @@
                                         {% endif %}
                                         </span>
                                     </td>
-                                    <td>
+                                    <td data-label="Player" class="text-left">
                                         <div class="d-flex align-items-center justify-content-between">
                                             <a href="{{ url_for('user.view_user', user_id=player.id) }}"
                                                 class="player-link-compact">
@@ -92,20 +97,16 @@
                                             {% endif %}
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-label="Form" class="text-right">
                                         <div class="form-dots-compact">
                                             {% for result in player.form %}
                                             <span class="form-dot-compact {{ result }}"></span>
                                             {% endfor %}
                                         </div>
                                     </td>
-                                    <td class="text-right font-weight-bold">
+                                    <td data-label="Avg Score" class="text-right font-weight-bold">
                                         {{ "%.2f"|format(player.avg_score|float) }}
                                     </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="4" class="text-center">No matches have been played yet.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -115,39 +116,52 @@
 
                 <div id="teams" class="tab-content" style="display: none;">
                     <div class="table-container">
-                        <div class="leaderboard-row header desktop-only">
-                            <div class="font-weight-bold">Rank</div>
-                            <div class="font-weight-bold">Team</div>
-                            <div class="text-right font-weight-bold">W-L</div>
-                        </div>
-                        {% for entry in team_leaderboard %}
-                        <div class="leaderboard-row">
-                            <div class="rank-cell">
-                                {% if loop.index == 1 %}🥇
-                                {% elif loop.index == 2 %}🥈
-                                {% elif loop.index == 3 %}🥉
-                                {% else %}#{{ loop.index }}{% endif %}
-                            </div>
-                            <div>
-                                <div class="team-members-compact">
-                                    {% for member in entry.team.member_details %}
-                                    <img src="{{ member | avatar_url }}" alt="{{ member | display_name }}"
-                                        class="avatar avatar-sm"
-                                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                    {% endfor %}
-                                    <span class="team-name-compact">{{ entry.team.name }}</span>
-                                </div>
-                            </div>
-                            <div class="text-right font-weight-bold">
-                                {{ entry.stats.wins }}-{{ entry.stats.losses }}
-                            </div>
-                        </div>
-                        {% else %}
-                        <div class="p-3 text-center">No teams formed yet.</div>
-                        {% endfor %}
+                        <table class="table table-standard responsive-table">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">Rank</th>
+                                    <th class="text-left">Team</th>
+                                    <th class="text-right">W-L</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in team_leaderboard %}
+                                <tr>
+                                    <td data-label="Rank" class="rank-cell text-center">
+                                        {% if loop.index == 1 %}🥇
+                                        {% elif loop.index == 2 %}🥈
+                                        {% elif loop.index == 3 %}🥉
+                                        {% else %}#{{ loop.index }}{% endif %}
+                                    </td>
+                                    <td data-label="Team" class="text-left">
+                                        <div class="team-members-compact">
+                                            {% for member in entry.team.member_details %}
+                                            <img src="{{ member | avatar_url }}" alt="{{ member | display_name }}"
+                                                class="avatar avatar-sm"
+                                                onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                            {% endfor %}
+                                            <span class="team-name-compact">{{ entry.team.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td data-label="W-L" class="text-right font-weight-bold">
+                                        {{ entry.stats.wins }}-{{ entry.stats.losses }}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No teams formed yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+            {% else %}
+            <div class="card card-notification text-center">
+                <p class="mb-0">No matches recorded yet. Be the first to play!</p>
+            </div>
+            {% endif %}
 
             <div class="leaderboard-trend-link">
                 <a href="{{ url_for('group.view_leaderboard_trend', group_id=group.id) }}">View Leaderboard Trend
