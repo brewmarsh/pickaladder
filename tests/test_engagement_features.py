@@ -180,7 +180,9 @@ class TestEngagementFeatures(unittest.TestCase):
 
         self.db.get_all.return_value = [mock_doc2, mock_doc7]
 
-        partners = UserService.get_recent_partners(self.db, self.user_id, matches, limit=4)
+        partners = UserService.get_recent_partners(
+            self.db, self.user_id, matches, limit=4
+        )
 
         self.assertEqual(len(partners), 2)
         self.assertEqual(partners[0]["id"], "user2")
