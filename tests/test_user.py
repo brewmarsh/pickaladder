@@ -31,14 +31,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_utils": patch(
                 "pickaladder.user.services.firestore", new=self.mock_firestore_service
             ),
-            "match_stats_firestore": patch(
-                "pickaladder.user.services.match_stats.firestore",
-                new=self.mock_firestore_service,
-            ),
-            "activity_firestore": patch(
-                "pickaladder.user.services.activity.firestore",
-                new=self.mock_firestore_service,
-            ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
