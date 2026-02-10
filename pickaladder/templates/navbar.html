@@ -71,20 +71,20 @@
                 </button>
             </div>
         </nav>
-        <div id="mobile-nav" class="mobile-nav">
+        <div id="myLinks" class="mobile-nav">
             {% if g.user %}
-            <a href="{{ url_for('user.dashboard') }}" class="mobile-nav-link">📈 Dashboard</a>
-            <a href="{{ url_for('user.view_community') }}" class="mobile-nav-link">🌍 Community</a>
-            <a href="{{ url_for('group.view_groups') }}" class="mobile-nav-link">👨‍👩‍👧‍👦 Groups</a>
-            <a href="{{ url_for('tournament.list_tournaments') }}" class="mobile-nav-link">🎾 Tournaments</a>
-            <a href="{{ url_for('match.leaderboard') }}" class="mobile-nav-link">🏆 Leaderboard</a>
+            <a href="{{ url_for('user.dashboard') }}" class="mobile-nav-link"><i class="fas fa-home me-2"></i> Dashboard</a>
+            <a href="{{ url_for('user.view_community') }}" class="mobile-nav-link"><i class="fas fa-users me-2"></i> Community</a>
+            <a href="{{ url_for('group.view_groups') }}" class="mobile-nav-link"><i class="fas fa-layer-group me-2"></i> Groups</a>
+            <a href="{{ url_for('tournament.list_tournaments') }}" class="mobile-nav-link"><i class="fas fa-trophy me-2"></i> Tournaments</a>
+            <a href="{{ url_for('match.leaderboard') }}" class="mobile-nav-link"><i class="fas fa-chart-line me-2"></i> Leaderboard</a>
             <div class="mobile-nav-divider"></div>
             <a href="{{ url_for('user.view_user', user_id=g.user['uid']) }}" class="mobile-nav-link">👤 My Profile</a>
             <a href="{{ url_for('auth.change_password') }}" class="mobile-nav-link">🔑 Settings</a>
             {% if session.get('is_admin') %}
             <a href="{{ url_for('admin.admin') }}" class="mobile-nav-link">👑 Admin</a>
             {% endif %}
-            <a href="{{ url_for('auth.logout') }}" class="mobile-nav-link">🚪 Logout</a>
+            <a href="{{ url_for('auth.logout') }}" class="mobile-nav-link"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
             {% else %}
             <a href="{{ url_for('auth.login') }}" class="mobile-nav-link">Login</a>
             <a href="{{ url_for('auth.register') }}" class="mobile-nav-link">Register</a>
