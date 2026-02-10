@@ -11,15 +11,53 @@
     }
 
     .hamburger-menu {
-        display: block;
+        display: flex !important;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
         cursor: pointer;
         background: transparent;
         border: none;
+        width: 40px;
+        height: 40px;
+        padding: 0;
     }
 
-    /* Repurpose the dropdown as the mobile menu */
-    .dropdown {
-        position: static;
+    .mobile-nav {
+        display: none;
+        background-color: var(--primary-color);
+        width: 100%;
+        margin-top: 10px;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+        position: absolute;
+        top: 60px;
+        left: 0;
+        z-index: 1000;
+    }
+
+    .mobile-nav.active {
+        display: block;
+    }
+
+    .mobile-nav-link {
+        display: block;
+        color: #ffffff !important;
+        padding: 12px 20px;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 1.1rem;
+    }
+
+    .mobile-nav-link:last-child {
+        border-bottom: none;
+    }
+
+    .mobile-nav-divider {
+        height: 1px;
+        background-color: rgba(255, 255, 255, 0.2);
+        margin: 4px 0;
     }
 
     .dropbtn {
@@ -27,27 +65,12 @@
         /* Hide the user icon image on mobile */
     }
 
-    .dropdown-content {
-        display: none;
-        position: absolute;
-        top: 60px;
-        left: 0;
-        width: 100%;
-        background-color: var(--surface-color);
-        box-shadow: var(--box-shadow);
-        z-index: 100;
-    }
-
-    .dropdown-content.active {
-        display: block;
-    }
-
     .hamburger-menu span {
         display: block;
         width: 25px;
         height: 3px;
-        margin: 5px;
-        background-color: var(--on-surface-color);
+        margin: 3px 0;
+        background-color: #ffffff !important;
     }
 
     .form-container {
@@ -74,10 +97,6 @@
         display: block !important;
     }
 
-    /* Override hamburger menu color for visibility on green header */
-    .hamburger-menu span {
-        background-color: #ffffff;
-    }
 
     .chart-container {
         min-height: 300px;

@@ -159,9 +159,10 @@
         });
 
         const hamburger = document.querySelector('.hamburger-menu');
-        if (hamburger) {
+        const mobileNav = document.getElementById('mobile-nav');
+        if (hamburger && mobileNav) {
             hamburger.addEventListener('click', function () {
-                document.querySelector('.dropdown-content').classList.toggle('active');
+                mobileNav.classList.toggle('active');
             });
         }
     </script>
