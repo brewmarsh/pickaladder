@@ -2,7 +2,6 @@
 {% block title %}Match Summary{% endblock %}
 {% block content %}
 <div class="container py-4">
-    <!-- Hero Section: Score -->
     <div class="card hero-stats-card mb-4">
         <div class="hero-middle-panel text-center">
             <h1 class="display-4 fw-bold mb-0">Match Summary</h1>
@@ -14,7 +13,6 @@
     </div>
 
     <div class="row justify-content-center">
-        <!-- Winners Card -->
         <div class="col-md-8 mb-4">
             <div class="card hero-stats-card mx-auto" style="max-width: 600px;">
                 <div class="hero-middle-panel w-100">
@@ -34,7 +32,6 @@
             </div>
         </div>
 
-        <!-- Losers Card -->
         <div class="col-md-8 mb-4">
             <div class="card hero-stats-card mx-auto" style="max-width: 600px;">
                 <div class="hero-middle-panel w-100">
@@ -55,7 +52,6 @@
         </div>
     </div>
 
-    <!-- Actions -->
     <div class="d-flex justify-content-center gap-4 mt-4 flex-wrap">
         <a href="{{ url_for('user.dashboard') }}" class="btn btn-primary w-auto">
             <i class="fas fa-home mr-2"></i> Back to Dashboard
@@ -64,7 +60,7 @@
             <i class="fas fa-copy mr-2"></i> Copy Result Link
         </button>
         {% if opponent_id %}
-        <a href="{{ url_for('match.record_match', player2=opponent_id) }}" class="btn btn-volt w-auto">
+        <a href="{{ url_for('match.record_match', player2=opponent_id, match_type=match_type) }}" class="btn btn-volt w-auto">
             <i class="fas fa-redo mr-2"></i> Rematch!
         </a>
         {% endif %}
