@@ -820,6 +820,9 @@ class UserService:
         user_result = UserService._determine_match_result(match_dict, user_id)
         winner = UserService._get_match_winner_slot(match_dict)
 
+        p1_info: dict[str, Any] | list[dict[str, Any]]
+        p2_info: dict[str, Any] | list[dict[str, Any]]
+
         if match_dict.get("matchType") == "doubles":
             p1_info = [
                 UserService._get_player_info(r, users_map)

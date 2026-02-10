@@ -255,9 +255,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         # Mock necessary Firestore calls for page load
         mock_user_snapshot = MagicMock(exists=True)
         mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
-        mock_db.collection("users").document(MOCK_USER_ID).get.return_value = (
-            mock_user_snapshot
-        )
+        mock_db.collection("users").document(
+            MOCK_USER_ID
+        ).get.return_value = mock_user_snapshot
 
         # Mock get_candidate_player_ids
         with patch(

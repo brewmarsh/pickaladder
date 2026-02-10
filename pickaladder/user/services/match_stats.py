@@ -269,6 +269,9 @@ def _transform_match_for_dashboard(
     user_result = _determine_match_result(match_dict, user_id)
     winner = _get_match_winner_slot(match_dict)
 
+    p1_info: dict[str, Any] | list[dict[str, Any]]
+    p2_info: dict[str, Any] | list[dict[str, Any]]
+
     if match_dict.get("matchType") == "doubles":
         p1_info = [_get_player_info(r, users_map) for r in match_dict.get("team1", [])]
         p2_info = [_get_player_info(r, users_map) for r in match_dict.get("team2", [])]
