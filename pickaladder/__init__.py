@@ -207,7 +207,7 @@ def _register_context_processors(app: Flask) -> None:
 
     @app.context_processor
     def inject_incoming_requests_count() -> dict[str, Any]:
-        """Injects the count of incoming friend requests into the template context."""
+        """Injects incoming friend requests count into the template context."""
         if g.user:
             try:
                 db = firestore.client()
