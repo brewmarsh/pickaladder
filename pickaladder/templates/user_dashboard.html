@@ -35,32 +35,32 @@
     <div class="hero-stats-card">
         <a href="javascript:void(0)" id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</a>
         <div class="hero-left-panel">
+            {# Resolved: Use the container pattern from main for better image fitting #}
             <div class="profile-picture-container avatar-xl">
                 <img id="hero-profile-img" src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture">
             </div>
-            <div class="hero-name-and-edit">
-                <h2 id="hero-username-text">{{ user.name if user.name else user.username }}</h2>
+        </div>
+        <div class="hero-middle-panel text-center">
+            <h2 id="hero-username-text" class="mb-2">{{ user.name if user.name else user.username }}</h2>
+            <div id="vanity-stats-container" class="vanity-stats-container justify-content-center gap-4">
+                <div class="vanity-stat">
+                    <div class="stat-value fs-3 fw-bold">{{ stats.total_games }}</div>
+                    <div class="stat-label text-muted small">Matches</div>
+                </div>
+                <div class="vanity-stat">
+                    <div class="stat-value fs-3 fw-bold">{{ stats.win_rate | round | int }}%</div>
+                    <div class="stat-label text-muted small">Win %</div>
+                </div>
+                <div class="vanity-stat">
+                    <div
+                        class="stat-value fs-3 fw-bold {{ 'text-volt' if stats.streak_type == 'W' else 'text-danger' if stats.streak_type == 'L' else '' }}">
+                        {{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}
+                    </div>
+                    <div class="stat-label text-muted small">Streak</div>
+                </div>
             </div>
         </div>
         <div class="hero-right-panel">
-            <div id="vanity-stats-container" class="vanity-stats-container">
-                <div class="vanity-stat">
-                    <div class="stat-value">{{ stats.total_games }}</div>
-                    <div class="stat-label text-muted">Total Matches</div>
-                </div>
-                <div class="vanity-stat">
-                    <div class="stat-value">{{ stats.win_rate | round | int }}%</div>
-                    <div class="stat-label text-muted">Win %</div>
-                </div>
-                <div class="vanity-stat">
-                    {# Resolved Conflict: Combine HEAD variable logic with Main's color coding #}
-                    <div
-                        class="stat-value {{ 'text-volt' if stats.streak_type == 'W' else 'text-danger' if stats.streak_type == 'L' else '' }}">
-                        {{ stats.current_streak }}{{ stats.streak_type if stats.total_games > 0 else 'N/A' }}
-                    </div>
-                    <div class="stat-label text-muted">Current Streak</div>
-                </div>
-            </div>
             <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
         </div>
     </div>
