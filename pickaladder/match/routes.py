@@ -181,11 +181,13 @@ def record_match() -> Any:
             match_id = MatchService.process_match_submission(db, form.data, g.user)
 
             if request.is_json:
-                return jsonify({
-                    "status": "success",
-                    "message": "Match recorded.",
-                    "match_id": match_id
-                }), 200
+                return jsonify(
+                    {
+                        "status": "success",
+                        "message": "Match recorded.",
+                        "match_id": match_id,
+                    }
+                ), 200
 
             flash("Match recorded successfully.", "success")
             active_tid = form.tournament_id.data or tournament_id

@@ -245,9 +245,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         # Mock necessary Firestore calls for page load
         mock_user_snapshot = MagicMock(exists=True)
         mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
-        mock_db.collection("users").document(MOCK_USER_ID).get.return_value = (
-            mock_user_snapshot
-        )
+        mock_db.collection("users").document(
+            MOCK_USER_ID
+        ).get.return_value = mock_user_snapshot
 
         # Mock get_candidate_player_ids
         with patch(
@@ -265,7 +265,6 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             )
             self.assertEqual(response.status_code, 200)
             self.assertIn(MOCK_OPPONENT_ID.encode(), response.data)
-
 
     def test_pending_invites_query_uses_correct_field(self) -> None:
         """Test that pending invites are queried using 'inviter_id'."""
