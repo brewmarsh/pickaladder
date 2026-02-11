@@ -14,12 +14,13 @@ from flask import (
     request,
     url_for,
 )
+from flask_login import current_user
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
 
 from . import bp
-from .forms import UpdateProfileForm, UpdateUserForm
+from .forms import EditProfileForm, UpdateUserForm
 from .services import UserService
 
 if TYPE_CHECKING:
@@ -33,6 +34,22 @@ class MockPagination:
         """Initialize the mock pagination object."""
         self.items = items
         self.pages = 1
+
+
+@bp.route("/settings", methods=["GET", "POST"])
+@login_required
+def settings() -> Any:
+    """Handle user settings."""
+    form = EditProfileForm(obj=current_user)
+    if form.validate_on_submit():
+        res = UserService.update_settings(
+            firestore.client(), g.user["uid"], form, form.profile_picture.data
+        )
+        if res["success"]:
+            flash("Settings updated!", "success")
+            return redirect(url_for(".settings"))
+        flash(res["error"], "danger")
+    return render_template("user/settings.html", form=form)
 
 
 @bp.route("/edit_profile", methods=["GET", "POST"])
@@ -56,14 +73,9 @@ def edit_profile() -> Any:
 @bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard() -> Any:
-    """Render user dashboard and handle profile updates."""
+    """Render user dashboard."""
     db = firestore.client()
     user_id = g.user["uid"]
-    form = UpdateProfileForm()
-
-    if request.method == "GET":
-        form.dupr_rating.data = g.user.get("duprRating")
-        form.dark_mode.data = g.user.get("dark_mode")
 
     data = UserService.get_dashboard_data(db, user_id)
 
@@ -73,17 +85,9 @@ def dashboard() -> Any:
     current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
     recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
 
-    if form.validate_on_submit():
-        UserService.update_dashboard_profile(
-            db, user_id, form, form.profile_picture.data
-        )
-        flash("Profile updated successfully.", "success")
-        return redirect(url_for(".dashboard"))
-
     # FIX: Removed explicit 'user=g.user' to avoid conflict with **data['user']
     return render_template(
         "user_dashboard.html",
-        form=form,
         current_streak=current_streak,
         recent_opponents=recent_opponents,
         **data,

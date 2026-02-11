@@ -134,6 +134,56 @@ def process_profile_update(
     return {"success": True}
 
 
+def update_settings(
+    db: Client, user_id: str, form_data: Any, profile_picture_file: Any = None
+) -> dict[str, Any]:
+    """Update user settings (username, rating, dark mode, and profile picture)."""
+    new_username = form_data.username.data
+
+    # Check for username conflict
+    user_ref = db.collection("users").document(user_id)
+    current_user_doc = cast("DocumentSnapshot", user_ref.get())
+    current_user_data = current_user_doc.to_dict() or {}
+
+    if new_username != current_user_data.get("username"):
+        existing_user = (
+            db.collection("users")
+            .where("username", "==", new_username)
+            .limit(1)
+            .stream()
+        )
+        if len(list(existing_user)) > 0:
+            return {
+                "success": False,
+                "error": "Username already exists. Please choose a different one.",
+            }
+
+    update_data: dict[str, Any] = {
+        "username": new_username,
+        "dark_mode": bool(form_data.dark_mode.data),
+    }
+
+    if form_data.dupr_rating.data is not None:
+        rating = float(form_data.dupr_rating.data)
+        update_data["dupr_rating"] = rating
+        update_data["duprRating"] = rating  # Maintain compatibility
+
+    if profile_picture_file:
+        filename = secure_filename(profile_picture_file.filename or "profile.jpg")
+        bucket = storage.bucket()
+        blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
+
+        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1]) as tmp:
+            profile_picture_file.save(tmp.name)
+            blob.upload_from_filename(tmp.name)
+
+        blob.make_public()
+        update_data["profilePictureUrl"] = blob.public_url
+
+    user_ref.update(update_data)
+    return {"success": True}
+
+
 def search_users(
     db: Client, current_user_id: str, search_term: str
 ) -> list[tuple[dict[str, Any], str | None, str | None]]:
