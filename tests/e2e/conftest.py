@@ -259,6 +259,25 @@ class MockTransaction:
     def __init__(self, db: EnhancedMockFirestore) -> None:
         """Initialize mock transaction."""
         self.db = db
+        self._read_only = False
+        self._id = "mock-transaction-id"
+        self._max_attempts = 5
+
+    def _rollback(self) -> None:
+        """Mock rollback."""
+        pass
+
+    def _clean_up(self) -> None:
+        """Mock clean up."""
+        pass
+
+    def _begin(self, retry_id: Any = None) -> None:
+        """Mock begin."""
+        pass
+
+    def _commit(self) -> Any:
+        """Mock commit."""
+        return []
 
     def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
         """Mock get."""
