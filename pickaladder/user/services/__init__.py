@@ -46,6 +46,9 @@ from .core import (
     update_dashboard_profile as _update_dashboard_profile,
 )
 from .core import (
+    update_settings as _update_settings,
+)
+from .core import (
     update_user_profile as _update_user_profile,
 )
 from .dashboard import (
@@ -211,3 +214,4 @@ class UserService:
     send_friend_request = staticmethod(_send_friend_request)
     create_invite_token = staticmethod(_create_invite_token)
     update_dashboard_profile = staticmethod(_update_dashboard_profile)
+    update_settings = staticmethod(_update_settings)

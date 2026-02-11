@@ -3,7 +3,7 @@
 import datetime
 from typing import Any
 
-from firebase_admin import auth, firestore
+from firebase_admin import firestore
 
 
 class AdminService:
@@ -11,29 +11,30 @@ class AdminService:
 
     @staticmethod
     def get_admin_stats(db: Any) -> dict[str, Any]:
-        """Fetch high-level stats for the admin dashboard."""
+        """Fetch high-level stats for the admin dashboard using efficient count aggregations."""
         # Total Users
-        users = db.collection("users").stream()
-        total_users = sum(1 for _ in users)
+        total_users = db.collection("users").count().get()[0][0].value
 
         # Active Tournaments (status != 'Completed')
-        tournaments = (
+        active_tournaments = (
             db.collection("tournaments")
             .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
-            .stream()
+            .count()
+            .get()[0][0]
+            .value
         )
-        active_tournaments = sum(1 for _ in tournaments)
 
         # Recent Matches (last 24 hours)
         yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
             days=1
         )
-        matches = (
+        recent_matches = (
             db.collection("matches")
             .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))
-            .stream()
+            .count()
+            .get()[0][0]
+            .value
         )
-        recent_matches = sum(1 for _ in matches)
 
         return {
             "total_users": total_users,
@@ -56,6 +57,8 @@ class AdminService:
     @staticmethod
     def delete_user(db: Any, user_id: str) -> None:
         """Delete a user from Firebase Auth and Firestore."""
+        from firebase_admin import auth  # noqa: PLC0415
+
         # Delete from Firebase Auth
         auth.delete_user(user_id)
         # Delete from Firestore
@@ -71,6 +74,8 @@ class AdminService:
     @staticmethod
     def verify_user(db: Any, user_id: str) -> None:
         """Manually verify a user's email in Auth and Firestore."""
+        from firebase_admin import auth  # noqa: PLC0415
+
         auth.update_user(user_id, email_verified=True)
         user_ref = db.collection("users").document(user_id)
         user_ref.update({"email_verified": True})

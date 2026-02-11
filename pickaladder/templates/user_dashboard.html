@@ -33,7 +33,7 @@
     {% endif %}
 
     <div class="hero-stats-card">
-        <a href="javascript:void(0)" id="edit-profile-toggle" class="btn-edit-gear" title="Edit Profile">⚙️</a>
+        <a href="{{ url_for('user.settings') }}" class="btn-edit-gear" title="Edit Profile">⚙️</a>
         <div class="hero-left-panel">
             {# Resolved: Use the container pattern from main for better image fitting #}
             <div class="profile-picture-container avatar-xl">
@@ -147,15 +147,24 @@
                                     {% endif %}
                                 </td>
                                 <td data-label="Result">
-                                    {% if match.user_result == 'win' %}
-                                    <span class="badge badge-success">W</span>
-                                    {% else %}
-                                    <span class="badge badge-danger">L</span>
-                                    {% endif %}
-                                    {{ user_score }} - {{ opp_score }}
-                                    {% if match.tournament_name %}
-                                    <div class="text-muted small" style="margin-top: 4px;">🏆 {{ match.tournament_name }}</div>
-                                    {% endif %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            {% if match.user_result == 'win' %}
+                                            <span class="badge badge-success">W</span>
+                                            {% else %}
+                                            <span class="badge badge-danger">L</span>
+                                            {% endif %}
+                                            {{ user_score }} - {{ opp_score }}
+                                            {% if match.tournament_name %}
+                                            <div class="text-muted small" style="margin-top: 4px;">🏆 {{ match.tournament_name }}</div>
+                                            {% endif %}
+                                        </div>
+                                        {% if (match.created_by == user.uid and not match.tournament_id) or user.isAdmin %}
+                                        <a href="{{ url_for('match.edit_match', match_id=match.id) }}" class="text-muted" title="Edit Match">
+                                            ✏️
+                                        </a>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -279,68 +288,8 @@
         </div>
     </div>
 
-    {# Hidden Profile Edit Section #}
-    <div id="profile-edit-section" class="collapsible-section card" style="display: none; margin-top: 24px;">
-        <h3>Profile Information</h3>
-        <form method="post" action="{{ url_for('user.dashboard') }}" enctype="multipart/form-data" class="profile-form">
-            {{ form.hidden_tag() }}
-            <div class="profile-header">
-                <img src="{{ user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl"
-                    id="profile-picture-img">
-                <div class="form-group">
-                    {{ form.profile_picture(class="form-control", accept="image/*") }}
-                </div>
-            </div>
-            <h4>@{{ user.username }}</h4>
-            <p><strong>Email:</strong> {{ user.email }}</p>
-
-            <div class="form-group">
-                {{ form.dupr_rating.label }}
-                {{ form.dupr_rating(class="form-control") }}
-            </div>
-
-            <div class="form-group">
-                {{ form.dark_mode.label }}
-                <label class="switch">
-                    {{ form.dark_mode() }}
-                    <span class="slider round"></span>
-                </label>
-            </div>
-
-            <a href="{{ url_for('user.edit_profile') }}" class="btn btn-secondary">Edit Credentials</a>
-            <button type="submit" name="submit" class="btn btn-volt">Update Profile</button>
-        </form>
-    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const profilePictureInput = document.querySelector('input[name="profile_picture"]');
-        const profilePictureImg = document.getElementById('profile-picture-img');
-
-        if (profilePictureInput) {
-            profilePictureInput.addEventListener('change', function () {
-                if (this.files && this.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        profilePictureImg.src = e.target.result;
-                    }
-                    reader.readAsDataURL(this.files[0]);
-                }
-            });
-        }
-
-        const editProfileToggle = document.getElementById('edit-profile-toggle');
-        const profileEditSection = document.getElementById('profile-edit-section');
-
-        if (editProfileToggle) {
-            editProfileToggle.addEventListener('click', function () {
-                const isHidden = profileEditSection.style.display === 'none';
-                profileEditSection.style.display = isHidden ? 'block' : 'none';
-            });
-        }
-    });
-</script>
 {% endblock %}

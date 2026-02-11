@@ -46,7 +46,7 @@
                                 {% if user.email_verified %}<span class="badge badge-success">Verified</span>{% else %}<span class="badge badge-danger">Unverified</span>{% endif %}
                             </td>
                             <td data-label="Actions" class="actions-cell">
-                                <div style="display: flex; gap: 5px;">
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                                     {% if not user.isAdmin %}
                                     <form action="{{ url_for('admin.promote_user', user_id=user.id) }}" method="post">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -59,6 +59,7 @@
                                         <button type="submit" class="btn btn-sm btn-success">Verify</button>
                                     </form>
                                     {% endif %}
+                                    <a href="{{ url_for('admin.impersonate', user_id=user.id) }}" class="btn btn-sm btn-secondary">Impersonate</a>
                                     <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" onsubmit="return confirm('Are you sure?');">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-sm btn-danger">Delete</button>
@@ -70,6 +71,32 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- System Message -->
+        <div class="card">
+            <h3>System Message</h3>
+            <p>Broadcast a global announcement to all users.</p>
+            <form action="{{ url_for('admin.announcement') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group mb-2">
+                    <label for="announcement_text">Message</label>
+                    <textarea id="announcement_text" name="announcement_text" class="form-control" rows="3" required>{{ global_announcement.announcement_text if global_announcement }}</textarea>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="level">Level</label>
+                    <select id="level" name="level" class="form-control">
+                        <option value="info" {% if global_announcement and global_announcement.level == 'info' %}selected{% endif %}>Info (Blue)</option>
+                        <option value="warning" {% if global_announcement and global_announcement.level == 'warning' %}selected{% endif %}>Warning (Yellow)</option>
+                        <option value="danger" {% if global_announcement and global_announcement.level == 'danger' %}selected{% endif %}>Danger (Red)</option>
+                    </select>
+                </div>
+                <div class="form-group form-check mb-2">
+                    <input type="checkbox" id="is_active" name="is_active" class="form-check-input" {% if global_announcement and global_announcement.is_active %}checked{% endif %}>
+                    <label for="is_active" class="form-check-label">Active</label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Update Announcement</button>
+            </form>
         </div>
 
         <!-- Account Tools -->
@@ -85,14 +112,14 @@
                         <input type="text" name="target_user_id" class="form-control mb-2" placeholder="Real User ID" required>
                         <input type="email" name="ghost_email" class="form-control mb-2" placeholder="Ghost Email" required>
                     </div>
-                    <button type="submit" class="btn btn-secondary">Merge Ghost</button>
+                    <button type="submit" class="btn btn-secondary w-100">Merge Ghost</button>
                 </form>
             </div>
         </div>
 
-        <!-- Settings -->
+        <!-- Settings & Links -->
         <div class="card">
-            <h3>Settings</h3>
+            <h3>Site Settings</h3>
             <p>
                 Email Verification:
                 {% if email_verification_setting and email_verification_setting.value == 'true' %}
@@ -101,12 +128,20 @@
                     <strong class="text-danger">Disabled</strong>
                 {% endif %}
             </p>
-            <form action="{{ url_for('admin.toggle_email_verification') }}" method="post">
+            <form action="{{ url_for('admin.toggle_email_verification') }}" method="post" class="mb-3">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn {{ 'btn-danger' if email_verification_setting.value == 'true' else 'btn-success' }}">
+                <button type="submit" class="btn {{ 'btn-danger' if email_verification_setting.value == 'true' else 'btn-success' }} w-100">
                     {{ 'Disable' if email_verification_setting.value == 'true' else 'Enable' }}
                 </button>
             </form>
+
+            <hr>
+
+            <h4>Project Links</h4>
+            <div class="d-flex flex-column gap-2">
+                <a href="https://github.com/brewmarsh/pickaladder/discussions" target="_blank" class="btn btn-sm btn-outline-primary">GitHub Discussions</a>
+                <a href="https://github.com/brewmarsh/pickaladder/projects" target="_blank" class="btn btn-sm btn-outline-primary">Project Board</a>
+            </div>
         </div>
 
         <!-- Danger Zone -->
@@ -116,11 +151,11 @@
             <div class="d-flex flex-column gap-2">
                 <form action="{{ url_for('admin.generate_users') }}" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-outline-primary btn-sm">Generate Test Users</button>
+                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">Generate Test Users</button>
                 </form>
                 <form action="{{ url_for('admin.generate_matches') }}" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-outline-primary btn-sm">Generate Test Matches</button>
+                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">Generate Test Matches</button>
                 </form>
             </div>
         </div>

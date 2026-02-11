@@ -11,6 +11,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 from werkzeug.wrappers import Response
@@ -29,7 +30,10 @@ MIN_USERS_FOR_MATCH_GENERATION = 2
 def admin() -> Union[str, Response]:
     """Render the main admin dashboard."""
     # Authorization check is now here, after g.user is guaranteed to be loaded.
-    if not g.user or not g.user.get("isAdmin"):
+    # We allow access if the user is an admin OR if they are an admin currently
+    # impersonating someone else. The login_required(admin_required=True)
+    # decorator already checks session['is_admin'].
+    if not g.user or (not g.user.get("isAdmin") and not g.get("is_impersonating")):
         flash("You are not authorized to view this page.", "danger")
         return redirect(url_for("auth.login"))
 
@@ -77,6 +81,31 @@ def merge_ghost() -> Response:
             flash("Merge failed or ghost user not found", "danger")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
+
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/announcement", methods=["POST"])
+@login_required(admin_required=True)
+def announcement() -> Response:
+    """Update the global system announcement."""
+    db = firestore.client()
+    announcement_text = request.form.get("announcement_text")
+    is_active = request.form.get("is_active") == "on"
+    level = request.form.get("level", "info")
+
+    try:
+        db.collection("system").document("settings").set(
+            {
+                "announcement_text": announcement_text,
+                "is_active": is_active,
+                "level": level,
+            },
+            merge=True,
+        )
+        flash("Global announcement updated successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred while updating the announcement: {e}", "danger")
 
     return redirect(url_for(".admin"))
 
@@ -275,3 +304,27 @@ def merge_players() -> Union[str, Response]:
 def styleguide() -> str:
     """Render the design system styleguide."""
     return render_template("admin/styleguide.html")
+
+
+@bp.route("/impersonate/<string:user_id>")
+@login_required(admin_required=True)
+def impersonate(user_id: str) -> Response:
+    """Start impersonating another user."""
+    # current_user must be an admin to reach here due to decorator
+    session["impersonate_id"] = user_id
+
+    db = firestore.client()
+    user_doc = db.collection("users").document(user_id).get()
+    name = user_doc.to_dict().get("name", "User") if user_doc.exists else "User"
+
+    flash(f"You are now impersonating {name}.", "success")
+    return redirect(url_for("user.dashboard"))
+
+
+@bp.route("/stop_impersonating")
+@login_required
+def stop_impersonating() -> Response:
+    """Stop impersonating and return to admin profile."""
+    session.pop("impersonate_id", None)
+    flash("Welcome back, Admin.", "success")
+    return redirect(url_for("admin.admin"))
