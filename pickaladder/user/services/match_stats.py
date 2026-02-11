@@ -224,18 +224,33 @@ def format_matches_for_profile(
     return final_matches
 
 
-def format_matches_for_dashboard(
-    db: Client, matches_docs: list[DocumentSnapshot], user_id: str
-) -> list[dict[str, Any]]:
-    """Enrich match documents with user and team data for dashboard display."""
-    users_map, teams_map = _fetch_match_entities(db, matches_docs)
+def _determine_match_result(match_data: dict[str, Any], user_id: str) -> str:
+    """Determine the final match result (win/loss/draw) for a specific user."""
+    winner = _get_match_winner_slot(match_data)
+    return _get_user_match_result(match_data, user_id, winner)
 
-    # Batch fetch tournament names
-    tournament_ids = set()
-    for m in matches_docs:
-        m_data = m.to_dict()
-        if m_data and (tid := m_data.get("tournamentId")):
-            tournament_ids.add(tid)
+
+def _format_date(date_val: Any) -> str:
+    """Format a date for display, matching existing template expectations."""
+    if date_val is None:
+        return "N/A"
+    if hasattr(date_val, "to_datetime"):
+        return date_val.to_datetime().strftime("%b %d")
+    if isinstance(date_val, (datetime.datetime, datetime.date)):
+        return date_val.strftime("%b %d")
+    return str(date_val)
+
+
+def _fetch_tournaments_map(
+    db: Client, matches_docs: list[DocumentSnapshot]
+) -> dict[str, dict[str, Any]]:
+    """Fetch tournament data for a list of matches."""
+    tournament_ids = {
+        m_data.get("tournamentId")
+        for m in matches_docs
+        if (m_data := m.to_dict()) and m_data.get("tournamentId")
+    }
+
     tournaments_map: dict[str, dict[str, Any]] = {}
     if tournament_ids:
         tournament_refs = [
@@ -245,62 +260,78 @@ def format_matches_for_dashboard(
         for doc in tournament_docs:
             if doc.exists and (d := doc.to_dict()):
                 tournaments_map[doc.id] = d
+    return tournaments_map
 
-    matches_data = []
 
-    for match_doc in matches_docs:
-        m_data = match_doc.to_dict()
-        if m_data is None:
-            continue
-        match_dict: dict[str, Any] = m_data
+def _transform_match_for_dashboard(
+    match_doc: DocumentSnapshot,
+    user_id: str,
+    users_map: dict[str, Any],
+    teams_map: dict[str, Any],
+    tournaments_map: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Transform a single match document into a dashboard-ready Match dict."""
+    m_data = match_doc.to_dict()
+    if m_data is None:
+        return None
 
-        winner = _get_match_winner_slot(match_dict)
-        user_result = _get_user_match_result(match_dict, user_id, winner)
+    match_dict: dict[str, Any] = m_data
+    user_result = _determine_match_result(match_dict, user_id)
+    winner = _get_match_winner_slot(match_dict)
 
-        p1_info: dict[str, Any] | list[dict[str, Any]]
-        p2_info: dict[str, Any] | list[dict[str, Any]]
+    p1_info: dict[str, Any] | list[dict[str, Any]]
+    p2_info: dict[str, Any] | list[dict[str, Any]]
 
-        if match_dict.get("matchType") == "doubles":
-            p1_info = [
-                _get_player_info(r, users_map) for r in match_dict.get("team1", [])
-            ]
-            p2_info = [
-                _get_player_info(r, users_map) for r in match_dict.get("team2", [])
-            ]
-        else:
-            p1_info = _get_player_info(match_dict["player1Ref"], users_map)
-            p2_info = _get_player_info(match_dict["player2Ref"], users_map)
+    if match_dict.get("matchType") == "doubles":
+        p1_info = [_get_player_info(r, users_map) for r in match_dict.get("team1", [])]
+        p2_info = [_get_player_info(r, users_map) for r in match_dict.get("team2", [])]
+    else:
+        p1_info = _get_player_info(match_dict["player1Ref"], users_map)
+        p2_info = _get_player_info(match_dict["player2Ref"], users_map)
 
-        t1_name = "Team 1"
-        t2_name = "Team 2"
-        if t1_ref := match_dict.get("team1Ref"):
-            t1_name = teams_map.get(t1_ref.id, {}).get("name", "Team 1")
-        if t2_ref := match_dict.get("team2Ref"):
-            t2_name = teams_map.get(t2_ref.id, {}).get("name", "Team 2")
+    t1_name = "Team 1"
+    t2_name = "Team 2"
+    if t1_ref := match_dict.get("team1Ref"):
+        t1_name = teams_map.get(t1_ref.id, {}).get("name", "Team 1")
+    if t2_ref := match_dict.get("team2Ref"):
+        t2_name = teams_map.get(t2_ref.id, {}).get("name", "Team 2")
 
-        tournament_name = None
-        if t_id := match_dict.get("tournamentId"):
-            tournament_name = tournaments_map.get(t_id, {}).get("name")
+    tournament_name = None
+    if t_id := match_dict.get("tournamentId"):
+        tournament_name = tournaments_map.get(t_id, {}).get("name")
 
-        matches_data.append(
-            {
-                "id": match_doc.id,
-                "player1": p1_info,
-                "player2": p2_info,
-                "player1_score": m_data.get("player1Score", 0),
-                "player2_score": m_data.get("player2Score", 0),
-                "winner": winner,
-                "date": m_data.get("matchDate", "N/A"),
-                "match_date": m_data.get("matchDate"),
-                "is_group_match": bool(m_data.get("groupId")),
-                "match_type": m_data.get("matchType", "singles"),
-                "user_result": user_result,
-                "team1_name": t1_name,
-                "team2_name": t2_name,
-                "tournament_name": tournament_name,
-            }
+    return {
+        "id": match_doc.id,
+        "player1": p1_info,
+        "player2": p2_info,
+        "player1_score": m_data.get("player1Score", 0),
+        "player2_score": m_data.get("player2Score", 0),
+        "winner": winner,
+        "date": _format_date(m_data.get("matchDate")),
+        "match_date": m_data.get("matchDate"),
+        "is_group_match": bool(m_data.get("groupId")),
+        "match_type": m_data.get("matchType", "singles"),
+        "user_result": user_result,
+        "team1_name": t1_name,
+        "team2_name": t2_name,
+        "tournament_name": tournament_name,
+    }
+
+
+def format_matches_for_dashboard(
+    db: Client, matches_docs: list[DocumentSnapshot], user_id: str
+) -> list[dict[str, Any]]:
+    """Enrich match documents with user and team data for dashboard display."""
+    users_map, teams_map = _fetch_match_entities(db, matches_docs)
+    tournaments_map = _fetch_tournaments_map(db, matches_docs)
+
+    formatted_matches = [
+        _transform_match_for_dashboard(
+            m, user_id, users_map, teams_map, tournaments_map
         )
-    return matches_data
+        for m in matches_docs
+    ]
+    return [m for m in formatted_matches if m is not None]
 
 
 def _get_user_match_won_lost(
