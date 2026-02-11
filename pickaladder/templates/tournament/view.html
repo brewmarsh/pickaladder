@@ -150,6 +150,12 @@
             {% if tournament.status != 'Completed' %}
             <div class="card" style="margin-bottom: 24px;">
                 <h4 class="card-header">Tournament Management</h4>
+                {% if g.user.isAdmin and tournament.status == 'DRAFT' %}
+                    <form action="{{ url_for('tournament.generate_bracket', tournament_id=tournament.id) }}" method="POST" style="margin-bottom: 10px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-primary">Generate Bracket</button>
+                    </form>
+                {% endif %}
                 <form action="{{ url_for('tournament.complete_tournament', tournament_id=tournament.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to complete this tournament? This will notify all participants of the final results.');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger" style="margin-top: 10px;">Complete Tournament</button>
@@ -195,7 +201,8 @@
             <h4 class="card-header">Quick Info</h4>
             <p><strong>Date:</strong> {{ tournament.date_display or tournament.date }}</p>
             <p><strong>Location:</strong> {{ tournament.location }}</p>
-            <p><strong>Format:</strong> {{ tournament.matchType|capitalize }}</p>
+            <p><strong>Type:</strong> {{ tournament.matchType|capitalize }}</p>
+            <p><strong>Format:</strong> {{ (tournament.format or 'ROUND_ROBIN')|replace('_', ' ')|title }}</p>
         </div>
     </div>
 </div>

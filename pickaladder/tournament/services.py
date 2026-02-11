@@ -162,9 +162,10 @@ class TournamentService:
             "date": data["date"],
             "location": data["location"],
             "matchType": data["matchType"],
+            "format": data.get("format", "ROUND_ROBIN"),
             "ownerRef": user_ref,
             "organizer_id": user_uid,
-            "status": "Active",
+            "status": "DRAFT",
             "participants": [{"userRef": user_ref, "status": "accepted"}],
             "participant_ids": [user_uid],
             "createdAt": firestore.SERVER_TIMESTAMP,
@@ -501,3 +502,45 @@ class TournamentService:
         )
         winner = standings[0]["name"] if standings else "No one"
         TournamentService._notify_participants(data, winner, standings)
+
+
+class TournamentGenerator:
+    """Handles generation of tournament brackets and pairings."""
+
+    @staticmethod
+    def generate_round_robin(participants: list[str]) -> list[dict[str, str]]:
+        """Generate round-robin pairings using the Circle Method.
+
+        Args:
+            participants: List of player or team IDs.
+
+        Returns:
+            A list of match objects with 'p1' and 'p2' keys.
+        """
+        if not participants:
+            return []
+
+        # Copy the list to avoid mutating the original
+        p = list(participants)
+
+        # If odd number of participants, add a BYE
+        if len(p) % 2 != 0:
+            p.append(None)  # type: ignore
+
+        n = len(p)
+        matches = []
+        num_rounds = n - 1
+
+        for _ in range(num_rounds):
+            for j in range(n // 2):
+                p1 = p[j]
+                p2 = p[n - 1 - j]
+
+                if p1 is not None and p2 is not None:
+                    matches.append({"p1": p1, "p2": p2})
+
+            # Rotate participants: keep the first one fixed, rotate the others
+            # [1, 2, 3, 4] -> [1, 4, 2, 3]
+            p = [p[0]] + [p[-1]] + p[1:-1]
+
+        return matches

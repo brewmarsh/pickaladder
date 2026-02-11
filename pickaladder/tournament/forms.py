@@ -16,6 +16,14 @@ class TournamentForm(FlaskForm):
         choices=[("singles", "Singles"), ("doubles", "Doubles")],
         validators=[DataRequired()],
     )
+    format = SelectField(
+        "Tournament Format",
+        choices=[
+            ("ROUND_ROBIN", "Round Robin"),
+            ("SINGLE_ELIMINATION", "Single Elimination"),
+        ],
+        validators=[DataRequired()],
+    )
 
 
 class InvitePlayerForm(FlaskForm):

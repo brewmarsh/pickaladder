@@ -24,7 +24,8 @@ class Tournament(FirestoreDocument, total=False):
     """A tournament document in Firestore."""
 
     name: str
-    status: str
+    status: str  # DRAFT, PUBLISHED, IN_PROGRESS, COMPLETED
+    format: str  # SINGLE_ELIMINATION, ROUND_ROBIN, DOUBLE_ELIMINATION
     date: Any
     location: str
     matchType: str

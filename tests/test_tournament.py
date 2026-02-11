@@ -55,6 +55,10 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,
             ),
+            "firestore_routes": patch(
+                "pickaladder.tournament.routes.firestore",
+                new=self.mock_firestore_module,
+            ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_module
             ),
@@ -79,12 +83,16 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         """Tear down the test client."""
         self.app_context.pop()
 
-    def _set_session_user(self) -> None:
+    def _set_session_user(self, is_admin: bool = False) -> None:
         """Set a logged-in user in the session."""
         with self.client.session_transaction() as sess:
             sess["user_id"] = MOCK_USER_ID
-            sess["is_admin"] = False
+            sess["is_admin"] = is_admin
         self.mocks["verify_id_token"].return_value = MOCK_USER_PAYLOAD
+        if is_admin:
+            self.mock_db.collection("users").document(MOCK_USER_ID).update(
+                {"isAdmin": True}
+            )
 
     def _get_auth_headers(self) -> dict[str, str]:
         """Get standard authentication headers for tests."""
@@ -102,6 +110,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "date": "2024-06-01",
                 "location": "Courtside",
                 "match_type": "singles",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -142,6 +151,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "date": "2024-07-01",
                 "location": "Updated Location",
                 "match_type": "doubles",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -188,6 +198,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "date": "2024-07-01",
                 "location": "Updated Location",
                 "match_type": "doubles",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -422,6 +433,64 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn(
             b"You can only invite members from groups you belong to.", response.data
         )
+
+    def test_generate_bracket(self) -> None:
+        """Test generating a round robin bracket."""
+        # Must be an admin
+        self._set_session_user(is_admin=True)
+
+        tournament_id = "test_tournament_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+
+        # Setup tournament with 3 accepted participants
+        p2_ref = self.mock_db.collection("users").document("user2")
+        p2_ref.set({"username": "user2"})
+        p3_ref = self.mock_db.collection("users").document("user3")
+        p3_ref.set({"username": "user3"})
+
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Round Robin Test",
+                "format": "ROUND_ROBIN",
+                "status": "DRAFT",
+                "organizer_id": MOCK_USER_ID,
+                "participants": [
+                    {"userRef": user_ref, "status": "accepted"},
+                    {"userRef": p2_ref, "status": "accepted"},
+                    {"userRef": p3_ref, "status": "accepted"},
+                ],
+                "participant_ids": [MOCK_USER_ID, "user2", "user3"],
+            }
+        )
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/generate",
+            headers=self._get_auth_headers(),
+            follow_redirects=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Round Robin bracket generated", response.data)
+
+        # Verify status update
+        t_data = (
+            self.mock_db.collection("tournaments")
+            .document(tournament_id)
+            .get()
+            .to_dict()
+        )
+        self.assertEqual(t_data["status"], "PUBLISHED")
+
+        # Verify matches in sub-collection
+        matches = list(
+            self.mock_db.collection("tournaments")
+            .document(tournament_id)
+            .collection("matches")
+            .stream()
+        )
+        # For 3 players, RR should have 3 matches (each plays 2 matches)
+        # 3 * (3-1) / 2 = 3
+        self.assertEqual(len(matches), 3)
 
 
 if __name__ == "__main__":

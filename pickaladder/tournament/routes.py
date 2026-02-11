@@ -20,7 +20,7 @@ from pickaladder.user.helpers import smart_display_name
 
 from . import bp
 from .forms import InvitePlayerForm, TournamentForm
-from .services import TournamentService
+from .services import TournamentGenerator, TournamentService
 
 
 @bp.route("/", methods=["GET"])
@@ -47,6 +47,7 @@ def create_tournament() -> Any:
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
                 "location": form.location.data,
                 "matchType": form.match_type.data,
+                "format": form.format.data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
             flash("Tournament created successfully.", "success")
@@ -119,6 +120,7 @@ def edit_tournament(tournament_id: str) -> Any:
             "date": datetime.datetime.combine(date_val, datetime.time.min),
             "location": form.location.data,
             "matchType": form.match_type.data,
+            "format": form.format.data,
         }
 
         try:
@@ -138,6 +140,7 @@ def edit_tournament(tournament_id: str) -> Any:
         form.name.data = tournament_data.get("name")
         form.location.data = tournament_data.get("location")
         form.match_type.data = tournament_data.get("matchType")
+        form.format.data = tournament_data.get("format")
         raw_date = tournament_data.get("date")
         if hasattr(raw_date, "to_datetime"):
             form.date.data = raw_date.to_datetime().date()
@@ -238,6 +241,60 @@ def complete_tournament(tournament_id: str) -> Any:
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
 
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/generate", methods=["POST"])
+@login_required
+def generate_bracket(tournament_id: str) -> Any:
+    """Generate the tournament bracket/pairings."""
+    if not g.user.get("isAdmin"):
+        flash("Only admins can generate brackets.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    db = firestore.client()
+    t_ref = db.collection("tournaments").document(tournament_id)
+    t_doc = t_ref.get()
+    if not t_doc.exists:
+        flash("Tournament not found.", "danger")
+        return redirect(url_for(".list_tournaments"))
+
+    t_data = t_doc.to_dict() or {}
+    if t_data.get("format") != "ROUND_ROBIN":
+        flash(
+            f"Generation for {t_data.get('format')} is not yet implemented.", "warning"
+        )
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    # Get accepted participants
+    participants = t_data.get("participants", [])
+    accepted_ids = [
+        (p.get("userRef").id if p.get("userRef") else p.get("user_id"))
+        for p in participants
+        if p.get("status") == "accepted"
+    ]
+
+    if len(accepted_ids) < 2:
+        flash(
+            "At least 2 accepted participants are required to generate a bracket.",
+            "warning",
+        )
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    # Generate pairings
+    pairings = TournamentGenerator.generate_round_robin(accepted_ids)
+
+    # Save to matches sub-collection
+    matches_sub_ref = t_ref.collection("matches")
+    batch = db.batch()
+    for match in pairings:
+        batch.set(matches_sub_ref.document(), match)
+
+    # Update status
+    batch.update(t_ref, {"status": "PUBLISHED"})
+    batch.commit()
+
+    flash(f"Round Robin bracket generated with {len(pairings)} matches!", "success")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
