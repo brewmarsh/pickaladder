@@ -259,6 +259,7 @@ class MockTransaction:
     def __init__(self, db: EnhancedMockFirestore) -> None:
         """Initialize mock transaction."""
         self.db = db
+        self._read_only = False
 
     def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
         """Mock get."""

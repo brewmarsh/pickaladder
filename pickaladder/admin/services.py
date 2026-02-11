@@ -3,7 +3,7 @@
 import datetime
 from typing import Any
 
-from firebase_admin import firestore
+from firebase_admin import auth, firestore
 
 
 class AdminService:
@@ -11,7 +11,10 @@ class AdminService:
 
     @staticmethod
     def get_admin_stats(db: Any) -> dict[str, Any]:
-        """Fetch high-level stats for the admin dashboard using efficient count aggregations."""
+        """Fetch high-level stats for the admin dashboard.
+
+        Uses efficient count aggregations.
+        """
         # Total Users
         total_users = db.collection("users").count().get()[0][0].value
 
@@ -57,8 +60,6 @@ class AdminService:
     @staticmethod
     def delete_user(db: Any, user_id: str) -> None:
         """Delete a user from Firebase Auth and Firestore."""
-        from firebase_admin import auth  # noqa: PLC0415
-
         # Delete from Firebase Auth
         auth.delete_user(user_id)
         # Delete from Firestore
@@ -77,6 +78,37 @@ class AdminService:
             pass
 
     @staticmethod
+    def build_friend_graph(db: Any) -> dict[str, Any]:
+        """Build a dictionary representing the social graph of users and friendships."""
+        users_stream = db.collection("users").stream()
+        nodes = []
+        user_ids = set()
+
+        for user_doc in users_stream:
+            data = user_doc.to_dict()
+            nodes.append(
+                {"id": user_doc.id, "label": data.get("username") or user_doc.id}
+            )
+            user_ids.add(user_doc.id)
+
+        edges = []
+        # Optimization: We only need to iterate over users once.
+        # Friendships are reciprocal.
+        for uid in user_ids:
+            friends_stream = (
+                db.collection("users")
+                .document(uid)
+                .collection("friends")
+                .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+                .stream()
+            )
+            for friend_doc in friends_stream:
+                if uid < friend_doc.id:  # Avoid duplicate edges
+                    edges.append({"from": uid, "to": friend_doc.id})
+
+        return {"nodes": nodes, "edges": edges}
+
+    @staticmethod
     def promote_user(db: Any, user_id: str) -> str:
         """Promote a user to admin status in Firestore."""
         user_ref = db.collection("users").document(user_id)
@@ -86,8 +118,6 @@ class AdminService:
     @staticmethod
     def verify_user(db: Any, user_id: str) -> None:
         """Manually verify a user's email in Auth and Firestore."""
-        from firebase_admin import auth  # noqa: PLC0415
-
         auth.update_user(user_id, email_verified=True)
         user_ref = db.collection("users").document(user_id)
         user_ref.update({"email_verified": True})

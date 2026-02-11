@@ -91,8 +91,12 @@ def dashboard() -> Any:
 
     # Check if avatar is not default (dicebear)
     # If profilePictureUrl or profilePictureThumbnailUrl is set, it's custom.
-    has_avatar = bool(g.user.get("profilePictureUrl") or g.user.get("profilePictureThumbnailUrl"))
-    has_dupr = (g.user.get("dupr_rating") or 0) > 0 or (g.user.get("duprRating") or 0) > 0
+    has_avatar = bool(
+        g.user.get("profilePictureUrl") or g.user.get("profilePictureThumbnailUrl")
+    )
+    has_dupr = (g.user.get("dupr_rating") or 0) > 0 or (
+        g.user.get("duprRating") or 0
+    ) > 0
     has_group = len(user_groups) > 0
     has_match = total_matches > 0
 
