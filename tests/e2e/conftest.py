@@ -118,6 +118,18 @@ def get_by_field_path(self: DocumentSnapshot, field_path: str) -> Any:
 DocumentSnapshot._get_by_field_path = get_by_field_path
 
 
+# Patch DocumentReference.get to handle transaction kwarg
+original_doc_get = DocumentReference.get
+
+
+def doc_ref_get(self: DocumentReference, transaction: Any = None) -> DocumentSnapshot:
+    """Handle transaction argument in get."""
+    return original_doc_get(self)
+
+
+DocumentReference.get = doc_ref_get
+
+
 # Patch DocumentReference equality and hashing
 def doc_ref_eq(self: DocumentReference, other: Any) -> bool:
     """Equality for DocumentReference."""
@@ -201,6 +213,54 @@ class MockFieldFilter:
         self.value = value
 
 
+class MockTransaction:
+    """Mock for firestore.Transaction."""
+
+    def __init__(self, client: Any) -> None:
+        """Initialize mock transaction."""
+        self._client = client
+        self._read_only = False
+        self.ops: list[Any] = []
+
+    def get(self, ref_or_query: Any) -> Any:
+        """Mock get."""
+        return ref_or_query.get()
+
+    def set(
+        self, doc_ref: DocumentReference, data: dict[str, Any], merge: bool = False
+    ) -> None:
+        """Mock set."""
+        self.ops.append(("set", doc_ref, data, merge))
+
+    def update(self, doc_ref: DocumentReference, data: dict[str, Any]) -> None:
+        """Mock update."""
+        self.ops.append(("update", doc_ref, data))
+
+    def delete(self, doc_ref: DocumentReference) -> None:
+        """Mock delete."""
+        self.ops.append(("delete", doc_ref))
+
+    def commit(self) -> None:
+        """Mock commit."""
+        for op in self.ops:
+            if op[0] == "set":
+                op[1].set(op[2], merge=op[3])
+            elif op[0] == "update":
+                op[1].update(op[2])
+            elif op[0] == "delete":
+                op[1].delete()
+        self.ops = []
+
+    def __enter__(self) -> MockTransaction:
+        """Context manager enter."""
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Context manager exit."""
+        if exc_type is None:
+            self.commit()
+
+
 class MockBatch:
     """Mock for firestore.WriteBatch."""
 
@@ -252,9 +312,9 @@ class EnhancedMockFirestore(MockFirestore):
         """Return MockBatch."""
         return MockBatch(self)
 
-    def transaction(self) -> MagicMock:
-        """Return dummy transaction."""
-        return MagicMock()
+    def transaction(self) -> MockTransaction:
+        """Return MockTransaction."""
+        return MockTransaction(self)
 
 
 class MockAuthService:
@@ -355,8 +415,9 @@ def app_server(
         firebase_admin.firestore, "ArrayRemove", side_effect=mock_array_remove
     )
     p10 = patch.object(firebase_admin.firestore, "FieldFilter", MockFieldFilter)
+    p11 = patch.object(firebase_admin.firestore, "transactional", lambda x: x)
 
-    # Start p1 through p10 immediately after definitions
+    # Start p1 through p11 immediately after definitions
     p1.start()
     p2.start()
     p3.start()
@@ -367,6 +428,7 @@ def app_server(
     p8.start()
     p9.start()
     p10.start()
+    p11.start()
 
     os.environ["FIREBASE_PROJECT_ID"] = "test-project"
     os.environ["SECRET_KEY"] = "dev"  # nosec
@@ -396,6 +458,7 @@ def app_server(
     p8.stop()
     p9.stop()
     p10.stop()
+    p11.stop()
 
 
 @pytest.fixture

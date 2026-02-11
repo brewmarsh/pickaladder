@@ -162,6 +162,15 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     expect(page.locator("h1")).to_contain_text("Pickleballers")
     expect(page.locator(".toast")).to_contain_text("Match recorded successfully")
 
+    # TAKE SCREENSHOT
+    page.screenshot(path="/home/jules/verification/group_detail.png")
+
+    # Share Group
+    page.click("button:has-text('Share')")
+    page.wait_for_selector(".social-share-card")
+    page.screenshot(path="/home/jules/verification/share_card.png")
+    page.click("button:has-text('Done')")
+
     # Check Global Leaderboard (Req: "see the leaderboard")
     with page.expect_navigation():
         page.click("text=Leaderboard")

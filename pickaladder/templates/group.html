@@ -232,19 +232,37 @@
                     {% set user_in_p2 = (m_p2 and m_p2.id == current_user_id) or (m_opp2 and m_opp2.id == current_user_id) %}
 
                     {% if user_in_p2 %}
-                        {% set primary_names = (match.team2.name if (match.team2 and match.team2.name) else (match.player2 | display_name + ((' & ' + match.opponent2 | display_name) if match.opponent2 else ''))) %}
-                        {% set opponent_names = (match.team1.name if (match.team1 and match.team1.name) else (match.player1 | display_name + ((' & ' + match.partner | display_name) if match.partner else ''))) %}
+                        {% set primary_names = (match.team2.name if (match.team2 is defined and match.team2 and match.team2.name) else (match.player2 | display_name if match.player2 is defined else 'Opponent')) %}
+                        {% if not (match.team2 is defined and match.team2 and match.team2.name) and match.opponent2 is defined and match.opponent2 %}
+                            {% set primary_names = primary_names + ' & ' + (match.opponent2 | display_name) %}
+                        {% endif %}
+                        {% set opponent_names = (match.team1.name if (match.team1 is defined and match.team1 and match.team1.name) else (match.player1 | display_name if match.player1 is defined else 'Player')) %}
+                        {% if not (match.team1 is defined and match.team1 and match.team1.name) and match.partner is defined and match.partner %}
+                            {% set opponent_names = opponent_names + ' & ' + (match.partner | display_name) %}
+                        {% endif %}
                         {% set primary_score = p2_score %}
                         {% set opponent_score = p1_score %}
                     {% elif user_in_p1 or p1_score >= p2_score %}
-                        {% set primary_names = (match.team1.name if (match.team1 and match.team1.name) else (match.player1 | display_name + ((' & ' + match.partner | display_name) if match.partner else ''))) %}
-                        {% set opponent_names = (match.team2.name if (match.team2 and match.team2.name) else (match.player2 | display_name + ((' & ' + match.opponent2 | display_name) if match.opponent2 else ''))) %}
+                        {% set primary_names = (match.team1.name if (match.team1 is defined and match.team1 and match.team1.name) else (match.player1 | display_name if match.player1 is defined else 'Player')) %}
+                        {% if not (match.team1 is defined and match.team1 and match.team1.name) and match.partner is defined and match.partner %}
+                            {% set primary_names = primary_names + ' & ' + (match.partner | display_name) %}
+                        {% endif %}
+                        {% set opponent_names = (match.team2.name if (match.team2 is defined and match.team2 and match.team2.name) else (match.player2 | display_name if match.player2 is defined else 'Opponent')) %}
+                        {% if not (match.team2 is defined and match.team2 and match.team2.name) and match.opponent2 is defined and match.opponent2 %}
+                            {% set opponent_names = opponent_names + ' & ' + (match.opponent2 | display_name) %}
+                        {% endif %}
                         {% set primary_score = p1_score %}
                         {% set opponent_score = p2_score %}
                     {% else %}
                         {# P2 won and user not in match #}
-                        {% set primary_names = (match.team2.name if (match.team2 and match.team2.name) else (match.player2 | display_name + ((' & ' + match.opponent2 | display_name) if match.opponent2 else ''))) %}
-                        {% set opponent_names = (match.team1.name if (match.team1 and match.team1.name) else (match.player1 | display_name + ((' & ' + match.partner | display_name) if match.partner else ''))) %}
+                        {% set primary_names = (match.team2.name if (match.team2 is defined and match.team2 and match.team2.name) else (match.player2 | display_name if match.player2 is defined else 'Opponent')) %}
+                        {% if not (match.team2 is defined and match.team2 and match.team2.name) and match.opponent2 is defined and match.opponent2 %}
+                            {% set primary_names = primary_names + ' & ' + (match.opponent2 | display_name) %}
+                        {% endif %}
+                        {% set opponent_names = (match.team1.name if (match.team1 is defined and match.team1 and match.team1.name) else (match.player1 | display_name if match.player1 is defined else 'Player')) %}
+                        {% if not (match.team1 is defined and match.team1 and match.team1.name) and match.partner is defined and match.partner %}
+                            {% set opponent_names = opponent_names + ' & ' + (match.partner | display_name) %}
+                        {% endif %}
                         {% set primary_score = p2_score %}
                         {% set opponent_score = p1_score %}
                     {% endif %}
@@ -318,7 +336,7 @@
                     {{ invite_email_form.email.label }}
                     {{ invite_email_form.email(class="form-control") }}
                 </div>
-                <button type="submit" class="btn">Send Invite</button>
+                <input type="submit" value="Send Invite" class="btn">
             </form>
 
             <h3>Danger Zone</h3>
