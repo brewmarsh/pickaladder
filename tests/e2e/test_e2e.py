@@ -32,10 +32,8 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         with page.expect_navigation():
             page.click("input[value='Login']")
 
-    page.click("#edit-profile-toggle")
-    expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(
-        timeout=10000
-    )
+    page.click(".btn-edit-gear")
+    expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
 
     # Logout
     page.click(".dropbtn", force=True)
@@ -63,10 +61,8 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("input[value='Login']")
 
-    page.click("#edit-profile-toggle")
-    expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(
-        timeout=10000
-    )
+    page.click(".btn-edit-gear")
+    expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
 
     # 3. Add Friend (User 2 invites Admin)
     with page.expect_navigation():

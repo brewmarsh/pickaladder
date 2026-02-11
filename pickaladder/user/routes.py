@@ -60,7 +60,7 @@ def settings() -> Any:
             )
 
         # Update base fields (dark_mode and profile_pic if uploaded)
-        update_data = {"dark_mode": bool(form.dark_mode.data)}
+        update_data: dict[str, Any] = {"dark_mode": bool(form.dark_mode.data)}
         if profile_pic_url:
             update_data["profilePictureUrl"] = profile_pic_url
 
