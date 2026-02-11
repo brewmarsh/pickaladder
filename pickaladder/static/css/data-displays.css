@@ -1,0 +1,153 @@
+/* --- 2. Data Display (Tables) --- */
+.table-standard {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+.table-standard th {
+    background-color: var(--bg-color);
+    color: var(--text-secondary);
+    font-weight: var(--fw-medium);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--border-color);
+}
+.table-standard td {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+.table-standard tr:last-child td { border-bottom: none; }
+
+.table-container {
+    background-color: var(--card-bg);
+    box-shadow: var(--box-shadow);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+/* Responsive Table Logic (Migrated from mobile.css) */
+@media screen and (max-width: 768px) {
+    .responsive-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .responsive-table thead {
+        display: none;
+    }
+
+    .responsive-table tbody,
+    .responsive-table tr,
+    .responsive-table td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .responsive-table tr {
+        margin-bottom: 15px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 0 10px;
+    }
+
+    .responsive-table td {
+        padding-left: 50%;
+        position: relative;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+        text-align: right; /* Align content to right */
+    }
+
+    .responsive-table tr td:last-child {
+        border-bottom: none;
+    }
+
+    .responsive-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        width: 45%;
+        padding-right: 10px;
+        font-weight: bold;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    /* Special handling for avatar cells in responsive mode */
+    .responsive-table td[data-label="Avatar"],
+    .responsive-table td[data-label="Logo"] {
+        padding-left: 10px;
+        text-align: center;
+    }
+
+    .responsive-table td[data-label="Avatar"]::before,
+    .responsive-table td[data-label="Logo"]::before {
+        display: none;
+    }
+
+    /* Hero Card Mobile Stacking */
+    .hero-stats-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+
+    .hero-left-panel, .hero-middle-panel, .hero-right-panel {
+        width: 100%;
+        margin-bottom: 0;
+    }
+}
+
+.table th, .table td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.table td[data-label="Result"] {
+    text-align: center;
+}
+
+.table th {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+    font-weight: 500;
+}
+
+.leaderboard-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 100px 100px 80px;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.rank-1 { color: #FFD700; }
+.rank-2 { color: #C0C0C0; }
+.rank-3 { color: #CD7F32; }
+
+/* --- 3. Scoring Typography --- */
+.score-display {
+    font-family: var(--font-score);
+    font-weight: var(--fw-bold);
+    font-size: 1.75rem;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+.score-win { color: var(--success-color); }
+.score-loss { color: var(--text-secondary); }

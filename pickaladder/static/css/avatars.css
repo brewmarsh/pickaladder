@@ -1,0 +1,92 @@
+/* --- 4. Status Badges --- */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: var(--fw-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* Volt Badge (Primary Action/Status) */
+.badge-volt {
+    background-color: var(--accent-color);
+    color: var(--text-primary); /* Dark text for contrast */
+}
+
+.badge-success { background-color: var(--success-color); color: white; }
+.badge-warning { background-color: var(--warning-color); color: var(--text-primary); }
+.badge-danger  { background-color: var(--danger-color); color: white; }
+.badge-neutral { background-color: var(--bg-color); color: var(--text-secondary); border: 1px solid var(--border-color); }
+
+/* Profile Picture Fix */
+.profile-picture-container {
+    overflow: hidden;
+    border-radius: 50% !important;
+    flex-shrink: 0;
+    background-color: var(--bg-color);
+    display: block;
+}
+
+.profile-picture-container img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block;
+}
+
+/* Specificity override to fix masking and size */
+.hero-stats-card .profile-picture-container .profile-picture {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border: none;
+    margin: 0;
+}
+
+/* --- 5. Avatar System (Consolidated) --- */
+.profile-picture {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    aspect-ratio: 1/1;
+    border-radius: 50% !important;
+}
+
+.avatar {
+    object-fit: cover;
+    border-radius: 50% !important;
+    flex-shrink: 0;
+    background-color: var(--bg-color);
+    aspect-ratio: 1/1;
+}
+
+.avatar-sm { width: 32px; height: 32px; }
+.avatar-md { width: 48px; height: 48px; }
+.avatar-lg { width: 80px; height: 80px; }
+.avatar-xl { width: 120px; height: 120px; }
+
+/* Vanity Stats */
+.vanity-stats-container {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}
+
+@media screen and (max-width: 768px) {
+    .vanity-stats-container {
+        gap: 1rem !important;
+    }
+}
+
+.vanity-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}

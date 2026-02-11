@@ -1,0 +1,89 @@
+/* --- 1. Surface System (Cards) --- */
+.card {
+    background-color: var(--card-bg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+.card:hover { box-shadow: var(--shadow-md); }
+.card-notification {
+    background-color: #eff6ff;
+    border: 1px solid var(--primary-color);
+}
+.card-compact { padding: 16px; }
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    font-weight: var(--fw-bold);
+    font-size: 1.1rem;
+}
+
+.hero-stats-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 24px;
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.hero-left-panel, .hero-middle-panel, .hero-right-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.hero-middle-panel {
+    flex: 2;
+}
+
+/* Modals */
+.modal-header h5 { margin: 0; font-weight: 500; }
+.modal-content {
+    background-color: var(--card-bg);
+    margin: 15% auto;
+    padding: 24px;
+    border: 1px solid var(--border-color);
+    width: 80%;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+.modal-body { padding: 16px; }
+
+/* Toasts */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    min-width: 300px;
+}
+.toast {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    position: relative;
+}
+.toast::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background-color: var(--primary-color);
+}
+.toast-body { padding: 15px 20px; }

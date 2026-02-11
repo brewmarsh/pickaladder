@@ -1,0 +1,47 @@
+/* --- 0. Layout Utilities --- */
+.w-auto { width: auto !important; }
+.mx-auto { margin-left: auto !important; margin-right: auto !important; }
+.gap-4 { gap: 1.5rem !important; }
+.justify-content-center { justify-content: center !important; }
+.text-center { text-align: center !important; }
+
+/* --- 6. Input Groups (Design System) --- */
+.input-group {
+    display: flex;
+    width: 100%;
+}
+
+.input-group .form-control {
+    flex: 1 1 auto;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group-append {
+    display: flex;
+}
+
+.input-group-append .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    width: auto;
+}
+
+/* Progress Bar */
+.progress {
+    display: flex;
+    height: 1rem;
+    overflow: hidden;
+    background-color: #e9ecef;
+    border-radius: var(--border-radius);
+}
+.progress-bar {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Page Header Standardization */
+.page-header-actions h1 {
+    margin-bottom: 0 !important;
+}
