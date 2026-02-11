@@ -75,6 +75,11 @@ body {
     width: auto;
 }
 
+/* Hamburger Animation */
+.hamburger-menu.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+.hamburger-menu.active span:nth-child(2) { opacity: 0; }
+.hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
 .dashboard-columns {
     display: flex;
     gap: 24px;
