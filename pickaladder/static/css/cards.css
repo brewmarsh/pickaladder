@@ -47,19 +47,18 @@
     flex: 2;
 }
 
-/* Hero Card Mobile Stacking */
-@media screen and (max-width: 768px) {
-    .hero-stats-card {
-        flex-direction: column;
-        text-align: center;
-        gap: 20px;
-    }
-
-    .hero-left-panel, .hero-middle-panel, .hero-right-panel {
-        width: 100%;
-        margin-bottom: 0;
-    }
+/* Modals */
+.modal-header h5 { margin: 0; font-weight: 500; }
+.modal-content {
+    background-color: var(--card-bg);
+    margin: 15% auto;
+    padding: 24px;
+    border: 1px solid var(--border-color);
+    width: 80%;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
 }
+.modal-body { padding: 16px; }
 
 /* Toasts */
 .toast-container {

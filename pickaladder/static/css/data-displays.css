@@ -34,26 +34,6 @@
     margin-top: 20px;
 }
 
-.table th, .table td {
-    padding: 16px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-.table td[data-label="Result"] {
-    text-align: center;
-}
-
-.table th {
-    background-color: var(--primary-color);
-    color: var(--text-on-primary);
-    font-weight: 500;
-}
-
 /* Responsive Table Logic (Migrated from mobile.css) */
 @media screen and (max-width: 768px) {
     .responsive-table {
@@ -115,4 +95,59 @@
     .responsive-table td[data-label="Logo"]::before {
         display: none;
     }
+
+    /* Hero Card Mobile Stacking */
+    .hero-stats-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+
+    .hero-left-panel, .hero-middle-panel, .hero-right-panel {
+        width: 100%;
+        margin-bottom: 0;
+    }
 }
+
+.table th, .table td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.table td[data-label="Result"] {
+    text-align: center;
+}
+
+.table th {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+    font-weight: 500;
+}
+
+.leaderboard-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 100px 100px 80px;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.rank-1 { color: #FFD700; }
+.rank-2 { color: #C0C0C0; }
+.rank-3 { color: #CD7F32; }
+
+/* --- 3. Scoring Typography --- */
+.score-display {
+    font-family: var(--font-score);
+    font-weight: var(--fw-bold);
+    font-size: 1.75rem;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+.score-win { color: var(--success-color); }
+.score-loss { color: var(--text-secondary); }

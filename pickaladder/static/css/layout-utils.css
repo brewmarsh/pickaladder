@@ -26,3 +26,22 @@
     border-bottom-left-radius: 0;
     width: auto;
 }
+
+/* Progress Bar */
+.progress {
+    display: flex;
+    height: 1rem;
+    overflow: hidden;
+    background-color: #e9ecef;
+    border-radius: var(--border-radius);
+}
+.progress-bar {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Page Header Standardization */
+.page-header-actions h1 {
+    margin-bottom: 0 !important;
+}

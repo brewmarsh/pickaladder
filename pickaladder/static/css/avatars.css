@@ -55,13 +55,16 @@
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
+    aspect-ratio: 1/1;
+    border-radius: 50% !important;
 }
 
 .avatar {
     object-fit: cover;
-    border-radius: 50%;
+    border-radius: 50% !important;
     flex-shrink: 0;
     background-color: var(--bg-color);
+    aspect-ratio: 1/1;
 }
 
 .avatar-sm { width: 32px; height: 32px; }
