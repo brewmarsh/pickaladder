@@ -22,6 +22,8 @@ from . import bp
 from .forms import InvitePlayerForm, TournamentForm
 from .services import TournamentGenerator, TournamentService
 
+MIN_PARTICIPANTS_FOR_GENERATION = 2
+
 
 @bp.route("/", methods=["GET"])
 @login_required
@@ -274,7 +276,7 @@ def generate_bracket(tournament_id: str) -> Any:
         if p.get("status") == "accepted"
     ]
 
-    if len(accepted_ids) < 2:
+    if len(accepted_ids) < MIN_PARTICIPANTS_FOR_GENERATION:
         flash(
             "At least 2 accepted participants are required to generate a bracket.",
             "warning",
