@@ -501,3 +501,10 @@ class TournamentService:
         )
         winner = standings[0]["name"] if standings else "No one"
         TournamentService._notify_participants(data, winner, standings)
+
+    @staticmethod
+    def delete_tournament(tournament_id: str, db: Client | None = None) -> None:
+        """Delete a tournament document from Firestore."""
+        if db is None:
+            db = firestore.client()
+        db.collection("tournaments").document(tournament_id).delete()

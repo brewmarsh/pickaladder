@@ -40,3 +40,22 @@ def login_required(
     if f:
         return decorator(f)
     return decorator
+
+
+def admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
+    """Redirect to the home page if the user is not an administrator.
+
+    This is a specialized decorator for the tournament paywall that shows
+     a specific warning message.
+    """
+
+    @wraps(f)
+    def decorated_function(*args: Any, **kwargs: Any) -> Any:
+        if "user_id" not in session:
+            return redirect(url_for("auth.login"))
+        if not session.get("is_admin"):
+            flash("⚠️ Only administrators can create tournaments.", "danger")
+            return redirect(url_for("user.dashboard"))
+        return f(*args, **kwargs)
+
+    return decorated_function

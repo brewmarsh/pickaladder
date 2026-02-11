@@ -74,6 +74,11 @@ class UserSession(UserDict, UserMixin):
         return str(self.get("uid", ""))
 
     @property
+    def is_admin(self) -> bool:
+        """Return True if the user is an administrator."""
+        return self.get("isAdmin", False)
+
+    @property
     def avatar_url(self) -> str:
         """Return a deterministic avatar URL based on the user ID."""
         # If the user has a profile picture, use it
