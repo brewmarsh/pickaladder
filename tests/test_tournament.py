@@ -299,9 +299,13 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "date": datetime.datetime(2024, 6, 1),
             }
         )
-        with patch("pickaladder.tournament.services.get_tournament_standings") as mock_standings:
+        with patch(
+            "pickaladder.tournament.services.get_tournament_standings"
+        ) as mock_standings:
             mock_standings.return_value = []
-            response = self.client.get(f"/tournaments/{tournament_id}", headers=self._get_auth_headers())
+            response = self.client.get(
+                f"/tournaments/{tournament_id}", headers=self._get_auth_headers()
+            )
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Edit Tournament", response.data)
@@ -322,9 +326,13 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "date": datetime.datetime(2024, 6, 1),
             }
         )
-        with patch("pickaladder.tournament.services.get_tournament_standings") as mock_standings:
+        with patch(
+            "pickaladder.tournament.services.get_tournament_standings"
+        ) as mock_standings:
             mock_standings.return_value = []
-            response = self.client.get(f"/tournaments/{tournament_id}", headers=self._get_auth_headers())
+            response = self.client.get(
+                f"/tournaments/{tournament_id}", headers=self._get_auth_headers()
+            )
 
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(b"Edit Tournament", response.data)
@@ -531,7 +539,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user(is_admin=True)
 
         tournament_id = "test_tournament_id"
-        self.mock_db.collection("tournaments").document(tournament_id).set({"name": "To be deleted"})
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {"name": "To be deleted"}
+        )
 
         response = self.client.post(
             f"/tournaments/{tournament_id}/delete",
@@ -541,14 +551,18 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Tournament deleted successfully.", response.data)
-        self.assertFalse(self.mock_db.collection("tournaments").document(tournament_id).get().exists)
+        self.assertFalse(
+            self.mock_db.collection("tournaments").document(tournament_id).get().exists
+        )
 
     def test_delete_tournament_non_admin(self) -> None:
         """Test that a non-admin cannot delete a tournament."""
         self._set_session_user(is_admin=False)
 
         tournament_id = "test_tournament_id"
-        self.mock_db.collection("tournaments").document(tournament_id).set({"name": "Not deleted"})
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {"name": "Not deleted"}
+        )
 
         response = self.client.post(
             f"/tournaments/{tournament_id}/delete",
@@ -558,7 +572,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Only administrators can create tournaments.", response.data)
-        self.assertTrue(self.mock_db.collection("tournaments").document(tournament_id).get().exists)
+        self.assertTrue(
+            self.mock_db.collection("tournaments").document(tournament_id).get().exists
+        )
 
 
 if __name__ == "__main__":
