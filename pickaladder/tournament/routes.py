@@ -139,9 +139,10 @@ def edit_tournament(tournament_id: str) -> Any:
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
         form.location.data = tournament_data.get("location")
-        form.mode.data = tournament_data.get("mode") or tournament_data.get(
-            "matchType", "SINGLES"
-        ).upper()
+        form.mode.data = (
+            tournament_data.get("mode")
+            or tournament_data.get("matchType", "SINGLES").upper()
+        )
         raw_date = tournament_data.get("date")
         if hasattr(raw_date, "to_datetime"):
             form.date.data = raw_date.to_datetime().date()
@@ -279,7 +280,9 @@ def register_team(tournament_id: str) -> Any:
 def accept_team(tournament_id: str) -> Any:
     """Accept a team partnership invitation."""
     try:
-        success = TournamentService.accept_team_partnership(tournament_id, g.user["uid"])
+        success = TournamentService.accept_team_partnership(
+            tournament_id, g.user["uid"]
+        )
         if success:
             flash("You have accepted the team partnership!", "success")
         else:

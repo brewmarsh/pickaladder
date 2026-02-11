@@ -225,7 +225,12 @@ class TournamentService:
         # Team Status
         team_status = None
         pending_partner_invite = False
-        teams_query = db.collection("tournaments").document(tournament_id).collection("teams").stream()
+        teams_query = (
+            db.collection("tournaments")
+            .document(tournament_id)
+            .collection("teams")
+            .stream()
+        )
         for doc in teams_query:
             t_team = doc.to_dict()
             if t_team["p1_uid"] == user_uid or t_team["p2_uid"] == user_uid:
@@ -556,9 +561,11 @@ class TournamentService:
         teams_ref = (
             db.collection("tournaments").document(tournament_id).collection("teams")
         )
-        query = teams_ref.where(filter=firestore.FieldFilter("p2_uid", "==", user_uid)).where(
-            filter=firestore.FieldFilter("status", "==", "PENDING")
-        ).stream()
+        query = (
+            teams_ref.where(filter=firestore.FieldFilter("p2_uid", "==", user_uid))
+            .where(filter=firestore.FieldFilter("status", "==", "PENDING"))
+            .stream()
+        )
 
         updated = False
         for doc in query:
@@ -574,24 +581,30 @@ class TournamentService:
             new_parts = []
             if p1_uid not in p_ids:
                 new_ids.append(p1_uid)
-                new_parts.append({
-                    "userRef": db.collection("users").document(p1_uid),
-                    "status": "accepted",
-                    "team_name": data["team_name"]
-                })
+                new_parts.append(
+                    {
+                        "userRef": db.collection("users").document(p1_uid),
+                        "status": "accepted",
+                        "team_name": data["team_name"],
+                    }
+                )
             if user_uid not in p_ids:
                 new_ids.append(user_uid)
-                new_parts.append({
-                    "userRef": db.collection("users").document(user_uid),
-                    "status": "accepted",
-                    "team_name": data["team_name"]
-                })
+                new_parts.append(
+                    {
+                        "userRef": db.collection("users").document(user_uid),
+                        "status": "accepted",
+                        "team_name": data["team_name"],
+                    }
+                )
 
             if new_parts:
-                t_ref.update({
-                    "participants": firestore.ArrayUnion(new_parts),
-                    "participant_ids": firestore.ArrayUnion(new_ids)
-                })
+                t_ref.update(
+                    {
+                        "participants": firestore.ArrayUnion(new_parts),
+                        "participant_ids": firestore.ArrayUnion(new_ids),
+                    }
+                )
 
             updated = True
 
@@ -599,7 +612,7 @@ class TournamentService:
 
     @staticmethod
     def generate_bracket(tournament_id: str, db: Client | None = None) -> list[Any]:
-        """Generate a bracket for the tournament based on participants or confirmed teams."""
+        """Generate a tournament bracket based on participants or teams."""
         if db is None:
             db = firestore.client()
 
@@ -613,7 +626,9 @@ class TournamentService:
 
         if mode == "SINGLES":
             participants = [
-                p for p in t_data.get("participants", []) if p.get("status") == "accepted"
+                p
+                for p in t_data.get("participants", [])
+                if p.get("status") == "accepted"
             ]
             # Simplistic seeding: just list them
             return participants
