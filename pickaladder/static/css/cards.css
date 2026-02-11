@@ -130,6 +130,7 @@
 .social-share-card-title {
     font-size: 2rem;
     margin-bottom: 15px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 1.0);
 }
 
 .social-share-card-stat {

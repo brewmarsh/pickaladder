@@ -473,7 +473,19 @@
                     <div class="social-share-card-footer">Join us on pickaladder.io</div>
                 </div>
                 <div class="mt-4 text-center">
-                    <p class="text-white mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Screenshot this card to share!</p>
+                    <div class="form-group">
+                        <label class="text-white" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Invite Link</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control"
+                                value="{{ url_for('group.view_group', group_id=group.id, ref=g.user.uid, _external=True) }}"
+                                id="group-invite-link" readonly>
+                            <div class="input-group-append">
+                                <button class="btn btn-volt" id="copy-link-btn" style="margin-top: 0; width: auto;">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="qrcode" class="d-flex justify-content-center mt-3" style="background: white; padding: 10px; border-radius: 10px; width: fit-content; margin-left: auto; margin-right: auto;"></div>
+                    <p class="text-white mt-3 mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Screenshot this card or share the link!</p>
                     <button type="button" class="btn btn-volt" data-dismiss="modal" style="width: auto;">Done</button>
                 </div>
             </div>
@@ -484,7 +496,57 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle Copy Link
+        const copyBtn = document.getElementById('copy-link-btn');
+        const inviteInput = document.getElementById('group-invite-link');
+
+        if (copyBtn && inviteInput) {
+            copyBtn.addEventListener('click', function() {
+                inviteInput.select();
+                inviteInput.setSelectionRange(0, 99999); // For mobile devices
+
+                try {
+                    navigator.clipboard.writeText(inviteInput.value).then(() => {
+                        const originalText = copyBtn.innerText;
+                        copyBtn.innerText = 'Copied!';
+                        copyBtn.classList.remove('btn-volt');
+                        copyBtn.classList.add('btn-success');
+
+                        setTimeout(() => {
+                            copyBtn.innerText = originalText;
+                            copyBtn.classList.remove('btn-success');
+                            copyBtn.classList.add('btn-volt');
+                        }, 2000);
+                    });
+                } catch (err) {
+                    console.error('Failed to copy: ', err);
+                }
+            });
+        }
+
+        // Handle QR Code Generation
+        let qrcode = null;
+        $('#shareGroupModal').on('shown.bs.modal', function () {
+            const inviteLink = document.getElementById('group-invite-link').value;
+            const qrcodeContainer = document.getElementById('qrcode');
+
+            if (qrcodeContainer) {
+                qrcodeContainer.innerHTML = ''; // Clear previous
+                qrcode = new QRCode(qrcodeContainer, {
+                    text: inviteLink,
+                    width: 128,
+                    height: 128,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+        });
+    });
+
     function openTab(evt, tabName) {
         var i, tabcontent, tabbuttons;
         tabcontent = document.getElementsByClassName("tab-content");

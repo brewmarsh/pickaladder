@@ -12,6 +12,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 
@@ -58,6 +59,10 @@ def view_groups() -> Any:
 @login_required
 def view_group(group_id: str) -> Any:
     """Display a single group's page."""
+    # Capture Referrer
+    if "ref" in request.args:
+        session["referrer_id"] = request.args.get("ref")
+
     db = firestore.client()
     player_a_id = request.args.get("playerA")
     player_b_id = request.args.get("playerB")
