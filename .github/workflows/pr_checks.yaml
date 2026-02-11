@@ -2,21 +2,20 @@ name: Quality Gate
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
-  quality-gate:
+  test:
     name: Quality Gate
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:13
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
+          POSTGRES_DB: pickaladder_test
+          POSTGRES_HOST_AUTH_METHOD: trust
         ports:
           - 5432:5432
         options: >-
@@ -34,32 +33,18 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
-        with:
-          python-version: 3.11
+      - name: Setup Database
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
 
-      - name: Install dependencies
-        run: uv pip install -r requirements.txt -r requirements-test.txt coverage --system
-
-      - name: Install Playwright
-        run: uv pip install playwright pytest-playwright --system
+      - name: Install Dependencies
+        run: uv sync
 
       - name: Install Playwright Browsers
-        env:
-          UV_SYSTEM_PYTHON: 1
-        run: uv run --no-project playwright install --with-deps
-
-      - name: Enable uuid-ossp extension
-        run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
-          PGPASSWORD=postgres psql -h localhost -U postgres -p 5432 -d postgres -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+        run: uv run playwright install --with-deps
 
       - name: Run Tests
         env:
-          DB_HOST: localhost
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-          UV_SYSTEM_PYTHON: 1
+          TESTING: "True"
+          SECRET_KEY: "test-secret-key"
         run: uv run --no-project python -m pytest

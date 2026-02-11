@@ -8,322 +8,202 @@
         <p class="text-muted">A living documentation of the pickaladder UI components.</p>
     </div>
 
-    <!-- Colors Section -->
-    <section class="mb-5">
-        <h2>Colors</h2>
-        <p class="text-muted mb-4">The "COURT & VOLT" color system. Use these CSS variables to maintain consistency.</p>
-        <div class="card">
-            <div class="d-flex flex-wrap gap-4">
-                <div class="color-swatch-container">
-                    <div class="color-swatch" style="background-color: var(--primary-color);"></div>
-                    <div class="color-info">
-                        <span class="fw-bold">Primary</span>
-                        <code>--primary-color</code>
-                        <small>#2563EB</small>
-                    </div>
-                </div>
-                <div class="color-swatch-container">
-                    <div class="color-swatch" style="background-color: var(--text-secondary);"></div>
-                    <div class="color-info">
-                        <span class="fw-bold">Secondary</span>
-                        <code>--text-secondary</code>
-                        <small>#6B7280</small>
-                    </div>
-                </div>
-                <div class="color-swatch-container">
-                    <div class="color-swatch" style="background-color: var(--accent-color);"></div>
-                    <div class="color-info">
-                        <span class="fw-bold">Accent (Volt)</span>
-                        <code>--accent-color</code>
-                        <small>#84CC16</small>
-                    </div>
-                </div>
-                <div class="color-swatch-container">
-                    <div class="color-swatch" style="background-color: var(--success-color);"></div>
-                    <div class="color-info">
-                        <span class="fw-bold">Success</span>
-                        <code>--success-color</code>
-                        <small>#10B981</small>
-                    </div>
-                </div>
-                <div class="color-swatch-container">
-                    <div class="color-swatch" style="background-color: var(--danger-color);"></div>
-                    <div class="color-info">
-                        <span class="fw-bold">Danger</span>
-                        <code>--danger-color</code>
-                        <small>#EF4444</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Badges Section -->
-    <section class="mb-5">
-        <h2>Badges</h2>
-        <p class="text-muted">Status indicators and labels.</p>
-        <div class="card">
-            <div class="d-flex flex-wrap gap-2">
-                <span class="badge badge-success">Success</span>
-                <span class="badge badge-danger">Danger</span>
-                <span class="badge badge-volt">Volt</span>
-                <span class="badge badge-warning">Warning</span>
-                <span class="badge badge-neutral">Neutral</span>
-            </div>
-        </div>
-        <pre><code>&lt;span class="badge badge-success"&gt;Success&lt;/span&gt;
-&lt;span class="badge badge-danger"&gt;Danger&lt;/span&gt;
-&lt;span class="badge badge-volt"&gt;Volt&lt;/span&gt;</code></pre>
-    </section>
-
     <!-- Typography Section -->
-    <section class="mb-5">
+    <section class="mb-4">
         <h2>Typography</h2>
         <div class="card">
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <h1 class="mb-3">Heading 1</h1>
-                    <h2 class="mb-3">Heading 2</h2>
-                    <h3 class="mb-3">Heading 3</h3>
-                    <p class="mb-0">This is body text. It uses the Inter font family. The quick brown fox jumps over the lazy dog. Pickleball is a paddleball sport that combines elements of badminton, table tennis, and tennis.</p>
+                    <h1>Heading 1</h1>
+                    <h2>Heading 2</h2>
+                    <h3>Heading 3</h3>
+                    <h4>Heading 4</h4>
+                    <h5>Heading 5</h5>
+                    <h6>Heading 6</h6>
+                    <p>This is a standard paragraph using the Inter font family. It is designed for readability and clarity across the application.</p>
                 </div>
                 <div class="col-md-6">
-                    <pre><code>&lt;h1 class="mb-3"&gt;Heading 1&lt;/h1&gt;
-&lt;h2 class="mb-3"&gt;Heading 2&lt;/h2&gt;
-&lt;h3 class="mb-3"&gt;Heading 3&lt;/h3&gt;
-&lt;p class="mb-0"&gt;Body text&lt;/p&gt;</code></pre>
+                    <pre><code>&lt;h1&gt;Heading 1&lt;/h1&gt;
+&lt;h2&gt;Heading 2&lt;/h2&gt;
+&lt;h3&gt;Heading 3&lt;/h3&gt;
+&lt;h4&gt;Heading 4&lt;/h4&gt;
+&lt;h5&gt;Heading 5&lt;/h5&gt;
+&lt;h6&gt;Heading 6&lt;/h6&gt;
+&lt;p&gt;Paragraph text&lt;/p&gt;</code></pre>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Buttons Section -->
-    <section class="mb-5">
+    <section class="mb-4">
         <h2>Buttons</h2>
         <div class="card">
             <div class="row">
                 <div class="col-md-6">
                     <div class="d-flex flex-column gap-3">
-                        <div class="d-flex gap-2 align-items-center">
-                            <button class="btn btn-primary w-auto">Primary</button>
-                            <code>.btn .btn-primary .w-auto</code>
+                        <div>
+                            <button class="btn btn-primary w-auto">Primary Button</button>
                         </div>
-                        <div class="d-flex gap-2 align-items-center">
-                            <button class="btn btn-volt w-auto">Volt</button>
-                            <code>.btn .btn-volt .w-auto</code>
+                        <div>
+                            <button class="btn btn-volt w-auto">Volt Button</button>
                         </div>
-                        <div class="d-flex gap-2 align-items-center">
-                            <button class="btn btn-danger w-auto">Danger</button>
-                            <code>.btn .btn-danger .w-auto</code>
+                        <div>
+                            <button class="btn btn-outline-primary w-auto">Outline Button</button>
                         </div>
-                        <div class="d-flex gap-2 align-items-center">
-                            <button class="btn btn-outline-primary w-auto">Outline</button>
-                            <code>.btn .btn-outline-primary .w-auto</code>
-                        </div>
-                        <div class="d-flex flex-column gap-1">
-                            <button class="btn btn-primary">Full Width Button</button>
-                            <code>.btn .btn-primary</code>
+                        <div>
+                            <button class="btn btn-danger w-auto">Danger Button</button>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <pre><code>&lt;button class="btn btn-primary w-auto"&gt;Primary&lt;/button&gt;
-&lt;button class="btn btn-volt w-auto"&gt;Volt&lt;/button&gt;
-&lt;button class="btn btn-danger w-auto"&gt;Danger&lt;/button&gt;
-&lt;button class="btn btn-outline-primary w-auto"&gt;Outline&lt;/button&gt;
-&lt;button class="btn btn-primary"&gt;Full Width&lt;/button&gt;</code></pre>
+                    <pre><code>&lt;button class="btn btn-primary"&gt;Primary Button&lt;/button&gt;
+&lt;button class="btn btn-volt"&gt;Volt Button&lt;/button&gt;
+&lt;button class="btn btn-outline-primary"&gt;Outline Button&lt;/button&gt;
+&lt;button class="btn btn-danger"&gt;Danger Button&lt;/button&gt;</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Badges Section -->
+    <section class="mb-4">
+        <h2>Badges</h2>
+        <div class="card">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="d-flex gap-2">
+                        <span class="badge badge-success">Success</span>
+                        <span class="badge badge-danger">Danger</span>
+                        <span class="badge badge-volt">Volt</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <pre><code>&lt;span class="badge badge-success"&gt;Success&lt;/span&gt;
+&lt;span class="badge badge-danger"&gt;Danger&lt;/span&gt;
+&lt;span class="badge badge-volt"&gt;Volt&lt;/span&gt;</code></pre>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Cards Section -->
-    <section class="mb-5">
+    <section class="mb-4">
         <h2>Cards</h2>
-        <h3>Hero Stats Card</h3>
-        <p class="text-muted">A 3-panel layout used for entity dashboards (User, Group, Tournament).</p>
+
+        <h3>Standard Card</h3>
         <div class="card mb-3">
-            <div class="hero-stats-card">
-                <a href="javascript:void(0)" class="btn-edit-gear" title="Edit">⚙️</a>
-                <div class="hero-left-panel">
-                    <div class="profile-picture-container avatar-xl">
-                        <img src="{{ url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture">
-                    </div>
-                </div>
-                <div class="hero-middle-panel text-center">
-                    <h2 class="mb-2">Styleguide User</h2>
-                    <div class="vanity-stats-container justify-content-center gap-4">
-                        <div class="vanity-stat">
-                            <div class="stat-value fs-3 fw-bold">42</div>
-                            <div class="stat-label text-muted small">Matches</div>
-                        </div>
-                        <div class="vanity-stat">
-                            <div class="stat-value fs-3 fw-bold">65%</div>
-                            <div class="stat-label text-muted small">Win %</div>
-                        </div>
-                        <div class="vanity-stat">
-                            <div class="stat-value fs-3 fw-bold text-volt">🔥 5</div>
-                            <div class="stat-label text-muted small">Streak</div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-header">Card Header</div>
+                        <div class="card-body">
+                            This is the content of a standard card. It uses the <code>.card</code> class.
                         </div>
                     </div>
                 </div>
-                <div class="hero-right-panel">
-                    <button class="btn btn-volt w-auto">Primary Action</button>
+                <div class="col-md-6">
+                    <pre><code>&lt;div class="card"&gt;
+    &lt;div class="card-header"&gt;Card Header&lt;/div&gt;
+    &lt;div class="card-body"&gt;
+        Card content goes here.
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre>
                 </div>
             </div>
         </div>
-        <pre><code>&lt;div class="hero-stats-card"&gt;
+
+        <h3>Hero Stats Card</h3>
+        <div class="card">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="hero-stats-card">
+                        <a href="javascript:void(0)" class="btn-edit-gear" title="Edit Profile">⚙️</a>
+                        <div class="hero-left-panel">
+                            <div class="profile-picture-container avatar-xl">
+                                <img src="{{ url_for('static', filename='user_icon.png') }}" alt="Profile Picture" class="profile-picture">
+                            </div>
+                            <div class="hero-name-and-edit">
+                                <h2>Styleguide User</h2>
+                            </div>
+                        </div>
+                        <div class="hero-right-panel">
+                            <div class="vanity-stats-container">
+                                <div class="vanity-stat">
+                                    <div class="stat-value">42</div>
+                                    <div class="stat-label text-muted">Total Matches</div>
+                                </div>
+                                <div class="vanity-stat">
+                                    <div class="stat-value">65%</div>
+                                    <div class="stat-label text-muted">Win %</div>
+                                </div>
+                                <div class="vanity-stat">
+                                    <div class="stat-value text-volt">5W</div>
+                                    <div class="stat-label text-muted">Current Streak</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-volt w-auto">Record a Match</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <pre><code>&lt;div class="hero-stats-card"&gt;
     &lt;a href="#" class="btn-edit-gear"&gt;⚙️&lt;/a&gt;
     &lt;div class="hero-left-panel"&gt;
         &lt;div class="profile-picture-container avatar-xl"&gt;
             &lt;img src="..." class="profile-picture"&gt;
         &lt;/div&gt;
-    &lt;/div&gt;
-    &lt;div class="hero-middle-panel text-center"&gt;
-        &lt;h2 class="mb-2"&gt;Name&lt;/h2&gt;
-        &lt;div class="vanity-stats-container justify-content-center gap-4"&gt;
-            &lt;div class="vanity-stat"&gt;
-                &lt;div class="stat-value fs-3 fw-bold"&gt;Value&lt;/div&gt;
-                &lt;div class="stat-label text-muted small"&gt;Label&lt;/div&gt;
-            &lt;/div&gt;
+        &lt;div class="hero-name-and-edit"&gt;
+            &lt;h2&gt;Username&lt;/h2&gt;
         &lt;/div&gt;
     &lt;/div&gt;
     &lt;div class="hero-right-panel"&gt;
-        &lt;button class="btn btn-volt w-auto"&gt;Action&lt;/button&gt;
+        &lt;div class="vanity-stats-container"&gt;
+            &lt;div class="vanity-stat"&gt;
+                &lt;div class="stat-value"&gt;42&lt;/div&gt;
+                &lt;div class="stat-label text-muted"&gt;Total Matches&lt;/div&gt;
+            &lt;/div&gt;
+            &lt;!-- More stats --&gt;
+        &lt;/div&gt;
+        &lt;button class="btn btn-volt w-auto"&gt;Record a Match&lt;/button&gt;
     &lt;/div&gt;
 &lt;/div&gt;</code></pre>
-    </section>
-
-    <!-- Tables Section -->
-    <section class="mb-5">
-        <h2>Tables</h2>
-        <p class="text-muted">Standardized tables with hover states and responsive behavior.</p>
-        <div class="table-container mb-3">
-            <table class="table-standard table-hover responsive-table">
-                <thead>
-                    <tr>
-                        <th>Player</th>
-                        <th>Status</th>
-                        <th>Rating</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td data-label="Player">
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="{{ url_for('static', filename='user_icon.png') }}" class="avatar avatar-sm" alt="Avatar">
-                                <span>John Doe</span>
-                            </div>
-                        </td>
-                        <td data-label="Status"><span class="badge badge-success">Active</span></td>
-                        <td data-label="Rating">4.5</td>
-                        <td data-label="Actions">
-                            <button class="btn btn-outline-primary btn-sm w-auto mb-0">View</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td data-label="Player">
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="{{ url_for('static', filename='user_icon.png') }}" class="avatar avatar-sm" alt="Avatar">
-                                <span>Jane Smith</span>
-                            </div>
-                        </td>
-                        <td data-label="Status"><span class="badge badge-volt">Pro</span></td>
-                        <td data-label="Rating">5.0</td>
-                        <td data-label="Actions">
-                            <button class="btn btn-outline-primary btn-sm w-auto mb-0">View</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <pre><code>&lt;div class="table-container"&gt;
-    &lt;table class="table-standard table-hover responsive-table"&gt;
-        &lt;thead&gt;
-            &lt;tr&gt;&lt;th&gt;Header&lt;/th&gt;&lt;/tr&gt;
-        &lt;/thead&gt;
-        &lt;tbody&gt;
-            &lt;tr&gt;&lt;td data-label="Header"&gt;Data&lt;/td&gt;&lt;/tr&gt;
-        &lt;/tbody&gt;
-    &lt;/table&gt;
-&lt;/div&gt;</code></pre>
-    </section>
-
-    <!-- Avatars Section -->
-    <section class="mb-5">
-        <h2>Avatars</h2>
-        <p class="text-muted">Standardized avatar sizes using <code>.avatar-{size}</code> classes.</p>
-        <div class="card">
-            <div class="d-flex align-items-center flex-wrap gap-4">
-                <div class="text-center">
-                    <img src="{{ url_for('static', filename='user_icon.png') }}" class="avatar avatar-xl" alt="Avatar XL">
-                    <p class="mt-2 mb-0">.avatar-xl</p>
-                    <small class="text-muted">120x120</small>
-                </div>
-                <div class="text-center">
-                    <img src="{{ url_for('static', filename='user_icon.png') }}" class="avatar avatar-lg" alt="Avatar LG">
-                    <p class="mt-2 mb-0">.avatar-lg</p>
-                    <small class="text-muted">80x80</small>
-                </div>
-                <div class="text-center">
-                    <img src="{{ url_for('static', filename='user_icon.png') }}" class="avatar avatar-md" alt="Avatar MD">
-                    <p class="mt-2 mb-0">.avatar-md</p>
-                    <small class="text-muted">48x48</small>
-                </div>
-                <div class="text-center">
-                    <img src="{{ url_for('static', filename='user_icon.png') }}" class="avatar avatar-sm" alt="Avatar SM">
-                    <p class="mt-2 mb-0">.avatar-sm</p>
-                    <small class="text-muted">32x32</small>
                 </div>
             </div>
         </div>
-        <pre><code>&lt;img src="..." class="avatar avatar-xl"&gt;
-&lt;img src="..." class="avatar avatar-lg"&gt;
-&lt;img src="..." class="avatar avatar-md"&gt;
-&lt;img src="..." class="avatar avatar-sm"&gt;</code></pre>
     </section>
 </div>
 
 <style>
-    .styleguide-container { padding: 20px 0; }
+    .styleguide-container {
+        padding: 20px 0;
+    }
     .styleguide-container section h2 {
         border-bottom: 2px solid var(--border-color);
         padding-bottom: 10px;
         margin-bottom: 20px;
     }
-    .color-swatch-container {
-        display: flex;
-        flex-direction: column;
-        width: 150px;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        overflow: hidden;
-        background-color: var(--card-bg);
-    }
-    .color-swatch { height: 100px; width: 100%; }
-    .color-info {
-        padding: 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-    .color-info span { font-size: 0.9rem; }
-    .color-info code { font-size: 0.75rem; background: #f1f5f9; padding: 2px 4px; border-radius: 4px; color: #475569; }
-    [data-theme="dark"] .color-info code { background: #1e293b; color: #cbd5e1; }
-    .color-info small { font-size: 0.75rem; color: var(--text-secondary); }
-
     pre {
         background-color: #f8f9fa;
         padding: 15px;
         border-radius: 4px;
         border: 1px solid var(--border-color);
-        margin-top: 15px;
+        margin: 0;
         overflow-x: auto;
     }
     [data-theme="dark"] pre {
         background-color: #0f172a;
         color: #f3f4f6;
+    }
+    .flex-column { flex-direction: column !important; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-3 { gap: 1rem; }
+    .row { display: flex; flex-wrap: wrap; margin-right: -15px; margin-left: -15px; }
+    .col-md-6 { flex: 0 0 50%; max-width: 50%; padding-right: 15px; padding-left: 15px; }
+    .col-12 { flex: 0 0 100%; max-width: 100%; padding-right: 15px; padding-left: 15px; }
+    @media (max-width: 768px) {
+        .col-md-6 { flex: 0 0 100%; max-width: 100%; }
+        .hero-right-panel { margin-top: 20px; }
     }
 </style>
 {% endblock %}

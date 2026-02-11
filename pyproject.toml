@@ -1,4 +1,21 @@
+[project]
+name = "pickaladder"
 version = "0.9.0"
+description = "A pickleball ladder application"
+dependencies = [
+    "Flask==3.1.2",
+    "gunicorn==25.0.3",
+    "Flask-Mail==0.10.0",
+    "Pillow==12.1.0",
+    "pydantic==2.12.5",
+    "Flask-WTF==1.2.2",
+    "types-WTForms==3.2.1.20250809",
+    "imgur-python==0.2.4",
+    "types-Pillow==10.2.0.20240822",
+    "firebase-admin==7.1.0",
+    "email-validator==2.3.0",
+    "Flask-Login==0.6.3",
+]
 
 [tool.ruff]
 # Same as Black.
@@ -44,4 +61,11 @@ dev = [
     "pytest>=9.0.2",
     "pytest-flask>=1.3.0",
     "pytest-playwright>=0.7.2",
+    "ruff==0.15.0",
+    "bandit==1.9.3",
+    "mypy==1.19.1",
+    "Faker==40.4.0",
+    "coverage==7.13.4",
+    "pytest-mock",
+    "playwright",
 ]
