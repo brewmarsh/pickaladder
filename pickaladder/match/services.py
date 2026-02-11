@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
-    from google.cloud.firestore_v1.transaction import Transaction
+    from google.cloud.firestore_v1.batch import WriteBatch
 
     from pickaladder.user import User
     from pickaladder.user.models import UserSession
@@ -30,9 +30,9 @@ class MatchService:
     """Service class for match-related operations."""
 
     @staticmethod
-    @firestore.transactional
-    def _record_match_transaction(  # noqa: PLR0913
-        transaction: Transaction,
+    def _record_match_batch(  # noqa: PLR0913
+        db: Client,
+        batch: WriteBatch,
         match_ref: DocumentReference,
         p1_ref: DocumentReference,
         p2_ref: DocumentReference,
@@ -40,10 +40,11 @@ class MatchService:
         match_data: dict[str, Any],
         match_type: str,
     ) -> None:
-        """Atomic transaction to record a match and update stats."""
-        # 1. Read current snapshots
-        p1_snapshot = p1_ref.get(transaction=transaction)
-        p2_snapshot = p2_ref.get(transaction=transaction)
+        """Record a match and update stats using batched writes."""
+        # 1. Read current snapshots (Optimized to 1 round-trip for reads)
+        snapshots = db.get_all([p1_ref, p2_ref])
+        p1_snapshot = snapshots[0]
+        p2_snapshot = snapshots[1]
 
         p1_data = p1_snapshot.to_dict() or {}
         p2_data = p2_snapshot.to_dict() or {}
@@ -113,10 +114,15 @@ class MatchService:
                     match_data["is_upset"] = True
 
         # 3. Queue Writes
-        transaction.set(match_ref, match_data)
-        transaction.update(p1_ref, p1_updates)
-        transaction.update(p2_ref, p2_updates)
-        transaction.update(user_ref, {"lastMatchRecordedType": match_type})
+        batch.set(match_ref, match_data)
+        batch.update(p1_ref, p1_updates)
+        batch.update(p2_ref, p2_updates)
+        batch.update(user_ref, {"lastMatchRecordedType": match_type})
+
+        # Update the Group "leaderboard document" (the group doc itself)
+        if group_id := match_data.get("groupId"):
+            group_ref = db.collection("groups").document(group_id)
+            batch.update(group_ref, {"updatedAt": firestore.SERVER_TIMESTAMP})
 
     @staticmethod
     def process_match_submission(
@@ -212,10 +218,12 @@ class MatchService:
         else:
             raise ValueError("Unsupported match type.")
 
-        # Save to database via atomic transaction
+        # Save to database via batched write (exactly 1 commit round-trip)
         new_match_ref = db.collection("matches").document()
-        MatchService._record_match_transaction(
-            db.transaction(),
+        batch = db.batch()
+        MatchService._record_match_batch(
+            db,
+            batch,
             new_match_ref,
             side1_ref,
             side2_ref,
@@ -223,6 +231,7 @@ class MatchService:
             match_doc_data,
             match_type,
         )
+        batch.commit()
 
         return new_match_ref.id
 
