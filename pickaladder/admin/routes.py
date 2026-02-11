@@ -31,8 +31,9 @@ MIN_USERS_FOR_MATCH_GENERATION = 2
 def admin() -> Union[str, Response]:
     """Render the main admin dashboard."""
     # Authorization check is now here, after g.user is guaranteed to be loaded.
-    # We allow access if the user is an admin OR if they are an admin currently impersonating someone else.
-    # The login_required(admin_required=True) decorator already checks session['is_admin'].
+    # We allow access if the user is an admin OR if they are an admin currently
+    # impersonating someone else. The login_required(admin_required=True)
+    # decorator already checks session['is_admin'].
     if not g.user or (not g.user.get("isAdmin") and not g.get("is_impersonating")):
         flash("You are not authorized to view this page.", "danger")
         return redirect(url_for("auth.login"))

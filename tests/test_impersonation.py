@@ -2,8 +2,9 @@
 
 import unittest
 from unittest.mock import MagicMock, patch
-from flask import session, g
+
 from pickaladder import create_app
+
 
 class ImpersonationTestCase(unittest.TestCase):
     """Test case for user impersonation."""
@@ -13,14 +14,25 @@ class ImpersonationTestCase(unittest.TestCase):
         self.mock_firestore = patch("pickaladder.firestore.client").start()
         self.mock_firebase_admin = patch("firebase_admin.initialize_app").start()
 
-        self.app = create_app({"TESTING": True, "WTF_CSRF_ENABLED": False, "SECRET_KEY": "test"})
-        print(self.app.url_map)
+        self.app = create_app(
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SECRET_KEY": "test"}  # nosec
+        )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()
 
-        self.admin_data = {"name": "Admin", "isAdmin": True, "uid": "admin1", "id": "admin1"}
-        self.user_data = {"name": "User", "isAdmin": False, "uid": "user1", "id": "user1"}
+        self.admin_data = {
+            "name": "Admin",
+            "isAdmin": True,
+            "uid": "admin1",
+            "id": "admin1",
+        }
+        self.user_data = {
+            "name": "User",
+            "isAdmin": False,
+            "uid": "user1",
+            "id": "user1",
+        }
 
         # Setup mock db
         self.db = self.mock_firestore.return_value
@@ -37,7 +49,9 @@ class ImpersonationTestCase(unittest.TestCase):
         doc_ref.get.return_value = doc_snapshot
 
         # When db.collection("users").document(user_id).get() is called
-        self.db.collection.return_value.document.side_effect = lambda uid: doc_ref if uid == user_id else MagicMock()
+        self.db.collection.return_value.document.side_effect = lambda uid: (
+            doc_ref if uid == user_id else MagicMock()
+        )
 
     def test_impersonation_flow(self):
         """Test the full impersonation flow: start, verify, stop."""
@@ -52,10 +66,10 @@ class ImpersonationTestCase(unittest.TestCase):
         # 1b. Check if Impersonate button is present in users page
         # Mock search_users to return user1
         with patch("pickaladder.user.services.UserService.search_users") as mock_search:
-            mock_search.return_value = [(self.user_data, 'none', 'none')]
+            mock_search.return_value = [(self.user_data, "none", "none")]
             response = self.client.get("/user/users")
-            self.assertIn("fa-user-secret", response.data.decode('utf-8'))
-            self.assertIn("/admin/impersonate/user1", response.data.decode('utf-8'))
+            self.assertIn("fa-user-secret", response.data.decode("utf-8"))
+            self.assertIn("/admin/impersonate/user1", response.data.decode("utf-8"))
 
         # 2. Start Impersonation of user1
         # Mock getting user1 data for the redirect flash message
@@ -89,7 +103,7 @@ class ImpersonationTestCase(unittest.TestCase):
         # 3. Verify g.user is now the impersonated user
         # This is hard to check directly via client.get as it clears g between requests
         # but we can check if the response contains the impersonated user's name or the banner
-        data = response.data.decode('utf-8')
+        data = response.data.decode("utf-8")
         self.assertIn("You are now impersonating User", data)
         self.assertIn("You are impersonating <strong>User</strong>", data)
 
@@ -114,6 +128,7 @@ class ImpersonationTestCase(unittest.TestCase):
 
         with self.client.session_transaction() as sess:
             self.assertNotIn("impersonate_id", sess)
+
 
 if __name__ == "__main__":
     unittest.main()

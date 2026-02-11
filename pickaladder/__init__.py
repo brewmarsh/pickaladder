@@ -261,16 +261,15 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             user_doc = db.collection("users").document(id_to_load).get()
             if user_doc.exists:
                 g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
+            elif not g.is_impersonating:
+                session.clear()
+                current_app.logger.warning(
+                    f"User {id_to_load} in session but not found in Firestore."
+                )
             else:
-                if not g.is_impersonating:
-                    session.clear()
-                    current_app.logger.warning(
-                        f"User {id_to_load} in session but not found in Firestore."
-                    )
-                else:
-                    # Clear impersonation if user not found
-                    session.pop("impersonate_id", None)
-                    g.is_impersonating = False
+                # Clear impersonation if user not found
+                session.pop("impersonate_id", None)
+                g.is_impersonating = False
         except Exception as e:
             current_app.logger.error(f"Error loading user from session: {e}")
             if not g.is_impersonating:
