@@ -35,7 +35,6 @@
 
     #myLinks,
     .mobile-nav {
-        display: none;
         background-color: var(--primary-color);
         width: 100%;
         margin-top: 10px;
@@ -46,11 +45,6 @@
         top: 60px;
         left: 0;
         z-index: 1000;
-    }
-
-    #myLinks.active,
-    .mobile-nav.active {
-        display: block;
     }
 
     #myLinks a,
@@ -94,6 +88,7 @@
         height: 3px;
         margin: 3px 0;
         background-color: #ffffff !important;
+        transition: all 0.3s ease;
     }
 
     .form-container {

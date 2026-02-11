@@ -165,14 +165,8 @@
             }
         });
 
-        const hamburger = document.querySelector('.hamburger-menu');
-        const mobileNav = document.getElementById('myLinks');
-        if (hamburger && mobileNav) {
-            hamburger.addEventListener('click', function () {
-                mobileNav.classList.toggle('active');
-            });
-        }
     </script>
+    <script src="{{ url_for('static', filename='js/navbar.js') }}"></script>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
