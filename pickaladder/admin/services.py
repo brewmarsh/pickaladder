@@ -1,7 +1,7 @@
 """Service layer for admin-related operations."""
 
 import datetime
-from typing import Any, Dict, List  # noqa: UP035
+from typing import Any
 
 from firebase_admin import auth, firestore
 
@@ -10,7 +10,7 @@ class AdminService:
     """Service class for admin-related operations."""
 
     @staticmethod
-    def get_admin_stats(db: Any) -> Dict[str, Any]:
+    def get_admin_stats(db: Any) -> dict[str, Any]:
         """Fetch high-level stats for the admin dashboard."""
         # Total Users
         users = db.collection("users").stream()
@@ -25,7 +25,9 @@ class AdminService:
         active_tournaments = sum(1 for _ in tournaments)
 
         # Recent Matches (last 24 hours)
-        yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+        yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+            days=1
+        )
         matches = (
             db.collection("matches")
             .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))

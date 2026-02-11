@@ -8,7 +8,6 @@ from firebase_admin import auth, firestore
 from flask import (
     flash,
     g,
-    jsonify,
     redirect,
     render_template,
     request,
