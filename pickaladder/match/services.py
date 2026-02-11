@@ -475,9 +475,11 @@ class MatchService:
         # Permission Check
         editor_ref = db.collection("users").document(editor_uid)
         editor_doc = cast("DocumentSnapshot", editor_ref.get())
-        is_admin = (
-            editor_doc.to_dict().get("isAdmin", False) if editor_doc.exists else False
-        )
+        is_admin = False
+        if editor_doc.exists:
+            editor_data = editor_doc.to_dict()
+            if editor_data:
+                is_admin = editor_data.get("isAdmin", False)
 
         if tournament_id:
             if not is_admin:
