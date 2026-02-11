@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import unittest
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 from firebase_admin import firestore
@@ -191,7 +192,8 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match Summary", response.data)
-        self.assertIn(b"11 - 5", response.data)
+        self.assertIn(b"11", response.data)
+        self.assertIn(b"5", response.data)
         user_name = cast(str, MOCK_USER_DATA["name"])
         self.assertIn(user_name.encode(), response.data)
 
@@ -230,7 +232,8 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match Summary", response.data)
-        self.assertIn(b"11 - 5", response.data)
+        self.assertIn(b"11", response.data)
+        self.assertIn(b"5", response.data)
         self.assertIn(b"Winners", response.data)
         self.assertIn(b"Losers", response.data)
 

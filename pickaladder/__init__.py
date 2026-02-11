@@ -159,7 +159,8 @@ def _initialize_firebase(app: Flask) -> None:
 def _register_blueprints(app: Flask) -> None:
     """Register all blueprints for the application."""
     app.register_blueprint(auth_bp.bp)
-    app.register_blueprint(admin_bp.bp)
+    if not app.debug:
+        app.register_blueprint(admin_bp.bp)
     app.register_blueprint(user_bp.bp)
     app.register_blueprint(match_bp.bp)
     app.register_blueprint(group_bp.bp)

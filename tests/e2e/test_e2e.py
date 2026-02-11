@@ -74,7 +74,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     page.fill("input[name='search']", "admin")
     with page.expect_navigation():
-        page.click("button:has-text('🔍')")
+        page.click("button:has-text('Search')")
 
     # Click Add Friend for Admin User
     with page.expect_navigation():
