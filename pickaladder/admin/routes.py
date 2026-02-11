@@ -38,7 +38,7 @@ def admin() -> Union[str, Response]:
     setting_ref = db.collection("settings").document("enforceEmailVerification")
     email_verification_setting = setting_ref.get()
     return render_template(
-        "admin/dashboard.html",
+        "admin/admin.html",
         email_verification_setting=email_verification_setting.to_dict()
         if email_verification_setting.exists
         else {"value": False},
@@ -123,6 +123,48 @@ def friend_graph_data() -> Union[Response, str, tuple[Response, int]]:
         return jsonify(graph_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/delete_user", methods=["POST"])
+@login_required(admin_required=True)
+def admin_delete_user() -> Response:
+    """Delete a user by ID or Email."""
+    user_identifier = request.form.get("user_identifier")
+    if not user_identifier:
+        flash("User ID or Email is required.", "danger")
+        return redirect(url_for(".admin"))
+
+    db = firestore.client()
+    uid = None
+    email = None
+
+    # Try to find by UID first
+    user_doc = db.collection("users").document(user_identifier).get()
+    if user_doc.exists:
+        uid = user_doc.id
+        email = user_doc.to_dict().get("email")
+    else:
+        # Try to find by Email
+        users = list(
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("email", "==", user_identifier))
+            .limit(1)
+            .stream()
+        )
+        if users:
+            uid = users[0].id
+            email = users[0].to_dict().get("email")
+
+    if uid:
+        try:
+            AdminService.delete_user_data(db, uid)
+            flash(f"User {email or uid} deleted.", "success")
+        except Exception as e:
+            flash(f"An error occurred: {e}", "danger")
+    else:
+        flash(f"User {user_identifier} not found.", "danger")
+
+    return redirect(url_for(".admin"))
 
 
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])

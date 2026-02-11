@@ -52,6 +52,18 @@ class AdminService:
         db.collection("users").document(user_id).delete()
 
     @staticmethod
+    def delete_user_data(db: Any, uid: str) -> None:
+        """Delete a user from Firestore and Firebase Auth."""
+        # Delete from Firestore
+        db.collection("users").document(uid).delete()
+        # Delete from Firebase Auth
+        try:
+            auth.delete_user(uid)
+        except Exception:
+            # If user not found in Auth, we still want to proceed
+            pass
+
+    @staticmethod
     def promote_user(db: Any, user_id: str) -> str:
         """Promote a user to admin status in Firestore."""
         user_ref = db.collection("users").document(user_id)

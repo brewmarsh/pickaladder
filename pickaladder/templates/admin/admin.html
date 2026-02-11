@@ -56,6 +56,22 @@
         </div>
     </div>
 
+    <div class="card border-danger mb-4">
+        <h3 class="text-danger">Danger Zone</h3>
+        <p>Delete a user account permanently.</p>
+        <form action="{{ url_for('admin.admin_delete_user') }}" method="post" onsubmit="return confirm('Are you sure you want to delete this user? This action is irreversible.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="user_identifier">User ID or Email</label>
+                <input type="text" id="user_identifier" name="user_identifier" class="form-control" placeholder="e.g. user_123 or user@example.com" required>
+            </div>
+            <button type="submit" class="btn btn-danger">Delete User</button>
+        </form>
+        <p class="text-muted mt-2">
+            <small>This action is irreversible. It will remove the user's login and profile.</small>
+        </p>
+    </div>
+
     <!-- Modal -->
     <div class="modal" id="friendGraphModal" tabindex="-1" role="dialog" aria-labelledby="friendGraphModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
