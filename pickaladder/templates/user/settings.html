@@ -1,0 +1,90 @@
+{% extends "layout.html" %}
+{% block title %}Account Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Account Settings</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+
+                    <div class="text-center mb-4">
+                        <img src="{{ current_user.avatar_url }}" alt="Profile Picture" class="avatar avatar-xl mb-2" id="avatar-preview">
+                        <div class="form-group mt-2">
+                            {{ form.profile_picture.label }}
+                            {{ form.profile_picture(class="form-control-file") }}
+                            {% if form.profile_picture.errors %}
+                                {% for error in form.profile_picture.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        {{ form.username.label }}
+                        {{ form.username(class="form-control") }}
+                        {% if form.username.errors %}
+                            {% for error in form.username.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-3">
+                        {{ form.dupr_rating.label }}
+                        {{ form.dupr_rating(class="form-control", step="0.01") }}
+                        {% if form.dupr_rating.errors %}
+                            {% for error in form.dupr_rating.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-3 custom-control custom-switch">
+                        {{ form.dark_mode(class="custom-control-input", id="dark_mode") }}
+                        {{ form.dark_mode.label(class="custom-control-label", for="dark_mode") }}
+                    </div>
+
+                    <div class="mt-4">
+                        {{ form.submit(class="btn btn-volt") }}
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="security-section">
+                    <h4>Security</h4>
+                    <p class="text-muted small">Manage your account security and password.</p>
+                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-danger ms-2">Change Password</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const profilePictureInput = document.querySelector('input[name="profile_picture"]');
+        const avatarPreview = document.getElementById('avatar-preview');
+
+        if (profilePictureInput) {
+            profilePictureInput.addEventListener('change', function () {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        avatarPreview.src = e.target.result;
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

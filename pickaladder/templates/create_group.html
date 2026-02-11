@@ -25,7 +25,7 @@
             {{ form.profile_picture.label }}
             {{ form.profile_picture(class="form-control") }}
         </div>
-        <input type="submit" value="Create Group" class="btn">
+        <button type="submit" class="btn">Create Group</button>
         <a href="{{ url_for('group.view_groups') }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
     </form>
 </div>

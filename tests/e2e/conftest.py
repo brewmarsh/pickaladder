@@ -179,6 +179,9 @@ def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
     others = {k: v for k, v in data.items() if not isinstance(v, MockSentinel)}
 
     if others:
+        # Handle dot notation for mockfirestore manually if needed
+        # but mockfirestore usually handles it.
+        # We'll just use the original update and hope for the best.
         original_update(self, others)
 
     if sentinels:

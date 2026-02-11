@@ -298,6 +298,8 @@ def format_matches_for_dashboard(
                 "team1_name": t1_name,
                 "team2_name": t2_name,
                 "tournament_name": tournament_name,
+                "created_by": m_data.get("createdBy"),
+                "tournament_id": m_data.get("tournamentId"),
             }
         )
     return matches_data
