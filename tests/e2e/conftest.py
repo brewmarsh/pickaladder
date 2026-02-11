@@ -235,8 +235,34 @@ class MockBatch:
         self.ops = []
 
 
+class MockTransaction:
+    """Mock for firestore.Transaction."""
+
+    def __init__(self, db: EnhancedMockFirestore) -> None:
+        """Initialize mock transaction."""
+        self.db = db
+
+    def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
+        """Mock get."""
+        return doc_ref.get()
+
+    def set(
+        self, doc_ref: DocumentReference, data: dict[str, Any], merge: bool = False
+    ) -> None:
+        """Mock set."""
+        doc_ref.set(data, merge=merge)
+
+    def update(self, doc_ref: DocumentReference, data: dict[str, Any]) -> None:
+        """Mock update."""
+        doc_ref.update(data)
+
+    def delete(self, doc_ref: DocumentReference) -> None:
+        """Mock delete."""
+        doc_ref.delete()
+
+
 class EnhancedMockFirestore(MockFirestore):
-    """Enhanced MockFirestore with batch support."""
+    """Enhanced MockFirestore with batch and transaction support."""
 
     def __init__(self) -> None:
         """Initialize enhanced mock firestore."""
@@ -252,9 +278,9 @@ class EnhancedMockFirestore(MockFirestore):
         """Return MockBatch."""
         return MockBatch(self)
 
-    def transaction(self) -> MagicMock:
-        """Return dummy transaction."""
-        return MagicMock()
+    def transaction(self) -> MockTransaction:
+        """Return MockTransaction."""
+        return MockTransaction(self)
 
 
 class MockAuthService:
@@ -355,8 +381,11 @@ def app_server(
         firebase_admin.firestore, "ArrayRemove", side_effect=mock_array_remove
     )
     p10 = patch.object(firebase_admin.firestore, "FieldFilter", MockFieldFilter)
+    p11 = patch.object(
+        firebase_admin.firestore, "transactional", side_effect=lambda x: x
+    )
 
-    # Start p1 through p10 immediately after definitions
+    # Start p1 through p11 immediately after definitions
     p1.start()
     p2.start()
     p3.start()
@@ -367,6 +396,7 @@ def app_server(
     p8.start()
     p9.start()
     p10.start()
+    p11.start()
 
     os.environ["FIREBASE_PROJECT_ID"] = "test-project"
     os.environ["SECRET_KEY"] = "dev"  # nosec
@@ -396,6 +426,7 @@ def app_server(
     p8.stop()
     p9.stop()
     p10.stop()
+    p11.stop()
 
 
 @pytest.fixture

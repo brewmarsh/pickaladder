@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
@@ -32,7 +31,7 @@ class MatchService:
 
     @staticmethod
     @firestore.transactional
-    def _record_match_transaction(
+    def _record_match_transaction(  # noqa: PLR0913
         transaction: Transaction,
         match_ref: DocumentReference,
         p1_ref: DocumentReference,
@@ -198,8 +197,8 @@ class MatchService:
                 db, p1_id, cast(str, partner_id), p2_id, cast(str, opponent2_id)
             )
             match_doc_data.update(res)
-            side1_ref = res.get("team1Ref")
-            side2_ref = res.get("team2Ref")
+            side1_ref = cast("DocumentReference", res.get("team1Ref"))
+            side2_ref = cast("DocumentReference", res.get("team2Ref"))
         else:
             raise ValueError("Unsupported match type.")
 

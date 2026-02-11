@@ -21,11 +21,15 @@ class MatchTransactionTestCase(unittest.TestCase):
 
         # Mock snapshots
         p1_snap = MagicMock()
-        p1_snap.to_dict.return_value = {"stats": {"wins": 5, "losses": 2, "elo": 1200.0}}
+        p1_snap.to_dict.return_value = {
+            "stats": {"wins": 5, "losses": 2, "elo": 1200.0}
+        }
         p1_ref.get.return_value = p1_snap
 
         p2_snap = MagicMock()
-        p2_snap.to_dict.return_value = {"stats": {"wins": 3, "losses": 4, "elo": 1100.0}}
+        p2_snap.to_dict.return_value = {
+            "stats": {"wins": 3, "losses": 4, "elo": 1100.0}
+        }
         p2_ref.get.return_value = p2_snap
 
         match_data = {
@@ -85,11 +89,15 @@ class MatchTransactionTestCase(unittest.TestCase):
 
         # Mock snapshots
         t1_snap = MagicMock()
-        t1_snap.to_dict.return_value = {"stats": {"wins": 10, "losses": 10, "elo": 1500.0}}
+        t1_snap.to_dict.return_value = {
+            "stats": {"wins": 10, "losses": 10, "elo": 1500.0}
+        }
         t1_ref.get.return_value = t1_snap
 
         t2_snap = MagicMock()
-        t2_snap.to_dict.return_value = {"stats": {"wins": 20, "losses": 5, "elo": 1500.0}}
+        t2_snap.to_dict.return_value = {
+            "stats": {"wins": 20, "losses": 5, "elo": 1500.0}
+        }
         t2_ref.get.return_value = t2_snap
 
         match_data = {
@@ -118,6 +126,7 @@ class MatchTransactionTestCase(unittest.TestCase):
         self.assertEqual(p2_updates["stats.wins"], 21)
         self.assertEqual(p2_updates["stats.losses"], 5)
         self.assertEqual(p2_updates["stats.elo"], 1516.0)
+
 
 if __name__ == "__main__":
     unittest.main()
