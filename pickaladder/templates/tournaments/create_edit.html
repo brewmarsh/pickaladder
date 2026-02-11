@@ -1,0 +1,111 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ action }} Tournament{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <h2>{{ action }} Tournament</h2>
+    </div>
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.csrf_token }}
+
+            <div class="form-group">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-input", placeholder="Summer Smash 2024") }}
+                {% if form.name.errors %}
+                    {% for error in form.name.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.banner.label(class="form-label") }}
+                {% if tournament and tournament.banner_url %}
+                    <div class="mb-2">
+                        <img src="{{ tournament.banner_url }}" alt="Current Banner" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px;">
+                    </div>
+                {% endif %}
+                {{ form.banner(class="form-input") }}
+                <small class="text-muted">Recommended: 16:9 aspect ratio.</small>
+                {% if form.banner.errors %}
+                    {% for error in form.banner.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    {{ form.start_date.label(class="form-label") }}
+                    {{ form.start_date(class="form-input", type="date") }}
+                    {% if form.start_date.errors %}
+                        {% for error in form.start_date.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.match_type.label(class="form-label") }}
+                    {{ form.match_type(class="form-input") }}
+                    {% if form.match_type.errors %}
+                        {% for error in form.match_type.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                {{ form.venue_name.label(class="form-label") }}
+                {{ form.venue_name(class="form-input", placeholder="Central Park Courts") }}
+                {% if form.venue_name.errors %}
+                    {% for error in form.venue_name.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.address.label(class="form-label") }}
+                {{ form.address(class="form-input", placeholder="123 Park Lane, New York, NY") }}
+                <small class="text-muted">This will generate a 'Get Directions' link for players.</small>
+                {% if form.address.errors %}
+                    {% for error in form.address.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.description.label(class="form-label") }}
+                {{ form.description(class="form-input", rows="5", placeholder="Rules, schedule, and other details...") }}
+                {% if form.description.errors %}
+                    {% for error in form.description.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">{{ action }} Tournament</button>
+                {% if action == 'Edit' %}
+                    <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="btn btn-secondary" style="flex: 1; text-align: center; line-height: 2.5;">Cancel</a>
+                {% else %}
+                    <a href="{{ url_for('tournament.list_tournaments') }}" class="btn btn-secondary" style="flex: 1; text-align: center; line-height: 2.5;">Cancel</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+@media screen and (max-width: 600px) {
+    div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+{% endblock %}

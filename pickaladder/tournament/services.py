@@ -137,6 +137,10 @@ class TournamentService:
             data = doc.to_dict()
             if data:
                 data["id"] = doc.id
+                # Formatting
+                raw_date = data.get("start_date") or data.get("date")
+                if raw_date and hasattr(raw_date, "to_datetime"):
+                    data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
                 results[doc.id] = data
 
         for doc in participating:
@@ -144,9 +148,35 @@ class TournamentService:
                 data = doc.to_dict()
                 if data:
                     data["id"] = doc.id
+                    # Formatting
+                    raw_date = data.get("start_date") or data.get("date")
+                    if raw_date and hasattr(raw_date, "to_datetime"):
+                        data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
                     results[doc.id] = data
 
         return list(results.values())
+
+    @staticmethod
+    def _upload_banner(tournament_id: str, banner_file: Any) -> str | None:
+        """Upload tournament banner to Cloud Storage."""
+        if not banner_file or not getattr(banner_file, "filename", None):
+            return None
+
+        from firebase_admin import storage
+        import tempfile
+        import os
+        from werkzeug.utils import secure_filename
+
+        filename = secure_filename(banner_file.filename or f"banner_{tournament_id}.jpg")
+        bucket = storage.bucket()
+        blob = bucket.blob(f"tournaments/{tournament_id}/{filename}")
+
+        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1]) as tmp:
+            banner_file.save(tmp.name)
+            blob.upload_from_filename(tmp.name)
+
+        blob.make_public()
+        return str(blob.public_url)
 
     @staticmethod
     def create_tournament(
@@ -159,8 +189,12 @@ class TournamentService:
 
         tournament_payload = {
             "name": data["name"],
-            "date": data["date"],
-            "location": data["location"],
+            "date": data["date"],  # Backward compatibility
+            "start_date": data["date"],
+            "location": data["location"],  # Backward compatibility
+            "location_data": data.get("location_data"),
+            "description": data.get("description"),
+            "banner_url": data.get("banner_url"),
             "matchType": data["matchType"],
             "ownerRef": user_ref,
             "organizer_id": user_uid,
@@ -170,7 +204,7 @@ class TournamentService:
             "createdAt": firestore.SERVER_TIMESTAMP,
         }
         _, ref = db.collection("tournaments").add(tournament_payload)
-        return ref.id
+        return str(ref.id)
 
     @staticmethod
     def get_tournament_details(
@@ -189,7 +223,7 @@ class TournamentService:
         data["id"] = doc.id
 
         # Formatting
-        raw_date = data.get("date")
+        raw_date = data.get("start_date") or data.get("date")
         if raw_date and hasattr(raw_date, "to_datetime"):
             data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
 
@@ -260,6 +294,10 @@ class TournamentService:
 
         if owner_id != user_uid:
             raise PermissionError("Unauthorized.")
+
+        # Handle start_date / date compatibility
+        if "start_date" in update_data:
+            update_data["date"] = update_data["start_date"]
 
         # If changing match type, ensure no matches exist
         if "matchType" in update_data:

@@ -99,8 +99,10 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "date": "2024-06-01",
-                "location": "Courtside",
+                "start_date": "2024-06-01",
+                "venue_name": "Courtside",
+                "address": "123 Main St",
+                "description": "Rules here",
                 "match_type": "singles",
             },
             follow_redirects=True,
@@ -126,7 +128,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_db.collection("tournaments").document(tournament_id).set(
             {
                 "name": "Original Name",
-                "date": datetime.datetime(2024, 6, 1),
+                "start_date": datetime.datetime(2024, 6, 1),
                 "location": "Original Location",
                 "matchType": "singles",
                 "ownerRef": user_ref,
@@ -139,8 +141,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Updated Name",
-                "date": "2024-07-01",
-                "location": "Updated Location",
+                "start_date": "2024-07-01",
+                "venue_name": "Updated Venue",
+                "address": "456 Updated St",
                 "match_type": "doubles",
             },
             follow_redirects=True,
@@ -169,7 +172,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_db.collection("tournaments").document(tournament_id).set(
             {
                 "name": "Original Name",
-                "date": datetime.datetime(2024, 6, 1),
+                "start_date": datetime.datetime(2024, 6, 1),
                 "location": "Original Location",
                 "matchType": "singles",
                 "ownerRef": user_ref,
@@ -185,8 +188,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Updated Name",
-                "date": "2024-07-01",
-                "location": "Updated Location",
+                "start_date": "2024-07-01",
+                "venue_name": "Updated Venue",
+                "address": "456 Updated St",
                 "match_type": "doubles",
             },
             follow_redirects=True,
@@ -242,7 +246,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "ownerRef": user_ref,
                 "participants": [{"userRef": participant1_ref, "status": "accepted"}],
                 "participant_ids": ["participant1"],
-                "date": datetime.datetime(2024, 6, 1),
+                "start_date": datetime.datetime(2024, 6, 1),
             }
         )
 

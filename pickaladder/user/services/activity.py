@@ -72,7 +72,7 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
                 if p_uid == user_id and p.get("status") == "accepted":
                     data["id"] = doc.id
                     # Format date for display
-                    raw_date = data.get("date")
+                    raw_date = data.get("start_date") or data.get("date")
                     if raw_date is not None:
                         if hasattr(raw_date, "to_datetime"):
                             data["date_display"] = raw_date.to_datetime().strftime(
@@ -83,7 +83,9 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
                     active_tournaments.append(data)
                     break
     # Sort by date ascending (soonest first)
-    active_tournaments.sort(key=lambda x: x.get("date") or datetime.datetime.max)
+    active_tournaments.sort(
+        key=lambda x: x.get("start_date") or x.get("date") or datetime.datetime.max
+    )
     return active_tournaments
 
 
@@ -118,7 +120,7 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
                 standings = get_tournament_standings(db, doc.id, match_type)
                 data["winner_name"] = standings[0]["name"] if standings else "TBD"
 
-                raw_date = data.get("date")
+                raw_date = data.get("start_date") or data.get("date")
                 if raw_date is not None:
                     if hasattr(raw_date, "to_datetime"):
                         data["date_display"] = raw_date.to_datetime().strftime(
@@ -131,7 +133,8 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
     # Sort by date descending
     past_tournaments.sort(
-        key=lambda x: x.get("date") or datetime.datetime.min, reverse=True
+        key=lambda x: x.get("start_date") or x.get("date") or datetime.datetime.min,
+        reverse=True,
     )
     return past_tournaments
 
