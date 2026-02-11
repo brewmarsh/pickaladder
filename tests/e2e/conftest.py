@@ -321,14 +321,17 @@ def app_server(
     mock_db: EnhancedMockFirestore, mock_auth: MockAuthService
 ) -> Generator[str, None, None]:
     """Start Flask server with mocks."""
+    # Move pickaladder import to the very top to ensure it's loaded
+    pickaladder = importlib.import_module("pickaladder")
+
     # Ensure firebase_admin submodules are loaded for patching
     importlib.import_module("firebase_admin.auth")
     importlib.import_module("firebase_admin.firestore")
 
-    p1 = patch("firebase_admin.initialize_app")
     import firebase_admin.auth
     import firebase_admin.firestore
 
+    p1 = patch("firebase_admin.initialize_app")
     p2 = patch.object(firebase_admin.firestore, "client", return_value=mock_db)
     p3 = patch.object(
         firebase_admin.auth, "create_user", side_effect=mock_auth.create_user
@@ -353,6 +356,7 @@ def app_server(
     )
     p10 = patch.object(firebase_admin.firestore, "FieldFilter", MockFieldFilter)
 
+    # Start p1 through p10 immediately after definitions
     p1.start()
     p2.start()
     p3.start()
@@ -364,13 +368,13 @@ def app_server(
     p9.start()
     p10.start()
 
+    os.environ["FIREBASE_PROJECT_ID"] = "test-project"
     os.environ["SECRET_KEY"] = "dev"  # nosec
     os.environ["MAIL_USERNAME"] = "test"  # nosec
     os.environ["MAIL_PASSWORD"] = "test"  # nosec
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
 
-    pickaladder = importlib.import_module("pickaladder")
     app = pickaladder.create_app({"TESTING": True})
 
     port = 5002

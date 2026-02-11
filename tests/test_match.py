@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import unittest
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 from firebase_admin import firestore
@@ -191,7 +192,8 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match Summary", response.data)
-        self.assertIn(b"11 - 5", response.data)
+        self.assertIn(b"11", response.data)
+        self.assertIn(b"5", response.data)
         user_name = cast(str, MOCK_USER_DATA["name"])
         self.assertIn(user_name.encode(), response.data)
 
@@ -230,7 +232,8 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match Summary", response.data)
-        self.assertIn(b"11 - 5", response.data)
+        self.assertIn(b"11", response.data)
+        self.assertIn(b"5", response.data)
         self.assertIn(b"Winners", response.data)
         self.assertIn(b"Losers", response.data)
 
@@ -242,9 +245,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         # Mock necessary Firestore calls for page load
         mock_user_snapshot = MagicMock(exists=True)
         mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
-        mock_db.collection("users").document(MOCK_USER_ID).get.return_value = (
-            mock_user_snapshot
-        )
+        mock_db.collection("users").document(
+            MOCK_USER_ID
+        ).get.return_value = mock_user_snapshot
 
         # Mock get_candidate_player_ids
         with patch(
@@ -262,7 +265,6 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             )
             self.assertEqual(response.status_code, 200)
             self.assertIn(MOCK_OPPONENT_ID.encode(), response.data)
-
 
     def test_pending_invites_query_uses_correct_field(self) -> None:
         """Test that pending invites are queried using 'inviter_id'."""

@@ -55,29 +55,35 @@ def inject_global_context() -> dict[str, Any]:
 
 def inject_incoming_requests_count() -> dict[str, Any]:
     """Injects incoming friend requests count into the template context."""
-    if g.user:
-        try:
+    try:
+        user = getattr(g, "user", None)
+        if user:
             db = firestore.client()
-            pending_requests = UserService.get_user_pending_requests(db, g.user["uid"])
+            pending_requests = UserService.get_user_pending_requests(db, user["uid"])
             return dict(
                 incoming_requests_count=len(pending_requests),
                 pending_friend_requests=pending_requests,
             )
-        except Exception as e:
+    except (Exception, RuntimeError) as e:
+        # Avoid logging RuntimeError as it often means we're outside a request context
+        if not isinstance(e, RuntimeError):
             current_app.logger.error(f"Error fetching friend requests: {e}")
     return dict(incoming_requests_count=0, pending_friend_requests=[])
 
 
 def inject_pending_tournament_invites() -> dict[str, Any]:
     """Injects pending tournament invites into the template context."""
-    if g.user:
-        try:
+    try:
+        user = getattr(g, "user", None)
+        if user:
             db = firestore.client()
             pending_invites = UserService.get_pending_tournament_invites(
-                db, g.user["uid"]
+                db, user["uid"]
             )
             return dict(pending_tournament_invites=pending_invites)
-        except Exception as e:
+    except (Exception, RuntimeError) as e:
+        # Avoid logging RuntimeError as it often means we're outside a request context
+        if not isinstance(e, RuntimeError):
             current_app.logger.error(f"Error fetching tournament invites: {e}")
     return dict(pending_tournament_invites=[])
 
