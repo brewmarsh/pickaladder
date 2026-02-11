@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from pickaladder.core.types import FirestoreDocument
 
@@ -70,12 +70,12 @@ class MatchSubmission:
     score_p1: int
     score_p2: int
     match_type: str = "singles"
-    partner_id: Optional[str] = None
-    opponent_2_id: Optional[str] = None
-    group_id: Optional[str] = None
-    tournament_id: Optional[str] = None
-    match_date: Optional[Union[datetime.date, datetime.datetime]] = None
-    created_by: Optional[str] = None
+    partner_id: str | None = None
+    opponent_2_id: str | None = None
+    group_id: str | None = None
+    tournament_id: str | None = None
+    match_date: datetime.date | datetime.datetime | None = None
+    created_by: str | None = None
 
     def validate(self) -> None:
         """Validate the match submission for obvious errors."""
@@ -107,9 +107,8 @@ class MatchSubmission:
             active_players = [p for p in players if p]
             if len(active_players) != len(set(active_players)):
                 raise ValueError("All players in a doubles match must be unique.")
-        else:
-            if self.player_1_id == self.player_2_id:
-                raise ValueError("You can't play against yourself.")
+        elif self.player_1_id == self.player_2_id:
+            raise ValueError("You can't play against yourself.")
 
 
 @dataclass
@@ -126,14 +125,14 @@ class MatchResult:
     winner: str
     winnerId: str
     loserId: str
-    groupId: Optional[str] = None
-    tournamentId: Optional[str] = None
-    player1Ref: Optional[Any] = None
-    player2Ref: Optional[Any] = None
-    team1: Optional[list[Any]] = None
-    team2: Optional[list[Any]] = None
-    team1Id: Optional[str] = None
-    team2Id: Optional[str] = None
-    team1Ref: Optional[Any] = None
-    team2Ref: Optional[Any] = None
+    groupId: str | None = None
+    tournamentId: str | None = None
+    player1Ref: Any | None = None
+    player2Ref: Any | None = None
+    team1: list[Any] | None = None
+    team2: list[Any] | None = None
+    team1Id: str | None = None
+    team2Id: str | None = None
+    team1Ref: Any | None = None
+    team2Ref: Any | None = None
     is_upset: bool = False

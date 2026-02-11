@@ -46,7 +46,7 @@ class MatchSecurityTestCase(unittest.TestCase):
             score_p1=int(form_data["player1_score"]),
             score_p2=int(form_data["player2_score"]),
             match_type=form_data["match_type"],
-            # injected fields are naturally ignored as they aren't passed to the constructor
+            # Injected fields are ignored by dataclass constructor
         )
 
         MatchService.record_match(mock_db, submission, current_user)
