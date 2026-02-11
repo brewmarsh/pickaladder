@@ -130,11 +130,24 @@
                                     </span>
                                 </td>
                                 <td data-label="Action">
-                                    {% if p.user.id == g.user.uid and p.status == 'pending' %}
-                                        <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-sm btn-success">Join</button>
-                                        </form>
+                                    {% if p.user.id == g.user.uid %}
+                                        {% if tournament.mode == 'DOUBLES' %}
+                                            {% if pending_partner_invite %}
+                                                <form action="{{ url_for('tournament.accept_team', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-sm btn-success">Accept Team</button>
+                                                </form>
+                                            {% elif not team_status %}
+                                                <button type="button" class="btn btn-sm btn-success" onclick="openPartnerModal()">Join (Pick Partner)</button>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if p.status == 'pending' %}
+                                                <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-sm btn-success">Join</button>
+                                                </form>
+                                            {% endif %}
+                                        {% endif %}
                                     {% endif %}
                                 </td>
                             </tr>
@@ -199,4 +212,141 @@
         </div>
     </div>
 </div>
+
+<!-- Select Partner Modal -->
+<div class="modal" id="selectPartnerModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Select Partner</h3>
+            <button type="button" class="btn-close" onclick="closePartnerModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="registerTeamForm" action="{{ url_for('tournament.register_team', tournament_id=tournament.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="form-group">
+                    <label class="form-label">Team Name (Optional)</label>
+                    <input type="text" name="team_name" class="form-input" placeholder="The Smashers">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Search Partner</label>
+                    <input type="text" id="partnerSearch" class="form-input" placeholder="Type username..." autocomplete="off">
+                    <div id="searchResults" class="search-results-dropdown" style="display:none; position:absolute; background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; z-index: 100; max-height: 200px; overflow-y: auto;"></div>
+                </div>
+
+                <input type="hidden" name="partner_id" id="selectedPartnerId">
+
+                <div id="selectedPartnerDisplay" style="margin-bottom: 15px; display: none;">
+                    <span class="badge badge-info">Selected: <span id="selectedPartnerName"></span></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Send Partnership Invite</button>
+            </form>
+
+            <hr style="margin: 20px 0;">
+
+            <div class="text-center">
+                <p class="text-muted small">Can't find them? Send an invite link:</p>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="generateInviteLink()">🔗 Generate Invite Link</button>
+                <div id="inviteLinkContainer" style="display:none; margin-top: 10px;">
+                    <input type="text" id="inviteLinkInput" class="form-input" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.search-results-dropdown .search-item {
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.search-results-dropdown .search-item:hover {
+    background: var(--bg-hover);
+}
+.search-item img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openPartnerModal() {
+    document.getElementById('selectPartnerModal').classList.add('show');
+}
+
+function closePartnerModal() {
+    document.getElementById('selectPartnerModal').classList.remove('show');
+}
+
+const partnerSearch = document.getElementById('partnerSearch');
+const searchResults = document.getElementById('searchResults');
+const selectedPartnerId = document.getElementById('selectedPartnerId');
+const selectedPartnerDisplay = document.getElementById('selectedPartnerDisplay');
+const selectedPartnerName = document.getElementById('selectedPartnerName');
+
+partnerSearch.addEventListener('input', function() {
+    const q = this.value;
+    if (q.length < 2) {
+        searchResults.style.display = 'none';
+        return;
+    }
+
+    fetch(`/user/api/search?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(users => {
+            searchResults.innerHTML = '';
+            if (users.length === 0) {
+                searchResults.innerHTML = '<div class="search-item">No users found</div>';
+            } else {
+                users.forEach(u => {
+                    const div = document.createElement('div');
+                    div.className = 'search-item';
+                    div.innerHTML = `<img src="${u.avatar}" onerror="this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
+                    div.onclick = () => {
+                        selectedPartnerId.value = u.id;
+                        selectedPartnerName.innerText = u.name;
+                        selectedPartnerDisplay.style.display = 'block';
+                        searchResults.style.display = 'none';
+                        partnerSearch.value = '';
+                    };
+                    searchResults.appendChild(div);
+                });
+            }
+            searchResults.style.display = 'block';
+        });
+});
+
+document.addEventListener('click', function(e) {
+    if (!partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.style.display = 'none';
+    }
+});
+
+function generateInviteLink() {
+    const link = window.location.origin + "{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}?ref={{ g.user.uid }}";
+    const container = document.getElementById('inviteLinkContainer');
+    const input = document.getElementById('inviteLinkInput');
+    input.value = link;
+    container.style.display = 'block';
+    input.select();
+    document.execCommand('copy');
+    alert('Invite link copied to clipboard!');
+}
+</script>
 {% endblock %}

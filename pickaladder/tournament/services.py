@@ -161,7 +161,8 @@ class TournamentService:
             "name": data["name"],
             "date": data["date"],
             "location": data["location"],
-            "matchType": data["matchType"],
+            "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
+            "mode": data.get("mode", "SINGLES"),
             "ownerRef": user_ref,
             "organizer_id": user_uid,
             "status": "Active",
@@ -221,6 +222,18 @@ class TournamentService:
 
         user_groups = UserService.get_user_groups(db, user_uid)
 
+        # Team Status
+        team_status = None
+        pending_partner_invite = False
+        teams_query = db.collection("tournaments").document(tournament_id).collection("teams").stream()
+        for doc in teams_query:
+            t_team = doc.to_dict()
+            if t_team["p1_uid"] == user_uid or t_team["p2_uid"] == user_uid:
+                team_status = t_team["status"]
+                if t_team["p2_uid"] == user_uid and t_team["status"] == "PENDING":
+                    pending_partner_invite = True
+                break
+
         # Ownership
         is_owner = data.get("organizer_id") == user_uid or (
             data.get("ownerRef") and data["ownerRef"].id == user_uid
@@ -234,6 +247,8 @@ class TournamentService:
             "invitable_users": invitable,
             "user_groups": user_groups,
             "is_owner": is_owner,
+            "team_status": team_status,
+            "pending_partner_invite": pending_partner_invite,
         }
 
     @staticmethod
@@ -501,3 +516,117 @@ class TournamentService:
         )
         winner = standings[0]["name"] if standings else "No one"
         TournamentService._notify_participants(data, winner, standings)
+
+    @staticmethod
+    def register_team(
+        tournament_id: str,
+        p1_uid: str,
+        p2_uid: str,
+        team_name: str,
+        db: Client | None = None,
+    ) -> str:
+        """Register a team in the tournament teams sub-collection."""
+        if db is None:
+            db = firestore.client()
+
+        team_data = {
+            "p1_uid": p1_uid,
+            "p2_uid": p2_uid,
+            "team_name": team_name,
+            "status": "PENDING",
+            "createdAt": firestore.SERVER_TIMESTAMP,
+        }
+        ref = (
+            db.collection("tournaments")
+            .document(tournament_id)
+            .collection("teams")
+            .document()
+        )
+        ref.set(team_data)
+        return ref.id
+
+    @staticmethod
+    def accept_team_partnership(
+        tournament_id: str, user_uid: str, db: Client | None = None
+    ) -> bool:
+        """Accept a team partnership invitation."""
+        if db is None:
+            db = firestore.client()
+
+        teams_ref = (
+            db.collection("tournaments").document(tournament_id).collection("teams")
+        )
+        query = teams_ref.where(filter=firestore.FieldFilter("p2_uid", "==", user_uid)).where(
+            filter=firestore.FieldFilter("status", "==", "PENDING")
+        ).stream()
+
+        updated = False
+        for doc in query:
+            doc.reference.update({"status": "CONFIRMED"})
+            # Also add both players to participants if not already there
+            t_ref = db.collection("tournaments").document(tournament_id)
+            t_data = cast(Any, t_ref.get()).to_dict()
+            p_ids = t_data.get("participant_ids", [])
+            data = doc.to_dict()
+            p1_uid = data["p1_uid"]
+
+            new_ids = []
+            new_parts = []
+            if p1_uid not in p_ids:
+                new_ids.append(p1_uid)
+                new_parts.append({
+                    "userRef": db.collection("users").document(p1_uid),
+                    "status": "accepted",
+                    "team_name": data["team_name"]
+                })
+            if user_uid not in p_ids:
+                new_ids.append(user_uid)
+                new_parts.append({
+                    "userRef": db.collection("users").document(user_uid),
+                    "status": "accepted",
+                    "team_name": data["team_name"]
+                })
+
+            if new_parts:
+                t_ref.update({
+                    "participants": firestore.ArrayUnion(new_parts),
+                    "participant_ids": firestore.ArrayUnion(new_ids)
+                })
+
+            updated = True
+
+        return updated
+
+    @staticmethod
+    def generate_bracket(tournament_id: str, db: Client | None = None) -> list[Any]:
+        """Generate a bracket for the tournament based on participants or confirmed teams."""
+        if db is None:
+            db = firestore.client()
+
+        t_ref = db.collection("tournaments").document(tournament_id)
+        t_snap = cast(Any, t_ref.get())
+        if not t_snap.exists:
+            return []
+
+        t_data = t_snap.to_dict()
+        mode = t_data.get("mode", "SINGLES")
+
+        if mode == "SINGLES":
+            participants = [
+                p for p in t_data.get("participants", []) if p.get("status") == "accepted"
+            ]
+            # Simplistic seeding: just list them
+            return participants
+        else:
+            # Fetch confirmed teams from sub-collection
+            teams_query = (
+                t_ref.collection("teams")
+                .where(filter=firestore.FieldFilter("status", "==", "CONFIRMED"))
+                .stream()
+            )
+            teams = []
+            for doc in teams_query:
+                data = doc.to_dict()
+                data["id"] = doc.id
+                teams.append(data)
+            return teams

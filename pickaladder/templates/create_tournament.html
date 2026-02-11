@@ -38,10 +38,17 @@
                 {% endif %}
             </div>
             <div class="form-group">
-                {{ form.match_type.label(class="form-label") }}
-                {{ form.match_type(class="form-input") }}
-                {% if form.match_type.errors %}
-                    {% for error in form.match_type.errors %}
+                {{ form.mode.label(class="form-label") }}
+                <div class="radio-group" style="display: flex; gap: 20px; padding: 10px 0;">
+                    {% for subfield in form.mode %}
+                        <label class="radio-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            {{ subfield }}
+                            <span>{{ subfield.label.text }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                {% if form.mode.errors %}
+                    {% for error in form.mode.errors %}
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
                 {% endif %}

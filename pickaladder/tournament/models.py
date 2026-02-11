@@ -20,6 +20,15 @@ class Participant(TypedDict, total=False):
     email: str
 
 
+class TournamentTeam(TypedDict, total=False):
+    """Represents a team within a tournament sub-collection."""
+
+    p1_uid: str
+    p2_uid: str
+    team_name: str
+    status: str  # CONFIRMED/PENDING
+
+
 class Tournament(FirestoreDocument, total=False):
     """A tournament document in Firestore."""
 
@@ -28,6 +37,7 @@ class Tournament(FirestoreDocument, total=False):
     date: Any
     location: str
     matchType: str
+    mode: str
     organizer_id: str
     ownerRef: User | Any
     participants: list[Participant]

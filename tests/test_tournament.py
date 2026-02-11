@@ -101,7 +101,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Summer Open",
                 "date": "2024-06-01",
                 "location": "Courtside",
-                "match_type": "singles",
+                "mode": "SINGLES",
             },
             follow_redirects=True,
         )
@@ -141,7 +141,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Updated Name",
                 "date": "2024-07-01",
                 "location": "Updated Location",
-                "match_type": "doubles",
+                "mode": "DOUBLES",
             },
             follow_redirects=True,
         )
@@ -157,6 +157,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             .to_dict()
         )
         self.assertEqual(data["name"], "Updated Name")
+        self.assertEqual(data["mode"], "DOUBLES")
         self.assertEqual(data["matchType"], "doubles")
 
     def test_edit_tournament_ongoing(self) -> None:

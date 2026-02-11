@@ -46,7 +46,8 @@ def create_tournament() -> Any:
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
                 "location": form.location.data,
-                "matchType": form.match_type.data,
+                "mode": form.mode.data,
+                "matchType": form.mode.data.lower(),
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
             flash("Tournament created successfully.", "success")
@@ -118,7 +119,8 @@ def edit_tournament(tournament_id: str) -> Any:
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
             "location": form.location.data,
-            "matchType": form.match_type.data,
+            "mode": form.mode.data,
+            "matchType": form.mode.data.lower(),
         }
 
         try:
@@ -137,7 +139,9 @@ def edit_tournament(tournament_id: str) -> Any:
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
         form.location.data = tournament_data.get("location")
-        form.match_type.data = tournament_data.get("matchType")
+        form.mode.data = tournament_data.get("mode") or tournament_data.get(
+            "matchType", "SINGLES"
+        ).upper()
         raw_date = tournament_data.get("date")
         if hasattr(raw_date, "to_datetime"):
             form.date.data = raw_date.to_datetime().date()
@@ -246,3 +250,41 @@ def complete_tournament(tournament_id: str) -> Any:
 def join_tournament(tournament_id: str) -> Any:
     """Accept tournament invitation (legacy alias)."""
     return accept_invite(tournament_id)
+
+
+@bp.route("/<string:tournament_id>/register_team", methods=["POST"])
+@login_required
+def register_team(tournament_id: str) -> Any:
+    """Register a doubles team for the tournament."""
+    partner_id = request.form.get("partner_id")
+    team_name = request.form.get("team_name")
+
+    if not partner_id:
+        flash("You must select a partner.", "warning")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    try:
+        TournamentService.register_team(
+            tournament_id, g.user["uid"], partner_id, team_name
+        )
+        flash("Team registration pending. Your partner must accept.", "info")
+    except Exception as e:
+        flash(f"Error registering team: {e}", "danger")
+
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/accept_team", methods=["POST"])
+@login_required
+def accept_team(tournament_id: str) -> Any:
+    """Accept a team partnership invitation."""
+    try:
+        success = TournamentService.accept_team_partnership(tournament_id, g.user["uid"])
+        if success:
+            flash("You have accepted the team partnership!", "success")
+        else:
+            flash("No pending partnership found.", "warning")
+    except Exception as e:
+        flash(f"Error: {e}", "danger")
+
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
