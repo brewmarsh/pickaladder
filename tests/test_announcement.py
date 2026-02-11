@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import unittest
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
@@ -26,7 +25,8 @@ class AnnouncementTestCase(unittest.TestCase):
                 "pickaladder.admin.routes.firestore", new=self.mock_firestore_service
             ),
             "firestore_cp": patch(
-                "pickaladder.context_processors.firestore", new=self.mock_firestore_service
+                "pickaladder.context_processors.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
@@ -108,7 +108,9 @@ class AnnouncementTestCase(unittest.TestCase):
 
         with self.app.test_request_context():
             context = inject_global_context()
-            self.assertEqual(context["global_announcement"]["announcement_text"], "Global Message")
+            self.assertEqual(
+                context["global_announcement"]["announcement_text"], "Global Message"
+            )
             self.assertTrue(context["global_announcement"]["is_active"])
             self.assertEqual(context["global_announcement"]["level"], "danger")
 
