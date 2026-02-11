@@ -64,3 +64,34 @@ class AdminService:
         auth.update_user(user_id, email_verified=True)
         user_ref = db.collection("users").document(user_id)
         user_ref.update({"email_verified": True})
+
+    @staticmethod
+    def get_admin_stats(db: Any) -> Dict[str, Any]:
+        """Get high-level stats for the admin dashboard."""
+        from datetime import datetime, timedelta, timezone
+
+        # User Count
+        total_users = len(db.collection("users").get())
+
+        # Active Tournaments
+        active_tournaments = len(
+            db.collection("tournaments")
+            .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
+            .get()
+        )
+
+        # Recent Matches (Since yesterday at midnight)
+        yesterday = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) - timedelta(days=1)
+        recent_matches = len(
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("matchDate", ">=", yesterday))
+            .get()
+        )
+
+        return {
+            "total_users": total_users,
+            "active_tournaments": active_tournaments,
+            "recent_matches": recent_matches,
+        }

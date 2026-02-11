@@ -4,6 +4,26 @@
     <div class="page-header">
         <h1>Admin Panel</h1>
     </div>
+
+    <!-- KPI Row -->
+    <div class="card-grid" style="margin-bottom: 24px;">
+        <div class="card text-center">
+            <i class="fas fa-users fa-2x mb-3" style="color: var(--primary-color);"></i>
+            <h2 class="text-volt mb-1">{{ stats.total_users }}</h2>
+            <p class="text-muted mb-0">Total Users</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-trophy fa-2x mb-3" style="color: var(--primary-color);"></i>
+            <h2 class="text-volt mb-1">{{ stats.active_tournaments }}</h2>
+            <p class="text-muted mb-0">Active Tournaments</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-table-tennis fa-2x mb-3" style="color: var(--primary-color);"></i>
+            <h2 class="text-volt mb-1">{{ stats.recent_matches }}</h2>
+            <p class="text-muted mb-0">Recent Matches</p>
+        </div>
+    </div>
+
     <div class="card-grid">
         <div class="card">
             <h3>Account Management</h3>

@@ -37,11 +37,16 @@ def admin() -> Union[str, Response]:
     db = firestore.client()
     setting_ref = db.collection("settings").document("enforceEmailVerification")
     email_verification_setting = setting_ref.get()
+
+    # Get high-level stats for the dashboard
+    stats = AdminService.get_admin_stats(db)
+
     return render_template(
         "admin/dashboard.html",
         email_verification_setting=email_verification_setting.to_dict()
         if email_verification_setting.exists
         else {"value": False},
+        stats=stats,
     )
 
 
