@@ -36,9 +36,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
 
     # Logout
-    page.click(".dropbtn", force=True)
-    with page.expect_navigation():
-        page.click("text=Logout", force=True)
+    page.goto(f"{base_url}/auth/logout")
     expect(page.locator("h2")).to_contain_text("Login")
 
     # 2. Register User 2
@@ -81,9 +79,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     )
 
     # Logout User 2, Login Admin
-    page.click(".dropbtn", force=True)
-    with page.expect_navigation():
-        page.click("text=Logout", force=True)
+    page.goto(f"{base_url}/auth/logout")
     expect(page.locator("h2")).to_contain_text("Login")
 
     page.fill("input[name='email']", "admin@example.com")
@@ -118,9 +114,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("input[value='Invite Friend']")
 
     # Verify User 2 is added (Logout Admin, Login User 2)
-    page.click(".dropbtn", force=True)
-    with page.expect_navigation():
-        page.click("text=Logout", force=True)
+    page.goto(f"{base_url}/auth/logout")
 
     page.fill("input[name='email']", "user2@example.com")
     page.fill("input[name='password']", "MyPassword123")
@@ -176,9 +170,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # 8. Delete Group Game & 9. Delete Individual Game
     # Needs Admin access
-    page.click(".dropbtn", force=True)
-    with page.expect_navigation():
-        page.click("text=Logout", force=True)
+    page.goto(f"{base_url}/auth/logout")
 
     page.fill("input[name='email']", "admin@example.com")
     page.fill("input[name='password']", "password")
