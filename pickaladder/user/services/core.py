@@ -137,7 +137,7 @@ def process_profile_update(
 def update_settings(
     db: Client, user_id: str, form_data: Any, profile_picture_file: Any = None
 ) -> dict[str, Any]:
-    """Update user settings including username, rating, dark mode, and profile picture."""
+    """Update user settings (username, rating, dark mode, and profile picture)."""
     new_username = form_data.username.data
 
     # Check for username conflict
