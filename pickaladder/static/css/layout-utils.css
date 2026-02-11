@@ -54,3 +54,9 @@ body .d-none { display: none !important; }
     body .d-lg-flex { display: flex !important; }
     body .d-lg-block { display: block !important; }
 }
+
+/* Toast Transitions */
+.fade-out {
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+}
