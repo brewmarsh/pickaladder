@@ -1,34 +1,8 @@
 /* --- 0. Layout Utilities --- */
 .w-auto { width: auto !important; }
 .mx-auto { margin-left: auto !important; margin-right: auto !important; }
-.flex-1 { flex: 1 !important; }
-.flex-2 { flex: 2 !important; }
-.gap-2 { gap: 0.5rem !important; }
-.gap-3 { gap: 1rem !important; }
 .gap-4 { gap: 1.5rem !important; }
 .justify-content-center { justify-content: center !important; }
-.text-center { text-align: center !important; }
-
-.mt-1 { margin-top: 0.25rem !important; }
-.mt-2 { margin-top: 0.5rem !important; }
-.mt-3 { margin-top: 1rem !important; }
-.mt-4 { margin-top: 1.5rem !important; }
-.mb-1 { margin-bottom: 0.25rem !important; }
-.mb-2 { margin-bottom: 0.5rem !important; }
-.mb-3 { margin-bottom: 1rem !important; }
-.mb-4 { margin-bottom: 1.5rem !important; }
-.mb-5 { margin-bottom: 3rem !important; }
-
-/* Typography Utilities */
-.fs-1 { font-size: 2.5rem !important; }
-.fs-2 { font-size: 2rem !important; }
-.fs-3 { font-size: 1.75rem !important; }
-.fs-4 { font-size: 1.5rem !important; }
-.fs-5 { font-size: 1.25rem !important; }
-.fs-6 { font-size: 1rem !important; }
-.fw-bold { font-weight: 700 !important; }
-.fw-medium { font-weight: 500 !important; }
-.text-volt { color: var(--accent-color) !important; }
 
 /* Buttons */
 .btn {
@@ -132,23 +106,6 @@
     font-size: 1.1rem;
 }
 
-.card-header-clean {
-    border-bottom: none !important;
-    margin-bottom: 0 !important;
-    padding-left: 0 !important;
-}
-
-.tournament-invite-card {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    border-left: 5px solid var(--accent-color);
-    background-color: var(--card-bg);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    padding: 24px;
-}
-
 .hero-stats-card {
     display: flex;
     justify-content: space-between;
@@ -194,18 +151,6 @@
     vertical-align: middle;
 }
 .table-standard tr:last-child td { border-bottom: none; }
-
-.table-hover tbody tr {
-    transition: background-color 0.2s ease;
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-[data-theme="dark"] .table-hover tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
 
 .table-container {
     background-color: var(--card-bg);
@@ -301,14 +246,6 @@
     border-bottom: 1px solid var(--border-color);
 }
 
-.table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-}
-
-.table td[data-label="Result"] {
-    text-align: center;
-}
-
 .table th {
     background-color: var(--primary-color);
     color: var(--text-on-primary);
@@ -400,17 +337,9 @@
 /* Profile Picture Fix */
 .profile-picture-container {
     overflow: hidden;
-    border-radius: 50% !important;
+    border-radius: 50%;
     flex-shrink: 0;
     background-color: var(--bg-color);
-    display: block;
-}
-
-.profile-picture-container img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-    display: block;
 }
 
 /* Specificity override to fix masking and size */
@@ -425,9 +354,9 @@
 
 /* --- 5. Avatar System (Consolidated) --- */
 .profile-picture {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .avatar {
@@ -441,7 +370,6 @@
 .vanity-stats-container {
     display: flex;
     justify-content: center;
-    gap: 2rem;
 }
 
 @media screen and (max-width: 768px) {

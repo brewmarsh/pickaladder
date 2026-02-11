@@ -9,20 +9,23 @@
     {# Section: Tournament Invites (Top Priority Alert Banner) #}
     {% if pending_tournament_invites %}
     {% for tournament in pending_tournament_invites %}
-    <div class="tournament-invite-card">
-        <div class="flex-2">
-            <div class="fw-medium text-volt fs-5">🏆 You've been invited!</div>
-            <div class="fw-bold fs-4 mt-1">{{ tournament.name }}</div>
+    <div class="game-card tournament-invite-card"
+        style="margin-bottom: 20px; border-left: 5px solid var(--accent-color);">
+        <div style="flex: 2;">
+            <div style="font-weight: 600; font-size: 1.1rem; color: var(--accent-color);">🏆 You've been invited!</div>
+            <div style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">{{ tournament.name }}</div>
             <div class="text-muted small">Starts {{ tournament.date }}</div>
         </div>
-        <div class="flex-1 d-flex justify-content-end gap-2 align-items-center">
-            <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post" class="d-inline">
+        <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
+            <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post"
+                style="display: inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-volt w-auto mb-0">Accept</button>
+                <button type="submit" class="btn btn-volt" style="width: auto; margin: 0;">Accept</button>
             </form>
-            <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post" class="d-inline">
+            <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post"
+                style="display: inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-danger w-auto mb-0">Decline</button>
+                <button type="submit" class="btn btn-danger" style="width: auto; margin: 0;">Decline</button>
             </form>
         </div>
     </div>
@@ -39,6 +42,7 @@
         </div>
         <div class="hero-middle-panel text-center">
             <h2 id="hero-username-text" class="mb-2">{{ user.name if user.name else user.username }}</h2>
+            <!-- Vanity Stats Row -->
             <div class="vanity-stats-container justify-content-center gap-4">
                 <div class="vanity-stat">
                     <div class="stat-value fs-3 fw-bold">{{ stats.total_games }}</div>
@@ -73,7 +77,7 @@
     {% if recent_opponents %}
     <div class="card mb-4">
         <div class="card-body">
-            <h4 class="card-header card-header-clean">Jump Back In</h4>
+            <h4 class="card-header" style="border-bottom: none; margin-bottom: 0; padding-left: 0;">Jump Back In</h4>
             <div class="text-muted small mb-3">Recent Opponents</div>
             <div class="d-flex gap-3 mt-3">
                 {% for opponent in recent_opponents %}
@@ -89,18 +93,18 @@
     <div class="dashboard-columns">
         {# Left Column: Recent Activity #}
         <div class="dashboard-column-left">
-            {% if matches %}
             <div class="card">
                 <div class="header-with-button">
                     <h3>Recent Activity</h3>
                 </div>
                 <div id="latest-games-feed">
-                    <table class="table table-hover">
+                    {% if matches %}
+                    <table class="table">
                         <thead>
                             <tr>
                                 <th>Date</th>
                                 <th>Matchup</th>
-                                <th class="text-center">Result</th>
+                                <th>Result</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -142,7 +146,7 @@
                                         <strong>You</strong> vs {{ opponent.username }}
                                     {% endif %}
                                 </td>
-                                <td data-label="Result" class="text-center">
+                                <td data-label="Result">
                                     {% if match.user_result == 'win' %}
                                     <span class="badge badge-success">W</span>
                                     {% else %}
@@ -157,25 +161,18 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    {% else %}
+                    <p class="text-muted" style="padding: 20px; text-align: center;">No recent matches found.</p>
+                    {% endif %}
                 </div>
             </div>
-            {% else %}
-            <div class="card text-center p-5">
-                <h4 class="card-header" style="border-bottom: none;">Ready to climb?</h4>
-                <p>Record your first match to establish your ranking.</p>
-                <div class="mt-4">
-                    <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
-                </div>
-            </div>
-            {% endif %}
         </div>
 
         {# Right Column: Competition Stack #}
         <div class="dashboard-column-right">
             <div class="competition-stack">
                 {# My Groups Section #}
-                {% if group_rankings %}
-                <div class="card card-compact">
+                <div class="card" style="padding: 16px;">
                     <h3 style="margin-top: 0; margin-bottom: 16px;">My Groups</h3>
                     {% for ranking in group_rankings %}
                     <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}" class="ranking-card">
@@ -199,21 +196,13 @@
                             {% endfor %}
                         </div>
                     </a>
+                    {% else %}
+                    <p class="text-muted">You are not a member of any groups.</p>
                     {% endfor %}
                 </div>
-                {% else %}
-                <div class="card text-center p-5">
-                    <h4 class="card-header" style="border-bottom: none;">Find your squad</h4>
-                    <p>Join a group or create one to start a leaderboard.</p>
-                    <div class="mt-4 d-flex flex-column gap-2">
-                        <a href="{{ url_for('group.view_groups') }}" class="btn btn-volt">Find Groups</a>
-                        <a href="{{ url_for('group.create_group') }}" class="btn btn-outline-primary">Create Group</a>
-                    </div>
-                </div>
-                {% endif %}
 
                 {# Social Section #}
-                <div class="card card-compact">
+                <div class="card" style="padding: 16px;">
                     <h3 style="margin-top: 0; margin-bottom: 16px;">Social</h3>
                     {% if requests %}
                     <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Friend Requests</h4>

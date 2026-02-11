@@ -1,0 +1,50 @@
+name: Quality Gate
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: pickaladder_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Setup Database
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+
+      - name: Install Dependencies
+        run: uv sync
+
+      - name: Install Playwright Browsers
+        run: uv run playwright install --with-deps
+
+      - name: Run Tests
+        env:
+          TESTING: "True"
+          SECRET_KEY: "test-secret-key"
+        run: uv run --no-project python -m pytest

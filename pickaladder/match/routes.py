@@ -244,16 +244,14 @@ def record_match() -> Any:
 
         try:
             # Capture the ID from the service call (Feature Branch Logic)
-            match_id = MatchService.process_match_submission(db, data, g.user)
+            match_id = MatchService.process_match_submission(db, user_id, form)
 
             if request.is_json:
-                return jsonify(
-                    {
-                        "status": "success",
-                        "message": "Match recorded.",
-                        "match_id": match_id,
-                    }
-                ), 200
+                return jsonify({
+                    "status": "success",
+                    "message": "Match recorded.",
+                    "match_id": match_id
+                }), 200
 
             flash("Match recorded successfully.", "success")
             active_tid = form.tournament_id.data or tournament_id
