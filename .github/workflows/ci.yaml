@@ -1,7 +1,8 @@
-name: Quality Gate
+name: CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
     branches: [main]
   workflow_dispatch:
 
@@ -13,19 +14,23 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Detect Merge Conflicts
+      - name: Check for Merge Conflicts
         run: |
           git fetch origin main
-          if ! git merge-tree --write-tree origin/main HEAD > /dev/null; then
-            echo "::error::Merge conflict detected! Please rebase your branch on main."
+          # Use merge-tree to simulate the merge in memory without failing the checkout
+          if git merge-tree --write-tree origin/main HEAD > /dev/null; then
+            echo "✅ Merge Clean"
+          else
+            echo "::error::❌ Merge Conflict Detected. Please rebase."
             exit 1
           fi
-          echo "Branch is clean."
 
   test:
     name: Quality Gate
+    needs: check-conflicts
     runs-on: ubuntu-latest
 
     services:
@@ -45,9 +50,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
