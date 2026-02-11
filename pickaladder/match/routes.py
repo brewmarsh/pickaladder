@@ -178,20 +178,32 @@ def record_match() -> Any:
             data["tournament_id"] = tournament_id
 
         try:
-            MatchService.process_match_submission(db, data, g.user)
+            # Capture the ID from the service call (Feature Branch Logic)
+            match_id = MatchService.process_match_submission(db, data, g.user)
+
             if request.is_json:
-                return jsonify({"status": "success", "message": "Match recorded."}), 200
+                return jsonify(
+                    {
+                        "status": "success",
+                        "message": "Match recorded.",
+                        "match_id": match_id,
+                    }
+                ), 200
 
             flash("Match recorded successfully.", "success")
             active_tid = form.tournament_id.data or tournament_id
             active_gid = form.group_id.data or group_id
+
             if active_tid:
                 return redirect(
                     url_for("tournament.view_tournament", tournament_id=active_tid)
                 )
             if active_gid:
                 return redirect(url_for("group.view_group", group_id=active_gid))
-            return redirect(url_for("user.dashboard"))
+
+            # Redirect to the new summary view (Feature Branch Logic)
+            return redirect(url_for("match.view_match_summary", match_id=match_id))
+
         except ValueError as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400
