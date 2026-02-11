@@ -36,6 +36,39 @@
             </button>
         </div>
         <div class="card">
+            <h3>Project Links</h3>
+            <p>Quick access to repository and project management.</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <a href="https://github.com/brewmarsh/pickaladder/discussions" target="_blank" class="btn">GitHub Discussions</a>
+                <a href="https://github.com/brewmarsh/pickaladder/projects" target="_blank" class="btn">Project Board</a>
+                <a href="https://github.com/brewmarsh/pickaladder/settings" target="_blank" class="btn">Repo Settings</a>
+            </div>
+        </div>
+        <div class="card">
+            <h3>System Message</h3>
+            <p>Broadcast a global announcement to all users.</p>
+            <form action="{{ url_for('admin.announcement') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label for="announcement_text">Message</label>
+                    <textarea id="announcement_text" name="announcement_text" class="form-control" rows="3" required>{{ global_announcement.announcement_text if global_announcement }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="level">Level</label>
+                    <select id="level" name="level" class="form-control">
+                        <option value="info" {% if global_announcement and global_announcement.level == 'info' %}selected{% endif %}>Info (Blue)</option>
+                        <option value="warning" {% if global_announcement and global_announcement.level == 'warning' %}selected{% endif %}>Warning (Yellow)</option>
+                        <option value="danger" {% if global_announcement and global_announcement.level == 'danger' %}selected{% endif %}>Danger (Red)</option>
+                    </select>
+                </div>
+                <div class="form-group form-check">
+                    <input type="checkbox" id="is_active" name="is_active" class="form-check-input" {% if global_announcement and global_announcement.is_active %}checked{% endif %}>
+                    <label for="is_active" class="form-check-label">Active</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Announcement</button>
+            </form>
+        </div>
+        <div class="card">
             <h3>Enforce Email Verification</h3>
             <p>
                 Current status:

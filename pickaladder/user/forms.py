@@ -52,9 +52,12 @@ class UpdateUserForm(FlaskForm):
     submit = SubmitField("Update Account")
 
 
-class UpdateProfileForm(FlaskForm):
+class EditProfileForm(FlaskForm):
     """Form for updating a user profile."""
 
+    username = StringField(
+        "Username", validators=[DataRequired(), Length(min=2, max=20)]
+    )
     dupr_rating = DecimalField(
         "DUPR Rating",
         validators=[
@@ -69,7 +72,7 @@ class UpdateProfileForm(FlaskForm):
     )
     profile_picture = FileField(
         "Update Profile Picture",
-        validators=[FileAllowed(["jpg", "jpeg", "png", "gif"], "Images only!")],
+        validators=[FileAllowed(["jpg", "png"], "Images only!")],
     )
     dark_mode = BooleanField("Enable Dark Mode")
-    submit = SubmitField("Update Profile")
+    submit = SubmitField("Save Changes")

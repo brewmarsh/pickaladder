@@ -14,12 +14,13 @@ from flask import (
     request,
     url_for,
 )
+from flask_login import current_user
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
 
 from . import bp
-from .forms import SettingsForm, UpdateProfileForm, UpdateUserForm
+from .forms import SettingsForm, UpdateUserForm
 from .services import UserService
 
 if TYPE_CHECKING:
@@ -100,14 +101,9 @@ def edit_profile() -> Any:
 @bp.route("/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard() -> Any:
-    """Render user dashboard and handle profile updates."""
+    """Render user dashboard."""
     db = firestore.client()
     user_id = g.user["uid"]
-    form = UpdateProfileForm()
-
-    if request.method == "GET":
-        form.dupr_rating.data = g.user.get("duprRating")
-        form.dark_mode.data = g.user.get("dark_mode")
 
     data = UserService.get_dashboard_data(db, user_id)
 
@@ -117,17 +113,9 @@ def dashboard() -> Any:
     current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
     recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
 
-    if form.validate_on_submit():
-        UserService.update_dashboard_profile(
-            db, user_id, form, form.profile_picture.data
-        )
-        flash("Profile updated successfully.", "success")
-        return redirect(url_for(".dashboard"))
-
     # FIX: Removed explicit 'user=g.user' to avoid conflict with **data['user']
     return render_template(
         "user_dashboard.html",
-        form=form,
         current_streak=current_streak,
         recent_opponents=recent_opponents,
         **data,

@@ -68,6 +68,8 @@
                         <a href="{{ url_for('admin.admin') }}">👑 Admin</a>
                         {% endif %}
                         <div class="dropdown-divider"></div>
+                        <a href="https://github.com/brewmarsh/pickaladder/issues/new" target="_blank">🐛 Report a Bug</a>
+                        <div class="dropdown-divider"></div>
                         <a href="{{ url_for('auth.logout') }}">🚪 Logout</a>
                     </div>
                 </div>
@@ -109,6 +111,8 @@
             <a href="{{ url_for('admin.admin') }}" class="mobile-nav-link"><i class="fas fa-user-shield me-2"></i>
                 Admin</a>
             {% endif %}
+            <div class="mobile-nav-divider"></div>
+            <a href="https://github.com/brewmarsh/pickaladder/issues/new" target="_blank" class="mobile-nav-link">🐛 Report a Bug</a>
             <a href="{{ url_for('auth.logout') }}" class="mobile-nav-link"><i class="fas fa-sign-out-alt me-2"></i>
                 Logout</a>
             {% else %}
