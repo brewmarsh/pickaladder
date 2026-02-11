@@ -2,7 +2,7 @@
 {% block title %}{{ group.name }}{% endblock %}
 {% block content %}
 <div class="card hero-stats-card">
-    {% if group.ownerRef.id == current_user_id %}
+    {% if is_admin %}
     <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="btn-edit-gear"
         data-testid="group-settings-btn">⚙️</a>
     {% endif %}
@@ -34,6 +34,11 @@
                 data-target="#shareGroupModal">
                 <i class="fas fa-share-alt"></i> Share
             </button>
+            {% if is_admin %}
+            <a href="{{ url_for('tournament.create_tournament', group_id=group.id) }}" class="btn btn-outline-primary w-auto">
+                <i class="fas fa-trophy"></i> Tournament
+            </a>
+            {% endif %}
             <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-volt w-auto">Record a Match</a>
         </div>
         {% endif %}
@@ -292,21 +297,61 @@
             <h3>Members</h3>
             <div class="table-container">
                 <table class="table-standard responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Role</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
                     <tbody>
                         {% for member in members %}
-                        <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=member.id) }}">
-                            <td data-label="Avatar">
-                                <img src="{{ member | avatar_url }}" alt="Profile Picture" class="avatar avatar-md"
-                                    onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                        <tr>
+                            <td data-label="Member">
+                                <a href="{{ url_for('user.view_user', user_id=member.id) }}" class="d-flex align-items-center gap-2">
+                                    <img src="{{ member | avatar_url }}" alt="Profile Picture" class="avatar avatar-md"
+                                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                    <span>{{ member.username }}</span>
+                                </a>
                             </td>
-                            <td data-label="Username">{{ member.username }}</td>
+                            <td data-label="Role">
+                                {% if member.id == group.ownerRef.id %}
+                                <span class="badge warning">👑 Owner</span>
+                                {% elif member.id in group.get('admins', []) %}
+                                <span class="badge success">🛡️ Captain</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Actions" class="text-right">
+                                <div class="d-flex justify-content-end gap-2">
+                                    {% if is_owner and member.id != current_user_id %}
+                                        {% if member.id in group.get('admins', []) %}
+                                        <form method="post" action="{{ url_for('group.demote_member', group_id=group.id, user_id=member.id) }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-warning small" style="width: auto;">Revoke Captain</button>
+                                        </form>
+                                        {% else %}
+                                        <form method="post" action="{{ url_for('group.promote_member', group_id=group.id, user_id=member.id) }}" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-volt small" style="width: auto;">Promote to Captain</button>
+                                        </form>
+                                        {% endif %}
+                                    {% endif %}
+
+                                    {% if is_admin and member.id != group.ownerRef.id and member.id != current_user_id %}
+                                    <form method="post" action="{{ url_for('group.remove_member', group_id=group.id, user_id=member.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-danger small" style="width: auto;" onclick="return confirm('Remove this member from the group?')">Remove</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
 
-            {% if group.ownerRef.id == current_user_id %}
+            {% if is_admin %}
             <h3>Invite Friends</h3>
             <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
                 {{ form.hidden_tag() }}
@@ -330,7 +375,9 @@
                 </div>
                 <button type="submit" class="btn">Send Invite</button>
             </form>
+            {% endif %}
 
+            {% if is_owner %}
             <h3>Danger Zone</h3>
             <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -356,7 +403,7 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Status</th>
-                            {% if group.ownerRef.id == current_user_id %}
+                            {% if is_admin %}
                             <th>Actions</th>
                             {% endif %}
                         </tr>
@@ -381,7 +428,7 @@
                                 <span class="badge">{{ invite.status or 'Pending' }}</span>
                                 {% endif %}
                             </td>
-                            {% if group.ownerRef.id == current_user_id %}
+                            {% if is_admin %}
                             <td data-label="Actions">
                                 <div class="pending-invites-actions">
                                     <form method="post"
