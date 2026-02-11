@@ -45,3 +45,12 @@
 .page-header-actions h1 {
     margin-bottom: 0 !important;
 }
+
+/* --- Responsive Visibility Utilities --- */
+body .d-none { display: none !important; }
+
+@media (min-width: 992px) {
+    body .d-lg-none { display: none !important; }
+    body .d-lg-flex { display: flex !important; }
+    body .d-lg-block { display: block !important; }
+}

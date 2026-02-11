@@ -66,6 +66,15 @@ body {
     gap: 15px;
 }
 
+.desktop-auth-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.desktop-auth-buttons .btn {
+    width: auto;
+}
+
 .dashboard-columns {
     display: flex;
     gap: 24px;
