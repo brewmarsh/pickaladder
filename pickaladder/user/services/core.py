@@ -165,6 +165,12 @@ def update_settings(
         "dark_mode": bool(form_data.dark_mode.data),
     }
 
+    if hasattr(form_data, "name") and form_data.name.data:
+        update_data["name"] = form_data.name.data
+
+    if hasattr(form_data, "dupr_id") and form_data.dupr_id.data:
+        update_data["dupr_id"] = form_data.dupr_id.data
+
     if form_data.dupr_rating.data is not None:
         rating = float(form_data.dupr_rating.data)
         update_data["dupr_rating"] = rating
