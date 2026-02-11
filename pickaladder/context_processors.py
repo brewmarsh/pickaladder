@@ -46,10 +46,21 @@ def inject_global_context() -> dict[str, Any]:
     if len(version) > VERSION_THRESHOLD and version != "dev":
         version = version[:VERSION_SHORT_LENGTH]
 
+    global_announcement = None
+    try:
+        db = firestore.client()
+        announcement_doc = db.collection("system").document("settings").get()
+        global_announcement = (
+            announcement_doc.to_dict() if announcement_doc.exists else None
+        )
+    except Exception as e:
+        current_app.logger.error(f"Error fetching global announcement: {e}")
+
     return {
         "current_year": datetime.now().year,
         "version": version,
         "app_version": version,
+        "global_announcement": global_announcement,
     }
 
 

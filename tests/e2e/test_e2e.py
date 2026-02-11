@@ -32,15 +32,13 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         with page.expect_navigation():
             page.click("button:has-text('Login')")
 
-    page.click("#edit-profile-toggle")
-    expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(
-        timeout=10000
-    )
+    page.click(".btn-edit-gear")
+    expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
 
     # Logout
-    page.click(".dropbtn", force=True)
+    page.hover(".dropdown")
     with page.expect_navigation():
-        page.click("text=Logout", force=True)
+        page.locator(".dropdown-content a:has-text('Logout')").click()
     expect(page.locator("h2")).to_contain_text("Login")
 
     # 2. Register User 2
@@ -63,10 +61,8 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Login')")
 
-    page.click("#edit-profile-toggle")
-    expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(
-        timeout=10000
-    )
+    page.click(".btn-edit-gear")
+    expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
 
     # 3. Add Friend (User 2 invites Admin)
     with page.expect_navigation():
@@ -85,9 +81,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     )
 
     # Logout User 2, Login Admin
-    page.click(".dropbtn", force=True)
+    page.hover(".dropdown")
     with page.expect_navigation():
-        page.click("text=Logout", force=True)
+        page.locator(".dropdown-content a:has-text('Logout')").click()
     expect(page.locator("h2")).to_contain_text("Login")
 
     page.fill("input[name='email']", "admin@example.com")
@@ -122,9 +118,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Invite Friend')")
 
     # Verify User 2 is added (Logout Admin, Login User 2)
-    page.click(".dropbtn", force=True)
+    page.hover(".dropdown")
     with page.expect_navigation():
-        page.click("text=Logout", force=True)
+        page.locator(".dropdown-content a:has-text('Logout')").click()
 
     page.fill("input[name='email']", "user2@example.com")
     page.fill("input[name='password']", "MyPassword123")
@@ -180,9 +176,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # 8. Delete Group Game & 9. Delete Individual Game
     # Needs Admin access
-    page.click(".dropbtn", force=True)
+    page.hover(".dropdown")
     with page.expect_navigation():
-        page.click("text=Logout", force=True)
+        page.locator(".dropdown-content a:has-text('Logout')").click()
 
     page.fill("input[name='email']", "admin@example.com")
     page.fill("input[name='password']", "password")

@@ -77,6 +77,9 @@
                     {% endif %}
 
                     {% if session['is_admin'] %}
+                    <a href="{{ url_for('admin.impersonate', user_id=user.id) }}" class="btn btn-info" title="Impersonate">
+                        <i class="fa fa-user-secret"></i>
+                    </a>
                     <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
                     <a href="{{ url_for('admin.promote_user', user_id=user.id) }}" class="btn btn-warning">Promote</a>
                     {% if not user.email_verified %}

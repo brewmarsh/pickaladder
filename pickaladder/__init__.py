@@ -159,8 +159,7 @@ def _initialize_firebase(app: Flask) -> None:
 def _register_blueprints(app: Flask) -> None:
     """Register all blueprints for the application."""
     app.register_blueprint(auth_bp.bp)
-    if not app.debug:
-        app.register_blueprint(admin_bp.bp)
+    app.register_blueprint(admin_bp.bp)
     app.register_blueprint(user_bp.bp)
     app.register_blueprint(match_bp.bp)
     app.register_blueprint(group_bp.bp)
@@ -206,11 +205,18 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @login_manager.user_loader
     def load_user(user_id: str) -> Any:
         """Load user by ID for Flask-Login."""
+        impersonate_id = session.get("impersonate_id")
+        is_admin = session.get("is_admin", False)
+
+        id_to_load = user_id
+        if impersonate_id and is_admin:
+            id_to_load = impersonate_id
+
         try:
             db = firestore.client()
-            user_doc = db.collection("users").document(user_id).get()
+            user_doc = db.collection("users").document(id_to_load).get()
             if user_doc.exists:
-                return wrap_user(user_doc.to_dict(), uid=user_id)
+                return wrap_user(user_doc.to_dict(), uid=id_to_load)
         except Exception as e:
             current_app.logger.error(f"Error in user_loader: {e}")
         return None
@@ -235,24 +241,39 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     @app.before_request
     def load_logged_in_user() -> None:
         """Load user from session."""
-        user_id = session.get("user_id")
+        real_user_id = session.get("user_id")
+        impersonate_id = session.get("impersonate_id")
+        is_admin = session.get("is_admin", False)
+
         g.user = None
-        if user_id is None:
+        g.is_impersonating = False
+
+        if real_user_id is None:
             return
+
+        id_to_load = real_user_id
+        if impersonate_id and is_admin:
+            id_to_load = impersonate_id
+            g.is_impersonating = True
 
         try:
             db = firestore.client()
-            user_doc = db.collection("users").document(user_id).get()
+            user_doc = db.collection("users").document(id_to_load).get()
             if user_doc.exists:
-                g.user = wrap_user(user_doc.to_dict(), uid=user_id)
-            else:
+                g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
+            elif not g.is_impersonating:
                 session.clear()
                 current_app.logger.warning(
-                    f"User {user_id} in session but not found in Firestore."
+                    f"User {id_to_load} in session but not found in Firestore."
                 )
+            else:
+                # Clear impersonation if user not found
+                session.pop("impersonate_id", None)
+                g.is_impersonating = False
         except Exception as e:
             current_app.logger.error(f"Error loading user from session: {e}")
-            session.clear()
+            if not g.is_impersonating:
+                session.clear()
 
     _register_context_processors(app)
 
