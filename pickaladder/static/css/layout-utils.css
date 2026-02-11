@@ -4,6 +4,8 @@
 .gap-4 { gap: 1.5rem !important; }
 .justify-content-center { justify-content: center !important; }
 .text-center { text-align: center !important; }
+.text-danger { color: var(--danger-color) !important; }
+.border-danger { border: 1px solid var(--danger-color) !important; }
 
 /* --- 6. Input Groups (Design System) --- */
 .input-group {
