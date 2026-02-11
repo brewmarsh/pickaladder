@@ -34,6 +34,12 @@
 </head>
 
 <body {% if g.user and g.user.dark_mode %}data-theme="dark" {% endif %}>
+    {% if g.get('is_impersonating') %}
+    <div class="alert alert-warning text-center m-0">
+        🕵️ You are impersonating <strong>{{ g.user.name }}</strong>.
+        <a href="{{ url_for('admin.stop_impersonating') }}" class="btn btn-sm btn-dark ms-3">Stop Impersonating</a>
+    </div>
+    {% endif %}
     {% include 'navbar.html' %}
     <div class="container">
         <main class="main-content">
