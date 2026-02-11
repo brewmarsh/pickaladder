@@ -20,26 +20,88 @@
     gap: 12px;
 }
 
-.game-won { border-left: 6px solid var(--accent-color) !important; }
-.game-lost { border-left: 6px solid var(--danger-color) !important; }
+.game-won {
+    border-left: 6px solid var(--accent-color) !important;
+}
+
+.game-lost {
+    border-left: 6px solid var(--danger-color) !important;
+}
 
 /* Utilities */
-.d-flex { display: flex !important; }
-.justify-content-between { justify-content: space-between !important; }
-.align-items-center { align-items: center !important; }
-.text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.w-100 { width: 100% !important; }
-.w-auto { width: auto !important; }
-.mb-0 { margin-bottom: 0 !important; }
-.mb-4 { margin-bottom: 24px !important; }
-.shadow-sm { box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; }
+.d-flex {
+    display: flex !important;
+}
+
+.justify-content-between {
+    justify-content: space-between !important;
+}
+
+.align-items-center {
+    align-items: center !important;
+}
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.w-100 {
+    width: 100% !important;
+}
+
+.w-auto {
+    width: auto !important;
+}
+
+.mb-0 {
+    margin-bottom: 0 !important;
+}
+
+.mb-4 {
+    margin-bottom: 24px !important;
+}
+
+.shadow-sm {
+    box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075) !important;
+}
 
 /* Alignment Utilities */
-.text-left { text-align: left !important; }
-.text-center { text-align: center !important; }
-.text-right { text-align: right !important; }
+.text-left {
+    text-align: left !important;
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
 
 /* Spacing & Layout Utilities */
-.p-5 { padding: 3rem !important; }
-.mt-4 { margin-top: 1.5rem !important; }
-.gap-2 { gap: 0.5rem !important; }
+.p-5 {
+    padding: 3rem !important;
+}
+
+.mt-4 {
+    margin-top: 1.5rem !important;
+}
+
+.gap-2 {
+    gap: 0.5rem !important;
+}
+
+/* Text Utilities */
+.fw-bold {
+    font-weight: var(--fw-bold) !important;
+}
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.text-muted {
+    color: var(--text-secondary) !important;
+}

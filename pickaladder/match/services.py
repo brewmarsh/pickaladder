@@ -401,7 +401,9 @@ class MatchService:
         return data
 
     @staticmethod
-    def get_leaderboard_data(db: Client, limit: int = 50) -> list[User]:
+    def get_leaderboard_data(
+        db: Client, limit: int = 50, min_games: int = GLOBAL_LEADERBOARD_MIN_GAMES
+    ) -> list[User]:
         """Fetch data for the global leaderboard."""
         # Removing limit from query to ensure we can find top players from whole base
         users_query = db.collection("users").stream()
@@ -425,7 +427,7 @@ class MatchService:
 
             # Only include players with more than 4 games played to ensure
             # a representative leaderboard and filter inactive players.
-            if games_played >= GLOBAL_LEADERBOARD_MIN_GAMES:
+            if games_played >= min_games:
                 players.append(user_data)
 
         # Sort players by win percentage, then by games played

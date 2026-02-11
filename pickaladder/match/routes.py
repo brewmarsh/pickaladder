@@ -19,9 +19,10 @@ if TYPE_CHECKING:
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:match_id>")
+@bp.route("/summary/<string:match_id>")
 @login_required
-def view_match_page(match_id: str) -> Any:
-    """Display the details of a single match."""
+def view_match_summary(match_id: str) -> Any:
+    """Display the summary of a single match."""
     db = firestore.client()
     match_data = MatchService.get_match_by_id(db, match_id)
     if match_data is None:
@@ -36,32 +37,30 @@ def view_match_page(match_id: str) -> Any:
 
     if match_type == "doubles":
         # Fetch team members
-        # team1 and team2 are lists of refs
         team1_refs = m_dict.get("team1", [])
         team2_refs = m_dict.get("team2", [])
 
         team1_data = []
-        for ref in team1_refs:
-            p = ref.get()
-            if p.exists:
-                p_data = p.to_dict()
-                p_data["id"] = p.id
-                team1_data.append(p_data)
+        if team1_refs:
+            for doc in db.get_all(team1_refs):
+                if doc.exists:
+                    p_data = doc.to_dict()
+                    p_data["id"] = doc.id
+                    team1_data.append(p_data)
 
         team2_data = []
-        for ref in team2_refs:
-            p = ref.get()
-            if p.exists:
-                p_data = p.to_dict()
-                p_data["id"] = p.id
-                team2_data.append(p_data)
+        if team2_refs:
+            for doc in db.get_all(team2_refs):
+                if doc.exists:
+                    p_data = doc.to_dict()
+                    p_data["id"] = doc.id
+                    team2_data.append(p_data)
 
         context["team1"] = team1_data
         context["team2"] = team2_data
 
     else:
         # Fetch player data from references
-        # Handle cases where refs might be missing in corrupted data
         player1_ref = m_dict.get("player1Ref")
         player2_ref = m_dict.get("player2Ref")
 
@@ -71,17 +70,17 @@ def view_match_page(match_id: str) -> Any:
         player2_record = {"wins": 0, "losses": 0}
 
         if player1_ref:
-            player1 = player1_ref.get()
-            if player1.exists:
-                player1_data = player1.to_dict()
-                player1_data["id"] = player1.id
+            p1_doc = player1_ref.get()
+            if p1_doc.exists:
+                player1_data = p1_doc.to_dict()
+                player1_data["id"] = p1_doc.id
                 player1_record = MatchService.get_player_record(db, player1_ref)
 
         if player2_ref:
-            player2 = player2_ref.get()
-            if player2.exists:
-                player2_data = player2.to_dict()
-                player2_data["id"] = player2.id
+            p2_doc = player2_ref.get()
+            if p2_doc.exists:
+                player2_data = p2_doc.to_dict()
+                player2_data["id"] = p2_doc.id
                 player2_record = MatchService.get_player_record(db, player2_ref)
 
         context.update(
@@ -305,7 +304,8 @@ def leaderboard() -> Any:
     """
     db = firestore.client()
     try:
-        players = MatchService.get_leaderboard_data(db)
+        # Exclude players with 0 games and sort by Win Percentage
+        players = MatchService.get_leaderboard_data(db, min_games=1)
     except Exception as e:
         players = []
         flash(f"An error occurred while fetching the leaderboard: {e}", "danger")

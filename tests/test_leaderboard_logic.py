@@ -16,7 +16,7 @@ class TestLeaderboardLogic(unittest.TestCase):
     def test_get_leaderboard_data_filters_inactive(
         self, mock_get_player_record: MagicMock, mock_firestore: MagicMock
     ) -> None:
-        """Test that players with fewer than 5 games are filtered out."""
+        """Test that players with zero games are filtered out."""
         # Mock Firestore client
         mock_db = MagicMock()
 
@@ -48,7 +48,7 @@ class TestLeaderboardLogic(unittest.TestCase):
         ]
 
         # u1: 6 games (should stay)
-        # u2: 4 games (should be filtered)
+        # u2: 4 games (should stay)
         # u3: 0 games (should be filtered)
         def get_record_side_effect(
             db: MagicMock, user_ref: MagicMock
@@ -68,10 +68,12 @@ class TestLeaderboardLogic(unittest.TestCase):
         players = MatchService.get_leaderboard_data(mock_db)
 
         # Assertions
-        # Only User 1 has >= 5 games
-        self.assertEqual(len(players), 1)
+        # User 1 and User 2 have > 0 games
+        self.assertEqual(len(players), 2)
         self.assertEqual(players[0]["id"], "u1")
         self.assertEqual(players[0]["games_played"], 6)
+        self.assertEqual(players[1]["id"], "u2")
+        self.assertEqual(players[1]["games_played"], 4)
 
     @patch("pickaladder.match.services.firestore")
     @patch("pickaladder.match.services.MatchService.get_player_record")

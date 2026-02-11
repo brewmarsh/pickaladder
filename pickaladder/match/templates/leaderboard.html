@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+{% block title %}Global Leaderboard{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Global Leaderboard</h1>
+    <p class="subtitle">Top Players by Win Percentage</p>
+</div>
+<div class="table-container">
+    <table class="table-standard responsive-table">
+        <thead>
+            <tr>
+                <th class="text-center">Rank</th>
+                <th>Player</th>
+                <th class="text-right">Win Percentage</th>
+                <th class="text-right">Games Played</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for player in players %}
+            <tr class="{{ 'highlight-row' if player.id == current_user_id else '' }}">
+                <td data-label="Rank"
+                    class="{% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">
+                    <span class="mobile-rank-badge">{{ loop.index }}</span>
+                </td>
+                <td data-label="Player"><a href="{{ url_for('user.view_user', user_id=player.id) }}">{{ player.name
+                        }}</a></td>
+                <td data-label="Win Percentage" class="text-right">{{ "%.1f"|format(player.win_percentage) }}%</td>
+                <td data-label="Games Played" class="text-right">{{ player.games_played }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="page-header">
+    <h2>Latest Games</h2>
+</div>
+<div class="table-container">
+    <table class="table-standard">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Matchup</th>
+                <th>Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for match in latest_matches %}
+            <tr>
+                <td data-label="Date">{{ match.date }}</td>
+                <td data-label="Matchup">
+                    <span class="fw-bold text-primary">{{ match.winner_name }}</span> <span class="text-muted">vs</span>
+                    {{ match.loser_name }}
+                </td>
+                <td data-label="Result">
+                    {{ match.winner_score }} - {{ match.loser_score }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
