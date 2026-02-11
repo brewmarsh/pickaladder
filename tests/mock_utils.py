@@ -104,6 +104,16 @@ class MockFirestoreBuilder:
         if not hasattr(DocumentReference, "__hash__"):
             DocumentReference.__hash__ = lambda self: hash(tuple(self._path))
 
+        # Patch DocumentReference.get to handle transaction argument
+        if not hasattr(DocumentReference, "_orig_get"):
+            DocumentReference._orig_get = DocumentReference.get
+
+            def doc_ref_get(self: Any, transaction: Any = None) -> Any:
+                """Handle transaction argument in get."""
+                return self._orig_get()
+
+            DocumentReference.get = doc_ref_get
+
     @staticmethod
     def patch_db_write() -> None:
         """Apply monkeypatches to mockfirestore to support update with sentinels."""
@@ -111,29 +121,43 @@ class MockFirestoreBuilder:
             DocumentReference._orig_update = DocumentReference.update
 
             def patched_update(self: Any, data: dict[str, Any]) -> Any:
-                current_data = self.get().to_dict() or {}
-                new_data = {}
-                for k, v in data.items():
-                    if isinstance(v, MockArrayUnion):
-                        existing = current_data.get(k, [])
-                        if not isinstance(existing, list):
-                            existing = []
-                        # Simple append for mock, firestore does set union
-                        merged = list(existing)
-                        for item in v.values:
-                            if item not in merged:
-                                merged.append(item)
-                        new_data[k] = merged
-                    elif isinstance(v, MockArrayRemove):
-                        existing = current_data.get(k, [])
-                        if not isinstance(existing, list):
-                            existing = []
-                        new_data[k] = [i for i in existing if i not in v.values]
-                    else:
-                        new_data[k] = v
-                # MockFirestore's DocumentReference.update updates its internal _data.
-                # Use the original update to ensure any other logic is preserved.
-                return self._orig_update(new_data)
+                sentinels = {
+                    k: v
+                    for k, v in data.items()
+                    if isinstance(v, (MockArrayUnion, MockArrayRemove))
+                }
+                others = {
+                    k: v
+                    for k, v in data.items()
+                    if not isinstance(v, (MockArrayUnion, MockArrayRemove))
+                }
+
+                if others:
+                    self._orig_update(others)
+
+                if sentinels:
+                    current_data = self.get().to_dict() or {}
+                    new_data = {}
+                    for k, v in sentinels.items():
+                        if isinstance(v, MockArrayUnion):
+                            existing = current_data.get(k, [])
+                            if not isinstance(existing, list):
+                                existing = []
+                            # Simple append for mock, firestore does set union
+                            merged = list(existing)
+                            for item in v.values:
+                                if item not in merged:
+                                    merged.append(item)
+                            new_data[k] = merged
+                        elif isinstance(v, MockArrayRemove):
+                            existing = current_data.get(k, [])
+                            if not isinstance(existing, list):
+                                existing = []
+                            new_data[k] = [i for i in existing if i not in v.values]
+
+                    # MockFirestore's DocumentReference.update updates its internal _data.
+                    # Use the original update to ensure any other logic is preserved.
+                    return self._orig_update(new_data)
 
             DocumentReference.update = patched_update
 

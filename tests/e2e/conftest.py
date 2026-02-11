@@ -117,6 +117,17 @@ def get_by_field_path(self: DocumentSnapshot, field_path: str) -> Any:
 
 DocumentSnapshot._get_by_field_path = get_by_field_path
 
+# Patch DocumentReference.get to handle transaction argument
+original_get = DocumentReference.get
+
+
+def doc_ref_get(self: DocumentReference, transaction: Any = None) -> DocumentSnapshot:
+    """Handle transaction argument in get."""
+    return original_get(self)
+
+
+DocumentReference.get = doc_ref_get
+
 
 # Patch DocumentReference equality and hashing
 def doc_ref_eq(self: DocumentReference, other: Any) -> bool:
@@ -159,16 +170,22 @@ def mock_array_remove(values: list[Any]) -> MockSentinel:
     return MockSentinel(values, "REMOVE")
 
 
-def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
-    """Update document handling sentinels."""
-    doc_snapshot = self.get()
-    if doc_snapshot.exists:
-        doc_data = doc_snapshot.to_dict()
-    else:
-        doc_data = {}
+original_update = DocumentReference.update
 
-    for key, value in data.items():
-        if isinstance(value, MockSentinel):
+
+def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
+    """Update document handling sentinels and nested fields."""
+    sentinels = {k: v for k, v in data.items() if isinstance(v, MockSentinel)}
+    others = {k: v for k, v in data.items() if not isinstance(v, MockSentinel)}
+
+    if others:
+        original_update(self, others)
+
+    if sentinels:
+        doc_snapshot = self.get()
+        doc_data = doc_snapshot.to_dict() if doc_snapshot.exists else {}
+
+        for key, value in sentinels.items():
             current_list = doc_data.get(key, [])
             if not isinstance(current_list, list):
                 current_list = []
@@ -181,9 +198,7 @@ def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
                     if item in current_list:
                         current_list.remove(item)
             doc_data[key] = current_list
-        else:
-            doc_data[key] = value
-    self.set(doc_data)
+        self.set(doc_data)
 
 
 DocumentReference.update = doc_ref_update
@@ -347,9 +362,6 @@ def app_server(
     mock_db: EnhancedMockFirestore, mock_auth: MockAuthService
 ) -> Generator[str, None, None]:
     """Start Flask server with mocks."""
-    # Move pickaladder import to the very top to ensure it's loaded
-    pickaladder = importlib.import_module("pickaladder")
-
     # Ensure firebase_admin submodules are loaded for patching
     importlib.import_module("firebase_admin.auth")
     importlib.import_module("firebase_admin.firestore")
@@ -385,7 +397,7 @@ def app_server(
         firebase_admin.firestore, "transactional", side_effect=lambda x: x
     )
 
-    # Start p1 through p11 immediately after definitions
+    # Start p1 through p11 BEFORE importing pickaladder to ensure decorators are patched
     p1.start()
     p2.start()
     p3.start()
@@ -397,6 +409,9 @@ def app_server(
     p9.start()
     p10.start()
     p11.start()
+
+    # Move pickaladder import AFTER patching
+    pickaladder = importlib.import_module("pickaladder")
 
     os.environ["FIREBASE_PROJECT_ID"] = "test-project"
     os.environ["SECRET_KEY"] = "dev"  # nosec
