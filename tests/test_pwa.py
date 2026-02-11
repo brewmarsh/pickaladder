@@ -1,9 +1,12 @@
 """Tests for PWA integration."""
 
 from __future__ import annotations
+
 import unittest
 from unittest.mock import MagicMock, patch
+
 from pickaladder import create_app
+
 
 class PWATestCase(unittest.TestCase):
     """Test case for PWA integration."""
@@ -23,7 +26,9 @@ class PWATestCase(unittest.TestCase):
 
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
-    def test_service_worker_served_from_root(self, mock_firestore: MagicMock, mock_init: MagicMock):
+    def test_service_worker_served_from_root(
+        self, mock_firestore: MagicMock, mock_init: MagicMock
+    ):
         """Test that service-worker.js is served from the root."""
         response = self.client.get("/service-worker.js")
         self.assertEqual(response.status_code, 200)
@@ -33,7 +38,9 @@ class PWATestCase(unittest.TestCase):
 
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
-    def test_layout_contains_pwa_elements(self, mock_firestore: MagicMock, mock_init: MagicMock):
+    def test_layout_contains_pwa_elements(
+        self, mock_firestore: MagicMock, mock_init: MagicMock
+    ):
         """Test that layout.html contains manifest and service worker registration."""
         # We need a route that renders layout.html. auth.login usually does.
         # We might need to mock more things if auth.login does more.
@@ -43,13 +50,17 @@ class PWATestCase(unittest.TestCase):
         @self.app.route("/test_layout")
         def test_layout():
             from flask import render_template
+
             return render_template("layout.html")
 
         response = self.client.get("/test_layout")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'link rel="manifest"', response.data)
         self.assertIn(b'meta name="theme-color"', response.data)
-        self.assertIn(b"navigator.serviceWorker.register('/service-worker.js')", response.data)
+        self.assertIn(
+            b"navigator.serviceWorker.register('/service-worker.js')", response.data
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

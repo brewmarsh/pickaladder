@@ -194,7 +194,7 @@
     <script src="{{ url_for('static', filename='js/navbar.js') }}"></script>
 
     <script>
-        if ('serviceWorker' in navigator) {
+        if ('serviceWorker' in navigator && !{{ is_testing|tojson }}) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js')
                     .then(reg => console.log('SW Registered!', reg))

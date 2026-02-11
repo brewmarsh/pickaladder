@@ -19,8 +19,8 @@ from werkzeug.routing import BaseConverter
 from . import admin as admin_bp
 from . import auth as auth_bp
 from . import error_handlers
-from . import main as main_bp
 from . import group as group_bp
+from . import main as main_bp
 from . import match as match_bp
 from . import teams as teams_bp
 from . import tournament as tournament_bp
