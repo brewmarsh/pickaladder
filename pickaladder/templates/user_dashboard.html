@@ -147,15 +147,24 @@
                                     {% endif %}
                                 </td>
                                 <td data-label="Result">
-                                    {% if match.user_result == 'win' %}
-                                    <span class="badge badge-success">W</span>
-                                    {% else %}
-                                    <span class="badge badge-danger">L</span>
-                                    {% endif %}
-                                    {{ user_score }} - {{ opp_score }}
-                                    {% if match.tournament_name %}
-                                    <div class="text-muted small" style="margin-top: 4px;">🏆 {{ match.tournament_name }}</div>
-                                    {% endif %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            {% if match.user_result == 'win' %}
+                                            <span class="badge badge-success">W</span>
+                                            {% else %}
+                                            <span class="badge badge-danger">L</span>
+                                            {% endif %}
+                                            {{ user_score }} - {{ opp_score }}
+                                            {% if match.tournament_name %}
+                                            <div class="text-muted small" style="margin-top: 4px;">🏆 {{ match.tournament_name }}</div>
+                                            {% endif %}
+                                        </div>
+                                        {% if (match.created_by == user.uid and not match.tournament_id) or user.isAdmin %}
+                                        <a href="{{ url_for('match.edit_match', match_id=match.id) }}" class="text-muted" title="Edit Match">
+                                            ✏️
+                                        </a>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}

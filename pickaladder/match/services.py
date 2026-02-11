@@ -96,6 +96,7 @@ class MatchService:
             "matchDate": match_date,
             "createdAt": firestore.SERVER_TIMESTAMP,
             "matchType": match_type,
+            "createdBy": user_id,
         }
 
         # Add IDs if present
@@ -115,6 +116,8 @@ class MatchService:
             match_doc_data["winner"] = (
                 "team1" if player1_score > player2_score else "team2"
             )
+            match_doc_data["winnerId"] = p1_id if player1_score > player2_score else p2_id
+            match_doc_data["loserId"] = p2_id if player1_score > player2_score else p1_id
 
             # Apply DUPR upset logic
             MatchService._apply_upset_logic(match_doc_data, p1_ref, p2_ref)
@@ -128,6 +131,12 @@ class MatchService:
             team2_ref = res.get("team2Ref")
             match_doc_data["winner"] = (
                 "team1" if player1_score > player2_score else "team2"
+            )
+            match_doc_data["winnerId"] = (
+                res.get("team1Id") if player1_score > player2_score else res.get("team2Id")
+            )
+            match_doc_data["loserId"] = (
+                res.get("team2Id") if player1_score > player2_score else res.get("team1Id")
             )
 
         # Save to database
@@ -433,6 +442,95 @@ class MatchService:
             key=lambda p: (p.get("win_percentage", 0), p.get("wins", 0)), reverse=True
         )
         return players[:limit]
+
+    @staticmethod
+    def update_match_score(  # noqa: PLR0913
+        db: Client,
+        match_id: str,
+        new_p1_score: int,
+        new_p2_score: int,
+        editor_uid: str,
+    ) -> None:
+        """Update a match score with permission checks and stats rollback."""
+        match_ref = db.collection("matches").document(match_id)
+        match_doc = cast("DocumentSnapshot", match_ref.get())
+        if not match_doc.exists:
+            raise ValueError("Match not found.")
+
+        match_data = cast(dict[str, Any], match_doc.to_dict())
+        tournament_id = match_data.get("tournamentId")
+        created_by = match_data.get("createdBy")
+
+        # Permission Check
+        editor_ref = db.collection("users").document(editor_uid)
+        editor_doc = cast("DocumentSnapshot", editor_ref.get())
+        is_admin = (
+            editor_doc.to_dict().get("isAdmin", False) if editor_doc.exists else False
+        )
+
+        if tournament_id:
+            if not is_admin:
+                raise PermissionError("Only Admins can edit tournament matches.")
+        elif not is_admin and created_by != editor_uid:
+            raise PermissionError("You do not have permission to edit this match.")
+
+        # Stats Rollback Logic (for doubles only, as singles are dynamic)
+        old_p1_score = match_data.get("player1Score", 0)
+        old_p2_score = match_data.get("player2Score", 0)
+
+        if match_data.get("matchType") == "doubles":
+            team1_ref = match_data.get("team1Ref")
+            team2_ref = match_data.get("team2Ref")
+
+            if team1_ref and team2_ref:
+                # Rollback old stats
+                if old_p1_score > old_p2_score:
+                    team1_ref.update({"stats.wins": firestore.Increment(-1)})
+                    team2_ref.update({"stats.losses": firestore.Increment(-1)})
+                elif old_p2_score > old_p1_score:
+                    team2_ref.update({"stats.wins": firestore.Increment(-1)})
+                    team1_ref.update({"stats.losses": firestore.Increment(-1)})
+
+                # Apply new stats
+                if new_p1_score > new_p2_score:
+                    team1_ref.update({"stats.wins": firestore.Increment(1)})
+                    team2_ref.update({"stats.losses": firestore.Increment(1)})
+                elif new_p2_score > new_p1_score:
+                    team2_ref.update({"stats.wins": firestore.Increment(1)})
+                    team1_ref.update({"stats.losses": firestore.Increment(1)})
+
+        # Update Match Document
+        new_winner_slot = "team1" if new_p1_score > new_p2_score else "team2"
+
+        updates: dict[str, Any] = {
+            "player1Score": new_p1_score,
+            "player2Score": new_p2_score,
+            "winner": new_winner_slot,
+        }
+
+        if match_data.get("matchType") == "doubles":
+            updates["winnerId"] = (
+                match_data.get("team1Id")
+                if new_p1_score > new_p2_score
+                else match_data.get("team2Id")
+            )
+            updates["loserId"] = (
+                match_data.get("team2Id")
+                if new_p1_score > new_p2_score
+                else match_data.get("team1Id")
+            )
+        else:
+            p1_ref = match_data.get("player1Ref")
+            p2_ref = match_data.get("player2Ref")
+            if p1_ref and p2_ref:
+                updates["winnerId"] = (
+                    p1_ref.id if new_p1_score > new_p2_score else p2_ref.id
+                )
+                updates["loserId"] = (
+                    p2_ref.id if new_p1_score > new_p2_score else p1_ref.id
+                )
+
+        match_ref.update(updates)
 
     @staticmethod
     def get_latest_matches(db: Client, limit: int = 10) -> list[Match]:
