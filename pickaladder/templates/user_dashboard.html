@@ -171,34 +171,65 @@
         {# Right Column: Competition Stack #}
         <div class="dashboard-column-right">
             <div class="competition-stack">
-                {# My Groups Section #}
-                <div class="card" style="padding: 16px;">
-                    <h3 style="margin-top: 0; margin-bottom: 16px;">My Groups</h3>
-                    {% for ranking in group_rankings %}
-                    <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}" class="ranking-card">
-                        <div class="ranking-card-top">
-                            <span class="ranking-group-name">{{ ranking.group_name }}</span>
-                            <span class="rank-badge-small">#{{ ranking.rank or '?' }}</span>
-                        </div>
-                        <div class="ranking-details">
-                            {% if ranking.rank == 1 %}
-                            Reigning Champion 👑
-                            {% elif ranking.rank and ranking.rank > 1 %}
-                            <span class="overtake-value">{{ "%.1f"|format(ranking.points_to_overtake) }}</span> pts to
-                            overtake <strong>{{ ranking.player_above }}</strong>
-                            {% else %}
-                            No rank yet
-                            {% endif %}
-                        </div>
-                        <div class="form-dots-row">
-                            {% for result in ranking.form %}
-                            <span class="form-dot-small {{ result }}"></span>
-                            {% endfor %}
-                        </div>
-                    </a>
+                {# Competitions Hub #}
+                <div class="card card-compact" style="padding: 16px;">
+                    <h3 style="margin-top: 0; margin-bottom: 16px;">Competitions</h3>
+                    {% if not active_tournaments and not group_rankings and not past_tournaments %}
+                    <div class="text-center p-5">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">👨‍👩‍👧‍👦</div>
+                        <h4>Find your squad</h4>
+                        <p class="text-muted" style="margin-bottom: 24px;">Join a group or tournament to start competing and climb the ranks!</p>
+                        <a href="{{ url_for('user.view_community') }}" class="btn btn-volt" style="width: auto;">Find a Group</a>
+                    </div>
                     {% else %}
-                    <p class="text-muted">You are not a member of any groups.</p>
-                    {% endfor %}
+                    <div class="list-group list-group-flush">
+                        {# Section 1: Active Tournaments (Top Priority) #}
+                        {% for tournament in active_tournaments %}
+                        <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}"
+                            class="list-group-item list-group-item-action"
+                            style="display: flex; align-items: center; border-left: 4px solid var(--accent-color); padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--border-color);">
+                            <span style="margin-right: 12px; font-size: 1.25rem;">🏆</span>
+                            <div style="flex-grow: 1;">
+                                <div class="fw-bold">{{ tournament.name }}</div>
+                                <div class="text-muted small">{{ tournament.date_display or tournament.date }}</div>
+                            </div>
+                            <span class="badge badge-warning">Round 1 / {{ tournament.status }}</span>
+                        </a>
+                        {% endfor %}
+
+                        {# Section 2: Groups (Ongoing) #}
+                        {% for ranking in group_rankings %}
+                        <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}"
+                            class="list-group-item list-group-item-action"
+                            style="display: flex; align-items: center; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--border-color);">
+                            {% if ranking.group_image %}
+                            <div class="profile-picture-container avatar-sm" style="margin-right: 12px;">
+                                <img src="{{ ranking.group_image }}" alt="{{ ranking.group_name }}" class="profile-picture">
+                            </div>
+                            {% else %}
+                            <span style="margin-right: 12px; font-size: 1.25rem;">👥</span>
+                            {% endif %}
+                            <div style="flex-grow: 1;">
+                                <div class="fw-bold">{{ ranking.group_name }}</div>
+                                <div class="text-muted small">Rank #{{ ranking.rank or '?' }}</div>
+                            </div>
+                        </a>
+                        {% endfor %}
+
+                        {# Section 3: Past Tournaments (History) #}
+                        {% for tournament in past_tournaments %}
+                        <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}"
+                            class="list-group-item list-group-item-action"
+                            style="display: flex; align-items: center; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--border-color); opacity: 0.75;">
+                            <span style="margin-right: 12px; font-size: 1.25rem;">🏁</span>
+                            <div style="flex-grow: 1;">
+                                <div class="fw-bold">{{ tournament.name }}</div>
+                                <div class="text-muted small">Finished</div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
 
                 {# Social Section #}

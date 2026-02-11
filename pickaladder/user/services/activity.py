@@ -63,7 +63,7 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     active_tournaments = []
     for doc in tournaments_query:
         data = doc.to_dict()
-        if data and data.get("status") in ["Active", "Scheduled"]:
+        if data and data.get("status") != "Completed":
             participants = data.get("participants") or []
             for p in participants:
                 if not p:
@@ -100,20 +100,34 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     for doc in tournaments_query:
         data = doc.to_dict()
         if data and data.get("status") == "Completed":
-            data["id"] = doc.id
-            # Find winner
-            match_type = data.get("matchType", "singles")
-            standings = get_tournament_standings(db, doc.id, match_type)
-            data["winner_name"] = standings[0]["name"] if standings else "TBD"
+            # Ensure the user actually participated (accepted the invite)
+            participants = data.get("participants") or []
+            participated = False
+            for p in participants:
+                if not p:
+                    continue
+                p_uid = p.get("userRef").id if p.get("userRef") else p.get("user_id")
+                if p_uid == user_id and p.get("status") == "accepted":
+                    participated = True
+                    break
 
-            raw_date = data.get("date")
-            if raw_date is not None:
-                if hasattr(raw_date, "to_datetime"):
-                    data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
-                elif isinstance(raw_date, datetime.datetime):
-                    data["date_display"] = raw_date.strftime("%b %d, %Y")
+            if participated:
+                data["id"] = doc.id
+                # Find winner
+                match_type = data.get("matchType", "singles")
+                standings = get_tournament_standings(db, doc.id, match_type)
+                data["winner_name"] = standings[0]["name"] if standings else "TBD"
 
-            past_tournaments.append(data)
+                raw_date = data.get("date")
+                if raw_date is not None:
+                    if hasattr(raw_date, "to_datetime"):
+                        data["date_display"] = raw_date.to_datetime().strftime(
+                            "%b %d, %Y"
+                        )
+                    elif isinstance(raw_date, datetime.datetime):
+                        data["date_display"] = raw_date.strftime("%b %d, %Y")
+
+                past_tournaments.append(data)
 
     # Sort by date descending
     past_tournaments.sort(
@@ -189,6 +203,7 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
                 user_ranking_data = {
                     "group_id": group_doc.id,
                     "group_name": group_data.get("name", "N/A"),
+                    "group_image": group_data.get("profilePictureUrl"),
                     "rank": rank,
                     "points": player.get("avg_score", 0),
                     "form": player.get("form", []),

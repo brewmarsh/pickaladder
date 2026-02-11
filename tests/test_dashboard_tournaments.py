@@ -109,6 +109,7 @@ class DashboardTournamentsTestCase(unittest.TestCase):
             "name": "Past Tournament",
             "status": "Completed",
             "participant_ids": [user_id],
+            "participants": [{"user_id": user_id, "status": "accepted"}],
             "matchType": "singles",
             "date": datetime.datetime(2023, 1, 1),
         }
