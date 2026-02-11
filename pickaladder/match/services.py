@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
@@ -14,6 +13,8 @@ from pickaladder.teams.services import TeamService
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
+    from google.cloud.firestore_v1.document import DocumentReference
+    from google.cloud.firestore_v1.transaction import Transaction
 
     from pickaladder.user import User
     from pickaladder.user.models import UserSession
@@ -27,6 +28,95 @@ UPSET_THRESHOLD = 0.25
 
 class MatchService:
     """Service class for match-related operations."""
+
+    @staticmethod
+    @firestore.transactional
+    def _record_match_transaction(  # noqa: PLR0913
+        transaction: Transaction,
+        match_ref: DocumentReference,
+        p1_ref: DocumentReference,
+        p2_ref: DocumentReference,
+        user_ref: DocumentReference,
+        match_data: dict[str, Any],
+        match_type: str,
+    ) -> None:
+        """Atomic transaction to record a match and update stats."""
+        # 1. Read current snapshots
+        p1_snapshot = p1_ref.get(transaction=transaction)
+        p2_snapshot = p2_ref.get(transaction=transaction)
+
+        p1_data = p1_snapshot.to_dict() or {}
+        p2_data = p2_snapshot.to_dict() or {}
+
+        # 2. Calculate New Stats (Server-Side Authority)
+        score1 = match_data["player1Score"]
+        score2 = match_data["player2Score"]
+        winner = "team1" if score1 > score2 else "team2"
+        match_data["winner"] = winner
+
+        # Set winnerId and loserId based on match type
+        if match_type == "singles":
+            match_data["winnerId"] = p1_ref.id if winner == "team1" else p2_ref.id
+            match_data["loserId"] = p2_ref.id if winner == "team1" else p1_ref.id
+        else:
+            # For doubles, side1_ref and side2_ref are team refs
+            match_data["winnerId"] = p1_ref.id if winner == "team1" else p2_ref.id
+            match_data["loserId"] = p2_ref.id if winner == "team1" else p1_ref.id
+
+        def get_stat(data: dict[str, Any], key: str, default: Any) -> Any:
+            return data.get("stats", {}).get(key, default)
+
+        p1_wins = get_stat(p1_data, "wins", 0)
+        p1_losses = get_stat(p1_data, "losses", 0)
+        p1_elo = float(get_stat(p1_data, "elo", 1200.0))
+
+        p2_wins = get_stat(p2_data, "wins", 0)
+        p2_losses = get_stat(p2_data, "losses", 0)
+        p2_elo = float(get_stat(p2_data, "elo", 1200.0))
+
+        # Simple Elo Calculation (K=32)
+        k = 32
+        expected_p1 = 1 / (1 + 10 ** ((p2_elo - p1_elo) / 400))
+        actual_p1 = 1.0 if winner == "team1" else 0.0
+
+        new_p1_elo = p1_elo + k * (actual_p1 - expected_p1)
+        new_p2_elo = p2_elo + k * ((1.0 - actual_p1) - (1.0 - expected_p1))
+
+        p1_updates = {
+            "stats.wins": p1_wins + (1 if winner == "team1" else 0),
+            "stats.losses": p1_losses + (1 if winner == "team2" else 0),
+            "stats.elo": new_p1_elo,
+        }
+        p2_updates = {
+            "stats.wins": p2_wins + (1 if winner == "team2" else 0),
+            "stats.losses": p2_losses + (1 if winner == "team1" else 0),
+            "stats.elo": new_p2_elo,
+        }
+
+        # Upset Logic (Singles only)
+        if match_type == "singles":
+
+            def get_rating(d: Any) -> float:
+                val = d.get("dupr_rating") or d.get("duprRating")
+                try:
+                    return float(val) if val is not None else 0.0
+                except (ValueError, TypeError):
+                    return 0.0
+
+            p1_rating = get_rating(p1_data)
+            p2_rating = get_rating(p2_data)
+
+            if p1_rating > 0 and p2_rating > 0:
+                if winner == "team1" and (p2_rating - p1_rating) >= UPSET_THRESHOLD:
+                    match_data["is_upset"] = True
+                elif winner == "team2" and (p1_rating - p2_rating) >= UPSET_THRESHOLD:
+                    match_data["is_upset"] = True
+
+        # 3. Queue Writes
+        transaction.set(match_ref, match_data)
+        transaction.update(p1_ref, p1_updates)
+        transaction.update(p2_ref, p2_updates)
+        transaction.update(user_ref, {"lastMatchRecordedType": match_type})
 
     @staticmethod
     def process_match_submission(
@@ -105,55 +195,33 @@ class MatchService:
         if tournament_id:
             match_doc_data["tournamentId"] = tournament_id
 
-        team1_ref = None
-        team2_ref = None
-
         if match_type == "singles":
             p1_ref = db.collection("users").document(p1_id)
             p2_ref = db.collection("users").document(p2_id)
             match_doc_data["player1Ref"] = p1_ref
             match_doc_data["player2Ref"] = p2_ref
-            match_doc_data["winner"] = (
-                "team1" if player1_score > player2_score else "team2"
-            )
-            match_doc_data["winnerId"] = (
-                p1_id if player1_score > player2_score else p2_id
-            )
-            match_doc_data["loserId"] = (
-                p2_id if player1_score > player2_score else p1_id
-            )
-
-            # Apply DUPR upset logic
-            MatchService._apply_upset_logic(match_doc_data, p1_ref, p2_ref)
-
+            side1_ref = p1_ref
+            side2_ref = p2_ref
         elif match_type == "doubles":
             res = MatchService._resolve_teams(
                 db, p1_id, cast(str, partner_id), p2_id, cast(str, opponent2_id)
             )
             match_doc_data.update(res)
-            team1_ref = res.get("team1Ref")
-            team2_ref = res.get("team2Ref")
-            match_doc_data["winner"] = (
-                "team1" if player1_score > player2_score else "team2"
-            )
-            match_doc_data["winnerId"] = (
-                res.get("team1Id")
-                if player1_score > player2_score
-                else res.get("team2Id")
-            )
-            match_doc_data["loserId"] = (
-                res.get("team2Id")
-                if player1_score > player2_score
-                else res.get("team1Id")
-            )
+            side1_ref = cast("DocumentReference", res.get("team1Ref"))
+            side2_ref = cast("DocumentReference", res.get("team2Ref"))
+        else:
+            raise ValueError("Unsupported match type.")
 
-        # Save to database
+        # Save to database via atomic transaction
         new_match_ref = db.collection("matches").document()
-        new_match_ref.set(match_doc_data)
-
-        # Update stats
-        MatchService._update_player_stats(
-            user_ref, match_type, player1_score, player2_score, team1_ref, team2_ref
+        MatchService._record_match_transaction(
+            db.transaction(),
+            new_match_ref,
+            side1_ref,
+            side2_ref,
+            user_ref,
+            match_doc_data,
+            match_type,
         )
 
         return new_match_ref.id
@@ -186,62 +254,6 @@ class MatchService:
             "team1Ref": team1_ref,
             "team2Ref": team2_ref,
         }
-
-    @staticmethod
-    def _update_player_stats(  # noqa: PLR0913
-        user_ref: Any,
-        match_type: str,
-        player1_score: int,
-        player2_score: int,
-        team1_ref: Any = None,
-        team2_ref: Any = None,
-    ) -> None:
-        """Update wins/losses and user's last match type."""
-        if match_type == "doubles" and team1_ref and team2_ref:
-            if player1_score > player2_score:
-                team1_ref.update({"stats.wins": firestore.Increment(1)})
-                team2_ref.update({"stats.losses": firestore.Increment(1)})
-            elif player2_score > player1_score:
-                team1_ref.update({"stats.losses": firestore.Increment(1)})
-                team2_ref.update({"stats.wins": firestore.Increment(1)})
-
-        user_ref.update({"lastMatchRecordedType": match_type})
-
-    @staticmethod
-    def _apply_upset_logic(
-        match_data: dict[str, Any], p1_ref: Any, p2_ref: Any
-    ) -> None:
-        """Calculate if match is an upset based on DUPR and update match_data."""
-        try:
-            p1_doc = p1_ref.get()
-            p2_doc = p2_ref.get()
-
-            if not p1_doc.exists or not p2_doc.exists:
-                return
-
-            p1_data = p1_doc.to_dict() or {}
-            p2_data = p2_doc.to_dict() or {}
-
-            # Handle multiple possible DUPR rating keys, ensuring safety with mocks
-            def get_rating(d: Any) -> float:
-                val = d.get("dupr_rating") or d.get("duprRating")
-                try:
-                    return float(val) if val is not None else 0.0
-                except (ValueError, TypeError):
-                    return 0.0
-
-            p1_rating = get_rating(p1_data)
-            p2_rating = get_rating(p2_data)
-
-            if p1_rating > 0 and p2_rating > 0:
-                winner = match_data.get("winner")
-                if winner == "team1" and (p2_rating - p1_rating) >= UPSET_THRESHOLD:
-                    match_data["is_upset"] = True
-                elif winner == "team2" and (p1_rating - p2_rating) >= UPSET_THRESHOLD:
-                    match_data["is_upset"] = True
-        except Exception as e:
-            # Ensure upset logic failure doesn't block match recording
-            logging.error(f"Error applying upset logic: {e}")
 
     @staticmethod
     def get_candidate_player_ids(
