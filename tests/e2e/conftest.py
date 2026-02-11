@@ -201,6 +201,31 @@ class MockFieldFilter:
         self.value = value
 
 
+class MockTransaction:
+    """Mock for firestore.Transaction."""
+
+    def __init__(self, client: Any, read_only: bool = False) -> None:
+        """Initialize mock transaction."""
+        self.client = client
+        self._read_only = read_only
+
+    def get(self, ref: Any) -> Any:
+        """Mock get."""
+        return ref.get()
+
+    def set(self, ref: Any, data: Any, merge: bool = False) -> None:
+        """Mock set."""
+        ref.set(data, merge=merge)
+
+    def update(self, ref: Any, data: Any) -> None:
+        """Mock update."""
+        ref.update(data)
+
+    def delete(self, ref: Any) -> None:
+        """Mock delete."""
+        ref.delete()
+
+
 class MockBatch:
     """Mock for firestore.WriteBatch."""
 
@@ -252,9 +277,9 @@ class EnhancedMockFirestore(MockFirestore):
         """Return MockBatch."""
         return MockBatch(self)
 
-    def transaction(self) -> MagicMock:
-        """Return dummy transaction."""
-        return MagicMock()
+    def transaction(self, **kwargs: Any) -> MockTransaction:
+        """Return mock transaction."""
+        return MockTransaction(self, read_only=kwargs.get("read_only", False))
 
 
 class MockAuthService:

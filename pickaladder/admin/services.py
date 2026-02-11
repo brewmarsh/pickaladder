@@ -3,7 +3,7 @@
 import datetime
 from typing import Any
 
-from firebase_admin import firestore
+from firebase_admin import auth, firestore
 
 
 class AdminService:
@@ -57,8 +57,6 @@ class AdminService:
     @staticmethod
     def delete_user(db: Any, user_id: str) -> None:
         """Delete a user from Firebase Auth and Firestore."""
-        from firebase_admin import auth  # noqa: PLC0415
-
         # Delete from Firebase Auth
         auth.delete_user(user_id)
         # Delete from Firestore
@@ -74,8 +72,6 @@ class AdminService:
     @staticmethod
     def verify_user(db: Any, user_id: str) -> None:
         """Manually verify a user's email in Auth and Firestore."""
-        from firebase_admin import auth  # noqa: PLC0415
-
         auth.update_user(user_id, email_verified=True)
         user_ref = db.collection("users").document(user_id)
         user_ref.update({"email_verified": True})
