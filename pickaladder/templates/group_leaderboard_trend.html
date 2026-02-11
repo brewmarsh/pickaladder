@@ -102,9 +102,9 @@
                 dataset.pointRadius = 5;
                 dataset.pointHoverRadius = 8;
             } else {
-                dataset.borderColor = '#E5E7EB';
-                dataset.backgroundColor = '#E5E7EB';
-                dataset.borderWidth = 2;
+                dataset.borderColor = 'rgba(229, 231, 235, 0.2)';
+                dataset.backgroundColor = 'rgba(229, 231, 235, 0.2)';
+                dataset.borderWidth = 1;
                 dataset.pointRadius = 0;
                 dataset.order = 10;
             }
@@ -180,6 +180,10 @@
                 },
                 scales: {
                     x: {
+                        ticks: {
+                            maxTicksLimit: 4,
+                            maxRotation: 0
+                        },
                         grid: {
                             display: false,
                             drawBorder: false,
