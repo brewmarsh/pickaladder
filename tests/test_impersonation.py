@@ -15,7 +15,11 @@ class ImpersonationTestCase(unittest.TestCase):
         self.mock_firebase_admin = patch("firebase_admin.initialize_app").start()
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SECRET_KEY": "test"}  # nosec
+            {
+                "TESTING": True,
+                "WTF_CSRF_ENABLED": False,
+                "SECRET_KEY": "test",  # nosec B105
+            }
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -100,9 +104,10 @@ class ImpersonationTestCase(unittest.TestCase):
         with self.client.session_transaction() as sess:
             self.assertEqual(sess["impersonate_id"], "user1")
 
-        # 3. Verify g.user is now the impersonated user
+        # 3. Verify g.user is now the impersonated user.
         # This is hard to check directly via client.get as it clears g between requests
-        # but we can check if the response contains the impersonated user's name or the banner
+        # but we can check if the response contains the impersonated user's name
+        # or the banner.
         data = response.data.decode("utf-8")
         self.assertIn("You are now impersonating User", data)
         self.assertIn("You are impersonating <strong>User</strong>", data)
