@@ -61,7 +61,9 @@ def create_tournament() -> Any:
             # Handle banner upload if present
             banner_file = request.files.get("banner")
             if banner_file and banner_file.filename:
-                banner_url = TournamentService._upload_banner(tournament_id, banner_file)
+                banner_url = TournamentService._upload_banner(
+                    tournament_id, banner_file
+                )
                 if banner_url:
                     TournamentService.update_tournament(
                         tournament_id, g.user["uid"], {"banner_url": banner_url}

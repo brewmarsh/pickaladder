@@ -151,7 +151,9 @@ class TournamentService:
                     # Formatting
                     raw_date = data.get("start_date") or data.get("date")
                     if raw_date and hasattr(raw_date, "to_datetime"):
-                        data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
+                        data["date_display"] = raw_date.to_datetime().strftime(
+                            "%b %d, %Y"
+                        )
                     results[doc.id] = data
 
         return list(results.values())
@@ -162,12 +164,15 @@ class TournamentService:
         if not banner_file or not getattr(banner_file, "filename", None):
             return None
 
-        from firebase_admin import storage
-        import tempfile
         import os
+        import tempfile
+
+        from firebase_admin import storage
         from werkzeug.utils import secure_filename
 
-        filename = secure_filename(banner_file.filename or f"banner_{tournament_id}.jpg")
+        filename = secure_filename(
+            banner_file.filename or f"banner_{tournament_id}.jpg"
+        )
         bucket = storage.bucket()
         blob = bucket.blob(f"tournaments/{tournament_id}/{filename}")
 
