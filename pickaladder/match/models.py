@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypedDict
+import datetime
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
 from pickaladder.core.types import FirestoreDocument
 
@@ -57,3 +59,81 @@ class Match(FirestoreDocument, Score, total=False):
     loser_name: str
     winner_score: int
     loser_score: int
+
+
+@dataclass
+class MatchSubmission:
+    """Dataclass for match recording submission."""
+
+    player_1_id: str
+    player_2_id: str
+    score_p1: int
+    score_p2: int
+    match_type: str = "singles"
+    partner_id: Optional[str] = None
+    opponent_2_id: Optional[str] = None
+    group_id: Optional[str] = None
+    tournament_id: Optional[str] = None
+    match_date: Optional[Union[datetime.date, datetime.datetime]] = None
+    created_by: Optional[str] = None
+
+    def validate(self) -> None:
+        """Validate the match submission for obvious errors."""
+        if self.score_p1 < 0 or self.score_p2 < 0:
+            raise ValueError("Scores cannot be negative.")
+        if self.score_p1 == self.score_p2:
+            raise ValueError("Scores cannot be the same.")
+
+        min_winning_score = 11
+        min_win_margin = 2
+        if max(self.score_p1, self.score_p2) < min_winning_score:
+            raise ValueError(
+                f"One team/player must have at least {min_winning_score} points to win."
+            )
+        if abs(self.score_p1 - self.score_p2) < min_win_margin:
+            raise ValueError(
+                f"The winner must win by at least {min_win_margin} points."
+            )
+
+        if self.match_type == "doubles":
+            if not self.partner_id or not self.opponent_2_id:
+                raise ValueError("Partner and Opponent 2 are required for doubles.")
+            players = [
+                self.player_1_id,
+                self.partner_id,
+                self.player_2_id,
+                self.opponent_2_id,
+            ]
+            active_players = [p for p in players if p]
+            if len(active_players) != len(set(active_players)):
+                raise ValueError("All players in a doubles match must be unique.")
+        else:
+            if self.player_1_id == self.player_2_id:
+                raise ValueError("You can't play against yourself.")
+
+
+@dataclass
+class MatchResult:
+    """Dataclass representing a recorded match result, matching Firestore structure."""
+
+    id: str
+    matchType: str
+    player1Score: int
+    player2Score: int
+    matchDate: Any
+    createdAt: Any
+    createdBy: str
+    winner: str
+    winnerId: str
+    loserId: str
+    groupId: Optional[str] = None
+    tournamentId: Optional[str] = None
+    player1Ref: Optional[Any] = None
+    player2Ref: Optional[Any] = None
+    team1: Optional[list[Any]] = None
+    team2: Optional[list[Any]] = None
+    team1Id: Optional[str] = None
+    team2Id: Optional[str] = None
+    team1Ref: Optional[Any] = None
+    team2Ref: Optional[Any] = None
+    is_upset: bool = False
