@@ -18,6 +18,72 @@ if TYPE_CHECKING:
 
 
 # TODO: Add type hints for Agent clarity
+@bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
+@login_required
+def edit_match(match_id: str) -> Any:
+    """Edit an existing match's scores."""
+    db = firestore.client()
+    match_data = MatchService.get_match_by_id(db, match_id)
+    if match_data is None:
+        flash("Match not found.", "danger")
+        return redirect(url_for("user.dashboard"))
+
+    if request.method == "POST":
+        try:
+            new_p1_score = int(request.form.get("player1_score", 0))
+            new_p2_score = int(request.form.get("player2_score", 0))
+
+            MatchService.update_match_score(
+                db, match_id, new_p1_score, new_p2_score, g.user["uid"]
+            )
+            flash("Match updated successfully.", "success")
+            return redirect(url_for("match.view_match_summary", match_id=match_id))
+        except PermissionError as e:
+            flash(str(e), "danger")
+        except ValueError as e:
+            flash(str(e), "danger")
+        except Exception as e:
+            flash(f"An unexpected error occurred: {e}", "danger")
+
+    # For GET or on error, render the edit page
+    # Fetch player names for the UI
+    m_dict = cast("dict[str, Any]", match_data)
+    match_type = m_dict.get("matchType", "singles")
+    player1_name = "Player 1"
+    player2_name = "Player 2"
+
+    if match_type == "doubles":
+        team1_id = m_dict.get("team1Id")
+        team2_id = m_dict.get("team2Id")
+        if team1_id:
+            t1_doc = db.collection("teams").document(team1_id).get()
+            if t1_doc.exists:
+                player1_name = t1_doc.to_dict().get("name", "Team 1")
+        if team2_id:
+            t2_doc = db.collection("teams").document(team2_id).get()
+            if t2_doc.exists:
+                player2_name = t2_doc.to_dict().get("name", "Team 2")
+    else:
+        p1_ref = m_dict.get("player1Ref")
+        p2_ref = m_dict.get("player2Ref")
+        if p1_ref:
+            p1_doc = p1_ref.get()
+            if p1_doc.exists:
+                player1_name = p1_doc.to_dict().get("name", "Player 1")
+        if p2_ref:
+            p2_doc = p2_ref.get()
+            if p2_doc.exists:
+                player2_name = p2_doc.to_dict().get("name", "Player 2")
+
+    return render_template(
+        "match/edit_match.html",
+        match=match_data,
+        player1_name=player1_name,
+        player2_name=player2_name,
+        is_admin=g.user.get("isAdmin", False),
+    )
+
+
 @bp.route("/<string:match_id>")
 @bp.route("/summary/<string:match_id>")
 @login_required

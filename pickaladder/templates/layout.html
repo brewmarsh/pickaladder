@@ -34,6 +34,12 @@
 </head>
 
 <body {% if g.user and g.user.dark_mode %}data-theme="dark" {% endif %}>
+    {% if g.get('is_impersonating') %}
+    <div class="alert alert-warning text-center m-0">
+        🕵️ You are impersonating <strong>{{ g.user.name }}</strong>.
+        <a href="{{ url_for('admin.stop_impersonating') }}" class="btn btn-sm btn-dark ms-3">Stop Impersonating</a>
+    </div>
+    {% endif %}
     {% include 'navbar.html' %}
     <div class="container">
         <main class="main-content">
@@ -85,6 +91,7 @@
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
         $(document).ready(function () {
             $('.toast').toast('show');
@@ -165,14 +172,8 @@
             }
         });
 
-        const hamburger = document.querySelector('.hamburger-menu');
-        const mobileNav = document.getElementById('myLinks');
-        if (hamburger && mobileNav) {
-            hamburger.addEventListener('click', function () {
-                mobileNav.classList.toggle('active');
-            });
-        }
     </script>
+    <script src="{{ url_for('static', filename='js/navbar.js') }}"></script>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
