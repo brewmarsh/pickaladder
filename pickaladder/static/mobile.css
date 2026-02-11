@@ -151,28 +151,6 @@
         object-fit: cover !important;
     }
 
-    /* Search Bar Stacking (Community Hub) */
-    .search-form .input-group {
-        flex-direction: column !important;
-        gap: 10px !important;
-    }
-
-    .search-form .input-group .form-control {
-        border-radius: 4px !important;
-        width: 100% !important;
-    }
-
-    .search-form .input-group-append {
-        width: 100% !important;
-        gap: 10px !important;
-        display: flex !important;
-    }
-
-    .search-form .input-group-append .btn {
-        border-radius: 4px !important;
-        flex: 1 !important;
-        margin-top: 0 !important;
-    }
 }
 
 @media (max-width: 768px) {

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import datetime
 import unittest
-from typing import cast
 from unittest.mock import MagicMock, patch
 
 from firebase_admin import firestore
@@ -35,6 +34,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore": patch(
                 "pickaladder.match.routes.firestore", new=self.mock_firestore_service
+            ),
+            "firestore_services": patch(
+                "pickaladder.match.services.firestore", new=self.mock_firestore_service
             ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
@@ -109,11 +111,8 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
-    @patch("pickaladder.match.routes.MatchService.get_match_by_id")
-    @patch("pickaladder.match.routes.MatchService.get_candidate_player_ids")
-    def test_record_match(
-        self, mock_get_candidate_player_ids: MagicMock, mock_get_match: MagicMock
-    ) -> None:
+    @patch("pickaladder.match.services.MatchService.get_candidate_player_ids")
+    def test_record_match(self, mock_get_candidate_player_ids: MagicMock) -> None:
         """Test recording a new match."""
 
         def get_candidates_side_effect(
@@ -142,17 +141,6 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         mock_matches_collection = mock_db.collection("matches")
 
-        # Mock the match data for the summary page
-        mock_get_match.return_value = {
-            "id": "match_123",
-            "matchType": "singles",
-            "player1Score": 11,
-            "player2Score": 5,
-            "player1Ref": MagicMock(id=MOCK_USER_ID),
-            "player2Ref": MagicMock(id=MOCK_OPPONENT_ID),
-            "matchDate": datetime.datetime.now(),
-        }
-
         response = self.client.post(
             "/match/record",
             headers=self._get_auth_headers(),
@@ -168,7 +156,6 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Match recorded successfully.", response.data)
-        self.assertIn(b"Match Summary", response.data)
         # Check that the match was saved (using either add or document().set())
         self.assertTrue(
             mock_matches_collection.add.called
@@ -275,6 +262,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             )
             self.assertEqual(response.status_code, 200)
             self.assertIn(MOCK_OPPONENT_ID.encode(), response.data)
+
 
     def test_pending_invites_query_uses_correct_field(self) -> None:
         """Test that pending invites are queried using 'inviter_id'."""

@@ -1,11 +1,26 @@
+{% macro brand_logo() %}
+<a href="{{ url_for('user.dashboard') }}" class="navbar-brand" style="display: flex; align-items: center;">
+    <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" alt="pickaladder logo"
+        style="height: 24px; margin-right: 8px;">
+    pickaladder
+</a>
+{% endmacro %}
+
 <header class="header">
     <div class="container">
-        <nav class="navbar">
-            <a href="{{ url_for('user.dashboard') }}" class="navbar-brand" style="display: flex; align-items: center;">
-                <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" alt="pickaladder logo"
-                    style="height: 24px; margin-right: 8px;">
-                pickaladder
-            </a>
+        <!-- Mobile Header -->
+        <div class="d-flex justify-content-between align-items-center d-lg-none w-100">
+            {{ brand_logo() }}
+            <button class="hamburger-menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+
+        <!-- Desktop Navbar -->
+        <nav class="navbar d-none d-lg-flex">
+            {{ brand_logo() }}
             <div class="navbar-menu">
                 {% if g.user %}
                 <a href="{{ url_for('user.dashboard') }}"
@@ -64,27 +79,37 @@
                     </div>
                 </div>
                 {% endif %}
-                <button class="hamburger-menu">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
             </div>
         </nav>
-        <div id="myLinks" class="mobile-nav">
+        <div id="myLinks" class="mobile-nav d-lg-none">
             {% if g.user %}
-            <a href="{{ url_for('user.dashboard') }}" class="mobile-nav-link"><i class="fas fa-home me-2"></i> Dashboard</a>
-            <a href="{{ url_for('user.view_community') }}" class="mobile-nav-link"><i class="fas fa-users me-2"></i> Community</a>
-            <a href="{{ url_for('group.view_groups') }}" class="mobile-nav-link"><i class="fas fa-layer-group me-2"></i> Groups</a>
-            <a href="{{ url_for('tournament.list_tournaments') }}" class="mobile-nav-link"><i class="fas fa-trophy me-2"></i> Tournaments</a>
-            <a href="{{ url_for('match.leaderboard') }}" class="mobile-nav-link"><i class="fas fa-chart-line me-2"></i> Leaderboard</a>
+            <a href="{{ url_for('user.dashboard') }}" class="mobile-nav-link"><i class="fas fa-home me-2"></i>
+                Dashboard</a>
+            <a href="{{ url_for('user.view_community') }}" class="mobile-nav-link" style="position: relative;">
+                <i class="fas fa-users me-2"></i> Community
+                {% if incoming_requests_count > 0 %}
+                <span class="notification-badge"
+                    style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%);">{{
+                    incoming_requests_count }}</span>
+                {% endif %}
+            </a>
+            <a href="{{ url_for('group.view_groups') }}" class="mobile-nav-link"><i class="fas fa-layer-group me-2"></i>
+                Groups</a>
+            <a href="{{ url_for('tournament.list_tournaments') }}" class="mobile-nav-link"><i
+                    class="fas fa-trophy me-2"></i> Tournaments</a>
+            <a href="{{ url_for('match.leaderboard') }}" class="mobile-nav-link"><i class="fas fa-chart-line me-2"></i>
+                Leaderboard</a>
             <div class="mobile-nav-divider"></div>
-            <a href="{{ url_for('user.view_user', user_id=g.user['uid']) }}" class="mobile-nav-link"><i class="fas fa-user me-2"></i> My Profile</a>
-            <a href="{{ url_for('auth.change_password') }}" class="mobile-nav-link"><i class="fas fa-cog me-2"></i> Settings</a>
+            <a href="{{ url_for('user.view_user', user_id=g.user['uid']) }}" class="mobile-nav-link"><i
+                    class="fas fa-user me-2"></i> My Profile</a>
+            <a href="{{ url_for('auth.change_password') }}" class="mobile-nav-link"><i class="fas fa-cog me-2"></i>
+                Settings</a>
             {% if session.get('is_admin') %}
-            <a href="{{ url_for('admin.admin') }}" class="mobile-nav-link"><i class="fas fa-user-shield me-2"></i> Admin</a>
+            <a href="{{ url_for('admin.admin') }}" class="mobile-nav-link"><i class="fas fa-user-shield me-2"></i>
+                Admin</a>
             {% endif %}
-            <a href="{{ url_for('auth.logout') }}" class="mobile-nav-link"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
+            <a href="{{ url_for('auth.logout') }}" class="mobile-nav-link"><i class="fas fa-sign-out-alt me-2"></i>
+                Logout</a>
             {% else %}
             <a href="{{ url_for('auth.login') }}" class="mobile-nav-link">Login</a>
             <a href="{{ url_for('auth.register') }}" class="mobile-nav-link">Register</a>
