@@ -108,7 +108,7 @@
                                 <th>Result</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="match-history-tbody">
                             {% for match in matches %}
                             <tr>
                                 <td class="text-muted" data-label="Date">
@@ -176,6 +176,12 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    {% if next_cursor %}
+                    <div class="text-center mt-3">
+                        <button id="load-more-btn" class="btn btn-outline-primary btn-sm"
+                            data-cursor="{{ next_cursor }}">Show Older Matches</button>
+                    </div>
+                    {% endif %}
                     {% else %}
                     <p class="text-muted" style="padding: 20px; text-align: center;">No recent matches found.</p>
                     {% endif %}
@@ -298,4 +304,132 @@
     </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        const matchHistoryTbody = document.getElementById('match-history-tbody');
+        const currentUserId = "{{ user.uid }}";
+        const isAdmin = {{ 'true' if user.isAdmin else 'false' }};
+
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', function () {
+                const cursor = loadMoreBtn.getAttribute('data-cursor');
+                loadMoreBtn.disabled = true;
+                loadMoreBtn.textContent = 'Loading...';
+
+                fetch(`/match/history?cursor=${cursor}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.matches && data.matches.length > 0) {
+                            data.matches.forEach(match => {
+                                const rowHtml = renderMatchRow(match, currentUserId, isAdmin);
+                                matchHistoryTbody.insertAdjacentHTML('beforeend', rowHtml);
+                            });
+
+                            if (data.next_cursor) {
+                                loadMoreBtn.setAttribute('data-cursor', data.next_cursor);
+                                loadMoreBtn.disabled = false;
+                                loadMoreBtn.textContent = 'Show Older Matches';
+                            } else {
+                                loadMoreBtn.parentElement.remove();
+                            }
+                        } else {
+                            loadMoreBtn.parentElement.remove();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading matches:', error);
+                        loadMoreBtn.disabled = false;
+                        loadMoreBtn.textContent = 'Show Older Matches';
+                    });
+            });
+        }
+
+        function renderMatchRow(match, currentUserId, isAdmin) {
+            const isDoubles = match.match_type === 'doubles';
+            let matchupHtml = '';
+            let userScore, oppScore;
+
+            if (isDoubles) {
+                const inTeam1 = match.player1.some(p => p.id === currentUserId);
+                let partner, opponentName;
+                if (inTeam1) {
+                    partner = match.player1[0].id === currentUserId ? match.player1[1] : match.player1[0];
+                    opponentName = match.team2_name;
+                    userScore = match.player1_score;
+                    oppScore = match.player2_score;
+                } else {
+                    partner = match.player2[0].id === currentUserId ? match.player2[1] : match.player2[0];
+                    opponentName = match.team1_name;
+                    userScore = match.player2_score;
+                    oppScore = match.player1_score;
+                }
+                matchupHtml = `<strong>You & ${partner.username}</strong> vs ${opponentName}`;
+            } else {
+                const isP1 = match.player1.id === currentUserId;
+                let opponent;
+                if (isP1) {
+                    opponent = match.player2;
+                    userScore = match.player1_score;
+                    oppScore = match.player2_score;
+                } else {
+                    opponent = match.player1;
+                    userScore = match.player2_score;
+                    oppScore = match.player1_score;
+                }
+                matchupHtml = `<strong>You</strong> vs ${opponent.username}`;
+            }
+
+            const resultBadge = match.user_result === 'win' ?
+                '<span class="badge badge-success">W</span>' :
+                '<span class="badge badge-danger">L</span>';
+
+            let tournamentHtml = '';
+            if (match.tournament_name) {
+                tournamentHtml = `<div class="text-muted small" style="margin-top: 4px;">🏆 ${match.tournament_name}</div>`;
+            }
+
+            let editLinkHtml = '';
+            if ((match.created_by === currentUserId && !match.tournament_id) || isAdmin) {
+                editLinkHtml = `
+                    <a href="/match/edit/${match.id}" class="text-muted" title="Edit Match">
+                        ✏️
+                    </a>
+                `;
+            }
+
+            // Date formatting
+            let dateStr = match.date || 'Date N/A';
+            if (typeof dateStr === 'string' && dateStr.includes(',')) {
+                try {
+                    const d = new Date(dateStr);
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    dateStr = months[d.getUTCMonths()] + ' ' + d.getUTCDate();
+                } catch (e) {
+                    // Fallback to original string
+                }
+            }
+
+            return `
+                <tr>
+                    <td class="text-muted" data-label="Date">${dateStr}</td>
+                    <td data-label="Matchup">${matchupHtml}</td>
+                    <td data-label="Result">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                ${resultBadge} ${userScore} - ${oppScore}
+                                ${tournamentHtml}
+                            </div>
+                            ${editLinkHtml}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    });
+</script>
 {% endblock %}

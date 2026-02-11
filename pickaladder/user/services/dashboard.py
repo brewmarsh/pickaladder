@@ -33,8 +33,10 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
 
     # Prepare formatted matches (limit to 20 for dashboard)
     # calculate_stats already sorts them by date descending
-    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:20]]
+    recent_matches_items = stats["processed_matches"][:20]
+    recent_matches_docs = [m["doc"] for m in recent_matches_items]
     matches = format_matches_for_dashboard(db, recent_matches_docs, user_id)
+    next_cursor = recent_matches_docs[-1].id if recent_matches_docs else None
 
     # Fetch other related data
     friends = get_user_friends(db, user_id)
@@ -50,6 +52,7 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     return {
         "user": user_data,
         "matches": matches,
+        "next_cursor": next_cursor,
         "stats": stats,
         "friends": friends,
         "requests": requests_data,

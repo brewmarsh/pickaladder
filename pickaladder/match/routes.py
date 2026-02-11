@@ -290,6 +290,20 @@ def record_match() -> Any:
 
 
 # TODO: Add type hints for Agent clarity
+@bp.route("/history")
+@login_required
+def get_match_history() -> Any:
+    """Fetch paginated match history for the current user."""
+    db = firestore.client()
+    cursor = request.args.get("cursor")
+    limit = request.args.get("limit", 20, type=int)
+    uid = g.user["uid"]
+
+    matches, next_cursor = MatchService.get_matches_for_user(db, uid, limit, cursor)
+
+    return jsonify({"matches": matches, "next_cursor": next_cursor})
+
+
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
