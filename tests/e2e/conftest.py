@@ -260,6 +260,7 @@ class MockTransaction:
         """Initialize mock transaction."""
         self.db = db
         self._read_only = False
+        self._rollback = False
 
     def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
         """Mock get."""
