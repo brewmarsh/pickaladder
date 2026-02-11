@@ -223,23 +223,28 @@
                     {% set p2_score = match.player2Score|default(0) %}
 
                     {# Determine perspective: Current user if involved, otherwise winner #}
-                    {% set user_in_p1 = (match.player1.id == current_user_id or (match.partner and match.partner.id == current_user_id)) %}
-                    {% set user_in_p2 = (match.player2.id == current_user_id or (match.opponent2 and match.opponent2.id == current_user_id)) %}
+                    {% set m_p1 = match.player1 if match.player1 is defined else none %}
+                    {% set m_p2 = match.player2 if match.player2 is defined else none %}
+                    {% set m_partner = match.partner if match.partner is defined else none %}
+                    {% set m_opp2 = match.opponent2 if match.opponent2 is defined else none %}
+
+                    {% set user_in_p1 = (m_p1 and m_p1.id == current_user_id) or (m_partner and m_partner.id == current_user_id) %}
+                    {% set user_in_p2 = (m_p2 and m_p2.id == current_user_id) or (m_opp2 and m_opp2.id == current_user_id) %}
 
                     {% if user_in_p2 %}
-                        {% set primary_names = (match.team2.name if match.team2 else (match.player2 | display_name + ((' & ' + match.opponent2 | display_name) if match.opponent2 else ''))) %}
-                        {% set opponent_names = (match.team1.name if match.team1 else (match.player1 | display_name + ((' & ' + match.partner | display_name) if match.partner else ''))) %}
+                        {% set primary_names = (match.team2.name if (match.team2 and match.team2.name) else (match.player2 | display_name + ((' & ' + match.opponent2 | display_name) if match.opponent2 else ''))) %}
+                        {% set opponent_names = (match.team1.name if (match.team1 and match.team1.name) else (match.player1 | display_name + ((' & ' + match.partner | display_name) if match.partner else ''))) %}
                         {% set primary_score = p2_score %}
                         {% set opponent_score = p1_score %}
                     {% elif user_in_p1 or p1_score >= p2_score %}
-                        {% set primary_names = (match.team1.name if match.team1 else (match.player1 | display_name + ((' & ' + match.partner | display_name) if match.partner else ''))) %}
-                        {% set opponent_names = (match.team2.name if match.team2 else (match.player2 | display_name + ((' & ' + match.opponent2 | display_name) if match.opponent2 else ''))) %}
+                        {% set primary_names = (match.team1.name if (match.team1 and match.team1.name) else (match.player1 | display_name + ((' & ' + match.partner | display_name) if match.partner else ''))) %}
+                        {% set opponent_names = (match.team2.name if (match.team2 and match.team2.name) else (match.player2 | display_name + ((' & ' + match.opponent2 | display_name) if match.opponent2 else ''))) %}
                         {% set primary_score = p1_score %}
                         {% set opponent_score = p2_score %}
                     {% else %}
                         {# P2 won and user not in match #}
-                        {% set primary_names = (match.team2.name if match.team2 else (match.player2 | display_name + ((' & ' + match.opponent2 | display_name) if match.opponent2 else ''))) %}
-                        {% set opponent_names = (match.team1.name if match.team1 else (match.player1 | display_name + ((' & ' + match.partner | display_name) if match.partner else ''))) %}
+                        {% set primary_names = (match.team2.name if (match.team2 and match.team2.name) else (match.player2 | display_name + ((' & ' + match.opponent2 | display_name) if match.opponent2 else ''))) %}
+                        {% set opponent_names = (match.team1.name if (match.team1 and match.team1.name) else (match.player1 | display_name + ((' & ' + match.partner | display_name) if match.partner else ''))) %}
                         {% set primary_score = p2_score %}
                         {% set opponent_score = p1_score %}
                     {% endif %}
