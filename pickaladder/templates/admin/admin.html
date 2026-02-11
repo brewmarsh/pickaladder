@@ -1,0 +1,163 @@
+{% extends "layout.html" %}
+{% block title %}Admin Panel{% endblock %}
+{% block content %}
+    <div class="page-header">
+        <h1>Admin Panel</h1>
+    </div>
+
+    <!-- KPI Stats Row -->
+    <div class="vanity-stats-container mb-4">
+        <div class="vanity-stat">
+            <div class="stat-value text-volt">{{ admin_stats.total_users }}</div>
+            <div class="stat-label text-muted">Total Users</div>
+        </div>
+        <div class="vanity-stat">
+            <div class="stat-value text-volt">{{ admin_stats.active_tournaments }}</div>
+            <div class="stat-label text-muted">Active Tournaments</div>
+        </div>
+        <div class="vanity-stat">
+            <div class="stat-value text-volt">{{ admin_stats.recent_matches }}</div>
+            <div class="stat-label text-muted">Recent Matches (24h)</div>
+        </div>
+    </div>
+
+    <div class="card-grid">
+        <!-- User Management -->
+        <div class="card" style="grid-column: span 2;">
+            <h3>User Management</h3>
+            <div class="table-container">
+                <table class="table-standard responsive-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td data-label="User">
+                                <strong>{{ user.name or user.username }}</strong><br>
+                                <small class="text-muted">{{ user.email }}</small>
+                            </td>
+                            <td data-label="Status">
+                                {% if user.isAdmin %}<span class="badge badge-volt">Admin</span>{% endif %}
+                                {% if user.email_verified %}<span class="badge badge-success">Verified</span>{% else %}<span class="badge badge-danger">Unverified</span>{% endif %}
+                            </td>
+                            <td data-label="Actions" class="actions-cell">
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                    {% if not user.isAdmin %}
+                                    <form action="{{ url_for('admin.promote_user', user_id=user.id) }}" method="post">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-warning">Promote</button>
+                                    </form>
+                                    {% endif %}
+                                    {% if not user.email_verified %}
+                                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-success">Verify</button>
+                                    </form>
+                                    {% endif %}
+                                    <a href="{{ url_for('admin.impersonate', user_id=user.id) }}" class="btn btn-sm btn-secondary">Impersonate</a>
+                                    <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" onsubmit="return confirm('Are you sure?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- System Message -->
+        <div class="card">
+            <h3>System Message</h3>
+            <p>Broadcast a global announcement to all users.</p>
+            <form action="{{ url_for('admin.announcement') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group mb-2">
+                    <label for="announcement_text">Message</label>
+                    <textarea id="announcement_text" name="announcement_text" class="form-control" rows="3" required>{{ global_announcement.announcement_text if global_announcement }}</textarea>
+                </div>
+                <div class="form-group mb-2">
+                    <label for="level">Level</label>
+                    <select id="level" name="level" class="form-control">
+                        <option value="info" {% if global_announcement and global_announcement.level == 'info' %}selected{% endif %}>Info (Blue)</option>
+                        <option value="warning" {% if global_announcement and global_announcement.level == 'warning' %}selected{% endif %}>Warning (Yellow)</option>
+                        <option value="danger" {% if global_announcement and global_announcement.level == 'danger' %}selected{% endif %}>Danger (Red)</option>
+                    </select>
+                </div>
+                <div class="form-group form-check mb-2">
+                    <input type="checkbox" id="is_active" name="is_active" class="form-check-input" {% if global_announcement and global_announcement.is_active %}checked{% endif %}>
+                    <label for="is_active" class="form-check-label">Active</label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Update Announcement</button>
+            </form>
+        </div>
+
+        <!-- Account Tools -->
+        <div class="card">
+            <h3>Account Tools</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <a href="{{ url_for('admin.merge_players') }}" class="btn btn-warning">Merge Players (Deep Merge)</a>
+                <hr>
+                <h4>Merge Ghost</h4>
+                <form action="{{ url_for('admin.merge_ghost') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <input type="text" name="target_user_id" class="form-control mb-2" placeholder="Real User ID" required>
+                        <input type="email" name="ghost_email" class="form-control mb-2" placeholder="Ghost Email" required>
+                    </div>
+                    <button type="submit" class="btn btn-secondary w-100">Merge Ghost</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Settings & Links -->
+        <div class="card">
+            <h3>Site Settings</h3>
+            <p>
+                Email Verification:
+                {% if email_verification_setting and email_verification_setting.value == 'true' %}
+                    <strong class="text-volt">Enabled</strong>
+                {% else %}
+                    <strong class="text-danger">Disabled</strong>
+                {% endif %}
+            </p>
+            <form action="{{ url_for('admin.toggle_email_verification') }}" method="post" class="mb-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn {{ 'btn-danger' if email_verification_setting.value == 'true' else 'btn-success' }} w-100">
+                    {{ 'Disable' if email_verification_setting.value == 'true' else 'Enable' }}
+                </button>
+            </form>
+
+            <hr>
+
+            <h4>Project Links</h4>
+            <div class="d-flex flex-column gap-2">
+                <a href="https://github.com/brewmarsh/pickaladder/discussions" target="_blank" class="btn btn-sm btn-outline-primary">GitHub Discussions</a>
+                <a href="https://github.com/brewmarsh/pickaladder/projects" target="_blank" class="btn btn-sm btn-outline-primary">Project Board</a>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card border-danger">
+            <h3 class="text-danger">Danger Zone</h3>
+            <p class="small text-muted">Destructive administrative actions.</p>
+            <div class="d-flex flex-column gap-2">
+                <form action="{{ url_for('admin.generate_users') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">Generate Test Users</button>
+                </form>
+                <form action="{{ url_for('admin.generate_matches') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">Generate Test Matches</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
