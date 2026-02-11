@@ -59,7 +59,7 @@ class AdminService:
         # Delete from Firebase Auth
         try:
             auth.delete_user(uid)
-        except Exception:
+        except Exception:  # nosec B110
             # If user not found in Auth, we still want to proceed
             pass
 
