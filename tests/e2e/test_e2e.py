@@ -33,12 +33,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
             page.click("button:has-text('Login')")
 
     page.click(".btn-edit-gear")
-    expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
+    expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
 
     # Logout
-    page.hover(".dropdown")
-    with page.expect_navigation():
-        page.locator(".dropdown-content a:has-text('Logout')").click()
+    page.goto(f"{base_url}/auth/logout")
     expect(page.locator("h2")).to_contain_text("Login")
 
     # 2. Register User 2
@@ -62,7 +60,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Login')")
 
     page.click(".btn-edit-gear")
-    expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
+    expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
 
     # 3. Add Friend (User 2 invites Admin)
     with page.expect_navigation():
@@ -81,9 +79,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     )
 
     # Logout User 2, Login Admin
-    page.hover(".dropdown")
-    with page.expect_navigation():
-        page.locator(".dropdown-content a:has-text('Logout')").click()
+    page.goto(f"{base_url}/auth/logout")
     expect(page.locator("h2")).to_contain_text("Login")
 
     page.fill("input[name='email']", "admin@example.com")
@@ -118,9 +114,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Invite Friend')")
 
     # Verify User 2 is added (Logout Admin, Login User 2)
-    page.hover(".dropdown")
-    with page.expect_navigation():
-        page.locator(".dropdown-content a:has-text('Logout')").click()
+    page.goto(f"{base_url}/auth/logout")
 
     page.fill("input[name='email']", "user2@example.com")
     page.fill("input[name='password']", "MyPassword123")
@@ -143,7 +137,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Record Match')")
 
     # Check flash message
-    expect(page.locator(".toast")).to_contain_text("Match recorded successfully")
+    expect(page.locator(".alert-success")).to_contain_text(
+        "Match recorded successfully"
+    )
 
     # 7. Score Group Game
     with page.expect_navigation():
@@ -160,7 +156,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Record Match')")
 
     expect(page.locator("h1")).to_contain_text("Pickleballers")
-    expect(page.locator(".toast")).to_contain_text("Match recorded successfully")
+    expect(page.locator(".alert-success")).to_contain_text(
+        "Match recorded successfully"
+    )
 
     # Check Global Leaderboard (Req: "see the leaderboard")
     with page.expect_navigation():
@@ -172,9 +170,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # 8. Delete Group Game & 9. Delete Individual Game
     # Needs Admin access
-    page.hover(".dropdown")
-    with page.expect_navigation():
-        page.locator(".dropdown-content a:has-text('Logout')").click()
+    page.goto(f"{base_url}/auth/logout")
 
     page.fill("input[name='email']", "admin@example.com")
     page.fill("input[name='password']", "password")
@@ -185,12 +181,12 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     # Delete match involving user2 (first one)
     with page.expect_navigation():
         page.click("button:has-text('Delete')")
-    expect(page.locator(".toast")).to_contain_text("Match deleted successfully")
+    expect(page.locator(".alert-success")).to_contain_text("Match deleted successfully")
 
     # Delete second match
     with page.expect_navigation():
         page.click("button:has-text('Delete')")
-    expect(page.locator(".toast")).to_contain_text("Match deleted successfully")
+    expect(page.locator(".alert-success")).to_contain_text("Match deleted successfully")
 
     # 10. Update Group Details (Login as Admin - already logged in)
     with page.expect_navigation():
@@ -209,8 +205,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("form[action*='group'] input[name='name']", "New Guy")
     page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
     with page.expect_navigation():
-        page.click("input[value='Send Invite']")
-    expect(page.locator(".toast")).to_contain_text("Invitation is being sent")
+        page.click("button:has-text('Send Invite')")
+    expect(page.locator(".alert-toast, .alert-success, .toast-body")).to_contain_text(
+        "Invitation is being sent"
+    )
 
     # Verify invite token was created
     invites = list(mock_db.collection("group_invites").stream())
