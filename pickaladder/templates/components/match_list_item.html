@@ -1,0 +1,101 @@
+<tr>
+    <td class="text-muted" data-label="Date">
+        {% if match.date and match.date != 'N/A' %}
+            {{ match.date if match.date is string else (match.date.strftime('%b %d') if match.date.strftime else match.date) }}
+        {% elif match.match_date %}
+            {{ match.match_date.strftime('%Y-%m-%d') }}
+        {% else %}
+            Date N/A
+        {% endif %}
+    </td>
+    <td data-label="Matchup">
+        {% if match.match_type == 'doubles' %}
+            {% if user and user.uid %}
+                {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
+                {% if in_team1 %}
+                    {% set partner = match.player1[1] if match.player1[0].id == user.uid else match.player1[0] %}
+                    {% set opponent_name = match.team2_name %}
+                {% else %}
+                    {% set partner = match.player2[1] if match.player2[0].id == user.uid else match.player2[0] %}
+                    {% set opponent_name = match.team1_name %}
+                {% endif %}
+                <strong>You & {{ partner.username if partner.username else partner.name }}</strong> vs {{ opponent_name }}
+            {% else %}
+                {{ match.team1_name }} vs {{ match.team2_name }}
+            {% endif %}
+        {% else %}
+            {% if match.player_1_data and match.player_2_data %}
+                {% if user and user.uid %}
+                    {% if match.player_1_data.uid == user.uid %}
+                        <strong>You</strong> vs {{ match.player_2_data.display_name }}
+                    {% elif match.player_2_data.uid == user.uid %}
+                        <strong>You</strong> vs {{ match.player_1_data.display_name }}
+                    {% else %}
+                        {{ match.player_1_data.display_name }} vs {{ match.player_2_data.display_name }}
+                    {% endif %}
+                {% else %}
+                    {{ match.player_1_data.display_name }} vs {{ match.player_2_data.display_name }}
+                {% endif %}
+            {% else %}
+                {# Fallback to old logic (fetch by ID) #}
+                {% if user and user.uid %}
+                    {% set is_p1 = match.player1.id == user.uid %}
+                    {% if is_p1 %}
+                        {% set opponent = match.player2 %}
+                    {% else %}
+                        {% set opponent = match.player1 %}
+                    {% endif %}
+                    <strong>You</strong> vs {{ opponent.username if opponent.username else opponent.display_name if opponent.display_name else opponent.name }}
+                {% else %}
+                    {{ match.player1.username if match.player1.username else match.player1.display_name if match.player1.display_name else match.player1.name }} vs {{ match.player2.username if match.player2.username else match.player2.display_name if match.player2.display_name else match.player2.name }}
+                {% endif %}
+            {% endif %}
+        {% endif %}
+    </td>
+    <td data-label="Result">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                {% if match.user_result == 'win' %}
+                    <span class="badge badge-success">W</span>
+                {% elif match.user_result == 'loss' %}
+                    <span class="badge badge-danger">L</span>
+                {% endif %}
+
+                {% if user and user.uid %}
+                    {% if match.match_type == 'doubles' %}
+                        {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
+                        {% set user_score = match.player1_score if in_team1 else match.player2_score %}
+                        {% set opp_score = match.player2_score if in_team1 else match.player1_score %}
+                    {% else %}
+                        {% set p1_id = match.player_1_data.uid if match.player_1_data else match.player1.id %}
+                        {% set is_p1 = p1_id == user.uid %}
+                        {% set user_score = match.player1_score if is_p1 else match.player2_score %}
+                        {% set opp_score = match.player2_score if is_p1 else match.player1_score %}
+                    {% endif %}
+                    {{ user_score }} - {{ opp_score }}
+                {% else %}
+                    {{ match.player1_score if match.player1_score is defined else match.player1Score }} - {{ match.player2_score if match.player2_score is defined else match.player2Score }}
+                {% endif %}
+
+                {% if match.tournament_name %}
+                    <div class="text-muted small" style="margin-top: 4px;">🏆 {{ match.tournament_name }}</div>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                {% if user and ((match.created_by == user.uid and not match.tournament_id) or user.isAdmin) %}
+                    <a href="{{ url_for('match.edit_match', match_id=match.id) }}" class="text-muted" title="Edit Match">
+                        ✏️
+                    </a>
+                {% endif %}
+                {% if user and user.isAdmin %}
+                    <form action="{{ url_for('admin.admin_delete_match', match_id=match.id) }}" method="post" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this match?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm text-danger p-0" style="background: none; border: none;" title="Delete Match">
+                            🗑️
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+</tr>

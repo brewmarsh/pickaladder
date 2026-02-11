@@ -9,6 +9,7 @@ from firebase_admin import firestore
 
 from pickaladder.core.constants import GLOBAL_LEADERBOARD_MIN_GAMES
 from pickaladder.teams.services import TeamService
+from pickaladder.user.services.core import smart_display_name
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
@@ -47,6 +48,36 @@ class MatchService:
 
         p1_data = p1_snapshot.to_dict() or {}
         p2_data = p2_snapshot.to_dict() or {}
+
+        # 1.5 Denormalize Player Data (Snapshots)
+        if match_type == "singles":
+
+            def get_avatar_url(data: dict[str, Any]) -> str:
+                thumbnail = data.get("profilePictureThumbnailUrl")
+                if thumbnail:
+                    return str(thumbnail)
+                profile_pic = data.get("profilePictureUrl")
+                if profile_pic:
+                    return str(profile_pic)
+                seed = data.get("username") or data.get("email") or "User"
+                return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
+
+            match_data["player_1_data"] = {
+                "uid": p1_ref.id,
+                "display_name": smart_display_name(p1_data),
+                "avatar_url": get_avatar_url(p1_data),
+                "dupr_at_match_time": float(
+                    p1_data.get("duprRating") or p1_data.get("dupr_rating") or 0.0
+                ),
+            }
+            match_data["player_2_data"] = {
+                "uid": p2_ref.id,
+                "display_name": smart_display_name(p2_data),
+                "avatar_url": get_avatar_url(p2_data),
+                "dupr_at_match_time": float(
+                    p2_data.get("duprRating") or p2_data.get("dupr_rating") or 0.0
+                ),
+            }
 
         # 2. Calculate New Stats (Server-Side Authority)
         score1 = match_data["player1Score"]
@@ -577,10 +608,12 @@ class MatchService:
                 player_refs.update(m_data.get("team1", []))
                 player_refs.update(m_data.get("team2", []))
             else:
-                if p1_ref := m_data.get("player1Ref"):
-                    player_refs.add(p1_ref)
-                if p2_ref := m_data.get("player2Ref"):
-                    player_refs.add(p2_ref)
+                # Only collect refs if denormalized data is missing
+                if "player_1_data" not in m_data or "player_2_data" not in m_data:
+                    if p1_ref := m_data.get("player1Ref"):
+                        player_refs.add(p1_ref)
+                    if p2_ref := m_data.get("player2Ref"):
+                        player_refs.add(p2_ref)
 
         players = {}
         if player_refs:
@@ -639,19 +672,29 @@ class MatchService:
                     match_data["winner_score"] = score2
                     match_data["loser_score"] = score1
             else:  # singles
-                p1_ref = match_data.get("player1Ref")
-                p2_ref = match_data.get("player2Ref")
+                # Use denormalized snapshots if available
+                if (
+                    "player_1_data" in match_data
+                    and "player_2_data" in match_data
+                    and match_data["player_1_data"]
+                    and match_data["player_2_data"]
+                ):
+                    p1_name = match_data["player_1_data"].get("display_name", "N/A")
+                    p2_name = match_data["player_2_data"].get("display_name", "N/A")
+                else:
+                    p1_ref = match_data.get("player1Ref")
+                    p2_ref = match_data.get("player2Ref")
 
-                p1_name = (
-                    players.get(str(getattr(p1_ref, "id", "")), "N/A")
-                    if p1_ref
-                    else "N/A"
-                )
-                p2_name = (
-                    players.get(str(getattr(p2_ref, "id", "")), "N/A")
-                    if p2_ref
-                    else "N/A"
-                )
+                    p1_name = (
+                        players.get(str(getattr(p1_ref, "id", "")), "N/A")
+                        if p1_ref
+                        else "N/A"
+                    )
+                    p2_name = (
+                        players.get(str(getattr(p2_ref, "id", "")), "N/A")
+                        if p2_ref
+                        else "N/A"
+                    )
 
                 if score1 > score2:
                     match_data["winner_name"] = p1_name

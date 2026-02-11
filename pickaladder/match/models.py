@@ -57,3 +57,7 @@ class Match(FirestoreDocument, Score, total=False):
     loser_name: str
     winner_score: int
     loser_score: int
+
+    # Denormalized player data
+    player_1_data: dict[str, Any]
+    player_2_data: dict[str, Any]
