@@ -177,8 +177,52 @@
             </div>
         </div>
 
-        {# Right Column: Competition Stack #}
+        {# Right Column: Competition Stack / Rookie Quest #}
         <div class="dashboard-column-right">
+            {% if not is_active %}
+            <div class="card rookie-quest-card">
+                <div class="card-header" style="border-bottom: none; margin-bottom: 0; padding-left: 0;">
+                    <h3>Rookie Quest</h3>
+                </div>
+                <p class="text-muted small mb-4">Complete these steps to activate your account and start climbing the leaderboard!</p>
+                <div class="list-group list-group-flush">
+                    {% set quests = [
+                        {'id': 'avatar', 'title': 'Suit Up', 'text': 'Upload a profile picture', 'icon': '📸', 'done': onboarding_status.has_avatar, 'link': url_for('user.settings')},
+                        {'id': 'rating', 'title': 'Set Your Rating', 'text': 'Enter your DUPR rating', 'icon': '🔢', 'done': onboarding_status.has_rating, 'link': url_for('user.settings')},
+                        {'id': 'friend', 'title': 'Recruit a Rival', 'text': 'Add 1 Friend', 'icon': '🤝', 'done': onboarding_status.has_friend, 'link': url_for('user.view_community')},
+                        {'id': 'group', 'title': 'Join a Squad', 'text': 'Join a Group', 'icon': '🏆', 'done': onboarding_status.has_group, 'link': url_for('group.view_groups')},
+                        {'id': 'match', 'title': 'First Blood', 'text': 'Record your first match', 'icon': '⚔️', 'done': onboarding_status.has_match, 'link': url_for('match.record_match')}
+                    ] %}
+
+                    {% set ns = namespace(next_found=false) %}
+                    {% for quest in quests %}
+                        {% set is_next = not quest.done and not ns.next_found %}
+                        {% if is_next %}{% set ns.next_found = true %}{% endif %}
+
+                        <div class="list-group-item d-flex align-items-center {{ 'text-muted' if quest.done else '' }}" style="padding: 12px 0; border-color: var(--border-color); {{ 'opacity: 0.6;' if quest.done else '' }}">
+                            <div class="quest-icon" style="font-size: 1.2rem; width: 30px; text-align: center; margin-right: 12px;">
+                                {% if quest.done %}
+                                    <i class="fas fa-check-circle text-success"></i>
+                                {% else %}
+                                    {{ quest.icon }}
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1 {{ 'strikethrough' if quest.done else '' }}">
+                                <div class="{{ 'fw-bold' if is_next else '' }}" style="font-size: 1rem;">{{ quest.title }}</div>
+                                <div class="text-muted small" style="font-size: 0.8rem;">{{ quest.text }}</div>
+                            </div>
+                            <div style="margin-left: 12px;">
+                                {% if not quest.done %}
+                                    <a href="{{ quest.link }}" class="btn {{ 'btn-volt pulse' if is_next else 'btn-outline-primary btn-sm' }}" style="width: auto; min-width: 60px; text-transform: none; margin: 0; padding: 4px 8px; font-size: 0.8rem;">
+                                        Go
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
             <div class="competition-stack">
                 {# Competitions Hub #}
                 <div class="card card-compact" style="padding: 16px;">

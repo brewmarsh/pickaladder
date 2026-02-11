@@ -231,7 +231,12 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         if not user:
             return ""
         wrapped = wrap_user(user)
-        return wrapped.avatar_url if wrapped else ""
+        url = wrapped.avatar_url if wrapped else ""
+        if url == "default":
+            # Fallback to DiceBear Avatars (avataaars style)
+            seed = user.get("username") or user.get("email") or "User"
+            return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
+        return url
 
     _register_blueprints(app)
 

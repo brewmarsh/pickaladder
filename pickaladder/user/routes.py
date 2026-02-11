@@ -85,11 +85,27 @@ def dashboard() -> Any:
     current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
     recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
 
+    # Onboarding logic
+    user_friends_count = len(data.get("friends", []))
+    user_groups = data.get("group_rankings", [])
+    total_matches = data.get("stats", {}).get("total_games", 0)
+
+    onboarding_status = {
+        "has_avatar": g.user.avatar_url != "default",
+        "has_rating": (g.user.get("dupr_rating") or 0) > 0,
+        "has_friend": user_friends_count > 0,
+        "has_group": len(user_groups) > 0,
+        "has_match": total_matches > 0,
+    }
+    is_active = total_matches > 0
+
     # FIX: Removed explicit 'user=g.user' to avoid conflict with **data['user']
     return render_template(
         "user_dashboard.html",
         current_streak=current_streak,
         recent_opponents=recent_opponents,
+        onboarding_status=onboarding_status,
+        is_active=is_active,
         **data,
     )
 

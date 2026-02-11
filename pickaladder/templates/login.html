@@ -1,37 +1,56 @@
 {% extends "layout.html" %}
 {% block title %}Login{% endblock %}
 {% block content %}
-<div class="form-container">
-    <div class="flashes">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+<div class="login-split-container">
+    <div class="login-pitch">
+        <h1 class="display-font">Track. Compete. Climb.</h1>
+        <p class="subhead">The only ladder app built for the players.</p>
+
+        <ul class="feature-bullets">
+            <li><i class="fas fa-chart-line"></i> Dynamic ELO</li>
+            <li><i class="fas fa-trophy"></i> Team Tournaments</li>
+            <li><i class="fas fa-users"></i> Social Groups</li>
+        </ul>
+
+        <div class="landing-visual">
+            <i class="fas fa-table-tennis-paddle-ball"></i>
+        </div>
     </div>
-    <h2>Login</h2>
-    <form method="post">
-        {{ form.hidden_tag() }}
-        <div class="form-group">
-            {{ form.email.label }}
-            {{ form.email(class="form-control", autocomplete="email", data_testid="login-email") }}
+
+    <div class="login-form-side">
+        <div class="form-container" style="margin: 0; width: 100%; max-width: 450px;">
+            <div class="flashes">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            </div>
+            <h2>Login</h2>
+            <form method="post">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    {{ form.email.label }}
+                    {{ form.email(class="form-control", autocomplete="email", data_testid="login-email") }}
+                </div>
+                <div class="form-group">
+                    {{ form.password.label }}
+                    {{ form.password(class="form-control", autocomplete="current-password") }}
+                </div>
+                <div class="form-group form-check">
+                    {{ form.remember(class="form-check-input") }}
+                    {{ form.remember.label(class="form-check-label") }}
+                </div>
+                <button type="submit" name="submit" class="btn btn-volt" data-testid="login-submit">Login</button>
+            </form>
+            <div class="or-separator">OR</div>
+            <button id="google-signin-btn" class="btn btn-google">Sign in with Google</button>
+            <!-- The "Forgot Password" link has been removed as this functionality is now handled by the Firebase client-side SDK. -->
+            <p class="text-center">Don't have an account? <a href="{{ url_for('auth.register', next=request.args.get('next')) }}">Register here</a>.</p>
         </div>
-        <div class="form-group">
-            {{ form.password.label }}
-            {{ form.password(class="form-control", autocomplete="current-password") }}
-        </div>
-        <div class="form-group form-check">
-            {{ form.remember(class="form-check-input") }}
-            {{ form.remember.label(class="form-check-label") }}
-        </div>
-        <button type="submit" name="submit" class="btn" data-testid="login-submit">Login</button>
-    </form>
-    <div class="or-separator">OR</div>
-    <button id="google-signin-btn" class="btn btn-google">Sign in with Google</button>
-    <!-- The "Forgot Password" link has been removed as this functionality is now handled by the Firebase client-side SDK. -->
-    <p class="text-center">Don't have an account? <a href="{{ url_for('auth.register', next=request.args.get('next')) }}">Register here</a>.</p>
+    </div>
 </div>
 {% endblock %}
 {% block scripts %}
