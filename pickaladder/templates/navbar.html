@@ -63,7 +63,7 @@
                     </button>
                     <div class="dropdown-content">
                         <a href="{{ url_for('user.view_user', user_id=g.user['uid']) }}">👤 My Profile</a>
-                        <a href="{{ url_for('auth.change_password') }}">🔑 Settings / Change Password</a>
+                        <a href="{{ url_for('user.settings') }}">⚙️ Settings</a>
                         {% if session.get('is_admin') %}
                         <a href="{{ url_for('admin.admin') }}">👑 Admin</a>
                         {% endif %}
@@ -103,7 +103,7 @@
             <div class="mobile-nav-divider"></div>
             <a href="{{ url_for('user.view_user', user_id=g.user['uid']) }}" class="mobile-nav-link"><i
                     class="fas fa-user me-2"></i> My Profile</a>
-            <a href="{{ url_for('auth.change_password') }}" class="mobile-nav-link"><i class="fas fa-cog me-2"></i>
+            <a href="{{ url_for('user.settings') }}" class="mobile-nav-link"><i class="fas fa-cog me-2"></i>
                 Settings</a>
             {% if session.get('is_admin') %}
             <a href="{{ url_for('admin.admin') }}" class="mobile-nav-link"><i class="fas fa-user-shield me-2"></i>
