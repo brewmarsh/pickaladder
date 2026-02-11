@@ -1,0 +1,7 @@
+            if (event.target == friendGraphModal) {
+                friendGraphModal.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

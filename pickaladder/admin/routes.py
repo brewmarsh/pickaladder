@@ -35,10 +35,21 @@ def admin() -> Union[str, Response]:
         return redirect(url_for("auth.login"))
 
     db = firestore.client()
+
+    # KPI Stats
+    admin_stats = AdminService.get_admin_stats(db)
+
+    # Email Verification Setting
     setting_ref = db.collection("settings").document("enforceEmailVerification")
     email_verification_setting = setting_ref.get()
+
+    # Fetch Users for Management Table
+    users = UserService.get_all_users(db, limit=50)
+
     return render_template(
-        "admin/dashboard.html",
+        "admin/admin.html",
+        admin_stats=admin_stats,
+        users=users,
         email_verification_setting=email_verification_setting.to_dict()
         if email_verification_setting.exists
         else {"value": False},
@@ -113,18 +124,6 @@ def admin_delete_match(match_id: str) -> Response:
     return redirect(url_for(".admin_matches"))
 
 
-@bp.route("/friend_graph_data")
-@login_required(admin_required=True)
-def friend_graph_data() -> Union[Response, str, tuple[Response, int]]:
-    """Provide data for a network graph of users and their friendships."""
-    db = firestore.client()
-    try:
-        graph_data = AdminService.build_friend_graph(db)
-        return jsonify(graph_data)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
 def delete_user(user_id: str) -> Response:
@@ -135,20 +134,20 @@ def delete_user(user_id: str) -> Response:
         flash("User deleted successfully.", "success")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
-    return redirect(url_for("user.users"))
+    return redirect(url_for(".admin"))
 
 
 @bp.route("/promote_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
 def promote_user(user_id: str) -> Response:
-    """Promote a user to admin status."""
+    """Promote a user to admin status in Firestore."""
     db = firestore.client()
     try:
         username = AdminService.promote_user(db, user_id)
         flash(f"{username} has been promoted to admin.", "success")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
-    return redirect(url_for("user.users"))
+    return redirect(url_for(".admin"))
 
 
 @bp.route("/verify_user/<string:user_id>", methods=["POST"])
@@ -161,7 +160,7 @@ def verify_user(user_id: str) -> Response:
         flash("User email verified successfully.", "success")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
-    return redirect(url_for("user.users"))
+    return redirect(url_for(".admin"))
 
 
 @bp.route("/generate_users", methods=["POST"])
@@ -233,7 +232,7 @@ def generate_matches() -> Response:
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
 
-    return redirect(url_for(".admin_matches"))
+    return redirect(url_for(".admin"))
 
 
 @bp.route("/merge_players", methods=["GET", "POST"])

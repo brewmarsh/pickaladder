@@ -1,0 +1,128 @@
+{% extends "layout.html" %}
+{% block title %}Admin Panel{% endblock %}
+{% block content %}
+    <div class="page-header">
+        <h1>Admin Panel</h1>
+    </div>
+
+    <!-- KPI Stats Row -->
+    <div class="vanity-stats-container mb-4">
+        <div class="vanity-stat">
+            <div class="stat-value text-volt">{{ admin_stats.total_users }}</div>
+            <div class="stat-label text-muted">Total Users</div>
+        </div>
+        <div class="vanity-stat">
+            <div class="stat-value text-volt">{{ admin_stats.active_tournaments }}</div>
+            <div class="stat-label text-muted">Active Tournaments</div>
+        </div>
+        <div class="vanity-stat">
+            <div class="stat-value text-volt">{{ admin_stats.recent_matches }}</div>
+            <div class="stat-label text-muted">Recent Matches (24h)</div>
+        </div>
+    </div>
+
+    <div class="card-grid">
+        <!-- User Management -->
+        <div class="card" style="grid-column: span 2;">
+            <h3>User Management</h3>
+            <div class="table-container">
+                <table class="table-standard responsive-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td data-label="User">
+                                <strong>{{ user.name or user.username }}</strong><br>
+                                <small class="text-muted">{{ user.email }}</small>
+                            </td>
+                            <td data-label="Status">
+                                {% if user.isAdmin %}<span class="badge badge-volt">Admin</span>{% endif %}
+                                {% if user.email_verified %}<span class="badge badge-success">Verified</span>{% else %}<span class="badge badge-danger">Unverified</span>{% endif %}
+                            </td>
+                            <td data-label="Actions" class="actions-cell">
+                                <div style="display: flex; gap: 5px;">
+                                    {% if not user.isAdmin %}
+                                    <form action="{{ url_for('admin.promote_user', user_id=user.id) }}" method="post">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-warning">Promote</button>
+                                    </form>
+                                    {% endif %}
+                                    {% if not user.email_verified %}
+                                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-success">Verify</button>
+                                    </form>
+                                    {% endif %}
+                                    <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" onsubmit="return confirm('Are you sure?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Account Tools -->
+        <div class="card">
+            <h3>Account Tools</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <a href="{{ url_for('admin.merge_players') }}" class="btn btn-warning">Merge Players (Deep Merge)</a>
+                <hr>
+                <h4>Merge Ghost</h4>
+                <form action="{{ url_for('admin.merge_ghost') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <input type="text" name="target_user_id" class="form-control mb-2" placeholder="Real User ID" required>
+                        <input type="email" name="ghost_email" class="form-control mb-2" placeholder="Ghost Email" required>
+                    </div>
+                    <button type="submit" class="btn btn-secondary">Merge Ghost</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="card">
+            <h3>Settings</h3>
+            <p>
+                Email Verification:
+                {% if email_verification_setting and email_verification_setting.value == 'true' %}
+                    <strong class="text-volt">Enabled</strong>
+                {% else %}
+                    <strong class="text-danger">Disabled</strong>
+                {% endif %}
+            </p>
+            <form action="{{ url_for('admin.toggle_email_verification') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn {{ 'btn-danger' if email_verification_setting.value == 'true' else 'btn-success' }}">
+                    {{ 'Disable' if email_verification_setting.value == 'true' else 'Enable' }}
+                </button>
+            </form>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card border-danger">
+            <h3 class="text-danger">Danger Zone</h3>
+            <p class="small text-muted">Destructive administrative actions.</p>
+            <div class="d-flex flex-column gap-2">
+                <form action="{{ url_for('admin.generate_users') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-primary btn-sm">Generate Test Users</button>
+                </form>
+                <form action="{{ url_for('admin.generate_matches') }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-primary btn-sm">Generate Test Matches</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

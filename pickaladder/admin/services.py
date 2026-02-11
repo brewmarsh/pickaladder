@@ -1,5 +1,6 @@
 """Service layer for admin-related operations."""
 
+import datetime
 from typing import Any, Dict, List  # noqa: UP035
 
 from firebase_admin import auth, firestore
@@ -9,27 +10,34 @@ class AdminService:
     """Service class for admin-related operations."""
 
     @staticmethod
-    def build_friend_graph(db: Any) -> Dict[str, List[Dict[str, Any]]]:  # noqa: UP006
-        """Build a dictionary of nodes and edges for a friendship graph."""
+    def get_admin_stats(db: Any) -> Dict[str, Any]:
+        """Fetch high-level stats for the admin dashboard."""
+        # Total Users
         users = db.collection("users").stream()
-        nodes = []
-        edges = []
-        for user in users:
-            user_data = user.to_dict()
-            nodes.append({"id": user.id, "label": user_data.get("username", user.id)})
-            # Fetch friends for this user
-            friends_query = (
-                db.collection("users")
-                .document(user.id)
-                .collection("friends")
-                .where(filter=firestore.FieldFilter("status", "==", "accepted"))
-                .stream()
-            )
-            for friend in friends_query:
-                # Add edge only once
-                if user.id < friend.id:
-                    edges.append({"from": user.id, "to": friend.id})
-        return {"nodes": nodes, "edges": edges}
+        total_users = sum(1 for _ in users)
+
+        # Active Tournaments (status != 'Completed')
+        tournaments = (
+            db.collection("tournaments")
+            .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
+            .stream()
+        )
+        active_tournaments = sum(1 for _ in tournaments)
+
+        # Recent Matches (last 24 hours)
+        yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+        matches = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))
+            .stream()
+        )
+        recent_matches = sum(1 for _ in matches)
+
+        return {
+            "total_users": total_users,
+            "active_tournaments": active_tournaments,
+            "recent_matches": recent_matches,
+        }
 
     @staticmethod
     def toggle_setting(db: Any, setting_key: str) -> bool:
@@ -39,9 +47,9 @@ class AdminService:
         current_value = (
             setting.to_dict().get("value", False) if setting.exists else False
         )
-        new_value = not current_value
-        setting_ref.set({"value": new_value})
-        return new_value
+        not_current_value = not current_value
+        setting_ref.set({"value": not_current_value})
+        return not_current_value
 
     @staticmethod
     def delete_user(db: Any, user_id: str) -> None:
