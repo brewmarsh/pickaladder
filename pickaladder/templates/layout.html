@@ -77,13 +77,23 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
 
+        function dismissToast(toast) {
+            if (!toast || !toast.parentNode) return;
+            toast.classList.add('fade-out');
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 500);
+        }
+
         function showToast(message, category = 'info', submissionId = null) {
             const toastContainer = document.querySelector('.toast-container');
             if (!toastContainer) return;
 
             const toastId = submissionId || `toast_${Date.now()}`;
             const autohide = category !== 'info'; // Don't autohide pending toasts
-            const delay = 5000;
+            const delay = 4000;
 
             let progressBar = '';
             if (category === 'info') {
@@ -91,11 +101,11 @@
             }
 
             const toastHTML = `
-                <div class="toast" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true" ${autohide ? `data-delay="${delay}" data-autohide="true"` : ''}>
+                <div class="toast show" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
                     <div class="toast-header">
                         <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" class="rounded mr-2" alt="Logo" style="width: 20px; height: 20px;">
                         <strong class="mr-auto">pickaladder</strong>
-                        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                        <button type="button" class="ml-2 mb-1 close" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -107,7 +117,16 @@
             `;
             toastContainer.insertAdjacentHTML('beforeend', toastHTML);
             const newToast = document.getElementById(toastId);
-            $(newToast).toast('show');
+
+            // Handle close button
+            const closeBtn = newToast.querySelector('.close');
+            closeBtn.onclick = () => dismissToast(newToast);
+
+            // Auto-dismiss
+            if (autohide) {
+                setTimeout(() => dismissToast(newToast), delay);
+            }
+
             return toastId;
         }
 
@@ -137,12 +156,10 @@
                 toastBody.appendChild(retryButton);
             }
 
-            $(toastElement).data('autohide', true);
-            $(toastElement).data('delay', 5000);
-
-            // Hack to restart the autohide timer
-            $(toastElement).toast('hide');
-            $(toastElement).toast('show');
+            // Start auto-dismiss now that it's no longer "pending"
+            if (category !== 'info') {
+                setTimeout(() => dismissToast(toastElement), 4000);
+            }
         }
 
         document.addEventListener("click", (e) => {
