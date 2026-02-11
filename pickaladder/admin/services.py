@@ -70,6 +70,8 @@ class AdminService:
         """Get high-level stats for the admin dashboard."""
         from datetime import datetime, timedelta, timezone
 
+        from firebase_admin import firestore
+
         # User Count
         total_users = len(db.collection("users").get())
 
