@@ -29,7 +29,13 @@
 
     <div class="hero-right-panel">
         {% if is_member %}
-        <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-volt w-auto">Record a Match</a>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary w-auto" data-toggle="modal"
+                data-target="#shareGroupModal">
+                <i class="fas fa-share-alt"></i> Share
+            </button>
+            <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-volt w-auto">Record a Match</a>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -421,7 +427,7 @@
             <div class="modal-body p-0">
                 <div id="bragCardContainer" class="brag-card">
                     <div class="brag-card-header">
-                        <img id="bragCardAvatar" src="" alt="Avatar" class="brag-card-avatar">
+                        <img id="bragCardAvatar" src="{{ url_for('static', filename='user_icon.png') }}" alt="Avatar" class="brag-card-avatar">
                         <h2 id="bragCardUsername" class="brag-card-username"></h2>
                     </div>
                     <div class="brag-card-main">
@@ -438,6 +444,35 @@
                 <div class="mt-4 text-center">
                     <p class="text-white mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Screenshot this card to
                         share!</p>
+                    <button type="button" class="btn btn-volt" data-dismiss="modal" style="width: auto;">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="shareGroupModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 400px;">
+        <div class="modal-content" style="background: transparent; border: none; box-shadow: none;">
+            <div class="modal-body p-0">
+                <div class="social-share-card">
+                    <div class="social-share-card-header">Pick-A-Ladder Group</div>
+                    <div class="social-share-card-body text-center">
+                        <div class="profile-picture-container avatar-lg mx-auto mb-3">
+                            <img src="{{ g.user | avatar_url }}" alt="Profile Picture" class="profile-picture">
+                        </div>
+                        <h2 class="social-share-card-title text-white font-weight-bold">{{ group.name }}</h2>
+                        {% set ns = namespace(user_rank='Member') %}
+                        {% for player in leaderboard %}
+                            {% if player.id == current_user_id %}
+                                {% set ns.user_rank = 'Rank #' ~ loop.index %}
+                            {% endif %}
+                        {% endfor %}
+                        <div class="social-share-card-stat">{{ ns.user_rank }}</div>
+                    </div>
+                    <div class="social-share-card-footer">Join us on pickaladder.io</div>
+                </div>
+                <div class="mt-4 text-center">
+                    <p class="text-white mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Screenshot this card to share!</p>
                     <button type="button" class="btn btn-volt" data-dismiss="modal" style="width: auto;">Done</button>
                 </div>
             </div>
