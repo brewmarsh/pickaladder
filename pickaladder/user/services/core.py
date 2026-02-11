@@ -81,11 +81,13 @@ def process_profile_update(
 
     dupr_id = form_data.dupr_id.data.strip() if form_data.dupr_id.data else None
     update_data["dupr_id"] = dupr_id
-    update_data["dupr_rating"] = (
+    rating = (
         float(form_data.dupr_rating.data)
         if form_data.dupr_rating.data is not None
         else None
     )
+    update_data["dupr_rating"] = rating
+    update_data["duprRating"] = rating
 
     # Handle username change
     if new_username != current_user_data.get("username"):
