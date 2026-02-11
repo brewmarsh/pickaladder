@@ -116,8 +116,12 @@ class MatchService:
             match_doc_data["winner"] = (
                 "team1" if player1_score > player2_score else "team2"
             )
-            match_doc_data["winnerId"] = p1_id if player1_score > player2_score else p2_id
-            match_doc_data["loserId"] = p2_id if player1_score > player2_score else p1_id
+            match_doc_data["winnerId"] = (
+                p1_id if player1_score > player2_score else p2_id
+            )
+            match_doc_data["loserId"] = (
+                p2_id if player1_score > player2_score else p1_id
+            )
 
             # Apply DUPR upset logic
             MatchService._apply_upset_logic(match_doc_data, p1_ref, p2_ref)
@@ -133,10 +137,14 @@ class MatchService:
                 "team1" if player1_score > player2_score else "team2"
             )
             match_doc_data["winnerId"] = (
-                res.get("team1Id") if player1_score > player2_score else res.get("team2Id")
+                res.get("team1Id")
+                if player1_score > player2_score
+                else res.get("team2Id")
             )
             match_doc_data["loserId"] = (
-                res.get("team2Id") if player1_score > player2_score else res.get("team1Id")
+                res.get("team2Id")
+                if player1_score > player2_score
+                else res.get("team1Id")
             )
 
         # Save to database
@@ -457,7 +465,10 @@ class MatchService:
         if not match_doc.exists:
             raise ValueError("Match not found.")
 
-        match_data = cast(dict[str, Any], match_doc.to_dict())
+        match_data = match_doc.to_dict()
+        if match_data is None:
+            raise ValueError("Match data is empty.")
+
         tournament_id = match_data.get("tournamentId")
         created_by = match_data.get("createdBy")
 
