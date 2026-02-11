@@ -71,6 +71,31 @@ def merge_ghost() -> Response:
     return redirect(url_for(".admin"))
 
 
+@bp.route("/announcement", methods=["POST"])
+@login_required(admin_required=True)
+def announcement() -> Response:
+    """Update the global system announcement."""
+    db = firestore.client()
+    announcement_text = request.form.get("announcement_text")
+    is_active = request.form.get("is_active") == "on"
+    level = request.form.get("level", "info")
+
+    try:
+        db.collection("system").document("settings").set(
+            {
+                "announcement_text": announcement_text,
+                "is_active": is_active,
+                "level": level,
+            },
+            merge=True,
+        )
+        flash("Global announcement updated successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred while updating the announcement: {e}", "danger")
+
+    return redirect(url_for(".admin"))
+
+
 @bp.route("/toggle_email_verification", methods=["POST"])
 @login_required(admin_required=True)
 def toggle_email_verification() -> Response:
