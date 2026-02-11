@@ -85,11 +85,31 @@ def dashboard() -> Any:
     current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
     recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
 
+    # Onboarding Progress Calculation
+    user_groups = data.get("group_rankings", [])
+    total_matches = data.get("stats", {}).get("total_games", 0)
+
+    # Check if avatar is not default (dicebear)
+    # If profilePictureUrl or profilePictureThumbnailUrl is set, it's custom.
+    has_avatar = bool(g.user.get("profilePictureUrl") or g.user.get("profilePictureThumbnailUrl"))
+    has_dupr = (g.user.get("dupr_rating") or 0) > 0 or (g.user.get("duprRating") or 0) > 0
+    has_group = len(user_groups) > 0
+    has_match = total_matches > 0
+
+    onboarding_progress = {
+        "has_avatar": has_avatar,
+        "has_dupr": has_dupr,
+        "has_group": has_group,
+        "has_match": has_match,
+        "percent": int((sum([has_avatar, has_dupr, has_group, has_match]) / 4) * 100),
+    }
+
     # FIX: Removed explicit 'user=g.user' to avoid conflict with **data['user']
     return render_template(
         "user_dashboard.html",
         current_streak=current_streak,
         recent_opponents=recent_opponents,
+        onboarding_progress=onboarding_progress,
         **data,
     )
 

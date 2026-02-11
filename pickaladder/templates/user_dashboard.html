@@ -73,6 +73,52 @@
         </div>
     </div>
 
+    {# Onboarding Quest Card #}
+    {% if onboarding_progress.percent < 100 or not onboarding_progress.has_match %}
+    <div class="card onboarding-card mb-4" style="border-left: 5px solid var(--accent-color);">
+        <div class="card-body">
+            <h4 class="mb-3">Welcome to pickaladder! 🚀 Let's get you ranked.</h4>
+
+            <div class="progress mb-2" style="height: 12px; background-color: var(--border-color); border-radius: 6px; overflow: hidden;">
+                <div class="progress-bar bg-volt" role="progressbar"
+                     style="width: {{ onboarding_progress.percent }}%; height: 100%; transition: width 0.5s ease;"
+                     aria-valuenow="{{ onboarding_progress.percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <div class="text-muted small mb-4 fw-bold">{{ onboarding_progress.percent }}% Complete</div>
+
+            {% set steps = [
+                {'label': 'Suit Up', 'desc': 'Add a profile picture', 'done': onboarding_progress.has_avatar, 'url': url_for('user.settings')},
+                {'label': 'Set Rating', 'desc': 'Add your DUPR rating', 'done': onboarding_progress.has_dupr, 'url': url_for('user.settings')},
+                {'label': 'Find a Squad', 'desc': 'Join a group', 'done': onboarding_progress.has_group, 'url': url_for('group.view_groups')},
+                {'label': 'Record Match', 'desc': 'Log your first game', 'done': onboarding_progress.has_match, 'url': url_for('match.record_match')}
+            ] %}
+
+            {% set first_undone = namespace(found=false) %}
+
+            <div class="list-group list-group-flush onboarding-list" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
+                {% for step in steps %}
+                <a href="{{ step.url }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 {% if step.done %}completed{% elif not first_undone.found %}{% set first_undone.found = true %}pulse{% endif %}" style="text-decoration: none; color: inherit; border-bottom: 1px solid var(--border-color);">
+                    <div class="d-flex align-items-center">
+                        <div class="step-check me-3" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                            {% if step.done %}
+                            <span class="text-success" style="font-size: 1.2rem;">✅</span>
+                            {% else %}
+                            <div style="width: 18px; height: 18px; border: 2px solid var(--text-secondary); border-radius: 50%;"></div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div class="fw-bold {% if step.done %}text-muted{% endif %}" style="{% if step.done %}text-decoration: line-through;{% endif %}">{{ step.label }}</div>
+                            <div class="text-muted small">{{ step.desc }}</div>
+                        </div>
+                    </div>
+                    <span class="text-muted">→</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     {# Jump Back In Section #}
     {% if recent_opponents %}
     <div class="card mb-4">
