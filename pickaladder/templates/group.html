@@ -455,10 +455,11 @@
         <div class="modal-content" style="background: transparent; border: none; box-shadow: none;">
             <div class="modal-body p-0">
                 <div class="social-share-card">
-                    <div class="social-share-card-header">Pick-A-Ladder Group</div>
+                    <div class="social-share-card-header">PICK-A-LADDER GROUP</div>
                     <div class="social-share-card-body text-center">
                         <div class="profile-picture-container avatar-lg mx-auto mb-3">
-                            <img src="{{ g.user | avatar_url }}" alt="Profile Picture" class="profile-picture">
+                            <img src="{{ g.user | avatar_url }}" alt="Profile Picture" class="profile-picture"
+                                onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                         </div>
                         <h2 class="social-share-card-title text-white font-weight-bold">{{ group.name }}</h2>
                         {% set ns = namespace(user_rank='Member') %}
