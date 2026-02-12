@@ -129,7 +129,7 @@ class MatchService:
             batch.update(group_ref, {"updatedAt": firestore.SERVER_TIMESTAMP})
 
     @staticmethod
-    def process_match_submission(
+    def record_match(
         db: Client,
         form_data: dict[str, Any],
         current_user: UserSession,

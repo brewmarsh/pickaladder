@@ -244,7 +244,7 @@ def record_match() -> Any:
 
         try:
             # Capture the ID from the service call (Feature Branch Logic)
-            match_id = MatchService.process_match_submission(db, form.data, g.user)
+            match_id = MatchService.record_match(db, form.data, g.user)
 
             if request.is_json:
                 return jsonify(

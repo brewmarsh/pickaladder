@@ -41,7 +41,7 @@ class MatchSecurityTestCase(unittest.TestCase):
 
         current_user = cast("UserSession", {"uid": "player1"})
 
-        MatchService.process_match_submission(mock_db, form_data, current_user)
+        MatchService.record_match(mock_db, form_data, current_user)
 
         # Verify mock_record_batch was called
         self.assertTrue(mock_record_batch.called)
