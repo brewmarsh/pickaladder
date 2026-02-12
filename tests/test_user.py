@@ -147,7 +147,9 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             call_args[0][0].get("profilePictureUrl")
             for call_args in mock_user_doc.update.call_args_list
         ]
-        self.assertIn("https://storage.googleapis.com/test-bucket/test.jpg", updated_urls)
+        self.assertIn(
+            "https://storage.googleapis.com/test-bucket/test.jpg", updated_urls
+        )
 
     def test_update_dupr_and_dark_mode(self) -> None:
         """Test updating DUPR rating and dark mode settings."""

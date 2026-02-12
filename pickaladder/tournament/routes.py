@@ -9,6 +9,7 @@ from firebase_admin import firestore  # noqa: F401
 from flask import (
     flash,
     g,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -321,7 +322,10 @@ def claim_team(tournament_id: str, team_id: str) -> Any:
         if success:
             flash("You have joined the team!", "success")
         else:
-            flash("Unable to join team. It may be full or you are already in it.", "danger")
+            flash(
+                "Unable to join team. It may be full or you are already in it.",
+                "danger",
+            )
     except Exception as e:
         flash(f"Error: {e}", "danger")
 

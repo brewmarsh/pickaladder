@@ -41,7 +41,7 @@ def test_tournament_flow(
     page.fill("input[name='name']", "Winter Open")
     page.fill("input[name='date']", "2026-12-01")
     page.fill("input[name='location']", "Central Park")
-    page.select_option("select[name='match_type']", value="singles")
+    page.check("input[name='mode'][value='SINGLES']")
     with page.expect_navigation():
         page.click("button:has-text('Create Tournament')")
 

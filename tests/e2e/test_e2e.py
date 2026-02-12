@@ -137,7 +137,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Record Match')")
 
     # Check flash message
-    expect(page.locator(".alert-success")).to_contain_text(
+    expect(page.locator(".alert-success, .alert-toast, .toast-body")).to_contain_text(
         "Match recorded successfully"
     )
 
@@ -156,7 +156,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Record Match')")
 
     expect(page.locator("h1")).to_contain_text("Pickleballers")
-    expect(page.locator(".alert-success")).to_contain_text(
+    expect(page.locator(".alert-success, .alert-toast, .toast-body")).to_contain_text(
         "Match recorded successfully"
     )
 
