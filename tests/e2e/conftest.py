@@ -404,9 +404,7 @@ def app_server(
     p11 = patch.object(
         firebase_admin.firestore, "transactional", side_effect=lambda x: x
     )
-    p12 = patch.object(
-        google.cloud.firestore, "transactional", side_effect=lambda x: x
-    )
+    p12 = patch.object(google.cloud.firestore, "transactional", side_effect=lambda x: x)
 
     # Start p1 through p12 BEFORE importing pickaladder to ensure decorators are patched
     p1.start()

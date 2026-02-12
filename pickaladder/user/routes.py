@@ -14,7 +14,6 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import current_user
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL

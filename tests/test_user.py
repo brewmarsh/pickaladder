@@ -35,7 +35,9 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
             "storage_service_core": patch("pickaladder.user.services.core.storage"),
-            "storage_service_profile": patch("pickaladder.user.services.profile.storage"),
+            "storage_service_profile": patch(
+                "pickaladder.user.services.profile.storage"
+            ),
             "auth_service_core": patch("pickaladder.user.services.core.auth"),
             "auth_service_profile": patch("pickaladder.user.services.profile.auth"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
@@ -134,8 +136,16 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         mock_blob.make_public.assert_called_once()
         # Find the call that contains profilePictureUrl
         update_calls = [c[0][0] for c in mock_user_doc.update.call_args_list]
-        pic_call = next((c for c in update_calls if "profilePictureUrl" in c), None)
+        pic_call = next(
+            (
+                c
+                for c in update_calls
+                if isinstance(c, dict) and "profilePictureUrl" in c
+            ),
+            None,
+        )
         self.assertIsNotNone(pic_call)
+        assert isinstance(pic_call, dict)
         self.assertEqual(
             pic_call["profilePictureUrl"],
             "https://storage.googleapis.com/test-bucket/test.jpg",
@@ -162,12 +172,18 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         # Check all update calls
         update_calls = [c[0][0] for c in mock_user_doc.update.call_args_list]
 
-        dark_mode_call = next((c for c in update_calls if "dark_mode" in c), None)
+        dark_mode_call = next(
+            (c for c in update_calls if isinstance(c, dict) and "dark_mode" in c), None
+        )
         self.assertIsNotNone(dark_mode_call)
+        assert isinstance(dark_mode_call, dict)
         self.assertEqual(dark_mode_call["dark_mode"], True)
 
-        dupr_call = next((c for c in update_calls if "duprRating" in c), None)
+        dupr_call = next(
+            (c for c in update_calls if isinstance(c, dict) and "duprRating" in c), None
+        )
         self.assertIsNotNone(dupr_call)
+        assert isinstance(dupr_call, dict)
         self.assertEqual(dupr_call["duprRating"], 5.5)
 
     def _setup_dashboard_mocks(self, mock_db: MagicMock) -> None:
