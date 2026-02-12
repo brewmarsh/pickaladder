@@ -39,6 +39,7 @@ def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
     if data is None:
         return None
     data["id"] = user_id
+    data["uid"] = user_id
     return data
 
 

@@ -100,11 +100,14 @@ def dashboard() -> Any:
     current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
     recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
 
-    # FIX: Removed explicit 'user=g.user' to avoid conflict with **data['user']
+    # Remove user from data to avoid conflict with g.user passed to template
+    data.pop("user", None)
+
     return render_template(
         "user_dashboard.html",
         current_streak=current_streak,
         recent_opponents=recent_opponents,
+        user=g.user,
         **data,
     )
 

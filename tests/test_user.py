@@ -361,7 +361,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertNotEqual(
             first_match, mock_match, "Should not pass raw Firestore snapshots"
         )
-        self.assertIn("match_date", first_match)
+        self.assertIn("date", first_match)
         self.assertIn("player1", first_match)
         self.assertIn("username", first_match["player1"])
 

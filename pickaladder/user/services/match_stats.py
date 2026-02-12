@@ -282,6 +282,13 @@ def format_matches_for_dashboard(
         if t_id := match_dict.get("tournamentId"):
             tournament_name = tournaments_map.get(t_id, {}).get("name")
 
+        match_date = m_data.get("matchDate")
+        date_str = "N/A"
+        if isinstance(match_date, datetime.datetime):
+            date_str = match_date.strftime("%b %d")
+        elif match_date:
+            date_str = str(match_date)
+
         matches_data.append(
             {
                 "id": match_doc.id,
@@ -290,8 +297,7 @@ def format_matches_for_dashboard(
                 "player1_score": m_data.get("player1Score", 0),
                 "player2_score": m_data.get("player2Score", 0),
                 "winner": winner,
-                "date": m_data.get("matchDate", "N/A"),
-                "match_date": m_data.get("matchDate"),
+                "date": date_str,
                 "is_group_match": bool(m_data.get("groupId")),
                 "match_type": m_data.get("matchType", "singles"),
                 "user_result": user_result,
