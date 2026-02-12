@@ -277,24 +277,23 @@ def format_matches_for_dashboard(
             p2_info = [
                 _get_player_info(r, users_map) for r in match_dict.get("team2", [])
             ]
+        # Use denormalized snapshots if available
+        elif "player_1_data" in match_dict and "player_2_data" in match_dict:
+            p1_snap = match_dict["player_1_data"]
+            p2_snap = match_dict["player_2_data"]
+            p1_info = {
+                "id": p1_snap.get("uid"),
+                "username": p1_snap.get("display_name"),
+                "thumbnail_url": p1_snap.get("avatar_url"),
+            }
+            p2_info = {
+                "id": p2_snap.get("uid"),
+                "username": p2_snap.get("display_name"),
+                "thumbnail_url": p2_snap.get("avatar_url"),
+            }
         else:
-            # Use denormalized snapshots if available
-            if "player_1_data" in match_dict and "player_2_data" in match_dict:
-                p1_snap = match_dict["player_1_data"]
-                p2_snap = match_dict["player_2_data"]
-                p1_info = {
-                    "id": p1_snap.get("uid"),
-                    "username": p1_snap.get("display_name"),
-                    "thumbnail_url": p1_snap.get("avatar_url"),
-                }
-                p2_info = {
-                    "id": p2_snap.get("uid"),
-                    "username": p2_snap.get("display_name"),
-                    "thumbnail_url": p2_snap.get("avatar_url"),
-                }
-            else:
-                p1_info = _get_player_info(match_dict["player1Ref"], users_map)
-                p2_info = _get_player_info(match_dict["player2Ref"], users_map)
+            p1_info = _get_player_info(match_dict["player1Ref"], users_map)
+            p2_info = _get_player_info(match_dict["player2Ref"], users_map)
 
         t1_name = "Team 1"
         t2_name = "Team 2"

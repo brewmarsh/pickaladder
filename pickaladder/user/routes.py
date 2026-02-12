@@ -14,7 +14,6 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import current_user
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
@@ -55,6 +54,7 @@ def settings() -> Any:
     if form.validate_on_submit():
         # Handle email change if needed
         if form.email.data and form.email.data != g.user.get("email"):
+            assert form.username.data is not None
             email_success, email_msg = UserService.update_email_address(
                 user_id, form.email.data, form.username.data
             )
@@ -68,9 +68,7 @@ def settings() -> Any:
                 return render_template("user/settings.html", form=form, user=g.user)
 
         # Update other settings
-        res = UserService.update_settings(
-            db, user_id, form, form.profile_picture.data
-        )
+        res = UserService.update_settings(db, user_id, form, form.profile_picture.data)
 
         if res["success"]:
             flash("Settings updated!", "success")
