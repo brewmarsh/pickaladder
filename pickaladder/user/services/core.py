@@ -1,14 +1,12 @@
 from __future__ import annotations
-import logging
-logger = logging.getLogger(__name__)
-import os
 
+import logging
+import os
 import secrets
 import tempfile
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import auth, firestore, storage
-from flask import current_app
 from werkzeug.utils import secure_filename
 
 from pickaladder.utils import send_email
@@ -18,6 +16,8 @@ from ..helpers import smart_display_name as _smart_display_name
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
+
+logger = logging.getLogger(__name__)
 
 
 def smart_display_name(user: dict[str, Any]) -> str:
@@ -128,7 +128,7 @@ def process_profile_update(
         except auth.EmailAlreadyExistsError:
             return {"success": False, "error": "That email address is already in use."}
         except Exception as e:
-            print(f"Error updating email: {e}")
+            logger.error(f"Error updating email: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while updating your email.",
@@ -141,7 +141,7 @@ def process_profile_update(
 def update_settings(
     db: Client, user_id: str, form_data: Any, profile_picture_file: Any = None
 ) -> dict[str, Any]:
-    """Update user settings (name, username, email, rating, dark mode, and profile picture)."""
+    """Update user settings."""
     new_username = form_data.username.data
     new_email = form_data.email.data
 
@@ -186,7 +186,7 @@ def update_settings(
         except auth.EmailAlreadyExistsError:
             return {"success": False, "error": "That email address is already in use."}
         except Exception as e:
-            print(f"Error updating email: {e}")
+            logger.error(f"Error updating email: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while updating your email.",
