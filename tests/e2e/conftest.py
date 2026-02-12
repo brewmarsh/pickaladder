@@ -117,14 +117,13 @@ def get_by_field_path(self: DocumentSnapshot, field_path: str) -> Any:
 
 DocumentSnapshot._get_by_field_path = get_by_field_path
 
-
-# Patch DocumentReference.get to handle transaction kwarg
-original_doc_get = DocumentReference.get
+# Patch DocumentReference.get to handle transaction argument
+original_get = DocumentReference.get
 
 
 def doc_ref_get(self: DocumentReference, transaction: Any = None) -> DocumentSnapshot:
     """Handle transaction argument in get."""
-    return original_doc_get(self)
+    return original_get(self)
 
 
 DocumentReference.get = doc_ref_get
@@ -171,16 +170,22 @@ def mock_array_remove(values: list[Any]) -> MockSentinel:
     return MockSentinel(values, "REMOVE")
 
 
-def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
-    """Update document handling sentinels."""
-    doc_snapshot = self.get()
-    if doc_snapshot.exists:
-        doc_data = doc_snapshot.to_dict()
-    else:
-        doc_data = {}
+original_update = DocumentReference.update
 
-    for key, value in data.items():
-        if isinstance(value, MockSentinel):
+
+def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
+    """Update document handling sentinels and nested fields."""
+    sentinels = {k: v for k, v in data.items() if isinstance(v, MockSentinel)}
+    others = {k: v for k, v in data.items() if not isinstance(v, MockSentinel)}
+
+    if others:
+        original_update(self, others)
+
+    if sentinels:
+        doc_snapshot = self.get()
+        doc_data = doc_snapshot.to_dict() if doc_snapshot.exists else {}
+
+        for key, value in sentinels.items():
             current_list = doc_data.get(key, [])
             if not isinstance(current_list, list):
                 current_list = []
@@ -193,9 +198,7 @@ def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
                     if item in current_list:
                         current_list.remove(item)
             doc_data[key] = current_list
-        else:
-            doc_data[key] = value
-    self.set(doc_data)
+        self.set(doc_data)
 
 
 DocumentReference.update = doc_ref_update
@@ -216,49 +219,27 @@ class MockFieldFilter:
 class MockTransaction:
     """Mock for firestore.Transaction."""
 
-    def __init__(self, client: Any) -> None:
+    def __init__(self, db: EnhancedMockFirestore) -> None:
         """Initialize mock transaction."""
-        self._client = client
-        self._read_only = False
-        self.ops: list[Any] = []
+        self.db = db
 
-    def get(self, ref_or_query: Any) -> Any:
+    def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
         """Mock get."""
-        return ref_or_query.get()
+        return doc_ref.get()
 
     def set(
         self, doc_ref: DocumentReference, data: dict[str, Any], merge: bool = False
     ) -> None:
         """Mock set."""
-        self.ops.append(("set", doc_ref, data, merge))
+        doc_ref.set(data, merge=merge)
 
     def update(self, doc_ref: DocumentReference, data: dict[str, Any]) -> None:
         """Mock update."""
-        self.ops.append(("update", doc_ref, data))
+        doc_ref.update(data)
 
     def delete(self, doc_ref: DocumentReference) -> None:
         """Mock delete."""
-        self.ops.append(("delete", doc_ref))
-
-    def commit(self) -> None:
-        """Mock commit."""
-        for op in self.ops:
-            if op[0] == "set":
-                op[1].set(op[2], merge=op[3])
-            elif op[0] == "update":
-                op[1].update(op[2])
-            elif op[0] == "delete":
-                op[1].delete()
-        self.ops = []
-
-    def __enter__(self) -> MockTransaction:
-        """Context manager enter."""
-        return self
-
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        """Context manager exit."""
-        if exc_type is None:
-            self.commit()
+        doc_ref.delete()
 
 
 class MockBatch:
@@ -296,7 +277,7 @@ class MockBatch:
 
 
 class EnhancedMockFirestore(MockFirestore):
-    """Enhanced MockFirestore with batch support."""
+    """Enhanced MockFirestore with batch and transaction support."""
 
     def __init__(self) -> None:
         """Initialize enhanced mock firestore."""
@@ -322,12 +303,10 @@ class MockAuthService:
 
     class EmailAlreadyExistsError(Exception):
         """Mock EmailAlreadyExistsError."""
-
         pass
 
     class UserNotFoundError(Exception):
         """Mock UserNotFoundError."""
-
         pass
 
     def verify_id_token(
@@ -381,9 +360,6 @@ def app_server(
     mock_db: EnhancedMockFirestore, mock_auth: MockAuthService
 ) -> Generator[str, None, None]:
     """Start Flask server with mocks."""
-    # Move pickaladder import to the very top to ensure it's loaded
-    pickaladder = importlib.import_module("pickaladder")
-
     # Ensure firebase_admin submodules are loaded for patching
     importlib.import_module("firebase_admin.auth")
     importlib.import_module("firebase_admin.firestore")
@@ -415,9 +391,11 @@ def app_server(
         firebase_admin.firestore, "ArrayRemove", side_effect=mock_array_remove
     )
     p10 = patch.object(firebase_admin.firestore, "FieldFilter", MockFieldFilter)
-    p11 = patch.object(firebase_admin.firestore, "transactional", lambda x: x)
+    p11 = patch.object(
+        firebase_admin.firestore, "transactional", side_effect=lambda x: x
+    )
 
-    # Start p1 through p11 immediately after definitions
+    # Start p1 through p11 BEFORE importing pickaladder to ensure decorators are patched
     p1.start()
     p2.start()
     p3.start()
@@ -430,10 +408,13 @@ def app_server(
     p10.start()
     p11.start()
 
+    # Move pickaladder import AFTER patching
+    pickaladder = importlib.import_module("pickaladder")
+
     os.environ["FIREBASE_PROJECT_ID"] = "test-project"
-    os.environ["SECRET_KEY"] = "dev"  # nosec
-    os.environ["MAIL_USERNAME"] = "test"  # nosec
-    os.environ["MAIL_PASSWORD"] = "test"  # nosec
+    os.environ["SECRET_KEY"] = "dev"
+    os.environ["MAIL_USERNAME"] = "test"
+    os.environ["MAIL_PASSWORD"] = "test"
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
 
