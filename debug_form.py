@@ -4,13 +4,15 @@ from wtforms import StringField
 from wtforms.validators import DataRequired
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'test'
-app.config['WTF_CSRF_ENABLED'] = False
+app.config["SECRET_KEY"] = "test"
+app.config["WTF_CSRF_ENABLED"] = False
+
 
 class MyForm(FlaskForm):
-    name = StringField('Name', validators=[DataRequired()])
+    name = StringField("Name", validators=[DataRequired()])
 
-@app.route('/test', methods=['POST'])
+
+@app.route("/test", methods=["POST"])
 def test():
     form = MyForm()
     print(f"Form data: {form.data}")
@@ -20,6 +22,7 @@ def test():
     else:
         return f"Invalid: {form.errors}"
 
+
 with app.test_client() as client:
-    response = client.post('/test', data={'name': 'John'})
+    response = client.post("/test", data={"name": "John"})
     print(f"Response: {response.data}")
