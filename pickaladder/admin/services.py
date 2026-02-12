@@ -1,7 +1,7 @@
 """Service layer for admin-related operations."""
 
 import datetime
-from typing import Any
+from typing import Any, Dict, List  # noqa: UP035
 
 from firebase_admin import auth, firestore
 
@@ -44,6 +44,29 @@ class AdminService:
             "active_tournaments": active_tournaments,
             "recent_matches": recent_matches,
         }
+
+    @staticmethod
+    def build_friend_graph(db: Any) -> Dict[str, List[Dict[str, Any]]]:  # noqa: UP006
+        """Build a dictionary of nodes and edges for a friendship graph."""
+        users = db.collection("users").stream()
+        nodes = []
+        edges = []
+        for user in users:
+            user_data = user.to_dict()
+            nodes.append({"id": user.id, "label": user_data.get("username", user.id)})
+            # Fetch friends for this user
+            friends_query = (
+                db.collection("users")
+                .document(user.id)
+                .collection("friends")
+                .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+                .stream()
+            )
+            for friend in friends_query:
+                # Add edge only once
+                if user.id < friend.id:
+                    edges.append({"from": user.id, "to": friend.id})
+        return {"nodes": nodes, "edges": edges}
 
     @staticmethod
     def toggle_setting(db: Any, setting_key: str) -> bool:
