@@ -47,6 +47,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 "pickaladder.user.services.profile.storage",
                 new=self.mock_storage_service,
             ),
+            "profile_auth": patch("pickaladder.user.services.profile.auth"),
+            "core_auth": patch("pickaladder.user.services.core.auth"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
 
