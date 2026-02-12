@@ -11,16 +11,16 @@ class AdminService:
 
     @staticmethod
     def get_admin_stats(db: Any) -> dict[str, Any]:
-        """Fetch high-level stats for the admin dashboard using efficient count aggregations."""
+        """Fetch high-level stats for the admin dashboard using aggregations."""
         # Total Users
-        total_users = db.collection("users").count().get()[0][0].value
+        total_users = db.collection("users").count().get()[0].value
 
         # Active Tournaments (status != 'Completed')
         active_tournaments = (
             db.collection("tournaments")
             .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
             .count()
-            .get()[0][0]
+            .get()[0]
             .value
         )
 
@@ -30,9 +30,9 @@ class AdminService:
         )
         recent_matches = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))
+            .where(filter=firestore.FieldFilter("matchDate", ">=", yesterday))
             .count()
-            .get()[0][0]
+            .get()[0]
             .value
         )
 
@@ -110,36 +110,3 @@ class AdminService:
         auth.update_user(user_id, email_verified=True)
         user_ref = db.collection("users").document(user_id)
         user_ref.update({"email_verified": True})
-
-    @staticmethod
-    def get_admin_stats(db: Any) -> Dict[str, Any]:
-        """Get high-level stats for the admin dashboard."""
-        from datetime import datetime, timedelta, timezone
-
-        from firebase_admin import firestore
-
-        # User Count
-        total_users = len(db.collection("users").get())
-
-        # Active Tournaments
-        active_tournaments = len(
-            db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
-            .get()
-        )
-
-        # Recent Matches (Since yesterday at midnight)
-        yesterday = datetime.now(timezone.utc).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        ) - timedelta(days=1)
-        recent_matches = len(
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("matchDate", ">=", yesterday))
-            .get()
-        )
-
-        return {
-            "total_users": total_users,
-            "active_tournaments": active_tournaments,
-            "recent_matches": recent_matches,
-        }
