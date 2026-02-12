@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 from pickaladder import create_app
 
 if TYPE_CHECKING:
-    from flask import Response
+    pass
 
 
 class PWATestCase(unittest.TestCase):
@@ -56,7 +56,7 @@ class PWATestCase(unittest.TestCase):
         # we want to be safe. Or just use the test client on a simple route.
 
         @self.app.route("/test_layout")
-        def test_layout() -> Response:
+        def test_layout() -> str:
             from flask import render_template
 
             return render_template("layout.html")

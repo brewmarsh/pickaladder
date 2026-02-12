@@ -16,9 +16,6 @@ MOCK_PROFILE_USER_ID = "user2"
 MOCK_FIREBASE_TOKEN_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user1@example.com"}
 MOCK_FIRESTORE_USER_DATA = {"name": "User One", "isAdmin": True, "uid": "user1"}
 
-# Constants for test values
-TEST_DUPR_RATING = 5.5
-
 
 class UserRoutesFirebaseTestCase(unittest.TestCase):
     """Test case for the user blueprint."""
@@ -37,10 +34,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
-            "auth_core": patch("pickaladder.user.services.core.auth"),
-            "storage_core": patch("pickaladder.user.services.core.storage"),
-            "auth_profile": patch("pickaladder.user.services.profile.auth"),
-            "storage_profile": patch("pickaladder.user.services.profile.storage"),
+            "storage_service": patch("pickaladder.user.services.core.storage"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
 
@@ -92,24 +86,18 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={
-                "dark_mode": "y",
-                "dupr_rating": TEST_DUPR_RATING,
-                "username": "newuser",
-                "name": "New Name",
-                "email": "new@example.com",
-            },
+            data={"dark_mode": "y", "dupr_rating": 5.5, "username": "newuser"},
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated successfully.", response.data)
-        self.assertTrue(mock_user_doc.update.called)
+        self.assertIn(b"Settings updated!", response.data)
+        mock_user_doc.update.assert_called_once()
 
     def test_update_profile_picture_upload(self) -> None:
         """Test successfully uploading a profile picture."""
         self._set_session_user()
         mock_user_doc = self._mock_firestore_user()
-        mock_storage = self.mocks["storage_profile"]
+        mock_storage = self.mocks["storage_service"]
         mock_bucket = mock_storage.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
         mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test.jpg"
@@ -117,8 +105,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         data = {
             "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
             "username": "newuser",
-            "name": "New Name",
-            "email": "new@example.com",
         }
         response = self.client.post(
             "/user/settings",
@@ -127,21 +113,17 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated successfully.", response.data)
+        self.assertIn(b"Settings updated!", response.data)
         mock_storage.bucket.assert_called_once()
         mock_bucket.blob.assert_called_once_with(
             f"profile_pictures/{MOCK_USER_ID}/test.png"
         )
         mock_blob.upload_from_filename.assert_called_once()
         mock_blob.make_public.assert_called_once()
-        # Verify that profilePictureUrl was included in one of the update calls
-        all_updates = [call[0][0] for call in mock_user_doc.update.call_args_list]
-        found_url = any(
-            u.get("profilePictureUrl")
-            == "https://storage.googleapis.com/test-bucket/test.jpg"
-            for u in all_updates
+        self.assertEqual(
+            mock_user_doc.update.call_args[0][0]["profilePictureUrl"],
+            "https://storage.googleapis.com/test-bucket/test.jpg",
         )
-        self.assertTrue(found_url)
 
     def test_update_dupr_and_dark_mode(self) -> None:
         """Test updating DUPR rating and dark mode settings."""
@@ -150,26 +132,15 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={
-                "dark_mode": "y",
-                "dupr_rating": str(TEST_DUPR_RATING),
-                "username": "newuser",
-                "name": "New Name",
-                "email": "new@example.com",
-            },
+            data={"dark_mode": "y", "dupr_rating": "5.5", "username": "newuser"},
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated successfully.", response.data)
-
-        all_updates = [call[0][0] for call in mock_user_doc.update.call_args_list]
-        # First call has dark_mode, second call (from process_profile_update)
-        # has duprRating
-        found_dark_mode = any(u.get("dark_mode") is True for u in all_updates)
-        found_dupr = any(u.get("duprRating") == TEST_DUPR_RATING for u in all_updates)
-
-        self.assertTrue(found_dark_mode)
-        self.assertTrue(found_dupr)
+        self.assertIn(b"Settings updated!", response.data)
+        # Note: update_settings now uses a dictionary with multiple fields
+        update_call_args = mock_user_doc.update.call_args[0][0]
+        self.assertEqual(update_call_args["dark_mode"], True)
+        self.assertEqual(update_call_args["duprRating"], 5.5)
 
     def _setup_dashboard_mocks(self, mock_db: MagicMock) -> None:
         """Set up specific mocks for the dashboard API tests."""

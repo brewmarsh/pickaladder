@@ -14,12 +14,13 @@ from flask import (
     request,
     url_for,
 )
+from flask_login import current_user
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
 
 from . import bp
-from .forms import SettingsForm, UpdateUserForm
+from .forms import EditProfileForm, UpdateUserForm
 from .services import UserService
 
 if TYPE_CHECKING:
@@ -38,45 +39,17 @@ class MockPagination:
 @bp.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings() -> Any:
-    """Unified user settings page."""
-    db = firestore.client()
-    user_id = g.user["uid"]
-    form = SettingsForm()
-
-    if request.method == "GET":
-        form.name.data = g.user.get("name")
-        form.username.data = g.user.get("username")
-        form.email.data = g.user.get("email")
-        form.dupr_id.data = g.user.get("dupr_id")
-        form.dupr_rating.data = g.user.get("duprRating") or g.user.get("dupr_rating")
-        form.dark_mode.data = g.user.get("dark_mode")
-
+    """Handle user settings."""
+    form = EditProfileForm(obj=current_user)
     if form.validate_on_submit():
-        # Handle profile picture upload
-        profile_pic_url = None
-        if form.profile_picture.data:
-            profile_pic_url = UserService.upload_profile_picture(
-                user_id, form.profile_picture.data
-            )
-
-        # Update base fields (dark_mode and profile_pic if uploaded)
-        update_data: dict[str, Any] = {"dark_mode": bool(form.dark_mode.data)}
-        if profile_pic_url:
-            update_data["profilePictureUrl"] = profile_pic_url
-
-        UserService.update_user_profile(db, user_id, update_data)
-
-        # Handle other updates (name, username, email, dupr)
-        res = UserService.process_profile_update(db, user_id, form, g.user)
-
+        res = UserService.update_settings(
+            firestore.client(), g.user["uid"], form, form.profile_picture.data
+        )
         if res["success"]:
-            if "info" in res:
-                flash(res["info"], "info")
-            flash("Settings updated successfully.", "success")
+            flash("Settings updated!", "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
-
-    return render_template("user/settings.html", form=form, user=g.user)
+    return render_template("user/settings.html", form=form)
 
 
 @bp.route("/edit_profile", methods=["GET", "POST"])

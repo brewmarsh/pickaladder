@@ -1,5 +1,7 @@
 const CACHE_NAME = 'pickaladder-cache-v1';
 const ASSETS_TO_CACHE = [
+  '/static/css/variables.css',
+  '/static/css/layout.css',
   '/static/css/layout-utils.css',
   '/static/js/main.js',
   '/static/img/logo.png',
