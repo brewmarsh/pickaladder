@@ -187,7 +187,9 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_users_coll.document.return_value = self.mock_user_doc
 
         # Friends/requests/groups mocks
-        self.mock_user_doc.collection.return_value.where.return_value.stream.return_value = []
+        (
+            self.mock_user_doc.collection.return_value.where.return_value.stream.return_value
+        ) = []
         (
             self.mock_user_doc.collection.return_value.where.return_value.where.return_value.stream.return_value
         ) = []
