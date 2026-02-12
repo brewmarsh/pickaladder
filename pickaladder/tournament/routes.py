@@ -67,6 +67,24 @@ def view_tournament(tournament_id: str) -> Any:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
 
+    # Handle Claim Team partnership if present in URL
+    claim_team_id = request.args.get("claim_team")
+    claim_team_data = None
+    if claim_team_id:
+        db = firestore.client()
+        t_ref = db.collection("tournaments").document(tournament_id)
+        team_doc = t_ref.collection("teams").document(claim_team_id).get()
+        if team_doc.exists:
+            claim_team_data = team_doc.to_dict()
+            claim_team_data["id"] = team_doc.id
+            # Fetch P1 name
+            p1_doc = db.collection("users").document(claim_team_data["p1_uid"]).get()
+            claim_team_data["p1_name"] = (
+                smart_display_name(p1_doc.to_dict()) if p1_doc.exists else "Someone"
+            )
+
+    details["claim_team_data"] = claim_team_data
+
     # Handle Invitations form
     invite_form = InvitePlayerForm()
     invitable_users = details.get("invitable_users", [])
@@ -257,20 +275,55 @@ def join_tournament(tournament_id: str) -> Any:
 @login_required
 def register_team(tournament_id: str) -> Any:
     """Register a doubles team for the tournament."""
-    partner_id = request.form.get("partner_id")
-    team_name = request.form.get("team_name")
-
-    if not partner_id:
-        flash("You must select a partner.", "warning")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    # Check if it's an AJAX request (invite link generation)
+    if request.is_json:
+        data = request.get_json()
+        team_name = data.get("team_name")
+        partner_id = data.get("partner_id")  # Might be None for invite link
+    else:
+        partner_id = request.form.get("partner_id")
+        team_name = request.form.get("team_name")
 
     try:
-        TournamentService.register_team(
+        team_id = TournamentService.register_team(
             tournament_id, g.user["uid"], partner_id, team_name
         )
-        flash("Team registration pending. Your partner must accept.", "info")
+
+        if request.is_json:
+            invite_link = url_for(
+                ".view_tournament",
+                tournament_id=tournament_id,
+                claim_team=team_id,
+                _external=True,
+            )
+            return jsonify({"success": True, "team_id": team_id, "link": invite_link})
+
+        if not partner_id:
+            flash("Invite link generated!", "success")
+        else:
+            flash("Team registration pending. Your partner must accept.", "info")
     except Exception as e:
+        if request.is_json:
+            return jsonify({"success": False, "error": str(e)}), 400
         flash(f"Error registering team: {e}", "danger")
+
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/claim_team/<string:team_id>", methods=["POST"])
+@login_required
+def claim_team(tournament_id: str, team_id: str) -> Any:
+    """Claim a placeholder team partnership."""
+    try:
+        success = TournamentService.claim_team_partnership(
+            tournament_id, team_id, g.user["uid"]
+        )
+        if success:
+            flash("You have joined the team!", "success")
+        else:
+            flash("Unable to join team. It may be full or you are already in it.", "danger")
+    except Exception as e:
+        flash(f"Error: {e}", "danger")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 

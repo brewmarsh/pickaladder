@@ -1,6 +1,21 @@
 {% extends "layout.html" %}
 {% block title %}{{ tournament.name }}{% endblock %}
 {% block content %}
+{% if claim_team_data %}
+<div class="alert alert-info border-info shadow-sm mb-4" style="margin: 20px; padding: 20px; border-left: 5px solid var(--accent-color);">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h4 class="alert-heading mb-1" style="color: var(--text-color);">👥 Team Invitation</h4>
+            <p class="mb-0"><strong>{{ claim_team_data.p1_name }}</strong> has invited you to join team <strong>"{{ claim_team_data.team_name }}"</strong> for this tournament!</p>
+        </div>
+        <form action="{{ url_for('.claim_team', tournament_id=tournament.id, team_id=claim_team_data.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary">Join Team</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
 <div class="card hero-stats-card">
     {% if is_owner %}
         <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" title="Edit Tournament">⚙️</a>
@@ -339,14 +354,38 @@ document.addEventListener('click', function(e) {
 });
 
 function generateInviteLink() {
-    const link = window.location.origin + "{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}?ref={{ g.user.uid }}";
-    const container = document.getElementById('inviteLinkContainer');
-    const input = document.getElementById('inviteLinkInput');
-    input.value = link;
-    container.style.display = 'block';
-    input.select();
-    document.execCommand('copy');
-    alert('Invite link copied to clipboard!');
+    const teamNameInput = document.querySelector('input[name="team_name"]');
+    const teamName = teamNameInput ? teamNameInput.value : '';
+    if (!teamName) {
+        alert('Please enter a team name first.');
+        return;
+    }
+
+    fetch("{{ url_for('tournament.register_team', tournament_id=tournament.id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            team_name: teamName,
+            partner_id: null
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const container = document.getElementById('inviteLinkContainer');
+            const input = document.getElementById('inviteLinkInput');
+            input.value = data.link;
+            container.style.display = 'block';
+            input.select();
+            document.execCommand('copy');
+            alert('Invite link generated and copied to clipboard!');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
 }
 </script>
 {% endblock %}

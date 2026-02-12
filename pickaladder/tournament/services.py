@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
+from pickaladder.teams.services import TeamService
 from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
@@ -526,7 +527,7 @@ class TournamentService:
     def register_team(
         tournament_id: str,
         p1_uid: str,
-        p2_uid: str,
+        p2_uid: str | None,
         team_name: str,
         db: Client | None = None,
     ) -> str:
@@ -534,13 +535,19 @@ class TournamentService:
         if db is None:
             db = firestore.client()
 
-        team_data = {
+        team_data: dict[str, Any] = {
             "p1_uid": p1_uid,
             "p2_uid": p2_uid,
             "team_name": team_name,
             "status": "PENDING",
             "createdAt": firestore.SERVER_TIMESTAMP,
         }
+
+        if p2_uid:
+            # If partner is already known, link with global team ID
+            team_id = TeamService.get_or_create_team(db, p1_uid, p2_uid)
+            team_data["team_id"] = team_id
+
         ref = (
             db.collection("tournaments")
             .document(tournament_id)
@@ -569,13 +576,19 @@ class TournamentService:
 
         updated = False
         for doc in query:
-            doc.reference.update({"status": "CONFIRMED"})
-            # Also add both players to participants if not already there
-            t_ref = db.collection("tournaments").document(tournament_id)
-            t_data = cast(Any, t_ref.get()).to_dict()
-            p_ids = t_data.get("participant_ids", [])
             data = doc.to_dict()
             p1_uid = data["p1_uid"]
+
+            # Ensure global team exists and link it
+            team_id = TeamService.get_or_create_team(db, p1_uid, user_uid)
+
+            doc.reference.update({"status": "CONFIRMED", "team_id": team_id})
+
+            # Also add both players to participants if not already there
+            t_ref = db.collection("tournaments").document(tournament_id)
+            t_snap = cast(Any, t_ref.get())
+            t_data = t_snap.to_dict()
+            p_ids = t_data.get("participant_ids", [])
 
             new_ids = []
             new_parts = []
@@ -611,6 +624,71 @@ class TournamentService:
         return updated
 
     @staticmethod
+    def claim_team_partnership(
+        tournament_id: str, team_id: str, user_uid: str, db: Client | None = None
+    ) -> bool:
+        """Join a placeholder team via an invite link."""
+        if db is None:
+            db = firestore.client()
+
+        team_ref = (
+            db.collection("tournaments")
+            .document(tournament_id)
+            .collection("teams")
+            .document(team_id)
+        )
+        team_snap = cast(Any, team_ref.get())
+        if not team_snap.exists:
+            return False
+
+        data = team_snap.to_dict()
+        if data.get("p2_uid") or data.get("p1_uid") == user_uid:
+            return False
+
+        p1_uid = data["p1_uid"]
+        global_team_id = TeamService.get_or_create_team(db, p1_uid, user_uid)
+
+        team_ref.update(
+            {"p2_uid": user_uid, "status": "CONFIRMED", "team_id": global_team_id}
+        )
+
+        # Add to tournament participants
+        t_ref = db.collection("tournaments").document(tournament_id)
+        t_data = cast(Any, t_ref.get()).to_dict()
+        p_ids = t_data.get("participant_ids", [])
+
+        new_ids = []
+        new_parts = []
+        if p1_uid not in p_ids:
+            new_ids.append(p1_uid)
+            new_parts.append(
+                {
+                    "userRef": db.collection("users").document(p1_uid),
+                    "status": "accepted",
+                    "team_name": data["team_name"],
+                }
+            )
+        if user_uid not in p_ids:
+            new_ids.append(user_uid)
+            new_parts.append(
+                {
+                    "userRef": db.collection("users").document(user_uid),
+                    "status": "accepted",
+                    "team_name": data["team_name"],
+                }
+            )
+
+        if new_parts:
+            t_ref.update(
+                {
+                    "participants": firestore.ArrayUnion(new_parts),
+                    "participant_ids": firestore.ArrayUnion(new_ids),
+                }
+            )
+
+        return True
+
+    @staticmethod
     def generate_bracket(tournament_id: str, db: Client | None = None) -> list[Any]:
         """Generate a tournament bracket based on participants or teams."""
         if db is None:
@@ -624,14 +702,24 @@ class TournamentService:
         t_data = t_snap.to_dict()
         mode = t_data.get("mode", "SINGLES")
 
+        bracket = []
         if mode == "SINGLES":
             participants = [
                 p
                 for p in t_data.get("participants", [])
                 if p.get("status") == "accepted"
             ]
-            # Simplistic seeding: just list them
-            return participants
+            for p in participants:
+                u_ref = p.get("userRef")
+                u_data = cast(Any, u_ref.get()).to_dict()
+                bracket.append(
+                    {
+                        "id": u_ref.id,
+                        "name": smart_display_name(u_data),
+                        "type": "player",
+                        "members": [u_ref.id],
+                    }
+                )
         else:
             # Fetch confirmed teams from sub-collection
             teams_query = (
@@ -639,9 +727,15 @@ class TournamentService:
                 .where(filter=firestore.FieldFilter("status", "==", "CONFIRMED"))
                 .stream()
             )
-            teams = []
             for doc in teams_query:
                 data = doc.to_dict()
-                data["id"] = doc.id
-                teams.append(data)
-            return teams
+                bracket.append(
+                    {
+                        "id": data.get("team_id"),
+                        "name": data.get("team_name"),
+                        "type": "team",
+                        "members": [data.get("p1_uid"), data.get("p2_uid")],
+                        "tournament_team_id": doc.id,
+                    }
+                )
+        return bracket
