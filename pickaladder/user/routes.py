@@ -94,19 +94,11 @@ def dashboard() -> Any:
 
     data = UserService.get_dashboard_data(db, user_id)
 
-    # Calculate engagement features
-    processed_matches = data.get("stats", {}).get("processed_matches", [])
-    all_match_docs = [m["doc"] for m in processed_matches]
-    current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
-    recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
-
     # Remove user from data to avoid conflict with g.user passed to template
     data.pop("user", None)
 
     return render_template(
         "user_dashboard.html",
-        current_streak=current_streak,
-        recent_opponents=recent_opponents,
         user=g.user,
         **data,
     )

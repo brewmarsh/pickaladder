@@ -253,12 +253,15 @@ class MockBatch:
         self.ops = []
 
 
-class MockTransaction:
+class MockTransaction(MagicMock):
     """Mock for firestore.Transaction."""
 
     def __init__(self, db: EnhancedMockFirestore) -> None:
         """Initialize mock transaction."""
+        super().__init__()
+        print(f"DEBUG: Initializing MockTransaction with db {db}")
         self.db = db
+        self._read_only = False
 
     def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
         """Mock get."""

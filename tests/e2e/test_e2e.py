@@ -137,7 +137,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Record Match')")
 
     # Check flash message
-    expect(page.locator(".alert-success")).to_contain_text(
+    expect(page.locator(".toast")).to_contain_text(
         "Match recorded successfully"
     )
 
@@ -156,7 +156,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Record Match')")
 
     expect(page.locator("h1")).to_contain_text("Pickleballers")
-    expect(page.locator(".alert-success")).to_contain_text(
+    expect(page.locator(".toast")).to_contain_text(
         "Match recorded successfully"
     )
 
@@ -181,12 +181,12 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     # Delete match involving user2 (first one)
     with page.expect_navigation():
         page.click("button:has-text('Delete')")
-    expect(page.locator(".alert-success")).to_contain_text("Match deleted successfully")
+    expect(page.locator(".toast")).to_contain_text("Match deleted successfully")
 
     # Delete second match
     with page.expect_navigation():
         page.click("button:has-text('Delete')")
-    expect(page.locator(".alert-success")).to_contain_text("Match deleted successfully")
+    expect(page.locator(".toast")).to_contain_text("Match deleted successfully")
 
     # 10. Update Group Details (Login as Admin - already logged in)
     with page.expect_navigation():

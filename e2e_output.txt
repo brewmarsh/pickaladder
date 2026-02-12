@@ -1,0 +1,530 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+plugins: base-url-2.1.0, flask-1.3.0, mock-3.15.1, Faker-40.4.0, playwright-0.7.2, anyio-4.12.1
+collected 1 item
+
+tests/e2e/test_e2e.py F                                                  [100%]
+
+=================================== FAILURES ===================================
+_________________________ test_user_journey[chromium] __________________________
+
+app_server = 'http://localhost:5002'
+page_with_firebase = <Page url='http://localhost:5002/match/record'>
+mock_db = <conftest.EnhancedMockFirestore object at 0x7f6c6c5639e0>
+
+    def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -> None:
+        """Run a complete user journey test."""
+        page = page_with_firebase
+        base_url = app_server
+
+        # Auto-accept dialogs (alerts, confirms)
+        page.on("dialog", lambda dialog: dialog.accept())
+
+        # 1. Account creation (Admin)
+        page.goto(f"{base_url}/auth/login")
+
+        if "/auth/install" in page.url:
+            page.fill("input[name='username']", "admin")
+            page.fill("input[name='email']", "admin@example.com")
+            page.fill("input[name='password']", "password")
+            page.fill("input[name='name']", "Admin User")
+            with page.expect_navigation():
+                page.click("button:has-text('Create Admin')")
+
+            expect(page.locator("h2")).to_contain_text("Login")
+            page.fill("input[name='email']", "admin@example.com")
+            page.fill("input[name='password']", "password")
+            with page.expect_navigation():
+                page.click("button:has-text('Login')")
+
+        page.click(".btn-edit-gear")
+        expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
+
+        # Logout
+        page.goto(f"{base_url}/auth/logout")
+        expect(page.locator("h2")).to_contain_text("Login")
+
+        # 2. Register User 2
+        with page.expect_navigation():
+            page.click("text=Register")
+        page.wait_for_url("**/auth/register")
+        page.fill("input[name='username']", "user2")
+        page.fill("input[name='email']", "user2@example.com")
+        page.fill("input[name='password']", "MyPassword123")
+        page.fill("input[name='confirm_password']", "MyPassword123")
+        page.fill("input[name='name']", "User Two")
+        page.fill("input[name='dupr_rating']", "3.5")
+        with page.expect_navigation():
+            page.click("button:has-text('Register')")
+
+        # Now login as User Two
+        expect(page.locator("h2")).to_contain_text("Login")
+        page.fill("input[name='email']", "user2@example.com")
+        page.fill("input[name='password']", "MyPassword123")
+        with page.expect_navigation():
+            page.click("button:has-text('Login')")
+
+        page.click(".btn-edit-gear")
+        expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
+
+        # 3. Add Friend (User 2 invites Admin)
+        with page.expect_navigation():
+            page.click("text=Community")
+
+        page.fill("input[name='search']", "admin")
+        with page.expect_navigation():
+            page.click("button:has-text('Search')")
+
+        # Click Add Friend for Admin User
+        with page.expect_navigation():
+            page.click("button:has-text('Add Friend')")
+        # After reload, the user should be in the "Sent Friend Requests" section
+        expect(page.locator(".requests-section", has_text="admin")).to_be_visible(
+            timeout=5000
+        )
+
+        # Logout User 2, Login Admin
+        page.goto(f"{base_url}/auth/logout")
+        expect(page.locator("h2")).to_contain_text("Login")
+
+        page.fill("input[name='email']", "admin@example.com")
+        page.fill("input[name='password']", "password")
+        with page.expect_navigation():
+            page.click("button:has-text('Login')")
+
+        # Accept Friend Request
+        with page.expect_navigation():
+            page.click("text=Community")
+        expect(page.locator(".incoming-requests-section", has_text="user2")).to_be_visible()
+        with page.expect_navigation():
+            page.click("button:has-text('Accept')")
+        expect(page.locator(".friend-card", has_text="user2")).to_be_visible()
+
+        # 4. Create Group
+        with page.expect_navigation():
+            page.click("text=Groups")
+        with page.expect_navigation():
+            page.click("text=Create Group")
+        page.fill("input[name='name']", "Pickleballers")
+        page.fill("input[name='location']", "Test Court")
+        with page.expect_navigation():
+            page.click("button:has-text('Create Group')")
+
+        expect(page.locator("h1")).to_contain_text("Pickleballers")
+
+        # 5. Invite Friend to Group
+        page.click("summary:has-text('Manage Group & Members')")
+        page.select_option("select[name='friend']", value="user2")
+        with page.expect_navigation():
+            page.click("button:has-text('Invite Friend')")
+
+        # Verify User 2 is added (Logout Admin, Login User 2)
+        page.goto(f"{base_url}/auth/logout")
+
+        page.fill("input[name='email']", "user2@example.com")
+        page.fill("input[name='password']", "MyPassword123")
+        with page.expect_navigation():
+            page.click("button:has-text('Login')")
+
+        # User 2 should see the group
+        with page.expect_navigation():
+            page.click("text=Groups")
+        expect(page.locator("text=Pickleballers")).to_be_visible()
+
+        # 6. Score Individual Game (User 2 vs Admin)
+        page.goto(f"{base_url}/match/record")
+        page.select_option("select[name='match_type']", value="singles")
+        page.select_option("select[name='player1']", value="user2")
+        page.select_option("select[name='player2']", value="admin")
+        page.fill("input[name='player1_score']", "11")
+        page.fill("input[name='player2_score']", "9")
+        with page.expect_navigation():
+            page.click("button:has-text('Record Match')")
+
+        # Check flash message
+>       expect(page.locator(".alert-success")).to_contain_text(
+            "Match recorded successfully"
+        )
+E       AssertionError: Locator expected to contain text 'Match recorded successfully'
+E       Actual value: None
+E       Error: element(s) not found
+E       Call log:
+E         - Expect "to_contain_text" with timeout 5000ms
+E         - waiting for locator(".alert-success")
+
+tests/e2e/test_e2e.py:140: AssertionError
+------------------------------ Captured log call -------------------------------
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "[32mGET /auth/login HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /auth/install HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:16] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "[32mPOST /auth/install HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /auth/login HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "POST /auth/session_login HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /user/dashboard HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /user/settings HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "[32mGET /auth/logout HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /auth/login HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:17] "GET /auth/register HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "[32mPOST /auth/register HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /auth/login HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "POST /auth/session_login HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /user/dashboard HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /user/settings HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:18] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /user/community HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /user/community?search=admin HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "POST /user/send_friend_request/admin HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /user/community?search=admin HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:19] "[32mGET /auth/logout HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /auth/login HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "POST /auth/session_login HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /user/dashboard HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /user/community HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "[32mPOST /user/accept_friend_request/user2 HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /user/community HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:20] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /group/ HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:21] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /group/create HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "[32mPOST /group/create HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /group/uKCCuDq1YDbQwGPUE6kq HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/user_icon.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "[32mPOST /group/uKCCuDq1YDbQwGPUE6kq HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /group/uKCCuDq1YDbQwGPUE6kq HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:22] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/user_icon.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "[32mGET /auth/logout HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /auth/login HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "POST /auth/session_login HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /user/dashboard HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /group/ HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/user_icon.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /match/record HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/js/optimistic_submission.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:23] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "POST /match/record HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/js/optimistic_submission.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 17:55:24] "GET /static/js/navbar.js HTTP/1.1" 200 -
+=========================== short test summary info ============================
+FAILED tests/e2e/test_e2e.py::test_user_journey[chromium] - AssertionError: L...
+============================== 1 failed in 14.76s ==============================
