@@ -42,12 +42,14 @@ class MatchService:
     ) -> None:
         """Record a match and update stats using batched writes."""
         # 1. Read current snapshots (Optimized to 1 round-trip for reads)
-        snapshots = db.get_all([p1_ref, p2_ref])
-        p1_snapshot = snapshots[0]
-        p2_snapshot = snapshots[1]
+        snapshots_iterable = db.get_all([p1_ref, p2_ref])
+        snapshots_map = {snap.id: snap for snap in snapshots_iterable if snap.exists}
 
-        p1_data = p1_snapshot.to_dict() or {}
-        p2_data = p2_snapshot.to_dict() or {}
+        p1_snapshot = snapshots_map.get(p1_ref.id)
+        p2_snapshot = snapshots_map.get(p2_ref.id)
+
+        p1_data = p1_snapshot.to_dict() if p1_snapshot else {}
+        p2_data = p2_snapshot.to_dict() if p2_snapshot else {}
 
         # 2. Calculate New Stats (Server-Side Authority)
         score1 = match_data["player1Score"]

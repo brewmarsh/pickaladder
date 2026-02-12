@@ -16,12 +16,16 @@ class MatchSecurityTestCase(unittest.TestCase):
     """Test case for match submission security."""
 
     @patch("pickaladder.match.services.MatchService.get_candidate_player_ids")
-    @patch("pickaladder.match.services.MatchService._record_match_transaction")
+    @patch("pickaladder.match.services.MatchService._record_match_batch")
     def test_injected_fields_ignored(
-        self, mock_record_tx: MagicMock, mock_get_candidates: MagicMock
+        self, mock_record_batch: MagicMock, mock_get_candidates: MagicMock
     ) -> None:
         """Test that injected fields like is_winner are ignored."""
         mock_db = MagicMock()
+        # Mock batch
+        mock_batch = MagicMock()
+        mock_db.batch.return_value = mock_batch
+
         mock_get_candidates.return_value = {"player1", "player2"}
 
         form_data = {
@@ -39,11 +43,13 @@ class MatchSecurityTestCase(unittest.TestCase):
 
         MatchService.process_match_submission(mock_db, form_data, current_user)
 
-        # Verify mock_record_tx was called
-        self.assertTrue(mock_record_tx.called)
+        # Verify mock_record_batch was called
+        self.assertTrue(mock_record_batch.called)
 
-        # Check match_data passed to transaction
-        match_data = mock_record_tx.call_args[0][5]
+        # Check match_data passed to record_batch
+        # _record_match_batch(db, batch, match_ref, p1_ref, p2_ref, user_ref, match_data, match_type)
+        # index of match_data is 6
+        match_data = mock_record_batch.call_args[0][6]
 
         self.assertNotIn("is_winner", match_data)
         self.assertNotIn("is_upset", match_data)
