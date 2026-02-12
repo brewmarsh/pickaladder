@@ -14,7 +14,12 @@ from pickaladder import create_app
 MOCK_USER_ID = "user1"
 MOCK_PROFILE_USER_ID = "user2"
 MOCK_FIREBASE_TOKEN_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user1@example.com"}
-MOCK_FIRESTORE_USER_DATA = {"name": "User One", "isAdmin": True, "uid": "user1"}
+MOCK_FIRESTORE_USER_DATA = {
+    "name": "User One",
+    "isAdmin": True,
+    "uid": "user1",
+    "email": "user1@example.com",
+}
 
 
 class UserRoutesFirebaseTestCase(unittest.TestCase):
@@ -23,6 +28,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """Set up a test client and mock the necessary Firebase services."""
         self.mock_firestore_service = MagicMock()
+        self.mock_storage_service = MagicMock()
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore": patch(
@@ -34,7 +40,13 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
-            "storage_service": patch("pickaladder.user.services.core.storage"),
+            "storage_service": patch(
+                "pickaladder.user.services.core.storage", new=self.mock_storage_service
+            ),
+            "profile_storage": patch(
+                "pickaladder.user.services.profile.storage",
+                new=self.mock_storage_service,
+            ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
 
@@ -86,7 +98,13 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={"dark_mode": "y", "dupr_rating": 5.5, "username": "newuser"},
+            data={
+                "name": "User One",
+                "email": "user1@example.com",
+                "dark_mode": "y",
+                "dupr_rating": 5.5,
+                "username": "newuser",
+            },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -97,12 +115,14 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         """Test successfully uploading a profile picture."""
         self._set_session_user()
         mock_user_doc = self._mock_firestore_user()
-        mock_storage = self.mocks["storage_service"]
+        mock_storage = self.mock_storage_service
         mock_bucket = mock_storage.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
         mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test.jpg"
 
         data = {
+            "name": "User One",
+            "email": "user1@example.com",
             "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
             "username": "newuser",
         }
@@ -132,7 +152,13 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={"dark_mode": "y", "dupr_rating": "5.5", "username": "newuser"},
+            data={
+                "name": "User One",
+                "email": "user1@example.com",
+                "dark_mode": "y",
+                "dupr_rating": "5.5",
+                "username": "newuser",
+            },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
