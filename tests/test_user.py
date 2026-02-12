@@ -145,11 +145,11 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             None,
         )
         self.assertIsNotNone(pic_call)
-        assert isinstance(pic_call, dict)
-        self.assertEqual(
-            pic_call["profilePictureUrl"],
-            "https://storage.googleapis.com/test-bucket/test.jpg",
-        )
+        if pic_call is not None:
+            self.assertEqual(
+                pic_call["profilePictureUrl"],
+                "https://storage.googleapis.com/test-bucket/test.jpg",
+            )
 
     def test_update_dupr_and_dark_mode(self) -> None:
         """Test updating DUPR rating and dark mode settings."""
@@ -176,15 +176,15 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             (c for c in update_calls if isinstance(c, dict) and "dark_mode" in c), None
         )
         self.assertIsNotNone(dark_mode_call)
-        assert isinstance(dark_mode_call, dict)
-        self.assertEqual(dark_mode_call["dark_mode"], True)
+        if dark_mode_call is not None:
+            self.assertEqual(dark_mode_call["dark_mode"], True)
 
         dupr_call = next(
             (c for c in update_calls if isinstance(c, dict) and "duprRating" in c), None
         )
         self.assertIsNotNone(dupr_call)
-        assert isinstance(dupr_call, dict)
-        self.assertEqual(dupr_call["duprRating"], 5.5)
+        if dupr_call is not None:
+            self.assertEqual(dupr_call["duprRating"], 5.5)
 
     def _setup_dashboard_mocks(self, mock_db: MagicMock) -> None:
         """Set up specific mocks for the dashboard API tests."""
