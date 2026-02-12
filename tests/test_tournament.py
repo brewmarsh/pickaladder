@@ -80,10 +80,13 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context.pop()
 
     def _set_session_user(self, is_admin: bool = False) -> None:
-        """Set a logged-in user in the session."""
+        """Set a logged-in user in the session and mock DB."""
         with self.client.session_transaction() as sess:
             sess["user_id"] = MOCK_USER_ID
             sess["is_admin"] = is_admin
+        self.mock_db.collection("users").document(MOCK_USER_ID).update(
+            {"isAdmin": is_admin}
+        )
         self.mocks["verify_id_token"].return_value = MOCK_USER_PAYLOAD
 
     def _get_auth_headers(self) -> dict[str, str]:

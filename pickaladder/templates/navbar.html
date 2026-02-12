@@ -43,6 +43,10 @@
                     <span class="notification-badge">{{ pending_tournament_invites|length }}</span>
                     {% endif %}
                 </a>
+                {% if g.user.is_admin %}
+                <a href="{{ url_for('tournament.create_tournament') }}"
+                    class="nav-link {{ 'active' if request.endpoint == 'tournament.create_tournament' }}">➕ New Tournament</a>
+                {% endif %}
                 <a href="{{ url_for('match.leaderboard') }}"
                     class="nav-link {{ 'active' if request.endpoint == 'match.leaderboard' }}">🏆 Leaderboard</a>
                 {% else %}
@@ -100,6 +104,10 @@
                 Groups</a>
             <a href="{{ url_for('tournament.list_tournaments') }}" class="mobile-nav-link"><i
                     class="fas fa-trophy me-2"></i> Tournaments</a>
+            {% if g.user.is_admin %}
+            <a href="{{ url_for('tournament.create_tournament') }}" class="mobile-nav-link"><i
+                    class="fas fa-plus me-2"></i> New Tournament</a>
+            {% endif %}
             <a href="{{ url_for('match.leaderboard') }}" class="mobile-nav-link"><i class="fas fa-chart-line me-2"></i>
                 Leaderboard</a>
             <div class="mobile-nav-divider"></div>
