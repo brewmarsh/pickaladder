@@ -244,7 +244,20 @@ def record_match() -> Any:
 
         try:
             # Capture the ID from the service call (Feature Branch Logic)
-            match_id = MatchService.process_match_submission(db, form.data, g.user)
+            match_id, new_badges = MatchService.process_match_submission(
+                db, form.data, g.user
+            )
+
+            # Flash messages for current user's new badges
+            if user_id in new_badges:
+                from pickaladder.badges.models import BADGES
+
+                for badge_id in new_badges[user_id]:
+                    badge = BADGES.get(badge_id, {})
+                    flash(
+                        f"New Badge Unlocked! {badge.get('icon', '')} {badge.get('name', 'Badge')}",
+                        "success",
+                    )
 
             if request.is_json:
                 return jsonify(

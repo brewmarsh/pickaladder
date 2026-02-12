@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
+from pickaladder.badges.services import BadgeService
+
 from pickaladder.core.constants import GLOBAL_LEADERBOARD_MIN_GAMES
 from pickaladder.teams.services import TeamService
 
@@ -224,7 +226,19 @@ class MatchService:
             match_type,
         )
 
-        return new_match_ref.id
+        # Badge Evaluation
+        participants = [p1_id, p2_id]
+        if match_type == "doubles":
+            participants.extend([partner_id, opponent2_id])
+
+        new_badges = {}
+        for pid in participants:
+            if pid:
+                awarded = BadgeService.evaluate_post_match(db, pid)
+                if awarded:
+                    new_badges[pid] = awarded
+
+        return new_match_ref.id, new_badges
 
     @staticmethod
     def _resolve_teams(
