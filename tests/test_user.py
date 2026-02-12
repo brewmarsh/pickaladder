@@ -142,7 +142,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             ),
             None,
         )
-        assert profile_pic_update is not None
+        assert profile_pic_update is not None  # nosec B101
         self.assertEqual(
             profile_pic_update["profilePictureUrl"],
             "https://storage.googleapis.com/test-bucket/test.jpg",
@@ -177,7 +177,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             ),
             None,
         )
-        assert dark_mode_update is not None
+        assert dark_mode_update is not None  # nosec B101
         self.assertEqual(dark_mode_update["dark_mode"], True)
 
         # duprRating is updated via process_profile_update
@@ -189,7 +189,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             ),
             None,
         )
-        assert dupr_update is not None
+        assert dupr_update is not None  # nosec B101
         self.assertEqual(dupr_update["duprRating"], 5.5)
 
     def _setup_dashboard_mocks(self, mock_db: MagicMock) -> None:
