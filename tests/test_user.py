@@ -35,7 +35,9 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
             "storage_service": patch("pickaladder.user.services.core.storage"),
+            "profile_storage": patch("pickaladder.user.services.profile.storage"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
+            "auth": patch("pickaladder.user.services.core.auth"),
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}
@@ -86,7 +88,13 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={"dark_mode": "y", "dupr_rating": 5.5, "username": "newuser"},
+            data={
+                "dark_mode": "y",
+                "dupr_rating": 5.5,
+                "username": "newuser",
+                "name": "New User",
+                "email": "user1@example.com",
+            },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -97,7 +105,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         """Test successfully uploading a profile picture."""
         self._set_session_user()
         mock_user_doc = self._mock_firestore_user()
-        mock_storage = self.mocks["storage_service"]
+        mock_storage = self.mocks["profile_storage"]
         mock_bucket = mock_storage.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
         mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test.jpg"
@@ -105,6 +113,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         data = {
             "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
             "username": "newuser",
+            "name": "New User",
+            "email": "user1@example.com",
         }
         response = self.client.post(
             "/user/settings",
@@ -132,7 +142,13 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={"dark_mode": "y", "dupr_rating": "5.5", "username": "newuser"},
+            data={
+                "dark_mode": "y",
+                "dupr_rating": "5.5",
+                "username": "newuser",
+                "name": "New User",
+                "email": "user1@example.com",
+            },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
