@@ -255,19 +255,16 @@ def record_match() -> Any:
                     }
                 ), 200
 
+            flash("Match recorded successfully.", "success")
             active_tid = form.tournament_id.data or tournament_id
             active_gid = form.group_id.data or group_id
-
             if active_tid:
-                flash("Match recorded successfully.", "success")
                 return redirect(
                     url_for("tournament.view_tournament", tournament_id=active_tid)
                 )
             if active_gid:
-                flash("Match recorded successfully.", "success")
                 return redirect(url_for("group.view_group", group_id=active_gid))
-
-            return redirect(url_for("match.view_match_summary", match_id=match_id))
+            return redirect(url_for("user.dashboard"))
         except ValueError as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400

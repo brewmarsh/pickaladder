@@ -38,18 +38,15 @@ class MockPagination:
 @bp.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings() -> Any:
-    """Unified user settings page."""
-    db = firestore.client()
-    user_id = g.user["uid"]
-    form = SettingsForm()
-
+    """Handle user settings."""
+    form = SettingsForm(obj=g.user)
     # Ensure dupr_rating is populated from duprRating if needed
     if request.method == "GET":
         form.dupr_rating.data = g.user.get("duprRating") or g.user.get("dupr_rating")
 
     if form.validate_on_submit():
         res = UserService.update_settings(
-            db, user_id, form, form.profile_picture.data
+            firestore.client(), g.user["uid"], form, form.profile_picture.data
         )
         if res["success"]:
             if "info" in res:
@@ -57,7 +54,6 @@ def settings() -> Any:
             flash("Settings updated!", "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
-        
     return render_template("user/settings.html", form=form, user=g.user)
 
 
