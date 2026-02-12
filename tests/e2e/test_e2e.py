@@ -209,7 +209,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("form[action*='group'] input[name='name']", "New Guy")
     page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
     with page.expect_navigation():
-        page.click("input[value='Send Invite']")
+        page.click("button:has-text('Send Invite')")
     expect(page.locator(".toast")).to_contain_text("Invitation is being sent")
 
     # Verify invite token was created
