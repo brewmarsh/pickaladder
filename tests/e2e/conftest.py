@@ -259,6 +259,21 @@ class MockTransaction:
     def __init__(self, db: EnhancedMockFirestore) -> None:
         """Initialize mock transaction."""
         self.db = db
+        self._read_only = False
+        self._id = "mock_id"
+        self._max_attempts = 5
+
+    def _rollback(self) -> None:
+        """Mock rollback."""
+        pass
+
+    def __getattr__(self, name: str) -> Any:
+        """Handle missing attributes by returning a no-op or mock."""
+        if name.startswith("_"):
+            return MagicMock()
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        )
 
     def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
         """Mock get."""

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import (
@@ -54,9 +54,10 @@ def settings() -> Any:
     if form.validate_on_submit():
         # Handle email change if needed
         if form.email.data and form.email.data != g.user.get("email"):
-            assert form.username.data is not None
+            # Ensure username is a string for typing and security
+            username = cast(str, form.username.data)
             email_success, email_msg = UserService.update_email_address(
-                user_id, form.email.data, form.username.data
+                user_id, form.email.data, username
             )
             if email_success:
                 UserService.update_user_profile(

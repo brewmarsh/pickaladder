@@ -9,7 +9,7 @@ from firebase_admin import firestore
 
 from pickaladder.core.constants import GLOBAL_LEADERBOARD_MIN_GAMES
 from pickaladder.teams.services import TeamService
-from pickaladder.user.services.core import smart_display_name
+from pickaladder.user.services.core import get_avatar_url, smart_display_name
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
@@ -51,17 +51,6 @@ class MatchService:
 
         # 1.5 Denormalize Player Data (Snapshots)
         if match_type == "singles":
-
-            def get_avatar_url(data: dict[str, Any]) -> str:
-                thumbnail = data.get("profilePictureThumbnailUrl")
-                if thumbnail:
-                    return str(thumbnail)
-                profile_pic = data.get("profilePictureUrl")
-                if profile_pic:
-                    return str(profile_pic)
-                seed = data.get("username") or data.get("email") or "User"
-                return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
-
             match_data["player_1_data"] = {
                 "uid": p1_ref.id,
                 "display_name": smart_display_name(p1_data),
@@ -174,9 +163,26 @@ class MatchService:
         if len(active_players) != len(set(active_players)):
             raise ValueError("All players must be unique.")
 
-        # Candidate Validation (removed strict checks to avoid E2E failure)
+        # Candidate Validation
         group_id = form_data.get("group_id")
         tournament_id = form_data.get("tournament_id")
+
+        candidate_ids = MatchService.get_candidate_player_ids(
+            db, user_id, group_id, tournament_id
+        )
+        player1_candidates = MatchService.get_candidate_player_ids(
+            db, user_id, group_id, tournament_id, include_user=True
+        )
+
+        if p1_id not in player1_candidates:
+            raise ValueError("Invalid Team 1 Player 1 selected.")
+        if p2_id not in candidate_ids:
+            raise ValueError("Invalid Opponent 1 selected.")
+        if match_type == "doubles":
+            if partner_id not in candidate_ids:
+                raise ValueError("Invalid Partner selected.")
+            if opponent2_id not in candidate_ids:
+                raise ValueError("Invalid Opponent 2 selected.")
 
         # Determine Date
         match_date_input = form_data.get("match_date")
