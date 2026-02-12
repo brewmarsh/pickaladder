@@ -11,6 +11,9 @@ class TestUserService(unittest.TestCase):
     def setUp(self) -> None:
         self.db = MagicMock()
         self.user_id = "test_user_id"
+        self.patcher = patch("pickaladder.user.services.core.auth")
+        self.mock_auth = self.patcher.start()
+        self.addCleanup(self.patcher.stop)
 
     def test_get_user_by_id(self) -> None:
         mock_doc = MagicMock()
@@ -176,7 +179,10 @@ class TestUserService(unittest.TestCase):
     def test_update_settings_success(self) -> None:
         mock_user_doc = MagicMock()
         mock_user_doc.exists = True
-        mock_user_doc.to_dict.return_value = {"username": "olduser"}
+        mock_user_doc.to_dict.return_value = {
+            "username": "olduser",
+            "email": "olduser@example.com",
+        }
         self.db.collection().document().get.return_value = mock_user_doc
 
         # Mock username availability check (empty stream means available)
@@ -184,6 +190,8 @@ class TestUserService(unittest.TestCase):
 
         mock_form = MagicMock()
         mock_form.username.data = "newuser"
+        mock_form.name.data = "New Name"
+        mock_form.email.data = "olduser@example.com"
         mock_form.dark_mode.data = True
         mock_form.dupr_rating.data = 4.5
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
-
+import logging
+logger = logging.getLogger(__name__)
 import os
+
 import secrets
 import tempfile
 from typing import TYPE_CHECKING, Any, cast
@@ -81,11 +83,13 @@ def process_profile_update(
 
     dupr_id = form_data.dupr_id.data.strip() if form_data.dupr_id.data else None
     update_data["dupr_id"] = dupr_id
-    update_data["dupr_rating"] = (
+    rating = (
         float(form_data.dupr_rating.data)
         if form_data.dupr_rating.data is not None
         else None
     )
+    update_data["dupr_rating"] = rating
+    update_data["duprRating"] = rating
 
     # Handle username change
     if new_username != current_user_data.get("username"):
@@ -124,7 +128,7 @@ def process_profile_update(
         except auth.EmailAlreadyExistsError:
             return {"success": False, "error": "That email address is already in use."}
         except Exception as e:
-            current_app.logger.error(f"Error updating email: {e}")
+            print(f"Error updating email: {e}")
             return {
                 "success": False,
                 "error": "An error occurred while updating your email.",
@@ -137,8 +141,9 @@ def process_profile_update(
 def update_settings(
     db: Client, user_id: str, form_data: Any, profile_picture_file: Any = None
 ) -> dict[str, Any]:
-    """Update user settings (username, rating, dark mode, and profile picture)."""
+    """Update user settings (name, username, email, rating, dark mode, and profile picture)."""
     new_username = form_data.username.data
+    new_email = form_data.email.data
 
     # Check for username conflict
     user_ref = db.collection("users").document(user_id)
@@ -159,9 +164,33 @@ def update_settings(
             }
 
     update_data: dict[str, Any] = {
+        "name": form_data.name.data,
         "username": new_username,
         "dark_mode": bool(form_data.dark_mode.data),
     }
+
+    # Handle email change with verification
+    if new_email != current_user_data.get("email"):
+        try:
+            auth.update_user(user_id, email=new_email, email_verified=False)
+            verification_link = auth.generate_email_verification_link(new_email)
+            send_email(
+                to=new_email,
+                subject="Verify Your New Email Address",
+                template="email/verify_email.html",
+                user={"username": new_username},
+                verification_link=verification_link,
+            )
+            update_data["email"] = new_email
+            update_data["email_verified"] = False
+        except auth.EmailAlreadyExistsError:
+            return {"success": False, "error": "That email address is already in use."}
+        except Exception as e:
+            print(f"Error updating email: {e}")
+            return {
+                "success": False,
+                "error": "An error occurred while updating your email.",
+            }
 
     if form_data.dupr_rating.data is not None:
         rating = float(form_data.dupr_rating.data)

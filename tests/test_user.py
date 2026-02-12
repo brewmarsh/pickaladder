@@ -35,6 +35,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
             "storage_service": patch("pickaladder.user.services.core.storage"),
+            "auth_service": patch("pickaladder.user.services.core.auth"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
 
@@ -86,7 +87,13 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={"dark_mode": "y", "dupr_rating": 5.5, "username": "newuser"},
+            data={
+                "dark_mode": "y",
+                "dupr_rating": 5.5,
+                "username": "newuser",
+                "name": "Test User",
+                "email": "test@example.com",
+            },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -105,6 +112,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         data = {
             "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
             "username": "newuser",
+            "name": "Test User",
+            "email": "test@example.com",
         }
         response = self.client.post(
             "/user/settings",
@@ -132,7 +141,13 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={"dark_mode": "y", "dupr_rating": "5.5", "username": "newuser"},
+            data={
+                "dark_mode": "y",
+                "dupr_rating": "5.5",
+                "username": "newuser",
+                "name": "Test User",
+                "email": "test@example.com",
+            },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
