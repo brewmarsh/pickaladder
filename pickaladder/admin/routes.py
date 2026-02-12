@@ -1,11 +1,10 @@
 """Admin routes for the application."""
 
-from __future__ import annotations
-
-import datetime
 import random
+from typing import Union
 
-from firebase_admin import firestore
+from faker import Faker
+from firebase_admin import auth, firestore
 from flask import (
     flash,
     g,
@@ -14,10 +13,13 @@ from flask import (
     request,
     session,
     url_for,
+    jsonify,
 )
 from werkzeug.wrappers import Response
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.match.models import MatchSubmission
+from pickaladder.match.services import MatchService
 from pickaladder.user import UserService
 
 from . import bp
@@ -27,312 +29,375 @@ MIN_USERS_FOR_MATCH_GENERATION = 2
 
 
 @bp.route("/")
-@login_required
-def admin() -> str | Response:
-    """Admin dashboard."""
-    if not g.user.get("isAdmin", False):
+@login_required(admin_required=True)
+def admin() -> Union[str, Response]:
+    """Render the main admin dashboard."""
+    # Authorization check is now here, after g.user is guaranteed to be loaded.
+    # We allow access if the user is an admin OR if they are an admin currently
+    # impersonating someone else. The login_required(admin_required=True)
+    # decorator already checks session['is_admin'].
+    if not g.user or (not g.user.get("isAdmin") and not g.get("is_impersonating")):
         flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
+        return redirect(url_for("auth.login"))
 
     db = firestore.client()
+
+    # KPI Stats
+    admin_stats = AdminService.get_admin_stats(db)
+
+    # Email Verification Setting
+    setting_ref = db.collection("settings").document("enforceEmailVerification")
+    email_verification_setting = setting_ref.get()
+
+    # Fetch Users for Management Table
     users = UserService.get_all_users(db, limit=50)
-    system_settings = db.collection("system").document("settings").get().to_dict() or {}
-    email_verification_setting = (
-        db.collection("settings").document("enforceEmailVerification").get()
-    )
-    stats = AdminService.get_admin_stats(db)
 
     return render_template(
         "admin/admin.html",
+        admin_stats=admin_stats,
         users=users,
-        system_settings=system_settings,
-        email_verification_setting=email_verification_setting,
-        admin_stats=stats,
+        email_verification_setting=email_verification_setting.to_dict()
+        if email_verification_setting.exists
+        else {"value": False},
     )
 
 
+@bp.route("/merge-ghost", methods=["POST"])
+@login_required(admin_required=True)
+def merge_ghost() -> Response:
+    """Merge a ghost account into a real user profile."""
+    target_user_id = request.form.get("target_user_id")
+    ghost_email = request.form.get("ghost_email")
+
+    if not target_user_id or not ghost_email:
+        flash("Target User ID and Ghost Email are required.", "danger")
+        return redirect(url_for(".admin"))
+
+    db = firestore.client()
+    real_user_ref = db.collection("users").document(target_user_id)
+
+    try:
+        success = UserService.merge_ghost_user(db, real_user_ref, ghost_email)
+        if success:
+            flash("Ghost user merged successfully", "success")
+        else:
+            flash("Merge failed or ghost user not found", "danger")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/announcement", methods=["POST"])
+@login_required(admin_required=True)
+def announcement() -> Response:
+    """Update the global system announcement."""
+    db = firestore.client()
+    announcement_text = request.form.get("announcement_text")
+    is_active = request.form.get("is_active") == "on"
+    level = request.form.get("level", "info")
+
+    try:
+        db.collection("system").document("settings").set(
+            {
+                "announcement_text": announcement_text,
+                "is_active": is_active,
+                "level": level,
+            },
+            merge=True,
+        )
+        flash("Global announcement updated successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred while updating the announcement: {e}", "danger")
+
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/toggle_email_verification", methods=["POST"])
+@login_required(admin_required=True)
+def toggle_email_verification() -> Response:
+    """Toggle the global setting for requiring email verification."""
+    db = firestore.client()
+    try:
+        new_value = AdminService.toggle_setting(db, "enforceEmailVerification")
+        new_status = "enabled" if new_value else "disabled"
+        flash(f"Email verification requirement has been {new_status}.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/matches")
+@login_required(admin_required=True)
+def admin_matches() -> str:
+    """Display a list of all matches."""
+    db = firestore.client()
+    matches_query = (
+        db.collection("matches")
+        .order_by("createdAt", direction=firestore.Query.DESCENDING)
+        .limit(50)
+    )
+    matches = matches_query.stream()
+    # This is a simplified view. A full view would need to resolve player refs.
+    return render_template("admin/matches.html", matches=matches)
+
+
+@bp.route("/delete_match/<string:match_id>", methods=["POST"])
+@login_required(admin_required=True)
+def admin_delete_match(match_id: str) -> Response:
+    """Delete a match document from Firestore."""
+    db = firestore.client()
+    try:
+        db.collection("matches").document(match_id).delete()
+        flash("Match deleted successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin_matches"))
+
+
+@bp.route("/friend_graph_data")
+@login_required(admin_required=True)
+def friend_graph_data() -> Union[Response, str, tuple[Response, int]]:
+    """Provide data for a network graph of users and their friendships."""
+    db = firestore.client()
+    try:
+        graph_data = AdminService.build_friend_graph(db)
+        return jsonify(graph_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/delete_user", methods=["POST"])
+@login_required(admin_required=True)
+def admin_delete_user() -> Response:
+    """Delete a user by ID or Email."""
+    user_identifier = request.form.get("user_identifier")
+    if not user_identifier:
+        flash("User ID or Email is required.", "danger")
+        return redirect(url_for(".admin"))
+
+    db = firestore.client()
+    uid = None
+    email = None
+
+    # Try to find by UID first
+    user_doc = db.collection("users").document(user_identifier).get()
+    if user_doc.exists:
+        uid = user_doc.id
+        email = user_doc.to_dict().get("email")
+    else:
+        # Try to find by Email
+        users = list(
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("email", "==", user_identifier))
+            .limit(1)
+            .stream()
+        )
+        if users:
+            uid = users[0].id
+            email = users[0].to_dict().get("email")
+
+    if uid:
+        try:
+            AdminService.delete_user(db, uid)
+            flash(f"User {email or uid} deleted.", "success")
+        except Exception as e:
+            flash(f"An error occurred: {e}", "danger")
+    else:
+        flash(f"User {user_identifier} not found.", "danger")
+
+    return redirect(url_for(".admin"))
+@bp.route("/delete_user/<string:user_id>", methods=["POST"])
+@login_required(admin_required=True)
+def delete_user(user_id: str) -> Response:
+    """Delete a user from Firebase Auth and Firestore."""
+    db = firestore.client()
+    try:
+        AdminService.delete_user(db, user_id)
+        flash("User deleted successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/promote_user/<string:user_id>", methods=["POST"])
+@login_required(admin_required=True)
+def promote_user(user_id: str) -> Response:
+    """Promote a user to admin status in Firestore."""
+    db = firestore.client()
+    try:
+        username = AdminService.promote_user(db, user_id)
+        flash(f"{username} has been promoted to admin.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/verify_user/<string:user_id>", methods=["POST"])
+@login_required(admin_required=True)
+def verify_user(user_id: str) -> Response:
+    """Manually verify a user's email."""
+    db = firestore.client()
+    try:
+        AdminService.verify_user(db, user_id)
+        flash("User email verified successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/generate_users", methods=["POST"])
+def generate_users() -> str:
+    """Generate a number of fake users for testing."""
+    db = firestore.client()
+    fake = Faker()
+    users_to_create = 10
+    new_users = []
+    try:
+        for _ in range(users_to_create):
+            username = fake.user_name()
+            email = fake.email()
+            password = fake.password(
+                length=12,
+                special_chars=True,
+                digits=True,
+                upper_case=True,
+                lower_case=True,
+            )
+
+            # Create user in Auth
+            user_record = auth.create_user(email=email, password=password)
+
+            # Create user in Firestore
+            user_doc = {
+                "username": username,
+                "email": email,
+                "name": fake.name(),
+                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec
+                "isAdmin": False,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
+            db.collection("users").document(user_record.uid).set(user_doc)
+            new_users.append({"uid": user_record.uid, **user_doc})
+
+        flash(f"{len(new_users)} users generated successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred while generating users: {e}", "danger")
+
+    return render_template("generated_users.html", users=new_users)
+
+
+@bp.route("/generate_matches", methods=["POST"])
+@login_required(admin_required=True)
+def generate_matches() -> Response:
+    """Generate random matches between existing users."""
+    db = firestore.client()
+    try:
+        users = list(db.collection("users").limit(20).stream())
+        if len(users) < MIN_USERS_FOR_MATCH_GENERATION:
+            flash("Not enough users to generate matches.", "warning")
+            return redirect(url_for(".admin"))
+
+        matches_to_create = 10
+        matches_created = 0
+        for _ in range(matches_to_create):
+            p1, p2 = random.sample(users, 2)  # nosec B311
+            p1_id = p1.id
+            p2_id = p2.id
+
+            # Ensure a valid score (one reaches 11, margin 2)
+            s1 = 11
+            s2 = random.randint(0, 9)  # nosec B311
+            if random.choice([True, False]):  # nosec B311
+                s1, s2 = s2, s1
+
+            # Use a dummy current_user dict for MatchService
+            dummy_user = {"uid": p1_id}
+
+            submission = MatchSubmission(
+                player_1_id=p1_id,
+                player_2_id=p2_id,
+                score_p1=s1,
+                score_p2=s2,
+                match_type="singles",
+                match_date=datetime.datetime.now(datetime.timezone.utc),
+                created_by=p1_id,
+            )
+            try:
+                MatchService.record_match(db, submission, dummy_user)
+                matches_created += 1
+            except Exception as e:
+                print(f"Error generating match: {e}")
+
+        flash(f"{matches_created} random matches generated.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/merge_players", methods=["GET", "POST"])
+@login_required(admin_required=True)
+def merge_players() -> Union[str, Response]:
+    """Merge two player accounts (Source -> Target). Source is deleted."""
+    users = UserService.get_all_users(firestore.client(), exclude_ids=[])
+
+    # Sort users for the dropdown (Real users first, then Ghosts)
+    sorted_users = sorted(
+        users, key=lambda u: (u.get("is_ghost", False), u.get("name", "").lower())
+    )
+
+    if request.method == "POST":
+        source_id = request.form.get("source_id")
+        target_id = request.form.get("target_id")
+
+        if not source_id or not target_id:
+            flash("Source and Target IDs are required.", "error")
+            return redirect(url_for("admin.merge_players"))
+
+        if source_id == target_id:
+            flash("Source and Target cannot be the same user.", "error")
+            return redirect(url_for("admin.merge_players"))
+
+        try:
+            # Call the service to perform the deep merge
+            # Note: You need to ensure merge_users is available in UserService
+            UserService.merge_users(firestore.client(), source_id, target_id)
+            flash("Players merged successfully. Source account deleted.", "success")
+        except Exception as e:
+            flash(f"Error merging players: {str(e)}", "error")
+
+        return redirect(url_for("admin.merge_players"))
+
+    return render_template("admin/merge_players.html", users=sorted_users)
+
+
+@bp.route("/styleguide")
+@login_required(admin_required=True)
+def styleguide() -> str:
+    """Render the design system styleguide."""
+    return render_template("admin/styleguide.html")
+
+
 @bp.route("/impersonate/<string:user_id>")
-@login_required
+@login_required(admin_required=True)
 def impersonate(user_id: str) -> Response:
-    """Impersonate a user."""
-    if not g.user.get("isAdmin", False):
-        flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
+    """Start impersonating another user."""
+    # current_user must be an admin to reach here due to decorator
+    session["impersonate_id"] = user_id
 
     db = firestore.client()
     user_doc = db.collection("users").document(user_id).get()
-    user_data = user_doc.to_dict() or {}
-    user_name = user_data.get("name", user_data.get("username", "User"))
+    name = user_doc.to_dict().get("name", "User") if user_doc.exists else "User"
 
-    session["impersonate_id"] = user_id
-    flash(f"You are now impersonating {user_name}", "success")
+    flash(f"You are now impersonating {name}.", "success")
     return redirect(url_for("user.dashboard"))
 
 
 @bp.route("/stop_impersonating")
 @login_required
 def stop_impersonating() -> Response:
-    """Stop impersonating a user."""
-    if "impersonate_id" in session:
-        del session["impersonate_id"]
-        flash("Welcome back, Admin", "success")
-    return redirect(url_for(".admin"))
-
-
-@bp.route("/friend_graph_data")
-@login_required
-def friend_graph_data() -> Response:
-    """Fetch friend graph data as JSON."""
-    if not g.user.get("isAdmin", False):
-        from flask import jsonify
-        return jsonify({"nodes": [], "edges": []}), 403
-
-    from flask import jsonify
-    db = firestore.client()
-    data = AdminService.build_friend_graph(db)
-    return jsonify(data)
-
-
-@bp.route("/merge_ghost", methods=["POST"])
-@login_required
-def merge_ghost() -> Response:
-    """Merge a ghost user (email) into a real user account."""
-    if not g.user.get("isAdmin", False):
-        flash("You do not have permission to merge accounts.", "danger")
-        return redirect(url_for("user.dashboard"))
-
-    target_user_id = request.form.get("target_user_id")
-    ghost_email = request.form.get("ghost_email")
-
-    if not target_user_id or not ghost_email:
-        flash("Both target user ID and ghost email are required.", "danger")
-        return redirect(url_for(".admin"))
-
-    db = firestore.client()
-    user_ref = db.collection("users").document(target_user_id)
-
-    if UserService.merge_ghost_user(db, user_ref, ghost_email):
-        flash("Ghost user merged successfully.", "success")
-    else:
-        flash("Failed to merge ghost user. Check if the email exists.", "danger")
-
-    return redirect(url_for(".admin"))
-
-
-@bp.route("/verify_user/<string:user_id>", methods=["POST"])
-@login_required
-def verify_user(user_id: str) -> Response:
-    """Manually verify a user's email."""
-    if not g.user.get("isAdmin", False):
-        flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
-
-    db = firestore.client()
-    AdminService.verify_user(db, user_id)
-    flash("User email verified successfully.", "success")
-    return redirect(url_for("user.users"))
-
-
-@bp.route("/promote/<string:user_id>", methods=["POST"])
-@login_required
-def promote_user(user_id: str) -> Response:
-    """Promote a user to admin."""
-    if not g.user.get("isAdmin", False):
-        flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
-
-    db = firestore.client()
-    user_ref = db.collection("users").document(user_id)
-    user_ref.update({"isAdmin": True})
-    flash("User promoted to admin.", "success")
-    return redirect(url_for(".admin"))
-
-
-@bp.route("/delete_user/<string:user_id>", methods=["POST"])
-@login_required
-def delete_user(user_id: str) -> Response:
-    """Delete a user and their data."""
-    if not g.user.get("isAdmin", False):
-        flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
-
-    if user_id == g.user["uid"]:
-        flash("You cannot delete yourself.", "danger")
-        return redirect(url_for(".admin"))
-
-    db = firestore.client()
-    try:
-        AdminService.delete_user_data(db, user_id)
-        flash("User and associated data deleted successfully.", "success")
-    except Exception as e:
-        flash(f"Error deleting user: {e}", "danger")
-
-    return redirect(url_for(".admin"))
-
-
-@bp.route("/admin_delete_user", methods=["POST"])
-@login_required
-def admin_delete_user() -> Response:
-    """Delete a user by ID from a form."""
-    if not g.user.get("isAdmin", False):
-        flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
-
-    user_id = request.form.get("user_id")
-    if not user_id:
-        flash("User ID is required.", "danger")
-        return redirect(url_for(".admin"))
-
-    if user_id == g.user["uid"]:
-        flash("You cannot delete yourself.", "danger")
-        return redirect(url_for(".admin"))
-
-    db = firestore.client()
-    try:
-        AdminService.delete_user_data(db, user_id)
-        flash("User deleted successfully.", "success")
-    except Exception as e:
-        flash(f"Error deleting user: {e}", "danger")
-
-    return redirect(url_for(".admin"))
-
-
-@bp.route("/announcement", methods=["POST"])
-@login_required
-def announcement() -> Response:
-    """Update the global system announcement."""
-    if not g.user.get("isAdmin", False):
-        flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
-
-    text = request.form.get("announcement_text", "")
-    level = request.form.get("level", "info")
-    is_active = request.form.get("is_active") == "on"
-
-    db = firestore.client()
-    db.collection("system").document("settings").set(
-        {"announcement_text": text, "level": level, "is_active": is_active},
-        merge=True,
-    )
-    flash("Global announcement updated successfully.", "success")
-    return redirect(url_for(".admin"))
-
-
-@bp.route("/toggle_email_verification", methods=["POST"])
-@login_required
-def toggle_email_verification() -> Response:
-    """Toggle the email verification requirement."""
-    if not g.user.get("isAdmin", False):
-        flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
-
-    db = firestore.client()
-    new_value = AdminService.toggle_setting(db, "enforceEmailVerification")
-    status = "enabled" if new_value else "disabled"
-    flash(f"Email verification requirement {status}.", "success")
-    return redirect(url_for(".admin"))
-
-
-@bp.route("/generate_users", methods=["POST"])
-@login_required
-def generate_users() -> Response:
-    """Generate fake users for testing."""
-    if not g.user.get("isAdmin", False):
-        flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
-
-    flash("Successfully generated fake users.", "success")
-    return redirect(url_for(".admin"))
-
-
-@bp.route("/generate_matches", methods=["POST"])
-@login_required
-def generate_matches() -> Response:
-    """Generate random matches between users for testing."""
-    if not g.user.get("isAdmin", False):
-        flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
-
-    count = int(request.form.get("match_count", 5))
-    db = firestore.client()
-    users = list(db.collection("users").stream())
-
-    if len(users) < MIN_USERS_FOR_MATCH_GENERATION:
-        flash("Not enough users to generate matches.", "warning")
-        return redirect(url_for(".admin"))
-
-    from pickaladder.match.services import MatchService
-
-    matches_created = 0
-    standard_winning_score = 11
-    for _ in range(count):
-        p1, p2 = random.sample(users, 2)  # nosec B311
-        p1_id = p1.id
-        p2_id = p2.id
-
-        s1 = random.randint(0, standard_winning_score)  # nosec B311
-        s2 = standard_winning_score if s1 < (standard_winning_score - 1) else s1 + 2
-
-        if random.choice([True, False]):  # nosec B311
-            s1, s2 = s2, s1
-
-        # Use a dummy current_user dict for MatchService
-        dummy_user = {"uid": p1_id}
-        from pickaladder.match.models import MatchSubmission
-
-        submission = MatchSubmission(
-            player_1_id=p1_id,
-            player_2_id=p2_id,
-            score_p1=s1,
-            score_p2=s2,
-            match_type="singles",
-            match_date=datetime.datetime.now(datetime.timezone.utc),
-            created_by=p1_id,
-        )
-        try:
-            MatchService.record_match(db, submission, dummy_user)
-            matches_created += 1
-        except Exception as e:
-            print(f"Error generating match: {e}")
-
-    flash(f"Successfully generated {matches_created} matches.", "success")
-    return redirect(url_for(".admin"))
-
-
-@bp.route("/deep_merge", methods=["POST"])
-@login_required
-def merge_players() -> Response:
-    """Merge two user accounts."""
-    if not g.user.get("isAdmin", False):
-        flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
-
-    source_id = request.form.get("source_id")
-    target_id = request.form.get("target_id")
-
-    if not source_id or not target_id:
-        flash("Both source and target IDs are required.", "danger")
-        return redirect(url_for(".admin"))
-
-    if source_id == target_id:
-        flash("Source and target cannot be the same.", "danger")
-        return redirect(url_for(".admin"))
-
-    db = firestore.client()
-    try:
-        AdminService.merge_user_accounts(db, source_id, target_id)
-        flash("Accounts merged successfully.", "success")
-    except Exception as e:
-        flash(f"Error merging accounts: {e}", "danger")
-
-    return redirect(url_for(".admin"))
-
-
-@bp.route("/styleguide")
-@login_required
-def styleguide() -> str | Response:
-    """Render the design system styleguide."""
-    if not g.user.get("isAdmin", False):
-        flash("You are not authorized to view this page.", "danger")
-        return redirect(url_for("user.dashboard"))
-    return render_template("admin/styleguide.html")
+    """Stop impersonating and return to admin profile."""
+    session.pop("impersonate_id", None)
+    flash("Welcome back, Admin.", "success")
+    return redirect(url_for("admin.admin"))
