@@ -155,8 +155,8 @@ class MockFirestoreBuilder:
                                 existing = []
                             new_data[k] = [i for i in existing if i not in v.values]
 
-                    # MockFirestore's DocumentReference.update updates its internal _data.
-                    # Use the original update to ensure logic is preserved.
+                    # MockFirestore's DocumentReference.update updates its internal
+                    # _data. Use the original update to ensure logic is preserved.
                     return self._orig_update(new_data)
 
             DocumentReference.update = patched_update

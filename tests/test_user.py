@@ -163,7 +163,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn(b"Settings updated successfully.", response.data)
 
         all_updates = [call[0][0] for call in mock_user_doc.update.call_args_list]
-        # First call has dark_mode, second call (from process_profile_update) has duprRating
+        # First call has dark_mode, second call (from process_profile_update)
+        # has duprRating
         found_dark_mode = any(u.get("dark_mode") is True for u in all_updates)
         found_dupr = any(u.get("duprRating") == TEST_DUPR_RATING for u in all_updates)
 
