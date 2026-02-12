@@ -37,7 +37,9 @@ def admin() -> str | Response:
     db = firestore.client()
     users = UserService.get_all_users(db, limit=50)
     system_settings = db.collection("system").document("settings").get().to_dict() or {}
-    email_verification_setting = db.collection("settings").document("enforceEmailVerification").get()
+    email_verification_setting = (
+        db.collection("settings").document("enforceEmailVerification").get()
+    )
     stats = AdminService.get_admin_stats(db)
 
     return render_template(
