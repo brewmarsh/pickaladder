@@ -66,7 +66,9 @@ class MatchService:
             match_data["winnerId"] = p1_ref.id if winner == "team1" else p2_ref.id
             match_data["loserId"] = p2_ref.id if winner == "team1" else p1_ref.id
 
-        def get_stat(data: dict[str, Any], key: str, default: Any) -> Any:
+        def get_stat(data: dict[str, Any] | None, key: str, default: Any) -> Any:
+            if data is None:
+                return default
             return data.get("stats", {}).get(key, default)
 
         p1_wins = get_stat(p1_data, "wins", 0)
@@ -221,15 +223,15 @@ class MatchService:
             raise ValueError("Unsupported match type.")
 
         # Save to database via batched write (exactly 1 commit round-trip)
-        new_match_ref = db.collection("matches").document()
+        new_match_ref = cast("DocumentReference", db.collection("matches").document())
         batch = db.batch()
         MatchService._record_match_batch(
             db,
             batch,
             new_match_ref,
-            side1_ref,
-            side2_ref,
-            user_ref,
+            cast("DocumentReference", side1_ref),
+            cast("DocumentReference", side2_ref),
+            cast("DocumentReference", user_ref),
             match_doc_data,
             match_type,
         )

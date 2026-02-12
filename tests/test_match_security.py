@@ -47,7 +47,7 @@ class MatchSecurityTestCase(unittest.TestCase):
         self.assertTrue(mock_record_batch.called)
 
         # Check match_data passed to record_batch
-        # _record_match_batch(db, batch, match_ref, p1_ref, p2_ref, user_ref, match_data, match_type)
+        # _record_match_batch(db, batch, match_ref, p1_ref, p2_ref, ...)
         # index of match_data is 6
         match_data = mock_record_batch.call_args[0][6]
 
