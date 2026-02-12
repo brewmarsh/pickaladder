@@ -8,15 +8,6 @@ from mockfirestore import CollectionReference, Query
 from mockfirestore.document import DocumentReference
 
 
-class MockFieldFilter:
-    """Mock for firestore.FieldFilter."""
-
-    def __init__(self, field_path: str, op_string: str, value: Any) -> None:
-        self.field_path = field_path
-        self.op_string = op_string
-        self.value = value
-
-
 class MockArrayUnion:
     def __init__(self, values: list[Any]) -> None:
         self.values = values

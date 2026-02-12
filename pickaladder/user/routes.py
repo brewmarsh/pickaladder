@@ -20,7 +20,11 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
 
 from . import bp
+<<<<<<< HEAD
+from .forms import EditProfileForm, UpdateUserForm
+=======
 from .forms import SettingsForm, UpdateUserForm
+>>>>>>> origin/consolidate-user-settings-17414899747175371561
 from .services import UserService
 
 if TYPE_CHECKING:
@@ -39,6 +43,19 @@ class MockPagination:
 @bp.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings() -> Any:
+<<<<<<< HEAD
+    """Handle user settings."""
+    form = EditProfileForm(obj=current_user)
+    if form.validate_on_submit():
+        res = UserService.update_settings(
+            firestore.client(), g.user["uid"], form, form.profile_picture.data
+        )
+        if res["success"]:
+            flash("Settings updated!", "success")
+            return redirect(url_for(".settings"))
+        flash(res["error"], "danger")
+    return render_template("user/settings.html", form=form)
+=======
     """Unified user settings page."""
     db = firestore.client()
     user_id = g.user["uid"]
@@ -73,11 +90,12 @@ def settings() -> Any:
         if res["success"]:
             if "info" in res:
                 flash(res["info"], "info")
-            flash("Settings updated!", "success")
+            flash("Settings updated successfully.", "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
 
     return render_template("user/settings.html", form=form, user=g.user)
+>>>>>>> origin/consolidate-user-settings-17414899747175371561
 
 
 @bp.route("/edit_profile", methods=["GET", "POST"])

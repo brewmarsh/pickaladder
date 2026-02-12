@@ -6,6 +6,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+from flask import session
 from mockfirestore import MockFirestore
 
 # Mock user payloads
@@ -73,7 +74,7 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
         mock_create.return_value = MagicMock(uid="new_user_uid")
         mock_gen.return_value = "http://verify"
 
-        # Post registration (CSRF disabled in tests)
+        # Post registration with a very unique username
         response = client.post(
             "/auth/register",
             data={
@@ -86,6 +87,15 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
             follow_redirects=True,
         )
         assert response.status_code == 200
+
+        # If it failed, print the flash messages
+        if b"Registration successful" not in response.data:
+             print("DEBUG: Registration failed. Response data contains:")
+             # Look for alert-danger
+             import re
+             errors = re.findall(r'class="alert alert-danger">(.*?)<', response.data.decode())
+             print(f"DEBUG: Errors: {errors}")
+
         assert b"Registration successful" in response.data
 
     # Verify new user document has referred_by
