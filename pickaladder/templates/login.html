@@ -26,7 +26,7 @@
             {{ form.remember(class="form-check-input") }}
             {{ form.remember.label(class="form-check-label") }}
         </div>
-        {{ form.submit(class="btn", data_testid="login-submit") }}
+        <button type="submit" name="submit" class="btn" data-testid="login-submit">Login</button>
     </form>
     <div class="or-separator">OR</div>
     <button id="google-signin-btn" class="btn btn-google">Sign in with Google</button>
@@ -114,6 +114,16 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch((error) => {
                 console.error("Login error:", error);
+
+                // Re-enable the submit button on failure
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    if (submitBtn.dataset.originalText) {
+                        submitBtn.innerHTML = submitBtn.dataset.originalText;
+                    }
+                }
+
                 const errorCode = error.code;
                 let errorMessage = error.message;
 

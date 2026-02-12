@@ -314,7 +314,7 @@
                     {{ form.friend.label }}
                     {{ form.friend(class="form-control") }}
                 </div>
-                <input type="submit" value="Invite Friend" class="btn">
+                <button type="submit" class="btn">Invite Friend</button>
             </form>
 
             <h3>Invite by Email</h3>
@@ -328,14 +328,14 @@
                     {{ invite_email_form.email.label }}
                     {{ invite_email_form.email(class="form-control") }}
                 </div>
-                <input type="submit" value="Send Invite" class="btn">
+                <button type="submit" class="btn">Send Invite</button>
             </form>
 
             <h3>Danger Zone</h3>
             <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="submit" value="Delete Group" class="btn btn-danger"
-                    onclick="return confirm('Are you sure you want to permanently delete this group? This action cannot be undone.')">
+                <button type="submit" class="btn btn-danger"
+                    onclick="return confirm('Are you sure you want to permanently delete this group? This action cannot be undone.')">Delete Group</button>
             </form>
             {% endif %}
         </div>
@@ -458,7 +458,8 @@
                     <div class="social-share-card-header">pickaladder Group</div>
                     <div class="social-share-card-body text-center">
                         <div class="profile-picture-container avatar-lg mx-auto mb-3">
-                            <img src="{{ g.user | avatar_url }}" alt="Profile Picture" class="profile-picture">
+                            <img src="{{ g.user | avatar_url }}" alt="Profile Picture" class="profile-picture"
+                                onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                         </div>
                         <h2 class="social-share-card-title text-white font-weight-bold">{{ group.name }}</h2>
                         {% set ns = namespace(user_rank='Member') %}

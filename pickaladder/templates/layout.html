@@ -34,7 +34,25 @@
 </head>
 
 <body {% if g.user and g.user.dark_mode %}data-theme="dark" {% endif %}>
+    {% if g.get('is_impersonating') %}
+    <div class="alert alert-warning text-center m-0">
+        🕵️ You are impersonating <strong>{{ g.user.name }}</strong>.
+        <a href="{{ url_for('admin.stop_impersonating') }}" class="btn btn-sm btn-dark ms-3">Stop Impersonating</a>
+    </div>
+    {% endif %}
     {% include 'navbar.html' %}
+
+    {% if global_announcement and global_announcement.is_active %}
+    <div class="container mt-3">
+        <div class="alert alert-{{ global_announcement.level }} alert-dismissible fade show" role="alert">
+            {{ global_announcement.announcement_text }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="container">
         <main class="main-content">
             {% if session.get('show_welcome_invites') %}
@@ -47,24 +65,14 @@
             {% endif %}
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-            <div class="flashes">
-                {% for category, message in messages %}
-                {% if category != 'toast' %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endif %}
-                {% endfor %}
-            </div>
-
             <div class="toast-container">
                 {% for category, message in messages %}
-                {% if category == 'toast' %}
-                <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000"
-                    data-autohide="true">
+                <div class="toast alert-{{ category }} show" role="alert" aria-live="assertive" aria-atomic="true">
                     <div class="toast-header">
                         <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" class="rounded mr-2"
                             alt="Logo" style="width: 20px; height: 20px;">
                         <strong class="mr-auto">pickaladder</strong>
-                        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                        <button type="button" class="ml-2 mb-1 close" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -72,7 +80,6 @@
                         {{ message }}
                     </div>
                 </div>
-                {% endif %}
                 {% endfor %}
             </div>
             {% endif %}
@@ -85,10 +92,18 @@
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
-        $(document).ready(function () {
-            $('.toast').toast('show');
-        });
+
+        function dismissToast(toast) {
+            if (!toast || !toast.parentNode) return;
+            toast.classList.add('fade-out');
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 500);
+        }
 
         function showToast(message, category = 'info', submissionId = null) {
             const toastContainer = document.querySelector('.toast-container');
@@ -96,7 +111,7 @@
 
             const toastId = submissionId || `toast_${Date.now()}`;
             const autohide = category !== 'info'; // Don't autohide pending toasts
-            const delay = 5000;
+            const delay = 4000;
 
             let progressBar = '';
             if (category === 'info') {
@@ -104,11 +119,11 @@
             }
 
             const toastHTML = `
-                <div class="toast" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true" ${autohide ? `data-delay="${delay}" data-autohide="true"` : ''}>
+                <div class="toast show" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
                     <div class="toast-header">
                         <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" class="rounded mr-2" alt="Logo" style="width: 20px; height: 20px;">
                         <strong class="mr-auto">pickaladder</strong>
-                        <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                        <button type="button" class="ml-2 mb-1 close" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -120,7 +135,16 @@
             `;
             toastContainer.insertAdjacentHTML('beforeend', toastHTML);
             const newToast = document.getElementById(toastId);
-            $(newToast).toast('show');
+
+            // Handle close button
+            const closeBtn = newToast.querySelector('.close');
+            closeBtn.onclick = () => dismissToast(newToast);
+
+            // Auto-dismiss
+            if (autohide) {
+                setTimeout(() => dismissToast(newToast), delay);
+            }
+
             return toastId;
         }
 
@@ -150,12 +174,10 @@
                 toastBody.appendChild(retryButton);
             }
 
-            $(toastElement).data('autohide', true);
-            $(toastElement).data('delay', 5000);
-
-            // Hack to restart the autohide timer
-            $(toastElement).toast('hide');
-            $(toastElement).toast('show');
+            // Start auto-dismiss now that it's no longer "pending"
+            if (category !== 'info') {
+                setTimeout(() => dismissToast(toastElement), 4000);
+            }
         }
 
         document.addEventListener("click", (e) => {
@@ -165,14 +187,8 @@
             }
         });
 
-        const hamburger = document.querySelector('.hamburger-menu');
-        const mobileNav = document.getElementById('myLinks');
-        if (hamburger && mobileNav) {
-            hamburger.addEventListener('click', function () {
-                mobileNav.classList.toggle('active');
-            });
-        }
     </script>
+    <script src="{{ url_for('static', filename='js/navbar.js') }}"></script>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>

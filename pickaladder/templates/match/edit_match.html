@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% block title %}Edit Match{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Editing Match</h2>
+                    <p class="text-center text-muted mb-4">
+                        {{ player1_name }} vs {{ player2_name }}
+                    </p>
+
+                    {% if match.tournamentId and is_admin %}
+                    <div class="alert alert-warning text-center mb-4">
+                        <span class="badge badge-warning">⚠️ Admin Override: Tournament Match</span>
+                        <p class="small mb-0 mt-2">You are editing a match that belongs to a tournament.</p>
+                    </div>
+                    {% endif %}
+
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <label for="player1_score" class="form-label">{{ player1_name }} Score</label>
+                                <input type="number" class="form-control form-control-lg text-center"
+                                       id="player1_score" name="player1_score"
+                                       value="{{ match.player1Score }}" min="0" required>
+                            </div>
+                            <div class="col-6">
+                                <label for="player2_score" class="form-label">{{ player2_name }} Score</label>
+                                <input type="number" class="form-control form-control-lg text-center"
+                                       id="player2_score" name="player2_score"
+                                       value="{{ match.player2Score }}" min="0" required>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-volt btn-lg">Update Match Score</button>
+                            <a href="{{ url_for('match.view_match_summary', match_id=match.id) }}"
+                               class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-volt {
+        background-color: var(--accent-color);
+        color: var(--text-primary);
+        font-weight: bold;
+    }
+    .btn-volt:hover {
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}

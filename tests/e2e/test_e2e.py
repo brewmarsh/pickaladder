@@ -24,23 +24,19 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.fill("input[name='password']", "password")
         page.fill("input[name='name']", "Admin User")
         with page.expect_navigation():
-            page.click("input[value='Create Admin']")
+            page.click("button:has-text('Create Admin')")
 
         expect(page.locator("h2")).to_contain_text("Login")
         page.fill("input[name='email']", "admin@example.com")
         page.fill("input[name='password']", "password")
         with page.expect_navigation():
-            page.click("input[value='Login']")
+            page.click("button:has-text('Login')")
 
-    page.click("#edit-profile-toggle")
-    expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(
-        timeout=10000
-    )
+    page.click(".btn-edit-gear")
+    expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
 
     # Logout
-    page.click(".dropbtn", force=True)
-    with page.expect_navigation():
-        page.click("text=Logout", force=True)
+    page.goto(f"{base_url}/auth/logout")
     expect(page.locator("h2")).to_contain_text("Login")
 
     # 2. Register User 2
@@ -54,19 +50,17 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("input[name='name']", "User Two")
     page.fill("input[name='dupr_rating']", "3.5")
     with page.expect_navigation():
-        page.click("input[value='Register']")
+        page.click("button:has-text('Register')")
 
     # Now login as User Two
     expect(page.locator("h2")).to_contain_text("Login")
     page.fill("input[name='email']", "user2@example.com")
     page.fill("input[name='password']", "MyPassword123")
     with page.expect_navigation():
-        page.click("input[value='Login']")
+        page.click("button:has-text('Login')")
 
-    page.click("#edit-profile-toggle")
-    expect(page.locator("h3:has-text('Profile Information')")).to_be_visible(
-        timeout=10000
-    )
+    page.click(".btn-edit-gear")
+    expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
 
     # 3. Add Friend (User 2 invites Admin)
     with page.expect_navigation():
@@ -85,15 +79,13 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     )
 
     # Logout User 2, Login Admin
-    page.click(".dropbtn", force=True)
-    with page.expect_navigation():
-        page.click("text=Logout", force=True)
+    page.goto(f"{base_url}/auth/logout")
     expect(page.locator("h2")).to_contain_text("Login")
 
     page.fill("input[name='email']", "admin@example.com")
     page.fill("input[name='password']", "password")
     with page.expect_navigation():
-        page.click("input[value='Login']")
+        page.click("button:has-text('Login')")
 
     # Accept Friend Request
     with page.expect_navigation():
@@ -111,7 +103,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("input[name='name']", "Pickleballers")
     page.fill("input[name='location']", "Test Court")
     with page.expect_navigation():
-        page.click("input[value='Create Group']")
+        page.click("button:has-text('Create Group')")
 
     expect(page.locator("h1")).to_contain_text("Pickleballers")
 
@@ -119,17 +111,15 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.click("summary:has-text('Manage Group & Members')")
     page.select_option("select[name='friend']", value="user2")
     with page.expect_navigation():
-        page.click("input[value='Invite Friend']")
+        page.click("button:has-text('Invite Friend')")
 
     # Verify User 2 is added (Logout Admin, Login User 2)
-    page.click(".dropbtn", force=True)
-    with page.expect_navigation():
-        page.click("text=Logout", force=True)
+    page.goto(f"{base_url}/auth/logout")
 
     page.fill("input[name='email']", "user2@example.com")
     page.fill("input[name='password']", "MyPassword123")
     with page.expect_navigation():
-        page.click("input[value='Login']")
+        page.click("button:has-text('Login')")
 
     # User 2 should see the group
     with page.expect_navigation():
@@ -180,14 +170,12 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # 8. Delete Group Game & 9. Delete Individual Game
     # Needs Admin access
-    page.click(".dropbtn", force=True)
-    with page.expect_navigation():
-        page.click("text=Logout", force=True)
+    page.goto(f"{base_url}/auth/logout")
 
     page.fill("input[name='email']", "admin@example.com")
     page.fill("input[name='password']", "password")
     with page.expect_navigation():
-        page.click("input[value='Login']")
+        page.click("button:has-text('Login')")
 
     page.goto(f"{base_url}/admin/matches")
     # Delete match involving user2 (first one)
@@ -209,7 +197,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click('[data-testid="group-settings-btn"]')
     page.fill("input[name='location']", "New Court")
     with page.expect_navigation():
-        page.click("input[value='Update Group']")
+        page.click("button:has-text('Update Group')")
     expect(page.locator("text=New Court")).to_be_visible()
 
     # 11. Invite Email to Group
@@ -217,7 +205,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("form[action*='group'] input[name='name']", "New Guy")
     page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
     with page.expect_navigation():
-        page.click("input[value='Send Invite']")
+        page.click("button:has-text('Send Invite')")
     expect(page.locator(".alert-toast, .alert-success, .toast-body")).to_contain_text(
         "Invitation is being sent"
     )

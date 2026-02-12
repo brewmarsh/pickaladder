@@ -33,7 +33,7 @@
             {{ form.dupr_rating(class="form-control", value=user.dupr_rating if user.dupr_rating else '', step="0.01", placeholder="e.g. 4.25") }}
         </div>
 
-        {{ form.submit(class="btn") }}
+        <button type="submit" name="submit" class="btn">Update Account</button>
     </form>
 </div>
 {% endblock %}

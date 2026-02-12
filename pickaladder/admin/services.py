@@ -1,5 +1,6 @@
 """Service layer for admin-related operations."""
 
+import datetime
 from typing import Any, Dict, List  # noqa: UP035
 
 from firebase_admin import auth, firestore
@@ -7,6 +8,39 @@ from firebase_admin import auth, firestore
 
 class AdminService:
     """Service class for admin-related operations."""
+
+    @staticmethod
+    def get_admin_stats(db: Any) -> dict[str, Any]:
+        """Fetch high-level stats for the admin dashboard using efficient count aggregations."""
+        # Total Users
+        total_users = db.collection("users").count().get()[0][0].value
+
+        # Active Tournaments (status != 'Completed')
+        active_tournaments = (
+            db.collection("tournaments")
+            .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
+            .count()
+            .get()[0][0]
+            .value
+        )
+
+        # Recent Matches (last 24 hours)
+        yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+            days=1
+        )
+        recent_matches = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))
+            .count()
+            .get()[0][0]
+            .value
+        )
+
+        return {
+            "total_users": total_users,
+            "active_tournaments": active_tournaments,
+            "recent_matches": recent_matches,
+        }
 
     @staticmethod
     def build_friend_graph(db: Any) -> Dict[str, List[Dict[str, Any]]]:  # noqa: UP006
@@ -39,9 +73,9 @@ class AdminService:
         current_value = (
             setting.to_dict().get("value", False) if setting.exists else False
         )
-        new_value = not current_value
-        setting_ref.set({"value": new_value})
-        return new_value
+        not_current_value = not current_value
+        setting_ref.set({"value": not_current_value})
+        return not_current_value
 
     @staticmethod
     def delete_user(db: Any, user_id: str) -> None:
@@ -50,6 +84,18 @@ class AdminService:
         auth.delete_user(user_id)
         # Delete from Firestore
         db.collection("users").document(user_id).delete()
+
+    @staticmethod
+    def delete_user_data(db: Any, uid: str) -> None:
+        """Delete a user from Firestore and Firebase Auth."""
+        # Delete from Firestore
+        db.collection("users").document(uid).delete()
+        # Delete from Firebase Auth
+        try:
+            auth.delete_user(uid)
+        except Exception:  # nosec B110
+            # If user not found in Auth, we still want to proceed
+            pass
 
     @staticmethod
     def promote_user(db: Any, user_id: str) -> str:

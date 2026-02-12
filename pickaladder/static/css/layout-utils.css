@@ -4,7 +4,12 @@
 .gap-4 { gap: 1.5rem !important; }
 .justify-content-center { justify-content: center !important; }
 .text-center { text-align: center !important; }
+<<<<<<< HEAD
+.text-danger { color: var(--danger-color) !important; }
+.border-danger { border: 1px solid var(--danger-color) !important; }
+=======
 .text-volt { color: var(--accent-color) !important; }
+>>>>>>> 270f94b (feat: admin stats and branding consistency)
 
 /* --- 6. Input Groups (Design System) --- */
 .input-group {
@@ -54,4 +59,10 @@ body .d-none { display: none !important; }
     body .d-lg-none { display: none !important; }
     body .d-lg-flex { display: flex !important; }
     body .d-lg-block { display: block !important; }
+}
+
+/* Toast Transitions */
+.fade-out {
+    opacity: 0 !important;
+    transition: opacity 0.5s ease-out;
 }

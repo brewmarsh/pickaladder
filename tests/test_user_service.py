@@ -173,6 +173,28 @@ class TestUserService(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["id"], "user2")
 
+    def test_update_settings_success(self) -> None:
+        mock_user_doc = MagicMock()
+        mock_user_doc.exists = True
+        mock_user_doc.to_dict.return_value = {"username": "olduser"}
+        self.db.collection().document().get.return_value = mock_user_doc
+
+        # Mock username availability check (empty stream means available)
+        self.db.collection().where().limit().stream.return_value = []
+
+        mock_form = MagicMock()
+        mock_form.username.data = "newuser"
+        mock_form.dark_mode.data = True
+        mock_form.dupr_rating.data = 4.5
+
+        result = UserService.update_settings(self.db, self.user_id, mock_form)
+        self.assertTrue(result["success"])
+        self.db.collection().document().update.assert_called_once()
+        update_data = self.db.collection().document().update.call_args[0][0]
+        self.assertEqual(update_data["username"], "newuser")
+        self.assertEqual(update_data["dupr_rating"], 4.5)
+        self.assertEqual(update_data["duprRating"], 4.5)
+
 
 if __name__ == "__main__":
     unittest.main()
