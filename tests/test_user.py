@@ -188,7 +188,9 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         # Friends/requests/groups mocks
         self.mock_user_doc.collection.return_value.where.return_value.stream.return_value = []
-        self.mock_user_doc.collection.return_value.where.return_value.where.return_value.stream.return_value = []
+        (
+            self.mock_user_doc.collection.return_value.where.return_value.where.return_value.stream.return_value
+        ) = []
         self.mock_groups_coll.where.return_value.stream.return_value = []
 
     @patch("pickaladder.user.services.dashboard.get_user_matches")
