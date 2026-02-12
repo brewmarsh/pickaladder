@@ -72,7 +72,7 @@ def settings() -> Any:
         if res["success"]:
             if "info" in res:
                 flash(res["info"], "info")
-            flash("Settings updated!", "success")
+            flash("Settings updated successfully.", "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
 
