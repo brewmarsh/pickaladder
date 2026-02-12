@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from playwright.sync_api import Page, expect
@@ -206,9 +207,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
     with page.expect_navigation():
         page.click("button:has-text('Send Invite')")
-    expect(page.locator(".alert-toast, .alert-success, .toast-body")).to_contain_text(
-        "Invitation is being sent"
-    )
+    expect(
+        page.locator(".alert-success, .toast.alert-success, .toast-body").first
+    ).to_contain_text("Invitation is being sent")
 
     # Verify invite token was created
     invites = list(mock_db.collection("group_invites").stream())
