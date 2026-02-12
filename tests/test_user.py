@@ -14,7 +14,12 @@ from pickaladder import create_app
 MOCK_USER_ID = "user1"
 MOCK_PROFILE_USER_ID = "user2"
 MOCK_FIREBASE_TOKEN_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user1@example.com"}
-MOCK_FIRESTORE_USER_DATA = {"name": "User One", "isAdmin": True, "uid": "user1"}
+MOCK_FIRESTORE_USER_DATA = {
+    "name": "User One",
+    "email": "user1@example.com",
+    "isAdmin": True,
+    "uid": "user1",
+}
 
 
 class UserRoutesFirebaseTestCase(unittest.TestCase):
@@ -86,7 +91,13 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={"dark_mode": "y", "dupr_rating": 5.5, "username": "newuser"},
+            data={
+                "name": "New Name",
+                "email": "user1@example.com",
+                "dark_mode": "y",
+                "dupr_rating": 5.5,
+                "username": "newuser",
+            },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
@@ -103,6 +114,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test.jpg"
 
         data = {
+            "name": "User One",
+            "email": "user1@example.com",
             "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
             "username": "newuser",
         }
@@ -132,7 +145,13 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={"dark_mode": "y", "dupr_rating": "5.5", "username": "newuser"},
+            data={
+                "name": "User One",
+                "email": "user1@example.com",
+                "dark_mode": "y",
+                "dupr_rating": "5.5",
+                "username": "newuser",
+            },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)

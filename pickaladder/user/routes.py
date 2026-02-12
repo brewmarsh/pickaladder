@@ -14,7 +14,6 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import current_user
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
@@ -53,27 +52,15 @@ def settings() -> Any:
         form.dark_mode.data = g.user.get("dark_mode")
 
     if form.validate_on_submit():
-        # Handle profile picture upload
-        profile_pic_url = None
-        if form.profile_picture.data:
-            profile_pic_url = UserService.upload_profile_picture(
-                user_id, form.profile_picture.data
-            )
-
-        # Update base fields (dark_mode and profile_pic if uploaded)
-        update_data: dict[str, Any] = {"dark_mode": bool(form.dark_mode.data)}
-        if profile_pic_url:
-            update_data["profilePictureUrl"] = profile_pic_url
-
-        UserService.update_user_profile(db, user_id, update_data)
-
-        # Handle other updates (name, username, email, dupr)
-        res = UserService.process_profile_update(db, user_id, form, g.user)
+        # Use the consolidated service call
+        res = UserService.process_profile_update(
+            db, user_id, form, g.user, form.profile_picture.data
+        )
 
         if res["success"]:
             if "info" in res:
                 flash(res["info"], "info")
-            flash("Settings updated successfully.", "success")
+            flash("Settings updated!", "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
 
@@ -92,7 +79,7 @@ def edit_profile() -> Any:
         if res["success"]:
             if "info" in res:
                 flash(res["info"], "info")
-            flash("Account updated successfully.", "success")
+            flash("Account updated!", "success")
             return redirect(url_for(".edit_profile"))
         flash(res["error"], "danger")
     return render_template("user/edit_profile.html", form=form, user=g.user)

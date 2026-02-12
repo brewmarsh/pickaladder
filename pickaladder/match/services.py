@@ -582,7 +582,7 @@ class MatchService:
         )
 
         if start_after:
-            last_doc = matches_ref.document(start_after).get()
+            last_doc = cast("DocumentSnapshot", matches_ref.document(start_after).get())
             if last_doc.exists:
                 query = query.start_after(last_doc)
 
