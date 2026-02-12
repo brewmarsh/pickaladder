@@ -104,6 +104,7 @@ class GroupService:
             "is_public": form_data.get("is_public", False),
             "ownerRef": user_ref,
             "members": [user_ref],
+            "admins": [],
             "createdAt": firestore.SERVER_TIMESTAMP,
         }
         _, new_group_ref = db.collection("groups").add(group_data)
