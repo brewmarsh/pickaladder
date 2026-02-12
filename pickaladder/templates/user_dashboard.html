@@ -32,48 +32,7 @@
     {% endfor %}
     {% endif %}
 
-    <div class="hero-stats-card">
-        <a href="{{ url_for('user.settings') }}" class="btn-edit-gear" title="Edit Profile">⚙️</a>
-        <div class="hero-left-panel">
-            {# Resolved: Use the container pattern from main for better image fitting #}
-            <div class="profile-picture-container avatar-xl">
-                <img id="hero-profile-img" src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture">
-            </div>
-        </div>
-        <div class="hero-middle-panel text-center">
-            <h2 id="hero-username-text" class="mb-2">{{ user.name if user.name else user.username }}</h2>
-            <!-- Vanity Stats Row -->
-            <div class="vanity-stats-container justify-content-center gap-4">
-                <div class="vanity-stat">
-                    <div class="stat-value fs-3 fw-bold">{{ stats.total_games }}</div>
-                    <div class="stat-label text-muted small">Matches</div>
-                </div>
-                <div class="vanity-stat">
-                    <div class="stat-value fs-3 fw-bold">{{ stats.win_rate | round | int }}%</div>
-                    <div class="stat-label text-muted small">Win %</div>
-                </div>
-                <div class="vanity-stat">
-                    <div class="stat-value fs-3 fw-bold text-volt">
-                        {% if stats.total_games > 0 %}
-                            {% if current_streak > 2 %}
-                                🔥 {{ current_streak }}
-                            {% else %}
-                                {{ current_streak }}
-                            {% endif %}
-                        {% else %}
-                            N/A
-                        {% endif %}
-                    </div>
-                    <div class="stat-label text-muted small">Streak</div>
-                </div>
-            </div>
-        </div>
-        <div class="hero-right-panel">
-            <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
-        </div>
-    </div>
-
-    {# Onboarding Quest Card #}
+    {# Onboarding Quest Card replaces Performance Chart row during activation #}
     {% if onboarding_progress.percent < 100 or not onboarding_progress.has_match %}
     <div class="card onboarding-card mb-4" style="border-left: 5px solid var(--accent-color);">
         <div class="card-body">
@@ -117,10 +76,51 @@
             </div>
         </div>
     </div>
+    {% else %}
+    <div class="hero-stats-card">
+        <a href="{{ url_for('user.settings') }}" class="btn-edit-gear" title="Edit Profile">⚙️</a>
+        <div class="hero-left-panel">
+            {# Resolved: Use the container pattern from main for better image fitting #}
+            <div class="profile-picture-container avatar-xl">
+                <img id="hero-profile-img" src="{{ user | avatar_url }}" alt="Profile Picture" class="profile-picture">
+            </div>
+        </div>
+        <div class="hero-middle-panel text-center">
+            <h2 id="hero-username-text" class="mb-2">{{ user.name if user.name else user.username }}</h2>
+            <!-- Vanity Stats Row -->
+            <div class="vanity-stats-container justify-content-center gap-4">
+                <div class="vanity-stat">
+                    <div class="stat-value fs-3 fw-bold">{{ stats.total_games }}</div>
+                    <div class="stat-label text-muted small">Matches</div>
+                </div>
+                <div class="vanity-stat">
+                    <div class="stat-value fs-3 fw-bold">{{ stats.win_rate | round | int }}%</div>
+                    <div class="stat-label text-muted small">Win %</div>
+                </div>
+                <div class="vanity-stat">
+                    <div class="stat-value fs-3 fw-bold text-volt">
+                        {% if stats.total_games > 0 %}
+                            {% if current_streak > 2 %}
+                                🔥 {{ current_streak }}
+                            {% else %}
+                                {{ current_streak }}
+                            {% endif %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </div>
+                    <div class="stat-label text-muted small">Streak</div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-right-panel">
+            <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
+        </div>
+    </div>
     {% endif %}
 
     {# Jump Back In Section #}
-    {% if recent_opponents %}
+    {% if recent_opponents and onboarding_progress.percent == 100 %}
     <div class="card mb-4">
         <div class="card-body">
             <h4 class="card-header" style="border-bottom: none; margin-bottom: 0; padding-left: 0;">Jump Back In</h4>
