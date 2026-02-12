@@ -69,6 +69,7 @@ class TournamentDoublesTestCase(unittest.TestCase):
                 "name": "Test User",
                 "username": "testuser",
                 "email": "user1@example.com",
+                "isAdmin": True,
             }
         )
         self.mock_db.collection("users").document(MOCK_PARTNER_ID).set(
