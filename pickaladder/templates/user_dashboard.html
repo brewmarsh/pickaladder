@@ -33,7 +33,7 @@
     {% endif %}
 
     <div class="hero-stats-card">
-        <a href="{{ url_for('user.settings') }}" class="btn-edit-gear" title="Settings">⚙️</a>
+        <a href="{{ url_for('user.settings') }}" class="btn-edit-gear" title="Edit Profile">⚙️</a>
         <div class="hero-left-panel">
             {# Resolved: Use the container pattern from main for better image fitting #}
             <div class="profile-picture-container avatar-xl">
@@ -55,13 +55,13 @@
                 <div class="vanity-stat">
                     <div class="stat-value fs-3 fw-bold text-volt">
                         {% if stats.total_games > 0 %}
-                        {% if current_streak > 2 %}
-                        🔥 {{ current_streak }}
+                            {% if current_streak > 2 %}
+                                🔥 {{ current_streak }}
+                            {% else %}
+                                {{ current_streak }}
+                            {% endif %}
                         {% else %}
-                        {{ current_streak }}
-                        {% endif %}
-                        {% else %}
-                        N/A
+                            N/A
                         {% endif %}
                     </div>
                     <div class="stat-label text-muted small">Streak</div>
@@ -81,8 +81,7 @@
             <div class="text-muted small mb-3">Recent Opponents</div>
             <div class="d-flex gap-3 mt-3">
                 {% for opponent in recent_opponents %}
-                <a href="{{ url_for('match.record_match', opponent_id=opponent.uid) }}"
-                    title="{{ opponent.name or opponent.username }}">
+                <a href="{{ url_for('match.record_match', opponent_id=opponent.uid) }}" title="{{ opponent.name or opponent.username }}">
                     <img src="{{ opponent | avatar_url }}" alt="{{ opponent.username }}" class="avatar avatar-lg">
                 </a>
                 {% endfor %}
@@ -120,33 +119,31 @@
                                 </td>
                                 <td data-label="Matchup">
                                     {% if match.match_type == 'doubles' %}
-                                    {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
-                                    {% if in_team1 %}
-                                    {% set partner = match.player1[1] if match.player1[0].id == user.uid else
-                                    match.player1[0] %}
-                                    {% set opponent_name = match.team2_name %}
-                                    {% set user_score = match.player1_score %}
-                                    {% set opp_score = match.player2_score %}
+                                        {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
+                                        {% if in_team1 %}
+                                            {% set partner = match.player1[1] if match.player1[0].id == user.uid else match.player1[0] %}
+                                            {% set opponent_name = match.team2_name %}
+                                            {% set user_score = match.player1_score %}
+                                            {% set opp_score = match.player2_score %}
+                                        {% else %}
+                                            {% set partner = match.player2[1] if match.player2[0].id == user.uid else match.player2[0] %}
+                                            {% set opponent_name = match.team1_name %}
+                                            {% set user_score = match.player2_score %}
+                                            {% set opp_score = match.player1_score %}
+                                        {% endif %}
+                                        <strong>You & {{ partner.username }}</strong> vs {{ opponent_name }}
                                     {% else %}
-                                    {% set partner = match.player2[1] if match.player2[0].id == user.uid else
-                                    match.player2[0] %}
-                                    {% set opponent_name = match.team1_name %}
-                                    {% set user_score = match.player2_score %}
-                                    {% set opp_score = match.player1_score %}
-                                    {% endif %}
-                                    <strong>You & {{ partner.username }}</strong> vs {{ opponent_name }}
-                                    {% else %}
-                                    {% set is_p1 = match.player1.id == user.uid %}
-                                    {% if is_p1 %}
-                                    {% set opponent = match.player2 %}
-                                    {% set user_score = match.player1_score %}
-                                    {% set opp_score = match.player2_score %}
-                                    {% else %}
-                                    {% set opponent = match.player1 %}
-                                    {% set user_score = match.player2_score %}
-                                    {% set opp_score = match.player1_score %}
-                                    {% endif %}
-                                    <strong>You</strong> vs {{ opponent.username }}
+                                        {% set is_p1 = match.player1.id == user.uid %}
+                                        {% if is_p1 %}
+                                            {% set opponent = match.player2 %}
+                                            {% set user_score = match.player1_score %}
+                                            {% set opp_score = match.player2_score %}
+                                        {% else %}
+                                            {% set opponent = match.player1 %}
+                                            {% set user_score = match.player2_score %}
+                                            {% set opp_score = match.player1_score %}
+                                        {% endif %}
+                                        <strong>You</strong> vs {{ opponent.username }}
                                     {% endif %}
                                 </td>
                                 <td data-label="Result">
@@ -159,14 +156,11 @@
                                             {% endif %}
                                             {{ user_score }} - {{ opp_score }}
                                             {% if match.tournament_name %}
-                                            <div class="text-muted small" style="margin-top: 4px;">🏆 {{
-                                                match.tournament_name }}</div>
+                                            <div class="text-muted small" style="margin-top: 4px;">🏆 {{ match.tournament_name }}</div>
                                             {% endif %}
                                         </div>
-                                        {% if (match.created_by == user.uid and not match.tournament_id) or user.isAdmin
-                                        %}
-                                        <a href="{{ url_for('match.edit_match', match_id=match.id) }}"
-                                            class="text-muted" title="Edit Match">
+                                        {% if (match.created_by == user.uid and not match.tournament_id) or user.isAdmin %}
+                                        <a href="{{ url_for('match.edit_match', match_id=match.id) }}" class="text-muted" title="Edit Match">
                                             ✏️
                                         </a>
                                         {% endif %}
@@ -237,10 +231,8 @@
                     <div class="text-center p-5">
                         <div style="font-size: 3rem; margin-bottom: 1rem;">👨‍👩‍👧‍👦</div>
                         <h4>Find your squad</h4>
-                        <p class="text-muted" style="margin-bottom: 24px;">Join a group or tournament to start competing
-                            and climb the ranks!</p>
-                        <a href="{{ url_for('user.view_community') }}" class="btn btn-volt" style="width: auto;">Find a
-                            Group</a>
+                        <p class="text-muted" style="margin-bottom: 24px;">Join a group or tournament to start competing and climb the ranks!</p>
+                        <a href="{{ url_for('user.view_community') }}" class="btn btn-volt" style="width: auto;">Find a Group</a>
                     </div>
                     {% else %}
                     <div class="list-group list-group-flush">
@@ -265,8 +257,7 @@
                             style="display: flex; align-items: center; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--border-color);">
                             {% if ranking.group_image %}
                             <div class="profile-picture-container avatar-sm" style="margin-right: 12px;">
-                                <img src="{{ ranking.group_image }}" alt="{{ ranking.group_name }}"
-                                    class="profile-picture">
+                                <img src="{{ ranking.group_image }}" alt="{{ ranking.group_name }}" class="profile-picture">
                             </div>
                             {% else %}
                             <span style="margin-right: 12px; font-size: 1.25rem;">👥</span>
@@ -342,4 +333,7 @@
     </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
 {% endblock %}
