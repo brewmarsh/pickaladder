@@ -62,8 +62,12 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             sess["user_id"] = MOCK_USER_ID
             sess["is_admin"] = False
         self.mocks["verify_id_token"].return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
-        self.mocks["auth_core"].verify_id_token.return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
-        self.mocks["auth_profile"].verify_id_token.return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
+        self.mocks[
+            "auth_core"
+        ].verify_id_token.return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
+        self.mocks[
+            "auth_profile"
+        ].verify_id_token.return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
 
     def _mock_firestore_user(self) -> MagicMock:
         """Mock a firestore user document."""
