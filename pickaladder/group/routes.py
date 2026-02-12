@@ -97,7 +97,7 @@ def view_group(group_id: str) -> Any:
                 GroupService.invite_by_email(
                     db, group_id, context["group"]["name"], email, name, g.user["uid"]
                 )
-                flash(f"Invitation is being sent to {email.lower()}.", "toast")
+                flash(f"Invitation is being sent to {email.lower()}.", "success")
                 return redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
             flash(f"An error occurred creating the invitation: {e}", "danger")

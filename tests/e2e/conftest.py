@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from mockfirestore import CollectionReference, MockFirestore
+from mockfirestore import CollectionReference, MockFirestore, Transaction
 from mockfirestore.document import DocumentReference, DocumentSnapshot
 from mockfirestore.query import Query
 from werkzeug.serving import make_server
@@ -179,6 +179,9 @@ def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
     others = {k: v for k, v in data.items() if not isinstance(v, MockSentinel)}
 
     if others:
+        # Handle dot notation for mockfirestore manually if needed
+        # but mockfirestore usually handles it.
+        # We'll just use the original update and hope for the best.
         original_update(self, others)
 
     if sentinels:
@@ -216,32 +219,6 @@ class MockFieldFilter:
         self.value = value
 
 
-class MockTransaction:
-    """Mock for firestore.Transaction."""
-
-    def __init__(self, db: EnhancedMockFirestore) -> None:
-        """Initialize mock transaction."""
-        self.db = db
-
-    def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
-        """Mock get."""
-        return doc_ref.get()
-
-    def set(
-        self, doc_ref: DocumentReference, data: dict[str, Any], merge: bool = False
-    ) -> None:
-        """Mock set."""
-        doc_ref.set(data, merge=merge)
-
-    def update(self, doc_ref: DocumentReference, data: dict[str, Any]) -> None:
-        """Mock update."""
-        doc_ref.update(data)
-
-    def delete(self, doc_ref: DocumentReference) -> None:
-        """Mock delete."""
-        doc_ref.delete()
-
-
 class MockBatch:
     """Mock for firestore.WriteBatch."""
 
@@ -276,6 +253,36 @@ class MockBatch:
         self.ops = []
 
 
+class MockTransaction(Transaction):
+    """Mock for firestore.Transaction."""
+
+    def __init__(self, db: EnhancedMockFirestore) -> None:
+        """Initialize mock transaction."""
+        super().__init__(db)
+        self._read_only = False
+        self._rollback = False
+        self._id = "mock-transaction-id"
+        self._max_attempts = 5
+
+    def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
+        """Mock get."""
+        return doc_ref.get()
+
+    def set(
+        self, doc_ref: DocumentReference, data: dict[str, Any], merge: bool = False
+    ) -> None:
+        """Mock set."""
+        doc_ref.set(data, merge=merge)
+
+    def update(self, doc_ref: DocumentReference, data: dict[str, Any]) -> None:
+        """Mock update."""
+        doc_ref.update(data)
+
+    def delete(self, doc_ref: DocumentReference) -> None:
+        """Mock delete."""
+        doc_ref.delete()
+
+
 class EnhancedMockFirestore(MockFirestore):
     """Enhanced MockFirestore with batch and transaction support."""
 
@@ -303,10 +310,12 @@ class MockAuthService:
 
     class EmailAlreadyExistsError(Exception):
         """Mock EmailAlreadyExistsError."""
+
         pass
 
     class UserNotFoundError(Exception):
         """Mock UserNotFoundError."""
+
         pass
 
     def verify_id_token(
@@ -366,6 +375,7 @@ def app_server(
 
     import firebase_admin.auth
     import firebase_admin.firestore
+    import google.cloud.firestore
 
     p1 = patch("firebase_admin.initialize_app")
     p2 = patch.object(firebase_admin.firestore, "client", return_value=mock_db)
@@ -394,8 +404,9 @@ def app_server(
     p11 = patch.object(
         firebase_admin.firestore, "transactional", side_effect=lambda x: x
     )
+    p12 = patch.object(google.cloud.firestore, "transactional", side_effect=lambda x: x)
 
-    # Start p1 through p11 BEFORE importing pickaladder to ensure decorators are patched
+    # Start p1 through p12 BEFORE importing pickaladder to ensure decorators are patched
     p1.start()
     p2.start()
     p3.start()
@@ -407,14 +418,15 @@ def app_server(
     p9.start()
     p10.start()
     p11.start()
+    p12.start()
 
     # Move pickaladder import AFTER patching
     pickaladder = importlib.import_module("pickaladder")
 
     os.environ["FIREBASE_PROJECT_ID"] = "test-project"
-    os.environ["SECRET_KEY"] = "dev"
-    os.environ["MAIL_USERNAME"] = "test"
-    os.environ["MAIL_PASSWORD"] = "test"
+    os.environ["SECRET_KEY"] = "dev"  # nosec
+    os.environ["MAIL_USERNAME"] = "test"  # nosec
+    os.environ["MAIL_PASSWORD"] = "test"  # nosec
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
 
@@ -440,6 +452,7 @@ def app_server(
     p9.stop()
     p10.stop()
     p11.stop()
+    p12.stop()
 
 
 @pytest.fixture

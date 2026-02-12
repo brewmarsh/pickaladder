@@ -152,7 +152,7 @@
 .score-win { color: var(--success-color); }
 .score-loss { color: var(--text-secondary); }
 
-/* --- 4. Compact Match Row Design --- */
+/* Match History Compact Rows */
 .match-compact-row {
     display: flex;
     align-items: center;
@@ -211,4 +211,8 @@
     background-color: rgba(239, 68, 68, 0.1);
     color: var(--danger-color);
     border: 1px solid var(--danger-color);
+}
+
+.upset-mini-badge {
+    font-size: 0.75rem;
 }
