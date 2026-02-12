@@ -1,163 +1,269 @@
 {% extends "layout.html" %}
 {% block title %}Admin Panel{% endblock %}
 {% block content %}
-    <div class="page-header">
-        <h1>Admin Panel</h1>
+<div class="page-header">
+    <h1>Admin Panel</h1>
+</div>
+
+<!-- KPI Stats Row -->
+<div class="vanity-stats-container mb-4">
+    <div class="vanity-stat">
+        <div class="stat-value text-volt">{{ admin_stats.total_users }}</div>
+        <div class="stat-label text-muted">Total Users</div>
+    </div>
+    <div class="vanity-stat">
+        <div class="stat-value text-volt">{{ admin_stats.active_tournaments }}</div>
+        <div class="stat-label text-muted">Active Tournaments</div>
+    </div>
+    <div class="vanity-stat">
+        <div class="stat-value text-volt">{{ admin_stats.recent_matches }}</div>
+        <div class="stat-label text-muted">Recent Matches (24h)</div>
+    </div>
+</div>
+
+<div class="card-grid">
+    <!-- User Management -->
+    <div class="card" style="grid-column: span 2;">
+        <h3>User Management</h3>
+        <div class="table-container">
+            <table class="table-standard responsive-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td data-label="User">
+                            <strong>{{ user.name or user.username }}</strong><br>
+                            <small class="text-muted">{{ user.email }}</small>
+                        </td>
+                        <td data-label="Status">
+                            {% if user.isAdmin %}<span class="badge badge-volt">Admin</span>{% endif %}
+                            {% if user.email_verified %}<span class="badge badge-success">Verified</span>{% else %}<span
+                                class="badge badge-danger">Unverified</span>{% endif %}
+                        </td>
+                        <td data-label="Actions" class="actions-cell">
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                {% if not user.isAdmin %}
+                                <form action="{{ url_for('admin.promote_user', user_id=user.id) }}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-warning">Promote</button>
+                                </form>
+                                {% endif %}
+                                {% if not user.email_verified %}
+                                <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-success">Verify</button>
+                                </form>
+                                {% endif %}
+                                <a href="{{ url_for('admin.impersonate', user_id=user.id) }}"
+                                    class="btn btn-sm btn-secondary">Impersonate</a>
+                                <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post"
+                                    onsubmit="return confirm('Are you sure?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <!-- KPI Stats Row -->
-    <div class="vanity-stats-container mb-4">
-        <div class="vanity-stat">
-            <div class="stat-value text-volt">{{ admin_stats.total_users }}</div>
-            <div class="stat-label text-muted">Total Users</div>
-        </div>
-        <div class="vanity-stat">
-            <div class="stat-value text-volt">{{ admin_stats.active_tournaments }}</div>
-            <div class="stat-label text-muted">Active Tournaments</div>
-        </div>
-        <div class="vanity-stat">
-            <div class="stat-value text-volt">{{ admin_stats.recent_matches }}</div>
-            <div class="stat-label text-muted">Recent Matches (24h)</div>
-        </div>
-    </div>
-
-    <div class="card-grid">
-        <!-- User Management -->
-        <div class="card" style="grid-column: span 2;">
-            <h3>User Management</h3>
-            <div class="table-container">
-                <table class="table-standard responsive-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user in users %}
-                        <tr>
-                            <td data-label="User">
-                                <strong>{{ user.name or user.username }}</strong><br>
-                                <small class="text-muted">{{ user.email }}</small>
-                            </td>
-                            <td data-label="Status">
-                                {% if user.isAdmin %}<span class="badge badge-volt">Admin</span>{% endif %}
-                                {% if user.email_verified %}<span class="badge badge-success">Verified</span>{% else %}<span class="badge badge-danger">Unverified</span>{% endif %}
-                            </td>
-                            <td data-label="Actions" class="actions-cell">
-                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                                    {% if not user.isAdmin %}
-                                    <form action="{{ url_for('admin.promote_user', user_id=user.id) }}" method="post">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-warning">Promote</button>
-                                    </form>
-                                    {% endif %}
-                                    {% if not user.email_verified %}
-                                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-success">Verify</button>
-                                    </form>
-                                    {% endif %}
-                                    <a href="{{ url_for('admin.impersonate', user_id=user.id) }}" class="btn btn-sm btn-secondary">Impersonate</a>
-                                    <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" onsubmit="return confirm('Are you sure?');">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- System Message -->
+    <div class="card">
+        <h3>System Message</h3>
+        <p>Broadcast a global announcement to all users.</p>
+        <form action="{{ url_for('admin.announcement') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group mb-2">
+                <label for="announcement_text">Message</label>
+                <textarea id="announcement_text" name="announcement_text" class="form-control" rows="3"
+                    required>{{ global_announcement.announcement_text if global_announcement }}</textarea>
             </div>
-        </div>
+            <div class="form-group mb-2">
+                <label for="level">Level</label>
+                <select id="level" name="level" class="form-control">
+                    <option value="info" {% if global_announcement and global_announcement.level=='info' %}selected{%
+                        endif %}>Info (Blue)</option>
+                    <option value="warning" {% if global_announcement and global_announcement.level=='warning'
+                        %}selected{% endif %}>Warning (Yellow)</option>
+                    <option value="danger" {% if global_announcement and global_announcement.level=='danger'
+                        %}selected{% endif %}>Danger (Red)</option>
+                </select>
+            </div>
+            <div class="form-group form-check mb-2">
+                <input type="checkbox" id="is_active" name="is_active" class="form-check-input" {% if
+                    global_announcement and global_announcement.is_active %}checked{% endif %}>
+                <label for="is_active" class="form-check-label">Active</label>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Update Announcement</button>
+        </form>
+    </div>
 
-        <!-- System Message -->
-        <div class="card">
-            <h3>System Message</h3>
-            <p>Broadcast a global announcement to all users.</p>
-            <form action="{{ url_for('admin.announcement') }}" method="post">
+    <!-- Account Tools -->
+    <div class="card">
+        <h3>Account Tools</h3>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="{{ url_for('admin.merge_players') }}" class="btn btn-warning">Merge Players (Deep Merge)</a>
+            <hr>
+            <h4>Merge Ghost</h4>
+            <form action="{{ url_for('admin.merge_ghost') }}" method="post">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="form-group mb-2">
-                    <label for="announcement_text">Message</label>
-                    <textarea id="announcement_text" name="announcement_text" class="form-control" rows="3" required>{{ global_announcement.announcement_text if global_announcement }}</textarea>
+                <div class="form-group">
+                    <input type="text" name="target_user_id" class="form-control mb-2" placeholder="Real User ID"
+                        required>
+                    <input type="email" name="ghost_email" class="form-control mb-2" placeholder="Ghost Email" required>
                 </div>
-                <div class="form-group mb-2">
-                    <label for="level">Level</label>
-                    <select id="level" name="level" class="form-control">
-                        <option value="info" {% if global_announcement and global_announcement.level == 'info' %}selected{% endif %}>Info (Blue)</option>
-                        <option value="warning" {% if global_announcement and global_announcement.level == 'warning' %}selected{% endif %}>Warning (Yellow)</option>
-                        <option value="danger" {% if global_announcement and global_announcement.level == 'danger' %}selected{% endif %}>Danger (Red)</option>
-                    </select>
-                </div>
-                <div class="form-group form-check mb-2">
-                    <input type="checkbox" id="is_active" name="is_active" class="form-check-input" {% if global_announcement and global_announcement.is_active %}checked{% endif %}>
-                    <label for="is_active" class="form-check-label">Active</label>
-                </div>
-                <button type="submit" class="btn btn-primary w-100">Update Announcement</button>
+                <button type="submit" class="btn btn-secondary w-100">Merge Ghost</button>
             </form>
+            <hr>
+            <h4>Friend Graph</h4>
+            <p class="small text-muted">Visualize user connections.</p>
+            <button type="button" class="btn btn-secondary w-100" data-toggle="modal" data-target="#friendGraphModal">
+                View Graph
+            </button>
         </div>
+    </div>
 
-        <!-- Account Tools -->
-        <div class="card">
-            <h3>Account Tools</h3>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <a href="{{ url_for('admin.merge_players') }}" class="btn btn-warning">Merge Players (Deep Merge)</a>
-                <hr>
-                <h4>Merge Ghost</h4>
-                <form action="{{ url_for('admin.merge_ghost') }}" method="post">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="form-group">
-                        <input type="text" name="target_user_id" class="form-control mb-2" placeholder="Real User ID" required>
-                        <input type="email" name="ghost_email" class="form-control mb-2" placeholder="Ghost Email" required>
-                    </div>
-                    <button type="submit" class="btn btn-secondary w-100">Merge Ghost</button>
-                </form>
-            </div>
+    <!-- Site Settings -->
+    <div class="card">
+        <h3>Site Settings</h3>
+        <p>
+            Email Verification:
+            {% if email_verification_setting and email_verification_setting.value == 'true' %}
+            <strong class="text-volt">Enabled</strong>
+            {% else %}
+            <strong class="text-danger">Disabled</strong>
+            {% endif %}
+        </p>
+        <form action="{{ url_for('admin.toggle_email_verification') }}" method="post" class="mb-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit"
+                class="btn {{ 'btn-danger' if email_verification_setting.value == 'true' else 'btn-success' }} w-100">
+                {{ 'Disable' if email_verification_setting.value == 'true' else 'Enable' }}
+            </button>
+        </form>
+
+        <hr>
+
+        <h4>Project Links</h4>
+        <div class="d-flex flex-column gap-2">
+            <a href="https://github.com/brewmarsh/pickaladder/discussions" target="_blank"
+                class="btn btn-sm btn-outline-primary">GitHub Discussions</a>
+            <a href="https://github.com/brewmarsh/pickaladder/projects" target="_blank"
+                class="btn btn-sm btn-outline-primary">Project Board</a>
+            <a href="https://github.com/brewmarsh/pickaladder/settings" target="_blank"
+                class="btn btn-sm btn-outline-secondary">Repo Settings</a>
         </div>
+    </div>
 
-        <!-- Settings & Links -->
-        <div class="card">
-            <h3>Site Settings</h3>
-            <p>
-                Email Verification:
-                {% if email_verification_setting and email_verification_setting.value == 'true' %}
-                    <strong class="text-volt">Enabled</strong>
-                {% else %}
-                    <strong class="text-danger">Disabled</strong>
-                {% endif %}
-            </p>
-            <form action="{{ url_for('admin.toggle_email_verification') }}" method="post" class="mb-3">
+    <!-- Danger Zone -->
+    <div class="card border-danger">
+        <h3 class="text-danger">Danger Zone</h3>
+        <p class="small text-muted">Destructive administrative actions.</p>
+        <div class="d-flex flex-column gap-2">
+            <form action="{{ url_for('admin.generate_users') }}" method="post">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn {{ 'btn-danger' if email_verification_setting.value == 'true' else 'btn-success' }} w-100">
-                    {{ 'Disable' if email_verification_setting.value == 'true' else 'Enable' }}
-                </button>
+                <button type="submit" class="btn btn-outline-primary btn-sm w-100">Generate Test Users</button>
+            </form>
+            <form action="{{ url_for('admin.generate_matches') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-primary btn-sm w-100">Generate Test Matches</button>
             </form>
 
             <hr>
 
-            <h4>Project Links</h4>
-            <div class="d-flex flex-column gap-2">
-                <a href="https://github.com/brewmarsh/pickaladder/discussions" target="_blank" class="btn btn-sm btn-outline-primary">GitHub Discussions</a>
-                <a href="https://github.com/brewmarsh/pickaladder/projects" target="_blank" class="btn btn-sm btn-outline-primary">Project Board</a>
-            </div>
+            <h4>Delete User by ID/Email</h4>
+            <form action="{{ url_for('admin.admin_delete_user') }}" method="post"
+                onsubmit="return confirm('Are you sure you want to delete this user? This action is irreversible.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group mb-2">
+                    <input type="text" id="user_identifier" name="user_identifier" class="form-control form-control-sm"
+                        placeholder="User ID or Email" required>
+                </div>
+                <button type="submit" class="btn btn-danger btn-sm w-100">Delete User</button>
+            </form>
         </div>
+    </div>
+</div>
 
-        <!-- Danger Zone -->
-        <div class="card border-danger">
-            <h3 class="text-danger">Danger Zone</h3>
-            <p class="small text-muted">Destructive administrative actions.</p>
-            <div class="d-flex flex-column gap-2">
-                <form action="{{ url_for('admin.generate_users') }}" method="post">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">Generate Test Users</button>
-                </form>
-                <form action="{{ url_for('admin.generate_matches') }}" method="post">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">Generate Test Matches</button>
-                </form>
+<!-- Friend Graph Modal -->
+<div class="modal" id="friendGraphModal" tabindex="-1" role="dialog" aria-labelledby="friendGraphModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="friendGraphModalLabel">Friend Graph</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="friend-graph" style="height: 500px; background: #111;"></div>
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var friendGraphModal = document.getElementById('friendGraphModal');
+        var friendGraphBtn = document.querySelector('[data-target="#friendGraphModal"]');
+        var closeBtn = friendGraphModal.querySelector('.close');
+
+        if (friendGraphBtn) {
+            friendGraphBtn.addEventListener('click', function () {
+                friendGraphModal.style.display = 'block';
+                fetch('/admin/friend_graph_data')
+                    .then(response => response.json())
+                    .then(data => {
+                        var container = document.getElementById('friend-graph');
+                        var options = {
+                            nodes: {
+                                shape: 'dot',
+                                size: 16,
+                                color: {
+                                    background: '#00ff00',
+                                    border: '#ffffff',
+                                    highlight: { background: '#ffffff', border: '#00ff00' }
+                                },
+                                font: { color: '#ffffff' }
+                            },
+                            edges: {
+                                color: '#444',
+                                width: 2
+                            },
+                            physics: {
+                                enabled: true,
+                                barnesHut: { gravitationalConstant: -2000 }
+                            }
+                        };
+                        var network = new vis.Network(container, data, options);
+                    });
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                friendGraphModal.style.display = 'none';
+            });
+        }
+
+        window.addEventListener('click', function (event) {
+            if (event.target == friendGraphModal) {
+                friendGraphModal.style.display = 'none';
+            }
+        });
+    });
+</script>
 {% endblock %}

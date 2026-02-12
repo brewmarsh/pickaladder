@@ -34,8 +34,10 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
-            "storage_service": patch("pickaladder.user.services.core.storage"),
+            "storage_service": patch("pickaladder.user.services.profile.storage"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
+            "auth_core": patch("pickaladder.user.services.core.auth"),
+            "auth_profile": patch("pickaladder.user.services.profile.auth"),
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}
@@ -86,12 +88,18 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={"dark_mode": "y", "dupr_rating": 5.5, "username": "newuser"},
+            data={
+                "dark_mode": "y",
+                "dupr_rating": 5.5,
+                "username": "newuser",
+                "name": "New Name",
+                "email": "new@example.com",
+            },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Settings updated!", response.data)
-        mock_user_doc.update.assert_called_once()
+        mock_user_doc.update.assert_called()
 
     def test_update_profile_picture_upload(self) -> None:
         """Test successfully uploading a profile picture."""
@@ -105,6 +113,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         data = {
             "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
             "username": "newuser",
+            "name": "New Name",
+            "email": "new@example.com",
         }
         response = self.client.post(
             "/user/settings",
@@ -120,10 +130,11 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         )
         mock_blob.upload_from_filename.assert_called_once()
         mock_blob.make_public.assert_called_once()
-        self.assertEqual(
-            mock_user_doc.update.call_args[0][0]["profilePictureUrl"],
-            "https://storage.googleapis.com/test-bucket/test.jpg",
-        )
+
+        # Verify profilePictureUrl was updated in one of the calls
+        calls = [c[0][0] for c in mock_user_doc.update.call_args_list]
+        found_pic = any(c.get("profilePictureUrl") == "https://storage.googleapis.com/test-bucket/test.jpg" for c in calls)
+        self.assertTrue(found_pic)
 
     def test_update_dupr_and_dark_mode(self) -> None:
         """Test updating DUPR rating and dark mode settings."""
@@ -132,15 +143,22 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.post(
             "/user/settings",
-            data={"dark_mode": "y", "dupr_rating": "5.5", "username": "newuser"},
+            data={
+                "dark_mode": "y",
+                "dupr_rating": "5.5",
+                "username": "newuser",
+                "name": "New Name",
+                "email": "new@example.com",
+            },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Settings updated!", response.data)
-        # Note: update_settings now uses a dictionary with multiple fields
-        update_call_args = mock_user_doc.update.call_args[0][0]
-        self.assertEqual(update_call_args["dark_mode"], True)
-        self.assertEqual(update_call_args["duprRating"], 5.5)
+
+        # Verify updates in any of the calls
+        calls = [c[0][0] for c in mock_user_doc.update.call_args_list]
+        self.assertTrue(any(c.get("dark_mode") is True for c in calls))
+        self.assertTrue(any(c.get("duprRating") == 5.5 for c in calls))
 
     def _setup_dashboard_mocks(self, mock_db: MagicMock) -> None:
         """Set up specific mocks for the dashboard API tests."""

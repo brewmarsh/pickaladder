@@ -30,6 +30,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_firestore_service = MagicMock()
         # Ensure FieldFilter is available for inspection in tests
         self.mock_firestore_service.FieldFilter = firestore.FieldFilter
+        self.mock_firestore_service.transactional.side_effect = lambda x: x
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),

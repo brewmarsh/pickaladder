@@ -8,7 +8,7 @@ import pytest
 from mockfirestore import MockFirestore
 
 from pickaladder import create_app
-from tests.mock_utils import MockFirestoreBuilder, patch_mockfirestore
+from tests.mock_utils import MockFieldFilter, MockFirestoreBuilder, patch_mockfirestore
 
 
 @pytest.fixture
@@ -21,9 +21,15 @@ def mock_db() -> MockFirestore:
 def apply_global_patches(mock_db: MockFirestore) -> Iterator[None]:
     """Apply global monkeypatches to mockfirestore and firebase_admin."""
     patch_mockfirestore()
+
+    # Also patch Increment
+    mock_db.Increment = lambda x: f"INCREMENT({x})" # Simple representation
+
     with (
         unittest.mock.patch("firebase_admin.initialize_app"),
         unittest.mock.patch("firebase_admin.firestore.client", return_value=mock_db),
+        unittest.mock.patch("firebase_admin.firestore.FieldFilter", MockFieldFilter),
+        unittest.mock.patch("firebase_admin.firestore.Increment", return_value=None), # will be overridden if needed
         unittest.mock.patch("firebase_admin.auth"),
     ):
         yield
