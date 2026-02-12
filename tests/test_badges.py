@@ -83,3 +83,10 @@ def test_evaluate_post_match_hot_streak(mock_db):
 
     assert "HOT_STREAK" in awarded  # nosec B101
     mock_award.assert_any_call(mock_db, user_id, "HOT_STREAK")
+
+
+def test_award_champion_badge(mock_db):
+    user_id = "user123"
+    with patch.object(BadgeService, "award_badge", return_value=True) as mock_award:
+        BadgeService.award_champion_badge(mock_db, user_id)
+    mock_award.assert_called_once_with(mock_db, user_id, "CHAMPION")

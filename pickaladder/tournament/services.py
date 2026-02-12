@@ -496,6 +496,30 @@ class TournamentService:
 
         ref.update({"status": "Completed"})
 
+        # Award Champion badges
+        try:
+            from pickaladder.badges.services import BadgeService
+
+            standings = get_tournament_standings(
+                db, tournament_id, data.get("matchType", "singles")
+            )
+            if standings:
+                winner_data = standings[0]
+                winner_id = winner_data.get("id")
+                if winner_id:
+                    if data.get("matchType") == "doubles":
+                        # For doubles, winner_id is a teamId. Get members.
+                        team_doc = db.collection("teams").document(winner_id).get()
+                        if team_doc.exists:
+                            team_data = team_doc.to_dict() or {}
+                            members = team_data.get("members", [])
+                            for m_ref in members:
+                                BadgeService.award_champion_badge(db, m_ref.id)
+                    else:
+                        BadgeService.award_champion_badge(db, winner_id)
+        except Exception as e:
+            logging.error(f"Failed to award champion badge: {e}")
+
         standings = get_tournament_standings(
             db, tournament_id, data.get("matchType", "singles")
         )

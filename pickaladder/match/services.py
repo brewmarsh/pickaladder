@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
-from pickaladder.badges.services import BadgeService
 from pickaladder.core.constants import GLOBAL_LEADERBOARD_MIN_GAMES
 from pickaladder.teams.services import TeamService
 
@@ -124,7 +123,7 @@ class MatchService:
         db: Client,
         form_data: dict[str, Any],
         current_user: UserSession,
-    ) -> tuple[str, dict[str, list[str]]]:
+    ) -> str:
         """Process and record a match submission."""
         user_id = current_user["uid"]
         user_ref = db.collection("users").document(user_id)
@@ -225,19 +224,23 @@ class MatchService:
             match_type,
         )
 
-        # Badge Evaluation
-        participants = [p1_id, p2_id]
-        if match_type == "doubles":
-            participants.extend([partner_id, opponent2_id])
+        match_id = new_match_ref.id
 
-        new_badges = {}
-        for pid in participants:
-            if pid:
+        # Badge Evaluation (Post-recording)
+        unlocked_badges: dict[str, list[str]] = {}
+        try:
+            from pickaladder.badges.services import BadgeService
+
+            for pid in active_players:
+                if not pid:
+                    continue
                 awarded = BadgeService.evaluate_post_match(db, pid)
                 if awarded:
-                    new_badges[pid] = awarded
+                    unlocked_badges[pid] = awarded
+        except Exception:  # noqa: BLE001
+            pass
 
-        return new_match_ref.id, new_badges
+        return match_id, unlocked_badges
 
     @staticmethod
     def _resolve_teams(

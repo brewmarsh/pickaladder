@@ -75,3 +75,8 @@ class BadgeService:
                 awarded_badge_ids.append("HOT_STREAK")
 
         return awarded_badge_ids
+
+    @staticmethod
+    def award_champion_badge(db: Client, user_id: str) -> bool:
+        """Award the Champion badge to a user."""
+        return BadgeService.award_badge(db, user_id, "CHAMPION")
