@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, cast
 
 from firebase_admin import firestore
 
@@ -11,7 +11,12 @@ from pickaladder.user.services.match_stats import calculate_stats, get_user_matc
 from .models import BADGES
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
+
+
+HOT_STREAK_THRESHOLD = 3
+CENTURY_CLUB_THRESHOLD = 100
 
 
 class BadgeService:
@@ -24,7 +29,7 @@ class BadgeService:
             return False
 
         user_ref = db.collection("users").document(user_id)
-        user_doc = user_ref.get()
+        user_doc = cast("DocumentSnapshot", user_ref.get())
         if not user_doc.exists:
             return False
 
@@ -57,12 +62,15 @@ class BadgeService:
                 awarded_badge_ids.append("ROOKIE")
 
         # Logic: Century Club (100 matches)
-        if stats.get("total_games") == 100:
+        if stats.get("total_games") == CENTURY_CLUB_THRESHOLD:
             if BadgeService.award_badge(db, user_id, "CENTURY"):
                 awarded_badge_ids.append("CENTURY")
 
         # Logic: On Fire (3 wins in a row)
-        if stats.get("current_streak") == 3 and stats.get("streak_type") == "W":
+        if (
+            stats.get("current_streak") == HOT_STREAK_THRESHOLD
+            and stats.get("streak_type") == "W"
+        ):
             if BadgeService.award_badge(db, user_id, "HOT_STREAK"):
                 awarded_badge_ids.append("HOT_STREAK")
 

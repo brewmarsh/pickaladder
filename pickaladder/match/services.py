@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, cast
 from firebase_admin import firestore
 
 from pickaladder.badges.services import BadgeService
-
 from pickaladder.core.constants import GLOBAL_LEADERBOARD_MIN_GAMES
 from pickaladder.teams.services import TeamService
 
@@ -125,7 +124,7 @@ class MatchService:
         db: Client,
         form_data: dict[str, Any],
         current_user: UserSession,
-    ) -> str:
+    ) -> tuple[str, dict[str, list[str]]]:
         """Process and record a match submission."""
         user_id = current_user["uid"]
         user_ref = db.collection("users").document(user_id)

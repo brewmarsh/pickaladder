@@ -109,7 +109,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def test_update_profile_picture_upload(self) -> None:
         """Test successfully uploading a profile picture."""
         self._set_session_user()
-        mock_user_doc = self._mock_firestore_user()
+        self._mock_firestore_user()
         mock_storage = self.mocks["storage_service"]
         mock_bucket = mock_storage.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
@@ -130,9 +130,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Settings updated!", response.data)
         mock_storage.bucket.assert_called()
-        mock_bucket.blob.assert_called_with(
-            f"profile_pictures/{MOCK_USER_ID}/test.png"
-        )
+        mock_bucket.blob.assert_called_with(f"profile_pictures/{MOCK_USER_ID}/test.png")
         mock_blob.upload_from_filename.assert_called_once()
         mock_blob.make_public.assert_called_once()
 

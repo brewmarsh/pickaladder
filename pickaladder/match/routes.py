@@ -243,7 +243,7 @@ def record_match() -> Any:
             data["tournament_id"] = tournament_id
 
         try:
-            # Capture the ID from the service call (Feature Branch Logic)
+            # Capture the ID and badges from the service call
             match_id, new_badges = MatchService.process_match_submission(
                 db, form.data, g.user
             )
@@ -253,9 +253,11 @@ def record_match() -> Any:
                 from pickaladder.badges.models import BADGES
 
                 for badge_id in new_badges[user_id]:
-                    badge = BADGES.get(badge_id, {})
+                    badge_info = BADGES.get(badge_id, {})
+                    badge_name = badge_info.get("name", "Badge")
+                    badge_icon = badge_info.get("icon", "")
                     flash(
-                        f"New Badge Unlocked! {badge.get('icon', '')} {badge.get('name', 'Badge')}",
+                        f"New Badge Unlocked! {badge_icon} {badge_name}",
                         "success",
                     )
 
