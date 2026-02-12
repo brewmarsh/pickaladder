@@ -8,12 +8,12 @@ from firebase_admin import auth, firestore
 from flask import (
     flash,
     g,
-    jsonify,
     redirect,
     render_template,
     request,
     session,
     url_for,
+    jsonify,
 )
 from werkzeug.wrappers import Response
 
@@ -30,7 +30,9 @@ MIN_USERS_FOR_MATCH_GENERATION = 2
 @login_required(admin_required=True)
 def admin() -> Union[str, Response]:
     """Render the main admin dashboard."""
-    # Authorization check is now here, after g.user is guaranteed to be loaded.
+    # We allow access if the user is an admin OR if they are an admin currently
+    # impersonating someone else. The login_required(admin_required=True)
+    # decorator already checks session['is_admin'].
     if not g.user or (not g.user.get("isAdmin") and not g.get("is_impersonating")):
         flash("You are not authorized to view this page.", "danger")
         return redirect(url_for("auth.login"))
@@ -93,6 +95,7 @@ def announcement() -> Response:
     is_active = request.form.get("is_active") == "on"
 
     try:
+        # standardizing on 'settings' collection for global config
         db.collection("settings").document("global_announcement").set(
             {
                 "announcement_text": announcement_text,
@@ -133,7 +136,6 @@ def admin_matches() -> str:
         .limit(50)
     )
     matches = matches_query.stream()
-    # This is a simplified view. A full view would need to resolve player refs.
     return render_template("admin/matches.html", matches=matches)
 
 
@@ -175,13 +177,11 @@ def admin_delete_user() -> Response:
     uid = None
     email = None
 
-    # Try to find by UID first
     user_doc = db.collection("users").document(user_identifier).get()
     if user_doc.exists:
         uid = user_doc.id
         email = user_doc.to_dict().get("email")
     else:
-        # Try to find by Email
         users = list(
             db.collection("users")
             .where(filter=firestore.FieldFilter("email", "==", user_identifier))
@@ -262,15 +262,13 @@ def generate_users() -> str:
                 lower_case=True,
             )
 
-            # Create user in Auth
             user_record = auth.create_user(email=email, password=password)
 
-            # Create user in Firestore
             user_doc = {
                 "username": username,
                 "email": email,
                 "name": fake.name(),
-                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec
+                "duprRating": round(random.uniform(2.5, 7.0), 2),
                 "isAdmin": False,
                 "createdAt": firestore.SERVER_TIMESTAMP,
             }
@@ -297,13 +295,13 @@ def generate_matches() -> Response:
 
         matches_to_create = 10
         for _ in range(matches_to_create):
-            p1, p2 = random.sample(users, 2)  # nosec
+            p1, p2 = random.sample(users, 2)
             db.collection("matches").add(
                 {
                     "player1Ref": p1.reference,
                     "player2Ref": p2.reference,
-                    "player1Score": random.randint(5, 11),  # nosec
-                    "player2Score": random.randint(5, 11),  # nosec
+                    "player1Score": random.randint(5, 11),
+                    "player2Score": random.randint(5, 11),
                     "matchDate": fake.date_between(start_date="-1y", end_date="today"),
                     "createdAt": firestore.SERVER_TIMESTAMP,
                 }
@@ -321,7 +319,6 @@ def merge_players() -> Union[str, Response]:
     """Merge two player accounts (Source -> Target). Source is deleted."""
     users = UserService.get_all_users(firestore.client(), exclude_ids=[])
 
-    # Sort users for the dropdown (Real users first, then Ghosts)
     sorted_users = sorted(
         users, key=lambda u: (u.get("is_ghost", False), u.get("name", "").lower())
     )
@@ -339,8 +336,6 @@ def merge_players() -> Union[str, Response]:
             return redirect(url_for("admin.merge_players"))
 
         try:
-            # Call the service to perform the deep merge
-            # Note: You need to ensure merge_users is available in UserService
             UserService.merge_users(firestore.client(), source_id, target_id)
             flash("Players merged successfully. Source account deleted.", "success")
         except Exception as e:
@@ -362,7 +357,6 @@ def styleguide() -> str:
 @login_required(admin_required=True)
 def impersonate(user_id: str) -> Response:
     """Start impersonating another user."""
-    # current_user must be an admin to reach here due to decorator
     session["impersonate_id"] = user_id
 
     db = firestore.client()

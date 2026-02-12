@@ -4,12 +4,9 @@
 .gap-4 { gap: 1.5rem !important; }
 .justify-content-center { justify-content: center !important; }
 .text-center { text-align: center !important; }
-<<<<<<< HEAD
 .text-danger { color: var(--danger-color) !important; }
-.border-danger { border: 1px solid var(--danger-color) !important; }
-=======
 .text-volt { color: var(--accent-color) !important; }
->>>>>>> 270f94b (feat: admin stats and branding consistency)
+.border-danger { border: 1px solid var(--danger-color) !important; }
 
 /* --- 6. Input Groups (Design System) --- */
 .input-group {

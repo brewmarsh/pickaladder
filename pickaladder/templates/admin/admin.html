@@ -5,27 +5,22 @@
     <h1>Admin Panel</h1>
 </div>
 
-<!-- KPI Row -->
-<div class="card-grid" style="margin-bottom: 24px;">
-    <div class="card text-center">
-        <i class="fas fa-users fa-2x mb-3" style="color: var(--primary-color);"></i>
-        <h2 class="text-volt mb-1">{{ admin_stats.total_users }}</h2>
-        <p class="text-muted mb-0">Total Users</p>
+<div class="vanity-stats-container mb-4">
+    <div class="vanity-stat">
+        <div class="stat-value text-volt">{{ admin_stats.total_users }}</div>
+        <div class="stat-label text-muted">Total Users</div>
     </div>
-    <div class="card text-center">
-        <i class="fas fa-trophy fa-2x mb-3" style="color: var(--primary-color);"></i>
-        <h2 class="text-volt mb-1">{{ admin_stats.active_tournaments }}</h2>
-        <p class="text-muted mb-0">Active Tournaments</p>
+    <div class="vanity-stat">
+        <div class="stat-value text-volt">{{ admin_stats.active_tournaments }}</div>
+        <div class="stat-label text-muted">Active Tournaments</div>
     </div>
-    <div class="card text-center">
-        <i class="fas fa-table-tennis fa-2x mb-3" style="color: var(--primary-color);"></i>
-        <h2 class="text-volt mb-1">{{ admin_stats.recent_matches }}</h2>
-        <p class="text-muted mb-0">Recent Matches</p>
+    <div class="vanity-stat">
+        <div class="stat-value text-volt">{{ admin_stats.recent_matches }}</div>
+        <div class="stat-label text-muted">Recent Matches (24h)</div>
     </div>
 </div>
 
 <div class="card-grid">
-    <!-- User Management -->
     <div class="card" style="grid-column: span 2;">
         <h3>User Management</h3>
         <div class="table-container">
@@ -44,24 +39,31 @@
                             <div class="d-flex align-items-center gap-2">
                                 <img src="{{ user | avatar_url }}" class="avatar avatar-sm" alt="{{ user.username }}">
                                 <div>
-                                    <div class="fw-bold">{{ user.name }}</div>
-                                    <div class="text-muted small">@{{ user.username }}</div>
+                                    <div class="fw-bold">{{ user.name or user.username }}</div>
+                                    <div class="text-muted small">{{ user.email }}</div>
                                 </div>
                             </div>
                         </td>
                         <td data-label="Status">
-                            {% if user.isAdmin %}
-                            <span class="badge badge-volt">Admin</span>
+                            {% if user.isAdmin %}<span class="badge badge-volt">Admin</span>{% endif %}
+                            {% if user.email_verified %}
+                                <span class="badge badge-success">Verified</span>
                             {% else %}
-                            <span class="badge badge-secondary">User</span>
+                                <span class="badge badge-danger">Unverified</span>
                             {% endif %}
                         </td>
-                        <td data-label="Actions">
-                            <div class="d-flex gap-2">
+                        <td data-label="Actions" class="actions-cell">
+                            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                                 {% if not user.isAdmin %}
                                 <form action="{{ url_for('admin.promote_user', user_id=user.id) }}" method="post">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-sm btn-success">Promote</button>
+                                    <button type="submit" class="btn btn-sm btn-warning">Promote</button>
+                                </form>
+                                {% endif %}
+                                {% if not user.email_verified %}
+                                <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-success">Verify</button>
                                 </form>
                                 {% endif %}
                                 <a href="{{ url_for('admin.impersonate', user_id=user.id) }}"
@@ -80,7 +82,6 @@
         </div>
     </div>
 
-    <!-- System Message -->
     <div class="card">
         <h3>System Message</h3>
         <p>Broadcast a global announcement to all users.</p>
@@ -111,7 +112,6 @@
         </form>
     </div>
 
-    <!-- Account Tools -->
     <div class="card">
         <h3>Account Tools</h3>
         <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -136,7 +136,6 @@
         </div>
     </div>
 
-    <!-- Site Settings -->
     <div class="card">
         <h3>Site Settings</h3>
         <p>
@@ -168,7 +167,6 @@
         </div>
     </div>
 
-    <!-- Danger Zone -->
     <div class="card border-danger">
         <h3 class="text-danger">Danger Zone</h3>
         <p class="small text-muted">Destructive administrative actions.</p>
@@ -198,7 +196,6 @@
     </div>
 </div>
 
-<!-- Friend Graph Modal -->
 <div class="modal" id="friendGraphModal" tabindex="-1" role="dialog" aria-labelledby="friendGraphModalLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
