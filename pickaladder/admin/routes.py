@@ -148,14 +148,14 @@ def generate_matches() -> Response:
     matches_created = 0
     standard_winning_score = 11
     for _ in range(count):
-        p1, p2 = random.sample(users, 2)
+        p1, p2 = random.sample(users, 2)  # nosec B311
         p1_id = p1.id
         p2_id = p2.id
 
-        s1 = random.randint(0, standard_winning_score)
+        s1 = random.randint(0, standard_winning_score)  # nosec B311
         s2 = standard_winning_score if s1 < (standard_winning_score - 1) else s1 + 2
 
-        if random.choice([True, False]):
+        if random.choice([True, False]):  # nosec B311
             s1, s2 = s2, s1
 
         # Use a dummy current_user dict for MatchService
