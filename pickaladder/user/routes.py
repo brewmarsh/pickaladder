@@ -14,17 +14,12 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import current_user
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
 
 from . import bp
-<<<<<<< HEAD
-from .forms import EditProfileForm, UpdateUserForm
-=======
 from .forms import SettingsForm, UpdateUserForm
->>>>>>> origin/consolidate-user-settings-17414899747175371561
 from .services import UserService
 
 if TYPE_CHECKING:
@@ -43,19 +38,6 @@ class MockPagination:
 @bp.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings() -> Any:
-<<<<<<< HEAD
-    """Handle user settings."""
-    form = EditProfileForm(obj=current_user)
-    if form.validate_on_submit():
-        res = UserService.update_settings(
-            firestore.client(), g.user["uid"], form, form.profile_picture.data
-        )
-        if res["success"]:
-            flash("Settings updated!", "success")
-            return redirect(url_for(".settings"))
-        flash(res["error"], "danger")
-    return render_template("user/settings.html", form=form)
-=======
     """Unified user settings page."""
     db = firestore.client()
     user_id = g.user["uid"]
@@ -66,6 +48,7 @@ def settings() -> Any:
         form.username.data = g.user.get("username")
         form.email.data = g.user.get("email")
         form.dupr_id.data = g.user.get("dupr_id")
+        # Explicitly map data to form fields to ensure compatibility
         form.dupr_rating.data = g.user.get("duprRating") or g.user.get("dupr_rating")
         form.dark_mode.data = g.user.get("dark_mode")
 
@@ -95,7 +78,6 @@ def settings() -> Any:
         flash(res["error"], "danger")
 
     return render_template("user/settings.html", form=form, user=g.user)
->>>>>>> origin/consolidate-user-settings-17414899747175371561
 
 
 @bp.route("/edit_profile", methods=["GET", "POST"])
@@ -131,7 +113,7 @@ def dashboard() -> Any:
     current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
     recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
 
-    # FIX: Removed explicit 'user=g.user' to avoid conflict with **data['user']
+    # Pass data directly to template context
     return render_template(
         "user_dashboard.html",
         current_streak=current_streak,
@@ -169,8 +151,8 @@ def view_community() -> Any:
     db = firestore.client()
     search_term = request.args.get("search", "").strip()
 
-    incoming_requests = UserService.get_user_pending_requests(db, g.user["uid"])
-    outgoing_requests = UserService.get_user_sent_requests(db, g.user["uid"])
+    incoming_requests = UserService.get_user_pending_requests(db, user_id=g.user["uid"])
+    outgoing_requests = UserService.get_user_sent_requests(db, user_id=g.user["uid"])
 
     data = UserService.get_community_data(db, g.user["uid"], search_term)
 
