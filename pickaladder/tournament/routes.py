@@ -35,6 +35,20 @@ def list_tournaments() -> Any:
 @admin_required
 def create_tournament() -> Any:
     """Create a new tournament."""
+    group_id = request.args.get("group_id")
+    if group_id:
+        db = firestore.client()
+        group_doc = db.collection("groups").document(group_id).get()
+        if group_doc.exists:
+            from pickaladder.group.services.group_service import GroupService
+
+            if not GroupService.is_group_admin(group_doc.to_dict(), g.user["uid"]):
+                flash(
+                    "You do not have permission to create a tournament for this group.",
+                    "danger",
+                )
+                return redirect(url_for("group.view_group", group_id=group_id))
+
     form = TournamentForm()
     if form.validate_on_submit():
         try:

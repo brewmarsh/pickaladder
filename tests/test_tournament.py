@@ -51,6 +51,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
+            "firestore_client": patch("firebase_admin.firestore.client"),
             "firestore_services": patch(
                 "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,

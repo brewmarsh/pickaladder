@@ -1,9 +1,9 @@
 """Service layer for admin-related operations."""
 
 import datetime
-from typing import Any, Dict, List  # noqa: UP035
+from typing import Any
 
-from firebase_admin import auth, firestore
+from firebase_admin import firestore
 
 
 class AdminService:
@@ -46,29 +46,6 @@ class AdminService:
         }
 
     @staticmethod
-    def build_friend_graph(db: Any) -> Dict[str, List[Dict[str, Any]]]:  # noqa: UP006
-        """Build a dictionary of nodes and edges for a friendship graph."""
-        users = db.collection("users").stream()
-        nodes = []
-        edges = []
-        for user in users:
-            user_data = user.to_dict()
-            nodes.append({"id": user.id, "label": user_data.get("username", user.id)})
-            # Fetch friends for this user
-            friends_query = (
-                db.collection("users")
-                .document(user.id)
-                .collection("friends")
-                .where(filter=firestore.FieldFilter("status", "==", "accepted"))
-                .stream()
-            )
-            for friend in friends_query:
-                # Add edge only once
-                if user.id < friend.id:
-                    edges.append({"from": user.id, "to": friend.id})
-        return {"nodes": nodes, "edges": edges}
-
-    @staticmethod
     def toggle_setting(db: Any, setting_key: str) -> bool:
         """Toggle a boolean setting in the Firestore 'settings' collection."""
         setting_ref = db.collection("settings").document(setting_key)
@@ -83,6 +60,8 @@ class AdminService:
     @staticmethod
     def delete_user(db: Any, user_id: str) -> None:
         """Delete a user from Firebase Auth and Firestore."""
+        from firebase_admin import auth  # noqa: PLC0415
+
         # Delete from Firebase Auth
         auth.delete_user(user_id)
         # Delete from Firestore
@@ -103,6 +82,37 @@ class AdminService:
             pass
 
     @staticmethod
+    def build_friend_graph(db: Any) -> dict[str, Any]:
+        """Build a dictionary representing the social graph of users and friendships."""
+        users_stream = db.collection("users").stream()
+        nodes = []
+        user_ids = set()
+
+        for user_doc in users_stream:
+            data = user_doc.to_dict()
+            nodes.append(
+                {"id": user_doc.id, "label": data.get("username") or user_doc.id}
+            )
+            user_ids.add(user_doc.id)
+
+        edges = []
+        # Optimization: We only need to iterate over users once.
+        # Friendships are reciprocal.
+        for uid in user_ids:
+            friends_stream = (
+                db.collection("users")
+                .document(uid)
+                .collection("friends")
+                .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+                .stream()
+            )
+            for friend_doc in friends_stream:
+                if uid < friend_doc.id:  # Avoid duplicate edges
+                    edges.append({"from": uid, "to": friend_doc.id})
+
+        return {"nodes": nodes, "edges": edges}
+
+    @staticmethod
     def promote_user(db: Any, user_id: str) -> str:
         """Promote a user to admin status in Firestore."""
         user_ref = db.collection("users").document(user_id)
@@ -112,6 +122,8 @@ class AdminService:
     @staticmethod
     def verify_user(db: Any, user_id: str) -> None:
         """Manually verify a user's email in Auth and Firestore."""
+        from firebase_admin import auth  # noqa: PLC0415
+
         auth.update_user(user_id, email_verified=True)
         user_ref = db.collection("users").document(user_id)
         user_ref.update({"email_verified": True})

@@ -7,7 +7,7 @@ from wtforms.validators import DataRequired, Email, Length, NumberRange, Optiona
 
 
 class SettingsForm(FlaskForm):
-    """Unified form for user settings."""
+    """Form for updating user settings."""
 
     name = StringField("Full Name", validators=[DataRequired(), Length(min=2, max=50)])
     username = StringField(
@@ -29,10 +29,10 @@ class SettingsForm(FlaskForm):
     )
     profile_picture = FileField(
         "Update Profile Picture",
-        validators=[FileAllowed(["jpg", "jpeg", "png", "gif"], "Images only!")],
+        validators=[FileAllowed(["jpg", "png"], "Images only!")],
     )
     dark_mode = BooleanField("Enable Dark Mode")
-    submit = SubmitField("Save Settings")
+    submit = SubmitField("Save Changes")
 
 
 class UpdateUserForm(FlaskForm):

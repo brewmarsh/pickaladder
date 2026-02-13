@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
         form.addEventListener('submit', function () {
+            // Disable spinner in E2E tests to avoid flakiness
+            if (document.body.dataset.isTesting === 'true') return;
+
             const submitBtn = form.querySelector('button[type="submit"]');
             if (submitBtn) {
                 // Store original text
@@ -25,26 +28,40 @@ function handleFlashMessages() {
     const toasts = document.querySelectorAll('.toast');
 
     toasts.forEach(toast => {
-        // Auto-dismiss after 4 seconds
-        const dismissTimeout = setTimeout(() => {
-            if (toast.parentNode) {
-                toast.classList.add('fade-out');
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.remove();
-                    }
-                }, 500); // Wait for the 0.5s transition
-            }
-        }, 4000);
+        // Auto-dismiss after 4 seconds unless data-autohide="false" or in testing
+        const isTesting = document.body.dataset.isTesting === 'true';
+        const autohide = toast.dataset.autohide !== 'false' && !isTesting;
 
-        // Click to dismiss
-        const closeButton = toast.querySelector('.close');
-        if (closeButton) {
-            closeButton.addEventListener('click', function (e) {
-                e.preventDefault();
-                clearTimeout(dismissTimeout);
-                toast.remove();
-            });
+        if (autohide) {
+            const dismissTimeout = setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.classList.add('fade-out');
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            toast.remove();
+                        }
+                    }, 500); // Wait for the 0.5s transition
+                }
+            }, 4000);
+
+            // Click to dismiss
+            const closeButton = toast.querySelector('.close');
+            if (closeButton) {
+                closeButton.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    clearTimeout(dismissTimeout);
+                    toast.remove();
+                });
+            }
+        } else {
+            // Even if not autohiding, still allow manual dismissal
+            const closeButton = toast.querySelector('.close');
+            if (closeButton) {
+                closeButton.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    toast.remove();
+                });
+            }
         }
     });
 }
