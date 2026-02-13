@@ -10,7 +10,6 @@ from typing import Any
 from firebase_admin import firestore
 from flask import current_app, g
 
-from .badges.models import BADGES
 from .user import UserService
 
 VERSION_THRESHOLD = 10
@@ -62,7 +61,6 @@ def inject_global_context() -> dict[str, Any]:
         "version": version,
         "app_version": version,
         "global_announcement": global_announcement,
-        "badge_definitions": BADGES,
     }
 
 
