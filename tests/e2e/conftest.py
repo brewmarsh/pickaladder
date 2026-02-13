@@ -1,12 +1,10 @@
-import os
-import importlib
-import pytest
-from typing import Any, Generator, List, Dict
-from unittest.mock import MagicMock, patch
+from typing import Any
+
 from google.cloud.firestore_v1.document import DocumentReference
 from google.cloud.firestore_v1.transaction import Transaction
 
 # Assuming EnhancedMockFirestore is defined earlier in the file...
+
 
 class MockBatch:
     """Mock for firestore.WriteBatch."""
@@ -50,25 +48,25 @@ class MockTransaction(Transaction):
         # Note: We don't call super().__init__ because it requires a live client
         self.db = db
         self._read_only = False
-        self._id = "mock-transaction-id"
+        self._id = "mock-transaction-id"  # type: ignore
         self._max_attempts = 5
 
     def _rollback(self) -> None:
         """Mock rollback method to prevent TypeError in library calls."""
         pass
 
-    def get(self, ref_or_query: Any) -> Any:
+    def get(self, ref_or_query: Any) -> Any:  # type: ignore
         """Mock get within a transaction."""
         return ref_or_query.get()
 
-    def set(self, doc_ref: Any, data: Dict[str, Any], merge: bool = False) -> None:
+    def set(self, doc_ref: Any, data: dict[str, Any], merge: Any = False) -> None:  # type: ignore
         """Mock set within a transaction."""
         doc_ref.set(data, merge=merge)
 
-    def update(self, doc_ref: Any, data: Dict[str, Any]) -> None:
+    def update(self, doc_ref: Any, data: dict[str, Any]) -> None:  # type: ignore
         """Mock update within a transaction."""
         doc_ref.update(data)
 
-    def delete(self, doc_ref: Any) -> None:
+    def delete(self, doc_ref: Any) -> None:  # type: ignore
         """Mock delete within a transaction."""
         doc_ref.delete()

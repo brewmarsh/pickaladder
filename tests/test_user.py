@@ -41,12 +41,12 @@ class TestUserRoutes(unittest.TestCase):
         }
         for p in self.patchers.values():
             p.start()
-        
+
         self.mocks = {k: p.new for k, p in self.patchers.items()}
-        
+
         # Configure the mock Firestore client
         self.mock_db = self.mock_firestore_service.client.return_value
-        
+
         # Setup app
         self.app = create_app()
         self.client = self.app.test_client()
@@ -64,10 +64,10 @@ class TestUserRoutes(unittest.TestCase):
         # The decorator likely checks session or verify_id_token.
         # For simplicity in this reconstruction, we'll rely on the auth mocking which might happen in create_app or decorators.
         # Actually, let's look at how the test was running. It was likely using session injection.
-        
+
         # Mocking verify_id_token to return our payload
         self.mocks["verify_id_token"].return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
-        
+
         # We also need to mock the user loading in the request context
         # But standard pattern is:
         with self.client.session_transaction() as sess:
@@ -80,7 +80,7 @@ class TestUserRoutes(unittest.TestCase):
         mock_user_doc.exists = True
         mock_user_doc.to_dict.return_value = MOCK_FIRESTORE_USER_DATA
         mock_user_ref.get.return_value = mock_user_doc
-        
+
         # Mock collection("users").document(uid)
         def collection_side_effect(name):
             if name == "users":
@@ -96,7 +96,7 @@ class TestUserRoutes(unittest.TestCase):
         """Test updating user settings."""
         self._set_session_user()
         mock_user_ref = self._mock_firestore_user()
-        
+
         response = self.client.post(
             "/user/settings",
             data={
