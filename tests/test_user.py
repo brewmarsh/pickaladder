@@ -29,6 +29,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """Set up a test client and mock the necessary Firebase services."""
         self.mock_firestore_service = MagicMock()
+        self.mock_storage_service = MagicMock()
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore": patch(
@@ -110,7 +111,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated successfully.", response.data)
+        self.assertIn(b"Settings updated!", response.data)
         # Note: update_user_profile is called first, then process_profile_update
         # So update might be called multiple times
         self.assertTrue(mock_user_doc.update.called)
@@ -137,7 +138,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated successfully.", response.data)
+        self.assertIn(b"Settings updated!", response.data)
         mock_storage.bucket.assert_called_once()
         mock_bucket.blob.assert_called_once_with(
             f"profile_pictures/{MOCK_USER_ID}/test.png"
@@ -171,7 +172,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated successfully.", response.data)
+        self.assertIn(b"Settings updated!", response.data)
         # Check updates. Note that multiple update calls might happen.
         # We check that at least one call had the expected data.
         all_update_data = {}

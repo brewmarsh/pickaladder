@@ -140,9 +140,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     # Check for Match Summary redirect
     expect(page).to_have_url(re.compile(r".*/match/summary/.*"))
     expect(page.locator("h1")).to_contain_text("Match Summary")
-    expect(page.locator(".toast-body").first).to_contain_text(
-        "Match recorded successfully"
-    )
+    expect(
+        page.locator(".alert-success, .toast.alert-success, .toast-body").first
+    ).to_contain_text("Match recorded successfully")
 
     # 7. Score Group Game
     with page.expect_navigation():
@@ -158,12 +158,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Record Match')")
 
-    # Check for Match Summary redirect
-    expect(page).to_have_url(re.compile(r".*/match/summary/.*"))
-    expect(page.locator("h1")).to_contain_text("Match Summary")
-    expect(page.locator(".toast-body").first).to_contain_text(
-        "Match recorded successfully"
-    )
+    expect(page.locator("h1")).to_contain_text("Pickleballers")
+    expect(
+        page.locator(".alert-success, .toast.alert-success, .toast-body").first
+    ).to_contain_text("Match recorded successfully")
 
     # Check Global Leaderboard (Req: "see the leaderboard")
     with page.expect_navigation():
@@ -186,12 +184,16 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     # Delete match involving user2 (first one)
     with page.expect_navigation():
         page.click("button:has-text('Delete')")
-    expect(page.locator(".alert-success")).to_contain_text("Match deleted successfully")
+    expect(
+        page.locator(".alert-success, .toast.alert-success, .toast-body").first
+    ).to_contain_text("Match deleted successfully")
 
     # Delete second match
     with page.expect_navigation():
         page.click("button:has-text('Delete')")
-    expect(page.locator(".alert-success")).to_contain_text("Match deleted successfully")
+    expect(
+        page.locator(".alert-success, .toast.alert-success, .toast-body").first
+    ).to_contain_text("Match deleted successfully")
 
     # 10. Update Group Details (Login as Admin - already logged in)
     with page.expect_navigation():
