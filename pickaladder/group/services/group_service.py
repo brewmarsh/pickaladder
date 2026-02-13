@@ -104,6 +104,7 @@ class GroupService:
             "is_public": form_data.get("is_public", False),
             "ownerRef": user_ref,
             "members": [user_ref],
+            "admins": [],
             "createdAt": firestore.SERVER_TIMESTAMP,
         }
         _, new_group_ref = db.collection("groups").add(group_data)
@@ -115,6 +116,75 @@ class GroupService:
                 new_group_ref.update({"profilePictureUrl": url})
 
         return group_id
+
+    @staticmethod
+    def is_group_admin(group_data: dict[str, Any], user_id: str) -> bool:
+        """Check if a user is an admin of the group."""
+        owner_ref = group_data.get("ownerRef")
+        if owner_ref and owner_ref.id == user_id:
+            return True
+        admins = group_data.get("admins", [])
+        return user_id in admins
+
+    @staticmethod
+    def promote_member(
+        db: Any, group_id: str, target_uid: str, requester_uid: str
+    ) -> None:
+        """Promote a member to admin. Only the owner can do this."""
+        group_ref = db.collection("groups").document(group_id)
+        group = group_ref.get()
+        if not group.exists:
+            raise GroupNotFound("Group not found")
+
+        group_data = group.to_dict()
+        owner_ref = group_data.get("ownerRef")
+        if not owner_ref or owner_ref.id != requester_uid:
+            raise AccessDenied("Only the group owner can promote members")
+
+        group_ref.update({"admins": firestore.ArrayUnion([target_uid])})
+
+    @staticmethod
+    def demote_member(
+        db: Any, group_id: str, target_uid: str, requester_uid: str
+    ) -> None:
+        """Demote an admin to a regular member. Only the owner can do this."""
+        group_ref = db.collection("groups").document(group_id)
+        group = group_ref.get()
+        if not group.exists:
+            raise GroupNotFound("Group not found")
+
+        group_data = group.to_dict()
+        owner_ref = group_data.get("ownerRef")
+        if not owner_ref or owner_ref.id != requester_uid:
+            raise AccessDenied("Only the group owner can demote members")
+
+        group_ref.update({"admins": firestore.ArrayRemove([target_uid])})
+
+    @staticmethod
+    def remove_member(
+        db: Any, group_id: str, target_uid: str, requester_uid: str
+    ) -> None:
+        """Remove a member from the group. Only admins can do this."""
+        group_ref = db.collection("groups").document(group_id)
+        group = group_ref.get()
+        if not group.exists:
+            raise GroupNotFound("Group not found")
+
+        group_data = group.to_dict()
+        if not GroupService.is_group_admin(group_data, requester_uid):
+            raise AccessDenied("Only admins can remove members")
+
+        owner_ref = group_data.get("ownerRef")
+        if owner_ref and owner_ref.id == target_uid:
+            raise AccessDenied("Cannot remove the owner of the group")
+
+        target_ref = db.collection("users").document(target_uid)
+        group_ref.update(
+            {
+                "members": firestore.ArrayRemove([target_ref]),
+                "admins": firestore.ArrayRemove([target_uid]),
+            }
+        )
 
     @staticmethod
     def update_group(
@@ -131,8 +201,7 @@ class GroupService:
             raise GroupNotFound("Group not found")
 
         group_data = group.to_dict()
-        owner_ref = group_data.get("ownerRef")
-        if not owner_ref or owner_ref.id != user_id:
+        if not GroupService.is_group_admin(group_data, user_id):
             raise AccessDenied("You do not have permission to edit this group")
 
         update_data = {
@@ -206,6 +275,8 @@ class GroupService:
                 owner = owner_doc.to_dict()
 
         is_member = user_id in member_ids
+        is_owner = owner_ref and owner_ref.id == user_id
+        is_admin = GroupService.is_group_admin(group_data, user_id)
 
         # Get eligible friends for invitation
         eligible_friends = GroupService._get_eligible_friends(db, user_ref, member_ids)
@@ -233,6 +304,8 @@ class GroupService:
             "leaderboard": leaderboard,
             "pending_members": pending_members,
             "is_member": is_member,
+            "is_owner": is_owner,
+            "is_admin": is_admin,
             "recent_matches": recent_matches,
             "best_buds": best_buds,
             "team_leaderboard": team_leaderboard,

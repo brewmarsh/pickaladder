@@ -36,6 +36,7 @@ def register() -> Any:
         session["invite_token"] = invite_token
     form = RegisterForm()
     if form.validate_on_submit():
+        referrer_id = session.get("referrer_id")
         db = firestore.client()
         username = form.username.data
         email = form.email.data
@@ -43,11 +44,10 @@ def register() -> Any:
 
         # Check if username is already taken in Firestore
         users_ref = db.collection("users")
-        if (
-            users_ref.where(filter=firestore.FieldFilter("username", "==", username))
-            .limit(1)
-            .get()
-        ):
+        taken = users_ref.where(
+            filter=firestore.FieldFilter("username", "==", username)
+        ).limit(1).get()
+        if len(list(taken)) > 0:
             flash("Username already exists. Please choose a different one.", "danger")
             return redirect(url_for(".register"))
 
@@ -69,18 +69,32 @@ def register() -> Any:
 
             # Create user document in Firestore
             user_doc_ref = db.collection("users").document(user_record.uid)
-            user_doc_ref.set(
-                {
-                    "username": username,
-                    "email": email,
-                    "name": form.name.data,
-                    "duprRating": float(form.dupr_rating.data)
-                    if form.dupr_rating.data is not None
-                    else 0.0,
-                    "isAdmin": False,
-                    "createdAt": firestore.SERVER_TIMESTAMP,
-                }
-            )
+            user_data = {
+                "username": username,
+                "email": email,
+                "name": form.name.data,
+                "duprRating": float(form.dupr_rating.data)
+                if form.dupr_rating.data is not None
+                else 0.0,
+                "isAdmin": False,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
+
+            if referrer_id:
+                user_data["referred_by"] = referrer_id
+
+            user_doc_ref.set(user_data)
+
+            if referrer_id:
+                # Increment referral count for the referrer
+                try:
+                    db.collection("users").document(referrer_id).update(
+                        {"referral_count": firestore.Increment(1)}
+                    )
+                except Exception as e:
+                    current_app.logger.error(f"Error incrementing referral count: {e}")
+
+                session.pop("referrer_id", None)
 
             # Check for ghost user merge
             if email and UserService.merge_ghost_user(db, user_doc_ref, email):
