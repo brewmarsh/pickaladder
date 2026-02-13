@@ -205,7 +205,11 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_groups_coll.where.return_value.stream.return_value = []
 
     def test_api_dashboard_fetches_all_matches_for_sorting(self) -> None:
-        """Test that all matches are fetched for sorting."""
+        """Test that all matches are fetched for sorting.
+
+        Test that all matches are fetched (no limit) to allow correct in-memory
+        sorting.
+        """
         self._set_session_user()
         mock_db = self.mock_firestore_service.client.return_value
         self._setup_dashboard_mocks(mock_db)
@@ -214,7 +218,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_matches_coll.where.return_value = mock_query_where
         mock_query_where.stream.return_value = []
 
-        # We also need to mock the path where limit IS called
+        # We also need to mock the path where limit IS called, to avoid crash if
+        # it is called
         mock_query_limit = MagicMock()
         mock_query_where.limit.return_value = mock_query_limit
         mock_query_limit.stream.return_value = []
@@ -276,7 +281,11 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def test_view_user_includes_doubles_and_processes_matches(
         self, mock_render_template: MagicMock
     ) -> None:
-        """Test that view_user fetches and processes doubles matches."""
+        """Test that view_user fetches and processes doubles matches.
+
+        Test that view_user fetches doubles matches and processes them for the
+        template.
+        """
         self._set_session_user()
         mock_db = self.mock_firestore_service.client.return_value
 

@@ -52,15 +52,30 @@ def settings() -> Any:
         form.dark_mode.data = g.user.get("dark_mode")
 
     if form.validate_on_submit():
-        res = UserService.update_settings(
-            db, user_id, form, form.profile_picture.data
-        )
+        # Handle profile picture upload
+        profile_pic_url = None
+        if form.profile_picture.data:
+            profile_pic_url = UserService.upload_profile_picture(
+                user_id, form.profile_picture.data
+            )
+
+        # Update base fields (dark_mode and profile_pic if uploaded)
+        update_data: dict[str, Any] = {"dark_mode": bool(form.dark_mode.data)}
+        if profile_pic_url:
+            update_data["profilePictureUrl"] = profile_pic_url
+
+        UserService.update_user_profile(db, user_id, update_data)
+
+        # Handle other updates (name, username, email, dupr)
+        res = UserService.process_profile_update(db, user_id, form, g.user)
+
         if res["success"]:
             if "info" in res:
                 flash(res["info"], "info")
             flash("Settings updated!", "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
+
     return render_template("user/settings.html", form=form, user=g.user)
 
 
