@@ -208,8 +208,6 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
     with page.expect_navigation():
         page.click("button:has-text('Send Invite')")
-    
-    # Resolving conflict: Using the more inclusive locator from the feature branch
     expect(
         page.locator(".alert-success, .toast.alert-success, .toast-body").first
     ).to_contain_text("Invitation is being sent")

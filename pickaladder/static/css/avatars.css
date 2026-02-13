@@ -90,21 +90,3 @@
     flex-direction: column;
     align-items: center;
 }
-
-/* --- 6. Notification Badges --- */
-.notification-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--danger-color) !important; /* Force Red */
-    color: white !important;       /* Force White Text */
-    font-size: 0.75rem;
-    font-weight: 700;
-    min-width: 20px;               /* Ensure circle shape */
-    height: 20px;
-    border-radius: 50%;            /* Perfect Circle */
-    margin-left: 8px;              /* Spacing from text */
-    padding: 0 4px;
-    transform: translateY(-1px);   /* Slight lift */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Depth */
-}
