@@ -100,6 +100,7 @@ def view_match_summary(match_id: str) -> Any:
     context = {"match": match_data, "match_type": match_type}
 
     if match_type == "doubles":
+        # Fetch team members
         team1_refs = m_dict.get("team1", [])
         team2_refs = m_dict.get("team2", [])
 
@@ -261,15 +262,13 @@ def record_match() -> Any:
             flash(success_msg, "success")
             active_tid = form.tournament_id.data or tournament_id
             active_gid = form.group_id.data or group_id
-
             if active_tid:
                 return redirect(
                     url_for("tournament.view_tournament", tournament_id=active_tid)
                 )
             if active_gid:
                 return redirect(url_for("group.view_group", group_id=active_gid))
-
-            return redirect(url_for("match.view_match_summary", match_id=match_id))
+            return redirect(url_for("user.dashboard"))
         except ValueError as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400
@@ -294,13 +293,13 @@ def record_match() -> Any:
     )
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
     """Display a global leaderboard."""
     db = firestore.client()
     try:
+        # Exclude players with 0 games and sort by Win Percentage
         players = MatchService.get_leaderboard_data(db, min_games=1)
     except Exception as e:
         players = []

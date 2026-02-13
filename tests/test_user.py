@@ -40,12 +40,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
-            "storage_service_core": patch("pickaladder.user.services.core.storage"),
-            "storage_service_profile": patch(
-                "pickaladder.user.services.profile.storage"
-            ),
-            "auth_service_core": patch("pickaladder.user.services.core.auth"),
-            "auth_service_profile": patch("pickaladder.user.services.profile.auth"),
+            "storage_service": patch("pickaladder.user.services.core.storage"),
+            "auth_service": patch("pickaladder.user.services.core.auth"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
 
@@ -101,8 +97,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 "dark_mode": "y",
                 "dupr_rating": 5.5,
                 "username": "newuser",
-                "name": "New User",
-                "email": "newuser@example.com",
+                "name": "Test User",
+                "email": "test@example.com",
             },
             follow_redirects=True,
         )
@@ -114,7 +110,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         """Test successfully uploading a profile picture."""
         self._set_session_user()
         mock_user_doc = self._mock_firestore_user()
-        mock_storage = self.mocks["storage_service_profile"]
+        mock_storage = self.mocks["storage_service"]
         mock_bucket = mock_storage.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
         mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test.jpg"
@@ -122,8 +118,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         data = {
             "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
             "username": "newuser",
-            "name": "New User",
-            "email": "newuser@example.com",
+            "name": "Test User",
+            "email": "test@example.com",
         }
         response = self.client.post(
             "/user/settings",
@@ -164,8 +160,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 "dark_mode": "y",
                 "dupr_rating": "5.5",
                 "username": "newuser",
-                "name": "New User",
-                "email": "newuser@example.com",
+                "name": "Test User",
+                "email": "test@example.com",
             },
             follow_redirects=True,
         )
