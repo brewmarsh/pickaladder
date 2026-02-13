@@ -70,9 +70,7 @@ class MockFirestoreBuilder:
             filter: Any = None,
         ) -> Any:  # noqa: E501
             if filter:
-                return self._where(
-                    filter.field_path, filter.op_string, filter.value
-                )
+                return self._where(filter.field_path, filter.op_string, filter.value)
             return self._where(field_path, op_string, value)
 
         if not hasattr(CollectionReference, "_where"):
@@ -87,9 +85,7 @@ class MockFirestoreBuilder:
             filter: Any = None,
         ) -> Any:
             if filter:
-                return self._where(
-                    filter.field_path, filter.op_string, filter.value
-                )
+                return self._where(filter.field_path, filter.op_string, filter.value)
             return self._where(field_path, op_string, value)
 
         if not hasattr(Query, "_where"):
@@ -157,9 +153,7 @@ class MockFirestoreBuilder:
                             existing = current_data.get(k, [])
                             if not isinstance(existing, list):
                                 existing = []
-                            new_data[k] = [
-                                i for i in existing if i not in v.values
-                            ]
+                            new_data[k] = [i for i in existing if i not in v.values]
 
                     # MockFirestore's DocumentReference.update updates internal _data.
                     # Use the original update to ensure any other logic is preserved.
