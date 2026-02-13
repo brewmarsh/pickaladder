@@ -234,7 +234,9 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         return wrapped.avatar_url if wrapped else ""
 
     @app.template_filter("pluralize")
-    def pluralize_filter(number: int, singular: str = "", plural: str | None = None) -> str:
+    def pluralize_filter(
+        number: int, singular: str = "", plural: str | None = None
+    ) -> str:
         """Pluralize a word based on a number."""
         if number == 1:
             return singular

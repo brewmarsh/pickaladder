@@ -1,8 +1,8 @@
-
-import pytest
-from playwright.sync_api import Page, expect
 import os
 import re
+
+from playwright.sync_api import expect
+
 
 def test_verify_fixes(app_server, page_with_firebase, mock_db):
     page = page_with_firebase
