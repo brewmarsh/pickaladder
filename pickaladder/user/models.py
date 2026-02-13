@@ -40,6 +40,7 @@ class User(FirestoreDocument, total=False):
     games_played: int
     win_percentage: float
     thumbnail_url: str
+    badges: list[dict[str, Any]]
 
 
 class UserStats(TypedDict, total=False):
