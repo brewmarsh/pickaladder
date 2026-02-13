@@ -477,27 +477,13 @@ class MatchService:
         return players[:limit]
 
     @staticmethod
-    def update_match_score(  # noqa: PLR0913
-        db: Client,
-        match_id: str,
-        new_p1_score: int,
-        new_p2_score: int,
-        editor_uid: str,
+    def _check_match_edit_permissions(
+        match_data: dict[str, Any], editor_uid: str, db: Client
     ) -> None:
-        """Update a match score with permission checks and stats rollback."""
-        match_ref = db.collection("matches").document(match_id)
-        match_doc = cast("DocumentSnapshot", match_ref.get())
-        if not match_doc.exists:
-            raise ValueError("Match not found.")
-
-        match_data = match_doc.to_dict()
-        if match_data is None:
-            raise ValueError("Match data is empty.")
-
+        """Check if the user has permission to edit the match."""
         tournament_id = match_data.get("tournamentId")
         created_by = match_data.get("createdBy")
 
-        # Permission Check
         editor_ref = db.collection("users").document(editor_uid)
         editor_doc = cast("DocumentSnapshot", editor_ref.get())
         is_admin = False
@@ -512,34 +498,44 @@ class MatchService:
         elif not is_admin and created_by != editor_uid:
             raise PermissionError("You do not have permission to edit this match.")
 
-        # Stats Rollback Logic (for doubles only, as singles are dynamic)
+    @staticmethod
+    def _update_doubles_stats(
+        match_data: dict[str, Any], new_p1_score: int, new_p2_score: int
+    ) -> None:
+        """Rollback old stats and apply new stats for doubles matches."""
+        if match_data.get("matchType") != "doubles":
+            return
+
         old_p1_score = match_data.get("player1Score", 0)
         old_p2_score = match_data.get("player2Score", 0)
+        team1_ref = match_data.get("team1Ref")
+        team2_ref = match_data.get("team2Ref")
 
-        if match_data.get("matchType") == "doubles":
-            team1_ref = match_data.get("team1Ref")
-            team2_ref = match_data.get("team2Ref")
+        if not (team1_ref and team2_ref):
+            return
 
-            if team1_ref and team2_ref:
-                # Rollback old stats
-                if old_p1_score > old_p2_score:
-                    team1_ref.update({"stats.wins": firestore.Increment(-1)})
-                    team2_ref.update({"stats.losses": firestore.Increment(-1)})
-                elif old_p2_score > old_p1_score:
-                    team2_ref.update({"stats.wins": firestore.Increment(-1)})
-                    team1_ref.update({"stats.losses": firestore.Increment(-1)})
+        # Rollback old stats
+        if old_p1_score > old_p2_score:
+            team1_ref.update({"stats.wins": firestore.Increment(-1)})
+            team2_ref.update({"stats.losses": firestore.Increment(-1)})
+        elif old_p2_score > old_p1_score:
+            team2_ref.update({"stats.wins": firestore.Increment(-1)})
+            team1_ref.update({"stats.losses": firestore.Increment(-1)})
 
-                # Apply new stats
-                if new_p1_score > new_p2_score:
-                    team1_ref.update({"stats.wins": firestore.Increment(1)})
-                    team2_ref.update({"stats.losses": firestore.Increment(1)})
-                elif new_p2_score > new_p1_score:
-                    team2_ref.update({"stats.wins": firestore.Increment(1)})
-                    team1_ref.update({"stats.losses": firestore.Increment(1)})
+        # Apply new stats
+        if new_p1_score > new_p2_score:
+            team1_ref.update({"stats.wins": firestore.Increment(1)})
+            team2_ref.update({"stats.losses": firestore.Increment(1)})
+        elif new_p2_score > new_p1_score:
+            team2_ref.update({"stats.wins": firestore.Increment(1)})
+            team1_ref.update({"stats.losses": firestore.Increment(1)})
 
-        # Update Match Document
+    @staticmethod
+    def _get_match_updates(
+        match_data: dict[str, Any], new_p1_score: int, new_p2_score: int
+    ) -> dict[str, Any]:
+        """Calculate the updates for the match document."""
         new_winner_slot = "team1" if new_p1_score > new_p2_score else "team2"
-
         updates: dict[str, Any] = {
             "player1Score": new_p1_score,
             "player2Score": new_p2_score,
@@ -567,7 +563,34 @@ class MatchService:
                 updates["loserId"] = (
                     p2_ref.id if new_p1_score > new_p2_score else p1_ref.id
                 )
+        return updates
 
+    @staticmethod
+    def update_match_score(  # noqa: PLR0913
+        db: Client,
+        match_id: str,
+        new_p1_score: int,
+        new_p2_score: int,
+        editor_uid: str,
+    ) -> None:
+        """Update a match score with permission checks and stats rollback."""
+        match_ref = db.collection("matches").document(match_id)
+        match_doc = cast("DocumentSnapshot", match_ref.get())
+        if not match_doc.exists:
+            raise ValueError("Match not found.")
+
+        match_data = match_doc.to_dict()
+        if match_data is None:
+            raise ValueError("Match data is empty.")
+
+        # Permission Check
+        MatchService._check_match_edit_permissions(match_data, editor_uid, db)
+
+        # Stats Rollback Logic (for doubles only)
+        MatchService._update_doubles_stats(match_data, new_p1_score, new_p2_score)
+
+        # Update Match Document
+        updates = MatchService._get_match_updates(match_data, new_p1_score, new_p2_score)
         match_ref.update(updates)
 
     @staticmethod

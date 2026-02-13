@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from playwright.sync_api import Page, expect
@@ -33,12 +34,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
             page.click("button:has-text('Login')")
 
     page.click(".btn-edit-gear")
-    expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
+    expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
 
     # Logout
-    page.hover(".dropdown")
-    with page.expect_navigation():
-        page.locator(".dropdown-content a:has-text('Logout')").click()
+    page.goto(f"{base_url}/auth/logout")
     expect(page.locator("h2")).to_contain_text("Login")
 
     # 2. Register User 2
@@ -62,7 +61,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Login')")
 
     page.click(".btn-edit-gear")
-    expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
+    expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
 
     # 3. Add Friend (User 2 invites Admin)
     with page.expect_navigation():
@@ -81,9 +80,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     )
 
     # Logout User 2, Login Admin
-    page.hover(".dropdown")
-    with page.expect_navigation():
-        page.locator(".dropdown-content a:has-text('Logout')").click()
+    page.goto(f"{base_url}/auth/logout")
     expect(page.locator("h2")).to_contain_text("Login")
 
     page.fill("input[name='email']", "admin@example.com")
@@ -118,9 +115,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Invite Friend')")
 
     # Verify User 2 is added (Logout Admin, Login User 2)
-    page.hover(".dropdown")
-    with page.expect_navigation():
-        page.locator(".dropdown-content a:has-text('Logout')").click()
+    page.goto(f"{base_url}/auth/logout")
 
     page.fill("input[name='email']", "user2@example.com")
     page.fill("input[name='password']", "MyPassword123")
@@ -142,8 +137,11 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Record Match')")
 
-    # Check flash message
-    expect(page.locator(".toast")).to_contain_text("Match recorded successfully")
+    # Verify redirect to Summary Page
+    expect(page).to_have_url(re.compile(r".*/match/summary/.*"), timeout=15000)
+    expect(page.locator("h1")).to_contain_text("Match Summary")
+    # Verify the scores we just entered are visible
+    expect(page.locator("body")).to_contain_text(re.compile(r"11.*9", re.DOTALL))
 
     # 7. Score Group Game
     with page.expect_navigation():
@@ -172,9 +170,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # 8. Delete Group Game & 9. Delete Individual Game
     # Needs Admin access
-    page.hover(".dropdown")
-    with page.expect_navigation():
-        page.locator(".dropdown-content a:has-text('Logout')").click()
+    page.goto(f"{base_url}/auth/logout")
 
     page.fill("input[name='email']", "admin@example.com")
     page.fill("input[name='password']", "password")

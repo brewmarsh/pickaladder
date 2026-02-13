@@ -161,132 +161,89 @@ def view_match_summary(match_id: str) -> Any:
     return render_template("match/summary.html", **context)
 
 
-# TODO: Add type hints for Agent clarity
+def _populate_match_form_choices(
+    db: Any, form: MatchForm, user_id: str, group_id: str | None, t_id: str | None
+) -> None:
+    """Populate player choices for the match form."""
+    p1_cands = MatchService.get_candidate_player_ids(db, user_id, group_id, t_id, True)
+    other_cands = MatchService.get_candidate_player_ids(db, user_id, group_id, t_id)
+    all_uids = p1_cands | other_cands
+    all_names = {}
+    if all_uids:
+        refs = [db.collection("users").document(uid) for uid in all_uids]
+        for doc in db.get_all(refs):
+            if doc.exists:
+                all_names[doc.id] = doc.to_dict().get("name", doc.id)
+
+    form.player1.choices = [(u, str(all_names.get(u, u))) for u in p1_cands]
+    others = [(u, str(all_names.get(u, u))) for u in other_cands]
+    form.player2.choices = form.partner.choices = form.opponent2.choices = others
+
+
+def _handle_record_match_get(
+    db: Any, form: MatchForm, user_id: str, group_id: str | None, t_id: str | None
+) -> None:
+    """Handle GET parameters for pre-populating the match form."""
+    form.player1.data = user_id
+    form.group_id.data = group_id
+    form.tournament_id.data = t_id
+    if match_type := request.args.get("match_type"):
+        form.match_type.data = match_type
+    if p1 := request.args.get("player1"):
+        form.player1.data = p1
+    if p2 := request.args.get("player2"):
+        form.partner.data = p2
+    if p3 := request.args.get("player3"):
+        form.player2.data = p3
+    if p4 := request.args.get("player4"):
+        form.opponent2.data = p4
+    opp_id = request.args.get("opponent") or request.args.get("opponent_id")
+    if opp_id and not request.args.get("player3"):
+        form.player2.data = opp_id
+    if not form.match_type.data:
+        u_doc = db.collection("users").document(user_id).get()
+        if u_doc.exists:
+            form.match_type.data = u_doc.to_dict().get("lastMatchRecordedType", "singles")
+
+
 @bp.route("/record", methods=["GET", "POST"])
 @login_required
 def record_match() -> Any:
     """Handle match recording for both web form and optimistic JSON submission."""
-    db = firestore.client()
-    user_id = g.user["uid"]
-    group_id = request.args.get("group_id")
-    tournament_id = request.args.get("tournament_id")
+    db, user_id = firestore.client(), g.user["uid"]
+    group_id, t_id = request.args.get("group_id"), request.args.get("tournament_id")
+    form = MatchForm(data=request.get_json() if request.is_json else None)
 
-    # JSON handling merged into form data
-    form_data = request.get_json() if request.is_json else None
-    form = MatchForm(data=form_data)
-
-    # Populate choices for validation and UI
-    p1_candidates = MatchService.get_candidate_player_ids(
-        db, user_id, group_id, tournament_id, include_user=True
-    )
-    other_candidates = MatchService.get_candidate_player_ids(
-        db, user_id, group_id, tournament_id
-    )
-
-    all_uids = p1_candidates | other_candidates
-    all_names = {}
-    if all_uids:
-        candidate_refs = [db.collection("users").document(uid) for uid in all_uids]
-        for doc in db.get_all(candidate_refs):
-            if doc.exists:
-                all_names[doc.id] = doc.to_dict().get("name", doc.id)
-
-    form.player1.choices = [  # type: ignore[assignment]
-        (uid, str(all_names.get(uid, uid))) for uid in p1_candidates
-    ]
-    other_choices = [(uid, str(all_names.get(uid, uid))) for uid in other_candidates]
-    form.player2.choices = form.partner.choices = form.opponent2.choices = other_choices  # type: ignore[assignment]
-
+    _populate_match_form_choices(db, form, user_id, group_id, t_id)
     if request.method == "GET":
-        form.player1.data = user_id
-        form.group_id.data = group_id
-        form.tournament_id.data = tournament_id
-
-        # Support pre-populating multiple players (Rematch logic)
-        match_type = request.args.get("match_type")
-        if match_type:
-            form.match_type.data = match_type
-
-        p1 = request.args.get("player1")
-        p2 = request.args.get("player2")
-        p3 = request.args.get("player3")
-        p4 = request.args.get("player4")
-
-        if p1:
-            form.player1.data = p1
-        if p2:
-            form.partner.data = p2
-        if p3:
-            form.player2.data = p3
-        if p4:
-            form.opponent2.data = p4
-
-        # Backward compatibility for single opponent
-        opponent_id = request.args.get("opponent") or request.args.get("opponent_id")
-        if opponent_id and not p3:
-            form.player2.data = opponent_id
-
-        if not match_type:
-            user_doc = db.collection("users").document(user_id).get()
-            if user_doc.exists:
-                form.match_type.data = user_doc.to_dict().get(
-                    "lastMatchRecordedType", "singles"
-                )
+        _handle_record_match_get(db, form, user_id, group_id, t_id)
 
     if form.validate_on_submit():
-        # Ensure group_id and tournament_id from request args are preserved
-        # if not in form data, especially relevant for JSON submissions.
         data = form.data
-        if not data.get("group_id"):
-            data["group_id"] = group_id
-        if not data.get("tournament_id"):
-            data["tournament_id"] = tournament_id
-
+        data["group_id"] = data.get("group_id") or group_id
+        data["tournament_id"] = data.get("tournament_id") or t_id
         try:
-            # Capture the ID from the service call (Feature Branch Logic)
-            match_id = MatchService.record_match(db, form.data, g.user)
-
+            m_id = MatchService.record_match(db, data, g.user)
             if request.is_json:
-                return jsonify(
-                    {
-                        "status": "success",
-                        "message": "Match recorded.",
-                        "match_id": match_id,
-                    }
-                ), 200
-
+                return jsonify({"status": "success", "match_id": m_id}), 200
             flash("Match recorded successfully.", "success")
-            active_tid = form.tournament_id.data or tournament_id
-            active_gid = form.group_id.data or group_id
-            if active_tid:
-                return redirect(
-                    url_for("tournament.view_tournament", tournament_id=active_tid)
-                )
-            if active_gid:
-                return redirect(url_for("group.view_group", group_id=active_gid))
-            return redirect(url_for("user.dashboard"))
-        except ValueError as e:
+            if tid := data.get("tournament_id"):
+                return redirect(url_for("tournament.view_tournament", tournament_id=tid))
+            if gid := data.get("group_id"):
+                return redirect(url_for("group.view_group", group_id=gid))
+            return redirect(url_for("match.view_match_summary", match_id=m_id))
+        except Exception as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400
             flash(str(e), "danger")
-        except Exception as e:
-            if request.is_json:
-                return jsonify({"status": "error", "message": str(e)}), 500
-            flash(f"An unexpected error occurred: {e}", "danger")
 
-    tournament_name = None
-    if tournament_id:
-        t_doc = db.collection("tournaments").document(tournament_id).get()
-        if t_doc.exists:
-            tournament_name = t_doc.to_dict().get("name")
+    t_name = None
+    if t_id:
+        t_doc = db.collection("tournaments").document(t_id).get()
+        t_name = t_doc.to_dict().get("name") if t_doc.exists else None
 
-    return render_template(
-        "record_match.html",
-        form=form,
-        group_id=group_id,
-        tournament_id=tournament_id,
-        tournament_name=tournament_name,
-    )
+    return render_template("record_match.html", form=form, group_id=group_id,
+                           tournament_id=t_id, tournament_name=t_name)
 
 
 # TODO: Add type hints for Agent clarity
