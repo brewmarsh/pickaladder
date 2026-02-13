@@ -46,7 +46,6 @@ def edit_match(match_id: str) -> Any:
             flash(f"An unexpected error occurred: {e}", "danger")
 
     # For GET or on error, render the edit page
-    # Fetch player names for the UI
     m_dict = cast("dict[str, Any]", match_data)
     match_type = m_dict.get("matchType", "singles")
     player1_name = "Player 1"
@@ -95,14 +94,12 @@ def view_match_summary(match_id: str) -> Any:
         flash("Match not found.", "danger")
         return redirect(url_for("user.dashboard"))
 
-    # Cast to dict to avoid mypy Mapping.get issues with TypedDict
     m_dict = cast("dict[str, Any]", match_data)
     match_type = m_dict.get("matchType", "singles")
 
     context = {"match": match_data, "match_type": match_type}
 
     if match_type == "doubles":
-        # Fetch team members
         team1_refs = m_dict.get("team1", [])
         team2_refs = m_dict.get("team2", [])
 
@@ -126,7 +123,6 @@ def view_match_summary(match_id: str) -> Any:
         context["team2"] = team2_data
 
     else:
-        # Fetch player data from references
         player1_ref = m_dict.get("player1Ref")
         player2_ref = m_dict.get("player2Ref")
 
@@ -161,7 +157,6 @@ def view_match_summary(match_id: str) -> Any:
     return render_template("match/summary.html", **context)
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/record", methods=["GET", "POST"])
 @login_required
 def record_match() -> Any:
@@ -171,11 +166,9 @@ def record_match() -> Any:
     group_id = request.args.get("group_id")
     tournament_id = request.args.get("tournament_id")
 
-    # JSON handling merged into form data
     form_data = request.get_json() if request.is_json else None
     form = MatchForm(data=form_data)
 
-    # Populate choices for validation and UI
     p1_candidates = MatchService.get_candidate_player_ids(
         db, user_id, group_id, tournament_id, include_user=True
     )
@@ -191,18 +184,17 @@ def record_match() -> Any:
             if doc.exists:
                 all_names[doc.id] = doc.to_dict().get("name", doc.id)
 
-    form.player1.choices = [  # type: ignore[assignment]
+    form.player1.choices = [
         (uid, str(all_names.get(uid, uid))) for uid in p1_candidates
     ]
     other_choices = [(uid, str(all_names.get(uid, uid))) for uid in other_candidates]
-    form.player2.choices = form.partner.choices = form.opponent2.choices = other_choices  # type: ignore[assignment]
+    form.player2.choices = form.partner.choices = form.opponent2.choices = other_choices
 
     if request.method == "GET":
         form.player1.data = user_id
         form.group_id.data = group_id
         form.tournament_id.data = tournament_id
 
-        # Support pre-populating multiple players (Rematch logic)
         match_type = request.args.get("match_type")
         if match_type:
             form.match_type.data = match_type
@@ -221,7 +213,6 @@ def record_match() -> Any:
         if p4:
             form.opponent2.data = p4
 
-        # Backward compatibility for single opponent
         opponent_id = request.args.get("opponent") or request.args.get("opponent_id")
         if opponent_id and not p3:
             form.player2.data = opponent_id
@@ -234,8 +225,6 @@ def record_match() -> Any:
                 )
 
     if form.validate_on_submit():
-        # Ensure group_id and tournament_id from request args are preserved
-        # if not in form data, especially relevant for JSON submissions.
         data = form.data
         if not data.get("group_id"):
             data["group_id"] = group_id
@@ -243,16 +232,13 @@ def record_match() -> Any:
             data["tournament_id"] = tournament_id
 
         try:
-            # Capture the ID and unlocked badges from the service call
             match_id, unlocked_badges = MatchService.process_match_submission(
                 db, data, g.user
             )
 
-            # Process unlocked badges for the current user for flash message
             unlocked_names = []
             if user_id in unlocked_badges:
                 from pickaladder.badges.models import BADGES
-
                 for b_id in unlocked_badges[user_id]:
                     b_info = BADGES.get(b_id, {})
                     unlocked_names.append(
@@ -275,12 +261,14 @@ def record_match() -> Any:
             flash(success_msg, "success")
             active_tid = form.tournament_id.data or tournament_id
             active_gid = form.group_id.data or group_id
+
             if active_tid:
                 return redirect(
                     url_for("tournament.view_tournament", tournament_id=active_tid)
                 )
             if active_gid:
                 return redirect(url_for("group.view_group", group_id=active_gid))
+
             return redirect(url_for("match.view_match_summary", match_id=match_id))
         except ValueError as e:
             if request.is_json:
@@ -310,14 +298,9 @@ def record_match() -> Any:
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
-    """Display a global leaderboard.
-
-    Note: This is a simplified, non-scalable implementation. A production-ready
-    leaderboard on Firestore would likely require denormalization and Cloud Functions.
-    """
+    """Display a global leaderboard."""
     db = firestore.client()
     try:
-        # Exclude players with 0 games and sort by Win Percentage
         players = MatchService.get_leaderboard_data(db, min_games=1)
     except Exception as e:
         players = []
