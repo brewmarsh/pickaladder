@@ -261,7 +261,8 @@ def record_match() -> Any:
             if data.get("tournament_id"):
                 return redirect(
                     url_for(
-                        "tournament.view_tournament", tournament_id=data["tournament_id"]
+                        "tournament.view_tournament",
+                        tournament_id=data["tournament_id"],
                     )
                 )
             if data.get("group_id"):
