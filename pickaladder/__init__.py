@@ -105,8 +105,14 @@ def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
     cred = None
     project_id = None
 
-    # First, try to load from environment variable (for production)
-    cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+    flask_env = os.environ.get("FLASK_ENV")
+
+    # First, try to load from environment variable (for production/beta)
+    if flask_env == "beta":
+        cred_json = os.environ.get("FIREBASE_CREDENTIALS_BETA")
+    else:
+        cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+
     if cred_json:
         with suppress(json.JSONDecodeError, ValueError):
             cred_info = json.loads(cred_json)
@@ -115,7 +121,11 @@ def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
 
     # If env var fails or is not present, try loading from file (for local dev)
     if not cred:
-        cred_path = Path(__file__).parent.parent / "firebase_credentials.json"
+        if flask_env == "beta":
+            cred_path = Path(__file__).parent.parent / "firebase_credentials_beta.json"
+        else:
+            cred_path = Path(__file__).parent.parent / "firebase_credentials.json"
+
         if cred_path.exists():
             with suppress(json.JSONDecodeError, ValueError):
                 with cred_path.open() as f:
