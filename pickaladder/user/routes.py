@@ -19,7 +19,7 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
 
 from . import bp
-from .forms import EditProfileForm, UpdateUserForm
+from .forms import SettingsForm, UpdateUserForm
 from .services import UserService
 
 if TYPE_CHECKING:
@@ -41,7 +41,7 @@ def settings() -> Any:
     """Unified user settings page."""
     db = firestore.client()
     user_id = g.user["uid"]
-    form = EditProfileForm()
+    form = SettingsForm()
 
     if request.method == "GET":
         form.name.data = g.user.get("name")
