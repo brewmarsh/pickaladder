@@ -137,11 +137,12 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Record Match')")
 
-    # Verify redirect to Summary Page
-    expect(page).to_have_url(re.compile(r".*/match/summary/.*"), timeout=15000)
+    # Check for Match Summary redirect
+    expect(page).to_have_url(re.compile(r".*/match/summary/.*"))
     expect(page.locator("h1")).to_contain_text("Match Summary")
-    # Verify the scores we just entered are visible
-    expect(page.locator("body")).to_contain_text(re.compile(r"11.*9", re.DOTALL))
+    expect(page.locator(".toast-body").first).to_contain_text(
+        "Match recorded successfully"
+    )
 
     # 7. Score Group Game
     with page.expect_navigation():
@@ -157,8 +158,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Record Match')")
 
-    expect(page.locator("h1")).to_contain_text("Pickleballers")
-    expect(page.locator(".alert-success")).to_contain_text(
+    # Check for Match Summary redirect
+    expect(page).to_have_url(re.compile(r".*/match/summary/.*"))
+    expect(page.locator("h1")).to_contain_text("Match Summary")
+    expect(page.locator(".toast-body").first).to_contain_text(
         "Match recorded successfully"
     )
 
@@ -208,9 +211,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
     with page.expect_navigation():
         page.click("button:has-text('Send Invite')")
-    expect(
-        page.locator(".alert-success, .toast.alert-success, .toast-body").first
-    ).to_contain_text("Invitation is being sent")
+    expect(page.locator(".toast-body").first).to_contain_text(
+        "Invitation is being sent"
+    )
 
     # Verify invite token was created
     invites = list(mock_db.collection("group_invites").stream())

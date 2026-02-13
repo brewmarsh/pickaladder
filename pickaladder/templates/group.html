@@ -2,7 +2,7 @@
 {% block title %}{{ group.name }}{% endblock %}
 {% block content %}
 <div class="card hero-stats-card">
-    {% if group.ownerRef.id == current_user_id %}
+    {% if group.ownerRef.id == g.user['uid'] %}
     <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="btn-edit-gear"
         data-testid="group-settings-btn">⚙️</a>
     {% endif %}
@@ -228,8 +228,8 @@
                     {% set m_partner = match.partner if match.partner is defined else none %}
                     {% set m_opp2 = match.opponent2 if match.opponent2 is defined else none %}
 
-                    {% set user_in_p1 = (m_p1 and m_p1.id == current_user_id) or (m_partner and m_partner.id == current_user_id) %}
-                    {% set user_in_p2 = (m_p2 and m_p2.id == current_user_id) or (m_opp2 and m_opp2.id == current_user_id) %}
+                    {% set user_in_p1 = (m_p1 and m_p1.id == g.user['uid']) or (m_partner and m_partner.id == g.user['uid']) %}
+                    {% set user_in_p2 = (m_p2 and m_p2.id == g.user['uid']) or (m_opp2 and m_opp2.id == g.user['uid']) %}
 
                     {% if user_in_p2 %}
                         {% set primary_names = (match.team2.name if (match.team2 is defined and match.team2 and match.team2.name) else (match.player2 | display_name if match.player2 is defined else 'Opponent')) %}
@@ -314,7 +314,7 @@
                 </table>
             </div>
 
-            {% if group.ownerRef.id == current_user_id %}
+            {% if group.ownerRef.id == g.user['uid'] %}
             <h3>Invite Friends</h3>
             <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
                 {{ form.hidden_tag() }}
@@ -364,7 +364,7 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Status</th>
-                            {% if group.ownerRef.id == current_user_id %}
+                            {% if group.ownerRef.id == g.user['uid'] %}
                             <th>Actions</th>
                             {% endif %}
                         </tr>
@@ -389,7 +389,7 @@
                                 <span class="badge">{{ invite.status or 'Pending' }}</span>
                                 {% endif %}
                             </td>
-                            {% if group.ownerRef.id == current_user_id %}
+                            {% if group.ownerRef.id == g.user['uid'] %}
                             <td data-label="Actions">
                                 <div class="pending-invites-actions">
                                     <form method="post"
@@ -472,12 +472,12 @@
                         <h2 class="social-share-card-title text-white font-weight-bold">{{ group.name }}</h2>
                         {% set ns = namespace(user_rank='Member', streak=0) %}
                         {% for player in leaderboard %}
-                            {% if player.id == current_user_id %}
+                            {% if player.id == g.user['uid'] %}
                                 {% set ns.user_rank = 'Rank #' ~ loop.index %}
                                 {% set ns.streak = player.streak %}
                             {% endif %}
                         {% endfor %}
-                        <div class="social-share-card-stat">{{ ns.user_rank }} • {{ ns.streak }} Win{{ 's' if ns.streak != 1 }}</div>
+                        <div class="social-share-card-stat">{{ ns.user_rank }} • {{ ns.streak }} {{ ns.streak | pluralize('Win') }}</div>
                     </div>
                     <div class="social-share-card-footer">Join us on pickaladder.io</div>
                 </div>

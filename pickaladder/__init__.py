@@ -233,6 +233,13 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         wrapped = wrap_user(user)
         return wrapped.avatar_url if wrapped else ""
 
+    @app.template_filter("pluralize")
+    def pluralize_filter(number: int, singular: str = "", plural: str | None = None) -> str:
+        """Pluralize a word based on a number."""
+        if number == 1:
+            return singular
+        return plural if plural is not None else f"{singular}s"
+
     _register_blueprints(app)
 
     # make url_for('index') == url_for('auth.login')
