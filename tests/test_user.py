@@ -1,20 +1,19 @@
-"""Tests for the user blueprint."""
+"""Tests for the user blueprint using mockfirestore."""
 
 from __future__ import annotations
 
 import unittest
 from io import BytesIO
+from typing import Any
 from unittest.mock import MagicMock, patch
 
-# INSIGHT #2: Explicitly import submodules to defeat lazy loading
-# and ensure patch targets exist before the test runner tries to find them.
 from pickaladder import create_app
 
-# Mock user payloads for consistent test data
+# Mock data
 MOCK_USER_ID = "user1"
-MOCK_PROFILE_USER_ID = "user2"
 MOCK_FIREBASE_TOKEN_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user1@example.com"}
 MOCK_FIRESTORE_USER_DATA = {"name": "User One", "isAdmin": True, "uid": "user1"}
+MOCK_PROFILE_USER_ID = "profile_user_id"
 
 
 class UserRoutesFirebaseTestCase(unittest.TestCase):
@@ -57,7 +56,12 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {
+                "TESTING": True,
+                "WTF_CSRF_ENABLED": False,
+                "SERVER_NAME": "localhost",
+                "SECRET_KEY": "test-secret",  # nosec B105
+            }
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -102,10 +106,10 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "/user/settings",
             data={
                 "name": "New Name",
-                "email": "new@example.com",
+                "email": "user1@example.com",  # Match mock to avoid auth call
+                "username": "newuser",
                 "dark_mode": "y",
                 "dupr_rating": 5.5,
-                "username": "newuser",
             },
             follow_redirects=True,
         )
@@ -124,7 +128,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         data = {
             "name": "New Name",
-            "email": "new@example.com",
+            "email": "user1@example.com",
             "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
             "username": "newuser",
         }
@@ -142,6 +146,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         )
         mock_blob.upload_from_filename.assert_called_once()
         mock_blob.make_public.assert_called_once()
+
         # Find the call that contains profilePictureUrl
         update_calls = [c[0][0] for c in mock_user_doc.update.call_args_list]
         found = False
@@ -164,7 +169,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "/user/settings",
             data={
                 "name": "New Name",
-                "email": "new@example.com",
+                "email": "user1@example.com",
                 "dark_mode": "y",
                 "dupr_rating": "5.5",
                 "username": "newuser",
@@ -174,7 +179,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Settings updated!", response.data)
 
-        # Verify both calls
+        # Verify calls
         update_calls = [c[0][0] for c in mock_user_doc.update.call_args_list]
 
         dark_mode_found = False

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import os
+import re
 from typing import Any
 
 from playwright.sync_api import Page, expect
@@ -63,12 +63,6 @@ def test_tournament_flow(
     ).set({"status": "accepted"})
 
     page.reload()
-    # Create the directory safely in the current workspace
-    verify_dir = "verification"
-    os.makedirs(verify_dir, exist_ok=True)
-
-    # Save with a relative path
-    page.screenshot(path=os.path.join(verify_dir, "tournament_invite.png"))
     expect(page.locator("select[name='user_id']")).to_contain_text("friend_user")
 
     # 3. Check Directions button
@@ -78,7 +72,33 @@ def test_tournament_flow(
         "href", "https://www.google.com/maps/search/?api=1&query=Central%20Park"
     )
 
-    # 4. Complete Tournament (as owner)
+    # 4. Record a Match (Verify Summary Redirect)
+    # First, ensure friend_user is a participant for the match recording to work easily
+    tournament_id = page.url.split("/")[-1]
+    mock_db.collection("tournaments").document(tournament_id).update(
+        {"participant_ids": ["admin", "friend_user"]}
+    )
+    page.reload()
+
+    with page.expect_navigation():
+        page.click("text=Record Match")
+
+    page.select_option("select[name='player1']", value="admin")
+    page.select_option("select[name='player2']", value="friend_user")
+    page.fill("input[name='player1_score']", "11")
+    page.fill("input[name='player2_score']", "5")
+
+    with page.expect_navigation():
+        page.click("button:has-text('Record Match')")
+
+    # New requirement: handle Match Summary redirect
+    expect(page).to_have_url(re.compile(r".*/match/summary/.*"))
+    expect(page.locator("h1")).to_contain_text("Match Summary")
+
+    # Go back to tournament view to complete it
+    page.goto(f"{base_url}/tournaments/{tournament_id}")
+
+    # 5. Complete Tournament (as owner)
     with page.expect_navigation():
         page.click("text=Complete Tournament")
 

@@ -26,7 +26,7 @@ def query_get(self: Query) -> list[DocumentSnapshot]:
     return list(self.stream())
 
 
-Query.get = query_get
+Query.get = query_get  # type: ignore[method-assign]
 
 # Patch CollectionReference.where
 original_collection_where = CollectionReference.where
@@ -47,7 +47,7 @@ def collection_where(
     return original_collection_where(self, field_path, op_string, value)
 
 
-CollectionReference.where = collection_where
+CollectionReference.where = collection_where  # type: ignore[assignment]
 
 # Patch Query.where
 original_where = Query.where
@@ -66,10 +66,10 @@ def query_where(
     return original_where(self, field_path, op_string, value)
 
 
-Query.where = query_where
+Query.where = query_where  # type: ignore[assignment]
 
 # Patch Query._compare_func
-original_compare_func = Query._compare_func
+original_compare_func = Query._compare_func  # type: ignore[attr-defined]
 
 
 def query_compare_func(self: Query, op: str) -> Any:
@@ -102,10 +102,10 @@ def query_compare_func(self: Query, op: str) -> Any:
     return original_compare_func(self, op)
 
 
-Query._compare_func = query_compare_func
+Query._compare_func = query_compare_func  # type: ignore[attr-defined]
 
 # Patch DocumentSnapshot._get_by_field_path
-original_get_by_field_path = DocumentSnapshot._get_by_field_path
+original_get_by_field_path = DocumentSnapshot._get_by_field_path  # type: ignore[attr-defined]
 
 
 def get_by_field_path(self: DocumentSnapshot, field_path: str) -> Any:
@@ -115,7 +115,7 @@ def get_by_field_path(self: DocumentSnapshot, field_path: str) -> Any:
     return original_get_by_field_path(self, field_path)
 
 
-DocumentSnapshot._get_by_field_path = get_by_field_path
+DocumentSnapshot._get_by_field_path = get_by_field_path  # type: ignore[attr-defined]
 
 # Patch DocumentReference.get to handle transaction argument
 original_get = DocumentReference.get
@@ -126,7 +126,7 @@ def doc_ref_get(self: DocumentReference, transaction: Any = None) -> DocumentSna
     return original_get(self)
 
 
-DocumentReference.get = doc_ref_get
+DocumentReference.get = doc_ref_get  # type: ignore[method-assign]
 
 
 # Patch DocumentReference equality and hashing
@@ -142,8 +142,8 @@ def doc_ref_hash(self: DocumentReference) -> int:
     return hash(tuple(self._path))
 
 
-DocumentReference.__eq__ = doc_ref_eq
-DocumentReference.__hash__ = doc_ref_hash
+DocumentReference.__eq__ = doc_ref_eq  # type: ignore[method-assign]
+DocumentReference.__hash__ = doc_ref_hash  # type: ignore[method-assign]
 
 
 # Handle ArrayUnion/ArrayRemove
@@ -204,7 +204,7 @@ def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
         self.set(doc_data)
 
 
-DocumentReference.update = doc_ref_update
+DocumentReference.update = doc_ref_update  # type: ignore[method-assign]
 
 # --- Mock Classes ---
 
@@ -259,24 +259,43 @@ class MockTransaction:
     def __init__(self, db: EnhancedMockFirestore) -> None:
         """Initialize mock transaction."""
         self.db = db
+        self._read_only = False
+        self._id = "mock-transaction-id"
+        self._max_attempts = 5
 
-    def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
+    def _begin(self, retry_id: Any = None) -> None:
+        """Mock begin."""
+        pass
+
+    def _rollback(self) -> None:
+        """Mock rollback."""
+        pass
+
+    def _clean_up(self) -> None:
+        """Mock clean up."""
+        pass
+
+    def _commit(self) -> list[Any]:
+        """Mock commit."""
+        return []
+
+    def get(self, ref_or_query: Any, **kwargs: Any) -> Any:
         """Mock get."""
-        return doc_ref.get()
+        return ref_or_query.get()
 
-    def set(
-        self, doc_ref: DocumentReference, data: dict[str, Any], merge: bool = False
-    ) -> None:
+    def set(self, reference: Any, document_data: Any, merge: bool = False) -> None:
         """Mock set."""
-        doc_ref.set(data, merge=merge)
+        reference.set(document_data, merge=merge)
 
-    def update(self, doc_ref: DocumentReference, data: dict[str, Any]) -> None:
+    def update(
+        self, reference: Any, field_updates: dict[str, Any], option: Any = None
+    ) -> None:
         """Mock update."""
-        doc_ref.update(data)
+        reference.update(field_updates)
 
-    def delete(self, doc_ref: DocumentReference) -> None:
+    def delete(self, reference: Any, option: Any = None) -> None:
         """Mock delete."""
-        doc_ref.delete()
+        reference.delete()
 
 
 class EnhancedMockFirestore(MockFirestore):
@@ -401,29 +420,21 @@ def app_server(
     )
 
     # Start p1 through p11 BEFORE importing pickaladder to ensure decorators are patched
-    p1.start()
-    p2.start()
-    p3.start()
-    p4.start()
-    p5.start()
-    p6.start()
-    p7.start()
-    p8.start()
-    p9.start()
-    p10.start()
-    p11.start()
+    patchers: list[Any] = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11]
+    for p in patchers:
+        p.start()
 
     # Move pickaladder import AFTER patching
     pickaladder = importlib.import_module("pickaladder")
 
     os.environ["FIREBASE_PROJECT_ID"] = "test-project"
-    os.environ["SECRET_KEY"] = "dev"  # nosec
+    os.environ["SECRET_KEY"] = "dev"  # nosec B105
     os.environ["MAIL_USERNAME"] = "test"  # nosec
     os.environ["MAIL_PASSWORD"] = "test"  # nosec
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
 
-    app = pickaladder.create_app({"TESTING": True})
+    app = pickaladder.create_app({"TESTING": True, "WTF_CSRF_ENABLED": False})
 
     port = 5002
     server = make_server("localhost", port, app)
@@ -434,17 +445,8 @@ def app_server(
 
     server.shutdown()
     t.join()
-    p1.stop()
-    p2.stop()
-    p3.stop()
-    p4.stop()
-    p5.stop()
-    p6.stop()
-    p7.stop()
-    p8.stop()
-    p9.stop()
-    p10.stop()
-    p11.stop()
+    for p in patchers:
+        p.stop()
 
 
 @pytest.fixture

@@ -22,5 +22,3 @@ def test_rivalry_ui(page: Page) -> None:
     expect(page.get_by_text("Tale of the Tape")).to_be_visible()
     expect(page.get_by_text("Avg Points Scored")).to_be_visible()
     expect(page.get_by_text("Partnership Record")).to_be_visible()
-
-    page.screenshot(path="tests/e2e/screenshots/rivalry_ui.png")
