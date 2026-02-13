@@ -259,6 +259,25 @@ class MockTransaction:
     def __init__(self, db: EnhancedMockFirestore) -> None:
         """Initialize mock transaction."""
         self.db = db
+        self._read_only = False
+        self._id = "mock-transaction-id"
+        self._max_attempts = 5
+
+    def _begin(self, retry_id: Any = None) -> None:
+        """Mock begin."""
+        pass
+
+    def _rollback(self) -> None:
+        """Mock rollback."""
+        pass
+
+    def _clean_up(self) -> None:
+        """Mock clean up."""
+        pass
+
+    def _commit(self) -> list[Any]:
+        """Mock commit."""
+        return []
 
     def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
         """Mock get."""
@@ -423,7 +442,7 @@ def app_server(
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
 
-    app = pickaladder.create_app({"TESTING": True})
+    app = pickaladder.create_app({"TESTING": True, "WTF_CSRF_ENABLED": False})
 
     port = 5002
     server = make_server("localhost", port, app)

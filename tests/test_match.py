@@ -113,8 +113,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
+    @patch("pickaladder.match.routes.MatchService.get_match_by_id")
     @patch("pickaladder.match.services.MatchService.get_candidate_player_ids")
-    def test_record_match(self, mock_get_candidate_player_ids: MagicMock) -> None:
+    def test_record_match(self, mock_get_candidate_player_ids: MagicMock, mock_get_match: MagicMock) -> None:
         """Test recording a new match."""
 
         def get_candidates_side_effect(
@@ -142,6 +143,17 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_db.get_all.return_value = [mock_user_snapshot, mock_opponent_snapshot]
 
         mock_matches_collection = mock_db.collection("matches")
+
+        # Mock match data for summary page redirect
+        mock_get_match.return_value = {
+            "id": "match_123",
+            "matchType": "singles",
+            "player1Score": 11,
+            "player2Score": 5,
+            "player1Ref": MagicMock(id=MOCK_USER_ID),
+            "player2Ref": MagicMock(id=MOCK_OPPONENT_ID),
+            "matchDate": datetime.datetime.now(),
+        }
 
         response = self.client.post(
             "/match/record",

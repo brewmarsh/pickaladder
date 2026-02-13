@@ -42,7 +42,7 @@ class MatchForm(FlaskForm):
 
     # TODO: Add type hints for Agent clarity
     def validate_player1_score(
-        self, field: Field, form: Optional[FlaskForm] = None
+        self, field: Field
     ) -> None:
         """Validate that the score is not negative."""
         if field.data is None:
@@ -52,7 +52,7 @@ class MatchForm(FlaskForm):
 
     # TODO: Add type hints for Agent clarity
     def validate_player2_score(
-        self, field: Field, form: Optional[FlaskForm] = None
+        self, field: Field
     ) -> None:
         """Validate that the score is not negative."""
         if field.data is None:
