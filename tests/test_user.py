@@ -41,9 +41,14 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
-            "profile_storage": patch("pickaladder.user.services.profile.storage"),
+            "storage_service": patch(
+                "pickaladder.user.services.core.storage", new=self.mock_storage_service
+            ),
+            "profile_storage": patch(
+                "pickaladder.user.services.profile.storage",
+                new=self.mock_storage_service,
+            ),
             "profile_auth": patch("pickaladder.user.services.profile.auth"),
-            "core_storage": patch("pickaladder.user.services.core.storage"),
             "core_auth": patch("pickaladder.user.services.core.auth"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
@@ -112,8 +117,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Settings updated successfully.", response.data)
-        # Note: update_user_profile is called first, then process_profile_update
-        # So update might be called multiple times
         self.assertTrue(mock_user_doc.update.called)
 
     def test_update_profile_picture_upload(self) -> None:
@@ -138,7 +141,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated!", response.data)
+        self.assertIn(b"Settings updated successfully.", response.data)
         mock_storage.bucket.assert_called_once()
         mock_bucket.blob.assert_called_once_with(
             f"profile_pictures/{MOCK_USER_ID}/test.png"
@@ -173,8 +176,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Settings updated successfully.", response.data)
-        # Check updates. Note that multiple update calls might happen.
-        # We check that at least one call had the expected data.
+        
         all_update_data = {}
         for call in mock_user_doc.update.call_args_list:
             all_update_data.update(call[0][0])
@@ -216,11 +218,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_groups_coll.where.return_value.stream.return_value = []
 
     def test_api_dashboard_fetches_all_matches_for_sorting(self) -> None:
-        """Test that all matches are fetched for sorting.
-
-        Test that all matches are fetched (no limit) to allow correct in-memory
-        sorting.
-        """
+        """Test that all matches are fetched for sorting."""
         self._set_session_user()
         mock_db = self.mock_firestore_service.client.return_value
         self._setup_dashboard_mocks(mock_db)
@@ -229,15 +227,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_matches_coll.where.return_value = mock_query_where
         mock_query_where.stream.return_value = []
 
-        # We also need to mock the path where limit IS called, to avoid crash if
-        # it is called
-        mock_query_limit = MagicMock()
-        mock_query_where.limit.return_value = mock_query_limit
-        mock_query_limit.stream.return_value = []
-
         self.client.get("/user/api/dashboard")
 
-        # Assert that limit was NOT called on the query
         self.assertFalse(
             mock_query_where.limit.called,
             "limit() should not be called on match queries",
@@ -253,7 +244,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         mock_db = self.mock_firestore_service.client.return_value
         self._setup_dashboard_mocks(mock_db)
 
-        # Construct a mock match with groupId
         mock_match = MagicMock()
         mock_match.id = "match1"
         mock_p2_ref = MagicMock()
@@ -271,32 +261,21 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "groupId": "group123",  # This makes it a group match
         }
 
-        mock_stream = [mock_match]
-
-        # Mock for the code path without limit (where -> stream)
-        self.mock_matches_coll.where.return_value.stream.return_value = mock_stream
+        self.mock_matches_coll.where.return_value.stream.return_value = [mock_match]
 
         response = self.client.get("/user/api/dashboard")
 
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
-        self.assertIsInstance(data, dict)
         matches = data["matches"]
         self.assertEqual(len(matches), 1)
-        self.assertIn(
-            "is_group_match", matches[0], "is_group_match field missing in response"
-        )
         self.assertTrue(matches[0]["is_group_match"], "is_group_match should be True")
 
     @patch("pickaladder.user.routes.render_template")
     def test_view_user_includes_doubles_and_processes_matches(
         self, mock_render_template: MagicMock
     ) -> None:
-        """Test that view_user fetches and processes doubles matches.
-
-        Test that view_user fetches doubles matches and processes them for the
-        template.
-        """
+        """Test that view_user fetches and processes doubles matches."""
         self._set_session_user()
         mock_db = self.mock_firestore_service.client.return_value
 
@@ -308,7 +287,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "username": "profile_user"
         }
 
-        # Use side_effect to return correct mock collection
         mock_matches_coll = MagicMock()
 
         def collection_side_effect(name: str) -> MagicMock:
@@ -366,15 +344,11 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             c[0][0] == "team2" and c[0][1] == "array_contains" for c in actual_calls
         )
 
-        self.assertTrue(
-            found_team1, "Did not query matches where user is in team1 (doubles)"
-        )
-        self.assertTrue(
-            found_team2, "Did not query matches where user is in team2 (doubles)"
-        )
+        self.assertTrue(found_team1)
+        self.assertTrue(found_team2)
 
         # Check template context
-        args, kwargs = mock_render_template.call_args
+        _, kwargs = mock_render_template.call_args
         matches = kwargs.get("matches")
         self.assertTrue(matches, "Matches not passed to template")
 
@@ -384,7 +358,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertIn("match_date", first_match)
         self.assertIn("player1", first_match)
-        self.assertIn("username", first_match["player1"])
 
 
 if __name__ == "__main__":

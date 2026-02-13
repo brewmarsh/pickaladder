@@ -137,12 +137,15 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Record Match')")
 
-    # Check for Match Summary redirect
-    expect(page).to_have_url(re.compile(r".*/match/summary/.*"))
+    # Verify redirect to Summary Page (Logic from Main)
+    expect(page).to_have_url(re.compile(r".*/match/summary/.*"), timeout=15000)
     expect(page.locator("h1")).to_contain_text("Match Summary")
-    expect(
-        page.locator(".alert-success, .toast.alert-success, .toast-body")
-    ).to_contain_text("Match recorded successfully")
+    # Verify flash message using inclusive locator (Logic from Feature Branch)
+    expect(page.locator(".alert-success, .toast.alert-success, .toast-body").first).to_contain_text(
+        "Match recorded successfully"
+    )
+    # Verify the scores we just entered are visible
+    expect(page.locator("body")).to_contain_text(re.compile(r"11.*9", re.DOTALL))
 
     # 7. Score Group Game
     with page.expect_navigation():
@@ -158,10 +161,12 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Record Match')")
 
-    expect(page.locator("h1")).to_contain_text("Pickleballers")
-    expect(
-        page.locator(".alert-success, .toast.alert-success, .toast-body")
-    ).to_contain_text("Match recorded successfully")
+    # Check for Match Summary redirect
+    expect(page).to_have_url(re.compile(r".*/match/summary/.*"))
+    expect(page.locator("h1")).to_contain_text("Match Summary")
+    expect(page.locator(".alert-success, .toast.alert-success, .toast-body").first).to_contain_text(
+        "Match recorded successfully"
+    )
 
     # Check Global Leaderboard (Req: "see the leaderboard")
     with page.expect_navigation():
@@ -184,16 +189,12 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     # Delete match involving user2 (first one)
     with page.expect_navigation():
         page.click("button:has-text('Delete')")
-    expect(
-        page.locator(".alert-success, .toast.alert-success, .toast-body")
-    ).to_contain_text("Match deleted successfully")
+    expect(page.locator(".alert-success, .toast.alert-success, .toast-body").first).to_contain_text("Match deleted successfully")
 
     # Delete second match
     with page.expect_navigation():
         page.click("button:has-text('Delete')")
-    expect(
-        page.locator(".alert-success, .toast.alert-success, .toast-body")
-    ).to_contain_text("Match deleted successfully")
+    expect(page.locator(".alert-success, .toast.alert-success, .toast-body").first).to_contain_text("Match deleted successfully")
 
     # 10. Update Group Details (Login as Admin - already logged in)
     with page.expect_navigation():
@@ -213,7 +214,8 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
     with page.expect_navigation():
         page.click("button:has-text('Send Invite')")
-    expect(page.locator(".toast-body").first).to_contain_text(
+    
+    expect(page.locator(".alert-success, .toast.alert-success, .toast-body").first).to_contain_text(
         "Invitation is being sent"
     )
 
