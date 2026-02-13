@@ -253,15 +253,28 @@ class MockBatch:
         self.ops = []
 
 
-class MockTransaction(MagicMock):
+class MockTransaction:
     """Mock for firestore.Transaction."""
 
     def __init__(self, db: EnhancedMockFirestore) -> None:
         """Initialize mock transaction."""
-        super().__init__()
-        print(f"DEBUG: Initializing MockTransaction with db {db}")
         self.db = db
         self._read_only = False
+        self._id = "mock-transaction-id"
+        self._max_attempts = 5
+        self._retry_id = None
+
+    def _rollback(self):
+        pass
+
+    def _begin(self, **kwargs):
+        pass
+
+    def _commit(self):
+        pass
+
+    def _clean_up(self):
+        pass
 
     def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
         """Mock get."""
@@ -280,6 +293,12 @@ class MockTransaction(MagicMock):
     def delete(self, doc_ref: DocumentReference) -> None:
         """Mock delete."""
         doc_ref.delete()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
 
 
 class EnhancedMockFirestore(MockFirestore):
