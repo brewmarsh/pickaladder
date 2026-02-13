@@ -272,15 +272,19 @@ def record_match() -> Any:
             if unlocked_names:
                 success_msg += f" New Badge Unlocked! {', '.join(unlocked_names)}"
 
-            flash(success_msg, "success")
             active_tid = form.tournament_id.data or tournament_id
             active_gid = form.group_id.data or group_id
+
             if active_tid:
+                flash(success_msg, "success")
                 return redirect(
                     url_for("tournament.view_tournament", tournament_id=active_tid)
                 )
             if active_gid:
+                flash(success_msg, "success")
                 return redirect(url_for("group.view_group", group_id=active_gid))
+
+            flash(success_msg, "success")
             return redirect(url_for("match.view_match_summary", match_id=match_id))
         except ValueError as e:
             if request.is_json:

@@ -60,7 +60,7 @@ class MockFirestoreBuilder:
 
     @staticmethod
     def patch_db_read() -> None:
-        """Apply monkeypatches to mockfirestore to support FieldFilter and equality."""
+        """Apply monkeypatches to mockfirestore to support FieldFilter."""
 
         def collection_where(
             self: Any,
@@ -116,7 +116,7 @@ class MockFirestoreBuilder:
 
     @staticmethod
     def patch_db_write() -> None:
-        """Apply monkeypatches to mockfirestore to support update with sentinels."""
+        """Apply monkeypatches to support update with sentinels."""
         if not hasattr(DocumentReference, "_orig_update"):
             DocumentReference._orig_update = DocumentReference.update
 
@@ -171,6 +171,6 @@ class MockFirestoreBuilder:
 
 
 def patch_mockfirestore() -> None:
-    """Apply monkeypatches to mockfirestore to support FieldFilter and equality."""
+    """Apply monkeypatches to mockfirestore to support FieldFilter."""
     MockFirestoreBuilder.patch_db_read()
     MockFirestoreBuilder.patch_db_write()
