@@ -1,0 +1,223 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, beta]
+  workflow_dispatch:
+
+jobs:
+  check-conflicts:
+    name: Check for Merge Conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Check for Merge Conflicts
+        run: |
+          git fetch origin main
+          # Use merge-tree to simulate the merge in memory without failing the checkout
+          if git merge-tree --write-tree origin/main HEAD > /dev/null; then
+            echo "✅ Merge Clean"
+          else
+            echo "::error::❌ Merge Conflict Detected. Please rebase."
+            exit 1
+          fi
+
+  lint:
+    name: Lint
+    needs: check-conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
+      - name: Lint with ruff
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project ruff check .
+
+  format:
+    name: Format
+    needs: check-conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
+      - name: Format with ruff
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project ruff format --check .
+
+  security:
+    name: Security
+    needs: check-conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
+      - name: Security Analysis with Bandit
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project bandit -r .
+
+  typing:
+    name: Typing
+    needs: check-conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
+      - name: Static Type Checking with mypy
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project python -m mypy --no-incremental .
+
+  vulnerabilities:
+    name: Vulnerabilities
+    needs: check-conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          uv pip install --upgrade pip --system
+          uv pip install -r requirements.txt mock-firestore coverage pip-audit --system
+      - name: Scan for vulnerabilities
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project pip-audit
+
+  refurb:
+    name: Refurb
+    needs: check-conflicts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: uv pip install -r requirements.txt mock-firestore coverage refurb --system
+      - name: Run refurb
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv run --no-project refurb .
+        continue-on-error: true
+
+  test:
+    name: Quality Gate (Tests)
+    needs: check-conflicts
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: pickaladder_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Setup Database
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+
+      - name: Install Dependencies
+        run: uv sync
+
+      - name: Install Playwright Browsers
+        run: uv run playwright install --with-deps
+
+      - name: Run Tests
+        env:
+          TESTING: "True"
+          SECRET_KEY: "test-secret-key"
+        run: uv run --no-project python -m pytest

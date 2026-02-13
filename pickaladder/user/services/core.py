@@ -69,7 +69,11 @@ def get_all_users(
 
 
 def process_profile_update(
-    db: Client, user_id: str, form_data: Any, current_user_data: dict[str, Any]
+    db: Client,
+    user_id: str,
+    form_data: Any,
+    current_user_data: dict[str, Any],
+    profile_pic_url: str | None = None,
 ) -> dict[str, Any]:
     """Handle complex profile updates, including email change and verification."""
     new_email = form_data.email.data
@@ -78,6 +82,12 @@ def process_profile_update(
         "name": form_data.name.data,
         "username": new_username,
     }
+
+    if hasattr(form_data, "dark_mode"):
+        update_data["dark_mode"] = bool(form_data.dark_mode.data)
+
+    if profile_pic_url:
+        update_data["profilePictureUrl"] = profile_pic_url
 
     dupr_id = form_data.dupr_id.data.strip() if form_data.dupr_id.data else None
     update_data["dupr_id"] = dupr_id

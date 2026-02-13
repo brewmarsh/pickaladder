@@ -121,7 +121,7 @@
 
 .social-share-card-header {
     font-size: 0.75rem;
-    text-transform: uppercase;
+    text-transform: none;
     letter-spacing: 0.1em;
     opacity: 0.8;
     margin-bottom: 20px;

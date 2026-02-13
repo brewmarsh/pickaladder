@@ -1,0 +1,40 @@
+services:
+  web:
+    container_name: pickaladder-beta-web
+    build: .
+    restart: always
+    command: gunicorn --bind 0.0.0.0:8000 --workers 2 --threads 4 --worker-class gthread --timeout 120 app:app
+    ports:
+      - "8080:8000"
+    volumes:
+      - .:/app
+      - ./firebase_credentials_beta.json:/app/serviceAccountKey.json:ro
+    environment:
+      - FLASK_ENV=beta
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/serviceAccountKey.json
+    env_file:
+      - .env.beta
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - pickanet-beta
+  nginx:
+    container_name: pickaladder-beta-nginx
+    build: ./nginx
+    restart: always
+    ports:
+      - "8081:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - web
+    networks:
+      - pickanet-beta
+
+networks:
+  pickanet-beta:
+    driver: bridge
