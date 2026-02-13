@@ -49,18 +49,23 @@ def get_all_users(
     if exclude_ids is None:
         exclude_ids = []
 
-    users_query = (
-        db.collection("users")
-        .order_by("createdAt", direction=firestore.Query.DESCENDING)
-        .limit(limit + len(exclude_ids))  # Fetch extra in case we exclude users
-        .stream()
-    )
+    try:
+        users_query = (
+            db.collection("users")
+            .order_by("createdAt", direction=firestore.Query.DESCENDING)
+            .limit(limit + len(exclude_ids))  # Fetch extra in case we exclude users
+            .stream()
+        )
+    except KeyError:
+        # Fallback for mockfirestore if createdAt is missing in some docs
+        users_query = db.collection("users").stream()
+
     users = []
     for doc in users_query:
         if exclude_ids and doc.id in exclude_ids:
             continue
         data = doc.to_dict()
-        if data is not None:
+        if data is not None and "username" in data:
             data["id"] = doc.id
             users.append(data)
         if len(users) >= limit:

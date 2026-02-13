@@ -30,16 +30,16 @@
                         </td>
                         <td data-label="P1/Team1">
                             {% if match.matchType == 'doubles' %}
-                                {{ match.team1|length }} players
+                                {{ match.team1|length if match.team1 else 0 }} players
                             {% else %}
-                                {{ match.player1Ref.id }}
+                                {{ match.player1Ref.id if match.player1Ref else 'N/A' }}
                             {% endif %}
                         </td>
                         <td data-label="P2/Team2">
                             {% if match.matchType == 'doubles' %}
-                                {{ match.team2|length }} players
+                                {{ match.team2|length if match.team2 else 0 }} players
                             {% else %}
-                                {{ match.player2Ref.id }}
+                                {{ match.player2Ref.id if match.player2Ref else 'N/A' }}
                             {% endif %}
                         </td>
                         <td data-label="Score">{{ match.player1Score }} - {{ match.player2Score }}</td>

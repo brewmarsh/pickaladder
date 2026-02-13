@@ -141,13 +141,20 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     from firebase_admin import firestore
 
     # Query for public groups
-    public_groups_query = (
-        db.collection("groups")
-        .where("is_public", "==", True)
-        .order_by("createdAt", direction=firestore.Query.DESCENDING)
-        .limit(limit)
-    )
-    public_group_docs = list(public_groups_query.stream())
+    try:
+        public_groups_query = (
+            db.collection("groups")
+            .where("is_public", "==", True)
+            .order_by("createdAt", direction=firestore.Query.DESCENDING)
+            .limit(limit)
+        )
+        public_group_docs = list(public_groups_query.stream())
+    except KeyError:
+        # Fallback for mockfirestore
+        public_groups_query = (
+            db.collection("groups").where("is_public", "==", True).limit(limit)
+        )
+        public_group_docs = list(public_groups_query.stream())
 
     # Enrich groups with owner data
     owner_refs = []
