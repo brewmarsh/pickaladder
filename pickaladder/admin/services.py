@@ -88,6 +88,8 @@ class AdminService:
     @staticmethod
     def delete_user_data(db: Any, uid: str) -> None:
         """Delete a user from Firestore and Firebase Auth."""
+        from firebase_admin import auth  # noqa: PLC0415
+
         # Delete from Firestore
         db.collection("users").document(uid).delete()
         # Delete from Firebase Auth
