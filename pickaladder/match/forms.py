@@ -41,9 +41,7 @@ class MatchForm(FlaskForm):
     tournament_id = HiddenField("Tournament ID", validators=[OptionalValidator()])
 
     # TODO: Add type hints for Agent clarity
-    def validate_player1_score(
-        self, field: Field
-    ) -> None:
+    def validate_player1_score(self, field: Field) -> None:
         """Validate that the score is not negative."""
         if field.data is None:
             return
@@ -51,9 +49,7 @@ class MatchForm(FlaskForm):
             raise ValidationError("Scores cannot be negative.")
 
     # TODO: Add type hints for Agent clarity
-    def validate_player2_score(
-        self, field: Field
-    ) -> None:
+    def validate_player2_score(self, field: Field) -> None:
         """Validate that the score is not negative."""
         if field.data is None:
             return

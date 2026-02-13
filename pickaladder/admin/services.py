@@ -11,19 +11,16 @@ class AdminService:
 
     @staticmethod
     def get_admin_stats(db: Any) -> dict[str, Any]:
-        """Fetch high-level stats for the admin dashboard.
-
-        Uses efficient count aggregations.
-        """
+        """Fetch high-level stats for the admin dashboard using efficient count aggregations."""
         # Total Users
-        total_users = db.collection("users").count().get()[0].value
+        total_users = db.collection("users").count().get()[0][0].value
 
         # Active Tournaments (status != 'Completed')
         active_tournaments = (
             db.collection("tournaments")
             .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
             .count()
-            .get()[0]
+            .get()[0][0]
             .value
         )
 
@@ -33,9 +30,9 @@ class AdminService:
         )
         recent_matches = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter("matchDate", ">=", yesterday))
+            .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))
             .count()
-            .get()[0]
+            .get()[0][0]
             .value
         )
 
