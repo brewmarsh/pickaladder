@@ -59,20 +59,15 @@ def settings() -> Any:
                 user_id, form.profile_picture.data
             )
 
-        # Update base fields (dark_mode and profile_pic if uploaded)
-        update_data: dict[str, Any] = {"dark_mode": bool(form.dark_mode.data)}
-        if profile_pic_url:
-            update_data["profilePictureUrl"] = profile_pic_url
-
-        UserService.update_user_profile(db, user_id, update_data)
-
-        # Handle other updates (name, username, email, dupr)
-        res = UserService.process_profile_update(db, user_id, form, g.user)
+        # Handle updates (name, username, email, dupr, dark_mode, profile_pic)
+        res = UserService.process_profile_update(
+            db, user_id, form, g.user, profile_pic_url=profile_pic_url
+        )
 
         if res["success"]:
             if "info" in res:
                 flash(res["info"], "info")
-            flash("Settings updated successfully.", "success")
+            flash("Settings updated!", "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
 

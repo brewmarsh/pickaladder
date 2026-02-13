@@ -258,6 +258,14 @@ def record_match() -> Any:
                 ), 200
 
             flash("Match recorded successfully.", "success")
+            if data.get("tournament_id"):
+                return redirect(
+                    url_for(
+                        "tournament.view_tournament", tournament_id=data["tournament_id"]
+                    )
+                )
+            if data.get("group_id"):
+                return redirect(url_for("group.view_group", group_id=data["group_id"]))
             return redirect(url_for("match.view_match_summary", match_id=match_id))
         except ValueError as e:
             if request.is_json:
