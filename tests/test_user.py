@@ -58,12 +58,13 @@ class TestUserRoutes(unittest.TestCase):
 
     def _set_session_user(self) -> None:
         """Simulate a logged-in user."""
-        # We need to mock g.user somehow or simulate session
-        # Since using Flask-Login or similar, usually we define a user loader or similar.
+        # We need to mock g.user somehow or simulate session.
+        # Since using Flask-Login or similar, usually we define a user loader.
         # But looking at routes, it uses @login_required decorator.
         # The decorator likely checks session or verify_id_token.
-        # For simplicity in this reconstruction, we'll rely on the auth mocking which might happen in create_app or decorators.
-        # Actually, let's look at how the test was running. It was likely using session injection.
+        # For simplicity, we rely on auth mocking which happens in
+        # create_app or decorators.
+        # Actually, it was likely using session injection.
 
         # Mocking verify_id_token to return our payload
         self.mocks["verify_id_token"].return_value = MOCK_FIREBASE_TOKEN_PAYLOAD
