@@ -56,7 +56,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 "TESTING": True,
                 "WTF_CSRF_ENABLED": False,
                 "SERVER_NAME": "localhost",
-                "SECRET_KEY": "test-secret",
+                "SECRET_KEY": "test-secret",  # nosec B105
             }
         )
         self.client = self.app.test_client()
