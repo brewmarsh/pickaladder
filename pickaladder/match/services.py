@@ -123,7 +123,7 @@ class MatchService:
         db: Client,
         form_data: dict[str, Any],
         current_user: UserSession,
-    ) -> str:
+    ) -> tuple[str, dict[str, list[str]]]:
         """Process and record a match submission."""
         user_id = current_user["uid"]
         user_ref = db.collection("users").document(user_id)
@@ -237,7 +237,7 @@ class MatchService:
                 awarded = BadgeService.evaluate_post_match(db, pid)
                 if awarded:
                     unlocked_badges[pid] = awarded
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001 # nosec B110
             pass
 
         return match_id, unlocked_badges

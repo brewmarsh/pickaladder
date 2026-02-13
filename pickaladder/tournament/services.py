@@ -456,7 +456,10 @@ class TournamentService:
         for p in tournament_data.get("participants", []):
             if p and p.get("status") == "accepted":
                 try:
-                    u_doc = p.get("userRef").get() if "userRef" in p else None
+                    from google.cloud.firestore_v1.base_document import DocumentSnapshot
+
+                    u_ref = p.get("userRef")
+                    u_doc = cast(DocumentSnapshot, u_ref.get()) if u_ref else None
                     if u_doc and u_doc.exists:
                         u_data = u_doc.to_dict()
                         if u_data and u_data.get("email"):
@@ -509,7 +512,14 @@ class TournamentService:
                 if winner_id:
                     if data.get("matchType") == "doubles":
                         # For doubles, winner_id is a teamId. Get members.
-                        team_doc = db.collection("teams").document(winner_id).get()
+                        from google.cloud.firestore_v1.base_document import (
+                            DocumentSnapshot,
+                        )
+
+                        team_doc = cast(
+                            DocumentSnapshot,
+                            db.collection("teams").document(winner_id).get(),
+                        )
                         if team_doc.exists:
                             team_data = team_doc.to_dict() or {}
                             members = team_data.get("members", [])
