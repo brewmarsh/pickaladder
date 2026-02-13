@@ -2,7 +2,7 @@
 {% block title %}{{ group.name }}{% endblock %}
 {% block content %}
 <div class="card hero-stats-card">
-    {% if is_admin %}
+    {% if group.ownerRef.id == g.user['uid'] %}
     <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="btn-edit-gear"
         data-testid="group-settings-btn">⚙️</a>
     {% endif %}
@@ -28,25 +28,15 @@
     </div>
 
     <div class="hero-right-panel">
-        <div class="d-flex gap-2 flex-wrap justify-content-end">
-            {% if is_admin %}
-            <a href="{{ url_for('tournament.create_tournament', group_id=group.id) }}" class="btn btn-outline-volt w-auto">
-                🏆 Create Tournament
-            </a>
-            {% if pending_members %}
-            <a href="#pendingInvitesDetails" class="btn btn-outline-primary w-auto">
-                📩 Requests ({{ pending_members|length }})
-            </a>
-            {% endif %}
-            {% endif %}
-            {% if is_member %}
+        {% if is_member %}
+        <div class="d-flex gap-2">
             <button type="button" class="btn btn-outline-primary w-auto" data-toggle="modal"
                 data-target="#shareGroupModal">
                 <i class="fas fa-share-alt"></i> Share
             </button>
             <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-volt w-auto">Record a Match</a>
-            {% endif %}
         </div>
+        {% endif %}
     </div>
 </div>
 
@@ -65,19 +55,27 @@
                 </div>
 
                 <div id="players" class="tab-content" style="display: block;">
+                    {% set ns_table = namespace(has_form=false) %}
+                    {% for p in leaderboard %}
+                        {% if p.form and p.form|length > 0 %}
+                            {% set ns_table.has_form = true %}
+                        {% endif %}
+                    {% endfor %}
                     <div class="table-container">
                         <table class="table table-standard responsive-table">
                             <thead>
                                 <tr>
                                     <th class="text-center">Rank</th>
                                     <th class="text-left">Player</th>
-                                    <th class="text-right">Form</th>
+                                    {% if ns_table.has_form %}
+                                    <th class="text-center d-none d-lg-table-cell">Form</th>
+                                    {% endif %}
                                     <th class="text-right">Avg Score</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for player in leaderboard %}
-                                <tr class="{{ 'bg-primary-subtle' if player.id == g.user['uid'] else '' }}">
+                                <tr class="{{ 'bg-primary-subtle' if player.id == g.user['uid'] or player.user_id == g.user['uid'] else '' }}">
                                     <td data-label="Rank" class="rank-cell text-center {% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">
                                         <span class="mobile-rank-badge">
                                             {% if loop.index == 1 %}🥇
@@ -116,13 +114,15 @@
                                             {% endif %}
                                         </div>
                                     </td>
-                                    <td data-label="Form" class="text-right">
-                                        <div class="form-dots-compact">
+                                    {% if ns_table.has_form %}
+                                    <td data-label="Form" class="text-center d-none d-lg-table-cell">
+                                        <div class="form-dots-compact justify-content-center">
                                             {% for result in player.form %}
                                             <span class="form-dot-compact {{ result }}"></span>
                                             {% endfor %}
                                         </div>
                                     </td>
+                                    {% endif %}
                                     <td data-label="Avg Score" class="text-right font-weight-bold">
                                         {{ "%.2f"|format(player.avg_score|float) }}
                                     </td>
@@ -215,79 +215,77 @@
 
 
         {% if recent_matches %}
-        <div class="card">
-            <h3>Recent Matches</h3>
+        <div class="card p-0 overflow-hidden">
+            <h3 class="p-3 mb-0">Recent Matches</h3>
             <div class="match-history-feed">
                 {% for match in recent_matches %}
-                <div class="match-history-row">
-                    <span class="match-date-compact text-muted">{{ match.matchDate.strftime('%m/%d') if match.matchDate
-                        else 'N/A' }}</span>
+                    {% set p1_score = match.player1Score|default(0) %}
+                    {% set p2_score = match.player2Score|default(0) %}
 
-                    <div class="match-main-content">
-                        {% set p1_score = match.player1Score|default(0) %}
-                        {% set p2_score = match.player2Score|default(0) %}
-                        {% set p1_win = p1_score > p2_score %}
-                        {% set p2_win = p2_score > p1_score %}
+                    {# Perspective determination: Current user if involved, otherwise winner #}
+                    {% set m_p1 = match.player1 if match.player1 is defined else none %}
+                    {% set m_p2 = match.player2 if match.player2 is defined else none %}
+                    {% set m_partner = match.partner if match.partner is defined else none %}
+                    {% set m_opp2 = match.opponent2 if match.opponent2 is defined else none %}
 
-                        {% if p2_win %}
-                        {# Winners (Team 2) #}
-                        <div class="match-team font-weight-bold">
-                            {% if match.team2 %}
-                            {{ match.team2.name }}
-                            {% elif match.player2 %}
-                            {{ match.player2 | display_name }}{% if match.opponent2 %} & {{ match.opponent2 |
-                            display_name }}{% endif %}
-                            {% else %}
-                            Unknown
-                            {% endif %}
-                        </div>
-                        <div class="match-score-pill font-weight-bold">
-                            {{ p2_score }}-{{ p1_score }}
-                        </div>
-                        <div class="match-vs text-muted">vs</div>
-                        <div class="match-team">
-                            {% if match.team1 %}
-                            {{ match.team1.name }}
-                            {% elif match.player1 %}
-                            {{ match.player1 | display_name }}{% if match.partner %} & {{ match.partner | display_name
-                            }}{% endif %}
-                            {% else %}
-                            Unknown
-                            {% endif %}
-                        </div>
-                        {% else %}
-                        {# Winners (Team 1) or Draw #}
-                        <div class="match-team {{ 'font-weight-bold' if p1_win else '' }}">
-                            {% if match.team1 %}
-                            {{ match.team1.name }}
-                            {% elif match.player1 %}
-                            {{ match.player1 | display_name }}{% if match.partner %} & {{ match.partner | display_name
-                            }}{% endif %}
-                            {% else %}
-                            Unknown
-                            {% endif %}
-                        </div>
-                        <div class="match-score-pill {{ 'font-weight-bold' if p1_win else '' }}">
-                            {{ p1_score }}-{{ p2_score }}
-                        </div>
-                        <div class="match-vs text-muted">vs</div>
-                        <div class="match-team">
-                            {% if match.team2 %}
-                            {{ match.team2.name }}
-                            {% elif match.player2 %}
-                            {{ match.player2 | display_name }}{% if match.opponent2 %} & {{ match.opponent2 |
-                            display_name }}{% endif %}
-                            {% else %}
-                            Unknown
-                            {% endif %}
-                        </div>
+                    {% set user_in_p1 = (m_p1 and m_p1.id == g.user['uid']) or (m_partner and m_partner.id == g.user['uid']) %}
+                    {% set user_in_p2 = (m_p2 and m_p2.id == g.user['uid']) or (m_opp2 and m_opp2.id == g.user['uid']) %}
+
+                    {% if user_in_p2 %}
+                        {% set primary_names = (match.team2.name if (match.team2 is defined and match.team2 and match.team2.name) else (match.player2 | display_name if match.player2 is defined else 'Opponent')) %}
+                        {% if not (match.team2 is defined and match.team2 and match.team2.name) and match.opponent2 is defined and match.opponent2 %}
+                            {% set primary_names = primary_names + ' & ' + (match.opponent2 | display_name) %}
                         {% endif %}
-                    </div>
-
-                    {% if match.is_upset %}
-                    <span class="upset-mini-badge" title="Upset! 🔥">🔥</span>
+                        {% set opponent_names = (match.team1.name if (match.team1 is defined and match.team1 and match.team1.name) else (match.player1 | display_name if match.player1 is defined else 'Player')) %}
+                        {% if not (match.team1 is defined and match.team1 and match.team1.name) and match.partner is defined and match.partner %}
+                            {% set opponent_names = opponent_names + ' & ' + (match.partner | display_name) %}
+                        {% endif %}
+                        {% set primary_score = p2_score %}
+                        {% set opponent_score = p1_score %}
+                    {% elif user_in_p1 or p1_score >= p2_score %}
+                        {% set primary_names = (match.team1.name if (match.team1 is defined and match.team1 and match.team1.name) else (match.player1 | display_name if match.player1 is defined else 'Player')) %}
+                        {% if not (match.team1 is defined and match.team1 and match.team1.name) and match.partner is defined and match.partner %}
+                            {% set primary_names = primary_names + ' & ' + (match.partner | display_name) %}
+                        {% endif %}
+                        {% set opponent_names = (match.team2.name if (match.team2 is defined and match.team2 and match.team2.name) else (match.player2 | display_name if match.player2 is defined else 'Opponent')) %}
+                        {% if not (match.team2 is defined and match.team2 and match.team2.name) and match.opponent2 is defined and match.opponent2 %}
+                            {% set opponent_names = opponent_names + ' & ' + (match.opponent2 | display_name) %}
+                        {% endif %}
+                        {% set primary_score = p1_score %}
+                        {% set opponent_score = p2_score %}
+                    {% else %}
+                        {# P2 won and user not in match #}
+                        {% set primary_names = (match.team2.name if (match.team2 is defined and match.team2 and match.team2.name) else (match.player2 | display_name if match.player2 is defined else 'Opponent')) %}
+                        {% if not (match.team2 is defined and match.team2 and match.team2.name) and match.opponent2 is defined and match.opponent2 %}
+                            {% set primary_names = primary_names + ' & ' + (match.opponent2 | display_name) %}
+                        {% endif %}
+                        {% set opponent_names = (match.team1.name if (match.team1 is defined and match.team1 and match.team1.name) else (match.player1 | display_name if match.player1 is defined else 'Player')) %}
+                        {% if not (match.team1 is defined and match.team1 and match.team1.name) and match.partner is defined and match.partner %}
+                            {% set opponent_names = opponent_names + ' & ' + (match.partner | display_name) %}
+                        {% endif %}
+                        {% set primary_score = p2_score %}
+                        {% set opponent_score = p1_score %}
                     {% endif %}
-                </div>
+
+                    {% set is_win = primary_score >= opponent_score %}
+
+                    <div class="match-compact-row">
+                        <div class="match-date-compact">{{ match.matchDate.strftime('%b %d') if match.matchDate else 'N/A' }}</div>
+
+                        <div class="match-info-compact text-truncate">
+                            <div class="fw-bold text-truncate">{{ primary_names }}</div>
+                            <div class="match-opponent-names text-truncate">vs {{ opponent_names }}</div>
+                        </div>
+
+                        <div class="match-score-badge-compact">
+                            <span class="score-badge {{ 'score-badge-win' if is_win else 'score-badge-loss' }}">
+                                {{ 'W' if is_win else 'L' }} {{ primary_score }}-{{ opponent_score }}
+                            </span>
+                            {% if match.is_upset %}
+                            <span class="upset-mini-badge" title="Upset! 🔥">🔥</span>
+                            {% endif %}
+                        </div>
+                    </div>
                 {% endfor %}
             </div>
         </div>
@@ -302,67 +300,21 @@
             <h3>Members</h3>
             <div class="table-container">
                 <table class="table-standard responsive-table">
-                    <thead>
-                        <tr>
-                            <th>Member</th>
-                            <th>Role</th>
-                            {% if is_admin %}
-                            <th class="text-right">Actions</th>
-                            {% endif %}
-                        </tr>
-                    </thead>
                     <tbody>
                         {% for member in members %}
-                        <tr>
-                            <td data-label="Member">
-                                <a href="{{ url_for('user.view_user', user_id=member.id) }}" class="d-flex align-items-center gap-2">
-                                    <img src="{{ member | avatar_url }}" alt="Profile Picture" class="avatar avatar-sm"
-                                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                    <span>{{ member.username }}</span>
-                                </a>
+                        <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=member.id) }}">
+                            <td data-label="Avatar">
+                                <img src="{{ member | avatar_url }}" alt="Profile Picture" class="avatar avatar-md"
+                                    onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                             </td>
-                            <td data-label="Role">
-                                {% if member.id == group.ownerRef.id %}
-                                <span class="badge" title="Owner">👑 Owner</span>
-                                {% elif member.id in group.get('admins', []) %}
-                                <span class="badge" title="Captain">🛡️ Captain</span>
-                                {% else %}
-                                <span class="text-muted">Member</span>
-                                {% endif %}
-                            </td>
-                            {% if is_admin %}
-                            <td data-label="Actions" class="text-right">
-                                <div class="d-flex gap-2 justify-content-end">
-                                    {% if is_owner and member.id != current_user_id %}
-                                        {% if member.id in group.get('admins', []) %}
-                                        <form method="post" action="{{ url_for('group.demote_member', group_id=group.id, user_id=member.id) }}" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-warning small" title="Revoke Captain">Revoke</button>
-                                        </form>
-                                        {% else %}
-                                        <form method="post" action="{{ url_for('group.promote_member', group_id=group.id, user_id=member.id) }}" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-outline-primary small" title="Promote to Captain">Promote</button>
-                                        </form>
-                                        {% endif %}
-                                    {% endif %}
-
-                                    {% if member.id != group.ownerRef.id and member.id != current_user_id %}
-                                    <form method="post" action="{{ url_for('group.remove_member', group_id=group.id, user_id=member.id) }}" class="d-inline">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-danger small" onclick="return confirm('Remove this member?')">Remove</button>
-                                    </form>
-                                    {% endif %}
-                                </div>
-                            </td>
-                            {% endif %}
+                            <td data-label="Username">{{ member.username }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
 
-            {% if is_admin %}
+            {% if group.ownerRef.id == g.user['uid'] %}
             <h3>Invite Friends</h3>
             <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
                 {{ form.hidden_tag() }}
@@ -386,9 +338,7 @@
                 </div>
                 <button type="submit" class="btn">Send Invite</button>
             </form>
-            {% endif %}
 
-            {% if is_owner %}
             <h3>Danger Zone</h3>
             <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -400,9 +350,9 @@
     </details>
 </div>
 
-{% if is_admin and pending_members %}
+{% if is_member and pending_members %}
 <div class="manage-group-section">
-    <details class="card manage-group-card" id="pendingInvitesDetails">
+    <details class="card manage-group-card">
         <summary class="manage-group-summary">Manage Pending Invites ({{ pending_members|length }})</summary>
         <div class="manage-group-content">
             <h3>Pending Members</h3>
@@ -414,7 +364,9 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Status</th>
+                            {% if group.ownerRef.id == g.user['uid'] %}
                             <th>Actions</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -437,6 +389,7 @@
                                 <span class="badge">{{ invite.status or 'Pending' }}</span>
                                 {% endif %}
                             </td>
+                            {% if group.ownerRef.id == g.user['uid'] %}
                             <td data-label="Actions">
                                 <div class="pending-invites-actions">
                                     <form method="post"
@@ -465,6 +418,7 @@
                                 </div>
                                 {% endif %}
                             </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -509,25 +463,38 @@
         <div class="modal-content" style="background: transparent; border: none; box-shadow: none;">
             <div class="modal-body p-0">
                 <div class="social-share-card">
-                    <div class="social-share-card-header">PICK-A-LADDER GROUP</div>
+                    <div class="social-share-card-header">pickaladder group</div>
                     <div class="social-share-card-body text-center">
                         <div class="profile-picture-container avatar-lg mx-auto mb-3">
                             <img src="{{ g.user | avatar_url }}" alt="Profile Picture" class="profile-picture"
                                 onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                         </div>
                         <h2 class="social-share-card-title text-white font-weight-bold">{{ group.name }}</h2>
-                        {% set ns = namespace(user_rank='Member') %}
+                        {% set ns = namespace(user_rank='Member', streak=0) %}
                         {% for player in leaderboard %}
-                            {% if player.id == current_user_id %}
+                            {% if player.id == g.user['uid'] %}
                                 {% set ns.user_rank = 'Rank #' ~ loop.index %}
+                                {% set ns.streak = player.streak %}
                             {% endif %}
                         {% endfor %}
-                        <div class="social-share-card-stat">{{ ns.user_rank }}</div>
+                        <div class="social-share-card-stat">{{ ns.user_rank }} • {{ ns.streak }} {{ ns.streak | pluralize('Win') }}</div>
                     </div>
                     <div class="social-share-card-footer">Join us on pickaladder.io</div>
                 </div>
                 <div class="mt-4 text-center">
-                    <p class="text-white mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Screenshot this card to share!</p>
+                    <div class="form-group">
+                        <label class="text-white" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Invite Link</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control"
+                                value="{{ url_for('group.view_group', group_id=group.id, ref=g.user.uid, _external=True) }}"
+                                id="group-invite-link" readonly>
+                            <div class="input-group-append">
+                                <button class="btn btn-volt" id="copy-link-btn" style="margin-top: 0; width: auto;">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="qrcode" class="d-flex justify-content-center mt-3" style="background: white; padding: 10px; border-radius: 10px; width: fit-content; margin-left: auto; margin-right: auto;"></div>
+                    <p class="text-white mt-3 mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Screenshot this card or share the link!</p>
                     <button type="button" class="btn btn-volt" data-dismiss="modal" style="width: auto;">Done</button>
                 </div>
             </div>
@@ -538,7 +505,57 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle Copy Link
+        const copyBtn = document.getElementById('copy-link-btn');
+        const inviteInput = document.getElementById('group-invite-link');
+
+        if (copyBtn && inviteInput) {
+            copyBtn.addEventListener('click', function() {
+                inviteInput.select();
+                inviteInput.setSelectionRange(0, 99999); // For mobile devices
+
+                try {
+                    navigator.clipboard.writeText(inviteInput.value).then(() => {
+                        const originalText = copyBtn.innerText;
+                        copyBtn.innerText = 'Copied!';
+                        copyBtn.classList.remove('btn-volt');
+                        copyBtn.classList.add('btn-success');
+
+                        setTimeout(() => {
+                            copyBtn.innerText = originalText;
+                            copyBtn.classList.remove('btn-success');
+                            copyBtn.classList.add('btn-volt');
+                        }, 2000);
+                    });
+                } catch (err) {
+                    console.error('Failed to copy: ', err);
+                }
+            });
+        }
+
+        // Handle QR Code Generation
+        let qrcode = null;
+        $('#shareGroupModal').on('shown.bs.modal', function () {
+            const inviteLink = document.getElementById('group-invite-link').value;
+            const qrcodeContainer = document.getElementById('qrcode');
+
+            if (qrcodeContainer) {
+                qrcodeContainer.innerHTML = ''; // Clear previous
+                qrcode = new QRCode(qrcodeContainer, {
+                    text: inviteLink,
+                    width: 128,
+                    height: 128,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+        });
+    });
+
     function openTab(evt, tabName) {
         var i, tabcontent, tabbuttons;
         tabcontent = document.getElementsByClassName("tab-content");

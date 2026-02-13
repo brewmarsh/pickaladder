@@ -12,6 +12,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 
@@ -58,6 +59,10 @@ def view_groups() -> Any:
 @login_required
 def view_group(group_id: str) -> Any:
     """Display a single group's page."""
+    # Capture Referrer
+    if "ref" in request.args:
+        session["referrer_id"] = request.args.get("ref")
+
     db = firestore.client()
     player_a_id = request.args.get("playerA")
     player_b_id = request.args.get("playerB")
@@ -97,7 +102,7 @@ def view_group(group_id: str) -> Any:
                 GroupService.invite_by_email(
                     db, group_id, context["group"]["name"], email, name, g.user["uid"]
                 )
-                flash(f"Invitation is being sent to {email.lower()}.", "toast")
+                flash(f"Invitation is being sent to {email.lower()}.", "success")
                 return redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
             flash(f"An error occurred creating the invitation: {e}", "danger")

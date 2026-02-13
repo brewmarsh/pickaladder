@@ -79,6 +79,37 @@ class AdminService:
             pass
 
     @staticmethod
+    def build_friend_graph(db: Any) -> dict[str, Any]:
+        """Build a dictionary representing the social graph of users and friendships."""
+        users_stream = db.collection("users").stream()
+        nodes = []
+        user_ids = set()
+
+        for user_doc in users_stream:
+            data = user_doc.to_dict()
+            nodes.append(
+                {"id": user_doc.id, "label": data.get("username") or user_doc.id}
+            )
+            user_ids.add(user_doc.id)
+
+        edges = []
+        # Optimization: We only need to iterate over users once.
+        # Friendships are reciprocal.
+        for uid in user_ids:
+            friends_stream = (
+                db.collection("users")
+                .document(uid)
+                .collection("friends")
+                .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+                .stream()
+            )
+            for friend_doc in friends_stream:
+                if uid < friend_doc.id:  # Avoid duplicate edges
+                    edges.append({"from": uid, "to": friend_doc.id})
+
+        return {"nodes": nodes, "edges": edges}
+
+    @staticmethod
     def promote_user(db: Any, user_id: str) -> str:
         """Promote a user to admin status in Firestore."""
         user_ref = db.collection("users").document(user_id)
