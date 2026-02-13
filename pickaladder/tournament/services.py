@@ -354,6 +354,26 @@ class TournamentService:
         return member_refs
 
     @staticmethod
+    def _prepare_group_invites(
+        member_docs: list[DocumentSnapshot], current_ids: set[str]
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        """Filter group members and prepare invite objects."""
+        new_parts = []
+        new_ids = []
+        for m_doc in member_docs:
+            if not m_doc.exists or m_doc.id in current_ids:
+                continue
+            m_data = m_doc.to_dict()
+            if not m_data:
+                continue
+            p_obj = {"userRef": m_doc.reference, "status": "pending", "team_name": None}
+            if m_data.get("is_ghost") and m_data.get("email"):
+                p_obj["email"] = m_data.get("email")
+            new_parts.append(p_obj)
+            new_ids.append(m_doc.id)
+        return new_parts, new_ids
+
+    @staticmethod
     def invite_group(
         tournament_id: str, group_id: str, user_uid: str, db: Client | None = None
     ) -> int:
@@ -363,47 +383,27 @@ class TournamentService:
 
         t_ref = db.collection("tournaments").document(tournament_id)
         t_doc = cast(Any, t_ref.get())
-        if not t_doc.exists:
+        if not t_doc or not t_doc.exists:
             raise ValueError("Tournament not found")
         t_data = cast(dict[str, Any], t_doc.to_dict())
-        if not t_data:
-            raise ValueError("Tournament data is empty")
 
         member_refs = TournamentService._validate_group_invite(
             db, t_data, group_id, user_uid
         )
-
         current_ids = set(t_data.get("participant_ids", []))
-        member_docs = db.get_all(member_refs)
+        member_docs = cast(list[Any], db.get_all(member_refs))
 
-        new_parts = []
-        new_ids = []
-
-        for m_doc in member_docs:
-            if not m_doc.exists or m_doc.id in current_ids:
-                continue
-
-            m_data = m_doc.to_dict()
-            if not m_data:
-                continue
-            p_obj = {"userRef": m_doc.reference, "status": "pending", "team_name": None}
-            if m_data.get("is_ghost") and m_data.get("email"):
-                p_obj["email"] = m_data.get("email")
-
-            new_parts.append(p_obj)
-            new_ids.append(m_doc.id)
+        new_parts, new_ids = TournamentService._prepare_group_invites(
+            member_docs, current_ids
+        )
 
         if new_parts:
-            batch = db.batch()
-            batch.update(
-                t_ref,
+            t_ref.update(
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                },
+                }
             )
-            batch.commit()
-
         return len(new_parts)
 
     @staticmethod
