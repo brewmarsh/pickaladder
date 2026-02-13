@@ -15,7 +15,7 @@ from flask import (
     url_for,
 )
 
-from pickaladder.auth.decorators import login_required
+from pickaladder.auth.decorators import admin_required, login_required
 from pickaladder.user.helpers import smart_display_name
 
 from . import bp
@@ -34,9 +34,23 @@ def list_tournaments() -> Any:
 
 
 @bp.route("/create", methods=["GET", "POST"])
-@login_required
+@admin_required
 def create_tournament() -> Any:
     """Create a new tournament."""
+    group_id = request.args.get("group_id")
+    if group_id:
+        db = firestore.client()
+        group_doc = db.collection("groups").document(group_id).get()
+        if group_doc.exists:
+            from pickaladder.group.services.group_service import GroupService
+
+            if not GroupService.is_group_admin(group_doc.to_dict(), g.user["uid"]):
+                flash(
+                    "You do not have permission to create a tournament for this group.",
+                    "danger",
+                )
+                return redirect(url_for("group.view_group", group_id=group_id))
+
     form = TournamentForm()
     if form.validate_on_submit():
         try:
@@ -94,7 +108,7 @@ def view_tournament(tournament_id: str) -> Any:
 
 
 @bp.route("/<string:tournament_id>/edit", methods=["GET", "POST"])
-@login_required
+@admin_required
 def edit_tournament(tournament_id: str) -> Any:
     """Edit tournament details."""
     details = TournamentService.get_tournament_details(tournament_id, g.user["uid"])
@@ -305,3 +319,16 @@ def generate_bracket(tournament_id: str) -> Any:
 def join_tournament(tournament_id: str) -> Any:
     """Accept tournament invitation (legacy alias)."""
     return accept_invite(tournament_id)
+
+
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    try:
+        TournamentService.delete_tournament(tournament_id)
+        flash("Tournament deleted successfully.", "success")
+        return redirect(url_for(".list_tournaments"))
+    except Exception as e:
+        flash(f"Error deleting tournament: {e}", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))

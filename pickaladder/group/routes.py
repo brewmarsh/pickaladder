@@ -12,6 +12,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 
@@ -58,6 +59,10 @@ def view_groups() -> Any:
 @login_required
 def view_group(group_id: str) -> Any:
     """Display a single group's page."""
+    # Capture Referrer
+    if "ref" in request.args:
+        session["referrer_id"] = request.args.get("ref")
+
     db = firestore.client()
     player_a_id = request.args.get("playerA")
     player_b_id = request.args.get("playerB")
@@ -97,7 +102,7 @@ def view_group(group_id: str) -> Any:
                 GroupService.invite_by_email(
                     db, group_id, context["group"]["name"], email, name, g.user["uid"]
                 )
-                flash(f"Invitation is being sent to {email.lower()}.", "toast")
+                flash(f"Invitation is being sent to {email.lower()}.", "success")
                 return redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
             flash(f"An error occurred creating the invitation: {e}", "danger")
@@ -144,6 +149,10 @@ def edit_group(group_id: str) -> Any:
     group_data = group.to_dict()
     group_data["id"] = group.id
 
+    if not GroupService.is_group_admin(group_data, g.user["uid"]):
+        flash("You do not have permission to edit this group.", "danger")
+        return redirect(url_for(".view_group", group_id=group_id))
+
     form = GroupForm(data=group_data)
     if form.validate_on_submit():
         try:
@@ -186,8 +195,7 @@ def resend_invite(token: str) -> Any:
         flash("Group not found", "danger")
         return redirect(url_for("auth.login"))
 
-    owner_ref = group.to_dict().get("ownerRef")
-    if not owner_ref or owner_ref.id != g.user["uid"]:
+    if not GroupService.is_group_admin(group.to_dict(), g.user["uid"]):
         flash("Permission denied", "danger")
         return redirect(url_for(".view_group", group_id=group_id))
 
@@ -265,8 +273,7 @@ def delete_invite(token: str) -> Any:
         flash("Group not found", "danger")
         return redirect(url_for("auth.login"))
 
-    owner_ref = group.to_dict().get("ownerRef")
-    if not owner_ref or owner_ref.id != g.user["uid"]:
+    if not GroupService.is_group_admin(group.to_dict(), g.user["uid"]):
         flash("Permission denied", "danger")
         return redirect(url_for(".view_group", group_id=group_id))
 
@@ -379,6 +386,51 @@ def leave_group(group_id: str) -> Any:
     except Exception as e:
         flash(f"An error occurred while trying to leave the group: {e}", "danger")
 
+    return redirect(url_for(".view_group", group_id=group_id))
+
+
+@bp.route("/<string:group_id>/promote/<string:user_id>", methods=["POST"])
+@login_required
+def promote_member(group_id: str, user_id: str) -> Any:
+    """Promote a member to captain."""
+    db = firestore.client()
+    try:
+        GroupService.promote_member(db, group_id, user_id, g.user["uid"])
+        flash("Member promoted to Captain.", "success")
+    except AccessDenied:
+        flash("Only the group owner can promote members.", "danger")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".view_group", group_id=group_id))
+
+
+@bp.route("/<string:group_id>/demote/<string:user_id>", methods=["POST"])
+@login_required
+def demote_member(group_id: str, user_id: str) -> Any:
+    """Demote a captain to member."""
+    db = firestore.client()
+    try:
+        GroupService.demote_member(db, group_id, user_id, g.user["uid"])
+        flash("Captain privileges revoked.", "success")
+    except AccessDenied:
+        flash("Only the group owner can demote members.", "danger")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".view_group", group_id=group_id))
+
+
+@bp.route("/<string:group_id>/remove/<string:user_id>", methods=["POST"])
+@login_required
+def remove_member(group_id: str, user_id: str) -> Any:
+    """Remove a member from the group."""
+    db = firestore.client()
+    try:
+        GroupService.remove_member(db, group_id, user_id, g.user["uid"])
+        flash("Member removed from group.", "success")
+    except AccessDenied as e:
+        flash(str(e), "danger")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
     return redirect(url_for(".view_group", group_id=group_id))
 
 

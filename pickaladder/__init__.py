@@ -20,6 +20,7 @@ from . import admin as admin_bp
 from . import auth as auth_bp
 from . import error_handlers
 from . import group as group_bp
+from . import main as main_bp
 from . import match as match_bp
 from . import teams as teams_bp
 from . import tournament as tournament_bp
@@ -105,8 +106,14 @@ def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
     cred = None
     project_id = None
 
-    # First, try to load from environment variable (for production)
-    cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+    flask_env = os.environ.get("FLASK_ENV")
+
+    # First, try to load from environment variable (for production/beta)
+    if flask_env == "beta":
+        cred_json = os.environ.get("FIREBASE_CREDENTIALS_BETA")
+    else:
+        cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+
     if cred_json:
         with suppress(json.JSONDecodeError, ValueError):
             cred_info = json.loads(cred_json)
@@ -115,7 +122,11 @@ def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
 
     # If env var fails or is not present, try loading from file (for local dev)
     if not cred:
-        cred_path = Path(__file__).parent.parent / "firebase_credentials.json"
+        if flask_env == "beta":
+            cred_path = Path(__file__).parent.parent / "firebase_credentials_beta.json"
+        else:
+            cred_path = Path(__file__).parent.parent / "firebase_credentials.json"
+
         if cred_path.exists():
             with suppress(json.JSONDecodeError, ValueError):
                 with cred_path.open() as f:
@@ -158,6 +169,7 @@ def _initialize_firebase(app: Flask) -> None:
 
 def _register_blueprints(app: Flask) -> None:
     """Register all blueprints for the application."""
+    app.register_blueprint(main_bp.bp)
     app.register_blueprint(auth_bp.bp)
     app.register_blueprint(admin_bp.bp)
     app.register_blueprint(user_bp.bp)
@@ -231,7 +243,21 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         if not user:
             return ""
         wrapped = wrap_user(user)
-        return wrapped.avatar_url if wrapped else ""
+        url = wrapped.avatar_url if wrapped else ""
+        if url == "default":
+            # Fallback to DiceBear Avatars (avataaars style)
+            seed = user.get("username") or user.get("email") or "User"
+            return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
+        return url
+
+    @app.template_filter("pluralize")
+    def pluralize_filter(
+        number: int, singular: str = "", plural: str | None = None
+    ) -> str:
+        """Pluralize a word based on a number."""
+        if number == 1:
+            return singular
+        return plural if plural is not None else f"{singular}s"
 
     _register_blueprints(app)
 

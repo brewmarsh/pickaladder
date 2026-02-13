@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from itertools import combinations
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
@@ -162,10 +163,9 @@ class TournamentService:
             "date": data["date"],
             "location": data["location"],
             "matchType": data["matchType"],
-            "format": data.get("format", "ROUND_ROBIN"),
             "ownerRef": user_ref,
             "organizer_id": user_uid,
-            "status": "DRAFT",
+            "status": "Active",
             "participants": [{"userRef": user_ref, "status": "accepted"}],
             "participant_ids": [user_uid],
             "createdAt": firestore.SERVER_TIMESTAMP,
@@ -503,44 +503,42 @@ class TournamentService:
         winner = standings[0]["name"] if standings else "No one"
         TournamentService._notify_participants(data, winner, standings)
 
+    @staticmethod
+    def delete_tournament(tournament_id: str, db: Client | None = None) -> None:
+        """Delete a tournament document from Firestore."""
+        if db is None:
+            db = firestore.client()
+        db.collection("tournaments").document(tournament_id).delete()
+
 
 class TournamentGenerator:
-    """Handles generation of tournament brackets and pairings."""
+    """Utility class for generating tournament structures."""
 
     @staticmethod
-    def generate_round_robin(participants: list[str]) -> list[dict[str, str]]:
-        """Generate round-robin pairings using the Circle Method.
-
-        Args:
-            participants: List of player or team IDs.
-
-        Returns:
-            A list of match objects with 'p1' and 'p2' keys.
+    def generate_round_robin(
+        participant_ids: list[str],
+    ) -> list[tuple[str, str]]:
         """
-        if not participants:
+        Generate a list of round-robin pairings from a list of IDs.
+        If odd number of players, one player rests each round.
+        """
+        if not participant_ids:
             return []
 
-        # Copy the list to avoid mutating the original
-        p = list(participants)
+        # Add a dummy player if the number of participants is odd
+        players = list(participant_ids)
+        if len(players) % 2 != 0:
+            players.append("dummy")
 
-        # If odd number of participants, add a BYE
-        if len(p) % 2 != 0:
-            p.append(None)  # type: ignore
-
-        n = len(p)
-        matches = []
-        num_rounds = n - 1
-
-        for _ in range(num_rounds):
+        n = len(players)
+        pairings = []
+        for i in range(n - 1):
             for j in range(n // 2):
-                p1 = p[j]
-                p2 = p[n - 1 - j]
+                player1 = players[j]
+                player2 = players[n - 1 - j]
+                if "dummy" not in (player1, player2):
+                    pairings.append((player1, player2))
+            # Rotate players
+            players.insert(1, players.pop())
 
-                if p1 is not None and p2 is not None:
-                    matches.append({"p1": p1, "p2": p2})
-
-            # Rotate participants: keep the first one fixed, rotate the others
-            # [1, 2, 3, 4] -> [1, 4, 2, 3]
-            p = [p[0]] + [p[-1]] + p[1:-1]
-
-        return matches
+        return pairings

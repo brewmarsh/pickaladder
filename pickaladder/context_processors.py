@@ -61,6 +61,7 @@ def inject_global_context() -> dict[str, Any]:
         "version": version,
         "app_version": version,
         "global_announcement": global_announcement,
+        "is_testing": current_app.config.get("TESTING", False),
     }
 
 

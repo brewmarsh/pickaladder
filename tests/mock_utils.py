@@ -33,24 +33,24 @@ class MockArrayRemove:
 class MockBatch:
     def __init__(self, db: Any) -> None:
         self.db = db
-        self.operations: list[tuple[str, Any, Any]] = []
+        self.updates: list[tuple[Any, Any]] = []
         self.commit = unittest.mock.MagicMock(side_effect=self._real_commit)
 
     def update(self, ref: Any, data: Any) -> None:
-        self.operations.append(("UPDATE", ref, data))
+        self.updates.append((ref, data))
 
     def set(self, ref: Any, data: Any, merge: bool = False) -> None:
-        self.operations.append(("SET", ref, data))
+        # For set with merge=True, it's like update.
+        # For simplicity in tests, we just update.
+        self.updates.append((ref, data))
 
     def delete(self, ref: Any) -> None:
-        self.operations.append(("DELETE", ref, None))
+        self.updates.append((ref, "DELETE"))
 
     def _real_commit(self) -> None:
-        for op, ref, data in self.operations:
-            if op == "DELETE":
+        for ref, data in self.updates:
+            if data == "DELETE":
                 ref.delete()
-            elif op == "SET":
-                ref.set(data)
             else:
                 ref.update(data)
 
@@ -155,8 +155,9 @@ class MockFirestoreBuilder:
                                 existing = []
                             new_data[k] = [i for i in existing if i not in v.values]
 
-                    # MockFirestore's update updates its internal data.
-                    # Use the original update to ensure any other logic is preserved.
+                    # MockFirestore's DocumentReference.update updates its internal
+                    # _data. Use the original update to ensure any other logic is
+                    # preserved.
                     return self._orig_update(new_data)
 
             DocumentReference.update = patched_update

@@ -74,6 +74,11 @@ class UserSession(UserDict, UserMixin):
         return str(self.get("uid", ""))
 
     @property
+    def is_admin(self) -> bool:
+        """Return True if the user is an administrator."""
+        return self.get("isAdmin", False)
+
+    @property
     def avatar_url(self) -> str:
         """Return a deterministic avatar URL based on the user ID."""
         # If the user has a profile picture, use it
@@ -84,6 +89,5 @@ class UserSession(UserDict, UserMixin):
         if profile_pic:
             return str(profile_pic)
 
-        # Fallback to DiceBear Avatars (avataaars style)
-        seed = self.get("username") or self.get("email") or "User"
-        return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
+        # Fallback to "default"
+        return "default"

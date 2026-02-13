@@ -2,7 +2,7 @@
 {% block title %}{{ tournament.name }}{% endblock %}
 {% block content %}
 <div class="card hero-stats-card">
-    {% if is_owner %}
+    {% if g.user.is_admin %}
         <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" title="Edit Tournament">⚙️</a>
     {% endif %}
     <div class="hero-left-panel">
@@ -146,7 +146,7 @@
     </div>
 
     <div class="dashboard-column-right">
-        {% if is_owner %}
+        {% if g.user.is_admin %}
             {% if tournament.status != 'Completed' %}
             <div class="card" style="margin-bottom: 24px;">
                 <h4 class="card-header">Tournament Management</h4>
