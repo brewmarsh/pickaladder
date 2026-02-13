@@ -72,7 +72,7 @@ def settings() -> Any:
         if res["success"]:
             if "info" in res:
                 flash(res["info"], "info")
-            flash("Settings updated!", "success")
+            flash("Settings updated successfully.", "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
 
@@ -150,8 +150,8 @@ def view_community() -> Any:
     db = firestore.client()
     search_term = request.args.get("search", "").strip()
 
-    incoming_requests = UserService.get_user_pending_requests(db, g.user["uid"])
-    outgoing_requests = UserService.get_user_sent_requests(db, g.user["uid"])
+    incoming_requests = UserService.get_user_pending_requests(db, user_id=g.user["uid"])
+    outgoing_requests = UserService.get_user_sent_requests(db, user_id=g.user["uid"])
 
     data = UserService.get_community_data(db, g.user["uid"], search_term)
 

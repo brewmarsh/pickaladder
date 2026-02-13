@@ -243,8 +243,21 @@ def record_match() -> Any:
             data["tournament_id"] = tournament_id
 
         try:
-            # Capture the ID from the service call (Feature Branch Logic)
-            match_id = MatchService.process_match_submission(db, form.data, g.user)
+            # Capture the ID and unlocked badges from the service call
+            match_id, unlocked_badges = MatchService.process_match_submission(
+                db, data, g.user
+            )
+
+            # Process unlocked badges for the current user for flash message
+            unlocked_names = []
+            if user_id in unlocked_badges:
+                from pickaladder.badges.models import BADGES
+
+                for b_id in unlocked_badges[user_id]:
+                    b_info = BADGES.get(b_id, {})
+                    unlocked_names.append(
+                        f"{b_info.get('icon', '')} {b_info.get('name', 'Badge')}"
+                    )
 
             if request.is_json:
                 return jsonify(
@@ -255,7 +268,11 @@ def record_match() -> Any:
                     }
                 ), 200
 
-            flash("Match recorded successfully.", "success")
+            success_msg = "Match recorded successfully."
+            if unlocked_names:
+                success_msg += f" New Badge Unlocked! {', '.join(unlocked_names)}"
+
+            flash(success_msg, "success")
             active_tid = form.tournament_id.data or tournament_id
             active_gid = form.group_id.data or group_id
             if active_tid:
@@ -264,7 +281,7 @@ def record_match() -> Any:
                 )
             if active_gid:
                 return redirect(url_for("group.view_group", group_id=active_gid))
-            return redirect(url_for("user.dashboard"))
+            return redirect(url_for("match.view_match_summary", match_id=match_id))
         except ValueError as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400
