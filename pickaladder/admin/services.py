@@ -16,14 +16,14 @@ class AdminService:
         Uses efficient count aggregations.
         """
         # Total Users
-        total_users = db.collection("users").count().get()[0][0].value
+        total_users = db.collection("users").count().get()[0].value
 
         # Active Tournaments (status != 'Completed')
         active_tournaments = (
             db.collection("tournaments")
             .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
             .count()
-            .get()[0][0]
+            .get()[0]
             .value
         )
 
@@ -33,9 +33,9 @@ class AdminService:
         )
         recent_matches = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))
+            .where(filter=firestore.FieldFilter("matchDate", ">=", yesterday))
             .count()
-            .get()[0][0]
+            .get()[0]
             .value
         )
 

@@ -34,7 +34,9 @@ def admin() -> Union[str, Response]:
     # We allow access if the user is an admin OR if they are an admin currently
     # impersonating someone else. The login_required(admin_required=True)
     # decorator already checks session['is_admin'].
-    if not g.user or (not g.user.get("isAdmin") and not g.get("is_impersonating")):
+    if not g.user or (
+        not g.user.get("isAdmin") and not getattr(g, "is_impersonating", False)
+    ):
         flash("You are not authorized to view this page.", "danger")
         return redirect(url_for("auth.login"))
 
@@ -273,7 +275,7 @@ def generate_users() -> str:
                 "username": username,
                 "email": email,
                 "name": fake.name(),
-                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec
+                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec B311
                 "isAdmin": False,
                 "createdAt": firestore.SERVER_TIMESTAMP,
             }
@@ -300,13 +302,13 @@ def generate_matches() -> Response:
 
         matches_to_create = 10
         for _ in range(matches_to_create):
-            p1, p2 = random.sample(users, 2)  # nosec
+            p1, p2 = random.sample(users, 2)  # nosec B311
             db.collection("matches").add(
                 {
                     "player1Ref": p1.reference,
                     "player2Ref": p2.reference,
-                    "player1Score": random.randint(5, 11),  # nosec
-                    "player2Score": random.randint(5, 11),  # nosec
+                    "player1Score": random.randint(5, 11),  # nosec B311
+                    "player2Score": random.randint(5, 11),  # nosec B311
                     "matchDate": fake.date_between(start_date="-1y", end_date="today"),
                     "createdAt": firestore.SERVER_TIMESTAMP,
                 }
