@@ -367,6 +367,12 @@ class MockAuthService:
 # --- Fixtures ---
 
 
+@pytest.fixture(autouse=True)
+def clear_db(mock_db: EnhancedMockFirestore) -> None:
+    """Clear mock database before each test."""
+    mock_db._data = {}
+
+
 @pytest.fixture(scope="session")
 def mock_db() -> EnhancedMockFirestore:
     """Return singleton mock DB."""

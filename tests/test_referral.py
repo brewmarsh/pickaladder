@@ -50,7 +50,7 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
         assert response.status_code == 200  # noqa: S101, PLR2004 # nosec B101
 
         with client.session_transaction() as sess:
-            assert sess.get("referrer_id") == REFERRER_ID
+            assert sess.get("referrer_id") == REFERRER_ID  # nosec B101
 
 
 @pytest.mark.usefixtures("apply_global_patches")
@@ -68,7 +68,9 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
         patch("firebase_admin.auth.create_user") as mock_create,
         patch("firebase_admin.auth.generate_email_verification_link") as mock_gen,
         patch("pickaladder.auth.routes.send_email"),
-        patch("pickaladder.auth.routes.UserService.merge_ghost_user", return_value=False),
+        patch(
+            "pickaladder.auth.routes.UserService.merge_ghost_user", return_value=False
+        ),
     ):
         mock_create.return_value = MagicMock(uid="new_user_uid")
         mock_gen.return_value = "http://verify"
@@ -89,19 +91,22 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
 
         # If it failed, print the flash messages
         if b"Registration successful" not in response.data:
-             print("DEBUG: Registration failed. Response data contains:")
-             # Look for alert-danger
-             import re
-             errors = re.findall(r'class="alert alert-danger">(.*?)<', response.data.decode())
-             print(f"DEBUG: Errors: {errors}")
+            print("DEBUG: Registration failed. Response data contains:")
+            # Look for alert-danger
+            import re
 
-        assert b"Registration successful" in response.data
+            errors = re.findall(
+                r'class="alert alert-danger">(.*?)<', response.data.decode()
+            )
+            print(f"DEBUG: Errors: {errors}")
+
+        assert b"Registration successful" in response.data  # nosec B101
 
     # Verify new user document has referred_by
     new_user_doc = mock_db.collection("users").document("new_user_uid").get().to_dict()
-    assert new_user_doc is not None
-    assert new_user_doc.get("referred_by") == REFERRER_ID
+    assert new_user_doc is not None  # nosec B101
+    assert new_user_doc.get("referred_by") == REFERRER_ID  # nosec B101
 
     # Verify session was cleared
     with client.session_transaction() as sess:
-        assert sess.get("referrer_id") is None
+        assert sess.get("referrer_id") is None  # nosec B101

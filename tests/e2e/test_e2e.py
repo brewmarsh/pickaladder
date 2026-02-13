@@ -28,12 +28,13 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
             page.click("button:has-text('Create Admin')")
 
         expect(page.locator("h2")).to_contain_text("Login")
-        page.fill("input[name='email']", "admin@example.com")
-        page.fill("input[name='password']", "password")
-        with page.expect_navigation():
-            page.click("button:has-text('Login')")
 
-    page.hover(".dropdown")
+    page.fill("input[name='email']", "admin@example.com")
+    page.fill("input[name='password']", "password")
+    with page.expect_navigation():
+        page.click("button:has-text('Login')")
+
+    page.hover(".navbar-user-controls .dropdown")
     page.click("a:has-text('Settings')")
     expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
 
@@ -61,7 +62,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Login')")
 
-    page.hover(".dropdown")
+    page.hover(".navbar-user-controls .dropdown")
     page.click("a:has-text('Settings')")
     expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
 

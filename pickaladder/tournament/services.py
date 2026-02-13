@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from itertools import combinations
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
