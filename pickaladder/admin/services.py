@@ -11,7 +11,10 @@ class AdminService:
 
     @staticmethod
     def get_admin_stats(db: Any) -> dict[str, Any]:
-        """Fetch high-level stats for the admin dashboard using aggregations."""
+        """Fetch high-level stats for the admin dashboard.
+
+        Uses efficient count aggregations.
+        """
         # Total Users
         total_users = db.collection("users").count().get()[0][0].value
 
@@ -88,8 +91,6 @@ class AdminService:
     @staticmethod
     def delete_user_data(db: Any, uid: str) -> None:
         """Delete a user from Firestore and Firebase Auth."""
-        from firebase_admin import auth  # noqa: PLC0415
-
         # Delete from Firestore
         db.collection("users").document(uid).delete()
         # Delete from Firebase Auth

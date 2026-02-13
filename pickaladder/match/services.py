@@ -123,7 +123,7 @@ class MatchService:
         db: Client,
         form_data: dict[str, Any],
         current_user: UserSession,
-    ) -> str:
+    ) -> tuple[str, dict[str, list[str]]]:
         """Process and record a match submission."""
         user_id = current_user["uid"]
         user_ref = db.collection("users").document(user_id)
@@ -224,7 +224,23 @@ class MatchService:
             match_type,
         )
 
-        return new_match_ref.id
+        match_id = new_match_ref.id
+
+        # Badge Evaluation (Post-recording)
+        unlocked_badges: dict[str, list[str]] = {}
+        try:
+            from pickaladder.badges.services import BadgeService
+
+            for pid in active_players:
+                if not pid:
+                    continue
+                awarded = BadgeService.evaluate_post_match(db, pid)
+                if awarded:
+                    unlocked_badges[pid] = awarded
+        except Exception:  # noqa: BLE001 # nosec B110
+            pass
+
+        return match_id, unlocked_badges
 
     @staticmethod
     def _resolve_teams(
