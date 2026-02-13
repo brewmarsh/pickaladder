@@ -48,7 +48,6 @@ def settings() -> Any:
         form.username.data = g.user.get("username")
         form.email.data = g.user.get("email")
         form.dupr_id.data = g.user.get("dupr_id")
-        # Explicitly map data to form fields to ensure compatibility
         form.dupr_rating.data = g.user.get("duprRating") or g.user.get("dupr_rating")
         form.dark_mode.data = g.user.get("dark_mode")
 
@@ -108,7 +107,7 @@ def dashboard() -> Any:
     current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
     recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
 
-    # Pass data directly to template context
+    # FIX: Removed explicit 'user=g.user' to avoid conflict with **data['user']
     return render_template(
         "user_dashboard.html",
         current_streak=current_streak,
@@ -146,8 +145,8 @@ def view_community() -> Any:
     db = firestore.client()
     search_term = request.args.get("search", "").strip()
 
-    incoming_requests = UserService.get_user_pending_requests(db, user_id=g.user["uid"])
-    outgoing_requests = UserService.get_user_sent_requests(db, user_id=g.user["uid"])
+    incoming_requests = UserService.get_user_pending_requests(db, g.user["uid"])
+    outgoing_requests = UserService.get_user_sent_requests(db, g.user["uid"])
 
     data = UserService.get_community_data(db, g.user["uid"], search_term)
 
