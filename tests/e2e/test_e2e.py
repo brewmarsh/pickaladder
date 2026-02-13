@@ -141,7 +141,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     expect(page).to_have_url(re.compile(r".*/match/summary/.*"))
     expect(page.locator("h1")).to_contain_text("Match Summary")
     expect(
-        page.locator(".alert-success, .toast.alert-success, .toast-body")
+        page.locator(".alert-success, .toast.alert-success, .toast-body").first
     ).to_contain_text("Match recorded successfully")
 
     # 7. Score Group Game
@@ -160,7 +160,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     expect(page.locator("h1")).to_contain_text("Pickleballers")
     expect(
-        page.locator(".alert-success, .toast.alert-success, .toast-body")
+        page.locator(".alert-success, .toast.alert-success, .toast-body").first
     ).to_contain_text("Match recorded successfully")
 
     # Check Global Leaderboard (Req: "see the leaderboard")
@@ -185,14 +185,14 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Delete')")
     expect(
-        page.locator(".alert-success, .toast.alert-success, .toast-body")
+        page.locator(".alert-success, .toast.alert-success, .toast-body").first
     ).to_contain_text("Match deleted successfully")
 
     # Delete second match
     with page.expect_navigation():
         page.click("button:has-text('Delete')")
     expect(
-        page.locator(".alert-success, .toast.alert-success, .toast-body")
+        page.locator(".alert-success, .toast.alert-success, .toast-body").first
     ).to_contain_text("Match deleted successfully")
 
     # 10. Update Group Details (Login as Admin - already logged in)
