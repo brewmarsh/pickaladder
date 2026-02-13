@@ -8,12 +8,12 @@ from firebase_admin import auth, firestore
 from flask import (
     flash,
     g,
+    jsonify,
     redirect,
     render_template,
     request,
     session,
     url_for,
-    jsonify,
 )
 from werkzeug.wrappers import Response
 

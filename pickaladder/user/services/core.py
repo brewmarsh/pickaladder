@@ -87,7 +87,7 @@ def process_profile_update(
         else None
     )
     update_data["dupr_rating"] = rating
-    update_data["duprRating"] = rating
+    update_data["duprRating"] = rating  # Maintain compatibility
 
     # Handle username change
     if new_username != current_user_data.get("username"):

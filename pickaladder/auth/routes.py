@@ -44,11 +44,10 @@ def register() -> Any:
 
         # Check if username is already taken in Firestore
         users_ref = db.collection("users")
-        if (
-            users_ref.where(filter=firestore.FieldFilter("username", "==", username))
-            .limit(1)
-            .get()
-        ):
+        taken = users_ref.where(
+            filter=firestore.FieldFilter("username", "==", username)
+        ).limit(1).get()
+        if len(list(taken)) > 0:
             flash("Username already exists. Please choose a different one.", "danger")
             return redirect(url_for(".register"))
 

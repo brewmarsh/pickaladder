@@ -6,7 +6,6 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from flask import session
 from mockfirestore import MockFirestore
 
 # Mock user payloads
@@ -48,7 +47,7 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
             "pending_members": [],
         }
         response = client.get("/group/group1?ref=" + REFERRER_ID)
-        assert response.status_code == 200
+        assert response.status_code == 200  # noqa: S101, PLR2004 # nosec B101
 
         with client.session_transaction() as sess:
             assert sess.get("referrer_id") == REFERRER_ID
@@ -86,7 +85,7 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
             },
             follow_redirects=True,
         )
-        assert response.status_code == 200
+        assert response.status_code == 200  # noqa: S101, PLR2004 # nosec B101
 
         # If it failed, print the flash messages
         if b"Registration successful" not in response.data:

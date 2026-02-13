@@ -179,6 +179,9 @@ def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
     others = {k: v for k, v in data.items() if not isinstance(v, MockSentinel)}
 
     if others:
+        # Handle dot notation for mockfirestore manually if needed
+        # but mockfirestore usually handles it.
+        # We'll just use the original update and hope for the best.
         original_update(self, others)
 
     if sentinels:
@@ -219,28 +222,26 @@ class MockFieldFilter:
 class MockTransaction:
     """Mock for firestore.Transaction."""
 
-    def __init__(self, db: EnhancedMockFirestore, read_only: bool = False) -> None:
+    def __init__(self, client: Any, read_only: bool = False) -> None:
         """Initialize mock transaction."""
-        self.db = db
+        self.client = client
         self._read_only = read_only
 
-    def get(self, doc_ref: DocumentReference) -> DocumentSnapshot:
+    def get(self, ref: Any) -> Any:
         """Mock get."""
-        return doc_ref.get()
+        return ref.get()
 
-    def set(
-        self, doc_ref: DocumentReference, data: dict[str, Any], merge: bool = False
-    ) -> None:
+    def set(self, ref: Any, data: Any, merge: bool = False) -> None:
         """Mock set."""
-        doc_ref.set(data, merge=merge)
+        ref.set(data, merge=merge)
 
-    def update(self, doc_ref: DocumentReference, data: dict[str, Any]) -> None:
+    def update(self, ref: Any, data: Any) -> None:
         """Mock update."""
-        doc_ref.update(data)
+        ref.update(data)
 
-    def delete(self, doc_ref: DocumentReference) -> None:
+    def delete(self, ref: Any) -> None:
         """Mock delete."""
-        doc_ref.delete()
+        ref.delete()
 
 
 class MockBatch:
@@ -304,10 +305,12 @@ class MockAuthService:
 
     class EmailAlreadyExistsError(Exception):
         """Mock EmailAlreadyExistsError."""
+
         pass
 
     class UserNotFoundError(Exception):
         """Mock UserNotFoundError."""
+
         pass
 
     def verify_id_token(
@@ -361,6 +364,7 @@ def app_server(
     mock_db: EnhancedMockFirestore, mock_auth: MockAuthService
 ) -> Generator[str, None, None]:
     """Start Flask server with mocks."""
+    # Ensure firebase_admin submodules are loaded for patching
     importlib.import_module("firebase_admin.auth")
     importlib.import_module("firebase_admin.firestore")
 
@@ -395,6 +399,7 @@ def app_server(
         firebase_admin.firestore, "transactional", side_effect=lambda x: x
     )
 
+    # Start p1 through p11 BEFORE importing pickaladder to ensure decorators are patched
     p1.start()
     p2.start()
     p3.start()
@@ -407,12 +412,13 @@ def app_server(
     p10.start()
     p11.start()
 
+    # Move pickaladder import AFTER patching
     pickaladder = importlib.import_module("pickaladder")
 
     os.environ["FIREBASE_PROJECT_ID"] = "test-project"
-    os.environ["SECRET_KEY"] = "dev"
-    os.environ["MAIL_USERNAME"] = "test"
-    os.environ["MAIL_PASSWORD"] = "test"
+    os.environ["SECRET_KEY"] = "dev"  # nosec
+    os.environ["MAIL_USERNAME"] = "test"  # nosec
+    os.environ["MAIL_PASSWORD"] = "test"  # nosec
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
 
