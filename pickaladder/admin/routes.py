@@ -208,6 +208,8 @@ def admin_delete_user() -> Response:
         flash(f"User {user_identifier} not found.", "danger")
 
     return redirect(url_for(".admin"))
+
+
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
 def delete_user(user_id: str) -> Response:

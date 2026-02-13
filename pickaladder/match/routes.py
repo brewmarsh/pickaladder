@@ -162,7 +162,6 @@ def record_match() -> Any:
 
     if form.validate_on_submit():
         # Ensure group_id and tournament_id from request args are preserved
-        # if not in form data, especially relevant for JSON submissions.
         data = form.data
         if not data.get("group_id"):
             data["group_id"] = group_id
@@ -204,13 +203,15 @@ def record_match() -> Any:
             flash("Match recorded successfully.", "success")
             active_tid = submission.tournament_id or tournament_id
             active_gid = submission.group_id or group_id
+
             if active_tid:
                 return redirect(
                     url_for("tournament.view_tournament", tournament_id=active_tid)
                 )
             if active_gid:
                 return redirect(url_for("group.view_group", group_id=active_gid))
-            return redirect(url_for("user.dashboard"))
+
+            return redirect(url_for("match.view_match_summary", match_id=match_id))
         except ValueError as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400
@@ -237,11 +238,7 @@ def record_match() -> Any:
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
-    """Display a global leaderboard.
-
-    Note: This is a simplified, non-scalable implementation. A production-ready
-    leaderboard on Firestore would likely require denormalization and Cloud Functions.
-    """
+    """Display a global leaderboard."""
     db = firestore.client()
     try:
         # Exclude players with 0 games and sort by Win Percentage
