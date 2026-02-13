@@ -1,7 +1,7 @@
 """Service layer for admin-related operations."""
 
 import datetime
-from typing import Any, Dict, List  # noqa: UP035
+from typing import Any
 
 from firebase_admin import firestore
 
@@ -11,19 +11,16 @@ class AdminService:
 
     @staticmethod
     def get_admin_stats(db: Any) -> dict[str, Any]:
-        """Fetch high-level stats for the admin dashboard.
-
-        Uses efficient count aggregations.
-        """
+        """Fetch high-level stats for the admin dashboard using efficient count aggregations."""
         # Total Users
-        total_users = db.collection("users").count().get()[0].value
+        total_users = db.collection("users").count().get()[0][0].value
 
         # Active Tournaments (status != 'Completed')
         active_tournaments = (
             db.collection("tournaments")
             .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
             .count()
-            .get()[0]
+            .get()[0][0]
             .value
         )
 
@@ -33,9 +30,9 @@ class AdminService:
         )
         recent_matches = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter("matchDate", ">=", yesterday))
+            .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))
             .count()
-            .get()[0]
+            .get()[0][0]
             .value
         )
 
@@ -44,29 +41,6 @@ class AdminService:
             "active_tournaments": active_tournaments,
             "recent_matches": recent_matches,
         }
-
-    @staticmethod
-    def build_friend_graph(db: Any) -> Dict[str, List[Dict[str, Any]]]:  # noqa: UP006
-        """Build a dictionary of nodes and edges for a friendship graph."""
-        users = db.collection("users").stream()
-        nodes = []
-        edges = []
-        for user in users:
-            user_data = user.to_dict()
-            nodes.append({"id": user.id, "label": user_data.get("username", user.id)})
-            # Fetch friends for this user
-            friends_query = (
-                db.collection("users")
-                .document(user.id)
-                .collection("friends")
-                .where(filter=firestore.FieldFilter("status", "==", "accepted"))
-                .stream()
-            )
-            for friend in friends_query:
-                # Add edge only once
-                if user.id < friend.id:
-                    edges.append({"from": user.id, "to": friend.id})
-        return {"nodes": nodes, "edges": edges}
 
     @staticmethod
     def toggle_setting(db: Any, setting_key: str) -> bool:
@@ -103,6 +77,37 @@ class AdminService:
         except Exception:  # nosec B110
             # If user not found in Auth, we still want to proceed
             pass
+
+    @staticmethod
+    def build_friend_graph(db: Any) -> dict[str, Any]:
+        """Build a dictionary representing the social graph of users and friendships."""
+        users_stream = db.collection("users").stream()
+        nodes = []
+        user_ids = set()
+
+        for user_doc in users_stream:
+            data = user_doc.to_dict()
+            nodes.append(
+                {"id": user_doc.id, "label": data.get("username") or user_doc.id}
+            )
+            user_ids.add(user_doc.id)
+
+        edges = []
+        # Optimization: We only need to iterate over users once.
+        # Friendships are reciprocal.
+        for uid in user_ids:
+            friends_stream = (
+                db.collection("users")
+                .document(uid)
+                .collection("friends")
+                .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+                .stream()
+            )
+            for friend_doc in friends_stream:
+                if uid < friend_doc.id:  # Avoid duplicate edges
+                    edges.append({"from": uid, "to": friend_doc.id})
+
+        return {"nodes": nodes, "edges": edges}
 
     @staticmethod
     def promote_user(db: Any, user_id: str) -> str:

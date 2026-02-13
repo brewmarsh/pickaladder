@@ -32,8 +32,53 @@
     {% endfor %}
     {% endif %}
 
+    {# Onboarding Quest Card replaces Performance Chart row during activation #}
+    {% if onboarding_progress.percent < 100 or not onboarding_progress.has_match %}
+    <div class="card onboarding-card mb-4" style="border-left: 5px solid var(--accent-color);">
+        <div class="card-body">
+            <h4 class="mb-3">Welcome to pickaladder! 🚀 Let's get you ranked.</h4>
+
+            <div class="progress mb-2" style="height: 12px; background-color: var(--border-color); border-radius: 6px; overflow: hidden;">
+                <div class="progress-bar bg-volt" role="progressbar"
+                     style="width: {{ onboarding_progress.percent }}%; height: 100%; transition: width 0.5s ease;"
+                     aria-valuenow="{{ onboarding_progress.percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <div class="text-muted small mb-4 fw-bold">{{ onboarding_progress.percent }}% Complete</div>
+
+            {% set steps = [
+                {'label': 'Suit Up', 'desc': 'Add a profile picture', 'done': onboarding_progress.has_avatar, 'url': url_for('user.settings')},
+                {'label': 'Set Rating', 'desc': 'Add your DUPR rating', 'done': onboarding_progress.has_dupr, 'url': url_for('user.settings')},
+                {'label': 'Find a Squad', 'desc': 'Join a group', 'done': onboarding_progress.has_group, 'url': url_for('group.view_groups')},
+                {'label': 'Record Match', 'desc': 'Log your first game', 'done': onboarding_progress.has_match, 'url': url_for('match.record_match')}
+            ] %}
+
+            {% set first_undone = namespace(found=false) %}
+
+            <div class="list-group list-group-flush onboarding-list" style="border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
+                {% for step in steps %}
+                <a href="{{ step.url }}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 {% if step.done %}completed{% elif not first_undone.found %}{% set first_undone.found = true %}pulse{% endif %}" style="text-decoration: none; color: inherit; border-bottom: 1px solid var(--border-color);">
+                    <div class="d-flex align-items-center">
+                        <div class="step-check me-3" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                            {% if step.done %}
+                            <span class="text-success" style="font-size: 1.2rem;">✅</span>
+                            {% else %}
+                            <div style="width: 18px; height: 18px; border: 2px solid var(--text-secondary); border-radius: 50%;"></div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div class="fw-bold {% if step.done %}text-muted{% endif %}" style="{% if step.done %}text-decoration: line-through;{% endif %}">{{ step.label }}</div>
+                            <div class="text-muted small">{{ step.desc }}</div>
+                        </div>
+                    </div>
+                    <span class="text-muted">→</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
     <div class="hero-stats-card">
-        <a href="{{ url_for('user.settings') }}" class="btn-edit-gear" title="Settings">⚙️</a>
+        <a href="{{ url_for('user.settings') }}" class="btn-edit-gear" title="Edit Profile">⚙️</a>
         <div class="hero-left-panel">
             {# Resolved: Use the container pattern from main for better image fitting #}
             <div class="profile-picture-container avatar-xl">
@@ -55,13 +100,13 @@
                 <div class="vanity-stat">
                     <div class="stat-value fs-3 fw-bold text-volt">
                         {% if stats.total_games > 0 %}
-                        {% if current_streak > 2 %}
-                        🔥 {{ current_streak }}
+                            {% if current_streak > 2 %}
+                                🔥 {{ current_streak }}
+                            {% else %}
+                                {{ current_streak }}
+                            {% endif %}
                         {% else %}
-                        {{ current_streak }}
-                        {% endif %}
-                        {% else %}
-                        N/A
+                            N/A
                         {% endif %}
                     </div>
                     <div class="stat-label text-muted small">Streak</div>
@@ -72,17 +117,17 @@
             <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
         </div>
     </div>
+    {% endif %}
 
     {# Jump Back In Section #}
-    {% if recent_opponents %}
+    {% if recent_opponents and onboarding_progress.percent == 100 %}
     <div class="card mb-4">
         <div class="card-body">
             <h4 class="card-header" style="border-bottom: none; margin-bottom: 0; padding-left: 0;">Jump Back In</h4>
             <div class="text-muted small mb-3">Recent Opponents</div>
             <div class="d-flex gap-3 mt-3">
                 {% for opponent in recent_opponents %}
-                <a href="{{ url_for('match.record_match', opponent_id=opponent.uid) }}"
-                    title="{{ opponent.name or opponent.username }}">
+                <a href="{{ url_for('match.record_match', opponent_id=opponent.uid) }}" title="{{ opponent.name or opponent.username }}">
                     <img src="{{ opponent | avatar_url }}" alt="{{ opponent.username }}" class="avatar avatar-lg">
                 </a>
                 {% endfor %}
@@ -120,33 +165,31 @@
                                 </td>
                                 <td data-label="Matchup">
                                     {% if match.match_type == 'doubles' %}
-                                    {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
-                                    {% if in_team1 %}
-                                    {% set partner = match.player1[1] if match.player1[0].id == user.uid else
-                                    match.player1[0] %}
-                                    {% set opponent_name = match.team2_name %}
-                                    {% set user_score = match.player1_score %}
-                                    {% set opp_score = match.player2_score %}
+                                        {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
+                                        {% if in_team1 %}
+                                            {% set partner = match.player1[1] if match.player1[0].id == user.uid else match.player1[0] %}
+                                            {% set opponent_name = match.team2_name %}
+                                            {% set user_score = match.player1_score %}
+                                            {% set opp_score = match.player2_score %}
+                                        {% else %}
+                                            {% set partner = match.player2[1] if match.player2[0].id == user.uid else match.player2[0] %}
+                                            {% set opponent_name = match.team1_name %}
+                                            {% set user_score = match.player2_score %}
+                                            {% set opp_score = match.player1_score %}
+                                        {% endif %}
+                                        <strong>You & {{ partner.username }}</strong> vs {{ opponent_name }}
                                     {% else %}
-                                    {% set partner = match.player2[1] if match.player2[0].id == user.uid else
-                                    match.player2[0] %}
-                                    {% set opponent_name = match.team1_name %}
-                                    {% set user_score = match.player2_score %}
-                                    {% set opp_score = match.player1_score %}
-                                    {% endif %}
-                                    <strong>You & {{ partner.username }}</strong> vs {{ opponent_name }}
-                                    {% else %}
-                                    {% set is_p1 = match.player1.id == user.uid %}
-                                    {% if is_p1 %}
-                                    {% set opponent = match.player2 %}
-                                    {% set user_score = match.player1_score %}
-                                    {% set opp_score = match.player2_score %}
-                                    {% else %}
-                                    {% set opponent = match.player1 %}
-                                    {% set user_score = match.player2_score %}
-                                    {% set opp_score = match.player1_score %}
-                                    {% endif %}
-                                    <strong>You</strong> vs {{ opponent.username }}
+                                        {% set is_p1 = match.player1.id == user.uid %}
+                                        {% if is_p1 %}
+                                            {% set opponent = match.player2 %}
+                                            {% set user_score = match.player1_score %}
+                                            {% set opp_score = match.player2_score %}
+                                        {% else %}
+                                            {% set opponent = match.player1 %}
+                                            {% set user_score = match.player2_score %}
+                                            {% set opp_score = match.player1_score %}
+                                        {% endif %}
+                                        <strong>You</strong> vs {{ opponent.username }}
                                     {% endif %}
                                 </td>
                                 <td data-label="Result">
@@ -159,14 +202,11 @@
                                             {% endif %}
                                             {{ user_score }} - {{ opp_score }}
                                             {% if match.tournament_name %}
-                                            <div class="text-muted small" style="margin-top: 4px;">🏆 {{
-                                                match.tournament_name }}</div>
+                                            <div class="text-muted small" style="margin-top: 4px;">🏆 {{ match.tournament_name }}</div>
                                             {% endif %}
                                         </div>
-                                        {% if (match.created_by == user.uid and not match.tournament_id) or user.isAdmin
-                                        %}
-                                        <a href="{{ url_for('match.edit_match', match_id=match.id) }}"
-                                            class="text-muted" title="Edit Match">
+                                        {% if (match.created_by == user.uid and not match.tournament_id) or user.isAdmin %}
+                                        <a href="{{ url_for('match.edit_match', match_id=match.id) }}" class="text-muted" title="Edit Match">
                                             ✏️
                                         </a>
                                         {% endif %}
@@ -193,11 +233,11 @@
                 <p class="text-muted small mb-4">Complete these steps to activate your account and start climbing the leaderboard!</p>
                 <div class="list-group list-group-flush">
                     {% set quests = [
-                        {'id': 'avatar', 'title': 'Suit Up', 'text': 'Upload a profile picture', 'icon': '📸', 'done': onboarding_status.has_avatar, 'link': url_for('user.settings')},
-                        {'id': 'rating', 'title': 'Set Your Rating', 'text': 'Enter your DUPR rating', 'icon': '🔢', 'done': onboarding_status.has_rating, 'link': url_for('user.settings')},
-                        {'id': 'friend', 'title': 'Recruit a Rival', 'text': 'Add 1 Friend', 'icon': '🤝', 'done': onboarding_status.has_friend, 'link': url_for('user.view_community')},
-                        {'id': 'group', 'title': 'Join a Squad', 'text': 'Join a Group', 'icon': '🏆', 'done': onboarding_status.has_group, 'link': url_for('group.view_groups')},
-                        {'id': 'match', 'title': 'First Blood', 'text': 'Record your first match', 'icon': '⚔️', 'done': onboarding_status.has_match, 'link': url_for('match.record_match')}
+                        {'id': 'avatar', 'title': 'Suit Up', 'text': 'Upload a profile picture', 'icon': '📸', 'done': onboarding_progress.has_avatar, 'link': url_for('user.settings')},
+                        {'id': 'rating', 'title': 'Set Your Rating', 'text': 'Enter your DUPR rating', 'icon': '🔢', 'done': onboarding_progress.has_rating, 'link': url_for('user.settings')},
+                        {'id': 'friend', 'title': 'Recruit a Rival', 'text': 'Add 1 Friend', 'icon': '🤝', 'done': onboarding_progress.has_friend, 'link': url_for('user.view_community')},
+                        {'id': 'group', 'title': 'Join a Squad', 'text': 'Join a Group', 'icon': '🏆', 'done': onboarding_progress.has_group, 'link': url_for('group.view_groups')},
+                        {'id': 'match', 'title': 'First Blood', 'text': 'Record your first match', 'icon': '⚔️', 'done': onboarding_progress.has_match, 'link': url_for('match.record_match')}
                     ] %}
 
                     {% set ns = namespace(next_found=false) %}
@@ -237,10 +277,8 @@
                     <div class="text-center p-5">
                         <div style="font-size: 3rem; margin-bottom: 1rem;">👨‍👩‍👧‍👦</div>
                         <h4>Find your squad</h4>
-                        <p class="text-muted" style="margin-bottom: 24px;">Join a group or tournament to start competing
-                            and climb the ranks!</p>
-                        <a href="{{ url_for('user.view_community') }}" class="btn btn-volt" style="width: auto;">Find a
-                            Group</a>
+                        <p class="text-muted" style="margin-bottom: 24px;">Join a group or tournament to start competing and climb the ranks!</p>
+                        <a href="{{ url_for('user.view_community') }}" class="btn btn-volt" style="width: auto;">Find a Group</a>
                     </div>
                     {% else %}
                     <div class="list-group list-group-flush">
@@ -265,8 +303,7 @@
                             style="display: flex; align-items: center; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--border-color);">
                             {% if ranking.group_image %}
                             <div class="profile-picture-container avatar-sm" style="margin-right: 12px;">
-                                <img src="{{ ranking.group_image }}" alt="{{ ranking.group_name }}"
-                                    class="profile-picture">
+                                <img src="{{ ranking.group_image }}" alt="{{ ranking.group_name }}" class="profile-picture">
                             </div>
                             {% else %}
                             <span style="margin-right: 12px; font-size: 1.25rem;">👥</span>
@@ -342,4 +379,7 @@
     </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
 {% endblock %}

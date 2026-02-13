@@ -48,7 +48,6 @@ def settings() -> Any:
         form.username.data = g.user.get("username")
         form.email.data = g.user.get("email")
         form.dupr_id.data = g.user.get("dupr_id")
-        # Explicitly map data to form fields to ensure compatibility
         form.dupr_rating.data = g.user.get("duprRating") or g.user.get("dupr_rating")
         form.dark_mode.data = g.user.get("dark_mode")
 
@@ -60,10 +59,14 @@ def settings() -> Any:
                 user_id, form.profile_picture.data
             )
 
-        # Update core settings via service
-        res = UserService.update_settings(db, user_id, form, profile_pic_url)
+        # Handle updates (name, username, email, dupr, dark_mode, profile_pic)
+        res = UserService.process_profile_update(
+            db, user_id, form, g.user, profile_pic_url=profile_pic_url
+        )
 
         if res["success"]:
+            if "info" in res:
+                flash(res["info"], "info")
             flash("Settings updated!", "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
@@ -104,26 +107,35 @@ def dashboard() -> Any:
     current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
     recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
 
-    # Onboarding logic
-    user_friends_count = len(data.get("friends", []))
+    # Onboarding Progress Calculation
     user_groups = data.get("group_rankings", [])
     total_matches = data.get("stats", {}).get("total_games", 0)
 
-    onboarding_status = {
-        "has_avatar": g.user.avatar_url != "default",
-        "has_rating": (g.user.get("dupr_rating") or 0) > 0,
-        "has_friend": user_friends_count > 0,
-        "has_group": len(user_groups) > 0,
-        "has_match": total_matches > 0,
-    }
-    is_active = total_matches > 0
+    # Check if avatar is not default (dicebear)
+    # If profilePictureUrl or profilePictureThumbnailUrl is set, it's custom.
+    has_avatar = bool(
+        g.user.get("profilePictureUrl") or g.user.get("profilePictureThumbnailUrl")
+    )
+    has_dupr = (g.user.get("dupr_rating") or 0) > 0 or (
+        g.user.get("duprRating") or 0
+    ) > 0
+    has_group = len(user_groups) > 0
+    has_match = total_matches > 0
 
+    onboarding_progress = {
+        "has_avatar": has_avatar,
+        "has_dupr": has_dupr,
+        "has_group": has_group,
+        "has_match": has_match,
+        "percent": int((sum([has_avatar, has_dupr, has_group, has_match]) / 4) * 100),
+    }
+
+    # FIX: Removed explicit 'user=g.user' to avoid conflict with **data['user']
     return render_template(
         "user_dashboard.html",
         current_streak=current_streak,
         recent_opponents=recent_opponents,
-        onboarding_status=onboarding_status,
-        is_active=is_active,
+        onboarding_progress=onboarding_progress,
         **data,
     )
 

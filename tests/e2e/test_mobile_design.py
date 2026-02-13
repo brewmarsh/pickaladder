@@ -1,5 +1,3 @@
-import os
-
 import pytest
 from playwright.sync_api import expect
 
@@ -71,9 +69,6 @@ def test_mobile_layout(page_with_firebase, app_server, seeded_data):
     # 2. Set viewport to mobile
     page.set_viewport_size({"width": 375, "height": 667})
 
-    # Create directory for screenshots if it doesn't exist
-    os.makedirs("verification", exist_ok=True)
-
     # 3. Check Groups Page
     page.goto(f"{app_server}/group/")
     # Verify grid is 1-column
@@ -85,20 +80,14 @@ def test_mobile_layout(page_with_firebase, app_server, seeded_data):
     img = page.locator(".group-card-img").first
     expect(img).to_have_css("height", "200px")
 
-    page.screenshot(path="verification/mobile_groups.png")
-
     # 4. Check Tournaments Page
     page.goto(f"{app_server}/tournaments/")
     tournament_grid = page.locator(".tournament-grid")
     expect(tournament_grid).to_have_css("display", "grid")
     expect(tournament_grid).to_have_css("gap", "16px")
 
-    page.screenshot(path="verification/mobile_tournaments.png")
-
     # 5. Check Community Hub (Search Bar)
     page.goto(f"{app_server}/user/community")
     search_input_group = page.locator(".search-form .input-group")
     # Mobile layout check for search bar
     expect(search_input_group).to_be_visible()
-
-    page.screenshot(path="verification/mobile_community.png")
