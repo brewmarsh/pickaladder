@@ -1,0 +1,28 @@
+name: Deploy Beta
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Beta
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USERNAME }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            cd ~/picka-beta
+            git fetch origin develop
+            git checkout develop
+            git pull origin develop
+            docker compose -f docker-compose.beta.yml up -d --build
+            docker image prune -f
