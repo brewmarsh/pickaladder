@@ -61,22 +61,18 @@ class MatchService:
         if match_type == "singles":
             match_data["player_1_data"] = {
                 "uid": p1_ref.id,
-                "display_name": smart_display_name(p1_data or {}),
-                "avatar_url": get_avatar_url(p1_data or {}),
+                "display_name": smart_display_name(p1_data),
+                "avatar_url": get_avatar_url(p1_data),
                 "dupr_at_match_time": float(
-                    (p1_data or {}).get("duprRating")
-                    or (p1_data or {}).get("dupr_rating")
-                    or 0.0
+                    p1_data.get("duprRating") or p1_data.get("dupr_rating") or 0.0
                 ),
             }
             match_data["player_2_data"] = {
                 "uid": p2_ref.id,
-                "display_name": smart_display_name(p2_data or {}),
-                "avatar_url": get_avatar_url(p2_data or {}),
+                "display_name": smart_display_name(p2_data),
+                "avatar_url": get_avatar_url(p2_data),
                 "dupr_at_match_time": float(
-                    (p2_data or {}).get("duprRating")
-                    or (p2_data or {}).get("dupr_rating")
-                    or 0.0
+                    p2_data.get("duprRating") or p2_data.get("dupr_rating") or 0.0
                 ),
             }
 
@@ -91,6 +87,7 @@ class MatchService:
             match_data["winnerId"] = p1_ref.id if winner == "team1" else p2_ref.id
             match_data["loserId"] = p2_ref.id if winner == "team1" else p1_ref.id
         else:
+            # For doubles, side1_ref and side2_ref are team refs
             match_data["winnerId"] = p1_ref.id if winner == "team1" else p2_ref.id
             match_data["loserId"] = p2_ref.id if winner == "team1" else p1_ref.id
 
@@ -128,6 +125,7 @@ class MatchService:
 
         # Upset Logic (Singles only)
         if match_type == "singles":
+
             def get_rating(d: Any) -> float:
                 val = d.get("dupr_rating") or d.get("duprRating")
                 try:
@@ -150,7 +148,7 @@ class MatchService:
         batch.update(p2_ref, p2_updates)
         batch.update(user_ref, {"lastMatchRecordedType": match_type})
 
-        # Update the Group timestamp
+        # Update the Group "leaderboard document" (the group doc itself)
         if group_id := match_data.get("groupId"):
             group_ref = db.collection("groups").document(group_id)
             batch.update(group_ref, {"updatedAt": firestore.SERVER_TIMESTAMP})
@@ -158,22 +156,32 @@ class MatchService:
     @staticmethod
     def record_match(
         db: Client,
-        submission: MatchSubmission,
+        submission: MatchSubmission | dict[str, Any],
         current_user: UserSession,
     ) -> MatchResult:
         """Process and record a match submission."""
         user_id = current_user["uid"]
         user_ref = db.collection("users").document(user_id)
 
-        match_type = submission.match_type
-        p1_id = submission.player_1_id
-        p2_id = submission.player_2_id
-        partner_id = submission.partner_id
-        opponent2_id = submission.opponent_2_id
+        # Helper to bridge field name differences and support both dict and object access
+        def get_val(key_list: list[str]) -> Any:
+            for k in key_list:
+                if isinstance(submission, dict):
+                    if k in submission:
+                        return submission[k]
+                elif hasattr(submission, k):
+                    return getattr(submission, k)
+            return None
 
-        # Validation
-        group_id = submission.group_id
-        tournament_id = submission.tournament_id
+        match_type = get_val(["match_type", "matchType"]) or "singles"
+        p1_id = get_val(["player_1_id", "player1"])
+        p2_id = get_val(["player_2_id", "player2"])
+        partner_id = get_val(["partner_id", "partner"])
+        opponent2_id = get_val(["opponent2_id", "opponent2", "opponent_2_id"])
+
+        # Candidate Validation (Service-side because it requires DB)
+        group_id = get_val(["group_id", "groupId"])
+        tournament_id = get_val(["tournament_id", "tournamentId"])
 
         candidate_ids = MatchService.get_candidate_player_ids(
             db, user_id, group_id, tournament_id
@@ -192,8 +200,8 @@ class MatchService:
             if opponent2_id not in candidate_ids:
                 raise ValueError("Invalid Opponent 2 selected.")
 
-        # Date Parsing
-        match_date_input = submission.match_date
+        # Determine Date
+        match_date_input = get_val(["match_date", "matchDate"])
         if isinstance(match_date_input, str) and match_date_input:
             match_date = datetime.datetime.strptime(
                 match_date_input, "%Y-%m-%d"
@@ -209,8 +217,8 @@ class MatchService:
         else:
             match_date = datetime.datetime.now(datetime.timezone.utc)
 
-        player1_score = submission.score_p1
-        player2_score = submission.score_p2
+        player1_score = get_val(["score_p1", "player1_score", "player1Score"]) or 0
+        player2_score = get_val(["score_p2", "player2_score", "player2Score"]) or 0
 
         match_doc_data: dict[str, Any] = {
             "player1Score": player1_score,
@@ -221,6 +229,7 @@ class MatchService:
             "createdBy": user_id,
         }
 
+        # Add IDs if present
         if group_id:
             match_doc_data["groupId"] = group_id
         if tournament_id:
@@ -254,7 +263,7 @@ class MatchService:
         else:
             raise ValueError("Unsupported match type.")
 
-        # Save via batch
+        # Save to database via batched write (exactly 1 commit round-trip)
         new_match_ref = cast("DocumentReference", db.collection("matches").document())
         batch = db.batch()
         MatchService._record_match_batch(
@@ -330,10 +339,14 @@ class MatchService:
         tournament_id: str | None = None,
         include_user: bool = False,
     ) -> set[str]:
-        """Fetch a set of valid opponent IDs for a user."""
+        """Fetch a set of valid opponent IDs for a user.
+
+        Optionally restricts to a group or tournament.
+        """
         candidate_player_ids: set[str] = {user_id}
 
         if tournament_id:
+            # If in a tournament context, candidates are tournament participants
             tournament_ref = db.collection("tournaments").document(tournament_id)
             tournament = cast("DocumentSnapshot", tournament_ref.get())
             if tournament.exists:
@@ -341,6 +354,7 @@ class MatchService:
                 participant_ids = t_data.get("participant_ids", [])
                 candidate_player_ids.update(participant_ids)
         elif group_id:
+            # If in a group context, candidates are group members and pending invitees
             group_ref = db.collection("groups").document(group_id)
             group = cast("DocumentSnapshot", group_ref.get())
             if group.exists:
@@ -372,11 +386,35 @@ class MatchService:
                     for user_doc in users_by_email:
                         candidate_player_ids.add(user_doc.id)
         else:
+            # If not in a group context, candidates are friends and user's own invitees
             friends_ref = db.collection("users").document(user_id).collection("friends")
             friends_docs = friends_ref.stream()
             for doc in friends_docs:
                 if doc.to_dict().get("status") in ["accepted", "pending"]:
                     candidate_player_ids.add(doc.id)
+
+            my_invites_query = (
+                db.collection("group_invites")
+                .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
+                .stream()
+            )
+            my_invited_emails = {
+                (doc.to_dict() or {}).get("email") for doc in my_invites_query
+            }
+
+            if my_invited_emails:
+                my_invited_emails_list = list(my_invited_emails)
+                for i in range(0, len(my_invited_emails_list), 10):
+                    batch_emails = my_invited_emails_list[i : i + 10]
+                    users_by_email = (
+                        db.collection("users")
+                        .where(
+                            filter=firestore.FieldFilter("email", "in", batch_emails)
+                        )
+                        .stream()
+                    )
+                    for user_doc in users_by_email:
+                        candidate_player_ids.add(user_doc.id)
 
         if not include_user:
             candidate_player_ids.discard(user_id)
@@ -388,45 +426,69 @@ class MatchService:
         wins = 0
         losses = 0
 
-        # Singles as p1
-        p1_matches = db.collection("matches").where(filter=firestore.FieldFilter("player1Ref", "==", player_ref)).stream()
-        for match in p1_matches:
+        # 1. Matches where the user is player1 (Singles)
+        p1_matches_query = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("player1Ref", "==", player_ref))
+            .stream()
+        )
+        for match in p1_matches_query:
             data = match.to_dict()
-            if data and data.get("matchType") != "doubles":
-                if data.get("player1Score", 0) > data.get("player2Score", 0):
-                    wins += 1
-                else:
-                    losses += 1
+            if not data or data.get("matchType") == "doubles":
+                continue
 
-        # Singles as p2
-        p2_matches = db.collection("matches").where(filter=firestore.FieldFilter("player2Ref", "==", player_ref)).stream()
-        for match in p2_matches:
-            data = match.to_dict()
-            if data and data.get("matchType") != "doubles":
-                if data.get("player2Score", 0) > data.get("player1Score", 0):
-                    wins += 1
-                else:
-                    losses += 1
+            if data.get("player1Score", 0) > data.get("player2Score", 0):
+                wins += 1
+            else:
+                losses += 1
 
-        # Doubles as team 1
-        t1_matches = db.collection("matches").where(filter=firestore.FieldFilter("team1", "array_contains", player_ref)).stream()
-        for match in t1_matches:
+        # 2. Matches where the user is player2 (Singles)
+        p2_matches_query = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("player2Ref", "==", player_ref))
+            .stream()
+        )
+        for match in p2_matches_query:
             data = match.to_dict()
-            if data and data.get("matchType") == "doubles":
-                if data.get("player1Score", 0) > data.get("player2Score", 0):
-                    wins += 1
-                else:
-                    losses += 1
+            if not data or data.get("matchType") == "doubles":
+                continue
 
-        # Doubles as team 2
-        t2_matches = db.collection("matches").where(filter=firestore.FieldFilter("team2", "array_contains", player_ref)).stream()
-        for match in t2_matches:
+            if data.get("player2Score", 0) > data.get("player1Score", 0):
+                wins += 1
+            else:
+                losses += 1
+
+        # 3. Matches where the user is in team1 (Doubles)
+        t1_matches_query = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("team1", "array_contains", player_ref))
+            .stream()
+        )
+        for match in t1_matches_query:
             data = match.to_dict()
-            if data and data.get("matchType") == "doubles":
-                if data.get("player2Score", 0) > data.get("player1Score", 0):
-                    wins += 1
-                else:
-                    losses += 1
+            if not data or data.get("matchType") != "doubles":
+                continue
+
+            if data.get("player1Score", 0) > data.get("player2Score", 0):
+                wins += 1
+            else:
+                losses += 1
+
+        # 4. Matches where the user is in team2 (Doubles)
+        t2_matches_query = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("team2", "array_contains", player_ref))
+            .stream()
+        )
+        for match in t2_matches_query:
+            data = match.to_dict()
+            if not data or data.get("matchType") != "doubles":
+                continue
+
+            if data.get("player2Score", 0) > data.get("player1Score", 0):
+                wins += 1
+            else:
+                losses += 1
 
         return {"wins": wins, "losses": losses}
 
@@ -446,6 +508,7 @@ class MatchService:
         db: Client, limit: int = 50, min_games: int = GLOBAL_LEADERBOARD_MIN_GAMES
     ) -> list[User]:
         """Fetch data for the global leaderboard."""
+        # Removing limit from query to ensure we can find top players from whole base
         users_query = db.collection("users").stream()
         players: list[User] = []
         for user in users_query:
@@ -460,18 +523,351 @@ class MatchService:
             if games_played > 0:
                 win_percentage = float((record["wins"] / games_played) * 100)
 
-            user_data.update({
-                "wins": record["wins"],
-                "losses": record["losses"],
-                "games_played": games_played,
-                "win_percentage": win_percentage
-            })
+            user_data["wins"] = record["wins"]
+            user_data["losses"] = record["losses"]
+            user_data["games_played"] = games_played
+            user_data["win_percentage"] = win_percentage
 
+            # Only include players with at least minimum games played to ensure
+            # a representative leaderboard and filter inactive players.
             if games_played >= min_games:
                 players.append(user_data)
 
-        players.sort(key=lambda p: (p.get("win_percentage", 0), p.get("wins", 0)), reverse=True)
+        # Sort players by win percentage, then by wins
+        players.sort(
+            key=lambda p: (p.get("win_percentage", 0), p.get("wins", 0)), reverse=True
+        )
         return players[:limit]
+
+    @staticmethod
+    def _check_match_edit_permissions(
+        match_data: dict[str, Any], editor_uid: str, db: Client
+    ) -> None:
+        """Check if the user has permission to edit the match."""
+        tournament_id = match_data.get("tournamentId")
+        created_by = match_data.get("createdBy")
+
+        editor_ref = db.collection("users").document(editor_uid)
+        editor_doc = cast("DocumentSnapshot", editor_ref.get())
+        is_admin = False
+        if editor_doc.exists:
+            editor_data = editor_doc.to_dict()
+            if editor_data:
+                is_admin = editor_data.get("isAdmin", False)
+
+        if tournament_id:
+            if not is_admin:
+                raise PermissionError("Only Admins can edit tournament matches.")
+        elif not is_admin and created_by != editor_uid:
+            raise PermissionError("You do not have permission to edit this match.")
+
+    @staticmethod
+    def _update_doubles_stats(
+        match_data: dict[str, Any], new_p1_score: int, new_p2_score: int
+    ) -> None:
+        """Rollback old stats and apply new stats for doubles matches."""
+        if match_data.get("matchType") != "doubles":
+            return
+
+        old_p1_score = match_data.get("player1Score", 0)
+        old_p2_score = match_data.get("player2Score", 0)
+        team1_ref = match_data.get("team1Ref")
+        team2_ref = match_data.get("team2Ref")
+
+        if not (team1_ref and team2_ref):
+            return
+
+        # Rollback old stats
+        if old_p1_score > old_p2_score:
+            team1_ref.update({"stats.wins": firestore.Increment(-1)})
+            team2_ref.update({"stats.losses": firestore.Increment(-1)})
+        elif old_p2_score > old_p1_score:
+            team2_ref.update({"stats.wins": firestore.Increment(-1)})
+            team1_ref.update({"stats.losses": firestore.Increment(-1)})
+
+        # Apply new stats
+        if new_p1_score > new_p2_score:
+            team1_ref.update({"stats.wins": firestore.Increment(1)})
+            team2_ref.update({"stats.losses": firestore.Increment(1)})
+        elif new_p2_score > new_p1_score:
+            team2_ref.update({"stats.wins": firestore.Increment(1)})
+            team1_ref.update({"stats.losses": firestore.Increment(1)})
+
+    @staticmethod
+    def _get_match_updates(
+        match_data: dict[str, Any], new_p1_score: int, new_p2_score: int
+    ) -> dict[str, Any]:
+        """Calculate the updates for the match document."""
+        new_winner_slot = "team1" if new_p1_score > new_p2_score else "team2"
+        updates: dict[str, Any] = {
+            "player1Score": new_p1_score,
+            "player2Score": new_p2_score,
+            "winner": new_winner_slot,
+        }
+
+        if match_data.get("matchType") == "doubles":
+            updates["winnerId"] = (
+                match_data.get("team1Id")
+                if new_p1_score > new_p2_score
+                else match_data.get("team2Id")
+            )
+            updates["loserId"] = (
+                match_data.get("team2Id")
+                if new_p1_score > new_p2_score
+                else match_data.get("team1Id")
+            )
+        else:
+            p1_ref = match_data.get("player1Ref")
+            p2_ref = match_data.get("player2Ref")
+            if p1_ref and p2_ref:
+                updates["winnerId"] = (
+                    p1_ref.id if new_p1_score > new_p2_score else p2_ref.id
+                )
+                updates["loserId"] = (
+                    p2_ref.id if new_p1_score > new_p2_score else p1_ref.id
+                )
+        return updates
+
+    @staticmethod
+    def update_match_score(  # noqa: PLR0913
+        db: Client,
+        match_id: str,
+        new_p1_score: int,
+        new_p2_score: int,
+        editor_uid: str,
+    ) -> None:
+        """Update a match score with permission checks and stats rollback."""
+        match_ref = db.collection("matches").document(match_id)
+        match_doc = cast("DocumentSnapshot", match_ref.get())
+        if not match_doc.exists:
+            raise ValueError("Match not found.")
+
+        match_data = match_doc.to_dict()
+        if match_data is None:
+            raise ValueError("Match data is empty.")
+
+        # Permission Check
+        MatchService._check_match_edit_permissions(match_data, editor_uid, db)
+
+        # Stats Rollback Logic (for doubles only)
+        MatchService._update_doubles_stats(match_data, new_p1_score, new_p2_score)
+
+        # Update Match Document
+        updates = MatchService._get_match_updates(
+            match_data, new_p1_score, new_p2_score
+        )
+        match_ref.update(updates)
+
+    @staticmethod
+    def get_matches_for_user(
+        db: Client, uid: str, limit: int = 20, start_after: str | None = None
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Fetch matches for a user with cursor-based pagination."""
+        from pickaladder.user.services.match_stats import format_matches_for_dashboard
+
+        matches_ref = db.collection("matches")
+        # Ensure 'matchDate' is used for ordering to match the created documents
+        query = (
+            matches_ref.where(
+                filter=firestore.FieldFilter("participants", "array_contains", uid)
+            )
+            .order_by("matchDate", direction=firestore.Query.DESCENDING)
+            .limit(limit)
+        )
+
+        if start_after:
+            last_doc = cast("DocumentSnapshot", matches_ref.document(start_after).get())
+            if last_doc.exists:
+                query = query.start_after(last_doc)
+
+        docs = list(query.stream())
+        if not docs:
+            return [], None
+
+        last_visible_doc_id = docs[-1].id
+        formatted_matches = format_matches_for_dashboard(db, docs, uid)
+
+        return formatted_matches, last_visible_doc_id
+
+    @staticmethod
+    def get_latest_matches(db: Client, limit: int = 10) -> list[Match]:
+        """Fetch and process the latest matches."""
+        try:
+            matches_query = (
+                db.collection("matches")
+                .order_by("createdAt", direction=firestore.Query.DESCENDING)
+                .limit(limit)
+            )
+            matches = list(matches_query.stream())
+        except KeyError:
+            # Fallback for mockfirestore
+            matches_query = db.collection("matches").limit(limit)
+            matches = list(matches_query.stream())
+
+        player_refs = set()
+        for match in matches:
+            m_snap = cast("DocumentSnapshot", match)
+            m_data = m_snap.to_dict()
+            if not m_data:
+                continue
+            if m_data.get("matchType") == "doubles":
+                player_refs.update(m_data.get("team1", []))
+                player_refs.update(m_data.get("team2", []))
+            elif "player_1_data" not in m_data or "player_2_data" not in m_data:
+                if p1_ref := m_data.get("player1Ref"):
+                    player_refs.add(p1_ref)
+                if p2_ref := m_data.get("player2Ref"):
+                    player_refs.add(p2_ref)
+
+        players = {}
+        if player_refs:
+            player_docs = db.get_all(list(player_refs))
+            for doc in player_docs:
+                d_snap = cast("DocumentSnapshot", doc)
+                if d_snap.exists:
+                    d_data = d_snap.to_dict() or {}
+                    players[d_snap.id] = d_data.get("name", "N/A")
+
+        processed_matches: list[Match] = []
+        for match in matches:
+            m_snap = cast("DocumentSnapshot", match)
+            match_data = cast("Match", m_snap.to_dict() or {})
+            match_data["id"] = m_snap.id
+            match_date = match_data.get("matchDate")
+            if isinstance(match_date, datetime.datetime):
+                match_date_formatted = match_date.strftime("%b %d")
+            else:
+                match_date_formatted = "N/A"
+
+            score1 = match_data.get("player1Score", 0)
+            score2 = match_data.get("player2Score", 0)
+
+            point_diff = abs(score1 - score2)
+            close_call = point_diff <= CLOSE_CALL_THRESHOLD
+
+            match_data["date"] = match_date_formatted
+            match_data["point_differential"] = point_diff
+            match_data["close_call"] = close_call
+
+            if match_data.get("matchType") == "doubles":
+                team1_refs = match_data.get("team1", [])
+                team2_refs = match_data.get("team2", [])
+                team1_names = " & ".join(
+                    [
+                        players.get(str(getattr(ref, "id", "")), "N/A")
+                        for ref in team1_refs
+                    ]
+                )
+                team2_names = " & ".join(
+                    [
+                        players.get(str(getattr(ref, "id", "")), "N/A")
+                        for ref in team2_refs
+                    ]
+                )
+
+                if score1 > score2:
+                    match_data["winner_name"] = team1_names
+                    match_data["loser_name"] = team2_names
+                    match_data["winner_score"] = score1
+                    match_data["loser_score"] = score2
+                else:
+                    match_data["winner_name"] = team2_names
+                    match_data["loser_name"] = team1_names
+                    match_data["winner_score"] = score2
+                    match_data["loser_score"] = score1
+            else:  # singles
+                # Use denormalized snapshots if available
+                if (
+                    "player_1_data" in match_data
+                    and "player_2_data" in match_data
+                    and match_data["player_1_data"]
+                    and match_data["player_2_data"]
+                ):
+                    p1_name = match_data["player_1_data"].get("display_name", "N/A")
+                    p2_name = match_data["player_2_data"].get("display_name", "N/A")
+                else:
+                    p1_ref = match_data.get("player1Ref")
+                    p2_ref = match_data.get("player2Ref")
+
+                    p1_name = (
+                        players.get(str(getattr(p1_ref, "id", "")), "N/A")
+                        if p1_ref
+                        else "N/A"
+                    )
+                    p2_name = (
+                        players.get(str(getattr(p2_ref, "id", "")), "N/A")
+                        if p2_ref
+                        else "N/A"
+                    )
+
+                if score1 > score2:
+                    match_data["winner_name"] = p1_name
+                    match_data["loser_name"] = p2_name
+                    match_data["winner_score"] = score1
+                    match_data["loser_score"] = score2
+                else:
+                    match_data["winner_name"] = p2_name
+                    match_data["loser_name"] = p1_name
+                    match_data["winner_score"] = score2
+                    match_data["loser_score"] = score1
+
+            processed_matches.append(match_data)
+
+        return processed_matches
+
+    @staticmethod
+    def get_player_names(db: Client, uids: Iterable[str]) -> dict[str, str]:
+        """Fetch a mapping of UIDs to names."""
+        names: dict[str, str] = {}
+        if not uids:
+            return names
+        u_refs = [db.collection("users").document(uid) for uid in uids]
+        for doc in db.get_all(u_refs):
+            if cast("DocumentSnapshot", doc).exists:
+                d = cast("DocumentSnapshot", doc).to_dict() or {}
+                names[str(doc.id)] = d.get("name", doc.id)
+        return names
+
+    @staticmethod
+    def get_tournament_name(db: Client, tournament_id: str) -> str | None:
+        """Fetch tournament name."""
+        t_ref = db.collection("tournaments").document(tournament_id)
+        t_doc = cast("DocumentSnapshot", t_ref.get())
+        if t_doc.exists:
+            return cast(str, (t_doc.to_dict() or {}).get("name"))
+        return None
+
+    @staticmethod
+    def get_user_last_match_type(db: Client, user_id: str) -> str:
+        """Fetch the last match type recorded by the user."""
+        u_doc = cast("DocumentSnapshot", db.collection("users").document(user_id).get())
+        if u_doc.exists:
+            return cast(
+                str, (u_doc.to_dict() or {}).get("lastMatchRecordedType", "singles")
+            )
+        return "singles"
+
+    @staticmethod
+    def get_team_names(db: Client, team1_id: str, team2_id: str) -> tuple[str, str]:
+        """Fetch names for two teams."""
+        t1_doc = cast(
+            "DocumentSnapshot", db.collection("teams").document(team1_id).get()
+        )
+        t2_doc = cast(
+            "DocumentSnapshot", db.collection("teams").document(team2_id).get()
+        )
+
+        name1 = (
+            cast(str, (t1_doc.to_dict() or {}).get("name", "Team 1"))
+            if t1_doc.exists
+            else "Team 1"
+        )
+        name2 = (
+            cast(str, (t2_doc.to_dict() or {}).get("name", "Team 2"))
+            if t2_doc.exists
+            else "Team 2"
+        )
+        return name1, name2
 
     @staticmethod
     def get_match_summary_context(db: Client, match_id: str) -> dict[str, Any]:
@@ -493,8 +889,8 @@ class MatchService:
                 for doc in db.get_all(team1_refs):
                     d_snap = cast("DocumentSnapshot", doc)
                     if d_snap.exists:
-                        p_dict = cast(dict[str, Any], d_snap.to_dict() or {})
-                        p_data = {**p_dict, "id": d_snap.id}
+                        p_data = d_snap.to_dict() or {}
+                        p_data["id"] = d_snap.id
                         team1_data.append(p_data)
 
             team2_data = []
@@ -502,8 +898,8 @@ class MatchService:
                 for doc in db.get_all(team2_refs):
                     d_snap = cast("DocumentSnapshot", doc)
                     if d_snap.exists:
-                        p_dict = cast(dict[str, Any], d_snap.to_dict() or {})
-                        p_data = {**p_dict, "id": d_snap.id}
+                        p_data = d_snap.to_dict() or {}
+                        p_data["id"] = d_snap.id
                         team2_data.append(p_data)
 
             context["team1"] = team1_data
@@ -520,45 +916,26 @@ class MatchService:
             if player1_ref:
                 p1_doc = cast("DocumentSnapshot", player1_ref.get())
                 if p1_doc.exists:
-                    p1_dict = cast(dict[str, Any], p1_doc.to_dict() or {})
-                    player1_data = {**p1_dict, "id": p1_doc.id}
+                    p1_dict = p1_doc.to_dict() or {}
+                    p1_dict["id"] = p1_doc.id
+                    player1_data = p1_dict
                     player1_record = MatchService.get_player_record(db, player1_ref)
 
             if player2_ref:
                 p2_doc = cast("DocumentSnapshot", player2_ref.get())
                 if p2_doc.exists:
-                    p2_dict = cast(dict[str, Any], p2_doc.to_dict() or {})
-                    player2_data = {**p2_dict, "id": p2_doc.id}
+                    p2_dict = p2_doc.to_dict() or {}
+                    p2_dict["id"] = p2_doc.id
+                    player2_data = p2_dict
                     player2_record = MatchService.get_player_record(db, player2_ref)
 
-            context.update({
-                "player1": player1_data,
-                "player2": player2_data,
-                "player1_record": player1_record,
-                "player2_record": player2_record,
-            })
+            context.update(
+                {
+                    "player1": player1_data,
+                    "player2": player2_data,
+                    "player1_record": player1_record,
+                    "player2_record": player2_record,
+                }
+            )
 
         return context
-
-    @staticmethod
-    def get_player_names(db: Client, uids: Iterable[str]) -> dict[str, str]:
-        """Fetch a mapping of UIDs to names."""
-        names: dict[str, str] = {}
-        if not uids:
-            return names
-        u_refs = [db.collection("users").document(uid) for uid in uids]
-        for doc in db.get_all(u_refs):
-            if cast("DocumentSnapshot", doc).exists:
-                d = cast("DocumentSnapshot", doc).to_dict() or {}
-                names[str(doc.id)] = d.get("name", doc.id)
-        return names
-
-    @staticmethod
-    def get_team_names(db: Client, team1_id: str, team2_id: str) -> tuple[str, str]:
-        """Fetch names for two teams."""
-        t1_doc = cast("DocumentSnapshot", db.collection("teams").document(team1_id).get())
-        t2_doc = cast("DocumentSnapshot", db.collection("teams").document(team2_id).get())
-
-        name1 = cast(str, (t1_doc.to_dict() or {}).get("name", "Team 1")) if t1_doc.exists else "Team 1"
-        name2 = cast(str, (t2_doc.to_dict() or {}).get("name", "Team 2")) if t2_doc.exists else "Team 2"
-        return name1, name2

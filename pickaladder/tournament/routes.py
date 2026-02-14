@@ -60,23 +60,23 @@ def create_tournament() -> Any:
             if date_val is None:
                 raise ValueError("Date is required")
 
-            # Combine date with min time to satisfy Firestore datetime requirements
             data = {
                 "name": form.name.data,
-                "start_date": datetime.datetime.combine(date_val, datetime.time.min),
+                "date": datetime.datetime.combine(date_val, datetime.time.min),
+                "location": form.address.data,
                 "venue_name": form.venue_name.data,
                 "address": form.address.data,
-                "match_type": form.match_type.data,
                 "mode": form.mode.data,
-                "format": form.format.data,
+                "matchType": form.match_type.data,
                 "description": form.description.data,
+                "format": form.format.data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
             # Handle banner upload if present
             banner_file = request.files.get("banner")
             if banner_file and banner_file.filename:
-                banner_url = TournamentService._upload_banner(
+                banner_url = TournamentService.upload_tournament_banner(
                     tournament_id, banner_file
                 )
                 if banner_url:
@@ -172,19 +172,22 @@ def edit_tournament(tournament_id: str) -> Any:
 
         update_data = {
             "name": form.name.data,
-            "start_date": datetime.datetime.combine(date_val, datetime.time.min),
+            "date": datetime.datetime.combine(date_val, datetime.time.min),
+            "location": form.address.data,
             "venue_name": form.venue_name.data,
             "address": form.address.data,
-            "match_type": form.match_type.data,
             "mode": form.mode.data,
-            "format": form.format.data,
+            "matchType": form.match_type.data,
             "description": form.description.data,
+            "format": form.format.data,
         }
 
         # Handle banner upload
         banner_file = request.files.get("banner")
         if banner_file and banner_file.filename:
-            banner_url = TournamentService._upload_banner(tournament_id, banner_file)
+            banner_url = TournamentService.upload_tournament_banner(
+                tournament_id, banner_file
+            )
             if banner_url:
                 update_data["banner_url"] = banner_url
 
@@ -203,17 +206,23 @@ def edit_tournament(tournament_id: str) -> Any:
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
-        form.venue_name.data = tournament_data.get("venue_name") or tournament_data.get("location")
-        form.address.data = tournament_data.get("address")
+        form.venue_name.data = tournament_data.get("venue_name")
+        form.address.data = tournament_data.get("address") or tournament_data.get(
+            "location"
+        )
+        form.mode.data = (
+            tournament_data.get("mode")
+            or tournament_data.get("matchType", "SINGLES").upper()
+        )
+        form.match_type.data = tournament_data.get("matchType", "singles")
         form.description.data = tournament_data.get("description")
         form.format.data = tournament_data.get("format", "ROUND_ROBIN")
-        form.mode.data = tournament_data.get("mode") or "SINGLES"
-        form.match_type.data = tournament_data.get("matchType", "singles")
 
-        raw_date = tournament_data.get("date") or tournament_data.get("start_date")
+        raw_date = tournament_data.get("date")
         if hasattr(raw_date, "to_datetime"):
             form.start_date.data = raw_date.to_datetime().date()
 
+    logging.warning(f"Type of form in edit_tournament: {type(form)}")
     return render_template(
         "tournaments/create_edit.html",
         form=form,
@@ -227,6 +236,7 @@ def edit_tournament(tournament_id: str) -> Any:
 def invite_player(tournament_id: str) -> Any:
     """Invite a player to a tournament."""
     form = InvitePlayerForm()
+    # Dynamically set choices to allow validation (hacky but standard in this app)
     submitted_uid = request.form.get("user_id")
     if submitted_uid:
         form.user_id.choices = [(submitted_uid, "")]
@@ -337,6 +347,7 @@ def generate_bracket(tournament_id: str) -> Any:
         )
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
+    # Get accepted participants
     participants = t_data.get("participants", [])
     accepted_ids = [
         (p.get("userRef").id if p.get("userRef") else p.get("user_id"))
@@ -351,31 +362,21 @@ def generate_bracket(tournament_id: str) -> Any:
         )
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
+    # Generate pairings
     pairings = TournamentGenerator.generate_round_robin(accepted_ids)
 
+    # Save to matches sub-collection
     matches_sub_ref = t_ref.collection("matches")
     batch = db.batch()
     for match in pairings:
         batch.set(matches_sub_ref.document(), match)
 
+    # Update status
     batch.update(t_ref, {"status": "PUBLISHED"})
     batch.commit()
 
     flash(f"Round Robin bracket generated with {len(pairings)} matches!", "success")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
-
-
-@bp.route("/<string:tournament_id>/delete", methods=["POST"])
-@admin_required
-def delete_tournament(tournament_id: str) -> Any:
-    """Delete a tournament."""
-    db = firestore.client()
-    try:
-        db.collection("tournaments").document(tournament_id).delete()
-        flash("Tournament deleted successfully.", "success")
-    except Exception as e:
-        flash(f"Error deleting tournament: {e}", "danger")
-    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/join", methods=["POST"])
@@ -389,10 +390,11 @@ def join_tournament(tournament_id: str) -> Any:
 @login_required
 def register_team(tournament_id: str) -> Any:
     """Register a doubles team for the tournament."""
+    # Check if it's an AJAX request (invite link generation)
     if request.is_json:
         data = request.get_json()
         team_name = data.get("team_name")
-        partner_id = data.get("partner_id")
+        partner_id = data.get("partner_id")  # Might be None for invite link
     else:
         partner_id = request.form.get("partner_id")
         team_name = request.form.get("team_name")
@@ -442,6 +444,18 @@ def claim_team(tournament_id: str, team_id: str) -> Any:
         flash(f"Error: {e}", "danger")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    try:
+        TournamentService.delete_tournament(tournament_id)
+        flash("Tournament deleted successfully.", "success")
+    except Exception as e:
+        flash(f"Error deleting tournament: {e}", "danger")
+    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/accept_team", methods=["POST"])
