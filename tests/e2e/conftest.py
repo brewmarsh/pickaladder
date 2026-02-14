@@ -259,9 +259,9 @@ class MockTransaction(Transaction):
     def __init__(self, db: EnhancedMockFirestore) -> None:
         """Initialize mock transaction."""
         super().__init__(db)
-        self.db = db
         self._read_only = False
-        self._id = "mock_id"
+        self._rollback = False
+        self._id = "mock-transaction-id"
         self._max_attempts = 5
 
     def _rollback(self) -> None:

@@ -155,7 +155,64 @@
                         </thead>
                         <tbody>
                             {% for match in matches %}
-                                {% include 'components/match_list_item.html' %}
+                            <tr>
+                                <td class="text-muted" data-label="Date">
+                                    {% if match.date and match.date != 'N/A' %}
+                                    {{ match.date if match.date is string else match.date.strftime('%b %d') }}
+                                    {% else %}
+                                    Date N/A
+                                    {% endif %}
+                                </td>
+                                <td data-label="Matchup">
+                                    {% if match.match_type == 'doubles' %}
+                                        {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
+                                        {% if in_team1 %}
+                                            {% set partner = match.player1[1] if match.player1[0].id == user.uid else match.player1[0] %}
+                                            {% set opponent_name = match.team2_name %}
+                                            {% set user_score = match.player1_score %}
+                                            {% set opp_score = match.player2_score %}
+                                        {% else %}
+                                            {% set partner = match.player2[1] if match.player2[0].id == user.uid else match.player2[0] %}
+                                            {% set opponent_name = match.team1_name %}
+                                            {% set user_score = match.player2_score %}
+                                            {% set opp_score = match.player1_score %}
+                                        {% endif %}
+                                        <strong>You & {{ partner.username }}</strong> vs {{ opponent_name }}
+                                    {% else %}
+                                        {% set is_p1 = match.player1.id == user.uid %}
+                                        {% if is_p1 %}
+                                            {% set opponent = match.player2 %}
+                                            {% set user_score = match.player1_score %}
+                                            {% set opp_score = match.player2_score %}
+                                        {% else %}
+                                            {% set opponent = match.player1 %}
+                                            {% set user_score = match.player2_score %}
+                                            {% set opp_score = match.player1_score %}
+                                        {% endif %}
+                                        <strong>You</strong> vs {{ opponent.username }}
+                                    {% endif %}
+                                </td>
+                                <td data-label="Result">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            {% if match.user_result == 'win' %}
+                                            <span class="badge badge-success">W</span>
+                                            {% else %}
+                                            <span class="badge badge-danger">L</span>
+                                            {% endif %}
+                                            {{ user_score }} - {{ opp_score }}
+                                            {% if match.tournament_name %}
+                                            <div class="text-muted small" style="margin-top: 4px;">🏆 {{ match.tournament_name }}</div>
+                                            {% endif %}
+                                        </div>
+                                        {% if (match.created_by == user.uid and not match.tournament_id) or user.isAdmin %}
+                                        <a href="{{ url_for('match.edit_match', match_id=match.id) }}" class="text-muted" title="Edit Match">
+                                            ✏️
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>

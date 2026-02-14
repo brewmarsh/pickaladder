@@ -38,12 +38,12 @@ class UserTestCase(unittest.TestCase):
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
-            "storage_service": patch("pickaladder.user.services.core.storage"),
+            "storage_service_core": patch("pickaladder.user.services.core.storage"),
             "storage_service_profile": patch(
                 "pickaladder.user.services.profile.storage"
             ),
-            "auth_service_profile": patch("pickaladder.user.services.profile.auth"),
             "auth_service_core": patch("pickaladder.user.services.core.auth"),
+            "auth_service_profile": patch("pickaladder.user.services.profile.auth"),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
             "auth": patch("pickaladder.user.services.core.auth"),
         }
@@ -139,11 +139,11 @@ class UserTestCase(unittest.TestCase):
         response = self.client.post(
             "/user/settings",
             data={
-                "name": "User One",
-                "email": "user1@example.com",
                 "dark_mode": "y",
                 "dupr_rating": 5.5,
                 "username": "newuser",
+                "name": "New User",
+                "email": "newuser@example.com",
             },
             follow_redirects=True,
         )
@@ -167,7 +167,7 @@ class UserTestCase(unittest.TestCase):
             "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
             "username": "newuser",
             "name": "New User",
-            "email": "user1@example.com",
+            "email": "newuser@example.com",
         }
         response = self.client.post(
             "/user/settings",
@@ -208,11 +208,11 @@ class UserTestCase(unittest.TestCase):
         response = self.client.post(
             "/user/settings",
             data={
-                "name": "User One",
-                "email": "user1@example.com",
                 "dark_mode": "y",
                 "dupr_rating": "5.5",
                 "username": "newuser",
+                "name": "New User",
+                "email": "newuser@example.com",
             },
             follow_redirects=True,
         )

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
-    from google.cloud.firestore_v1.transaction import Transaction
+    from google.cloud.firestore_v1.batch import WriteBatch
 
     from pickaladder.user import User
     from pickaladder.user.models import UserSession
@@ -32,9 +32,9 @@ class MatchService:
     """Service class for match-related operations."""
 
     @staticmethod
-    @firestore.transactional
-    def _record_match_transaction(  # noqa: PLR0913
-        transaction: Transaction,
+    def _record_match_batch(  # noqa: PLR0913
+        db: Client,
+        batch: WriteBatch,
         match_ref: DocumentReference,
         p1_ref: DocumentReference,
         p2_ref: DocumentReference,
@@ -42,13 +42,16 @@ class MatchService:
         match_data: dict[str, Any],
         match_type: str,
     ) -> None:
-        """Atomic transaction to record a match and update stats."""
-        # 1. Read current snapshots
-        p1_snapshot = p1_ref.get(transaction=transaction)
-        p2_snapshot = p2_ref.get(transaction=transaction)
+        """Record a match and update stats using batched writes."""
+        # 1. Read current snapshots (Optimized to 1 round-trip for reads)
+        snapshots_iterable = db.get_all([p1_ref, p2_ref])
+        snapshots_map = {snap.id: snap for snap in snapshots_iterable if snap.exists}
 
-        p1_data = p1_snapshot.to_dict() or {}
-        p2_data = p2_snapshot.to_dict() or {}
+        p1_snapshot = snapshots_map.get(p1_ref.id)
+        p2_snapshot = snapshots_map.get(p2_ref.id)
+
+        p1_data = p1_snapshot.to_dict() if p1_snapshot else {}
+        p2_data = p2_snapshot.to_dict() if p2_snapshot else {}
 
         # 1.5 Denormalize Player Data (Snapshots)
         if match_type == "singles":
@@ -84,7 +87,9 @@ class MatchService:
             match_data["winnerId"] = p1_ref.id if winner == "team1" else p2_ref.id
             match_data["loserId"] = p2_ref.id if winner == "team1" else p1_ref.id
 
-        def get_stat(data: dict[str, Any], key: str, default: Any) -> Any:
+        def get_stat(data: dict[str, Any] | None, key: str, default: Any) -> Any:
+            if data is None:
+                return default
             return data.get("stats", {}).get(key, default)
 
         p1_wins = get_stat(p1_data, "wins", 0)
@@ -134,10 +139,15 @@ class MatchService:
                     match_data["is_upset"] = True
 
         # 3. Queue Writes
-        transaction.set(match_ref, match_data)
-        transaction.update(p1_ref, p1_updates)
-        transaction.update(p2_ref, p2_updates)
-        transaction.update(user_ref, {"lastMatchRecordedType": match_type})
+        batch.set(match_ref, match_data)
+        batch.update(p1_ref, p1_updates)
+        batch.update(p2_ref, p2_updates)
+        batch.update(user_ref, {"lastMatchRecordedType": match_type})
+
+        # Update the Group "leaderboard document" (the group doc itself)
+        if group_id := match_data.get("groupId"):
+            group_ref = db.collection("groups").document(group_id)
+            batch.update(group_ref, {"updatedAt": firestore.SERVER_TIMESTAMP})
 
     @staticmethod
     def record_match(
@@ -232,17 +242,20 @@ class MatchService:
         else:
             raise ValueError("Unsupported match type.")
 
-        # Save to database via atomic transaction
-        new_match_ref = db.collection("matches").document()
-        MatchService._record_match_transaction(
-            db.transaction(),
+        # Save to database via batched write (exactly 1 commit round-trip)
+        new_match_ref = cast("DocumentReference", db.collection("matches").document())
+        batch = db.batch()
+        MatchService._record_match_batch(
+            db,
+            batch,
             new_match_ref,
-            side1_ref,
-            side2_ref,
-            user_ref,
+            cast("DocumentReference", side1_ref),
+            cast("DocumentReference", side2_ref),
+            cast("DocumentReference", user_ref),
             match_doc_data,
             match_type,
         )
+        batch.commit()
 
         return MatchResult(
             id=new_match_ref.id,
@@ -506,27 +519,13 @@ class MatchService:
         return players[:limit]
 
     @staticmethod
-    def update_match_score(  # noqa: PLR0913
-        db: Client,
-        match_id: str,
-        new_p1_score: int,
-        new_p2_score: int,
-        editor_uid: str,
+    def _check_match_edit_permissions(
+        match_data: dict[str, Any], editor_uid: str, db: Client
     ) -> None:
-        """Update a match score with permission checks and stats rollback."""
-        match_ref = db.collection("matches").document(match_id)
-        match_doc = cast("DocumentSnapshot", match_ref.get())
-        if not match_doc.exists:
-            raise ValueError("Match not found.")
-
-        match_data = match_doc.to_dict()
-        if match_data is None:
-            raise ValueError("Match data is empty.")
-
+        """Check if the user has permission to edit the match."""
         tournament_id = match_data.get("tournamentId")
         created_by = match_data.get("createdBy")
 
-        # Permission Check
         editor_ref = db.collection("users").document(editor_uid)
         editor_doc = cast("DocumentSnapshot", editor_ref.get())
         is_admin = False
@@ -541,34 +540,44 @@ class MatchService:
         elif not is_admin and created_by != editor_uid:
             raise PermissionError("You do not have permission to edit this match.")
 
-        # Stats Rollback Logic (for doubles only, as singles are dynamic)
+    @staticmethod
+    def _update_doubles_stats(
+        match_data: dict[str, Any], new_p1_score: int, new_p2_score: int
+    ) -> None:
+        """Rollback old stats and apply new stats for doubles matches."""
+        if match_data.get("matchType") != "doubles":
+            return
+
         old_p1_score = match_data.get("player1Score", 0)
         old_p2_score = match_data.get("player2Score", 0)
+        team1_ref = match_data.get("team1Ref")
+        team2_ref = match_data.get("team2Ref")
 
-        if match_data.get("matchType") == "doubles":
-            team1_ref = match_data.get("team1Ref")
-            team2_ref = match_data.get("team2Ref")
+        if not (team1_ref and team2_ref):
+            return
 
-            if team1_ref and team2_ref:
-                # Rollback old stats
-                if old_p1_score > old_p2_score:
-                    team1_ref.update({"stats.wins": firestore.Increment(-1)})
-                    team2_ref.update({"stats.losses": firestore.Increment(-1)})
-                elif old_p2_score > old_p1_score:
-                    team2_ref.update({"stats.wins": firestore.Increment(-1)})
-                    team1_ref.update({"stats.losses": firestore.Increment(-1)})
+        # Rollback old stats
+        if old_p1_score > old_p2_score:
+            team1_ref.update({"stats.wins": firestore.Increment(-1)})
+            team2_ref.update({"stats.losses": firestore.Increment(-1)})
+        elif old_p2_score > old_p1_score:
+            team2_ref.update({"stats.wins": firestore.Increment(-1)})
+            team1_ref.update({"stats.losses": firestore.Increment(-1)})
 
-                # Apply new stats
-                if new_p1_score > new_p2_score:
-                    team1_ref.update({"stats.wins": firestore.Increment(1)})
-                    team2_ref.update({"stats.losses": firestore.Increment(1)})
-                elif new_p2_score > new_p1_score:
-                    team2_ref.update({"stats.wins": firestore.Increment(1)})
-                    team1_ref.update({"stats.losses": firestore.Increment(1)})
+        # Apply new stats
+        if new_p1_score > new_p2_score:
+            team1_ref.update({"stats.wins": firestore.Increment(1)})
+            team2_ref.update({"stats.losses": firestore.Increment(1)})
+        elif new_p2_score > new_p1_score:
+            team2_ref.update({"stats.wins": firestore.Increment(1)})
+            team1_ref.update({"stats.losses": firestore.Increment(1)})
 
-        # Update Match Document
+    @staticmethod
+    def _get_match_updates(
+        match_data: dict[str, Any], new_p1_score: int, new_p2_score: int
+    ) -> dict[str, Any]:
+        """Calculate the updates for the match document."""
         new_winner_slot = "team1" if new_p1_score > new_p2_score else "team2"
-
         updates: dict[str, Any] = {
             "player1Score": new_p1_score,
             "player2Score": new_p2_score,
@@ -596,7 +605,34 @@ class MatchService:
                 updates["loserId"] = (
                     p2_ref.id if new_p1_score > new_p2_score else p1_ref.id
                 )
+        return updates
 
+    @staticmethod
+    def update_match_score(  # noqa: PLR0913
+        db: Client,
+        match_id: str,
+        new_p1_score: int,
+        new_p2_score: int,
+        editor_uid: str,
+    ) -> None:
+        """Update a match score with permission checks and stats rollback."""
+        match_ref = db.collection("matches").document(match_id)
+        match_doc = cast("DocumentSnapshot", match_ref.get())
+        if not match_doc.exists:
+            raise ValueError("Match not found.")
+
+        match_data = match_doc.to_dict()
+        if match_data is None:
+            raise ValueError("Match data is empty.")
+
+        # Permission Check
+        MatchService._check_match_edit_permissions(match_data, editor_uid, db)
+
+        # Stats Rollback Logic (for doubles only)
+        MatchService._update_doubles_stats(match_data, new_p1_score, new_p2_score)
+
+        # Update Match Document
+        updates = MatchService._get_match_updates(match_data, new_p1_score, new_p2_score)
         match_ref.update(updates)
 
     @staticmethod
