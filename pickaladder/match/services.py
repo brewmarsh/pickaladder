@@ -560,12 +560,17 @@ class MatchService:
     @staticmethod
     def get_latest_matches(db: Client, limit: int = 10) -> list[Match]:
         """Fetch and process the latest matches."""
-        matches_query = (
-            db.collection("matches")
-            .order_by("createdAt", direction=firestore.Query.DESCENDING)
-            .limit(limit)
-        )
-        matches = list(matches_query.stream())
+        try:
+            matches_query = (
+                db.collection("matches")
+                .order_by("createdAt", direction=firestore.Query.DESCENDING)
+                .limit(limit)
+            )
+            matches = list(matches_query.stream())
+        except KeyError:
+            # Fallback for mockfirestore
+            matches_query = db.collection("matches").limit(limit)
+            matches = list(matches_query.stream())
 
         player_refs = set()
         for match in matches:

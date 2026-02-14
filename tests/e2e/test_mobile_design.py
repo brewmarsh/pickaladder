@@ -26,7 +26,8 @@ def seeded_data(mock_db):
         "name": "Pickleball Pros",
         "description": "A group for pros",
         "ownerRef": mock_db.collection("users").document(user_id),
-        "isPublic": True,
+        "is_public": True,
+        "createdAt": "2023-01-01T00:00:00",
         "member_count": 5,
         "members": [mock_db.collection("users").document(user_id)],
     }
@@ -49,6 +50,7 @@ def seeded_data(mock_db):
         "location": "Central Park",
         "matchType": "doubles",
         "ownerRef": mock_db.collection("users").document(user_id),
+        "createdAt": "2023-01-01T00:00:00",
     }
     mock_db.collection("tournaments").document(tournament_id).set(tournament_data)
 
@@ -88,6 +90,6 @@ def test_mobile_layout(page_with_firebase, app_server, seeded_data):
 
     # 5. Check Community Hub (Search Bar)
     page.goto(f"{app_server}/user/community")
-    search_input_group = page.locator(".search-form .input-group")
+    search_input_group = page.locator("input[name='search']")
     # Mobile layout check for search bar
     expect(search_input_group).to_be_visible()

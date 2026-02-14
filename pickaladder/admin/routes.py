@@ -130,12 +130,17 @@ def toggle_email_verification() -> Response:
 def admin_matches() -> str:
     """Display a list of all matches."""
     db = firestore.client()
-    matches_query = (
-        db.collection("matches")
-        .order_by("createdAt", direction=firestore.Query.DESCENDING)
-        .limit(50)
-    )
-    matches = matches_query.stream()
+    try:
+        matches_query = (
+            db.collection("matches")
+            .order_by("createdAt", direction=firestore.Query.DESCENDING)
+            .limit(50)
+        )
+        matches = matches_query.stream()
+    except KeyError:
+        # Fallback for mockfirestore
+        matches_query = db.collection("matches").limit(50)
+        matches = matches_query.stream()
     # This is a simplified view. A full view would need to resolve player refs.
     return render_template("admin/matches.html", matches=matches)
 

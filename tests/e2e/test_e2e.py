@@ -28,13 +28,15 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
             page.click("button:has-text('Create Admin')")
 
         expect(page.locator("h2")).to_contain_text("Login")
-        page.fill("input[name='email']", "admin@example.com")
-        page.fill("input[name='password']", "password")
-        with page.expect_navigation():
-            page.click("button:has-text('Login')")
 
-    page.click(".btn-edit-gear")
-    expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
+    page.fill("input[name='email']", "admin@example.com")
+    page.fill("input[name='password']", "password")
+    with page.expect_navigation():
+        page.click("button:has-text('Login')")
+
+    page.hover(".navbar-user-controls .dropdown")
+    page.click("a:has-text('Settings')")
+    expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
 
     # Logout
     page.goto(f"{base_url}/auth/logout")
@@ -60,8 +62,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Login')")
 
-    page.click(".btn-edit-gear")
-    expect(page.locator("h2:has-text('Settings')")).to_be_visible(timeout=10000)
+    page.hover(".navbar-user-controls .dropdown")
+    page.click("a:has-text('Settings')")
+    expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
 
     # 3. Add Friend (User 2 invites Admin)
     with page.expect_navigation():
