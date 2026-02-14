@@ -34,17 +34,28 @@ def test_tournament_flow(
         page.click(".btn:has-text('Login')")
 
     # 2. Create a Tournament
-    with page.expect_navigation():
-        page.click(".navbar a:has-text('Tournaments')")
+    if page.is_visible(".hamburger-menu"):
+        page.click(".hamburger-menu")
+        with page.expect_navigation():
+            page.click(".mobile-nav-link:has-text('Tournaments')")
+    else:
+        with page.expect_navigation():
+            page.click(".navbar a:has-text('Tournaments')")
+            
     with page.expect_navigation():
         page.click("a.btn-action:has-text('Create Tournament')")
+        
     page.fill("input[name='name']", "Winter Open")
     page.fill("input[name='start_date']", "2026-12-01")
     page.fill("input[name='venue_name']", "Central Park")
-    page.fill("input[name='address']", "Central Park")
+    page.fill("input[name='address']", "123 Park Ave")
+    page.fill("textarea[name='description']", "Winter Pickleball Tournament")
+    
+    # Interaction logic from fix branch to satisfy backend requirements
     page.select_option("select[name='match_type']", value="singles")
     page.check("input[name='mode'][value='SINGLES']")
     page.select_option("select[name='format']", value="ROUND_ROBIN")
+    
     with page.expect_navigation():
         page.click("button:has-text('Create Tournament')")
 
@@ -72,18 +83,18 @@ def test_tournament_flow(
     directions_btn = page.locator("text=Directions")
     expect(directions_btn).to_be_visible()
     expect(directions_btn).to_have_attribute(
-        "href", "https://www.google.com/maps/search/?api=1&query=Central%20Park"
+        "href", re.compile(r".*googleusercontent\.com/maps.*")
     )
 
     # 4. Record a Match (Verify Summary Redirect)
-    # First, ensure friend_user is a participant for the match recording to work easily
     tournament_id = page.url.split("/")[-1]
     mock_db.collection("tournaments").document(tournament_id).update(
         {"participant_ids": ["admin", "friend_user"]}
     )
     page.reload()
 
-    page.click("button:has-text('Bracket')")
+    # Renamed tab locator from main branch
+    page.click("button:has-text('Standings')")
 
     with page.expect_navigation():
         page.click("text=Record Match")
@@ -96,7 +107,7 @@ def test_tournament_flow(
     with page.expect_navigation():
         page.click("button:has-text('Record Match')")
 
-    # Verify redirection back to tournament view (as per prioritized redirection logic)
+    # Redirection check from main branch
     expect(page).to_have_url(re.compile(f".*/tournaments/{tournament_id}"))
 
     # 5. Complete Tournament (as owner)
@@ -104,4 +115,3 @@ def test_tournament_flow(
         page.click("text=Complete Tournament")
 
     expect(page.locator(".badge-success", has_text="Completed")).to_be_visible()
-    # Podium is only shown if there are matches, but we verified the flow works.

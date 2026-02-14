@@ -27,6 +27,37 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
 
+def _calculate_onboarding_progress(
+    user_data: dict[str, Any],
+    matches: list[Any],
+    friends: list[Any],
+    groups: list[Any],
+) -> dict[str, Any]:
+    """Calculate the user's onboarding progress based on current data state."""
+    # check for avatar across multiple possible keys for robustness
+    has_avatar = bool(user_data.get("profilePictureUrl") or user_data.get("avatar_url"))
+    
+    # check for rating/id links
+    has_dupr = bool(user_data.get("dupr_id") or user_data.get("duprRating") or user_data.get("dupr_rating"))
+    
+    has_match = len(matches) > 0
+    has_group = len(groups) > 0
+    has_friend = len(friends) > 0
+
+    steps = [has_avatar, has_dupr, has_match, has_group, has_friend]
+    percent = int((sum(steps) / len(steps)) * 100)
+
+    return {
+        "percent": percent,
+        "has_avatar": has_avatar,
+        "has_dupr": has_dupr,
+        "has_rating": has_dupr,  # Template compatibility
+        "has_match": has_match,
+        "has_group": has_group,
+        "has_friend": has_friend,
+    }
+
+
 def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     """Aggregate all data required for the user dashboard."""
     # Fetch user data (includes stored stats for scalability)
@@ -39,7 +70,6 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     wins = user_stats.get("wins", 0)
     losses = user_stats.get("losses", 0)
 
-    # Ensure we have numbers (handles mocks in tests and potential None in DB)
     try:
         wins = int(wins) if wins is not None else 0
         losses = int(losses) if losses is not None else 0
@@ -65,7 +95,7 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     current_streak, streak_type = _calculate_streak(processed)
     recent_opponents = get_recent_opponents(db, user_id, recent_docs)
 
-    # Reconstruct a compatible stats object for the dashboard
+    # Reconstruct stats object for dashboard compatibility
     stats = {
         "wins": wins,
         "losses": losses,
@@ -76,7 +106,7 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         "processed_matches": [{"doc": d, "data": d.to_dict()} for d in recent_docs],
     }
 
-    # Fetch other related data
+    # Fetch secondary related data
     friends = get_user_friends(db, user_id)
     requests_data = get_user_pending_requests(db, user_id)
     group_rankings = get_group_rankings(db, user_id)
@@ -84,22 +114,15 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
 
-    # Calculate onboarding progress
-    onboarding_progress = {
-        "percent": 0,
-        "has_avatar": bool(user_data.get("profilePictureUrl")),
-        "has_dupr": bool(user_data.get("dupr_id")),
-        "has_group": len(group_rankings) > 0,
-        "has_match": len(matches) > 0,
-        "has_friend": len(friends) > 0,
-    }
-    steps = ["has_avatar", "has_dupr", "has_group", "has_match", "has_friend"]
-    completed = sum(1 for step in steps if onboarding_progress[step])
-    onboarding_progress["percent"] = int((completed / len(steps)) * 100)
+    # 4. Calculate onboarding progress using helper
+    onboarding_progress = _calculate_onboarding_progress(
+        user_data, matches, friends, group_rankings
+    )
 
     return {
         "user": user_data,
         "matches": matches,
+        "onboarding_progress": onboarding_progress,
         "next_cursor": next_cursor,
         "stats": stats,
         "current_streak": current_streak,
@@ -110,5 +133,4 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         "pending_tournament_invites": pending_tournament_invites,
         "active_tournaments": active_tournaments,
         "past_tournaments": past_tournaments,
-        "onboarding_progress": onboarding_progress,
     }

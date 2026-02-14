@@ -99,6 +99,23 @@ class MockFirestoreBuilder:
             Query._where = Query.where
             Query.where = query_where
 
+        # Patch Query._compare_func to handle array_contains with None field
+        if not hasattr(Query, "_orig_compare_func"):
+            Query._orig_compare_func = Query._compare_func  # type: ignore
+
+            def query_compare_func(self: Query, op: str) -> Any:
+                if op == "array_contains":
+
+                    def array_contains_op(x: list[Any] | None, y: Any) -> bool:
+                        if x is None:
+                            return False
+                        return y in x
+
+                    return array_contains_op
+                return self._orig_compare_func(op)  # type: ignore
+
+            Query._compare_func = query_compare_func  # type: ignore
+
         def doc_ref_eq(self: Any, other: Any) -> bool:
             if not isinstance(other, DocumentReference):
                 return False

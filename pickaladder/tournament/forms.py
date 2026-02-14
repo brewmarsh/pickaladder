@@ -10,20 +10,28 @@ class TournamentForm(FlaskForm):
     """Form for creating/editing a tournament."""
 
     name = StringField("Tournament Name", validators=[DataRequired()])
-    start_date = DateField("Date", validators=[DataRequired()])
+    
+    start_date = DateField("Start Date", validators=[DataRequired()])
+    
     venue_name = StringField("Venue Name", validators=[DataRequired()])
+    
     address = StringField("Address", validators=[DataRequired()])
+
+    description = TextAreaField("Description", validators=[Optional()])
+
     match_type = SelectField(
         "Match Type",
         choices=[("singles", "Singles"), ("doubles", "Doubles")],
         validators=[DataRequired()],
     )
+
     mode = RadioField(
         "Competition Mode",
         choices=[("SINGLES", "👤 Singles (1v1)"), ("DOUBLES", "👥 Doubles (2v2)")],
         validators=[DataRequired()],
         default="SINGLES",
     )
+
     format = SelectField(
         "Tournament Format",
         choices=[
@@ -32,6 +40,7 @@ class TournamentForm(FlaskForm):
         ],
         validators=[DataRequired()],
     )
+
     banner = FileField(
         "Tournament Banner",
         validators=[
@@ -39,9 +48,8 @@ class TournamentForm(FlaskForm):
             FileAllowed(["jpg", "jpeg", "png", "webp"], "Images only!"),
         ],
     )
-    description = TextAreaField("Description", validators=[Optional()])
 
-    # Legacy fields for compatibility if needed
+    # Legacy fields for backward compatibility with existing Firestore documents
     date = DateField("Date (Legacy)", validators=[Optional()])
     location = StringField("Location (Legacy)", validators=[Optional()])
 
