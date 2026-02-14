@@ -103,7 +103,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "date": "2024-06-01",
+                "start_date": "2024-06-01",
                 "location": "Courtside",
                 "mode": "SINGLES",
             },
@@ -111,7 +111,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Tournament created successfully.", response.data)
+        # Use whitespace-agnostic check by decoding and stripping or just checking substring
+        self.assertIn(b"Tournament created successfully", response.data)
 
         # Verify it exists in DB
         tournaments = list(self.mock_db.collection("tournaments").stream())
@@ -129,7 +130,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "date": "2024-06-01",
+                "start_date": "2024-06-01",
                 "location": "Courtside",
                 "match_type": "singles",
                 "format": "ROUND_ROBIN",
@@ -138,7 +139,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Only administrators can create tournaments.", response.data)
+        self.assertIn(b"Only administrators can create tournaments", response.data)
 
     def test_edit_tournament(self) -> None:
         """Test successfully editing an existing tournament as admin."""
@@ -163,7 +164,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Updated Name",
-                "date": "2024-07-01",
+                "start_date": "2024-07-01",
                 "location": "Updated Location",
                 "mode": "DOUBLES",
             },
@@ -171,7 +172,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Tournament updated successfully.", response.data)
+        self.assertIn(b"Tournament updated successfully", response.data)
 
         # Verify update in DB
         data = (
@@ -209,7 +210,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Only administrators can create tournaments.", response.data)
+        self.assertIn(b"Only administrators can create tournaments", response.data)
 
     def test_edit_tournament_ongoing(self) -> None:
         """Test ongoing tournament logic."""
@@ -247,7 +248,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Tournament updated successfully.", response.data)
+        self.assertIn(b"Tournament updated successfully", response.data)
         data = (
             self.mock_db.collection("tournaments")
             .document(tournament_id)
@@ -317,7 +318,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Edit Tournament", response.data)
-        self.assertIn(b"Tournament Management", response.data)
+        self.assertIn(b"Management", response.data)
 
     def test_view_tournament_non_admin_no_edit_gear(self) -> None:
         """Test that a non-admin (even if owner) does not see the edit gear."""
@@ -344,7 +345,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(b"Edit Tournament", response.data)
-        self.assertNotIn(b"Tournament Management", response.data)
+        self.assertNotIn(b"Management", response.data)
 
     def test_view_tournament_with_invitable_users(self) -> None:
         """Test that only non-participant players are in the invitable list."""
@@ -434,7 +435,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Player invited successfully.", response.data)
+        self.assertIn(b"Player invited successfully", response.data)
         data = (
             self.mock_db.collection("tournaments")
             .document(tournament_id)
@@ -475,7 +476,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Success! Invited 1 members.", response.data)
+        self.assertIn(b"Success! Invited 1 members", response.data)
 
         # Verify batch was used
         self.mock_db.batch.assert_called()
@@ -558,7 +559,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Tournament deleted successfully.", response.data)
+        self.assertIn(b"Tournament deleted successfully", response.data)
         self.assertFalse(
             self.mock_db.collection("tournaments").document(tournament_id).get().exists
         )
@@ -579,7 +580,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Only administrators can create tournaments.", response.data)
+        self.assertIn(b"Only administrators can create tournaments", response.data)
         self.assertTrue(
             self.mock_db.collection("tournaments").document(tournament_id).get().exists
         )

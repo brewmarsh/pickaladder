@@ -84,6 +84,26 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
 
+    # Calculate onboarding progress
+    has_avatar = bool(user_data.get("profilePictureUrl") or user_data.get("avatar_url"))
+    has_dupr = bool(user_data.get("dupr_id") or user_data.get("duprRating"))
+    has_group = bool(group_rankings)
+    has_match = bool(matches)
+    has_friend = bool(friends)
+
+    tasks = [has_avatar, has_dupr, has_group, has_match, has_friend]
+    percent = int(sum(tasks) / len(tasks) * 100) if tasks else 0
+
+    onboarding_progress = {
+        "percent": percent,
+        "has_avatar": has_avatar,
+        "has_dupr": has_dupr,
+        "has_rating": has_dupr,
+        "has_group": has_group,
+        "has_match": has_match,
+        "has_friend": has_friend,
+    }
+
     return {
         "user": user_data,
         "matches": matches,
@@ -97,4 +117,5 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         "pending_tournament_invites": pending_tournament_invites,
         "active_tournaments": active_tournaments,
         "past_tournaments": past_tournaments,
+        "onboarding_progress": onboarding_progress,
     }

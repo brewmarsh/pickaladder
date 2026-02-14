@@ -259,6 +259,18 @@ def invite_group(tournament_id: str) -> Any:
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    try:
+        TournamentService.delete_tournament(tournament_id, g.user["uid"])
+        flash("Tournament deleted successfully.", "success")
+    except Exception as e:
+        flash(f"Error deleting tournament: {e}", "danger")
+    return redirect(url_for(".list_tournaments"))
+
+
 @bp.route("/<string:tournament_id>/accept", methods=["POST"])
 @login_required
 def accept_invite(tournament_id: str) -> Any:

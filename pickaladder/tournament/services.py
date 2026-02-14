@@ -477,12 +477,15 @@ class TournamentService:
         )
 
         if new_parts:
-            t_ref.update(
+            batch = db.batch()
+            batch.update(
+                t_ref,
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                }
+                },
             )
+            batch.commit()
         return len(new_parts)
 
     @staticmethod
@@ -800,10 +803,12 @@ class TournamentService:
                 )
         return bracket
 
-
-class TournamentGenerator:
-    """Placeholder for tournament bracket generation logic."""
-
     @staticmethod
-    def generate_round_robin(participants: list[Any]) -> list[Any]:
-        return []
+    def delete_tournament(
+        tournament_id: str, user_uid: str, db: Client | None = None
+    ) -> None:
+        """Delete a tournament and its associated data."""
+        if db is None:
+            db = firestore.client()
+        ref = db.collection("tournaments").document(tournament_id)
+        ref.delete()
