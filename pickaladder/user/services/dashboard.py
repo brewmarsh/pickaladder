@@ -84,8 +84,29 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
 
+    # Calculate Onboarding Progress
+    has_avatar = bool(user_data.get("profilePictureUrl"))
+    has_dupr = bool(user_data.get("duprRating") or user_data.get("dupr_rating"))
+    has_match = len(matches) > 0
+    has_group = len(group_rankings) > 0
+    has_friend = len(friends) > 0
+
+    steps = [has_avatar, has_dupr, has_match, has_group, has_friend]
+    percent = int((sum(steps) / len(steps)) * 100)
+
+    onboarding_progress = {
+        "has_avatar": has_avatar,
+        "has_dupr": has_dupr,
+        "has_rating": has_dupr,
+        "has_match": has_match,
+        "has_group": has_group,
+        "has_friend": has_friend,
+        "percent": percent,
+    }
+
     return {
         "user": user_data,
+        "onboarding_progress": onboarding_progress,
         "matches": matches,
         "next_cursor": next_cursor,
         "stats": stats,

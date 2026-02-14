@@ -111,9 +111,11 @@ def _populate_match_form_choices(
             if doc.exists:
                 all_names[doc.id] = doc.to_dict().get("name", doc.id)
 
-    form.player1.choices = [(u, str(all_names.get(u, u))) for u in p1_cands]
+    form.player1.choices = cast(Any, [(u, str(all_names.get(u, u))) for u in p1_cands])
     others = [(u, str(all_names.get(u, u))) for u in other_cands]
-    form.player2.choices = form.partner.choices = form.opponent2.choices = others
+    form.player2.choices = form.partner.choices = form.opponent2.choices = cast(
+        Any, others
+    )
 
 
 def _handle_record_match_get(
@@ -139,7 +141,9 @@ def _handle_record_match_get(
     if not form.match_type.data:
         u_doc = db.collection("users").document(user_id).get()
         if u_doc.exists:
-            form.match_type.data = u_doc.to_dict().get("lastMatchRecordedType", "singles")
+            form.match_type.data = u_doc.to_dict().get(
+                "lastMatchRecordedType", "singles"
+            )
 
 
 @bp.route("/record", methods=["GET", "POST"])
@@ -190,8 +194,13 @@ def record_match() -> Any:
         t_doc = db.collection("tournaments").document(t_id).get()
         t_name = t_doc.to_dict().get("name") if t_doc.exists else None
 
-    return render_template("record_match.html", form=form, group_id=group_id,
-                           tournament_id=t_id, tournament_name=t_name)
+    return render_template(
+        "record_match.html",
+        form=form,
+        group_id=group_id,
+        tournament_id=t_id,
+        tournament_name=t_name,
+    )
 
 
 # TODO: Add type hints for Agent clarity

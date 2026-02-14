@@ -14,6 +14,7 @@ from pickaladder.utils import send_email
 from .utils import get_tournament_standings
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
@@ -279,8 +280,8 @@ class TournamentService:
         from pickaladder.user import UserService  # noqa: PLC0415
 
         user_groups = UserService.get_user_groups(db, user_uid)
-        team_status, pending_partner_invite = TournamentService._get_team_status_for_user(
-            db, tournament_id, user_uid
+        team_status, pending_partner_invite = (
+            TournamentService._get_team_status_for_user(db, tournament_id, user_uid)
         )
 
         is_owner = data.get("organizer_id") == user_uid or (
