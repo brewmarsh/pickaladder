@@ -103,12 +103,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "start_date": "2024-06-01",
-                "venue_name": "Courtside",
-                "address": "123 Main St",
-                "description": "Rules here",
-                "match_type": "singles",
-                "format": "ROUND_ROBIN",
+                "date": "2024-06-01",
+                "location": "Courtside",
+                "mode": "SINGLES",
             },
             follow_redirects=True,
         )
@@ -166,11 +163,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Updated Name",
-                "start_date": "2024-07-01",
-                "venue_name": "Updated Venue",
-                "address": "456 Updated St",
-                "match_type": "doubles",
-                "format": "ROUND_ROBIN",
+                "date": "2024-07-01",
+                "location": "Updated Location",
+                "mode": "DOUBLES",
             },
             follow_redirects=True,
         )
@@ -186,6 +181,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             .to_dict()
         )
         self.assertEqual(data["name"], "Updated Name")
+        self.assertEqual(data["mode"], "DOUBLES")
         self.assertEqual(data["matchType"], "doubles")
 
     def test_edit_tournament_non_admin(self) -> None:

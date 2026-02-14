@@ -9,6 +9,7 @@ from firebase_admin import firestore  # noqa: F401
 from flask import (
     flash,
     g,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -67,11 +68,9 @@ def create_tournament() -> Any:
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": f"{form.venue_name.data}, {form.address.data}",
-                "location_data": location_data,
-                "description": form.description.data,
-                "matchType": form.match_type.data,
-                "format": form.format.data,
+                "location": form.location.data,
+                "mode": form.mode.data,
+                "matchType": form.mode.data.lower(),
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -102,6 +101,24 @@ def view_tournament(tournament_id: str) -> Any:
     if not details:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
+
+    # Handle Claim Team partnership if present in URL
+    claim_team_id = request.args.get("claim_team")
+    claim_team_data = None
+    if claim_team_id:
+        db = firestore.client()
+        t_ref = db.collection("tournaments").document(tournament_id)
+        team_doc = t_ref.collection("teams").document(claim_team_id).get()
+        if team_doc.exists:
+            claim_team_data = team_doc.to_dict()
+            claim_team_data["id"] = team_doc.id
+            # Fetch P1 name
+            p1_doc = db.collection("users").document(claim_team_data["p1_uid"]).get()
+            claim_team_data["p1_name"] = (
+                smart_display_name(p1_doc.to_dict()) if p1_doc.exists else "Someone"
+            )
+
+    details["claim_team_data"] = claim_team_data
 
     # Handle Invitations form
     invite_form = InvitePlayerForm()
@@ -162,12 +179,10 @@ def edit_tournament(tournament_id: str) -> Any:
 
         update_data = {
             "name": form.name.data,
-            "start_date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": f"{form.venue_name.data}, {form.address.data}",
-            "location_data": location_data,
-            "description": form.description.data,
-            "matchType": form.match_type.data,
-            "format": form.format.data,
+            "date": datetime.datetime.combine(date_val, datetime.time.min),
+            "location": form.location.data,
+            "mode": form.mode.data,
+            "matchType": form.mode.data.lower(),
         }
 
         # Handle banner upload
@@ -192,17 +207,12 @@ def edit_tournament(tournament_id: str) -> Any:
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
-        loc_data = tournament_data.get("location_data", {})
-        if loc_data:
-            form.venue_name.data = loc_data.get("name")
-            form.address.data = loc_data.get("address")
-        else:
-            # Fallback for legacy
-            form.venue_name.data = tournament_data.get("location")
-
-        form.description.data = tournament_data.get("description")
-        form.match_type.data = tournament_data.get("matchType")
-        raw_date = tournament_data.get("start_date") or tournament_data.get("date")
+        form.location.data = tournament_data.get("location")
+        form.mode.data = (
+            tournament_data.get("mode")
+            or tournament_data.get("matchType", "SINGLES").upper()
+        )
+        raw_date = tournament_data.get("date")
         if hasattr(raw_date, "to_datetime"):
             form.start_date.data = raw_date.to_datetime().date()
 
@@ -369,14 +379,79 @@ def join_tournament(tournament_id: str) -> Any:
     return accept_invite(tournament_id)
 
 
-@bp.route("/<string:tournament_id>/delete", methods=["POST"])
-@admin_required
-def delete_tournament(tournament_id: str) -> Any:
-    """Delete a tournament."""
+@bp.route("/<string:tournament_id>/register_team", methods=["POST"])
+@login_required
+def register_team(tournament_id: str) -> Any:
+    """Register a doubles team for the tournament."""
+    # Check if it's an AJAX request (invite link generation)
+    if request.is_json:
+        data = request.get_json()
+        team_name = data.get("team_name")
+        partner_id = data.get("partner_id")  # Might be None for invite link
+    else:
+        partner_id = request.form.get("partner_id")
+        team_name = request.form.get("team_name")
+
     try:
-        TournamentService.delete_tournament(tournament_id)
-        flash("Tournament deleted successfully.", "success")
-        return redirect(url_for(".list_tournaments"))
+        team_id = TournamentService.register_team(
+            tournament_id, g.user["uid"], partner_id, team_name
+        )
+
+        if request.is_json:
+            invite_link = url_for(
+                ".view_tournament",
+                tournament_id=tournament_id,
+                claim_team=team_id,
+                _external=True,
+            )
+            return jsonify({"success": True, "team_id": team_id, "link": invite_link})
+
+        if not partner_id:
+            flash("Invite link generated!", "success")
+        else:
+            flash("Team registration pending. Your partner must accept.", "info")
     except Exception as e:
-        flash(f"Error deleting tournament: {e}", "danger")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        if request.is_json:
+            return jsonify({"success": False, "error": str(e)}), 400
+        flash(f"Error registering team: {e}", "danger")
+
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/claim_team/<string:team_id>", methods=["POST"])
+@login_required
+def claim_team(tournament_id: str, team_id: str) -> Any:
+    """Claim a placeholder team partnership."""
+    try:
+        success = TournamentService.claim_team_partnership(
+            tournament_id, team_id, g.user["uid"]
+        )
+        if success:
+            flash("You have joined the team!", "success")
+        else:
+            flash(
+                "Unable to join team. It may be full or you are already in it.",
+                "danger",
+            )
+    except Exception as e:
+        flash(f"Error: {e}", "danger")
+
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/accept_team", methods=["POST"])
+@login_required
+def accept_team(tournament_id: str) -> Any:
+    """Accept a team partnership invitation."""
+    try:
+        success = TournamentService.accept_team_partnership(
+            tournament_id, g.user["uid"]
+        )
+        if success:
+            flash("You have accepted the team partnership!", "success")
+        else:
+            flash("No pending partnership found.", "warning")
+    except Exception as e:
+        flash(f"Error: {e}", "danger")
+
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))

@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+
+{% block title %}Create Tournament{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <div class="card-header">
+        <h2>Create Tournament</h2>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            {{ form.csrf_token }}
+            <div class="form-group">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-input") }}
+                {% if form.name.errors %}
+                    {% for error in form.name.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form.date.label(class="form-label") }}
+                {{ form.date(class="form-input", type="date") }}
+                {% if form.date.errors %}
+                    {% for error in form.date.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form.location.label(class="form-label") }}
+                {{ form.location(class="form-input") }}
+                {% if form.location.errors %}
+                    {% for error in form.location.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <div class="form-group">
+                {{ form.mode.label(class="form-label") }}
+                <div class="radio-group" style="display: flex; gap: 20px; padding: 10px 0;">
+                    {% for subfield in form.mode %}
+                        <label class="radio-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            {{ subfield }}
+                            <span>{{ subfield.label.text }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                {% if form.mode.errors %}
+                    {% for error in form.mode.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-block">Create Tournament</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,13 +1,24 @@
 {% extends "layout.html" %}
 {% block title %}{{ tournament.name }}{% endblock %}
 {% block content %}
+{% if claim_team_data %}
+<div class="alert alert-info border-info shadow-sm mb-4" style="margin: 20px; padding: 20px; border-left: 5px solid var(--accent-color);">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h4 class="alert-heading mb-1" style="color: var(--text-color);">👥 Team Invitation</h4>
+            <p class="mb-0"><strong>{{ claim_team_data.p1_name }}</strong> has invited you to join team <strong>"{{ claim_team_data.team_name }}"</strong> for this tournament!</p>
+        </div>
+        <form action="{{ url_for('.claim_team', tournament_id=tournament.id, team_id=claim_team_data.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary">Join Team</button>
+        </form>
+    </div>
+</div>
+{% endif %}
 
-<!-- Hero Header -->
-<div class="tournament-hero" style="
-    {% if tournament.banner_url %}
-        background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url }}');
-    {% else %}
-        background-color: var(--primary-color);
+<div class="card hero-stats-card">
+    {% if is_owner %}
+        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" title="Edit Tournament">⚙️</a>
     {% endif %}
     background-size: cover;
     background-position: center;
@@ -114,23 +125,37 @@
                     <table class="table-standard responsive-table">
                         <thead>
                             <tr>
-                                <th>Rank</th>
-                                <th>{{ 'Team' if tournament.matchType == 'doubles' else 'Player' }}</th>
-                                <th>Wins</th>
-                                <th>Losses</th>
-                                <th>Win %</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for entry in standings %}
-                            <tr class="{{ 'highlight-row' if loop.index <= 3 and tournament.status == 'Completed' }}">
-                                <td data-label="Rank"><span class="mobile-rank-badge">{{ loop.index }}</span></td>
-                                <td data-label="{{ 'Team' if tournament.matchType == 'doubles' else 'Player' }}">{{ entry.name }}</td>
-                                <td data-label="Wins">{{ entry.wins }}</td>
-                                <td data-label="Losses">{{ entry.losses }}</td>
-                                <td data-label="Win %">
-                                    {% set total = entry.wins + entry.losses %}
-                                    {{ (entry.wins / total * 100)|round(1) if total > 0 else 0 }}%
+                                <td data-label="Player">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <img src="{{ p.user | avatar_url }}" alt="Avatar" class="friend-avatar" style="width: 32px; height: 32px;" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                        <span>{{ p.display_name }}</span>
+                                    </div>
+                                </td>
+                                <td data-label="Status">
+                                    <span class="badge {{ 'badge-success' if p.status == 'accepted' else 'badge-warning' if p.status == 'pending' else 'badge-info' }}">
+                                        {{ 'Confirmed' if p.status == 'accepted' else 'Pending' if p.status == 'pending' else 'Invited (Email)' }}
+                                    </span>
+                                </td>
+                                <td data-label="Action">
+                                    {% if p.user.id == g.user.uid %}
+                                        {% if tournament.mode == 'DOUBLES' %}
+                                            {% if pending_partner_invite %}
+                                                <form action="{{ url_for('tournament.accept_team', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-sm btn-success">Accept Team</button>
+                                                </form>
+                                            {% elif not team_status %}
+                                                <button type="button" class="btn btn-sm btn-success" onclick="openPartnerModal()">Join (Pick Partner)</button>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if p.status == 'pending' %}
+                                                <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-sm btn-success">Join</button>
+                                                </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% else %}
@@ -241,30 +266,164 @@
     </div>
 </div>
 
-<script>
-function openTab(evt, tabName) {
-    var i, tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("tab-content");
-    for (i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-    }
-    tablinks = document.getElementsByClassName("tab-btn");
-    for (i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace(" active", "");
-        tablinks[i].style.borderBottomColor = "transparent";
-        tablinks[i].style.fontWeight = "normal";
-    }
-    document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.className += " active";
-    evt.currentTarget.style.borderBottomColor = "var(--accent-color)";
-    evt.currentTarget.style.fontWeight = "bold";
-}
-</script>
+<!-- Select Partner Modal -->
+<div class="modal" id="selectPartnerModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Select Partner</h3>
+            <button type="button" class="btn-close" onclick="closePartnerModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="registerTeamForm" action="{{ url_for('tournament.register_team', tournament_id=tournament.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="form-group">
+                    <label class="form-label">Team Name (Optional)</label>
+                    <input type="text" name="team_name" class="form-input" placeholder="The Smashers">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Search Partner</label>
+                    <input type="text" id="partnerSearch" class="form-input" placeholder="Type username..." autocomplete="off">
+                    <div id="searchResults" class="search-results-dropdown" style="display:none; position:absolute; background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; z-index: 100; max-height: 200px; overflow-y: auto;"></div>
+                </div>
+
+                <input type="hidden" name="partner_id" id="selectedPartnerId">
+
+                <div id="selectedPartnerDisplay" style="margin-bottom: 15px; display: none;">
+                    <span class="badge badge-info">Selected: <span id="selectedPartnerName"></span></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Send Partnership Invite</button>
+            </form>
+
+            <hr style="margin: 20px 0;">
+
+            <div class="text-center">
+                <p class="text-muted small">Can't find them? Send an invite link:</p>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="generateInviteLink()">🔗 Generate Invite Link</button>
+                <div id="inviteLinkContainer" style="display:none; margin-top: 10px;">
+                    <input type="text" id="inviteLinkInput" class="form-input" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
-.tab-btn:hover {
-    background-color: rgba(0,0,0,0.05) !important;
+.search-results-dropdown .search-item {
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.search-results-dropdown .search-item:hover {
+    background: var(--bg-hover);
+}
+.search-item img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
 }
 </style>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openPartnerModal() {
+    document.getElementById('selectPartnerModal').classList.add('show');
+}
+
+function closePartnerModal() {
+    document.getElementById('selectPartnerModal').classList.remove('show');
+}
+
+const partnerSearch = document.getElementById('partnerSearch');
+const searchResults = document.getElementById('searchResults');
+const selectedPartnerId = document.getElementById('selectedPartnerId');
+const selectedPartnerDisplay = document.getElementById('selectedPartnerDisplay');
+const selectedPartnerName = document.getElementById('selectedPartnerName');
+
+partnerSearch.addEventListener('input', function() {
+    const q = this.value;
+    if (q.length < 2) {
+        searchResults.style.display = 'none';
+        return;
+    }
+
+    fetch(`/user/api/search?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(users => {
+            searchResults.innerHTML = '';
+            if (users.length === 0) {
+                searchResults.innerHTML = '<div class="search-item">No users found</div>';
+            } else {
+                users.forEach(u => {
+                    const div = document.createElement('div');
+                    div.className = 'search-item';
+                    div.innerHTML = `<img src="${u.avatar}" onerror="this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
+                    div.onclick = () => {
+                        selectedPartnerId.value = u.id;
+                        selectedPartnerName.innerText = u.name;
+                        selectedPartnerDisplay.style.display = 'block';
+                        searchResults.style.display = 'none';
+                        partnerSearch.value = '';
+                    };
+                    searchResults.appendChild(div);
+                });
+            }
+            searchResults.style.display = 'block';
+        });
+});
+
+document.addEventListener('click', function(e) {
+    if (!partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.style.display = 'none';
+    }
+});
+
+function generateInviteLink() {
+    const teamNameInput = document.querySelector('input[name="team_name"]');
+    const teamName = teamNameInput ? teamNameInput.value : '';
+    if (!teamName) {
+        alert('Please enter a team name first.');
+        return;
+    }
+
+    fetch("{{ url_for('tournament.register_team', tournament_id=tournament.id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            team_name: teamName,
+            partner_id: null
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const container = document.getElementById('inviteLinkContainer');
+            const input = document.getElementById('inviteLinkInput');
+            input.value = data.link;
+            container.style.display = 'block';
+            input.select();
+            document.execCommand('copy');
+            alert('Invite link generated and copied to clipboard!');
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+</script>
 {% endblock %}

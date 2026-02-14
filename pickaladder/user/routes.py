@@ -301,3 +301,23 @@ def create_invite() -> Any:
     """Generate a unique invite token."""
     token = UserService.create_invite_token(firestore.client(), g.user["uid"])
     return jsonify({"token": token})
+
+
+@bp.route("/api/search")
+@login_required
+def api_search_users() -> Any:
+    """Search for users and return JSON."""
+    search_term = request.args.get("q", "")
+    db = firestore.client()
+    users = UserService.search_users(db, g.user["uid"], search_term)
+    results = []
+    for user_data, _, _ in users:
+        results.append(
+            {
+                "id": user_data["id"],
+                "name": UserService.smart_display_name(user_data),
+                "avatar": user_data.get("profilePictureUrl")
+                or url_for("static", filename="user_icon.png"),
+            }
+        )
+    return jsonify(results)

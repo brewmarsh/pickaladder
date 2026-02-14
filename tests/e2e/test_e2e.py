@@ -145,6 +145,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     expect(page.locator("h1")).to_contain_text("Match Summary")
     # Verify the scores we just entered are visible
     expect(page.locator("body")).to_contain_text(re.compile(r"11.*9", re.DOTALL))
+    # Check flash message
+    expect(page.locator(".alert-success, .alert-toast, .toast-body")).to_contain_text(
+        "Match recorded successfully"
+    )
 
     # 7. Score Group Game
     with page.expect_navigation():
@@ -161,9 +165,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Record Match')")
 
     expect(page.locator("h1")).to_contain_text("Pickleballers")
-    expect(
-        page.locator(".alert-success, .toast.alert-success, .toast-body").first
-    ).to_contain_text("Match recorded successfully")
+    expect(page.locator(".alert-success, .alert-toast, .toast-body")).to_contain_text(
+        "Match recorded successfully"
+    )
 
     # Check Global Leaderboard (Req: "see the leaderboard")
     with page.expect_navigation():

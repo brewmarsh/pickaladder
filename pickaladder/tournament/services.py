@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
+from pickaladder.teams.services import TeamService
 from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
@@ -22,13 +23,10 @@ class TournamentService:
     """Handles business logic and data access for tournaments."""
 
     @staticmethod
-    def _resolve_participants(
+    def _get_participant_refs(
         db: Client, participant_objs: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
-        """Internal helper to resolve participant user data."""
-        if not participant_objs:
-            return []
-
+    ) -> list[DocumentReference]:
+        """Extract user references from participant objects."""
         user_refs = []
         for obj in participant_objs:
             if not obj:
@@ -37,7 +35,17 @@ class TournamentService:
                 user_refs.append(obj["userRef"])
             elif obj.get("user_id"):
                 user_refs.append(db.collection("users").document(obj["user_id"]))
+        return user_refs
 
+    @staticmethod
+    def _resolve_participants(
+        db: Client, participant_objs: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """Internal helper to resolve participant user data."""
+        if not participant_objs:
+            return []
+
+        user_refs = TournamentService._get_participant_refs(db, participant_objs)
         if not user_refs:
             return []
 
@@ -194,13 +202,10 @@ class TournamentService:
 
         tournament_payload = {
             "name": data["name"],
-            "date": data["date"],  # Backward compatibility
-            "start_date": data["date"],
-            "location": data["location"],  # Backward compatibility
-            "location_data": data.get("location_data"),
-            "description": data.get("description"),
-            "banner_url": data.get("banner_url"),
-            "matchType": data["matchType"],
+            "date": data["date"],
+            "location": data["location"],
+            "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
+            "mode": data.get("mode", "SINGLES"),
             "ownerRef": user_ref,
             "organizer_id": user_uid,
             "status": "Active",
@@ -212,6 +217,28 @@ class TournamentService:
         return str(ref.id)
 
     @staticmethod
+    def _get_team_status_for_user(
+        db: Client, tournament_id: str, user_uid: str
+    ) -> tuple[str | None, bool]:
+        """Fetch team status and pending flag for a user."""
+        team_status = None
+        pending_partner_invite = False
+        teams_query = (
+            db.collection("tournaments")
+            .document(tournament_id)
+            .collection("teams")
+            .stream()
+        )
+        for doc in teams_query:
+            t_team = doc.to_dict()
+            if t_team["p1_uid"] == user_uid or t_team["p2_uid"] == user_uid:
+                team_status = t_team["status"]
+                if t_team["p2_uid"] == user_uid and t_team["status"] == "PENDING":
+                    pending_partner_invite = True
+                break
+        return team_status, pending_partner_invite
+
+    @staticmethod
     def get_tournament_details(
         tournament_id: str, user_uid: str, db: Client | None = None
     ) -> dict[str, Any] | None:
@@ -219,48 +246,43 @@ class TournamentService:
         if db is None:
             db = firestore.client()
         doc = cast(Any, db.collection("tournaments").document(tournament_id).get())
-        if not doc.exists:
+        if not doc or not doc.exists:
             return None
 
         data = cast(dict[str, Any], doc.to_dict())
-        if not data:
-            return None
         data["id"] = doc.id
 
-        # Formatting
-        raw_date = data.get("start_date") or data.get("date")
+        # Formatting & Participants
+        raw_date = data.get("date")
         if raw_date and hasattr(raw_date, "to_datetime"):
             data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
 
-        # Participants
         raw_participants = data.get("participants", [])
         participants = TournamentService._resolve_participants(db, raw_participants)
 
-        # Standings & Podium
+        # Standings, Podium & Invitable Users
         standings = get_tournament_standings(
             db, tournament_id, data.get("matchType", "singles")
         )
         podium = standings[:3] if data.get("status") == "Completed" else []
 
-        # Invitable Users
-        current_p_ids = set()
-        for obj in raw_participants:
-            if not obj:
-                continue
-            user_ref = obj.get("userRef")
-            uid = user_ref.id if user_ref else obj.get("user_id")
-            if uid:
-                current_p_ids.add(str(uid))
+        current_p_ids = {
+            str(obj.get("userRef").id if obj.get("userRef") else obj.get("user_id"))
+            for obj in raw_participants
+            if obj
+        }
         invitable = TournamentService._get_invitable_players(
             db, user_uid, current_p_ids
         )
 
-        # Groups for dropdown
+        # Groups & Team Status
         from pickaladder.user import UserService  # noqa: PLC0415
 
         user_groups = UserService.get_user_groups(db, user_uid)
+        team_status, pending_partner_invite = TournamentService._get_team_status_for_user(
+            db, tournament_id, user_uid
+        )
 
-        # Ownership
         is_owner = data.get("organizer_id") == user_uid or (
             data.get("ownerRef") and data["ownerRef"].id == user_uid
         )
@@ -273,6 +295,8 @@ class TournamentService:
             "invitable_users": invitable,
             "user_groups": user_groups,
             "is_owner": is_owner,
+            "team_status": team_status,
+            "pending_partner_invite": pending_partner_invite,
         }
 
     @staticmethod
@@ -369,6 +393,26 @@ class TournamentService:
         return member_refs
 
     @staticmethod
+    def _prepare_group_invites(
+        member_docs: list[DocumentSnapshot], current_ids: set[str]
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        """Filter group members and prepare invite objects."""
+        new_parts = []
+        new_ids = []
+        for m_doc in member_docs:
+            if not m_doc.exists or m_doc.id in current_ids:
+                continue
+            m_data = m_doc.to_dict()
+            if not m_data:
+                continue
+            p_obj = {"userRef": m_doc.reference, "status": "pending", "team_name": None}
+            if m_data.get("is_ghost") and m_data.get("email"):
+                p_obj["email"] = m_data.get("email")
+            new_parts.append(p_obj)
+            new_ids.append(m_doc.id)
+        return new_parts, new_ids
+
+    @staticmethod
     def invite_group(
         tournament_id: str, group_id: str, user_uid: str, db: Client | None = None
     ) -> int:
@@ -378,47 +422,27 @@ class TournamentService:
 
         t_ref = db.collection("tournaments").document(tournament_id)
         t_doc = cast(Any, t_ref.get())
-        if not t_doc.exists:
+        if not t_doc or not t_doc.exists:
             raise ValueError("Tournament not found")
         t_data = cast(dict[str, Any], t_doc.to_dict())
-        if not t_data:
-            raise ValueError("Tournament data is empty")
 
         member_refs = TournamentService._validate_group_invite(
             db, t_data, group_id, user_uid
         )
-
         current_ids = set(t_data.get("participant_ids", []))
-        member_docs = db.get_all(member_refs)
+        member_docs = cast(list[Any], db.get_all(member_refs))
 
-        new_parts = []
-        new_ids = []
-
-        for m_doc in member_docs:
-            if not m_doc.exists or m_doc.id in current_ids:
-                continue
-
-            m_data = m_doc.to_dict()
-            if not m_data:
-                continue
-            p_obj = {"userRef": m_doc.reference, "status": "pending", "team_name": None}
-            if m_data.get("is_ghost") and m_data.get("email"):
-                p_obj["email"] = m_data.get("email")
-
-            new_parts.append(p_obj)
-            new_ids.append(m_doc.id)
+        new_parts, new_ids = TournamentService._prepare_group_invites(
+            member_docs, current_ids
+        )
 
         if new_parts:
-            batch = db.batch()
-            batch.update(
-                t_ref,
+            t_ref.update(
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                },
+                }
             )
-            batch.commit()
-
         return len(new_parts)
 
     @staticmethod
@@ -546,41 +570,192 @@ class TournamentService:
         TournamentService._notify_participants(data, winner, standings)
 
     @staticmethod
-    def delete_tournament(tournament_id: str, db: Client | None = None) -> None:
-        """Delete a tournament document from Firestore."""
+    def register_team(
+        tournament_id: str,
+        p1_uid: str,
+        p2_uid: str | None,
+        team_name: str,
+        db: Client | None = None,
+    ) -> str:
+        """Register a team in the tournament teams sub-collection."""
         if db is None:
             db = firestore.client()
-        db.collection("tournaments").document(tournament_id).delete()
 
+        team_data: dict[str, Any] = {
+            "p1_uid": p1_uid,
+            "p2_uid": p2_uid,
+            "team_name": team_name,
+            "status": "PENDING",
+            "createdAt": firestore.SERVER_TIMESTAMP,
+        }
 
-class TournamentGenerator:
-    """Utility class for generating tournament structures."""
+        if p2_uid:
+            # If partner is already known, link with global team ID
+            team_id = TeamService.get_or_create_team(db, p1_uid, p2_uid)
+            team_data["team_id"] = team_id
+
+        ref = (
+            db.collection("tournaments")
+            .document(tournament_id)
+            .collection("teams")
+            .document()
+        )
+        ref.set(team_data)
+        return ref.id
 
     @staticmethod
-    def generate_round_robin(
-        participant_ids: list[str],
-    ) -> list[tuple[str, str]]:
-        """
-        Generate a list of round-robin pairings from a list of IDs.
-        If odd number of players, one player rests each round.
-        """
-        if not participant_ids:
+    def accept_team_partnership(
+        tournament_id: str, user_uid: str, db: Client | None = None
+    ) -> bool:
+        """Accept a team partnership invitation."""
+        if db is None:
+            db = firestore.client()
+
+        teams_ref = (
+            db.collection("tournaments").document(tournament_id).collection("teams")
+        )
+        query = (
+            teams_ref.where(filter=firestore.FieldFilter("p2_uid", "==", user_uid))
+            .where(filter=firestore.FieldFilter("status", "==", "PENDING"))
+            .stream()
+        )
+
+        updated = False
+        for doc in query:
+            data = doc.to_dict()
+            p1_uid = data["p1_uid"]
+
+            # Ensure global team exists and link it
+            team_id = TeamService.get_or_create_team(db, p1_uid, user_uid)
+
+            doc.reference.update({"status": "CONFIRMED", "team_id": team_id})
+
+            TournamentService._sync_team_participants(
+                db, tournament_id, p1_uid, user_uid, data.get("team_name")
+            )
+
+            updated = True
+
+        return updated
+
+    @staticmethod
+    def _sync_team_participants(
+        db: Client,
+        tournament_id: str,
+        p1_uid: str,
+        p2_uid: str,
+        team_name: str | None,
+    ) -> None:
+        """Ensure both team members are in the tournament participants."""
+        t_ref = db.collection("tournaments").document(tournament_id)
+        t_snap = cast(Any, t_ref.get())
+        t_data = t_snap.to_dict()
+        p_ids = t_data.get("participant_ids", [])
+
+        new_ids = []
+        new_parts = []
+        for uid in [p1_uid, p2_uid]:
+            if uid not in p_ids:
+                new_ids.append(uid)
+                new_parts.append(
+                    {
+                        "userRef": db.collection("users").document(uid),
+                        "status": "accepted",
+                        "team_name": team_name,
+                    }
+                )
+
+        if new_parts:
+            t_ref.update(
+                {
+                    "participants": firestore.ArrayUnion(new_parts),
+                    "participant_ids": firestore.ArrayUnion(new_ids),
+                }
+            )
+
+    @staticmethod
+    def claim_team_partnership(
+        tournament_id: str, team_id: str, user_uid: str, db: Client | None = None
+    ) -> bool:
+        """Join a placeholder team via an invite link."""
+        if db is None:
+            db = firestore.client()
+
+        team_ref = (
+            db.collection("tournaments")
+            .document(tournament_id)
+            .collection("teams")
+            .document(team_id)
+        )
+        team_snap = cast(Any, team_ref.get())
+        if not team_snap.exists:
+            return False
+
+        data = team_snap.to_dict()
+        if data.get("p2_uid") or data.get("p1_uid") == user_uid:
+            return False
+
+        p1_uid = data["p1_uid"]
+        global_team_id = TeamService.get_or_create_team(db, p1_uid, user_uid)
+
+        team_ref.update(
+            {"p2_uid": user_uid, "status": "CONFIRMED", "team_id": global_team_id}
+        )
+
+        TournamentService._sync_team_participants(
+            db, tournament_id, p1_uid, user_uid, data.get("team_name")
+        )
+
+        return True
+
+    @staticmethod
+    def generate_bracket(tournament_id: str, db: Client | None = None) -> list[Any]:
+        """Generate a tournament bracket based on participants or teams."""
+        if db is None:
+            db = firestore.client()
+
+        t_ref = db.collection("tournaments").document(tournament_id)
+        t_snap = cast(Any, t_ref.get())
+        if not t_snap.exists:
             return []
 
-        # Add a dummy player if the number of participants is odd
-        players = list(participant_ids)
-        if len(players) % 2 != 0:
-            players.append("dummy")
+        t_data = t_snap.to_dict()
+        mode = t_data.get("mode", "SINGLES")
 
-        n = len(players)
-        pairings = []
-        for i in range(n - 1):
-            for j in range(n // 2):
-                player1 = players[j]
-                player2 = players[n - 1 - j]
-                if "dummy" not in (player1, player2):
-                    pairings.append((player1, player2))
-            # Rotate players
-            players.insert(1, players.pop())
-
-        return pairings
+        bracket = []
+        if mode == "SINGLES":
+            participants = [
+                p
+                for p in t_data.get("participants", [])
+                if p.get("status") == "accepted"
+            ]
+            for p in participants:
+                u_ref = p.get("userRef")
+                u_data = cast(Any, u_ref.get()).to_dict()
+                bracket.append(
+                    {
+                        "id": u_ref.id,
+                        "name": smart_display_name(u_data),
+                        "type": "player",
+                        "members": [u_ref.id],
+                    }
+                )
+        else:
+            # Fetch confirmed teams from sub-collection
+            teams_query = (
+                t_ref.collection("teams")
+                .where(filter=firestore.FieldFilter("status", "==", "CONFIRMED"))
+                .stream()
+            )
+            for doc in teams_query:
+                data = doc.to_dict()
+                bracket.append(
+                    {
+                        "id": data.get("team_id"),
+                        "name": data.get("team_name"),
+                        "type": "team",
+                        "members": [data.get("p1_uid"), data.get("p2_uid")],
+                        "tournament_team_id": doc.id,
+                    }
+                )
+        return bracket
