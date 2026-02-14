@@ -159,7 +159,8 @@ def record_match() -> Any:
         data["group_id"] = data.get("group_id") or group_id
         data["tournament_id"] = data.get("tournament_id") or t_id
         try:
-            m_id = MatchService.record_match(db, data, g.user)
+            result = MatchService.record_match(db, data, g.user)
+            m_id = result.id
             if request.is_json:
                 return jsonify({"status": "success", "match_id": m_id}), 200
             flash("Match recorded successfully.", "success")

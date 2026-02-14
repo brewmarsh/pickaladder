@@ -759,3 +759,9 @@ class TournamentService:
                     }
                 )
         return bracket
+
+class TournamentGenerator:
+    """Placeholder for tournament bracket generation logic."""
+    @staticmethod
+    def generate_round_robin(participants: list[Any]) -> list[Any]:
+        return []
