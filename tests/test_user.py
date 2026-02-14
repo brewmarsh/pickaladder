@@ -20,12 +20,12 @@ MOCK_FIRESTORE_USER_DATA = {
     "isAdmin": True,
     "uid": "user1",
     "stats": {
-        "wins": 10, 
+        "wins": 10,
         "losses": 5,
         "total_games": 15,
         "win_rate": 66.7,
         "current_streak": 2,
-        "streak_type": "win"
+        "streak_type": "win",
     },
 }
 
@@ -47,14 +47,22 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             patch("firebase_admin.firestore.client", return_value=self.mock_db),
             patch("pickaladder.user.services.core.auth", new=self.mock_auth_service),
             patch("pickaladder.user.services.profile.auth", new=self.mock_auth_service),
-            patch("pickaladder.user.services.core.storage", new=self.mock_storage_service),
-            patch("pickaladder.user.services.profile.storage", new=self.mock_storage_service),
-            patch("firebase_admin.auth.verify_id_token", return_value=MOCK_FIREBASE_TOKEN_PAYLOAD),
+            patch(
+                "pickaladder.user.services.core.storage", new=self.mock_storage_service
+            ),
+            patch(
+                "pickaladder.user.services.profile.storage",
+                new=self.mock_storage_service,
+            ),
+            patch(
+                "firebase_admin.auth.verify_id_token",
+                return_value=MOCK_FIREBASE_TOKEN_PAYLOAD,
+            ),
             patch("firebase_admin.auth"),
             patch("firebase_admin.storage"),
             patch("pickaladder.user.services.core.send_email"),
         ]
-        
+
         for p in self.patches:
             p.start()
 
@@ -74,11 +82,13 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         """Set the user ID in the session and setup mock doc."""
         with self.client.session_transaction() as sess:
             sess["user_id"] = user_id
-        
+
         # Populate the mock DB so the application's user-loader can find the user
         self.mock_db.collection("users").document(user_id).set(MOCK_FIRESTORE_USER_DATA)
 
-    def _mock_firestore_user(self, user_id: str = MOCK_USER_ID, data: dict = None) -> Any:
+    def _mock_firestore_user(
+        self, user_id: str = MOCK_USER_ID, data: dict | None = None
+    ) -> Any:
         """Setup a mock user document in Firestore and return the reference."""
         if data is None:
             data = MOCK_FIRESTORE_USER_DATA
@@ -90,7 +100,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         """Test that the settings page loads for a logged-in user."""
         self._set_session_user()
         self.client.get("/user/settings")
-        
+
         response = self.client.get("/user/settings")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"user1", response.data)
@@ -98,7 +108,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def test_settings_post_success(self) -> None:
         """Test updating user settings via POST."""
         self._set_session_user()
-        
+
         response = self.client.post(
             "/user/settings",
             data={
@@ -112,14 +122,16 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Settings updated!", response.data)
-        
-        updated_data = self.mock_db.collection("users").document(MOCK_USER_ID).get().to_dict()
+
+        updated_data = (
+            self.mock_db.collection("users").document(MOCK_USER_ID).get().to_dict()
+        )
         self.assertEqual(updated_data["name"], "New Name")
 
     def test_update_profile_picture_upload(self) -> None:
         """Test uploading a profile picture."""
         self._set_session_user()
-        
+
         mock_bucket = self.mock_storage_service.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
         mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test.jpg"
@@ -158,20 +170,26 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Settings updated!", response.data)
-        
-        updated_data = self.mock_db.collection("users").document(MOCK_USER_ID).get().to_dict()
+
+        updated_data = (
+            self.mock_db.collection("users").document(MOCK_USER_ID).get().to_dict()
+        )
         self.assertEqual(updated_data["dark_mode"], True)
         self.assertEqual(updated_data["duprRating"], 5.5)
 
     def _setup_dashboard_mocks(self) -> None:
         """Set up specific mock data for dashboard tests."""
-        self.mock_db.collection("users").document(MOCK_USER_ID).set({
-            "username": "user1",
-            "stats": {"wins": 10, "losses": 5},
-        })
+        self.mock_db.collection("users").document(MOCK_USER_ID).set(
+            {
+                "username": "user1",
+                "stats": {"wins": 10, "losses": 5},
+            }
+        )
 
     @patch("pickaladder.user.services.dashboard.get_user_matches")
-    def test_api_dashboard_fetches_matches_with_limit(self, mock_get_matches: MagicMock) -> None:
+    def test_api_dashboard_fetches_matches_with_limit(
+        self, mock_get_matches: MagicMock
+    ) -> None:
         """Test that matches are fetched with limit."""
         self._set_session_user()
         self._setup_dashboard_mocks()
@@ -204,21 +222,29 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertTrue(data["matches"][0]["is_group_match"])
 
     @patch("pickaladder.user.routes.render_template")
-    def test_view_user_includes_doubles_and_processes_matches(self, mock_render_template: MagicMock) -> None:
+    def test_view_user_includes_doubles_and_processes_matches(
+        self, mock_render_template: MagicMock
+    ) -> None:
         """Test that view_user fetches and processes matches."""
         self._set_session_user()
 
-        self.mock_db.collection("users").document(MOCK_PROFILE_USER_ID).set({
-            "username": "profile_user",
-            "stats": {"wins": 10, "losses": 5},
-        })
-        self.mock_db.collection("users").document("opponent_id").set({"username": "opponent_user"})
+        self.mock_db.collection("users").document(MOCK_PROFILE_USER_ID).set(
+            {
+                "username": "profile_user",
+                "stats": {"wins": 10, "losses": 5},
+            }
+        )
+        self.mock_db.collection("users").document("opponent_id").set(
+            {"username": "opponent_user"}
+        )
 
         match_data = {
             "matchDate": datetime.datetime(2023, 1, 1),
             "player1Score": 11,
             "player2Score": 9,
-            "player1Ref": self.mock_db.collection("users").document(MOCK_PROFILE_USER_ID),
+            "player1Ref": self.mock_db.collection("users").document(
+                MOCK_PROFILE_USER_ID
+            ),
             "player2Ref": self.mock_db.collection("users").document("opponent_id"),
             "matchType": "singles",
             "participants": [MOCK_PROFILE_USER_ID, "opponent_id"],

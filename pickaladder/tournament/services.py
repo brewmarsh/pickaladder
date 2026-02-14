@@ -22,18 +22,18 @@ if TYPE_CHECKING:
 class TournamentGenerator:
     """Helper to generate tournament brackets and pairings."""
 
+    MIN_PARTICIPANTS = 2
+
     @staticmethod
     def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
         """Generate round robin pairings using the circle method."""
-        if len(participant_ids) < 2:
+        if len(participant_ids) < TournamentGenerator.MIN_PARTICIPANTS:
             return []
 
         # Simple Circle Method implementation
         ids = list(participant_ids)
-        has_bye = False
         if len(ids) % 2 != 0:
             ids.append("BYE")
-            has_bye = True
 
         n = len(ids)
         pairings = []
@@ -809,11 +809,3 @@ class TournamentService:
         if db is None:
             db = firestore.client()
         db.collection("tournaments").document(tournament_id).delete()
-
-
-class TournamentGenerator:
-    """Placeholder for tournament bracket generation logic."""
-
-    @staticmethod
-    def generate_round_robin(participants: list[Any]) -> list[Any]:
-        return []

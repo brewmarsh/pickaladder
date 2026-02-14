@@ -34,7 +34,10 @@ class TournamentForm(FlaskForm):
     )
     banner = FileField(
         "Tournament Banner",
-        validators=[Optional(), FileAllowed(["jpg", "jpeg", "png", "webp"], "Images only!")],
+        validators=[
+            Optional(),
+            FileAllowed(["jpg", "jpeg", "png", "webp"], "Images only!"),
+        ],
     )
     description = TextAreaField("Description", validators=[Optional()])
 
