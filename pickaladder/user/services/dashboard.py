@@ -16,8 +16,10 @@ from pickaladder.user.services.friendship import (
     get_user_pending_requests,
 )
 from pickaladder.user.services.match_stats import (
-    calculate_stats,
+    _calculate_streak,
+    _get_user_match_won_lost,
     format_matches_for_dashboard,
+    get_recent_opponents,
     get_user_matches,
 )
 
@@ -27,14 +29,52 @@ if TYPE_CHECKING:
 
 def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     """Aggregate all data required for the user dashboard."""
-    # Fetch user matches and stats
-    matches_all = get_user_matches(db, user_id)
-    stats = calculate_stats(matches_all, user_id)
+    # Fetch user data (includes stored stats for scalability)
+    user_data = get_user_by_id(db, user_id) or {}
+    user_stats = user_data.get("stats")
+    if not isinstance(user_stats, dict):
+        user_stats = {}
 
-    # Prepare formatted matches (limit to 20 for dashboard)
-    # calculate_stats already sorts them by date descending
-    recent_matches_docs = [m["doc"] for m in stats["processed_matches"][:20]]
-    matches = format_matches_for_dashboard(db, recent_matches_docs, user_id)
+    # 1. Scalable Vanity Stats (from user document)
+    wins = user_stats.get("wins", 0)
+    losses = user_stats.get("losses", 0)
+
+    # Ensure we have numbers (handles mocks in tests and potential None in DB)
+    try:
+        wins = int(wins) if wins is not None else 0
+        losses = int(losses) if losses is not None else 0
+    except (TypeError, ValueError):
+        wins = 0
+        losses = 0
+
+    total_games = wins + losses
+    win_rate = (wins / total_games * 100) if total_games > 0 else 0
+
+    # 2. Scalable Match History (Limit to initial 20)
+    recent_docs = get_user_matches(db, user_id, limit=20)
+    matches = format_matches_for_dashboard(db, recent_docs, user_id)
+    next_cursor = recent_docs[-1].id if recent_docs else None
+
+    # 3. Calculate Engagement Stats from the recent batch
+    processed = []
+    for doc in recent_docs:
+        d = doc.to_dict() or {}
+        won, _ = _get_user_match_won_lost(d, user_id)
+        processed.append({"user_won": won})
+
+    current_streak, streak_type = _calculate_streak(processed)
+    recent_opponents = get_recent_opponents(db, user_id, recent_docs)
+
+    # Reconstruct a compatible stats object for the dashboard
+    stats = {
+        "wins": wins,
+        "losses": losses,
+        "total_games": total_games,
+        "win_rate": win_rate,
+        "current_streak": current_streak,
+        "streak_type": streak_type,
+        "processed_matches": [{"doc": d, "data": d.to_dict()} for d in recent_docs],
+    }
 
     # Fetch other related data
     friends = get_user_friends(db, user_id)
@@ -44,13 +84,13 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
 
-    # Fetch user data if needed (e.g. for API)
-    user_data = get_user_by_id(db, user_id)
-
     return {
         "user": user_data,
         "matches": matches,
+        "next_cursor": next_cursor,
         "stats": stats,
+        "current_streak": current_streak,
+        "recent_opponents": recent_opponents,
         "friends": friends,
         "requests": requests_data,
         "group_rankings": group_rankings,

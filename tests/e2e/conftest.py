@@ -258,11 +258,23 @@ class MockTransaction(Transaction):
 
     def __init__(self, db: EnhancedMockFirestore) -> None:
         """Initialize mock transaction."""
-        super().__init__(db)
+        self.db = db
         self._read_only = False
-        self._rollback = False
         self._id = "mock-transaction-id"
         self._max_attempts = 5
+        self._retry_id = None
+
+    def _rollback(self):
+        pass
+
+    def _begin(self, **kwargs):
+        pass
+
+    def _commit(self):
+        pass
+
+    def _clean_up(self):
+        pass
 
     def _rollback(self) -> None:
         """Mock rollback."""
@@ -309,6 +321,12 @@ class MockTransaction(Transaction):
     def delete(self, reference: Any, option: Any = None) -> None:
         """Mock delete."""
         reference.delete()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
 
 
 class EnhancedMockFirestore(MockFirestore):

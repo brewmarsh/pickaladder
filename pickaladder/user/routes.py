@@ -52,26 +52,14 @@ def settings() -> Any:
         form.dark_mode.data = g.user.get("dark_mode")
 
     if form.validate_on_submit():
-        # Handle email change if needed
-        if form.email.data and form.email.data != g.user.get("email"):
-            # Ensure username is a string for typing and security
-            username = cast(str, form.username.data)
-            email_success, email_msg = UserService.update_email_address(
-                user_id, form.email.data, username
-            )
-            if email_success:
-                UserService.update_user_profile(
-                    db, user_id, {"email": form.email.data, "email_verified": False}
-                )
-                flash(email_msg, "info")
-            else:
-                flash(email_msg, "danger")
-                return render_template("user/settings.html", form=form, user=g.user)
-
-        # Update other settings
-        res = UserService.update_settings(db, user_id, form, form.profile_picture.data)
+        # Use the consolidated service call
+        res = UserService.process_profile_update(
+            db, user_id, form, g.user, form.profile_picture.data
+        )
 
         if res["success"]:
+            if "info" in res:
+                flash(res["info"], "info")
             flash("Settings updated!", "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
@@ -91,7 +79,7 @@ def edit_profile() -> Any:
         if res["success"]:
             if "info" in res:
                 flash(res["info"], "info")
-            flash("Account updated successfully.", "success")
+            flash("Account updated!", "success")
             return redirect(url_for(".edit_profile"))
         flash(res["error"], "danger")
     return render_template("user/edit_profile.html", form=form, user=g.user)
@@ -106,41 +94,12 @@ def dashboard() -> Any:
 
     data = UserService.get_dashboard_data(db, user_id)
 
-    # Calculate engagement features
-    processed_matches = data.get("stats", {}).get("processed_matches", [])
-    all_match_docs = [m["doc"] for m in processed_matches]
-    current_streak = UserService.calculate_current_streak(user_id, all_match_docs)
-    recent_opponents = UserService.get_recent_opponents(db, user_id, all_match_docs)
+    # Remove user from data to avoid conflict with g.user passed to template
+    data.pop("user", None)
 
-    # Onboarding Progress Calculation
-    user_groups = data.get("group_rankings", [])
-    total_matches = data.get("stats", {}).get("total_games", 0)
-
-    # Check if avatar is not default (dicebear)
-    # If profilePictureUrl or profilePictureThumbnailUrl is set, it's custom.
-    has_avatar = bool(
-        g.user.get("profilePictureUrl") or g.user.get("profilePictureThumbnailUrl")
-    )
-    has_dupr = (g.user.get("dupr_rating") or 0) > 0 or (
-        g.user.get("duprRating") or 0
-    ) > 0
-    has_group = len(user_groups) > 0
-    has_match = total_matches > 0
-
-    onboarding_progress = {
-        "has_avatar": has_avatar,
-        "has_dupr": has_dupr,
-        "has_group": has_group,
-        "has_match": has_match,
-        "percent": int((sum([has_avatar, has_dupr, has_group, has_match]) / 4) * 100),
-    }
-
-    # FIX: Removed explicit 'user=g.user' to avoid conflict with **data['user']
     return render_template(
         "user_dashboard.html",
-        current_streak=current_streak,
-        recent_opponents=recent_opponents,
-        onboarding_progress=onboarding_progress,
+        user=g.user,
         **data,
     )
 
@@ -290,6 +249,7 @@ def api_dashboard() -> Any:
             "friends": data["friends"],
             "requests": data["requests"],
             "matches": data["matches"],
+            "next_cursor": data.get("next_cursor"),
             "group_rankings": data["group_rankings"],
             "stats": {
                 "total_matches": data["stats"]["total_games"],

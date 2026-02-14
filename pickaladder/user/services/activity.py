@@ -3,61 +3,43 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
+from firebase_admin import firestore
+
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
 
-def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
-    """Fetch all groups the user is a member of."""
+def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
+    """Fetch pending tournament invitations for a user."""
     user_ref = db.collection("users").document(user_id)
-    groups_query = (
-        db.collection("groups").where("members", "array_contains", user_ref).stream()
+    tournaments_query = (
+        db.collection("tournaments")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
     )
-    groups = []
-    for doc in groups_query:
+    pending_invites = []
+    for doc in tournaments_query:
         data = doc.to_dict()
         if data:
-            data["id"] = doc.id
-            groups.append(data)
-    return groups
-
-
-def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
-    """Fetch pending tournament invites for a user."""
-    if not user_id:
-        return []
-    try:
-        tournaments_query = (
-            db.collection("tournaments")
-            .where("participant_ids", "array_contains", user_id)
-            .stream()
-        )
-
-        pending_invites = []
-        for doc in tournaments_query:
-            data = doc.to_dict()
-            if data:
-                participants = data.get("participants") or []
-                for p in participants:
-                    if not p:
-                        continue
-                    p_ref = p.get("userRef")
-                    p_uid = p_ref.id if p_ref else p.get("user_id")
-                    if p_uid == user_id and p.get("status") == "pending":
-                        data["id"] = doc.id
-                        pending_invites.append(data)
-                        break
-        return pending_invites
-    except TypeError:
-        # Handle mockfirestore bug when array field is None
-        return []
+            participants = data.get("participants") or []
+            for p in participants:
+                if not p:
+                    continue
+                p_uid = p.get("userRef").id if p.get("userRef") else p.get("user_id")
+                if p_uid == user_id and p.get("status") == "pending":
+                    data["id"] = doc.id
+                    pending_invites.append(data)
+                    break
+    return pending_invites
 
 
 def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
-    """Fetch active tournaments for a user."""
+    """Fetch active tournaments where the user is a participant."""
     tournaments_query = (
         db.collection("tournaments")
-        .where("participant_ids", "array_contains", user_id)
+        .where(
+            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id)
+        )
         .stream()
     )
     active_tournaments = []
@@ -95,7 +77,9 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
     tournaments_query = (
         db.collection("tournaments")
-        .where("participant_ids", "array_contains", user_id)
+        .where(
+            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id)
+        )
         .stream()
     )
     past_tournaments = []
@@ -144,20 +128,13 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     from firebase_admin import firestore
 
     # Query for public groups
-    try:
-        public_groups_query = (
-            db.collection("groups")
-            .where("is_public", "==", True)
-            .order_by("createdAt", direction=firestore.Query.DESCENDING)
-            .limit(limit)
-        )
-        public_group_docs = list(public_groups_query.stream())
-    except KeyError:
-        # Fallback for mockfirestore
-        public_groups_query = (
-            db.collection("groups").where("is_public", "==", True).limit(limit)
-        )
-        public_group_docs = list(public_groups_query.stream())
+    public_groups_query = (
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("is_public", "==", True))
+        .order_by("createdAt", direction=firestore.Query.DESCENDING)
+        .limit(limit)
+    )
+    public_group_docs = list(public_groups_query.stream())
 
     # Enrich groups with owner data
     owner_refs = []
@@ -190,6 +167,23 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     return enriched_groups
 
 
+def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
+    """Fetch all groups a user belongs to."""
+    user_ref = db.collection("users").document(user_id)
+    groups_query = (
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
+    )
+    groups = []
+    for doc in groups_query:
+        data = doc.to_dict()
+        if data:
+            data["id"] = doc.id
+            groups.append(data)
+    return groups
+
+
 def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch group rankings for a user."""
     from pickaladder.group.utils import (  # noqa: PLC0415
@@ -199,7 +193,9 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     user_ref = db.collection("users").document(user_id)
     group_rankings = []
     my_groups_query = (
-        db.collection("groups").where("members", "array_contains", user_ref).stream()
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
     )
     for group_doc in my_groups_query:
         group_data = group_doc.to_dict()
@@ -266,10 +262,22 @@ def get_user_profile_data(
     if current_user_id != target_user_id:
         h2h_stats = get_h2h_stats(db, current_user_id, target_user_id)
 
-    matches = get_user_matches(db, target_user_id)
+    # Scalable profile matches load
+    matches = get_user_matches(db, target_user_id, limit=20)
     stats = calculate_stats(matches, target_user_id)
-    display_items_docs = [m["doc"] for m in stats["processed_matches"][:20]]
-    matches_data = format_matches_for_dashboard(db, display_items_docs, target_user_id)
+
+    # Override totals with pre-calculated stats from user document for scalability
+    user_stats = profile_user_data.get("stats", {})
+    wins = int(user_stats.get("wins", 0))
+    losses = int(user_stats.get("losses", 0))
+    stats["total_games"] = wins + losses
+    stats["win_rate"] = (
+        (wins / stats["total_games"] * 100) if stats["total_games"] > 0 else 0
+    )
+    stats["wins"] = wins
+    stats["losses"] = losses
+
+    matches_data = format_matches_for_dashboard(db, matches, target_user_id)
 
     return {
         "profile_user": profile_user_data,

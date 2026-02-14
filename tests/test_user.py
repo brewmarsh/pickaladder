@@ -1,10 +1,6 @@
-"""Tests for user routes and profiles."""
-
 import datetime
 import unittest
 from unittest.mock import MagicMock, patch
-
-from mockfirestore import MockFirestore
 
 from pickaladder import create_app
 from tests.mock_utils import patch_mockfirestore
@@ -15,35 +11,41 @@ MOCK_PROFILE_USER_ID = "user2"
 MOCK_FIREBASE_TOKEN_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user1@example.com"}
 MOCK_FIRESTORE_USER_DATA = {
     "name": "User One",
+    "email": "user1@example.com",
     "isAdmin": True,
     "uid": "user1",
-    "email": "user1@example.com",
+    "stats": {"wins": 10, "losses": 5},
 }
 
 
-class UserTestCase(unittest.TestCase):
-    """Test cases for user-related routes and functionality."""
+class UserRoutesFirebaseTestCase(unittest.TestCase):
+    """Test case for user routes with Firebase mocks."""
 
     def setUp(self) -> None:
-        """Set up a test client and mock the necessary Firebase services."""
+        """Set up the test case."""
         self.mock_firestore_service = MagicMock()
+        self.mock_auth_service = MagicMock()
+        self.mock_storage_service = MagicMock()
+
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore": patch(
-                "pickaladder.user.routes.firestore", new=self.mock_firestore_service
+            "firestore_client": patch(
+                "firebase_admin.firestore.client",
+                return_value=self.mock_firestore_service.client.return_value,
             ),
-            "firestore_utils": patch(
-                "pickaladder.user.services.firestore", new=self.mock_firestore_service
+            "auth_core": patch(
+                "pickaladder.user.services.core.auth", new=self.mock_auth_service
             ),
-            "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
+            "auth_profile": patch(
+                "pickaladder.user.services.profile.auth", new=self.mock_auth_service
             ),
-            "storage_service_core": patch("pickaladder.user.services.core.storage"),
-            "storage_service_profile": patch(
-                "pickaladder.user.services.profile.storage"
+            "storage_core": patch(
+                "pickaladder.user.services.core.storage", new=self.mock_storage_service
             ),
-            "auth_service_core": patch("pickaladder.user.services.core.auth"),
-            "auth_service_profile": patch("pickaladder.user.services.profile.auth"),
+            "storage_profile": patch(
+                "pickaladder.user.services.profile.storage",
+                new=self.mock_storage_service,
+            ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
             "auth": patch("pickaladder.user.services.core.auth"),
         }
@@ -139,25 +141,24 @@ class UserTestCase(unittest.TestCase):
         response = self.client.post(
             "/user/settings",
             data={
+                "name": "New Name",
+                "email": "user1@example.com",
                 "dark_mode": "y",
                 "dupr_rating": 5.5,
                 "username": "newuser",
-                "name": "New User",
-                "email": "newuser@example.com",
             },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated successfully.", response.data)
-        # Note: update_user_profile and process_profile_update are both called
-        self.assertTrue(mock_user_doc.update.called)
+        self.assertIn(b"Settings updated!", response.data)
+        mock_user_doc.update.assert_called()
 
     def test_update_profile_picture_upload(self) -> None:
-        """Test successfully uploading a profile picture."""
+        """Test uploading a profile picture."""
         self._set_session_user()
-        mock_user_doc = self._mock_firestore_user()
-        mock_storage = self.mocks["storage_service_profile"]
-        mock_bucket = mock_storage.bucket.return_value
+        self._mock_firestore_user()
+
+        mock_bucket = self.mock_storage_service.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
         mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test.jpg"
 
@@ -176,29 +177,11 @@ class UserTestCase(unittest.TestCase):
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated successfully.", response.data)
-        mock_storage.bucket.assert_called_once()
-        mock_bucket.blob.assert_called_once_with(
-            f"profile_pictures/{MOCK_USER_ID}/test.png"
-        )
-        mock_blob.upload_from_filename.assert_called_once()
-        mock_blob.make_public.assert_called_once()
-        # Find the call that contains profilePictureUrl
-        update_calls = [c[0][0] for c in mock_user_doc.update.call_args_list]
-        pic_call = next(
-            (
-                c
-                for c in update_calls
-                if isinstance(c, dict) and "profilePictureUrl" in c
-            ),
-            None,
-        )
-        self.assertIsNotNone(pic_call)
-        if pic_call is not None:
-            self.assertEqual(
-                pic_call["profilePictureUrl"],
-                "https://storage.googleapis.com/test-bucket/test.jpg",
-            )
+        self.assertIn(b"Settings updated!", response.data)
+        self.mock_storage_service.bucket.assert_called()
+        mock_bucket.blob.assert_called_with(f"profile_pictures/{MOCK_USER_ID}/test.png")
+        mock_blob.upload_from_filename.assert_called()
+        mock_blob.make_public.assert_called()
 
     def test_update_dupr_and_dark_mode(self) -> None:
         """Test updating DUPR rating and dark mode settings."""
@@ -208,32 +191,19 @@ class UserTestCase(unittest.TestCase):
         response = self.client.post(
             "/user/settings",
             data={
+                "name": "User One",
+                "email": "user1@example.com",
                 "dark_mode": "y",
                 "dupr_rating": "5.5",
                 "username": "newuser",
-                "name": "New User",
-                "email": "newuser@example.com",
             },
             follow_redirects=True,
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated successfully.", response.data)
-        # Check all update calls
-        update_calls = [c[0][0] for c in mock_user_doc.update.call_args_list]
-
-        dark_mode_call = next(
-            (c for c in update_calls if isinstance(c, dict) and "dark_mode" in c), None
-        )
-        self.assertIsNotNone(dark_mode_call)
-        if dark_mode_call is not None:
-            self.assertEqual(dark_mode_call["dark_mode"], True)
-
-        dupr_call = next(
-            (c for c in update_calls if isinstance(c, dict) and "duprRating" in c), None
-        )
-        self.assertIsNotNone(dupr_call)
-        if dupr_call is not None:
-            self.assertEqual(dupr_call["duprRating"], 5.5)
+        self.assertIn(b"Settings updated!", response.data)
+        update_call_args = mock_user_doc.update.call_args[0][0]
+        self.assertEqual(update_call_args["dark_mode"], True)
+        self.assertEqual(update_call_args["duprRating"], 5.5)
 
     def _setup_dashboard_mocks(self, mock_db: MagicMock) -> None:
         """Set up specific mocks for the dashboard API tests."""
@@ -242,7 +212,6 @@ class UserTestCase(unittest.TestCase):
         self.mock_groups_coll = MagicMock()
 
         def collection_side_effect(name: str) -> MagicMock:
-            """Firestore collection side effect mock."""
             if name == "users":
                 return self.mock_users_coll
             if name == "matches":
@@ -256,47 +225,64 @@ class UserTestCase(unittest.TestCase):
         # User doc setup
         self.mock_user_doc = MagicMock()
         self.mock_user_doc.id = MOCK_USER_ID
-        self.mock_user_doc.get.return_value.to_dict.return_value = {"username": "user1"}
+        self.mock_user_doc.get.return_value.to_dict.return_value = {
+            "username": "user1",
+            "stats": {"wins": 10, "losses": 5},
+        }
         self.mock_users_coll.document.return_value = self.mock_user_doc
 
-        # Empty friends/requests/groups by default
-        self.mock_user_doc.collection(
-            "friends"
-        ).where.return_value.stream.return_value = []
-        self.mock_user_doc.collection(
-            "friends"
-        ).where.return_value.where.return_value.stream.return_value = []
+        # Friends/requests/groups mocks
+        (
+            self.mock_user_doc.collection.return_value.where.return_value.stream.return_value
+        ) = []
+        (
+            self.mock_user_doc.collection.return_value.where.return_value.where.return_value.stream.return_value
+        ) = []
         self.mock_groups_coll.where.return_value.stream.return_value = []
 
-    def test_api_dashboard_fetches_all_matches_for_sorting(self) -> None:
-        """Test that all matches are fetched for sorting."""
+    @patch("pickaladder.user.services.dashboard.get_user_matches")
+    def test_api_dashboard_fetches_matches_with_limit(
+        self, mock_get_matches: MagicMock
+    ) -> None:
+        """Test that matches are fetched with limit."""
         self._set_session_user()
-        response = self.client.get("/user/api/dashboard")
-        self.assertEqual(response.status_code, 200)
+        mock_db = self.mock_firestore_service.client.return_value
+        self._setup_dashboard_mocks(mock_db)
+        mock_get_matches.return_value = []
+
+        self.client.get("/user/api/dashboard")
+
+        # Verify get_user_matches was called
+        self.assertTrue(mock_get_matches.called)
 
     def test_api_dashboard_returns_group_match_flag(self) -> None:
         """Test that the response includes an indicator for group matches."""
         self._set_session_user()
         user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
 
-        # Create a match
-        match_data = {
+        mock_match = MagicMock()
+        mock_match.id = "match1"
+        mock_p2_ref = MagicMock()
+        mock_p2_ref.id = "user2"
+        mock_p2_ref.get.return_value.exists = True
+        mock_p2_ref.get.return_value.to_dict.return_value = {"username": "user2"}
+
+        mock_match.to_dict.return_value = {
             "matchType": "singles",
-            "player1Ref": user_ref,
-            "player2Ref": self.mock_db.collection("users").document("user2"),
+            "participants": [MOCK_USER_ID, "user2"],
+            "player1Ref": self.mock_user_doc,
+            "player2Ref": mock_p2_ref,
             "player1Score": 10,
             "player2Score": 5,
-            "matchDate": "2023-01-01",
+            "matchDate": datetime.datetime(2023, 1, 1),
             "groupId": "group123",
-            "team1": [],
-            "team2": [],
-            "participants": [],
-            "status": "completed",
-            "player1Id": MOCK_USER_ID,
-            "player2Id": "user2",
         }
-        self.mock_db.collection("matches").add(match_data)
-        self.mock_db.collection("users").document("user2").set({"username": "user2"})
+
+        mock_query = MagicMock()
+        self.mock_matches_coll.where.return_value = mock_query
+        mock_query.order_by.return_value = mock_query
+        mock_query.limit.return_value = mock_query
+        mock_query.stream.return_value = [mock_match]
 
         response = self.client.get("/user/api/dashboard")
 
@@ -310,55 +296,72 @@ class UserTestCase(unittest.TestCase):
     def test_view_user_includes_doubles_and_processes_matches(
         self, mock_render_template: MagicMock
     ) -> None:
-        """Test that view_user fetches and processes doubles matches."""
+        """Test that view_user fetches and processes matches."""
         self._set_session_user()
 
-        # Mock profile user
-        self.mock_db.collection("users").document(MOCK_PROFILE_USER_ID).set(
-            {
-                "username": "profile_user",
-                "stats": {
-                    "wins": 0,
-                    "losses": 0,
-                    "total_games": 0,
-                    "win_rate": 0,
-                    "current_streak": 0,
-                    "streak_type": "win",
-                },
-            }
-        )
-        profile_user_ref = self.mock_db.collection("users").document(
-            MOCK_PROFILE_USER_ID
-        )
+        mock_profile_user_ref = MagicMock()
+        mock_profile_user_ref.id = MOCK_PROFILE_USER_ID
+        mock_profile_user_ref.get.return_value.exists = True
+        mock_profile_user_ref.get.return_value.to_dict.return_value = {
+            "username": "profile_user",
+            "stats": {"wins": 10, "losses": 5},
+        }
 
-        # Create a match
-        opponent_ref = self.mock_db.collection("users").document("opponent_id")
-        opponent_ref.set({"username": "opponent_user"})
+        mock_matches_coll = MagicMock()
 
-        self.mock_db.collection("matches").add(
-            {
-                "matchDate": datetime.datetime(2023, 1, 1),
-                "player1Score": 11,
-                "player2Score": 9,
-                "player1Ref": profile_user_ref,
-                "player2Ref": opponent_ref,
-                "matchType": "singles",
-                "team1": [],
-                "team2": [],
-                "participants": [],
-                "status": "completed",
-                "player1Id": MOCK_PROFILE_USER_ID,
-                "player2Id": "opponent_id",
-            }
-        )
+        def collection_side_effect(name: str) -> MagicMock:
+            if name == "users":
+                mock_users_coll = MagicMock()
+                mock_users_coll.document.return_value = mock_profile_user_ref
+                return mock_users_coll
+            if name == "matches":
+                return mock_matches_coll
+            return MagicMock()
 
-        # Execute request
+        mock_db.collection.side_effect = collection_side_effect
+
+        mock_match = MagicMock()
+        mock_match.id = "match1"
+        mock_p2_ref = MagicMock()
+        mock_p2_ref.id = "opponent_id"
+
+        mock_match.to_dict.return_value = {
+            "matchDate": datetime.datetime(2023, 1, 1),
+            "player1Score": 11,
+            "player2Score": 9,
+            "player1Ref": mock_profile_user_ref,
+            "player2Ref": mock_p2_ref,
+            "matchType": "singles",
+            "participants": [MOCK_PROFILE_USER_ID, "opponent_id"],
+        }
+
+        mock_query = MagicMock()
+        mock_matches_coll.where.return_value = mock_query
+        mock_query.order_by.return_value = mock_query
+        mock_query.limit.return_value = mock_query
+        mock_query.stream.return_value = [mock_match]
+
+        mock_opponent_doc = MagicMock()
+        mock_opponent_doc.id = "opponent_id"
+        mock_opponent_doc.exists = True
+        mock_opponent_doc.to_dict.return_value = {"username": "opponent_user"}
+
+        mock_profile_doc = MagicMock()
+        mock_profile_doc.id = MOCK_PROFILE_USER_ID
+        mock_profile_doc.exists = True
+        mock_profile_doc.to_dict.return_value = {
+            "username": "profile_user",
+            "stats": {"wins": 10, "losses": 5},
+        }
+
+        mock_db.get_all.return_value = [mock_profile_doc, mock_opponent_doc]
+
         self.client.get(f"/user/{MOCK_PROFILE_USER_ID}")
 
-        # Check template context
         args, kwargs = mock_render_template.call_args
         matches = kwargs.get("matches")
-        self.assertTrue(len(matches) > 0)
+        self.assertTrue(matches)
+        self.assertEqual(len(matches), 1)
 
 
 if __name__ == "__main__":

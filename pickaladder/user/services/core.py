@@ -47,6 +47,7 @@ def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
     if data is None:
         return None
     data["id"] = user_id
+    data["uid"] = user_id
     return data
 
 
@@ -86,7 +87,7 @@ def process_profile_update(
     user_id: str,
     form_data: Any,
     current_user_data: dict[str, Any],
-    profile_pic_url: str | None = None,
+    profile_picture_file: Any = None,
 ) -> dict[str, Any]:
     """Handle complex profile updates, including email change and verification."""
     new_email = form_data.email.data
@@ -99,9 +100,6 @@ def process_profile_update(
     if hasattr(form_data, "dark_mode"):
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
 
-    if profile_pic_url:
-        update_data["profilePictureUrl"] = profile_pic_url
-
     dupr_id = form_data.dupr_id.data.strip() if form_data.dupr_id.data else None
     update_data["dupr_id"] = dupr_id
     rating = (
@@ -111,6 +109,19 @@ def process_profile_update(
     )
     update_data["dupr_rating"] = rating
     update_data["duprRating"] = rating  # Maintain compatibility
+
+    # Handle profile picture upload
+    if profile_picture_file:
+        filename = secure_filename(profile_picture_file.filename or "profile.jpg")
+        bucket = storage.bucket()
+        blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
+
+        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1]) as tmp:
+            profile_picture_file.save(tmp.name)
+            blob.upload_from_filename(tmp.name)
+
+        blob.make_public()
+        update_data["profilePictureUrl"] = blob.public_url
 
     # Handle username change
     if new_username != current_user_data.get("username"):

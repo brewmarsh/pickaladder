@@ -226,6 +226,7 @@ class MatchService:
             p2_ref = db.collection("users").document(p2_id)
             match_doc_data["player1Ref"] = p1_ref
             match_doc_data["player2Ref"] = p2_ref
+            match_doc_data["participants"] = [p1_id, p2_id]
             side1_ref = p1_ref
             side2_ref = p2_ref
         elif match_type == "doubles":
@@ -237,6 +238,12 @@ class MatchService:
                 cast(str, opponent2_id),
             )
             match_doc_data.update(res)
+            match_doc_data["participants"] = [
+                p1_id,
+                cast(str, partner_id),
+                p2_id,
+                cast(str, opponent2_id),
+            ]
             side1_ref = cast("DocumentReference", res.get("team1Ref"))
             side2_ref = cast("DocumentReference", res.get("team2Ref"))
         else:
@@ -634,6 +641,37 @@ class MatchService:
         # Update Match Document
         updates = MatchService._get_match_updates(match_data, new_p1_score, new_p2_score)
         match_ref.update(updates)
+
+    @staticmethod
+    def get_matches_for_user(
+        db: Client, uid: str, limit: int = 20, start_after: str | None = None
+    ) -> tuple[list[dict[str, Any]], str | None]:
+        """Fetch matches for a user with cursor-based pagination."""
+        from pickaladder.user.services.match_stats import format_matches_for_dashboard
+
+        matches_ref = db.collection("matches")
+        # Ensure 'matchDate' is used for ordering to match the created documents
+        query = (
+            matches_ref.where(
+                filter=firestore.FieldFilter("participants", "array_contains", uid)
+            )
+            .order_by("matchDate", direction=firestore.Query.DESCENDING)
+            .limit(limit)
+        )
+
+        if start_after:
+            last_doc = cast("DocumentSnapshot", matches_ref.document(start_after).get())
+            if last_doc.exists:
+                query = query.start_after(last_doc)
+
+        docs = list(query.stream())
+        if not docs:
+            return [], None
+
+        last_visible_doc_id = docs[-1].id
+        formatted_matches = format_matches_for_dashboard(db, docs, uid)
+
+        return formatted_matches, last_visible_doc_id
 
     @staticmethod
     def get_latest_matches(db: Client, limit: int = 10) -> list[Match]:
