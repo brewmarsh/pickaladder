@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Any
 import firebase_admin
 from firebase_admin import credentials, firestore
 
+FIRESTORE_BATCH_LIMIT = 500
+
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.collection import CollectionReference
@@ -28,14 +30,14 @@ class BatchProcessor:
         """Adds a set operation to the batch."""
         self.batch.set(ref, data)
         self.count += 1
-        if self.count >= 500:
+        if self.count >= FIRESTORE_BATCH_LIMIT:
             self.commit()
 
     def delete(self, ref: Any) -> None:
         """Adds a delete operation to the batch."""
         self.batch.delete(ref)
         self.count += 1
-        if self.count >= 500:
+        if self.count >= FIRESTORE_BATCH_LIMIT:
             self.commit()
 
     def commit(self) -> None:
@@ -52,7 +54,9 @@ def initialize_apps() -> tuple[firebase_admin.App, firebase_admin.App]:
     beta_key_path = os.environ.get("BETA_KEY_PATH")
 
     if not prod_key_path or not beta_key_path:
-        print("Error: PROD_KEY_PATH and BETA_KEY_PATH environment variables must be set.")
+        print(
+            "Error: PROD_KEY_PATH and BETA_KEY_PATH environment variables must be set."
+        )
         sys.exit(1)
 
     # Initialize Prod App (Source)
@@ -101,23 +105,22 @@ def copy_collection_recursive(
     return count
 
 
-def sync_collection(
-    collection_name: str, prod_db: Client, beta_db: Client
-) -> None:
+def sync_collection(collection_name: str, prod_db: Client, beta_db: Client) -> None:
     """Syncs a single collection from production to beta."""
     print(f"Syncing collection: {collection_name}...")
 
     # Safety Check: Ensure destination project ID contains 'beta' or 'sandbox'
     project_id = beta_db.project
-    if (
-        not project_id
-        or ("beta" not in project_id.lower() and "sandbox" not in project_id.lower())
+    if not project_id or (
+        "beta" not in project_id.lower() and "sandbox" not in project_id.lower()
     ):
         print(
             f"CRITICAL ERROR: Destination project ID '{project_id}' does not "
             "contain 'beta' or 'sandbox'."
         )
-        print("Delete operations are restricted to beta/sandbox environments for safety.")
+        print(
+            "Delete operations are restricted to beta/sandbox environments for safety."
+        )
         sys.exit(1)
 
     prod_coll = prod_db.collection(collection_name)
