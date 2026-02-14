@@ -48,10 +48,17 @@
                     {% endif %}
                 </div>
                 <div class="form-group">
-                    {{ form.match_type.label(class="form-label") }}
-                    {{ form.match_type(class="form-input") }}
-                    {% if form.match_type.errors %}
-                        {% for error in form.match_type.errors %}
+                    {{ form.mode.label(class="form-label") }}
+                    <div class="d-flex gap-3 mt-2">
+                        {% for subfield in form.mode %}
+                            <div class="form-check">
+                                {{ subfield(class="form-check-input") }}
+                                {{ subfield.label(class="form-check-label") }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if form.mode.errors %}
+                        {% for error in form.mode.errors %}
                             <span class="text-danger">{{ error }}</span>
                         {% endfor %}
                     {% endif %}

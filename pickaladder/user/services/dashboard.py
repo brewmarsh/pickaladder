@@ -84,6 +84,32 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
 
+    # 4. Onboarding Progress calculation
+    has_avatar = bool(user_data.get("profilePictureUrl") or user_data.get("avatar_url"))
+    # Check for various DUPR field names across different schemas
+    has_dupr = bool(
+        user_data.get("dupr_id")
+        or user_data.get("dupr_rating")
+        or user_data.get("duprRating")
+    )
+    has_group = len(group_rankings) > 0
+    has_match = len(matches) > 0
+    has_friend = len(friends) > 0
+
+    onboarding_steps = [has_avatar, has_dupr, has_group, has_match, has_friend]
+    completed_steps = sum(1 for step in onboarding_steps if step)
+    onboarding_percent = int((completed_steps / len(onboarding_steps)) * 100)
+
+    onboarding_progress = {
+        "percent": onboarding_percent,
+        "has_avatar": has_avatar,
+        "has_dupr": has_dupr,
+        "has_rating": has_dupr,  # Template uses has_rating for the quest icon
+        "has_group": has_group,
+        "has_match": has_match,
+        "has_friend": has_friend,
+    }
+
     return {
         "user": user_data,
         "matches": matches,
@@ -97,4 +123,5 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         "pending_tournament_invites": pending_tournament_invites,
         "active_tournaments": active_tournaments,
         "past_tournaments": past_tournaments,
+        "onboarding_progress": onboarding_progress,
     }
