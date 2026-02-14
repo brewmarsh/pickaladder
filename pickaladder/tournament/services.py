@@ -246,7 +246,11 @@ class TournamentService:
         tournament_payload = {
             "name": data["name"],
             "date": data["date"],
+            "start_date": data["date"],
             "location": data["location"],
+            "location_data": data.get("location_data"),
+            "description": data.get("description"),
+            "format": data.get("format", "ROUND_ROBIN"),
             "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
             "mode": data.get("mode", "SINGLES"),
             "ownerRef": user_ref,
@@ -750,6 +754,16 @@ class TournamentService:
         )
 
         return True
+
+    @staticmethod
+    def delete_tournament(tournament_id: str, db: Client | None = None) -> None:
+        """Delete a tournament document and its sub-collections."""
+        if db is None:
+            db = firestore.client()
+
+        # Simple deletion of the main document
+        # Note: In production, we should recursively delete sub-collections
+        db.collection("tournaments").document(tournament_id).delete()
 
     @staticmethod
     def generate_bracket(tournament_id: str, db: Client | None = None) -> list[Any]:

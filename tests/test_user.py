@@ -58,6 +58,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.patcher_storage = patch("firebase_admin.storage")
         self.mock_storage = self.patcher_storage.start()
 
+        self.mock_user_doc = MagicMock()
+
         # Patch initialize_app to avoid real firebase init
         self.patcher_init = patch("firebase_admin.initialize_app")
         self.patcher_init.start()
@@ -76,6 +78,12 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.patcher_auth.stop()
         self.patcher_storage.stop()
         self.patcher_init.stop()
+
+    def _mock_firestore_user(self, user_id: str = MOCK_USER_ID) -> MagicMock:
+        """Mock a user document in Firestore."""
+        user_ref = self.mock_db.collection("users").document(user_id)
+        user_ref.set(MOCK_FIRESTORE_USER_DATA)
+        return user_ref
 
     def _set_session_user(self, user_id: str = MOCK_USER_ID) -> None:
         """Set the user ID in the session and setup mock doc."""
