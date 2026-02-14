@@ -34,18 +34,26 @@ def test_tournament_flow(
         page.click(".btn:has-text('Login')")
 
     # 2. Create a Tournament
-    with page.expect_navigation():
-        page.click(".navbar a:has-text('Tournaments')")
+    if page.is_visible(".hamburger-menu"):
+        page.click(".hamburger-menu")
+        with page.expect_navigation():
+            page.click(".mobile-nav-link:has-text('Tournaments')")
+    else:
+        with page.expect_navigation():
+            page.click(".navbar a:has-text('Tournaments')")
     with page.expect_navigation():
         page.click("a.btn-action:has-text('Create Tournament')")
     page.fill("input[name='name']", "Winter Open")
-    page.fill("input[name='date']", "2026-12-01")
-    page.fill("input[name='location']", "Central Park")
-    page.check("input[name='mode'][value='SINGLES']")
+    page.fill("input[name='start_date']", "2026-12-01")
+    page.fill("input[name='venue_name']", "Central Park")
+    page.fill("input[name='address']", "123 Park Ave")
+    page.fill("textarea[name='description']", "Winter Pickleball Tournament")
+    page.select_option("select[name='format']", value="ROUND_ROBIN")
+    page.check("input[name='match_type'][value='SINGLES']")
     with page.expect_navigation():
         page.click("button:has-text('Create Tournament')")
 
-    expect(page.locator("h2")).to_contain_text("Winter Open")
+    expect(page.locator("h1")).to_contain_text("Winter Open")
     expect(page.locator(".badge-warning", has_text="Active")).to_be_visible()
 
     # Create a friend to verify the Invite dropdown
@@ -79,6 +87,9 @@ def test_tournament_flow(
         {"participant_ids": ["admin", "friend_user"]}
     )
     page.reload()
+
+    # Click Bracket tab to reveal Record Match button
+    page.click("button:has-text('Bracket')")
 
     with page.expect_navigation():
         page.click("text=Record Match")

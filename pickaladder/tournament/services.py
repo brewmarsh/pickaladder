@@ -19,6 +19,38 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.transaction import Transaction
 
 
+class TournamentGenerator:
+    """Utility class for generating tournament matches."""
+
+    @staticmethod
+    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, str]]:
+        """
+        Generate round-robin pairings using the Circle Method.
+        Returns a list of match dicts with 'player1' and 'player2' keys.
+        """
+        if len(participant_ids) < 2:
+            return []
+
+        ids = list(participant_ids)
+        if len(ids) % 2 != 0:
+            ids.append(None)  # type: ignore # Bye
+
+        num_participants = len(ids)
+        num_rounds = num_participants - 1
+        matches = []
+
+        for _ in range(num_rounds):
+            for i in range(num_participants // 2):
+                p1 = ids[i]
+                p2 = ids[num_participants - 1 - i]
+                if p1 is not None and p2 is not None:
+                    matches.append({"player1": p1, "player2": p2})
+            # Rotate ids: keep the first element fixed, rotate others
+            ids = [ids[0], ids[-1]] + ids[1:-1]
+
+        return matches
+
+
 class TournamentService:
     """Handles business logic and data access for tournaments."""
 
@@ -200,12 +232,21 @@ class TournamentService:
             db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
 
+        # Handle naming inconsistencies between form and service
+        date = data.get("start_date") or data.get("date")
+        location = data.get("venue_name") or data.get("location")
+        mode = data.get("match_type") or data.get("mode") or "SINGLES"
+        match_type = data.get("matchType") or mode.lower()
+
         tournament_payload = {
             "name": data["name"],
-            "date": data["date"],
-            "location": data["location"],
-            "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
-            "mode": data.get("mode", "SINGLES"),
+            "date": date,
+            "location": location,
+            "address": data.get("address"),
+            "format": data.get("format"),
+            "description": data.get("description"),
+            "matchType": match_type,
+            "mode": mode,
             "ownerRef": user_ref,
             "organizer_id": user_uid,
             "status": "Active",

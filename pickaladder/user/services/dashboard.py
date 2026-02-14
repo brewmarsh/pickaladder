@@ -27,6 +27,33 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
 
+def _calculate_onboarding_progress(
+    user_data: dict[str, Any],
+    matches: list[Any],
+    friends: list[Any],
+    groups: list[Any],
+) -> dict[str, Any]:
+    """Calculate the user's onboarding progress."""
+    has_avatar = bool(user_data.get("avatar_url"))
+    has_rating = bool(user_data.get("duprRating") or user_data.get("dupr_rating"))
+    has_match = len(matches) > 0
+    has_group = len(groups) > 0
+    has_friend = len(friends) > 0
+
+    steps = [has_avatar, has_rating, has_match, has_group, has_friend]
+    percent = int((sum(steps) / len(steps)) * 100)
+
+    return {
+        "percent": percent,
+        "has_avatar": has_avatar,
+        "has_rating": has_rating,
+        "has_dupr": has_rating,  # For template compatibility
+        "has_match": has_match,
+        "has_group": has_group,
+        "has_friend": has_friend,
+    }
+
+
 def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     """Aggregate all data required for the user dashboard."""
     # Fetch user data (includes stored stats for scalability)
@@ -84,9 +111,14 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
 
+    onboarding_progress = _calculate_onboarding_progress(
+        user_data, matches, friends, group_rankings
+    )
+
     return {
         "user": user_data,
         "matches": matches,
+        "onboarding_progress": onboarding_progress,
         "next_cursor": next_cursor,
         "stats": stats,
         "current_streak": current_streak,
