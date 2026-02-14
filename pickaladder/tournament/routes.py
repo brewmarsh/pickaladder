@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import Any
 
 from firebase_admin import firestore  # noqa: F401
@@ -216,6 +217,7 @@ def edit_tournament(tournament_id: str) -> Any:
         if hasattr(raw_date, "to_datetime"):
             form.start_date.data = raw_date.to_datetime().date()
 
+    logging.warning(f"Type of form in edit_tournament: {type(form)}")
     return render_template(
         "tournaments/create_edit.html",
         form=form,

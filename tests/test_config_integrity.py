@@ -1,7 +1,7 @@
 """Test to ensure configuration integrity, specifically for Firebase mocking."""
 
 import unittest
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import firebase_admin
 from mockfirestore import MockFirestore
@@ -11,6 +11,11 @@ from pickaladder import create_app
 
 class TestConfigIntegrity(unittest.TestCase):
     """Test case for configuration integrity."""
+
+    def setUp(self):
+        self.mock_initialize_app = patch("firebase_admin.initialize_app").start()
+        self.mock_firestore_client = patch("firebase_admin.firestore.client").start()
+        self.addCleanup(patch.stopall)
 
     def test_app_initializes_db_client_in_test_mode(self) -> None:
         """
