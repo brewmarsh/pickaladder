@@ -72,6 +72,7 @@ def create_tournament() -> Any:
                 "location": form.location.data,
                 "mode": form.mode.data,
                 "matchType": form.mode.data.lower(),
+                "location_data": location_data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -184,6 +185,7 @@ def edit_tournament(tournament_id: str) -> Any:
             "location": form.location.data,
             "mode": form.mode.data,
             "matchType": form.mode.data.lower(),
+            "location_data": location_data,
         }
 
         # Handle banner upload

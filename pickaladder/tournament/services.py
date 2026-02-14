@@ -14,9 +14,57 @@ from pickaladder.utils import send_email
 from .utils import get_tournament_standings
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
+
+
+MIN_PARTICIPANTS = 2
+
+
+class TournamentGenerator:
+    """Implements tournament generation logic (e.g., Round Robin)."""
+
+    @staticmethod
+    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
+        """Generate Round Robin pairings using the Circle Method.
+
+        Returns a list of match document data.
+        """
+        if len(participant_ids) < MIN_PARTICIPANTS:
+            return []
+
+        ids: list[str | None] = list(participant_ids)
+        if len(ids) % 2 != 0:
+            ids.append(None)  # Bye
+
+        n = len(ids)
+        pairings = []
+
+        for _ in range(n - 1):
+            for i in range(n // 2):
+                p1 = ids[i]
+                p2 = ids[n - 1 - i]
+                if p1 and p2:
+                    pairings.append(
+                        {
+                            "player1Ref": firestore.client()
+                            .collection("users")
+                            .document(p1),
+                            "player2Ref": firestore.client()
+                            .collection("users")
+                            .document(p2),
+                            "participants": [p1, p2],
+                            "matchType": "singles",
+                            "status": "DRAFT",
+                            "createdAt": firestore.SERVER_TIMESTAMP,
+                        }
+                    )
+            # Rotate
+            ids.insert(1, ids.pop())
+
+        return pairings
 
 
 class TournamentService:
@@ -206,6 +254,7 @@ class TournamentService:
             "location": data["location"],
             "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
             "mode": data.get("mode", "SINGLES"),
+            "location_data": data.get("location_data"),
             "ownerRef": user_ref,
             "organizer_id": user_uid,
             "status": "Active",
@@ -279,8 +328,8 @@ class TournamentService:
         from pickaladder.user import UserService  # noqa: PLC0415
 
         user_groups = UserService.get_user_groups(db, user_uid)
-        team_status, pending_partner_invite = TournamentService._get_team_status_for_user(
-            db, tournament_id, user_uid
+        team_status, pending_partner_invite = (
+            TournamentService._get_team_status_for_user(db, tournament_id, user_uid)
         )
 
         is_owner = data.get("organizer_id") == user_uid or (

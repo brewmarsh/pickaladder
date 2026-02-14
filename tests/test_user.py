@@ -1,5 +1,6 @@
 import datetime
 import unittest
+from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
@@ -23,32 +24,40 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up the test case."""
+        from mockfirestore import MockFirestore
+
+        self.mock_db = MockFirestore()
+        self.mock_user_doc = MagicMock()
+        self.mock_users_coll = MagicMock()
+        self.mock_matches_coll = MagicMock()
+        self.mock_groups_coll = MagicMock()
         self.mock_firestore_service = MagicMock()
         self.mock_auth_service = MagicMock()
+        # Ensure auth.EmailAlreadyExistsError is catchable
+        self.mock_auth_service.EmailAlreadyExistsError = type(
+            "EmailAlreadyExistsError", (Exception,), {}
+        )
         self.mock_storage_service = MagicMock()
 
-        patchers = {
-            "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_client": patch(
-                "firebase_admin.firestore.client",
-                return_value=self.mock_firestore_service.client.return_value,
-            ),
-            "auth_core": patch(
-                "pickaladder.user.services.core.auth", new=self.mock_auth_service
-            ),
-            "auth_profile": patch(
-                "pickaladder.user.services.profile.auth", new=self.mock_auth_service
-            ),
-            "storage_core": patch(
-                "pickaladder.user.services.core.storage", new=self.mock_storage_service
-            ),
-            "storage_profile": patch(
-                "pickaladder.user.services.profile.storage",
-                new=self.mock_storage_service,
-            ),
-            "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
-            "auth": patch("pickaladder.user.services.core.auth"),
-        }
+        patch("firebase_admin.initialize_app").start()
+        patch(
+            "firebase_admin.firestore.client",
+            return_value=self.mock_firestore_service.client.return_value,
+        ).start()
+        patch("pickaladder.user.services.core.auth", new=self.mock_auth_service).start()
+        patch(
+            "pickaladder.user.services.profile.auth", new=self.mock_auth_service
+        ).start()
+        patch(
+            "pickaladder.user.services.core.storage", new=self.mock_storage_service
+        ).start()
+        patch(
+            "pickaladder.user.services.profile.storage",
+            new=self.mock_storage_service,
+        ).start()
+        patch("firebase_admin.auth.verify_id_token").start()
+        patch("pickaladder.user.services.core.auth", new=self.mock_auth_service).start()
+        patch("pickaladder.user.services.core.send_email").start()
 
         # Patch firestore.client() to return our mock_db
         self.patcher_firestore = patch(
@@ -151,20 +160,22 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Settings updated!", response.data)
-        mock_user_doc.update.assert_called()
+        # Verify changes in mock_db
+        user_data = (
+            self.mock_db.collection("users").document(MOCK_USER_ID).get().to_dict()
+        )
+        self.assertEqual(user_data["username"], "newuser")
+        self.assertEqual(user_data["name"], "New Name")
 
     def test_update_profile_picture_upload(self) -> None:
         """Test uploading a profile picture."""
         self._set_session_user()
-        self._mock_firestore_user()
 
         mock_bucket = self.mock_storage_service.bucket.return_value
         mock_blob = mock_bucket.blob.return_value
         mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test.jpg"
 
         data = {
-            "name": "User One",
-            "email": "user1@example.com",
             "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
             "username": "newuser",
             "name": "New User",
@@ -186,7 +197,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def test_update_dupr_and_dark_mode(self) -> None:
         """Test updating DUPR rating and dark mode settings."""
         self._set_session_user()
-        mock_user_doc = self._mock_firestore_user()
 
         response = self.client.post(
             "/user/settings",
@@ -201,9 +211,12 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Settings updated!", response.data)
-        update_call_args = mock_user_doc.update.call_args[0][0]
-        self.assertEqual(update_call_args["dark_mode"], True)
-        self.assertEqual(update_call_args["duprRating"], 5.5)
+        # Verify changes in mock_db
+        user_data = (
+            self.mock_db.collection("users").document(MOCK_USER_ID).get().to_dict()
+        )
+        self.assertEqual(user_data["dark_mode"], True)
+        self.assertEqual(user_data["duprRating"], 5.5)
 
     def _setup_dashboard_mocks(self, mock_db: MagicMock) -> None:
         """Set up specific mocks for the dashboard API tests."""
@@ -258,7 +271,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def test_api_dashboard_returns_group_match_flag(self) -> None:
         """Test that the response includes an indicator for group matches."""
         self._set_session_user()
-        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+        mock_db = self.mock_firestore_service.client.return_value
+        self._setup_dashboard_mocks(mock_db)
 
         mock_match = MagicMock()
         mock_match.id = "match1"
@@ -299,6 +313,14 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         """Test that view_user fetches and processes matches."""
         self._set_session_user()
 
+        # Convert self.mock_db to MagicMock for this specific test to use side_effect
+        self.mock_db = MagicMock()
+        self.patcher_firestore.stop()
+        self.patcher_firestore = patch(
+            "firebase_admin.firestore.client", return_value=self.mock_db
+        )
+        self.patcher_firestore.start()
+
         mock_profile_user_ref = MagicMock()
         mock_profile_user_ref.id = MOCK_PROFILE_USER_ID
         mock_profile_user_ref.get.return_value.exists = True
@@ -318,7 +340,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 return mock_matches_coll
             return MagicMock()
 
-        mock_db.collection.side_effect = collection_side_effect
+        self.mock_db.collection.side_effect = collection_side_effect
 
         mock_match = MagicMock()
         mock_match.id = "match1"
@@ -354,7 +376,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "stats": {"wins": 10, "losses": 5},
         }
 
-        mock_db.get_all.return_value = [mock_profile_doc, mock_opponent_doc]
+        self.mock_db.get_all.return_value = [mock_profile_doc, mock_opponent_doc]
 
         self.client.get(f"/user/{MOCK_PROFILE_USER_ID}")
 
