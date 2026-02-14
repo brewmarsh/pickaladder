@@ -20,35 +20,41 @@ if TYPE_CHECKING:
 
 
 class TournamentGenerator:
-    """Utility class for generating tournament matches."""
+    """Helper to generate tournament brackets and pairings."""
 
     @staticmethod
-    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, str]]:
-        """
-        Generate round-robin pairings using the Circle Method.
-        Returns a list of match dicts with 'player1' and 'player2' keys.
-        """
+    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
+        """Generate round robin pairings using the circle method."""
         if len(participant_ids) < 2:
             return []
 
+        # Simple Circle Method implementation
         ids = list(participant_ids)
         if len(ids) % 2 != 0:
-            ids.append(None)  # type: ignore # Bye
+            ids.append("BYE")
 
-        num_participants = len(ids)
-        num_rounds = num_participants - 1
-        matches = []
+        n = len(ids)
+        pairings = []
+        db = firestore.client()
 
-        for _ in range(num_rounds):
-            for i in range(num_participants // 2):
+        for _ in range(n - 1):
+            for i in range(n // 2):
                 p1 = ids[i]
-                p2 = ids[num_participants - 1 - i]
-                if p1 is not None and p2 is not None:
-                    matches.append({"player1": p1, "player2": p2})
-            # Rotate ids: keep the first element fixed, rotate others
-            ids = [ids[0], ids[-1]] + ids[1:-1]
+                p2 = ids[n - 1 - i]
+                if p1 != "BYE" and p2 != "BYE":
+                    pairings.append(
+                        {
+                            "player1Ref": db.collection("users").document(p1),
+                            "player2Ref": db.collection("users").document(p2),
+                            "matchType": "singles",
+                            "status": "PENDING",
+                            "createdAt": firestore.SERVER_TIMESTAMP,
+                        }
+                    )
+            # Rotate ids: keep the first element fixed, move the rest
+            ids = [ids[0]] + [ids[-1]] + ids[1:-1]
 
-        return matches
+        return pairings
 
 
 class TournamentService:
@@ -301,7 +307,6 @@ class TournamentService:
         raw_participants = data.get("participants", [])
         participants = TournamentService._resolve_participants(db, raw_participants)
 
-        # Standings, Podium & Invitable Users
         standings = get_tournament_standings(
             db, tournament_id, data.get("matchType", "singles")
         )
@@ -316,12 +321,11 @@ class TournamentService:
             db, user_uid, current_p_ids
         )
 
-        # Groups & Team Status
         from pickaladder.user import UserService  # noqa: PLC0415
 
         user_groups = UserService.get_user_groups(db, user_uid)
-        team_status, pending_partner_invite = TournamentService._get_team_status_for_user(
-            db, tournament_id, user_uid
+        team_status, pending_partner_invite = (
+            TournamentService._get_team_status_for_user(db, tournament_id, user_uid)
         )
 
         is_owner = data.get("organizer_id") == user_uid or (
@@ -365,11 +369,9 @@ class TournamentService:
         if owner_id != user_uid:
             raise PermissionError("Unauthorized.")
 
-        # Handle start_date / date compatibility
         if "start_date" in update_data:
             update_data["date"] = update_data["start_date"]
 
-        # If changing match type, ensure no matches exist
         if "matchType" in update_data:
             matches = (
                 db.collection("matches")
@@ -380,7 +382,6 @@ class TournamentService:
                 .stream()
             )
             if any(matches):
-                # Don't update matchType if matches exist
                 del update_data["matchType"]
 
         ref.update(update_data)
@@ -410,14 +411,12 @@ class TournamentService:
         db: Client, tournament_data: dict[str, Any], group_id: str, user_uid: str
     ) -> list[Any]:
         """Validate permissions and return group member references."""
-        # Check Tournament Ownership
         owner_id = tournament_data.get("organizer_id")
         if not owner_id and tournament_data.get("ownerRef"):
             owner_id = tournament_data["ownerRef"].id
         if owner_id != user_uid:
             raise PermissionError("Unauthorized.")
 
-        # Fetch Group
         g_doc = cast(Any, db.collection("groups").document(group_id).get())
         if not g_doc.exists:
             raise ValueError("Group not found")
@@ -425,7 +424,6 @@ class TournamentService:
         if not g_data:
             raise ValueError("Group data is empty")
 
-        # Check Group Membership
         member_refs = g_data.get("members", [])
         if not any(m.id == user_uid for m in member_refs):
             raise PermissionError(
@@ -435,7 +433,7 @@ class TournamentService:
 
     @staticmethod
     def _prepare_group_invites(
-        member_docs: list[DocumentSnapshot], current_ids: set[str]
+        member_docs: list[Any], current_ids: set[str]
     ) -> tuple[list[dict[str, Any]], list[str]]:
         """Filter group members and prepare invite objects."""
         new_parts = []
@@ -631,7 +629,6 @@ class TournamentService:
         }
 
         if p2_uid:
-            # If partner is already known, link with global team ID
             team_id = TeamService.get_or_create_team(db, p1_uid, p2_uid)
             team_data["team_id"] = team_id
 
@@ -665,16 +662,11 @@ class TournamentService:
         for doc in query:
             data = doc.to_dict()
             p1_uid = data["p1_uid"]
-
-            # Ensure global team exists and link it
             team_id = TeamService.get_or_create_team(db, p1_uid, user_uid)
-
             doc.reference.update({"status": "CONFIRMED", "team_id": team_id})
-
             TournamentService._sync_team_participants(
                 db, tournament_id, p1_uid, user_uid, data.get("team_name")
             )
-
             updated = True
 
         return updated
@@ -782,7 +774,6 @@ class TournamentService:
                     }
                 )
         else:
-            # Fetch confirmed teams from sub-collection
             teams_query = (
                 t_ref.collection("teams")
                 .where(filter=firestore.FieldFilter("status", "==", "CONFIRMED"))

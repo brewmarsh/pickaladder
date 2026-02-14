@@ -60,12 +60,6 @@ def create_tournament() -> Any:
             if date_val is None:
                 raise ValueError("Date is required")
 
-            location_data = {
-                "name": form.venue_name.data,
-                "address": form.address.data,
-                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
-            }
-
             data = {
                 "name": form.name.data,
                 "start_date": date_val,
@@ -173,12 +167,6 @@ def edit_tournament(tournament_id: str) -> Any:
                 tournament=tournament_data,
                 action="Edit",
             )
-
-        location_data = {
-            "name": form.venue_name.data,
-            "address": form.address.data,
-            "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
-        }
 
         update_data = {
             "name": form.name.data,
