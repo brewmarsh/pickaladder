@@ -1,5 +1,6 @@
 """Admin routes for the application."""
 
+import datetime
 import random
 from typing import Union
 
@@ -18,6 +19,8 @@ from flask import (
 from werkzeug.wrappers import Response
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.match.models import MatchSubmission
+from pickaladder.match.services import MatchService
 from pickaladder.user import UserService
 
 from . import bp
@@ -210,8 +213,6 @@ def admin_delete_user() -> Response:
         flash(f"User {user_identifier} not found.", "danger")
 
     return redirect(url_for(".admin"))
-
-
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
 def delete_user(user_id: str) -> Response:
@@ -293,10 +294,10 @@ def generate_users() -> str:
 
 
 @bp.route("/generate_matches", methods=["POST"])
+@login_required(admin_required=True)
 def generate_matches() -> Response:
     """Generate random matches between existing users."""
     db = firestore.client()
-    fake = Faker()
     try:
         users = list(db.collection("users").limit(20).stream())
         if len(users) < MIN_USERS_FOR_MATCH_GENERATION:
@@ -304,19 +305,37 @@ def generate_matches() -> Response:
             return redirect(url_for(".admin"))
 
         matches_to_create = 10
+        matches_created = 0
         for _ in range(matches_to_create):
-            p1, p2 = random.sample(users, 2)  # nosec
-            db.collection("matches").add(
-                {
-                    "player1Ref": p1.reference,
-                    "player2Ref": p2.reference,
-                    "player1Score": random.randint(5, 11),  # nosec
-                    "player2Score": random.randint(5, 11),  # nosec
-                    "matchDate": fake.date_between(start_date="-1y", end_date="today"),
-                    "createdAt": firestore.SERVER_TIMESTAMP,
-                }
+            p1, p2 = random.sample(users, 2)  # nosec B311
+            p1_id = p1.id
+            p2_id = p2.id
+
+            # Ensure a valid score (one reaches 11, margin 2)
+            s1 = 11
+            s2 = random.randint(0, 9)  # nosec B311
+            if random.choice([True, False]):  # nosec B311
+                s1, s2 = s2, s1
+
+            # Use a dummy current_user dict for MatchService
+            dummy_user = {"uid": p1_id}
+
+            submission = MatchSubmission(
+                player_1_id=p1_id,
+                player_2_id=p2_id,
+                score_p1=s1,
+                score_p2=s2,
+                match_type="singles",
+                match_date=datetime.datetime.now(datetime.timezone.utc),
+                created_by=p1_id,
             )
-        flash(f"{matches_to_create} random matches generated.", "success")
+            try:
+                MatchService.record_match(db, submission, dummy_user)
+                matches_created += 1
+            except Exception as e:
+                print(f"Error generating match: {e}")
+
+        flash(f"{matches_created} random matches generated.", "success")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
 

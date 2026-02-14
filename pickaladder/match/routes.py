@@ -11,6 +11,7 @@ from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import MatchForm
+from .models import MatchSubmission
 from .services import MatchService
 
 if TYPE_CHECKING:
@@ -55,25 +56,23 @@ def edit_match(match_id: str) -> Any:
     if match_type == "doubles":
         team1_id = m_dict.get("team1Id")
         team2_id = m_dict.get("team2Id")
-        if team1_id:
-            t1_doc = db.collection("teams").document(team1_id).get()
-            if t1_doc.exists:
-                player1_name = t1_doc.to_dict().get("name", "Team 1")
-        if team2_id:
-            t2_doc = db.collection("teams").document(team2_id).get()
-            if t2_doc.exists:
-                player2_name = t2_doc.to_dict().get("name", "Team 2")
+        if team1_id and team2_id:
+            player1_name, player2_name = MatchService.get_team_names(
+                db, team1_id, team2_id
+            )
     else:
         p1_ref = m_dict.get("player1Ref")
         p2_ref = m_dict.get("player2Ref")
+        uids = []
         if p1_ref:
-            p1_doc = p1_ref.get()
-            if p1_doc.exists:
-                player1_name = p1_doc.to_dict().get("name", "Player 1")
+            uids.append(p1_ref.id)
         if p2_ref:
-            p2_doc = p2_ref.get()
-            if p2_doc.exists:
-                player2_name = p2_doc.to_dict().get("name", "Player 2")
+            uids.append(p2_ref.id)
+        names = MatchService.get_player_names(db, uids)
+        if p1_ref:
+            player1_name = names.get(p1_ref.id, "Player 1")
+        if p2_ref:
+            player2_name = names.get(p2_ref.id, "Player 2")
 
     return render_template(
         "match/edit_match.html",
@@ -90,73 +89,10 @@ def edit_match(match_id: str) -> Any:
 def view_match_summary(match_id: str) -> Any:
     """Display the summary of a single match."""
     db = firestore.client()
-    match_data = MatchService.get_match_by_id(db, match_id)
-    if match_data is None:
+    context = MatchService.get_match_summary_context(db, match_id)
+    if not context:
         flash("Match not found.", "danger")
         return redirect(url_for("user.dashboard"))
-
-    # Cast to dict to avoid mypy Mapping.get issues with TypedDict
-    m_dict = cast("dict[str, Any]", match_data)
-    match_type = m_dict.get("matchType", "singles")
-
-    context = {"match": match_data, "match_type": match_type}
-
-    if match_type == "doubles":
-        # Fetch team members
-        team1_refs = m_dict.get("team1", [])
-        team2_refs = m_dict.get("team2", [])
-
-        team1_data = []
-        if team1_refs:
-            for doc in db.get_all(team1_refs):
-                if doc.exists:
-                    p_data = doc.to_dict()
-                    p_data["id"] = doc.id
-                    team1_data.append(p_data)
-
-        team2_data = []
-        if team2_refs:
-            for doc in db.get_all(team2_refs):
-                if doc.exists:
-                    p_data = doc.to_dict()
-                    p_data["id"] = doc.id
-                    team2_data.append(p_data)
-
-        context["team1"] = team1_data
-        context["team2"] = team2_data
-
-    else:
-        # Fetch player data from references
-        player1_ref = m_dict.get("player1Ref")
-        player2_ref = m_dict.get("player2Ref")
-
-        player1_data = {}
-        player2_data = {}
-        player1_record = {"wins": 0, "losses": 0}
-        player2_record = {"wins": 0, "losses": 0}
-
-        if player1_ref:
-            p1_doc = player1_ref.get()
-            if p1_doc.exists:
-                player1_data = p1_doc.to_dict()
-                player1_data["id"] = p1_doc.id
-                player1_record = MatchService.get_player_record(db, player1_ref)
-
-        if player2_ref:
-            p2_doc = player2_ref.get()
-            if p2_doc.exists:
-                player2_data = p2_doc.to_dict()
-                player2_data["id"] = p2_doc.id
-                player2_record = MatchService.get_player_record(db, player2_ref)
-
-        context.update(
-            {
-                "player1": player1_data,
-                "player2": player2_data,
-                "player1_record": player1_record,
-                "player2_record": player2_record,
-            }
-        )
 
     return render_template("match/summary.html", **context)
 
@@ -186,12 +122,7 @@ def record_match() -> Any:
     )
 
     all_uids = p1_candidates | other_candidates
-    all_names = {}
-    if all_uids:
-        candidate_refs = [db.collection("users").document(uid) for uid in all_uids]
-        for doc in db.get_all(candidate_refs):
-            if doc.exists:
-                all_names[doc.id] = doc.to_dict().get("name", doc.id)
+    all_names = MatchService.get_player_names(db, all_uids)
 
     form.player1.choices = [  # type: ignore[assignment]
         (uid, str(all_names.get(uid, uid))) for uid in p1_candidates
@@ -229,11 +160,7 @@ def record_match() -> Any:
             form.player2.data = opponent_id
 
         if not match_type:
-            user_doc = db.collection("users").document(user_id).get()
-            if user_doc.exists:
-                form.match_type.data = user_doc.to_dict().get(
-                    "lastMatchRecordedType", "singles"
-                )
+            form.match_type.data = MatchService.get_user_last_match_type(db, user_id)
 
     if (request.method == "POST" or request.is_json) and form.validate():
         # Ensure group_id and tournament_id from request args are preserved
@@ -244,9 +171,28 @@ def record_match() -> Any:
         if not data.get("tournament_id"):
             data["tournament_id"] = tournament_id
 
+        # Create MatchSubmission dataclass
+        submission = MatchSubmission(
+            player_1_id=data["player1"],
+            player_2_id=data["player2"],
+            score_p1=int(data["player1_score"]),
+            score_p2=int(data["player2_score"]),
+            match_type=data["match_type"],
+            partner_id=data.get("partner"),
+            opponent_2_id=data.get("opponent2"),
+            group_id=data.get("group_id"),
+            tournament_id=data.get("tournament_id"),
+            match_date=data.get("match_date"),
+            created_by=user_id,
+        )
+
         try:
-            # Capture the ID from the service call (Feature Branch Logic)
-            match_id = MatchService.process_match_submission(db, data, g.user)
+            # Explicit validation via dataclass
+            submission.validate()
+
+            # Record match via service
+            result = MatchService.record_match(db, submission, g.user)
+            match_id = result.id
 
             if request.is_json:
                 return jsonify(
@@ -257,11 +203,10 @@ def record_match() -> Any:
                     }
                 ), 200
 
-            active_tid = form.tournament_id.data or tournament_id
-            active_gid = form.group_id.data or group_id
-
+            flash("Match recorded successfully.", "success")
+            active_tid = submission.tournament_id or tournament_id
+            active_gid = submission.group_id or group_id
             if active_tid:
-                flash("Match recorded successfully.", "success")
                 return redirect(
                     url_for(
                         "tournament.view_tournament",
@@ -269,10 +214,8 @@ def record_match() -> Any:
                     )
                 )
             if active_gid:
-                flash("Match recorded successfully.", "success")
                 return redirect(url_for("group.view_group", group_id=active_gid))
-
-            return redirect(url_for("match.view_match_summary", match_id=match_id))
+            return redirect(url_for("user.dashboard"))
         except ValueError as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400
@@ -284,9 +227,7 @@ def record_match() -> Any:
 
     tournament_name = None
     if tournament_id:
-        t_doc = db.collection("tournaments").document(tournament_id).get()
-        if t_doc.exists:
-            tournament_name = t_doc.to_dict().get("name")
+        tournament_name = MatchService.get_tournament_name(db, tournament_id)
 
     return render_template(
         "record_match.html",

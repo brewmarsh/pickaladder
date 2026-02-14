@@ -6,6 +6,7 @@ import unittest
 from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
+from pickaladder.match.models import MatchSubmission
 from pickaladder.match.services import MatchService
 
 if TYPE_CHECKING:
@@ -24,6 +25,7 @@ class MatchSecurityTestCase(unittest.TestCase):
         mock_db = MagicMock()
         mock_get_candidates.return_value = {"player1", "player2"}
 
+        # Simulate form data with injected fields
         form_data = {
             "player1": "player1",
             "player2": "player2",
@@ -37,7 +39,17 @@ class MatchSecurityTestCase(unittest.TestCase):
 
         current_user = cast("UserSession", {"uid": "player1"})
 
-        MatchService.process_match_submission(mock_db, form_data, current_user)
+        # In the refactored route, we create a MatchSubmission explicitly
+        submission = MatchSubmission(
+            player_1_id=form_data["player1"],
+            player_2_id=form_data["player2"],
+            score_p1=int(form_data["player1_score"]),
+            score_p2=int(form_data["player2_score"]),
+            match_type=form_data["match_type"],
+            # Injected fields are ignored by dataclass constructor
+        )
+
+        MatchService.record_match(mock_db, submission, current_user)
 
         # Verify mock_record_tx was called
         self.assertTrue(mock_record_tx.called)

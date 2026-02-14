@@ -168,10 +168,10 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
                 "match_date": datetime.date.today().isoformat(),
                 "match_type": "singles",
             },
-            follow_redirects=False,
+            follow_redirects=True,
         )
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("/match/summary/", response.location)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Match recorded successfully.", response.data)
         # Check that the match was saved (using either add or document().set())
         self.assertTrue(
             mock_matches_collection.add.called
