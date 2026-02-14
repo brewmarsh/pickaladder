@@ -20,43 +20,36 @@ if TYPE_CHECKING:
 
 
 class TournamentGenerator:
-    """Helper to generate tournament brackets and pairings."""
+    """Utility class for generating tournament matches."""
 
     @staticmethod
-    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
-        """Generate round robin pairings using the circle method."""
-        if len(participant_ids) < 2:
+    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, str]]:
+        """
+        Generate round-robin pairings using the Circle Method.
+        Returns a list of match dicts with 'player1' and 'player2' keys.
+        """
+        min_participants = 2
+        if len(participant_ids) < min_participants:
             return []
 
-        # Simple Circle Method implementation
         ids = list(participant_ids)
-        has_bye = False
         if len(ids) % 2 != 0:
-            ids.append("BYE")
-            has_bye = True
+            ids.append(None)  # type: ignore # Bye
 
-        n = len(ids)
-        pairings = []
-        db = firestore.client()
+        num_participants = len(ids)
+        num_rounds = num_participants - 1
+        matches = []
 
-        for _ in range(n - 1):
-            for i in range(n // 2):
+        for _ in range(num_rounds):
+            for i in range(num_participants // 2):
                 p1 = ids[i]
-                p2 = ids[n - 1 - i]
-                if p1 != "BYE" and p2 != "BYE":
-                    pairings.append(
-                        {
-                            "player1Ref": db.collection("users").document(p1),
-                            "player2Ref": db.collection("users").document(p2),
-                            "matchType": "singles",
-                            "status": "PENDING",
-                            "createdAt": firestore.SERVER_TIMESTAMP,
-                        }
-                    )
-            # Rotate
-            ids = [ids[0]] + [ids[-1]] + ids[1:-1]
+                p2 = ids[num_participants - 1 - i]
+                if p1 is not None and p2 is not None:
+                    matches.append({"player1": p1, "player2": p2})
+            # Rotate ids: keep the first element fixed, rotate others
+            ids = [ids[0], ids[-1]] + ids[1:-1]
 
-        return pairings
+        return matches
 
 
 class TournamentService:
@@ -240,12 +233,21 @@ class TournamentService:
             db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
 
+        # Handle naming inconsistencies between form and service
+        date = data.get("start_date") or data.get("date")
+        location = data.get("venue_name") or data.get("location")
+        mode = data.get("match_type") or data.get("mode") or "SINGLES"
+        match_type = data.get("matchType") or mode.lower()
+
         tournament_payload = {
             "name": data["name"],
-            "date": data["date"],
-            "location": data["location"],
-            "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
-            "mode": data.get("mode", "SINGLES"),
+            "date": date,
+            "location": location,
+            "address": data.get("address"),
+            "format": data.get("format"),
+            "description": data.get("description"),
+            "matchType": match_type,
+            "mode": mode,
             "ownerRef": user_ref,
             "organizer_id": user_uid,
             "status": "Active",
@@ -368,6 +370,10 @@ class TournamentService:
         if "start_date" in update_data:
             update_data["date"] = update_data["start_date"]
 
+        if "match_type" in update_data:
+            update_data["mode"] = update_data["match_type"]
+            update_data["matchType"] = update_data["match_type"].lower()
+
         # If changing match type, ensure no matches exist
         if "matchType" in update_data:
             matches = (
@@ -381,6 +387,8 @@ class TournamentService:
             if any(matches):
                 # Don't update matchType if matches exist
                 del update_data["matchType"]
+                if "mode" in update_data:
+                    del update_data["mode"]
 
         ref.update(update_data)
 
@@ -477,12 +485,15 @@ class TournamentService:
         )
 
         if new_parts:
-            t_ref.update(
+            batch = db.batch()
+            batch.update(
+                t_ref,
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                }
+                },
             )
+            batch.commit()
         return len(new_parts)
 
     @staticmethod
@@ -799,11 +810,3 @@ class TournamentService:
                     }
                 )
         return bracket
-
-
-class TournamentGenerator:
-    """Placeholder for tournament bracket generation logic."""
-
-    @staticmethod
-    def generate_round_robin(participants: list[Any]) -> list[Any]:
-        return []

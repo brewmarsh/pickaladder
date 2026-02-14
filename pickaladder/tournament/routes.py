@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import datetime
 import logging
 from typing import Any
 
@@ -62,10 +61,12 @@ def create_tournament() -> Any:
 
             data = {
                 "name": form.name.data,
-                "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": form.location.data,
-                "mode": form.mode.data,
-                "matchType": form.mode.data.lower(),
+                "start_date": date_val,
+                "venue_name": form.venue_name.data,
+                "address": form.address.data,
+                "match_type": form.match_type.data,
+                "format": form.format.data,
+                "description": form.description.data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -168,10 +169,12 @@ def edit_tournament(tournament_id: str) -> Any:
 
         update_data = {
             "name": form.name.data,
-            "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": form.location.data,
-            "mode": form.mode.data,
-            "matchType": form.mode.data.lower(),
+            "start_date": date_val,
+            "venue_name": form.venue_name.data,
+            "address": form.address.data,
+            "match_type": form.match_type.data,
+            "format": form.format.data,
+            "description": form.description.data,
         }
 
         # Handle banner upload
@@ -196,8 +199,11 @@ def edit_tournament(tournament_id: str) -> Any:
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
-        form.location.data = tournament_data.get("location")
-        form.mode.data = (
+        form.venue_name.data = tournament_data.get("location")
+        form.address.data = tournament_data.get("address")
+        form.description.data = tournament_data.get("description")
+        form.format.data = tournament_data.get("format")
+        form.match_type.data = (
             tournament_data.get("mode")
             or tournament_data.get("matchType", "SINGLES").upper()
         )
@@ -360,6 +366,19 @@ def generate_bracket(tournament_id: str) -> Any:
 
     flash(f"Round Robin bracket generated with {len(pairings)} matches!", "success")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    db = firestore.client()
+    try:
+        db.collection("tournaments").document(tournament_id).delete()
+        flash("Tournament deleted successfully.", "success")
+    except Exception as e:
+        flash(f"Error deleting tournament: {e}", "danger")
+    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/join", methods=["POST"])

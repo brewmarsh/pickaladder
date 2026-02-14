@@ -33,7 +33,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Login')")
 
-    page.hover(".navbar-user-controls .dropdown")
+    page.click(".navbar-user-controls .dropdown")
     page.click("a:has-text('Settings')")
     expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
 
@@ -61,7 +61,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Login')")
 
-    page.hover(".navbar-user-controls .dropdown")
+    page.click(".navbar-user-controls .dropdown")
     page.click("a:has-text('Settings')")
     expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
 

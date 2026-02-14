@@ -1,7 +1,8 @@
 """Forms for the tournament blueprint."""
 
 from flask_wtf import FlaskForm
-from wtforms import DateField, RadioField, SelectField, StringField
+from flask_wtf.file import FileAllowed, FileField
+from wtforms import DateField, RadioField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired
 
 
@@ -9,9 +10,11 @@ class TournamentForm(FlaskForm):
     """Form for creating/editing a tournament."""
 
     name = StringField("Tournament Name", validators=[DataRequired()])
-    date = DateField("Date", validators=[DataRequired()])
-    location = StringField("Location", validators=[DataRequired()])
-    mode = RadioField(
+    start_date = DateField("Start Date", validators=[DataRequired()])
+    venue_name = StringField("Venue Name", validators=[DataRequired()])
+    address = StringField("Address", validators=[DataRequired()])
+    description = TextAreaField("Description")
+    match_type = RadioField(
         "Competition Mode",
         choices=[("SINGLES", "👤 Singles (1v1)"), ("DOUBLES", "👥 Doubles (2v2)")],
         validators=[DataRequired()],
@@ -24,6 +27,10 @@ class TournamentForm(FlaskForm):
             ("SINGLE_ELIMINATION", "Single Elimination"),
         ],
         validators=[DataRequired()],
+    )
+    banner = FileField(
+        "Tournament Banner",
+        validators=[FileAllowed(["jpg", "png", "jpeg"], "Images only!")],
     )
 
 

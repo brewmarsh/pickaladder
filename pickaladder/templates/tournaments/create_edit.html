@@ -59,6 +59,16 @@
             </div>
 
             <div class="form-group">
+                {{ form.format.label(class="form-label") }}
+                {{ form.format(class="form-input") }}
+                {% if form.format.errors %}
+                    {% for error in form.format.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="form-group">
                 {{ form.venue_name.label(class="form-label") }}
                 {{ form.venue_name(class="form-input", placeholder="Central Park Courts") }}
                 {% if form.venue_name.errors %}

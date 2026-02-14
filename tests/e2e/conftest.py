@@ -264,20 +264,20 @@ class MockTransaction(Transaction):
         self._max_attempts = 5
         self._retry_id = None
 
-    def _rollback(self):
-        pass
-
-    def _begin(self, **kwargs):
-        pass
-
-    def _commit(self):
-        pass
-
-    def _clean_up(self):
-        pass
-
     def _rollback(self) -> None:
         """Mock rollback."""
+        pass
+
+    def _begin(self, **kwargs: Any) -> None:
+        """Mock begin."""
+        pass
+
+    def _commit(self) -> list[Any]:
+        """Mock commit."""
+        return []
+
+    def _clean_up(self) -> None:
+        """Mock clean up."""
         pass
 
     def __getattr__(self, name: str) -> Any:
@@ -287,22 +287,6 @@ class MockTransaction(Transaction):
         raise AttributeError(
             f"'{self.__class__.__name__}' object has no attribute '{name}'"
         )
-
-    def _begin(self, retry_id: Any = None) -> None:
-        """Mock begin."""
-        pass
-
-    def _rollback(self) -> None:
-        """Mock rollback."""
-        pass
-
-    def _clean_up(self) -> None:
-        """Mock clean up."""
-        pass
-
-    def _commit(self) -> list[Any]:
-        """Mock commit."""
-        return []
 
     def get(self, ref_or_query: Any, **kwargs: Any) -> Any:
         """Mock get."""
