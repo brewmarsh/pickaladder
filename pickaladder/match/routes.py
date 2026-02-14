@@ -112,9 +112,11 @@ def _populate_match_form_choices(
             if doc.exists:
                 all_names[doc.id] = doc.to_dict().get("name", doc.id)
 
-    form.player1.choices = [(u, str(all_names.get(u, u))) for u in p1_cands]
+    form.player1.choices = cast(Any, [(u, str(all_names.get(u, u))) for u in p1_cands])
     others = [(u, str(all_names.get(u, u))) for u in other_cands]
-    form.player2.choices = form.partner.choices = form.opponent2.choices = others
+    form.player2.choices = form.partner.choices = form.opponent2.choices = cast(
+        Any, others
+    )
 
 
 def _handle_record_match_get(
@@ -159,41 +161,38 @@ def record_match() -> Any:
 
     if form.validate_on_submit():
         data = form.data
-        # Ensure ID context is preserved if not present in form body
-        data["group_id"] = data.get("group_id") or group_id
-        data["tournament_id"] = data.get("tournament_id") or t_id
         
+        # Using structured submission from the feature branch for cleaner data handling
+        submission = MatchSubmission(
+            match_type=data["match_type"],
+            player_1_id=data["player1"],
+            player_2_id=data["player2"],
+            score_p1=data["player1_score"],
+            score_p2=data["player2_score"],
+            match_date=data["match_date"],
+            partner_id=data.get("partner"),
+            opponent_2_id=data.get("opponent2"),
+            group_id=data.get("group_id") or group_id,
+            tournament_id=data.get("tournament_id") or t_id,
+        )
+
         try:
-            # Using structured submission from fix branch
-            submission = MatchSubmission(
-                player_1_id=data["player1"],
-                player_2_id=data["player2"],
-                score_p1=data["player1_score"],
-                score_p2=data["player2_score"],
-                match_type=data["match_type"],
-                match_date=data["match_date"],
-                partner_id=data.get("partner"),
-                opponent_2_id=data.get("opponent2"),
-                group_id=data.get("group_id"),
-                tournament_id=data.get("tournament_id"),
-            )
             result = MatchService.record_match(db, submission, g.user)
             
-            m_id = result.id
             if request.is_json:
-                return jsonify({"status": "success", "match_id": m_id}), 200
+                return jsonify({"status": "success", "match_id": result.id}), 200
             
             flash("Match recorded successfully.", "success")
             
             # Prioritize redirects: Tournament -> Group -> Summary
-            if tid := data.get("tournament_id"):
+            if tid := submission.tournament_id:
                 return redirect(
                     url_for("tournament.view_tournament", tournament_id=tid)
                 )
-            if gid := data.get("group_id"):
+            if gid := submission.group_id:
                 return redirect(url_for("group.view_group", group_id=gid))
             
-            return redirect(url_for("match.view_match_summary", match_id=m_id))
+            return redirect(url_for("match.view_match_summary", match_id=result.id))
             
         except Exception as e:
             if request.is_json:

@@ -53,6 +53,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             patch("firebase_admin.auth"),
             patch("firebase_admin.storage"),
             patch("pickaladder.user.services.core.send_email"),
+            patch("firebase_admin.firestore.FieldFilter", side_effect=lambda f, o, v: MagicMock(field_path=f, op_string=o, value=v))
         ]
         
         for p in self.patches:
@@ -89,7 +90,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def test_settings_get(self) -> None:
         """Test that the settings page loads for a logged-in user."""
         self._set_session_user()
-        self.client.get("/user/settings")
         
         response = self.client.get("/user/settings")
         self.assertEqual(response.status_code, 200)
