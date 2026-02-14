@@ -88,8 +88,8 @@ def test_tournament_flow(
     )
     page.reload()
 
-    # Click Bracket tab to reveal Record Match button
-    page.click("button:has-text('Bracket')")
+    # Click Standings tab to reveal Record Match button
+    page.click("button:has-text('Standings')")
 
     with page.expect_navigation():
         page.click("text=Record Match")

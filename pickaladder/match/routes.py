@@ -11,12 +11,11 @@ from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import MatchForm
-# Import the structured submission model
 from .models import MatchSubmission
 from .services import MatchService
 
 if TYPE_CHECKING:
-    pass
+    from google.cloud.firestore_v1.client import Client
 
 
 # TODO: Add type hints for Agent clarity
@@ -99,7 +98,7 @@ def view_match_summary(match_id: str) -> Any:
 
 
 def _populate_match_form_choices(
-    db: Any, form: MatchForm, user_id: str, group_id: str | None, t_id: str | None
+    db: Client, form: MatchForm, user_id: str, group_id: str | None, t_id: str | None
 ) -> None:
     """Populate player choices for the match form."""
     p1_cands = MatchService.get_candidate_player_ids(db, user_id, group_id, t_id, True)
@@ -109,16 +108,19 @@ def _populate_match_form_choices(
     if all_uids:
         refs = [db.collection("users").document(uid) for uid in all_uids]
         for doc in db.get_all(refs):
-            if doc.exists:
-                all_names[doc.id] = doc.to_dict().get("name", doc.id)
+            d_snap = cast("firestore.DocumentSnapshot", doc)
+            if d_snap.exists:
+                all_names[d_snap.id] = (d_snap.to_dict() or {}).get("name", d_snap.id)
 
     form.player1.choices = [(u, str(all_names.get(u, u))) for u in p1_cands]
     others = [(u, str(all_names.get(u, u))) for u in other_cands]
-    form.player2.choices = form.partner.choices = form.opponent2.choices = others
+    form.player2.choices = cast(Any, others)
+    form.partner.choices = cast(Any, others)
+    form.opponent2.choices = cast(Any, others)
 
 
 def _handle_record_match_get(
-    db: Any, form: MatchForm, user_id: str, group_id: str | None, t_id: str | None
+    db: Client, form: MatchForm, user_id: str, group_id: str | None, t_id: str | None
 ) -> None:
     """Handle GET parameters for pre-populating the match form."""
     form.player1.data = user_id
@@ -138,11 +140,12 @@ def _handle_record_match_get(
     if opp_id and not request.args.get("player3"):
         form.player2.data = opp_id
     if not form.match_type.data:
-        u_doc = db.collection("users").document(user_id).get()
+        u_doc = cast(
+            "firestore.DocumentSnapshot", db.collection("users").document(user_id).get()
+        )
         if u_doc.exists:
-            form.match_type.data = u_doc.to_dict().get(
-                "lastMatchRecordedType", "singles"
-            )
+            u_dict = u_doc.to_dict() or {}
+            form.match_type.data = u_dict.get("lastMatchRecordedType", "singles")
 
 
 @bp.route("/record", methods=["GET", "POST"])
@@ -159,12 +162,7 @@ def record_match() -> Any:
 
     if form.validate_on_submit():
         data = form.data
-        # Ensure context is preserved for the submission object
-        final_gid = data.get("group_id") or group_id
-        final_tid = data.get("tournament_id") or t_id
-
         try:
-            # Using structured submission with 'created_by' from fix branch
             submission = MatchSubmission(
                 player_1_id=data["player1"],
                 player_2_id=data["player2"],
@@ -174,8 +172,8 @@ def record_match() -> Any:
                 match_date=data["match_date"],
                 partner_id=data.get("partner"),
                 opponent_2_id=data.get("opponent2"),
-                group_id=final_gid,
-                tournament_id=final_tid,
+                group_id=data.get("group_id") or group_id,
+                tournament_id=data.get("tournament_id") or t_id,
                 created_by=user_id,
             )
             result = MatchService.record_match(db, submission, g.user)
@@ -183,17 +181,18 @@ def record_match() -> Any:
 
             if request.is_json:
                 return jsonify({"status": "success", "match_id": m_id}), 200
-            
+
             flash("Match recorded successfully.", "success")
-            
+
             # Prioritize redirects: Tournament -> Group -> Summary
             if tid := submission.tournament_id:
-                return redirect(url_for("tournament.view_tournament", tournament_id=tid))
+                return redirect(
+                    url_for("tournament.view_tournament", tournament_id=tid)
+                )
             if gid := submission.group_id:
                 return redirect(url_for("group.view_group", group_id=gid))
-            
+
             return redirect(url_for("match.view_match_summary", match_id=m_id))
-            
         except Exception as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400
@@ -201,8 +200,11 @@ def record_match() -> Any:
 
     t_name = None
     if t_id:
-        t_doc = db.collection("tournaments").document(t_id).get()
-        t_name = t_doc.to_dict().get("name") if t_doc.exists else None
+        t_doc = cast(
+            "firestore.DocumentSnapshot",
+            db.collection("tournaments").document(t_id).get(),
+        )
+        t_name = (t_doc.to_dict() or {}).get("name") if t_doc.exists else None
 
     return render_template(
         "record_match.html",
@@ -231,7 +233,11 @@ def get_match_history() -> Any:
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
-    """Display a global leaderboard."""
+    """Display a global leaderboard.
+
+    Note: This is a simplified, non-scalable implementation. A production-ready
+    leaderboard on Firestore would likely require denormalization and Cloud Functions.
+    """
     db = firestore.client()
     try:
         # Exclude players with 0 games and sort by Win Percentage
