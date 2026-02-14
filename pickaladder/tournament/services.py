@@ -19,6 +19,46 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.transaction import Transaction
 
 
+class TournamentGenerator:
+    """Helper to generate tournament brackets and pairings."""
+
+    @staticmethod
+    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
+        """Generate round robin pairings using the circle method."""
+        if len(participant_ids) < 2:
+            return []
+
+        # Simple Circle Method implementation
+        ids = list(participant_ids)
+        has_bye = False
+        if len(ids) % 2 != 0:
+            ids.append("BYE")
+            has_bye = True
+
+        n = len(ids)
+        pairings = []
+        db = firestore.client()
+
+        for _ in range(n - 1):
+            for i in range(n // 2):
+                p1 = ids[i]
+                p2 = ids[n - 1 - i]
+                if p1 != "BYE" and p2 != "BYE":
+                    pairings.append(
+                        {
+                            "player1Ref": db.collection("users").document(p1),
+                            "player2Ref": db.collection("users").document(p2),
+                            "matchType": "singles",
+                            "status": "PENDING",
+                            "createdAt": firestore.SERVER_TIMESTAMP,
+                        }
+                    )
+            # Rotate
+            ids = [ids[0]] + [ids[-1]] + ids[1:-1]
+
+        return pairings
+
+
 class TournamentService:
     """Handles business logic and data access for tournaments."""
 

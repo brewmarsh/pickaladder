@@ -11,6 +11,8 @@ from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import MatchForm
+# Added import to support the structured submission used in the fix branch
+from .models import MatchSubmission
 from .services import MatchService
 
 if TYPE_CHECKING:
@@ -157,21 +159,42 @@ def record_match() -> Any:
 
     if form.validate_on_submit():
         data = form.data
+        # Ensure ID context is preserved if not present in form body
         data["group_id"] = data.get("group_id") or group_id
         data["tournament_id"] = data.get("tournament_id") or t_id
+        
         try:
-            result = MatchService.record_match(db, data, g.user)
+            # Using structured submission from fix branch
+            submission = MatchSubmission(
+                player_1_id=data["player1"],
+                player_2_id=data["player2"],
+                score_p1=data["player1_score"],
+                score_p2=data["player2_score"],
+                match_type=data["match_type"],
+                match_date=data["match_date"],
+                partner_id=data.get("partner"),
+                opponent_2_id=data.get("opponent2"),
+                group_id=data.get("group_id"),
+                tournament_id=data.get("tournament_id"),
+            )
+            result = MatchService.record_match(db, submission, g.user)
+            
             m_id = result.id
             if request.is_json:
                 return jsonify({"status": "success", "match_id": m_id}), 200
+            
             flash("Match recorded successfully.", "success")
+            
+            # Prioritize redirects: Tournament -> Group -> Summary
             if tid := data.get("tournament_id"):
                 return redirect(
                     url_for("tournament.view_tournament", tournament_id=tid)
                 )
             if gid := data.get("group_id"):
                 return redirect(url_for("group.view_group", group_id=gid))
+            
             return redirect(url_for("match.view_match_summary", match_id=m_id))
+            
         except Exception as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400
