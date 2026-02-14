@@ -1,6 +1,9 @@
 import datetime
 import unittest
+from io import BytesIO
 from unittest.mock import MagicMock, patch
+
+from mockfirestore import MockFirestore
 
 from pickaladder import create_app
 from tests.mock_utils import patch_mockfirestore
@@ -23,32 +26,12 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up the test case."""
+        self.mock_db = MockFirestore()
         self.mock_firestore_service = MagicMock()
         self.mock_auth_service = MagicMock()
         self.mock_storage_service = MagicMock()
 
-        patchers = {
-            "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_client": patch(
-                "firebase_admin.firestore.client",
-                return_value=self.mock_firestore_service.client.return_value,
-            ),
-            "auth_core": patch(
-                "pickaladder.user.services.core.auth", new=self.mock_auth_service
-            ),
-            "auth_profile": patch(
-                "pickaladder.user.services.profile.auth", new=self.mock_auth_service
-            ),
-            "storage_core": patch(
-                "pickaladder.user.services.core.storage", new=self.mock_storage_service
-            ),
-            "storage_profile": patch(
-                "pickaladder.user.services.profile.storage",
-                new=self.mock_storage_service,
-            ),
-            "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
-            "auth": patch("pickaladder.user.services.core.auth"),
-        }
+        # Patchers were unused
 
         # Patch firestore.client() to return our mock_db
         self.patcher_firestore = patch(
@@ -137,21 +120,22 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def test_settings_post_success(self) -> None:
         """Test updating user settings via POST."""
         self._set_session_user()
-
-        response = self.client.post(
-            "/user/settings",
-            data={
-                "name": "New Name",
-                "email": "user1@example.com",
-                "dark_mode": "y",
-                "dupr_rating": 5.5,
-                "username": "newuser",
-            },
-            follow_redirects=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated!", response.data)
-        mock_user_doc.update.assert_called()
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+        with patch.object(user_ref, "update") as mock_user_doc:
+            response = self.client.post(
+                "/user/settings",
+                data={
+                    "name": "New Name",
+                    "email": "user1@example.com",
+                    "dark_mode": "y",
+                    "dupr_rating": 5.5,
+                    "username": "newuser",
+                },
+                follow_redirects=True,
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b"Settings updated!", response.data)
+            mock_user_doc.assert_called()
 
     def test_update_profile_picture_upload(self) -> None:
         """Test uploading a profile picture."""
@@ -163,8 +147,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test.jpg"
 
         data = {
-            "name": "User One",
-            "email": "user1@example.com",
             "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
             "username": "newuser",
             "name": "New User",
@@ -258,7 +240,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def test_api_dashboard_returns_group_match_flag(self) -> None:
         """Test that the response includes an indicator for group matches."""
         self._set_session_user()
-        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
 
         mock_match = MagicMock()
         mock_match.id = "match1"
@@ -318,45 +299,49 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 return mock_matches_coll
             return MagicMock()
 
-        mock_db.collection.side_effect = collection_side_effect
+        with patch.object(
+            self.mock_db, "collection", side_effect=collection_side_effect
+        ):
+            mock_match = MagicMock()
+            mock_match.id = "match1"
+            mock_p2_ref = MagicMock()
+            mock_p2_ref.id = "opponent_id"
 
-        mock_match = MagicMock()
-        mock_match.id = "match1"
-        mock_p2_ref = MagicMock()
-        mock_p2_ref.id = "opponent_id"
+            mock_match.to_dict.return_value = {
+                "matchDate": datetime.datetime(2023, 1, 1),
+                "player1Score": 11,
+                "player2Score": 9,
+                "player1Ref": mock_profile_user_ref,
+                "player2Ref": mock_p2_ref,
+                "matchType": "singles",
+                "participants": [MOCK_PROFILE_USER_ID, "opponent_id"],
+            }
 
-        mock_match.to_dict.return_value = {
-            "matchDate": datetime.datetime(2023, 1, 1),
-            "player1Score": 11,
-            "player2Score": 9,
-            "player1Ref": mock_profile_user_ref,
-            "player2Ref": mock_p2_ref,
-            "matchType": "singles",
-            "participants": [MOCK_PROFILE_USER_ID, "opponent_id"],
-        }
+            mock_query = MagicMock()
+            mock_matches_coll.where.return_value = mock_query
+            mock_query.order_by.return_value = mock_query
+            mock_query.limit.return_value = mock_query
+            mock_query.stream.return_value = [mock_match]
 
-        mock_query = MagicMock()
-        mock_matches_coll.where.return_value = mock_query
-        mock_query.order_by.return_value = mock_query
-        mock_query.limit.return_value = mock_query
-        mock_query.stream.return_value = [mock_match]
+            mock_opponent_doc = MagicMock()
+            mock_opponent_doc.id = "opponent_id"
+            mock_opponent_doc.exists = True
+            mock_opponent_doc.to_dict.return_value = {"username": "opponent_user"}
 
-        mock_opponent_doc = MagicMock()
-        mock_opponent_doc.id = "opponent_id"
-        mock_opponent_doc.exists = True
-        mock_opponent_doc.to_dict.return_value = {"username": "opponent_user"}
+            mock_profile_doc = MagicMock()
+            mock_profile_doc.id = MOCK_PROFILE_USER_ID
+            mock_profile_doc.exists = True
+            mock_profile_doc.to_dict.return_value = {
+                "username": "profile_user",
+                "stats": {"wins": 10, "losses": 5},
+            }
 
-        mock_profile_doc = MagicMock()
-        mock_profile_doc.id = MOCK_PROFILE_USER_ID
-        mock_profile_doc.exists = True
-        mock_profile_doc.to_dict.return_value = {
-            "username": "profile_user",
-            "stats": {"wins": 10, "losses": 5},
-        }
-
-        mock_db.get_all.return_value = [mock_profile_doc, mock_opponent_doc]
-
-        self.client.get(f"/user/{MOCK_PROFILE_USER_ID}")
+            with patch.object(
+                self.mock_db,
+                "get_all",
+                return_value=[mock_profile_doc, mock_opponent_doc],
+            ):
+                self.client.get(f"/user/{MOCK_PROFILE_USER_ID}")
 
         args, kwargs = mock_render_template.call_args
         matches = kwargs.get("matches")

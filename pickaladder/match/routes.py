@@ -11,7 +11,6 @@ from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import MatchForm
-from .models import MatchSubmission
 from .services import MatchService
 
 if TYPE_CHECKING:
@@ -139,7 +138,9 @@ def _handle_record_match_get(
     if not form.match_type.data:
         u_doc = db.collection("users").document(user_id).get()
         if u_doc.exists:
-            form.match_type.data = u_doc.to_dict().get("lastMatchRecordedType", "singles")
+            form.match_type.data = u_doc.to_dict().get(
+                "lastMatchRecordedType", "singles"
+            )
 
 
 @bp.route("/record", methods=["GET", "POST"])
@@ -164,7 +165,9 @@ def record_match() -> Any:
                 return jsonify({"status": "success", "match_id": m_id}), 200
             flash("Match recorded successfully.", "success")
             if tid := data.get("tournament_id"):
-                return redirect(url_for("tournament.view_tournament", tournament_id=tid))
+                return redirect(
+                    url_for("tournament.view_tournament", tournament_id=tid)
+                )
             if gid := data.get("group_id"):
                 return redirect(url_for("group.view_group", group_id=gid))
             return redirect(url_for("match.view_match_summary", match_id=m_id))
@@ -178,8 +181,13 @@ def record_match() -> Any:
         t_doc = db.collection("tournaments").document(t_id).get()
         t_name = t_doc.to_dict().get("name") if t_doc.exists else None
 
-    return render_template("record_match.html", form=form, group_id=group_id,
-                           tournament_id=t_id, tournament_name=t_name)
+    return render_template(
+        "record_match.html",
+        form=form,
+        group_id=group_id,
+        tournament_id=t_id,
+        tournament_name=t_name,
+    )
 
 
 # TODO: Add type hints for Agent clarity
