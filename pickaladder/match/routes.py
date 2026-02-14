@@ -156,18 +156,30 @@ def record_match() -> Any:
 
     if form.validate_on_submit():
         data = form.data
-        data["group_id"] = data.get("group_id") or group_id
-        data["tournament_id"] = data.get("tournament_id") or t_id
+        submission = MatchSubmission(
+            match_type=data["match_type"],
+            player_1_id=data["player1"],
+            player_2_id=data["player2"],
+            score_p1=data["player1_score"],
+            score_p2=data["player2_score"],
+            match_date=data["match_date"],
+            partner_id=data.get("partner"),
+            opponent_2_id=data.get("opponent2"),
+            group_id=data.get("group_id") or group_id,
+            tournament_id=data.get("tournament_id") or t_id,
+        )
         try:
-            m_id = MatchService.record_match(db, data, g.user)
+            result = MatchService.record_match(db, submission, g.user)
             if request.is_json:
-                return jsonify({"status": "success", "match_id": m_id}), 200
+                return jsonify({"status": "success", "match_id": result.id}), 200
             flash("Match recorded successfully.", "success")
-            if tid := data.get("tournament_id"):
-                return redirect(url_for("tournament.view_tournament", tournament_id=tid))
-            if gid := data.get("group_id"):
+            if tid := submission.tournament_id:
+                return redirect(
+                    url_for("tournament.view_tournament", tournament_id=tid)
+                )
+            if gid := submission.group_id:
                 return redirect(url_for("group.view_group", group_id=gid))
-            return redirect(url_for("match.view_match_summary", match_id=m_id))
+            return redirect(url_for("match.view_match_summary", match_id=result.id))
         except Exception as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400

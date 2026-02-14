@@ -759,3 +759,44 @@ class TournamentService:
                     }
                 )
         return bracket
+
+
+class TournamentGenerator:
+    """Utility class to generate tournament match pairings."""
+
+    @staticmethod
+    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
+        """Generate Round Robin pairings using the Circle Method."""
+        if not participant_ids:
+            return []
+
+        # Handle odd number of participants by adding a BYE
+        ids = list(participant_ids)
+        if len(ids) % 2 != 0:
+            ids.append(None)  # type: ignore
+
+        n = len(ids)
+        pairings = []
+        db = firestore.client()
+
+        # Circle Method for Round Robin pairings
+        for _ in range(n - 1):
+            for i in range(n // 2):
+                p1 = ids[i]
+                p2 = ids[n - 1 - i]
+
+                if p1 is not None and p2 is not None:
+                    pairings.append(
+                        {
+                            "player1Ref": db.collection("users").document(p1),
+                            "player2Ref": db.collection("users").document(p2),
+                            "matchType": "singles",
+                            "status": "DRAFT",
+                            "createdAt": firestore.SERVER_TIMESTAMP,
+                            "participants": [p1, p2],
+                        }
+                    )
+            # Rotate ids: keep the first element, rotate the others
+            ids = [ids[0]] + [ids[-1]] + ids[1:-1]
+
+        return pairings

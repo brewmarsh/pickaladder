@@ -4,12 +4,64 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 from pickaladder.core.types import FirestoreDocument
 
 if TYPE_CHECKING:
     from pickaladder.user import User
+
+
+@dataclass
+class MatchSubmission:
+    """Represents a match submission."""
+
+    match_type: str
+    player_1_id: str
+    player_2_id: str
+    score_p1: int
+    score_p2: int
+    match_date: Any
+    partner_id: Optional[str] = None
+    opponent_2_id: Optional[str] = None
+    group_id: Optional[str] = None
+    tournament_id: Optional[str] = None
+    created_by: Optional[str] = None
+
+    def __getitem__(self, key: str) -> Any:
+        """Allow dict-like access for backward compatibility or convenience."""
+        return getattr(self, key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Allow dict-like get for backward compatibility."""
+        return getattr(self, key, default)
+
+
+@dataclass
+class MatchResult:
+    """Represents the result of recording a match."""
+
+    id: str
+    matchType: str
+    player1Score: int
+    player2Score: int
+    matchDate: Any
+    createdAt: Any
+    createdBy: str
+    winner: str
+    winnerId: str
+    loserId: str
+    is_upset: bool = False
+    groupId: Optional[str] = None
+    tournamentId: Optional[str] = None
+    player1Ref: Any = None
+    player2Ref: Any = None
+    team1: Optional[list[Any]] = None
+    team2: Optional[list[Any]] = None
+    team1Id: Optional[str] = None
+    team2Id: Optional[str] = None
+    team1Ref: Any = None
+    team2Ref: Any = None
 
 
 class Score(TypedDict, total=False):

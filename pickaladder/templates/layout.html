@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <title>pickaladder - {% block title %}{% endblock %}</title>
+    <title>pickaladder{% if config['FLASK_ENV'] == 'beta' %} (BETA){% endif %} - {% block title %}{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -38,6 +38,12 @@
 
 <body {% if g.user and g.user.dark_mode %}data-theme="dark" {% endif %}
     {% if is_testing %}data-is-testing="true" {% endif %}>
+    {% if config['FLASK_ENV'] == 'beta' %}
+    <div class="alert alert-primary text-center m-0"
+        style="background-color: var(--primary-color); color: white; border: none; border-radius: 0;">
+        <strong>BETA MODE:</strong> Data is refreshed daily. Actions taken here will NOT be saved to Production.
+    </div>
+    {% endif %}
     {% if g.get('is_impersonating') %}
     <div class="alert alert-warning text-center m-0">
         🕵️ You are impersonating <strong>{{ g.user.name }}</strong>.

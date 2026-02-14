@@ -320,6 +320,7 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
 
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
+        FLASK_ENV=os.environ.get("FLASK_ENV", "development"),
         FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
         GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
         MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
