@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import (
@@ -14,13 +14,12 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import current_user
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
 
 from . import bp
-from .forms import EditProfileForm, UpdateUserForm
+from .forms import SettingsForm, UpdateUserForm
 from .services import UserService
 
 if TYPE_CHECKING:
@@ -39,17 +38,45 @@ class MockPagination:
 @bp.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings() -> Any:
-    """Handle user settings."""
-    form = EditProfileForm(obj=current_user)
+    """Unified user settings page."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+    form = SettingsForm()
+
+    if request.method == "GET":
+        form.name.data = g.user.get("name")
+        form.username.data = g.user.get("username")
+        form.email.data = g.user.get("email")
+        form.dupr_id.data = g.user.get("dupr_id")
+        form.dupr_rating.data = g.user.get("duprRating") or g.user.get("dupr_rating")
+        form.dark_mode.data = g.user.get("dark_mode")
+
     if form.validate_on_submit():
-        res = UserService.update_settings(
-            firestore.client(), g.user["uid"], form, form.profile_picture.data
-        )
+        # Handle email change if needed
+        if form.email.data and form.email.data != g.user.get("email"):
+            # Ensure username is a string for typing and security
+            username = cast(str, form.username.data)
+            email_success, email_msg = UserService.update_email_address(
+                user_id, form.email.data, username
+            )
+            if email_success:
+                UserService.update_user_profile(
+                    db, user_id, {"email": form.email.data, "email_verified": False}
+                )
+                flash(email_msg, "info")
+            else:
+                flash(email_msg, "danger")
+                return render_template("user/settings.html", form=form, user=g.user)
+
+        # Update other settings
+        res = UserService.update_settings(db, user_id, form, form.profile_picture.data)
+
         if res["success"]:
             flash("Settings updated!", "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
-    return render_template("user/settings.html", form=form)
+
+    return render_template("user/settings.html", form=form, user=g.user)
 
 
 @bp.route("/edit_profile", methods=["GET", "POST"])

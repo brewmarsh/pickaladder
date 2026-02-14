@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from mockfirestore import CollectionReference, MockFirestore
+from mockfirestore import CollectionReference, MockFirestore, Transaction
 from mockfirestore.document import DocumentReference, DocumentSnapshot
 from mockfirestore.query import Query
 from werkzeug.serving import make_server
@@ -253,12 +253,28 @@ class MockBatch:
         self.ops = []
 
 
-class MockTransaction:
+class MockTransaction(Transaction):
     """Mock for firestore.Transaction."""
 
     def __init__(self, db: EnhancedMockFirestore) -> None:
         """Initialize mock transaction."""
+        super().__init__(db)
         self.db = db
+        self._read_only = False
+        self._id = "mock_id"
+        self._max_attempts = 5
+
+    def _rollback(self) -> None:
+        """Mock rollback."""
+        pass
+
+    def __getattr__(self, name: str) -> Any:
+        """Handle missing attributes by returning a no-op or mock."""
+        if name.startswith("_"):
+            return MagicMock()
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        )
 
     def _begin(self, retry_id: Any = None) -> None:
         """Mock begin."""
@@ -393,6 +409,7 @@ def app_server(
 
     import firebase_admin.auth
     import firebase_admin.firestore
+    import google.cloud.firestore
 
     p1 = patch("firebase_admin.initialize_app")
     p2 = patch.object(firebase_admin.firestore, "client", return_value=mock_db)
@@ -421,8 +438,9 @@ def app_server(
     p11 = patch.object(
         firebase_admin.firestore, "transactional", side_effect=lambda x: x
     )
+    p12 = patch.object(google.cloud.firestore, "transactional", side_effect=lambda x: x)
 
-    # Start p1 through p11 BEFORE importing pickaladder to ensure decorators are patched
+    # Start p1 through p12 BEFORE importing pickaladder to ensure decorators are patched
     p1.start()
     p2.start()
     p3.start()
@@ -434,6 +452,7 @@ def app_server(
     p9.start()
     p10.start()
     p11.start()
+    p12.start()
 
     # Move pickaladder import AFTER patching
     pickaladder = importlib.import_module("pickaladder")
@@ -467,6 +486,7 @@ def app_server(
     p9.stop()
     p10.stop()
     p11.stop()
+    p12.stop()
 
 
 @pytest.fixture

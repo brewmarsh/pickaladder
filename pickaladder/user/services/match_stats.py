@@ -104,10 +104,20 @@ def _collect_match_refs(
         match = match_doc.to_dict()
         if match is None:
             continue
-        if match.get("player1Ref"):
-            player_refs.add(match["player1Ref"])
-        if match.get("player2Ref"):
-            player_refs.add(match["player2Ref"])
+
+        # Skip collecting player refs if denormalized data exists for singles
+        if (
+            match.get("matchType") != "doubles"
+            and "player_1_data" in match
+            and "player_2_data" in match
+        ):
+            pass
+        else:
+            if match.get("player1Ref"):
+                player_refs.add(match["player1Ref"])
+            if match.get("player2Ref"):
+                player_refs.add(match["player2Ref"])
+
         player_refs.update(match.get("team1", []))
         player_refs.update(match.get("team2", []))
         if match.get("team1Ref"):
@@ -267,6 +277,20 @@ def format_matches_for_dashboard(
             p2_info = [
                 _get_player_info(r, users_map) for r in match_dict.get("team2", [])
             ]
+        # Use denormalized snapshots if available
+        elif "player_1_data" in match_dict and "player_2_data" in match_dict:
+            p1_snap = match_dict["player_1_data"]
+            p2_snap = match_dict["player_2_data"]
+            p1_info = {
+                "id": p1_snap.get("uid"),
+                "username": p1_snap.get("display_name"),
+                "thumbnail_url": p1_snap.get("avatar_url"),
+            }
+            p2_info = {
+                "id": p2_snap.get("uid"),
+                "username": p2_snap.get("display_name"),
+                "thumbnail_url": p2_snap.get("avatar_url"),
+            }
         else:
             p1_info = _get_player_info(match_dict["player1Ref"], users_map)
             p2_info = _get_player_info(match_dict["player2Ref"], users_map)
@@ -300,6 +324,8 @@ def format_matches_for_dashboard(
                 "tournament_name": tournament_name,
                 "created_by": m_data.get("createdBy"),
                 "tournament_id": m_data.get("tournamentId"),
+                "player_1_data": m_data.get("player_1_data"),
+                "player_2_data": m_data.get("player_2_data"),
             }
         )
     return matches_data

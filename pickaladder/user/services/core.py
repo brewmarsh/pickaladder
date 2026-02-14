@@ -23,6 +23,14 @@ def smart_display_name(user: dict[str, Any]) -> str:
     return _smart_display_name(user)
 
 
+def get_avatar_url(user_data: dict[str, Any]) -> str:
+    """Get the avatar URL for a user, using a fallback if not present."""
+    if url := user_data.get("profilePictureUrl"):
+        return str(url)
+    seed = user_data.get("username") or user_data.get("email") or "User"
+    return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
+
+
 def update_user_profile(db: Client, user_id: str, update_data: dict[str, Any]) -> None:
     """Update a user's profile in Firestore."""
     user_ref = db.collection("users").document(user_id)
@@ -179,6 +187,12 @@ def update_settings(
         "username": new_username,
         "dark_mode": bool(form_data.dark_mode.data),
     }
+
+    if hasattr(form_data, "name") and form_data.name.data:
+        update_data["name"] = form_data.name.data
+
+    if hasattr(form_data, "dupr_id") and form_data.dupr_id.data:
+        update_data["dupr_id"] = form_data.dupr_id.data
 
     if form_data.dupr_rating.data is not None:
         rating = float(form_data.dupr_rating.data)
