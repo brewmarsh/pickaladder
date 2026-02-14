@@ -11,10 +11,11 @@ if TYPE_CHECKING:
 
 def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending tournament invitations for a user."""
-    user_ref = db.collection("users").document(user_id)
     tournaments_query = (
         db.collection("tournaments")
-        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .where(
+            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id)
+        )
         .stream()
     )
     pending_invites = []

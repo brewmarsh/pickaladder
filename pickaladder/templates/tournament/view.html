@@ -16,9 +16,11 @@
 </div>
 {% endif %}
 
-<div class="card hero-stats-card">
-    {% if is_owner %}
-        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" title="Edit Tournament">⚙️</a>
+<div class="card hero-stats-card" style="
+    {% if tournament.banner_url %}
+        background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url }}');
+    {% else %}
+        background-color: var(--card-bg);
     {% endif %}
     background-size: cover;
     background-position: center;
@@ -33,7 +35,7 @@
     text-align: center;
     position: relative;
 ">
-    {% if is_owner %}
+    {% if g.user.isAdmin %}
         <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">⚙️</a>
     {% endif %}
     <h1 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h1>
@@ -125,41 +127,22 @@
                     <table class="table-standard responsive-table">
                         <thead>
                             <tr>
-                                <td data-label="Player">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <img src="{{ p.user | avatar_url }}" alt="Avatar" class="friend-avatar" style="width: 32px; height: 32px;" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                        <span>{{ p.display_name }}</span>
-                                    </div>
-                                </td>
-                                <td data-label="Status">
-                                    <span class="badge {{ 'badge-success' if p.status == 'accepted' else 'badge-warning' if p.status == 'pending' else 'badge-info' }}">
-                                        {{ 'Confirmed' if p.status == 'accepted' else 'Pending' if p.status == 'pending' else 'Invited (Email)' }}
-                                    </span>
-                                </td>
-                                <td data-label="Action">
-                                    {% if p.user.id == g.user.uid %}
-                                        {% if tournament.mode == 'DOUBLES' %}
-                                            {% if pending_partner_invite %}
-                                                <form action="{{ url_for('tournament.accept_team', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
-                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button type="submit" class="btn btn-sm btn-success">Accept Team</button>
-                                                </form>
-                                            {% elif not team_status %}
-                                                <button type="button" class="btn btn-sm btn-success" onclick="openPartnerModal()">Join (Pick Partner)</button>
-                                            {% endif %}
-                                        {% else %}
-                                            {% if p.status == 'pending' %}
-                                                <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
-                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button type="submit" class="btn btn-sm btn-success">Join</button>
-                                                </form>
-                                            {% endif %}
-                                        {% endif %}
-                                    {% endif %}
-                                </td>
+                                <th>Name</th>
+                                <th>Wins</th>
+                                <th>Losses</th>
+                                <th>+/-</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for player in standings %}
+                            <tr>
+                                <td data-label="Name">{{ player.name }}</td>
+                                <td data-label="Wins">{{ player.wins }}</td>
+                                <td data-label="Losses">{{ player.losses }}</td>
+                                <td data-label="+/-">{{ player.point_diff }}</td>
                             </tr>
                             {% else %}
-                            <tr><td colspan="5" class="text-center">No matches recorded yet.</td></tr>
+                            <tr><td colspan="4" class="text-center">No matches recorded yet.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -225,7 +208,7 @@
             {% endif %}
         </div>
 
-        {% if is_owner %}
+        {% if g.user.isAdmin %}
             {% if tournament.status != 'Completed' %}
             <div class="card">
                 <h4 class="card-header">Management</h4>

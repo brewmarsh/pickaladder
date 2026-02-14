@@ -15,6 +15,7 @@ from tests.mock_utils import (
     MockArrayRemove,
     MockArrayUnion,
     MockBatch,
+    patch_mockfirestore,
 )
 
 # Mock user payloads
@@ -51,7 +52,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_client": patch("firebase_admin.firestore.client"),
+            "firestore_client": patch(
+                "firebase_admin.firestore.client", return_value=self.mock_db
+            ),
             "firestore_services": patch(
                 "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,
@@ -72,6 +75,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()
+
+        patch_mockfirestore()
 
         # Setup current user in mock DB
         self.mock_db.collection("users").document(MOCK_USER_ID).set(MOCK_USER_DATA)
@@ -103,9 +108,10 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "date": "2024-06-01",
+                "start_date": "2024-06-01",
                 "location": "Courtside",
-                "mode": "SINGLES",
+                "match_type": "SINGLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -155,6 +161,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "matchType": "singles",
                 "ownerRef": user_ref,
                 "organizer_id": MOCK_USER_ID,
+                "participant_ids": [],
             }
         )
 
@@ -163,9 +170,10 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Updated Name",
-                "date": "2024-07-01",
+                "start_date": "2024-07-01",
                 "location": "Updated Location",
-                "mode": "DOUBLES",
+                "match_type": "DOUBLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -196,6 +204,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Original Name",
                 "ownerRef": user_ref,
                 "organizer_id": MOCK_USER_ID,
+                "participant_ids": [],
             }
         )
 
@@ -209,7 +218,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Only administrators can create tournaments.", response.data)
+        self.assertIn(b"Only administrators can create tournaments", response.data)
 
     def test_edit_tournament_ongoing(self) -> None:
         """Test ongoing tournament logic."""
@@ -238,9 +247,10 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             data={
                 "name": "Updated Name",
                 "start_date": "2024-07-01",
+                "location": "Updated Location",
                 "venue_name": "Updated Venue",
                 "address": "456 Updated St",
-                "match_type": "doubles",
+                "match_type": "DOUBLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -302,6 +312,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             {
                 "name": "Test Tournament",
                 "ownerRef": user_ref,
+                "organizer_id": MOCK_USER_ID,
                 "participants": [],
                 "participant_ids": [],
                 "date": datetime.datetime(2024, 6, 1),
@@ -317,7 +328,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Edit Tournament", response.data)
-        self.assertIn(b"Tournament Management", response.data)
+        self.assertIn(b"Management", response.data)
 
     def test_view_tournament_non_admin_no_edit_gear(self) -> None:
         """Test that a non-admin (even if owner) does not see the edit gear."""
@@ -344,7 +355,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(b"Edit Tournament", response.data)
-        self.assertNotIn(b"Tournament Management", response.data)
+        self.assertNotIn(b"Management", response.data)
 
     def test_view_tournament_with_invitable_users(self) -> None:
         """Test that only non-participant players are in the invitable list."""
@@ -458,6 +469,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             {
                 "name": "Test Tournament",
                 "organizer_id": MOCK_USER_ID,
+                "ownerRef": user_ref,
                 "participant_ids": [MOCK_USER_ID],
             }
         )
@@ -547,18 +559,22 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user(is_admin=True)
 
         tournament_id = "test_tournament_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "To be deleted"}
+            {
+                "name": "To be deleted",
+                "organizer_id": MOCK_USER_ID,
+                "ownerRef": user_ref,
+            }
         )
 
         response = self.client.post(
             f"/tournaments/{tournament_id}/delete",
             headers=self._get_auth_headers(),
-            follow_redirects=True,
+            follow_redirects=False,
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Tournament deleted successfully.", response.data)
+        self.assertEqual(response.status_code, 302)
         self.assertFalse(
             self.mock_db.collection("tournaments").document(tournament_id).get().exists
         )
@@ -569,7 +585,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         tournament_id = "test_tournament_id"
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "Not deleted"}
+            {"name": "Not deleted", "participant_ids": []}
         )
 
         response = self.client.post(

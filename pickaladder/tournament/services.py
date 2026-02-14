@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import datetime
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
+from google.cloud.firestore_v1.base_document import DocumentSnapshot
 
 from pickaladder.teams.services import TeamService
 from pickaladder.user.helpers import smart_display_name
@@ -25,15 +27,14 @@ class TournamentGenerator:
     @staticmethod
     def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
         """Generate round robin pairings using the circle method."""
-        if len(participant_ids) < 2:
+        min_participants = 2
+        if len(participant_ids) < min_participants:
             return []
 
         # Simple Circle Method implementation
         ids = list(participant_ids)
-        has_bye = False
         if len(ids) % 2 != 0:
             ids.append("BYE")
-            has_bye = True
 
         n = len(ids)
         pairings = []
@@ -294,8 +295,11 @@ class TournamentService:
 
         # Formatting & Participants
         raw_date = data.get("date")
-        if raw_date and hasattr(raw_date, "to_datetime"):
-            data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
+        if raw_date:
+            if hasattr(raw_date, "to_datetime"):
+                data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
+            elif isinstance(raw_date, datetime.datetime):
+                data["date_display"] = raw_date.strftime("%b %d, %Y")
 
         raw_participants = data.get("participants", [])
         participants = TournamentService._resolve_participants(db, raw_participants)
@@ -434,7 +438,7 @@ class TournamentService:
 
     @staticmethod
     def _prepare_group_invites(
-        member_docs: list[Any], current_ids: set[str]
+        member_docs: list[DocumentSnapshot], current_ids: set[str]
     ) -> tuple[list[dict[str, Any]], list[str]]:
         """Filter group members and prepare invite objects."""
         new_parts = []
@@ -477,12 +481,15 @@ class TournamentService:
         )
 
         if new_parts:
-            t_ref.update(
+            batch = db.batch()
+            batch.update(
+                t_ref,
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                }
+                },
             )
+            batch.commit()
         return len(new_parts)
 
     @staticmethod
@@ -799,11 +806,3 @@ class TournamentService:
                     }
                 )
         return bracket
-
-
-class TournamentGenerator:
-    """Placeholder for tournament bracket generation logic."""
-
-    @staticmethod
-    def generate_round_robin(participants: list[Any]) -> list[Any]:
-        return []

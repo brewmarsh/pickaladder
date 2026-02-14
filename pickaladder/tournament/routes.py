@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import Any
+from typing import Any, cast
 
 from firebase_admin import firestore  # noqa: F401
 from flask import (
@@ -64,8 +64,8 @@ def create_tournament() -> Any:
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
                 "location": form.location.data,
-                "mode": form.mode.data,
-                "matchType": form.mode.data.lower(),
+                "mode": form.match_type.data,
+                "matchType": form.match_type.data.lower(),
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -170,8 +170,8 @@ def edit_tournament(tournament_id: str) -> Any:
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
             "location": form.location.data,
-            "mode": form.mode.data,
-            "matchType": form.mode.data.lower(),
+            "mode": form.match_type.data,
+            "matchType": form.match_type.data.lower(),
         }
 
         # Handle banner upload
@@ -197,7 +197,7 @@ def edit_tournament(tournament_id: str) -> Any:
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
         form.location.data = tournament_data.get("location")
-        form.mode.data = (
+        form.match_type.data = (
             tournament_data.get("mode")
             or tournament_data.get("matchType", "SINGLES").upper()
         )
@@ -212,6 +212,32 @@ def edit_tournament(tournament_id: str) -> Any:
         tournament=tournament_data,
         action="Edit",
     )
+
+
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    db = firestore.client()
+    ref = db.collection("tournaments").document(tournament_id)
+    doc = cast(Any, ref.get())
+    if not doc.exists:
+        flash("Tournament not found.", "danger")
+        return redirect(url_for(".list_tournaments"))
+
+    data = cast(dict[str, Any], doc.to_dict())
+    # Allow deletion by owner or admin
+    owner_id = data.get("organizer_id") or (
+        data.get("ownerRef").id if data.get("ownerRef") else None
+    )
+
+    if owner_id != g.user["uid"] and not g.user.get("isAdmin"):
+        flash("Unauthorized.", "danger")
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+    ref.delete()
+    flash("Tournament deleted successfully.", "success")
+    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/invite", methods=["POST"])
