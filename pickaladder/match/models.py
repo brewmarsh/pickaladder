@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 from pickaladder.core.types import FirestoreDocument
 
@@ -17,6 +17,54 @@ class Score(TypedDict, total=False):
 
     player1Score: int
     player2Score: int
+
+
+@dataclass
+class MatchSubmission:
+    """Represents a match submission."""
+
+    player_1_id: str
+    player_2_id: str
+    score_p1: int
+    score_p2: int
+    match_type: str
+    match_date: Any = None
+    partner_id: Optional[str] = None
+    opponent_2_id: Optional[str] = None
+    group_id: Optional[str] = None
+    tournament_id: Optional[str] = None
+    created_by: Optional[str] = None
+
+    def __getitem__(self, key: str) -> Any:
+        """Allow dict-like access for compatibility."""
+        return getattr(self, key)
+
+
+@dataclass
+class MatchResult:
+    """Result of recording a match."""
+
+    id: str
+    matchType: str
+    player1Score: int
+    player2Score: int
+    matchDate: Any
+    createdAt: Any
+    createdBy: str
+    winner: str
+    winnerId: str
+    loserId: str
+    groupId: Optional[str] = None
+    tournamentId: Optional[str] = None
+    player1Ref: Any = None
+    player2Ref: Any = None
+    team1: Optional[list[Any]] = None
+    team2: Optional[list[Any]] = None
+    team1Id: Optional[str] = None
+    team2Id: Optional[str] = None
+    team1Ref: Any = None
+    team2Ref: Any = None
+    is_upset: bool = False
 
 
 class Match(FirestoreDocument, Score, total=False):
