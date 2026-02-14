@@ -16,9 +16,9 @@ from .models import Match, MatchResult, MatchSubmission
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
+    from google.cloud.firestore_v1.batch import WriteBatch
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
-    from google.cloud.firestore_v1.batch import WriteBatch
 
     from pickaladder.user import User
     from pickaladder.user.models import UserSession
@@ -165,9 +165,8 @@ class MatchService:
                 if isinstance(submission, dict):
                     if k in submission:
                         return submission[k]
-                else:
-                    if hasattr(submission, k):
-                        return getattr(submission, k)
+                elif hasattr(submission, k):
+                    return getattr(submission, k)
             return None
 
         match_type = get_val(["match_type", "matchType"]) or "singles"
@@ -214,12 +213,8 @@ class MatchService:
         else:
             match_date = datetime.datetime.now(datetime.timezone.utc)
 
-        player1_score = (
-            get_val(["score_p1", "player1_score", "player1Score"]) or 0
-        )
-        player2_score = (
-            get_val(["score_p2", "player2_score", "player2Score"]) or 0
-        )
+        player1_score = get_val(["score_p1", "player1_score", "player1Score"]) or 0
+        player2_score = get_val(["score_p2", "player2_score", "player2Score"]) or 0
 
         match_doc_data: dict[str, Any] = {
             "player1Score": player1_score,
@@ -654,7 +649,9 @@ class MatchService:
         MatchService._update_doubles_stats(match_data, new_p1_score, new_p2_score)
 
         # Update Match Document
-        updates = MatchService._get_match_updates(match_data, new_p1_score, new_p2_score)
+        updates = MatchService._get_match_updates(
+            match_data, new_p1_score, new_p2_score
+        )
         match_ref.update(updates)
 
     @staticmethod
