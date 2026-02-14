@@ -15,11 +15,24 @@
 {% if tournaments %}
     <div class="tournament-grid">
         {% for tournament in tournaments %}
-            <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="card tournament-card">
-                <h3>{{ tournament.name }}</h3>
-                <p class="text-muted">
-                    {{ tournament.date }} | {{ tournament.location }} | {{ tournament.matchType|capitalize }}
-                </p>
+            <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="card tournament-card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; text-decoration: none; color: inherit;">
+                {% if tournament.banner_url %}
+                    <img src="{{ tournament.banner_url }}" alt="{{ tournament.name }}" style="width: 100%; height: 160px; object-fit: cover;">
+                {% else %}
+                    <div style="width: 100%; height: 160px; background-color: var(--primary-color); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">🎾</div>
+                {% endif %}
+                <div style="padding: 20px;">
+                    <h3 style="margin-top: 0; margin-bottom: 10px;">{{ tournament.name }}</h3>
+                    <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 5px;">
+                        📅 {{ tournament.date_display or tournament.date }}
+                    </p>
+                    <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 5px;">
+                        📍 {{ tournament.location_data.name if tournament.location_data else tournament.location }}
+                    </p>
+                    <p class="text-volt" style="font-size: 0.8rem; text-transform: uppercase; margin-top: 15px; font-weight: bold; letter-spacing: 0.05em;">
+                        {{ tournament.matchType|capitalize }}
+                    </p>
+                </div>
             </a>
         {% endfor %}
     </div>

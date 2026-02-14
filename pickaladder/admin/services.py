@@ -11,7 +11,7 @@ class AdminService:
 
     @staticmethod
     def get_admin_stats(db: Any) -> dict[str, Any]:
-        """Fetch high-level stats for the admin dashboard."""
+        """Fetch high-level stats for the admin dashboard using aggregations."""
         # Total Users
         total_users = db.collection("users").count().get()[0][0].value
 

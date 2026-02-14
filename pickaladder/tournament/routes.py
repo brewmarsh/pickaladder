@@ -54,24 +54,44 @@ def create_tournament() -> Any:
     form = TournamentForm()
     if form.validate_on_submit():
         try:
-            date_val = form.date.data
+            date_val = form.start_date.data
             if date_val is None:
                 raise ValueError("Date is required")
+
+            location_data = {
+                "name": form.venue_name.data,
+                "address": form.address.data,
+                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
+            }
 
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": form.location.data,
+                "location": f"{form.venue_name.data}, {form.address.data}",
+                "location_data": location_data,
+                "description": form.description.data,
                 "matchType": form.match_type.data,
                 "format": form.format.data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
+
+            # Handle banner upload if present
+            banner_file = request.files.get("banner")
+            if banner_file and banner_file.filename:
+                banner_url = TournamentService._upload_banner(
+                    tournament_id, banner_file
+                )
+                if banner_url:
+                    TournamentService.update_tournament(
+                        tournament_id, g.user["uid"], {"banner_url": banner_url}
+                    )
+
             flash("Tournament created successfully.", "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
 
-    return render_template("create_tournament.html", form=form)
+    return render_template("tournaments/create_edit.html", form=form, action="Create")
 
 
 @bp.route("/<string:tournament_id>", methods=["GET", "POST"])
@@ -124,20 +144,38 @@ def edit_tournament(tournament_id: str) -> Any:
     form = TournamentForm()
 
     if form.validate_on_submit():
-        date_val = form.date.data
+        date_val = form.start_date.data
         if date_val is None:
             flash("Date is required.", "danger")
             return render_template(
-                "tournament/edit.html", form=form, tournament=tournament_data
+                "tournaments/create_edit.html",
+                form=form,
+                tournament=tournament_data,
+                action="Edit",
             )
+
+        location_data = {
+            "name": form.venue_name.data,
+            "address": form.address.data,
+            "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
+        }
 
         update_data = {
             "name": form.name.data,
-            "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": form.location.data,
+            "start_date": datetime.datetime.combine(date_val, datetime.time.min),
+            "location": f"{form.venue_name.data}, {form.address.data}",
+            "location_data": location_data,
+            "description": form.description.data,
             "matchType": form.match_type.data,
             "format": form.format.data,
         }
+
+        # Handle banner upload
+        banner_file = request.files.get("banner")
+        if banner_file and banner_file.filename:
+            banner_url = TournamentService._upload_banner(tournament_id, banner_file)
+            if banner_url:
+                update_data["banner_url"] = banner_url
 
         try:
             TournamentService.update_tournament(
@@ -154,15 +192,25 @@ def edit_tournament(tournament_id: str) -> Any:
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
-        form.location.data = tournament_data.get("location")
+        loc_data = tournament_data.get("location_data", {})
+        if loc_data:
+            form.venue_name.data = loc_data.get("name")
+            form.address.data = loc_data.get("address")
+        else:
+            # Fallback for legacy
+            form.venue_name.data = tournament_data.get("location")
+
+        form.description.data = tournament_data.get("description")
         form.match_type.data = tournament_data.get("matchType")
-        form.format.data = tournament_data.get("format")
-        raw_date = tournament_data.get("date")
+        raw_date = tournament_data.get("start_date") or tournament_data.get("date")
         if hasattr(raw_date, "to_datetime"):
-            form.date.data = raw_date.to_datetime().date()
+            form.start_date.data = raw_date.to_datetime().date()
 
     return render_template(
-        "tournament/edit.html", form=form, tournament=tournament_data
+        "tournaments/create_edit.html",
+        form=form,
+        tournament=tournament_data,
+        action="Edit",
     )
 
 
