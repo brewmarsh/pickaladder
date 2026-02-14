@@ -56,16 +56,29 @@ def create_tournament() -> Any:
     form = TournamentForm()
     if form.validate_on_submit():
         try:
-            date_val = form.start_date.data
+            date_val = form.start_date.data or form.date.data
             if date_val is None:
                 raise ValueError("Date is required")
+
+            # Fallback for mode vs match_type
+            mode = form.match_type.data or form.mode.data or "SINGLES"
+
+            # Fallback for location vs venue_name/address
+            location = form.location.data
+            if not location and (form.venue_name.data or form.address.data):
+                location = (
+                    f"{form.venue_name.data or ''}, {form.address.data or ''}".strip(
+                        ", "
+                    )
+                )
 
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": form.location.data,
-                "mode": form.mode.data,
-                "matchType": form.mode.data.lower(),
+                "location": location or "TBD",
+                "mode": mode,
+                "matchType": mode.lower(),
+                "description": form.description.data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -156,7 +169,7 @@ def edit_tournament(tournament_id: str) -> Any:
     form = TournamentForm()
 
     if form.validate_on_submit():
-        date_val = form.start_date.data
+        date_val = form.start_date.data or form.date.data
         if date_val is None:
             flash("Date is required.", "danger")
             return render_template(
@@ -166,12 +179,23 @@ def edit_tournament(tournament_id: str) -> Any:
                 action="Edit",
             )
 
+        # Fallback for mode vs match_type
+        mode = form.match_type.data or form.mode.data or "SINGLES"
+
+        # Fallback for location vs venue_name/address
+        location = form.location.data
+        if not location and (form.venue_name.data or form.address.data):
+            location = f"{form.venue_name.data or ''}, {form.address.data or ''}".strip(
+                ", "
+            )
+
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": form.location.data,
-            "mode": form.mode.data,
-            "matchType": form.mode.data.lower(),
+            "location": location or "TBD",
+            "mode": mode,
+            "matchType": mode.lower(),
+            "description": form.description.data,
         }
 
         # Handle banner upload
@@ -257,6 +281,19 @@ def invite_group(tournament_id: str) -> Any:
         flash(f"Error: {e}", "danger")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    db = firestore.client()
+    try:
+        db.collection("tournaments").document(tournament_id).delete()
+        flash("Tournament deleted successfully.", "success")
+    except Exception as e:
+        flash(f"Error: {e}", "danger")
+    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/accept", methods=["POST"])

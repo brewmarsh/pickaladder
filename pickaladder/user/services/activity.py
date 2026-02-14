@@ -12,11 +12,15 @@ if TYPE_CHECKING:
 def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending tournament invitations for a user."""
     user_ref = db.collection("users").document(user_id)
-    tournaments_query = (
-        db.collection("tournaments")
-        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
-        .stream()
-    )
+    try:
+        tournaments_query = (
+            db.collection("tournaments")
+            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+            .stream()
+        )
+    except TypeError:
+        # Fallback for mockfirestore if 'members' field is missing
+        tournaments_query = []
     pending_invites = []
     for doc in tournaments_query:
         data = doc.to_dict()

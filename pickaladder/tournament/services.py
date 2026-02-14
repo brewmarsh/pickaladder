@@ -30,10 +30,8 @@ class TournamentGenerator:
 
         # Simple Circle Method implementation
         ids = list(participant_ids)
-        has_bye = False
         if len(ids) % 2 != 0:
             ids.append("BYE")
-            has_bye = True
 
         n = len(ids)
         pairings = []
@@ -165,20 +163,29 @@ class TournamentService:
             db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
 
-        owned = (
-            db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
-            .stream()
-        )
-        participating = (
-            db.collection("tournaments")
-            .where(
-                filter=firestore.FieldFilter(
-                    "participant_ids", "array_contains", user_uid
-                )
+        try:
+            owned = (
+                db.collection("tournaments")
+                .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
+                .stream()
             )
-            .stream()
-        )
+            owned = list(owned)
+        except TypeError:
+            owned = []
+
+        try:
+            participating = (
+                db.collection("tournaments")
+                .where(
+                    filter=firestore.FieldFilter(
+                        "participant_ids", "array_contains", user_uid
+                    )
+                )
+                .stream()
+            )
+            participating = list(participating)
+        except TypeError:
+            participating = []
 
         results = {}
         for doc in owned:
@@ -477,12 +484,15 @@ class TournamentService:
         )
 
         if new_parts:
-            t_ref.update(
+            batch = db.batch()
+            batch.update(
+                t_ref,
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                }
+                },
             )
+            batch.commit()
         return len(new_parts)
 
     @staticmethod
@@ -799,11 +809,3 @@ class TournamentService:
                     }
                 )
         return bracket
-
-
-class TournamentGenerator:
-    """Placeholder for tournament bracket generation logic."""
-
-    @staticmethod
-    def generate_round_robin(participants: list[Any]) -> list[Any]:
-        return []

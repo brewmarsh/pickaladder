@@ -309,6 +309,7 @@ def generate_matches() -> Response:
         matches_to_create = 10
         matches_created = 0
         from pickaladder.match.models import MatchSubmission
+
         for _ in range(matches_to_create):
             p1, p2 = random.sample(users, 2)  # nosec B311
             p1_id = p1.id

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from pickaladder.core.types import FirestoreDocument
 
@@ -114,5 +114,3 @@ class Match(FirestoreDocument, Score, total=False):
     # Denormalized player data
     player_1_data: dict[str, Any]
     player_2_data: dict[str, Any]
-
-
