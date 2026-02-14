@@ -22,6 +22,7 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.match.models import MatchSubmission
 from pickaladder.match.services import MatchService
 from pickaladder.user import UserService
+from pickaladder.user.models import UserSession
 
 from . import bp
 from .services import AdminService
@@ -320,7 +321,7 @@ def generate_matches() -> Response:
                 s1, s2 = s2, s1
 
             # Use a dummy current_user dict for MatchService
-            dummy_user = {"uid": p1_id}
+            dummy_user = UserSession({"uid": p1_id})
 
             submission = MatchSubmission(
                 player_1_id=p1_id,

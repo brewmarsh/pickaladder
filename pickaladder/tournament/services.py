@@ -279,8 +279,8 @@ class TournamentService:
         from pickaladder.user import UserService  # noqa: PLC0415
 
         user_groups = UserService.get_user_groups(db, user_uid)
-        team_status, pending_partner_invite = TournamentService._get_team_status_for_user(
-            db, tournament_id, user_uid
+        team_status, pending_partner_invite = (
+            TournamentService._get_team_status_for_user(db, tournament_id, user_uid)
         )
 
         is_owner = data.get("organizer_id") == user_uid or (
@@ -394,7 +394,7 @@ class TournamentService:
 
     @staticmethod
     def _prepare_group_invites(
-        member_docs: list[DocumentSnapshot], current_ids: set[str]
+        member_docs: list[Any], current_ids: set[str]
     ) -> tuple[list[dict[str, Any]], list[str]]:
         """Filter group members and prepare invite objects."""
         new_parts = []
@@ -759,3 +759,11 @@ class TournamentService:
                     }
                 )
         return bracket
+
+
+class TournamentGenerator:
+    """Placeholder for tournament bracket generation logic."""
+
+    @staticmethod
+    def generate_round_robin(participants: list[Any]) -> list[Any]:
+        return []
