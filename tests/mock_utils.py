@@ -36,6 +36,13 @@ class MockBatch:
         self.updates: list[tuple[Any, Any]] = []
         self.commit = unittest.mock.MagicMock(side_effect=self._real_commit)
 
+    def __enter__(self) -> "MockBatch":
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        if exc_type is None:
+            self.commit()
+
     def update(self, ref: Any, data: Any) -> None:
         self.updates.append((ref, data))
 

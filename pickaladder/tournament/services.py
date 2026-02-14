@@ -477,12 +477,15 @@ class TournamentService:
         )
 
         if new_parts:
-            t_ref.update(
+            batch = db.batch()
+            batch.update(
+                t_ref,
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                }
+                },
             )
+            batch.commit()
         return len(new_parts)
 
     @staticmethod
@@ -799,6 +802,13 @@ class TournamentService:
                     }
                 )
         return bracket
+
+    @staticmethod
+    def delete_tournament(tournament_id: str, db: Client | None = None) -> None:
+        """Delete a tournament document."""
+        if db is None:
+            db = firestore.client()
+        db.collection("tournaments").document(tournament_id).delete()
 
 
 class TournamentGenerator:

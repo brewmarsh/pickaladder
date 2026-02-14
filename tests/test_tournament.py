@@ -103,9 +103,12 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "date": "2024-06-01",
-                "location": "Courtside",
+                "start_date": "2024-06-01",
+                "venue_name": "Courtside",
+                "address": "Courtside",
+                "match_type": "singles",
                 "mode": "SINGLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -129,9 +132,11 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "date": "2024-06-01",
-                "location": "Courtside",
+                "start_date": "2024-06-01",
+                "venue_name": "Courtside",
+                "address": "Courtside",
                 "match_type": "singles",
+                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -163,9 +168,12 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Updated Name",
-                "date": "2024-07-01",
-                "location": "Updated Location",
+                "start_date": "2024-07-01",
+                "venue_name": "Updated Location",
+                "address": "Updated Location",
+                "match_type": "doubles",
                 "mode": "DOUBLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -204,6 +212,12 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Updated Name",
+                "start_date": "2024-07-01",
+                "venue_name": "Updated Location",
+                "address": "Updated Location",
+                "match_type": "singles",
+                "mode": "SINGLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -241,6 +255,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "venue_name": "Updated Venue",
                 "address": "456 Updated St",
                 "match_type": "doubles",
+                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -547,8 +562,14 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user(is_admin=True)
 
         tournament_id = "test_tournament_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "To be deleted"}
+            {
+                "name": "To be deleted",
+                "organizer_id": MOCK_USER_ID,
+                "ownerRef": user_ref,
+                "participant_ids": [MOCK_USER_ID],
+            }
         )
 
         response = self.client.post(
@@ -568,8 +589,14 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user(is_admin=False)
 
         tournament_id = "test_tournament_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "Not deleted"}
+            {
+                "name": "Not deleted",
+                "organizer_id": MOCK_USER_ID,
+                "ownerRef": user_ref,
+                "participant_ids": [MOCK_USER_ID],
+            }
         )
 
         response = self.client.post(

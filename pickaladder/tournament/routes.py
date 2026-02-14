@@ -63,9 +63,13 @@ def create_tournament() -> Any:
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": form.location.data,
+                "location": form.address.data,
+                "venue_name": form.venue_name.data,
+                "address": form.address.data,
                 "mode": form.mode.data,
-                "matchType": form.mode.data.lower(),
+                "matchType": form.match_type.data,
+                "description": form.description.data,
+                "format": form.format.data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -169,9 +173,13 @@ def edit_tournament(tournament_id: str) -> Any:
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": form.location.data,
+            "location": form.address.data,
+            "venue_name": form.venue_name.data,
+            "address": form.address.data,
             "mode": form.mode.data,
-            "matchType": form.mode.data.lower(),
+            "matchType": form.match_type.data,
+            "description": form.description.data,
+            "format": form.format.data,
         }
 
         # Handle banner upload
@@ -196,11 +204,18 @@ def edit_tournament(tournament_id: str) -> Any:
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
-        form.location.data = tournament_data.get("location")
+        form.venue_name.data = tournament_data.get("venue_name")
+        form.address.data = tournament_data.get("address") or tournament_data.get(
+            "location"
+        )
         form.mode.data = (
             tournament_data.get("mode")
             or tournament_data.get("matchType", "SINGLES").upper()
         )
+        form.match_type.data = tournament_data.get("matchType", "singles")
+        form.description.data = tournament_data.get("description")
+        form.format.data = tournament_data.get("format", "ROUND_ROBIN")
+
         raw_date = tournament_data.get("date")
         if hasattr(raw_date, "to_datetime"):
             form.start_date.data = raw_date.to_datetime().date()
@@ -427,6 +442,18 @@ def claim_team(tournament_id: str, team_id: str) -> Any:
         flash(f"Error: {e}", "danger")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    try:
+        TournamentService.delete_tournament(tournament_id)
+        flash("Tournament deleted successfully.", "success")
+    except Exception as e:
+        flash(f"Error deleting tournament: {e}", "danger")
+    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/accept_team", methods=["POST"])
