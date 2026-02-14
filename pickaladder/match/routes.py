@@ -12,7 +12,6 @@ from pickaladder.auth.decorators import login_required
 from . import bp
 from .forms import MatchForm
 # Added import to support the structured submission used in the fix branch
-from .models import MatchSubmission
 from .services import MatchService
 
 if TYPE_CHECKING:
@@ -164,6 +163,7 @@ def record_match() -> Any:
         data["tournament_id"] = data.get("tournament_id") or t_id
         
         try:
+            from .models import MatchSubmission
             # Using structured submission from fix branch
             submission = MatchSubmission(
                 player_1_id=data["player1"],

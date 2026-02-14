@@ -27,6 +27,7 @@ class MatchSecurityTestCase(unittest.TestCase):
         mock_db.batch.return_value = mock_batch
 
         mock_get_candidates.return_value = {"player1", "player2"}
+        mock_record_batch.return_value = (1200.0, 1200.0)
 
         # Simulate form data with injected fields
         form_data = {

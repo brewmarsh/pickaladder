@@ -12,9 +12,8 @@ from pickaladder.core.constants import GLOBAL_LEADERBOARD_MIN_GAMES
 from pickaladder.teams.services import TeamService
 from pickaladder.user.services.core import get_avatar_url, smart_display_name
 
-from .models import Match, MatchResult, MatchSubmission
-
 if TYPE_CHECKING:
+    from .models import Match, MatchResult, MatchSubmission
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.batch import WriteBatch
     from google.cloud.firestore_v1.client import Client
@@ -41,7 +40,7 @@ class MatchService:
         user_ref: DocumentReference,
         match_data: dict[str, Any],
         match_type: str,
-    ) -> None:
+    ) -> tuple[float, float]:
         """Record a match and update stats using batched writes."""
         # 1. Read current snapshots (Optimized to 1 round-trip for reads)
         snapshots_iterable = db.get_all([p1_ref, p2_ref])
@@ -149,6 +148,8 @@ class MatchService:
             group_ref = db.collection("groups").document(group_id)
             batch.update(group_ref, {"updatedAt": firestore.SERVER_TIMESTAMP})
 
+        return new_p1_elo, new_p2_elo
+
     @staticmethod
     def record_match(
         db: Client,
@@ -156,6 +157,8 @@ class MatchService:
         current_user: UserSession,
     ) -> MatchResult:
         """Process and record a match submission."""
+        from .models import MatchResult
+
         user_id = current_user["uid"]
         user_ref = db.collection("users").document(user_id)
 
@@ -262,7 +265,7 @@ class MatchService:
         # Save to database via batched write (exactly 1 commit round-trip)
         new_match_ref = cast("DocumentReference", db.collection("matches").document())
         batch = db.batch()
-        MatchService._record_match_batch(
+        new_p1_elo, new_p2_elo = MatchService._record_match_batch(
             db,
             batch,
             new_match_ref,
@@ -296,6 +299,10 @@ class MatchService:
             team1Ref=match_doc_data.get("team1Ref"),
             team2Ref=match_doc_data.get("team2Ref"),
             is_upset=match_doc_data.get("is_upset", False),
+            match_doc=match_doc_data,
+            player1_new_rating=new_p1_elo,
+            player2_new_rating=new_p2_elo,
+            rating_change=abs(new_p1_elo - new_p2_elo),
         )
 
     @staticmethod
