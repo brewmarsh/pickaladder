@@ -214,6 +214,23 @@ def edit_tournament(tournament_id: str) -> Any:
     )
 
 
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    try:
+        TournamentService.delete_tournament(tournament_id, g.user["uid"])
+        flash("Tournament deleted successfully.", "success")
+    except ValueError as e:
+        flash(str(e), "danger")
+    except PermissionError:
+        flash("Unauthorized.", "danger")
+    except Exception as e:
+        flash(f"An unexpected error occurred: {e}", "danger")
+
+    return redirect(url_for(".list_tournaments"))
+
+
 @bp.route("/<string:tournament_id>/invite", methods=["POST"])
 @login_required
 def invite_player(tournament_id: str) -> Any:

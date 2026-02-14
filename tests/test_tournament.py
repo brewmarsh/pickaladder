@@ -8,6 +8,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 from mockfirestore import MockFirestore
+from tests.mock_utils import patch_mockfirestore
 
 from pickaladder import create_app
 from pickaladder.tournament import TournamentService  # noqa: F401
@@ -28,6 +29,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
+        patch_mockfirestore()
         self.mock_db = MockFirestore()
 
         self.mock_batch_instance = MockBatch(self.mock_db)
@@ -103,9 +105,11 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "date": "2024-06-01",
+                "start_date": "2024-06-01",
                 "location": "Courtside",
+                "match_type": "singles",
                 "mode": "SINGLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -129,9 +133,10 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "date": "2024-06-01",
+                "start_date": "2024-06-01",
                 "location": "Courtside",
                 "match_type": "singles",
+                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -163,9 +168,11 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Updated Name",
-                "date": "2024-07-01",
+                "start_date": "2024-07-01",
                 "location": "Updated Location",
+                "match_type": "doubles",
                 "mode": "DOUBLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -241,6 +248,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "venue_name": "Updated Venue",
                 "address": "456 Updated St",
                 "match_type": "doubles",
+                "mode": "DOUBLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,

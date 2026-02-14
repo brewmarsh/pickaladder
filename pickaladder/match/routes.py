@@ -11,7 +11,6 @@ from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import MatchForm
-# Added import to support the structured submission used in the fix branch
 from .models import MatchSubmission
 from .services import MatchService
 
@@ -161,8 +160,6 @@ def record_match() -> Any:
 
     if form.validate_on_submit():
         data = form.data
-        
-        # Using structured submission from the feature branch for cleaner data handling
         submission = MatchSubmission(
             match_type=data["match_type"],
             player_1_id=data["player1"],
@@ -175,25 +172,18 @@ def record_match() -> Any:
             group_id=data.get("group_id") or group_id,
             tournament_id=data.get("tournament_id") or t_id,
         )
-
         try:
             result = MatchService.record_match(db, submission, g.user)
-            
             if request.is_json:
                 return jsonify({"status": "success", "match_id": result.id}), 200
-            
             flash("Match recorded successfully.", "success")
-            
-            # Prioritize redirects: Tournament -> Group -> Summary
             if tid := submission.tournament_id:
                 return redirect(
                     url_for("tournament.view_tournament", tournament_id=tid)
                 )
             if gid := submission.group_id:
                 return redirect(url_for("group.view_group", group_id=gid))
-            
             return redirect(url_for("match.view_match_summary", match_id=result.id))
-            
         except Exception as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400

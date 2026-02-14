@@ -11,7 +11,8 @@ class TournamentForm(FlaskForm):
 
     name = StringField("Tournament Name", validators=[DataRequired()])
     banner = FileField(
-        "Tournament Banner", validators=[Optional(), FileAllowed(["jpg", "png", "jpeg"])]
+        "Tournament Banner",
+        validators=[Optional(), FileAllowed(["jpg", "png", "jpeg"])],
     )
     start_date = DateField("Date", validators=[DataRequired()])
     location = StringField("Location", validators=[DataRequired()])

@@ -20,49 +20,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.transaction import Transaction
 
 
-class TournamentGenerator:
-    """Helper to generate tournament brackets and pairings."""
-
-    @staticmethod
-    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
-        """Generate Round Robin pairings using the Circle Method."""
-        if not participant_ids or len(participant_ids) < 2:
-            return []
-
-        # Handle odd number of participants by adding a BYE
-        ids = list(participant_ids)
-        if len(ids) % 2 != 0:
-            ids.append(None)  # type: ignore
-
-        n = len(ids)
-        pairings = []
-        db = firestore.client()
-
-        # Circle Method for Round Robin pairings
-        # We run n-1 rounds to ensure every player plays everyone else once
-        for _ in range(n - 1):
-            for i in range(n // 2):
-                p1 = ids[i]
-                p2 = ids[n - 1 - i]
-
-                # Only create a match if neither side is a BYE (None)
-                if p1 is not None and p2 is not None:
-                    pairings.append(
-                        {
-                            "player1Ref": db.collection("users").document(p1),
-                            "player2Ref": db.collection("users").document(p2),
-                            "participants": [p1, p2],
-                            "matchType": "singles",
-                            "status": "PENDING",
-                            "createdAt": firestore.SERVER_TIMESTAMP,
-                        }
-                    )
-            # Rotate ids: keep the first element fixed, move the last element to the second position
-            ids = [ids[0]] + [ids[-1]] + ids[1:-1]
-
-        return pairings
-
-
 class TournamentService:
     """Handles business logic and data access for tournaments."""
 
@@ -189,6 +146,7 @@ class TournamentService:
             data = doc.to_dict()
             if data:
                 data["id"] = doc.id
+                # Formatting
                 raw_date = data.get("start_date") or data.get("date")
                 if raw_date and hasattr(raw_date, "to_datetime"):
                     data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
@@ -199,6 +157,7 @@ class TournamentService:
                 data = doc.to_dict()
                 if data:
                     data["id"] = doc.id
+                    # Formatting
                     raw_date = data.get("start_date") or data.get("date")
                     if raw_date and hasattr(raw_date, "to_datetime"):
                         data["date_display"] = raw_date.to_datetime().strftime(
@@ -294,6 +253,7 @@ class TournamentService:
         data = cast(dict[str, Any], doc.to_dict())
         data["id"] = doc.id
 
+        # Formatting & Participants
         raw_date = data.get("date")
         if raw_date and hasattr(raw_date, "to_datetime"):
             data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
@@ -301,6 +261,7 @@ class TournamentService:
         raw_participants = data.get("participants", [])
         participants = TournamentService._resolve_participants(db, raw_participants)
 
+        # Standings, Podium & Invitable Users
         standings = get_tournament_standings(
             db, tournament_id, data.get("matchType", "singles")
         )
@@ -315,6 +276,7 @@ class TournamentService:
             db, user_uid, current_p_ids
         )
 
+        # Groups & Team Status
         from pickaladder.user import UserService  # noqa: PLC0415
 
         user_groups = UserService.get_user_groups(db, user_uid)
@@ -363,9 +325,11 @@ class TournamentService:
         if owner_id != user_uid:
             raise PermissionError("Unauthorized.")
 
+        # Handle start_date / date compatibility
         if "start_date" in update_data:
             update_data["date"] = update_data["start_date"]
 
+        # If changing match type, ensure no matches exist
         if "matchType" in update_data:
             matches = (
                 db.collection("matches")
@@ -376,9 +340,47 @@ class TournamentService:
                 .stream()
             )
             if any(matches):
+                # Don't update matchType if matches exist
                 del update_data["matchType"]
 
+        # If any matches exist, tournament cannot be edited at all
+        matches = (
+            db.collection("matches")
+            .where("tournamentId", "==", tournament_id)
+            .limit(1)
+            .stream()
+        )
+        if any(matches):
+            raise ValueError("Tournament has already started and cannot be edited.")
+
         ref.update(update_data)
+
+    @staticmethod
+    def delete_tournament(tournament_id: str, user_uid: str, db: Client | None = None) -> None:
+        """Delete a tournament if owner."""
+        if db is None:
+            db = firestore.client()
+        ref = db.collection("tournaments").document(tournament_id)
+        doc = cast(Any, ref.get())
+        if not doc.exists:
+            raise ValueError("Tournament not found")
+        data = doc.to_dict()
+        if not data:
+            raise ValueError("Empty data")
+
+        owner_id = data.get("organizer_id")
+        if not owner_id and data.get("ownerRef"):
+            owner_id = data["ownerRef"].id
+
+        if owner_id != user_uid:
+            raise PermissionError("Unauthorized")
+
+        # Optional: check if matches exist before deleting
+        # matches = db.collection("matches").where("tournamentId", "==", tournament_id).limit(1).stream()
+        # if any(matches):
+        #     raise ValueError("Cannot delete tournament with matches recorded.")
+
+        ref.delete()
 
     @staticmethod
     def invite_player(
@@ -405,12 +407,14 @@ class TournamentService:
         db: Client, tournament_data: dict[str, Any], group_id: str, user_uid: str
     ) -> list[Any]:
         """Validate permissions and return group member references."""
+        # Check Tournament Ownership
         owner_id = tournament_data.get("organizer_id")
         if not owner_id and tournament_data.get("ownerRef"):
             owner_id = tournament_data["ownerRef"].id
         if owner_id != user_uid:
             raise PermissionError("Unauthorized.")
 
+        # Fetch Group
         g_doc = cast(Any, db.collection("groups").document(group_id).get())
         if not g_doc.exists:
             raise ValueError("Group not found")
@@ -418,6 +422,7 @@ class TournamentService:
         if not g_data:
             raise ValueError("Group data is empty")
 
+        # Check Group Membership
         member_refs = g_data.get("members", [])
         if not any(m.id == user_uid for m in member_refs):
             raise PermissionError(
@@ -427,7 +432,7 @@ class TournamentService:
 
     @staticmethod
     def _prepare_group_invites(
-        member_docs: list[Any], current_ids: set[str]
+        member_docs: list[DocumentSnapshot], current_ids: set[str]
     ) -> tuple[list[dict[str, Any]], list[str]]:
         """Filter group members and prepare invite objects."""
         new_parts = []
@@ -470,12 +475,15 @@ class TournamentService:
         )
 
         if new_parts:
-            t_ref.update(
+            batch = db.batch()
+            batch.update(
+                t_ref,
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                }
+                },
             )
+            batch.commit()
         return len(new_parts)
 
     @staticmethod
@@ -623,6 +631,7 @@ class TournamentService:
         }
 
         if p2_uid:
+            # If partner is already known, link with global team ID
             team_id = TeamService.get_or_create_team(db, p1_uid, p2_uid)
             team_data["team_id"] = team_id
 
@@ -656,11 +665,16 @@ class TournamentService:
         for doc in query:
             data = doc.to_dict()
             p1_uid = data["p1_uid"]
+
+            # Ensure global team exists and link it
             team_id = TeamService.get_or_create_team(db, p1_uid, user_uid)
+
             doc.reference.update({"status": "CONFIRMED", "team_id": team_id})
+
             TournamentService._sync_team_participants(
                 db, tournament_id, p1_uid, user_uid, data.get("team_name")
             )
+
             updated = True
 
         return updated
@@ -768,6 +782,7 @@ class TournamentService:
                     }
                 )
         else:
+            # Fetch confirmed teams from sub-collection
             teams_query = (
                 t_ref.collection("teams")
                 .where(filter=firestore.FieldFilter("status", "==", "CONFIRMED"))
@@ -785,3 +800,45 @@ class TournamentService:
                     }
                 )
         return bracket
+
+
+class TournamentGenerator:
+    """Utility class to generate tournament match pairings."""
+
+    @staticmethod
+    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
+        """Generate Round Robin pairings using the Circle Method."""
+        min_participants = 2
+        if not participant_ids or len(participant_ids) < min_participants:
+            return []
+
+        # Handle odd number of participants by adding a BYE
+        ids = list(participant_ids)
+        if len(ids) % 2 != 0:
+            ids.append(None)  # type: ignore
+
+        n = len(ids)
+        pairings = []
+        db = firestore.client()
+
+        # Circle Method for Round Robin pairings
+        for _ in range(n - 1):
+            for i in range(n // 2):
+                p1 = ids[i]
+                p2 = ids[n - 1 - i]
+
+                if p1 is not None and p2 is not None:
+                    pairings.append(
+                        {
+                            "player1Ref": db.collection("users").document(p1),
+                            "player2Ref": db.collection("users").document(p2),
+                            "matchType": "singles",
+                            "status": "DRAFT",
+                            "createdAt": firestore.SERVER_TIMESTAMP,
+                            "participants": [p1, p2],
+                        }
+                    )
+            # Rotate ids: keep the first element, rotate the others
+            ids = [ids[0]] + [ids[-1]] + ids[1:-1]
+
+        return pairings
