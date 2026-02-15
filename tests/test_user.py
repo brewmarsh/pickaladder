@@ -34,7 +34,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     """Test case for user routes with Firebase mocks."""
 
     def setUp(self) -> None:
-        """Set up the test case."""
+        """Set up the test case with full mock isolation."""
         self.mock_db = MockFirestore()
         self.mock_auth_service = MagicMock()
         self.mock_auth_service.EmailAlreadyExistsError = type(
@@ -99,7 +99,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
     def test_settings_get(self) -> None:
         """Test that the settings page loads for a logged-in user."""
         self._set_session_user()
-        self.client.get("/user/settings")
+        self._mock_firestore_user()
 
         response = self.client.get("/user/settings")
         self.assertEqual(response.status_code, 200)
