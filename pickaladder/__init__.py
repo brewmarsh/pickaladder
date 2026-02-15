@@ -167,13 +167,8 @@ def _initialize_firebase(app: Flask) -> None:
             app.logger.info("Firebase app already initialized.")
 
 
-def _configure_logging(app: Flask) -> None:
-    """Set up logging handlers."""
-    _configure_mail_logging(app)
-
-
 def _register_blueprints(app: Flask) -> None:
-    """Import and register Flask blueprints."""
+    """Register all blueprints for the application."""
     app.register_blueprint(main_bp.bp)
     app.register_blueprint(auth_bp.bp)
     app.register_blueprint(admin_bp.bp)
@@ -183,6 +178,83 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(teams_bp.bp)
     app.register_blueprint(tournament_bp.bp)
     app.register_blueprint(error_handlers.error_handlers_bp)
+
+
+def _register_context_processors(app: Flask) -> None:
+    """Register all context processors for the application."""
+    app.context_processor(inject_global_context)
+    app.context_processor(inject_incoming_requests_count)
+    app.context_processor(inject_pending_tournament_invites)
+    app.context_processor(inject_firebase_api_key)
+
+
+def create_app(test_config: dict[str, Any] | None = None) -> Flask:
+    """Create and configure an instance of the Flask application."""
+    app = Flask(
+        __name__,
+        instance_relative_config=True,
+        static_folder="static",
+        static_url_path="/static",
+    )
+    app.url_map.converters["uuid"] = UUIDConverter
+
+    # Load configuration
+    _load_app_config(app, test_config)
+
+    _configure_mail_logging(app)
+    _initialize_firebase(app)
+
+    # Ensure the instance folder exists
+    with suppress(OSError):
+        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+
+    # Initialize extensions
+    mail.init_app(app)
+    csrf.init_app(app)
+    login_manager.init_app(app)
+    login_manager.login_view = "auth.login"
+
+    @login_manager.user_loader
+    def load_user(user_id: str) -> Any:
+        """Load user by ID for Flask-Login."""
+        impersonate_id = session.get("impersonate_id")
+        is_admin = session.get("is_admin", False)
+
+        id_to_load = user_id
+        if impersonate_id and is_admin:
+            id_to_load = impersonate_id
+
+        try:
+            db = firestore.client()
+            user_doc = db.collection("users").document(id_to_load).get()
+            if user_doc.exists:
+                return wrap_user(user_doc.to_dict(), uid=id_to_load)
+        except Exception as e:
+            current_app.logger.error(f"Error in user_loader: {e}")
+        return None
+
+    # Register filters
+    app.template_filter("smart_display_name")(smart_display_name)
+    app.template_filter("display_name")(smart_display_name)
+
+    @app.template_filter("avatar_url")
+    def avatar_url_filter(user: dict[str, Any]) -> str:
+        """Return the avatar URL for a user."""
+        if not user:
+            return ""
+        wrapped = wrap_user(user)
+        return wrapped.avatar_url if wrapped else ""
+
+    @app.template_filter("pluralize")
+    def pluralize_filter(
+        number: int, singular: str = "", plural: str | None = None
+    ) -> str:
+        """Pluralize a word based on a number."""
+        if number == 1:
+            return singular
+        return plural if plural is not None else f"{singular}s"
+
+    _register_blueprints(app)
 
     # make url_for('index') == url_for('auth.login')
     app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
@@ -226,92 +298,13 @@ def _register_blueprints(app: Flask) -> None:
 
     _register_context_processors(app)
 
-
-def _register_context_processors(app: Flask) -> None:
-    """Register all context processors for the application."""
-    app.context_processor(inject_global_context)
-    app.context_processor(inject_incoming_requests_count)
-    app.context_processor(inject_pending_tournament_invites)
-    app.context_processor(inject_firebase_api_key)
-
-
-def _register_extensions(app: Flask) -> None:
-    """Initialize Firebase, Mail, etc."""
-    _initialize_firebase(app)
-
-    # Initialize extensions
-    mail.init_app(app)
-    csrf.init_app(app)
-    login_manager.init_app(app)
-    login_manager.login_view = "auth.login"
-
-    @login_manager.user_loader
-    def load_user(user_id: str) -> Any:
-        """Load user by ID for Flask-Login."""
-        impersonate_id = session.get("impersonate_id")
-        is_admin = session.get("is_admin", False)
-
-        id_to_load = user_id
-        if impersonate_id and is_admin:
-            id_to_load = impersonate_id
-
-        try:
-            db = firestore.client()
-            user_doc = db.collection("users").document(id_to_load).get()
-            if user_doc.exists:
-                return wrap_user(user_doc.to_dict(), uid=id_to_load)
-        except Exception as e:
-            current_app.logger.error(f"Error in user_loader: {e}")
-        return None
-
-    # Register filters
-    app.template_filter("smart_display_name")(smart_display_name)
-    app.template_filter("display_name")(smart_display_name)
-
-    @app.template_filter("avatar_url")
-    def avatar_url_filter(user: dict[str, Any]) -> str:
-        """Return the avatar URL for a user."""
-        if not user:
-            return ""
-        wrapped = wrap_user(user)
-        url = wrapped.avatar_url if wrapped else ""
-        if url == "default":
-            # Fallback to DiceBear Avatars (avataaars style)
-            seed = user.get("username") or user.get("email") or "User"
-            return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
-        return url
-
-    @app.template_filter("pluralize")
-    def pluralize_filter(
-        number: int, singular: str = "", plural: str | None = None
-    ) -> str:
-        """Pluralize a word based on a number."""
-        if number == 1:
-            return singular
-        return plural if plural is not None else f"{singular}s"
-
-
-def create_app(test_config: dict[str, Any] | None = None) -> Flask:
-    """Create and configure an instance of the Flask application."""
-    app = Flask(
-        __name__,
-        instance_relative_config=True,
-        static_folder="static",
-        static_url_path="/static",
-    )
-
-    _configure_app(app, test_config)
-    _configure_logging(app)
-    _register_extensions(app)
-    _register_blueprints(app)
-
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
 
     return app
 
 
-def _configure_app(app: Flask, test_config: dict[str, Any] | None) -> None:
-    """Load configuration from file or mapping."""
+def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
+    """Load and process application configuration."""
     mail_username = os.environ.get("MAIL_USERNAME")
     if mail_username:
         mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
@@ -321,7 +314,6 @@ def _configure_app(app: Flask, test_config: dict[str, Any] | None) -> None:
         mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
 
     app.config.from_mapping(
-        ENV=os.environ.get("FLASK_ENV") or "development",
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
         FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
         GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
@@ -340,9 +332,3 @@ def _configure_app(app: Flask, test_config: dict[str, Any] | None) -> None:
 
     if test_config:
         app.config.update(test_config)
-
-    # Ensure the instance folder exists
-    with suppress(OSError):
-        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
-
-    app.url_map.converters["uuid"] = UUIDConverter

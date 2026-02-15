@@ -5,114 +5,64 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypedDict
 
-from pickaladder.core.types import FirestoreDocument
-
 if TYPE_CHECKING:
-    from pickaladder.user import User
+    from google.cloud.firestore_v1.document import DocumentSnapshot, DocumentReference
 
 
-class Score(TypedDict, total=False):
-    """Represents a match score."""
+class Match(TypedDict, total=False):
+    """A match document in Firestore."""
 
+    player1: str
+    player2: str
     player1Score: int
     player2Score: int
+
+
+class Score(TypedDict):
+    """A score representation."""
+
+    player1: int
+    player2: int
 
 
 @dataclass
 class MatchSubmission:
-    """Represents a match submission payload."""
+    """A match submission from the frontend."""
 
-    match_type: str
-    player_1_id: str
-    player_2_id: str
-    score_p1: int
-    score_p2: int
-    match_date: Any = None
-    partner_id: str | None = None
-    opponent_2_id: str | None = None
+    player1: str
+    player2: str
+    player1_score: int
+    player2_score: int
     group_id: str | None = None
     tournament_id: str | None = None
-    created_by: str | None = None
-
-    def __getitem__(self, key: str) -> Any:
-        """Allow dict-like access for compatibility with generic service handlers."""
-        return getattr(self, key)
 
 
 @dataclass
 class MatchResult:
-    """Represents the result of recording a match, including rating updates."""
+    """The result of recording a match."""
 
     id: str
-    matchType: str
-    player1Score: int
-    player2Score: int
-    matchDate: Any
-    createdAt: Any
-    createdBy: str
-    winner: str
-    winnerId: str
-    loserId: str
-    is_upset: bool = False
+    matchType: str | None = None
+    player1Score: int | None = None
+    player2Score: int | None = None
+    matchDate: Any | None = None
+    createdAt: Any | None = None
+    createdBy: str | None = None
+    winner: str | None = None
+    winnerId: str | None = None
+    loserId: str | None = None
     groupId: str | None = None
     tournamentId: str | None = None
-    player1Ref: Any = None
-    player2Ref: Any = None
-    team1: list[Any] | None = None
-    team2: list[Any] | None = None
+    player1Ref: DocumentReference | None = None
+    player2Ref: DocumentReference | None = None
+    team1: list[DocumentReference] | None = None
+    team2: list[DocumentReference] | None = None
     team1Id: str | None = None
     team2Id: str | None = None
-    team1Ref: Any = None
-    team2Ref: Any = None
-    
-    # Metadata for post-match UI feedback (Merged from fix branch)
-    match_doc: dict[str, Any] | None = None
+    team1Ref: DocumentReference | None = None
+    team2Ref: DocumentReference | None = None
+    is_upset: bool = False
+    match_doc: Any | None = None
     player1_new_rating: float | None = None
     player2_new_rating: float | None = None
     rating_change: float | None = None
-
-
-class Match(FirestoreDocument, Score, total=False):
-    """A match document in Firestore with UI-calculated fields."""
-
-    matchType: str
-    matchDate: Any
-    # player1Score and player2Score are inherited from Score
-    player1Ref: User | Any
-    player2Ref: User | Any
-    team1: list[User | Any]
-    team2: list[User | Any]
-    team1Id: str
-    team2Id: str
-    team1Ref: Any
-    team2Ref: Any
-    groupId: str
-    tournamentId: str
-    status: str
-    winnerId: str
-    participants: list[str]
-
-    # UI and calculated fields for Dashboard and Leaderboards
-    player1: User | list[User] | dict[str, Any]
-    player2: User | list[User] | dict[str, Any]
-    player1_score: int
-    player2_score: int
-    winner: str
-    date: str
-    match_date: Any
-    is_group_match: bool
-    match_type: str
-    user_result: str
-    team1_name: str
-    team2_name: str
-    tournament_name: str
-    point_differential: int
-    close_call: bool
-    winner_name: str
-    loser_name: str
-    winner_score: int
-    loser_score: int
-
-    # Denormalized player snapshots for performance
-    player_1_data: dict[str, Any]
-    player_2_data: dict[str, Any]

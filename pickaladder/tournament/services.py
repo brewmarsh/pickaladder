@@ -18,8 +18,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
 
-MIN_PARTICIPANTS = 2
-
 
 class TournamentGenerator:
     """Helper to generate tournament brackets and pairings."""
@@ -27,7 +25,7 @@ class TournamentGenerator:
     @staticmethod
     def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
         """Generate round robin pairings using the circle method."""
-        if len(participant_ids) < MIN_PARTICIPANTS:
+        if len(participant_ids) < 2:
             return []
 
         # Simple Circle Method implementation
@@ -249,14 +247,10 @@ class TournamentService:
             db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
 
-        # Handle field mappings from form
-        tournament_date = data.get("start_date") or data.get("date")
-        location = data.get("address") or data.get("location")
-
         tournament_payload = {
             "name": data["name"],
-            "date": tournament_date,
-            "location": location,
+            "date": data["date"],
+            "location": data["location"],
             "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
             "mode": data.get("mode", "SINGLES"),
             "ownerRef": user_ref,
@@ -336,8 +330,10 @@ class TournamentService:
             TournamentService._get_team_status_for_user(db, tournament_id, user_uid)
         )
 
-        is_owner = data.get("organizer_id") == user_uid or (
-            data.get("ownerRef") and data["ownerRef"].id == user_uid
+        is_owner = (
+            data.get("organizer_id") == user_uid
+            or data.get("owner_id") == user_uid
+            or (data.get("ownerRef") and data["ownerRef"].id == user_uid)
         )
 
         return {
@@ -383,15 +379,11 @@ class TournamentService:
 
         # If changing match type, ensure no matches exist
         if "matchType" in update_data:
-            matches = (
-                db.collection("matches")
-                .where(
-                    filter=firestore.FieldFilter("tournamentId", "==", tournament_id)
-                )
-                .limit(1)
-                .stream()
-            )
-            if any(matches):
+            matches_query = db.collection("matches").where(
+                "tournamentId", "==", tournament_id
+            ).limit(1)
+            matches = list(matches_query.stream())
+            if matches:
                 # Don't update matchType if matches exist
                 del update_data["matchType"]
 
@@ -763,33 +755,6 @@ class TournamentService:
         )
 
         return True
-
-    @staticmethod
-    def delete_tournament(
-        tournament_id: str, user_uid: str, db: Client | None = None
-    ) -> None:
-        """Delete a tournament (admin or owner only)."""
-        if db is None:
-            db = firestore.client()
-        ref = db.collection("tournaments").document(tournament_id)
-        doc = cast(Any, ref.get())
-        if not doc.exists:
-            raise ValueError("Tournament not found")
-        data = cast(dict[str, Any], doc.to_dict())
-        owner_id = data.get("organizer_id")
-        if not owner_id and data.get("ownerRef"):
-            owner_id = data["ownerRef"].id
-
-        # Check if user is owner or admin
-        user_doc = cast(Any, db.collection("users").document(user_uid).get())
-        is_admin = (
-            user_doc.to_dict().get("isAdmin", False) if user_doc.exists else False
-        )
-
-        if owner_id != user_uid and not is_admin:
-            raise PermissionError("Unauthorized")
-
-        ref.delete()
 
     @staticmethod
     def generate_bracket(tournament_id: str, db: Client | None = None) -> list[Any]:

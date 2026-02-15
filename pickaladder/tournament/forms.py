@@ -10,22 +10,36 @@ class TournamentForm(FlaskForm):
     """Form for creating/editing a tournament."""
 
     name = StringField("Tournament Name", validators=[DataRequired()])
-
     banner = FileField(
         "Tournament Banner",
-        validators=[Optional(), FileAllowed(["jpg", "png", "jpeg"], "Images only!")],
+        validators=[Optional(), FileAllowed(["jpg", "png", "jpeg"])],
     )
+    start_date = DateField("Start Date", validators=[Optional()])
+    # Keep date for backward compatibility
+    date = DateField("Date", validators=[Optional()])
 
-    start_date = DateField("Start Date", validators=[DataRequired()])
-
-    # Primary Competition Mode selection
     match_type = SelectField(
-        "Competition Type",
-        choices=[("SINGLES", "👤 Singles (1v1)"), ("DOUBLES", "👥 Doubles (2v2)")],
-        validators=[DataRequired()],
+        "Competition Mode",
+        choices=[
+            ("SINGLES", "👤 Singles (1v1)"),
+            ("DOUBLES", "👥 Doubles (2v2)"),
+            ("singles", "👤 Singles (1v1)"),
+            ("doubles", "👥 Doubles (2v2)"),
+        ],
+        validators=[Optional()],
+    )
+    # Keep mode for backward compatibility
+    mode = RadioField(
+        "Competition Mode",
+        choices=[
+            ("SINGLES", "👤 Singles (1v1)"),
+            ("DOUBLES", "👥 Doubles (2v2)"),
+            ("singles", "👤 Singles (1v1)"),
+            ("doubles", "👥 Doubles (2v2)"),
+        ],
+        validators=[Optional()],
     )
 
-    # Tournament progression style
     format = SelectField(
         "Tournament Format",
         choices=[
@@ -37,20 +51,11 @@ class TournamentForm(FlaskForm):
     )
 
     venue_name = StringField("Venue Name", validators=[Optional()])
-
     address = StringField("Address", validators=[Optional()])
+    # Keep location for backward compatibility
+    location = StringField("Location", validators=[Optional()])
 
     description = TextAreaField("Description", validators=[Optional()])
-
-    # --- Legacy Compatibility Fields ---
-    # These remain to prevent regressions in older tests or document schemas
-    date = DateField("Date (Legacy)", validators=[Optional()])
-    location = StringField("Location (Legacy)", validators=[Optional()])
-    mode = RadioField(
-        "Competition Mode (Legacy)",
-        choices=[("SINGLES", "👤 Singles"), ("DOUBLES", "👥 Doubles")],
-        validators=[Optional()],
-    )
 
 
 class InvitePlayerForm(FlaskForm):

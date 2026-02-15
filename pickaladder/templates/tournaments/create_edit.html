@@ -39,22 +39,22 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div class="form-group">
-                    {{ form.start_date.label(class="form-label") }}
-                    {{ form.start_date(class="form-input", type="date") }}
-                    {% if form.start_date.errors %}
-                        {% for error in form.start_date.errors %}
+                    <label class="form-label">Start Date</label>
+                    {{ form.date(class="form-input", type="date") }}
+                    {% if form.date.errors %}
+                        {% for error in form.date.errors %}
                             <span class="text-danger">{{ error }}</span>
                         {% endfor %}
                     {% endif %}
                 </div>
                 <div class="form-group">
-                    {{ form.mode.label(class="form-label") }}
-                    <div class="d-flex gap-3 mt-2">
+                    <label class="form-label">Competition Mode</label>
+                    <div class="radio-group" style="display: flex; gap: 20px; padding: 10px 0;">
                         {% for subfield in form.mode %}
-                            <div class="form-check">
-                                {{ subfield(class="form-check-input") }}
-                                {{ subfield.label(class="form-check-label") }}
-                            </div>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                {{ subfield }}
+                                {{ subfield.label.text }}
+                            </label>
                         {% endfor %}
                     </div>
                     {% if form.mode.errors %}
@@ -66,21 +66,11 @@
             </div>
 
             <div class="form-group">
-                {{ form.venue_name.label(class="form-label") }}
-                {{ form.venue_name(class="form-input", placeholder="Central Park Courts") }}
-                {% if form.venue_name.errors %}
-                    {% for error in form.venue_name.errors %}
-                        <span class="text-danger">{{ error }}</span>
-                    {% endfor %}
-                {% endif %}
-            </div>
-
-            <div class="form-group">
-                {{ form.address.label(class="form-label") }}
-                {{ form.address(class="form-input", placeholder="123 Park Lane, New York, NY") }}
+                <label class="form-label">Location</label>
+                {{ form.location(class="form-input", placeholder="Central Park Courts") }}
                 <small class="text-muted">This will generate a 'Get Directions' link for players.</small>
-                {% if form.address.errors %}
-                    {% for error in form.address.errors %}
+                {% if form.location.errors %}
+                    {% for error in form.location.errors %}
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
                 {% endif %}
