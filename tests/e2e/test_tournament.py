@@ -34,22 +34,17 @@ def test_tournament_flow(
         page.click(".btn:has-text('Login')")
 
     # 2. Create a Tournament
-    if page.is_visible(".hamburger-menu"):
-        page.click(".hamburger-menu")
-        with page.expect_navigation():
-            page.click(".mobile-nav-link:has-text('Tournaments')")
-    else:
-        with page.expect_navigation():
-            page.click(".navbar a:has-text('Tournaments')")
+    with page.expect_navigation():
+        page.click(".navbar a:has-text('Tournaments')")
     with page.expect_navigation():
         page.click("a.btn-action:has-text('Create Tournament')")
     page.fill("input[name='name']", "Winter Open")
     page.fill("input[name='start_date']", "2026-12-01")
     page.fill("input[name='venue_name']", "Central Park")
-    page.fill("input[name='address']", "123 Park Ave")
-    page.fill("textarea[name='description']", "Winter Pickleball Tournament")
+    page.fill("input[name='address']", "Central Park")
+    page.select_option("select[name='match_type']", value="singles")
+    page.check("input[name='mode'][value='SINGLES']")
     page.select_option("select[name='format']", value="ROUND_ROBIN")
-    page.check("input[name='match_type'][value='SINGLES']")
     with page.expect_navigation():
         page.click("button:has-text('Create Tournament')")
 
@@ -88,8 +83,7 @@ def test_tournament_flow(
     )
     page.reload()
 
-    # Click Standings tab to reveal Record Match button
-    page.click("button:has-text('Standings')")
+    page.click("button:has-text('Bracket')")
 
     with page.expect_navigation():
         page.click("text=Record Match")

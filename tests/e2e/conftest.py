@@ -264,12 +264,12 @@ class MockTransaction(Transaction):
         self._max_attempts = 5
         self._retry_id = None
 
-    def _rollback(self) -> None:
-        """Mock rollback."""
-        pass
-
     def _begin(self, **kwargs: Any) -> None:
         """Mock begin."""
+        pass
+
+    def _rollback(self) -> None:
+        """Mock rollback."""
         pass
 
     def _commit(self) -> list[Any]:

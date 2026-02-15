@@ -6,7 +6,6 @@ import unittest
 from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
-from pickaladder.match.models import MatchSubmission
 from pickaladder.match.services import MatchService
 
 if TYPE_CHECKING:
@@ -43,15 +42,7 @@ class MatchSecurityTestCase(unittest.TestCase):
 
         current_user = cast("UserSession", {"uid": "player1"})
 
-        submission = MatchSubmission(
-            player_1_id=cast(str, form_data["player1"]),
-            player_2_id=cast(str, form_data["player2"]),
-            score_p1=cast(int, form_data["player1_score"]),
-            score_p2=cast(int, form_data["player2_score"]),
-            match_type=cast(str, form_data["match_type"]),
-        )
-
-        MatchService.record_match(mock_db, submission, current_user)
+        MatchService.record_match(mock_db, form_data, current_user)
 
         # Verify mock_record_batch was called
         self.assertTrue(mock_record_batch.called)

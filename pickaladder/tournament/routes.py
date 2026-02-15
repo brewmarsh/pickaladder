@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import logging
 from typing import Any
 
@@ -61,19 +62,21 @@ def create_tournament() -> Any:
 
             data = {
                 "name": form.name.data,
-                "start_date": date_val,
+                "date": datetime.datetime.combine(date_val, datetime.time.min),
+                "location": form.address.data,
                 "venue_name": form.venue_name.data,
                 "address": form.address.data,
-                "match_type": form.match_type.data,
-                "format": form.format.data,
+                "mode": form.mode.data,
+                "matchType": form.match_type.data,
                 "description": form.description.data,
+                "format": form.format.data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
             # Handle banner upload if present
             banner_file = request.files.get("banner")
             if banner_file and banner_file.filename:
-                banner_url = TournamentService._upload_banner(
+                banner_url = TournamentService.upload_tournament_banner(
                     tournament_id, banner_file
                 )
                 if banner_url:
@@ -169,18 +172,22 @@ def edit_tournament(tournament_id: str) -> Any:
 
         update_data = {
             "name": form.name.data,
-            "start_date": date_val,
+            "date": datetime.datetime.combine(date_val, datetime.time.min),
+            "location": form.address.data,
             "venue_name": form.venue_name.data,
             "address": form.address.data,
-            "match_type": form.match_type.data,
-            "format": form.format.data,
+            "mode": form.mode.data,
+            "matchType": form.match_type.data,
             "description": form.description.data,
+            "format": form.format.data,
         }
 
         # Handle banner upload
         banner_file = request.files.get("banner")
         if banner_file and banner_file.filename:
-            banner_url = TournamentService._upload_banner(tournament_id, banner_file)
+            banner_url = TournamentService.upload_tournament_banner(
+                tournament_id, banner_file
+            )
             if banner_url:
                 update_data["banner_url"] = banner_url
 
@@ -199,14 +206,18 @@ def edit_tournament(tournament_id: str) -> Any:
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
-        form.venue_name.data = tournament_data.get("location")
-        form.address.data = tournament_data.get("address")
-        form.description.data = tournament_data.get("description")
-        form.format.data = tournament_data.get("format")
-        form.match_type.data = (
+        form.venue_name.data = tournament_data.get("venue_name")
+        form.address.data = tournament_data.get("address") or tournament_data.get(
+            "location"
+        )
+        form.mode.data = (
             tournament_data.get("mode")
             or tournament_data.get("matchType", "SINGLES").upper()
         )
+        form.match_type.data = tournament_data.get("matchType", "singles")
+        form.description.data = tournament_data.get("description")
+        form.format.data = tournament_data.get("format", "ROUND_ROBIN")
+
         raw_date = tournament_data.get("date")
         if hasattr(raw_date, "to_datetime"):
             form.start_date.data = raw_date.to_datetime().date()
@@ -368,19 +379,6 @@ def generate_bracket(tournament_id: str) -> Any:
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
-@bp.route("/<string:tournament_id>/delete", methods=["POST"])
-@admin_required
-def delete_tournament(tournament_id: str) -> Any:
-    """Delete a tournament."""
-    db = firestore.client()
-    try:
-        db.collection("tournaments").document(tournament_id).delete()
-        flash("Tournament deleted successfully.", "success")
-    except Exception as e:
-        flash(f"Error deleting tournament: {e}", "danger")
-    return redirect(url_for(".list_tournaments"))
-
-
 @bp.route("/<string:tournament_id>/join", methods=["POST"])
 @login_required
 def join_tournament(tournament_id: str) -> Any:
@@ -446,6 +444,18 @@ def claim_team(tournament_id: str, team_id: str) -> Any:
         flash(f"Error: {e}", "danger")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    try:
+        TournamentService.delete_tournament(tournament_id)
+        flash("Tournament deleted successfully.", "success")
+    except Exception as e:
+        flash(f"Error deleting tournament: {e}", "danger")
+    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/accept_team", methods=["POST"])

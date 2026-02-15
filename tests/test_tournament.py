@@ -15,7 +15,6 @@ from tests.mock_utils import (
     MockArrayRemove,
     MockArrayUnion,
     MockBatch,
-    patch_mockfirestore,
 )
 
 # Mock user payloads
@@ -52,9 +51,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_client": patch(
-                "firebase_admin.firestore.client", return_value=self.mock_db
-            ),
+            "firestore_client": patch("firebase_admin.firestore.client"),
             "firestore_services": patch(
                 "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,
@@ -75,8 +72,6 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()
-
-        patch_mockfirestore()
 
         # Setup current user in mock DB
         self.mock_db.collection("users").document(MOCK_USER_ID).set(MOCK_USER_DATA)
@@ -110,8 +105,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Summer Open",
                 "start_date": "2024-06-01",
                 "venue_name": "Courtside",
-                "address": "123 Court St",
-                "match_type": "SINGLES",
+                "address": "Courtside",
+                "match_type": "singles",
+                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -138,8 +134,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Summer Open",
                 "start_date": "2024-06-01",
                 "venue_name": "Courtside",
-                "address": "123 Court St",
+                "address": "Courtside",
                 "match_type": "singles",
+                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -160,8 +157,6 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Original Name",
                 "start_date": datetime.datetime(2024, 6, 1),
                 "location": "Original Location",
-                "venue_name": "Original Location",
-                "address": "123 Original St",
                 "matchType": "singles",
                 "ownerRef": user_ref,
                 "organizer_id": MOCK_USER_ID,
@@ -175,8 +170,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Updated Name",
                 "start_date": "2024-07-01",
                 "venue_name": "Updated Location",
-                "address": "456 Update Lane",
-                "match_type": "DOUBLES",
+                "address": "Updated Location",
+                "match_type": "doubles",
+                "mode": "DOUBLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -206,10 +202,6 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_db.collection("tournaments").document(tournament_id).set(
             {
                 "name": "Original Name",
-                "start_date": datetime.datetime(2024, 6, 1),
-                "location": "Original Location",
-                "venue_name": "Original Location",
-                "address": "123 Original St",
                 "ownerRef": user_ref,
                 "organizer_id": MOCK_USER_ID,
             }
@@ -220,6 +212,12 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Updated Name",
+                "start_date": "2024-07-01",
+                "venue_name": "Updated Location",
+                "address": "Updated Location",
+                "match_type": "singles",
+                "mode": "SINGLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -256,7 +254,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "start_date": "2024-07-01",
                 "venue_name": "Updated Venue",
                 "address": "456 Updated St",
-                "match_type": "DOUBLES",
+                "match_type": "doubles",
+                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -281,10 +280,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             {
                 "name": "Test Tournament",
                 "date": "2024-06-01",
-                "start_date": "2024-06-01",
                 "location": "Courtside",
-                "venue_name": "Courtside",
-                "address": "123 Court St",
                 "matchType": "singles",
                 "ownerRef": user_ref,
                 "participant_ids": [MOCK_USER_ID],
@@ -324,7 +320,6 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "participants": [],
                 "participant_ids": [],
                 "date": datetime.datetime(2024, 6, 1),
-                "start_date": datetime.datetime(2024, 6, 1),
             }
         )
         with patch(
@@ -352,7 +347,6 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "participants": [],
                 "participant_ids": [],
                 "date": datetime.datetime(2024, 6, 1),
-                "start_date": datetime.datetime(2024, 6, 1),
             }
         )
         with patch(
@@ -568,8 +562,14 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user(is_admin=True)
 
         tournament_id = "test_tournament_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "To be deleted"}
+            {
+                "name": "To be deleted",
+                "organizer_id": MOCK_USER_ID,
+                "ownerRef": user_ref,
+                "participant_ids": [MOCK_USER_ID],
+            }
         )
 
         response = self.client.post(
@@ -589,8 +589,14 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user(is_admin=False)
 
         tournament_id = "test_tournament_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "Not deleted"}
+            {
+                "name": "Not deleted",
+                "organizer_id": MOCK_USER_ID,
+                "ownerRef": user_ref,
+                "participant_ids": [MOCK_USER_ID],
+            }
         )
 
         response = self.client.post(

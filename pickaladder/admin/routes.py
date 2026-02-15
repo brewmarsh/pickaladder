@@ -2,7 +2,7 @@
 
 import datetime
 import random
-from typing import Union, cast
+from typing import Union
 
 from faker import Faker
 from firebase_admin import auth, firestore
@@ -321,7 +321,7 @@ def generate_matches() -> Response:
                 s1, s2 = s2, s1
 
             # Use a dummy current_user dict for MatchService
-            dummy_user = {"uid": p1_id}
+            dummy_user = UserSession({"uid": p1_id})
 
             submission = MatchSubmission(
                 player_1_id=p1_id,
@@ -333,7 +333,7 @@ def generate_matches() -> Response:
                 created_by=p1_id,
             )
             try:
-                MatchService.record_match(db, submission, cast(UserSession, dummy_user))
+                MatchService.record_match(db, submission, dummy_user)
                 matches_created += 1
             except Exception as e:
                 print(f"Error generating match: {e}")
