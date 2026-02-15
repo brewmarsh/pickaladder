@@ -89,5 +89,11 @@ class UserSession(UserDict, UserMixin):
         if profile_pic:
             return str(profile_pic)
 
+        # Robustness: Check for other common keys
+        if avatar_url := self.get("avatar_url"):
+            return str(avatar_url)
+        if profile_picture_url := self.get("profile_picture_url"):
+            return str(profile_picture_url)
+
         # Fallback to "default"
         return "default"

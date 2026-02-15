@@ -70,6 +70,7 @@ def create_tournament() -> Any:
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
                 "location": form.location.data,
+                "location_data": location_data,
                 "mode": form.mode.data,
                 "matchType": form.mode.data.lower(),
             }
@@ -182,6 +183,7 @@ def edit_tournament(tournament_id: str) -> Any:
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
             "location": form.location.data,
+            "location_data": location_data,
             "mode": form.mode.data,
             "matchType": form.mode.data.lower(),
         }

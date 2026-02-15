@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
 from playwright.sync_api import Page, expect
@@ -141,9 +140,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Record Match')")
 
     # Check flash message
-    expect(page.locator(".toast")).to_contain_text(
-        "Match recorded successfully"
-    )
+    expect(page.locator(".toast")).to_contain_text("Match recorded successfully")
 
     # 7. Score Group Game
     with page.expect_navigation():
@@ -160,9 +157,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Record Match')")
 
     expect(page.locator("h1")).to_contain_text("Pickleballers")
-    expect(page.locator(".toast")).to_contain_text(
-        "Match recorded successfully"
-    )
+    expect(page.locator(".toast")).to_contain_text("Match recorded successfully")
 
     # Check Global Leaderboard (Req: "see the leaderboard")
     with page.expect_navigation():
@@ -210,9 +205,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
     with page.expect_navigation():
         page.click("button:has-text('Send Invite')")
-    expect(page.locator(".toast-body").last).to_contain_text(
-        "Invitation is being sent"
-    )
+    expect(page.locator(".toast-body").last).to_contain_text("Invitation is being sent")
 
     # Verify invite token was created
     invites = list(mock_db.collection("group_invites").stream())

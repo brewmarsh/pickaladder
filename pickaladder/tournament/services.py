@@ -14,6 +14,7 @@ from pickaladder.utils import send_email
 from .utils import get_tournament_standings
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
@@ -279,8 +280,8 @@ class TournamentService:
         from pickaladder.user import UserService  # noqa: PLC0415
 
         user_groups = UserService.get_user_groups(db, user_uid)
-        team_status, pending_partner_invite = TournamentService._get_team_status_for_user(
-            db, tournament_id, user_uid
+        team_status, pending_partner_invite = (
+            TournamentService._get_team_status_for_user(db, tournament_id, user_uid)
         )
 
         is_owner = data.get("organizer_id") == user_uid or (
@@ -759,3 +760,37 @@ class TournamentService:
                     }
                 )
         return bracket
+
+
+class TournamentGenerator:
+    """Handles pairing generation for tournaments."""
+
+    MIN_PARTICIPANTS = 2
+
+    @staticmethod
+    def generate_round_robin(participants: list[Any]) -> list[dict[str, Any]]:
+        """Generate round robin pairings using the circle method."""
+        if len(participants) < TournamentGenerator.MIN_PARTICIPANTS:
+            return []
+
+        if len(participants) % 2 != 0:
+            participants.append(None)  # Add a bye
+
+        n = len(participants)
+        rounds = []
+        p = list(participants)
+
+        for _ in range(n - 1):
+            matches = []
+            for i in range(n // 2):
+                if p[i] is not None and p[n - 1 - i] is not None:
+                    matches.append({"p1": p[i], "p2": p[n - 1 - i]})
+            rounds.append(matches)
+            # Rotate participants, keeping the first one fixed
+            p = [p[0]] + [p[-1]] + p[1:-1]
+
+        # Flatten matches for saving to sub-collection
+        all_matches = []
+        for r in rounds:
+            all_matches.extend(r)
+        return all_matches

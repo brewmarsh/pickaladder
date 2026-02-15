@@ -320,7 +320,9 @@ def generate_matches() -> Response:
                 s1, s2 = s2, s1
 
             # Use a dummy current_user dict for MatchService
-            dummy_user = {"uid": p1_id}
+            from pickaladder.user.helpers import wrap_user
+
+            dummy_user = wrap_user({"uid": p1_id})
 
             submission = MatchSubmission(
                 player_1_id=p1_id,
@@ -329,11 +331,11 @@ def generate_matches() -> Response:
                 score_p2=s2,
                 match_type="singles",
                 match_date=datetime.datetime.now(datetime.timezone.utc),
-                created_by=p1_id,
             )
             try:
-                MatchService.record_match(db, submission, dummy_user)
-                matches_created += 1
+                if dummy_user:
+                    MatchService.record_match(db, submission, dummy_user)
+                    matches_created += 1
             except Exception as e:
                 print(f"Error generating match: {e}")
 

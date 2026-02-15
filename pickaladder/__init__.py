@@ -242,6 +242,18 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         """Return the avatar URL for a user."""
         if not user:
             return ""
+
+        # Robustness: Check common dictionary keys first
+        if isinstance(user, dict):
+            if url := user.get("profilePictureUrl"):
+                return str(url)
+            if url := user.get("profilePictureThumbnailUrl"):
+                return str(url)
+            if url := user.get("avatar_url"):
+                return str(url)
+            if url := user.get("profile_picture_url"):
+                return str(url)
+
         wrapped = wrap_user(user)
         url = wrapped.avatar_url if wrapped else ""
         if url == "default":
