@@ -6,7 +6,6 @@ import unittest
 from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
-from pickaladder.match.models import MatchSubmission
 from pickaladder.match.services import MatchService
 
 if TYPE_CHECKING:
