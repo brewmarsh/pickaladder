@@ -20,7 +20,7 @@ class Score(TypedDict, total=False):
 
 @dataclass
 class MatchSubmission:
-    """Represents a match submission."""
+    """Represents a match submission payload."""
 
     match_type: str
     player_1_id: str
@@ -35,13 +35,13 @@ class MatchSubmission:
     created_by: str | None = None
 
     def __getitem__(self, key: str) -> Any:
-        """Allow dict-like access for compatibility."""
+        """Allow dict-like access for compatibility with generic service handlers."""
         return getattr(self, key)
 
 
 @dataclass
 class MatchResult:
-    """Represents the result of recording a match."""
+    """Represents the result of recording a match, including rating updates."""
 
     id: str
     matchType: str
@@ -64,6 +64,8 @@ class MatchResult:
     team2Id: str | None = None
     team1Ref: Any = None
     team2Ref: Any = None
+    
+    # Metadata for post-match UI feedback (Merged from fix branch)
     match_doc: dict[str, Any] | None = None
     player1_new_rating: float | None = None
     player2_new_rating: float | None = None
@@ -71,7 +73,7 @@ class MatchResult:
 
 
 class Match(FirestoreDocument, Score, total=False):
-    """A match document in Firestore."""
+    """A match document in Firestore with UI-calculated fields."""
 
     matchType: str
     matchDate: Any
@@ -90,7 +92,7 @@ class Match(FirestoreDocument, Score, total=False):
     winnerId: str
     participants: list[str]
 
-    # UI and calculated fields
+    # UI and calculated fields for Dashboard and Leaderboards
     player1: User | list[User] | dict[str, Any]
     player2: User | list[User] | dict[str, Any]
     player1_score: int
@@ -111,6 +113,6 @@ class Match(FirestoreDocument, Score, total=False):
     winner_score: int
     loser_score: int
 
-    # Denormalized player data
+    # Denormalized player snapshots for performance
     player_1_data: dict[str, Any]
     player_2_data: dict[str, Any]

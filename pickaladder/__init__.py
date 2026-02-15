@@ -167,8 +167,13 @@ def _initialize_firebase(app: Flask) -> None:
             app.logger.info("Firebase app already initialized.")
 
 
+def _configure_logging(app: Flask) -> None:
+    """Set up logging handlers."""
+    _configure_mail_logging(app)
+
+
 def _register_blueprints(app: Flask) -> None:
-    """Register all blueprints for the application."""
+    """Import and register Flask blueprints."""
     app.register_blueprint(main_bp.bp)
     app.register_blueprint(auth_bp.bp)
     app.register_blueprint(admin_bp.bp)
@@ -179,6 +184,48 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(tournament_bp.bp)
     app.register_blueprint(error_handlers.error_handlers_bp)
 
+    # make url_for('index') == url_for('auth.login')
+    app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
+
+    @app.before_request
+    def load_logged_in_user() -> None:
+        """Load user from session."""
+        real_user_id = session.get("user_id")
+        impersonate_id = session.get("impersonate_id")
+        is_admin = session.get("is_admin", False)
+
+        g.user = None
+        g.is_impersonating = False
+
+        if real_user_id is None:
+            return
+
+        id_to_load = real_user_id
+        if impersonate_id and is_admin:
+            id_to_load = impersonate_id
+            g.is_impersonating = True
+
+        try:
+            db = firestore.client()
+            user_doc = db.collection("users").document(id_to_load).get()
+            if user_doc.exists:
+                g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
+            elif not g.is_impersonating:
+                session.clear()
+                current_app.logger.warning(
+                    f"User {id_to_load} in session but not found in Firestore."
+                )
+            else:
+                # Clear impersonation if user not found
+                session.pop("impersonate_id", None)
+                g.is_impersonating = False
+        except Exception as e:
+            current_app.logger.error(f"Error loading user from session: {e}")
+            if not g.is_impersonating:
+                session.clear()
+
+    _register_context_processors(app)
+
 
 def _register_context_processors(app: Flask) -> None:
     """Register all context processors for the application."""
@@ -188,25 +235,9 @@ def _register_context_processors(app: Flask) -> None:
     app.context_processor(inject_firebase_api_key)
 
 
-def create_app(test_config: dict[str, Any] | None = None) -> Flask:
-    """Create and configure an instance of the Flask application."""
-    app = Flask(
-        __name__,
-        instance_relative_config=True,
-        static_folder="static",
-        static_url_path="/static",
-    )
-    app.url_map.converters["uuid"] = UUIDConverter
-
-    # Load configuration
-    _load_app_config(app, test_config)
-
-    _configure_mail_logging(app)
+def _register_extensions(app: Flask) -> None:
+    """Initialize Firebase, Mail, etc."""
     _initialize_firebase(app)
-
-    # Ensure the instance folder exists
-    with suppress(OSError):
-        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
 
     # Initialize extensions
     mail.init_app(app)
@@ -259,57 +290,28 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             return singular
         return plural if plural is not None else f"{singular}s"
 
+
+def create_app(test_config: dict[str, Any] | None = None) -> Flask:
+    """Create and configure an instance of the Flask application."""
+    app = Flask(
+        __name__,
+        instance_relative_config=True,
+        static_folder="static",
+        static_url_path="/static",
+    )
+
+    _configure_app(app, test_config)
+    _configure_logging(app)
+    _register_extensions(app)
     _register_blueprints(app)
-
-    # make url_for('index') == url_for('auth.login')
-    app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
-
-    @app.before_request
-    def load_logged_in_user() -> None:
-        """Load user from session."""
-        real_user_id = session.get("user_id")
-        impersonate_id = session.get("impersonate_id")
-        is_admin = session.get("is_admin", False)
-
-        g.user = None
-        g.is_impersonating = False
-
-        if real_user_id is None:
-            return
-
-        id_to_load = real_user_id
-        if impersonate_id and is_admin:
-            id_to_load = impersonate_id
-            g.is_impersonating = True
-
-        try:
-            db = firestore.client()
-            user_doc = db.collection("users").document(id_to_load).get()
-            if user_doc.exists:
-                g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
-            elif not g.is_impersonating:
-                session.clear()
-                current_app.logger.warning(
-                    f"User {id_to_load} in session but not found in Firestore."
-                )
-            else:
-                # Clear impersonation if user not found
-                session.pop("impersonate_id", None)
-                g.is_impersonating = False
-        except Exception as e:
-            current_app.logger.error(f"Error loading user from session: {e}")
-            if not g.is_impersonating:
-                session.clear()
-
-    _register_context_processors(app)
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
 
     return app
 
 
-def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
-    """Load and process application configuration."""
+def _configure_app(app: Flask, test_config: dict[str, Any] | None) -> None:
+    """Load configuration from file or mapping."""
     mail_username = os.environ.get("MAIL_USERNAME")
     if mail_username:
         mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
@@ -319,6 +321,7 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
         mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
 
     app.config.from_mapping(
+        ENV=os.environ.get("FLASK_ENV") or "development",
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
         FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
         GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
@@ -337,3 +340,9 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
 
     if test_config:
         app.config.update(test_config)
+
+    # Ensure the instance folder exists
+    with suppress(OSError):
+        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+
+    app.url_map.converters["uuid"] = UUIDConverter
