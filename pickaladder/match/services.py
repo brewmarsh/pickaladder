@@ -915,14 +915,18 @@ class MatchService:
             if player1_ref:
                 p1_doc = cast("DocumentSnapshot", player1_ref.get())
                 if cast(Any, p1_doc).exists:
-                    player1_data = cast(dict[str, Any], cast(Any, p1_doc).to_dict() or {})
+                    player1_data = cast(
+                        dict[str, Any], cast(Any, p1_doc).to_dict() or {}
+                    )
                     player1_data["id"] = cast(Any, p1_doc).id
                     player1_record = MatchService.get_player_record(db, player1_ref)
 
             if player2_ref:
                 p2_doc = cast("DocumentSnapshot", player2_ref.get())
                 if cast(Any, p2_doc).exists:
-                    player2_data = cast(dict[str, Any], cast(Any, p2_doc).to_dict() or {})
+                    player2_data = cast(
+                        dict[str, Any], cast(Any, p2_doc).to_dict() or {}
+                    )
                     player2_data["id"] = cast(Any, p2_doc).id
                     player2_record = MatchService.get_player_record(db, player2_ref)
 

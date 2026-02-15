@@ -557,10 +557,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Tournament deleted successfully.", response.data)
         self.assertFalse(
-            self.mock_db.collection("tournaments")
-            .document(tournament_id)
-            .get()
-            .exists
+            self.mock_db.collection("tournaments").document(tournament_id).get().exists
         )
 
     def test_delete_tournament_non_admin(self) -> None:
@@ -580,10 +577,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertIn(b"Unauthorized", response.data)
         self.assertTrue(
-            self.mock_db.collection("tournaments")
-            .document(tournament_id)
-            .get()
-            .exists
+            self.mock_db.collection("tournaments").document(tournament_id).get().exists
         )
 
 
