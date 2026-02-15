@@ -87,7 +87,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_db.collection("users").document(user_id).set(MOCK_FIRESTORE_USER_DATA)
 
     def _mock_firestore_user(
-        self, user_id: str = MOCK_USER_ID, data: dict = None
+        self, user_id: str = MOCK_USER_ID, data: dict[Any, Any] | None = None
     ) -> Any:
         """Setup a mock user document in Firestore and return the reference."""
         if data is None:

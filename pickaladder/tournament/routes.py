@@ -63,9 +63,11 @@ def create_tournament() -> Any:
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": form.location.data,
+                "location": form.address.data or form.location.data,
                 "mode": form.mode.data,
                 "matchType": form.mode.data.lower(),
+                "venue_name": form.venue_name.data,
+                "description": form.description.data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -169,9 +171,11 @@ def edit_tournament(tournament_id: str) -> Any:
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": form.location.data,
+            "location": form.address.data or form.location.data,
             "mode": form.mode.data,
             "matchType": form.mode.data.lower(),
+            "venue_name": form.venue_name.data,
+            "description": form.description.data,
         }
 
         # Handle banner upload
@@ -196,7 +200,9 @@ def edit_tournament(tournament_id: str) -> Any:
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
-        form.location.data = tournament_data.get("location")
+        form.address.data = tournament_data.get("location")
+        form.venue_name.data = tournament_data.get("venue_name")
+        form.description.data = tournament_data.get("description")
         form.mode.data = (
             tournament_data.get("mode")
             or tournament_data.get("matchType", "SINGLES").upper()
@@ -257,6 +263,18 @@ def invite_group(tournament_id: str) -> Any:
         flash(f"Error: {e}", "danger")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@login_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    try:
+        TournamentService.delete_tournament(tournament_id, g.user["uid"])
+        flash("Tournament deleted successfully.", "success")
+    except Exception as e:
+        flash(f"Error deleting tournament: {e}", "danger")
+    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/accept", methods=["POST"])

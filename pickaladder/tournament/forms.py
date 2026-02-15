@@ -11,7 +11,7 @@ class TournamentForm(FlaskForm):
 
     name = StringField("Tournament Name", validators=[DataRequired()])
     start_date = DateField("Start Date", validators=[DataRequired()])
-    # Keep date for backward compatibility in some tests/logic
+    # Keep date and location for backward compatibility in some tests/logic
     date = DateField("Date")
     banner = FileField("Banner Image")
     venue_name = StringField("Venue Name")

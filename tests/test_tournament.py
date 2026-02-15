@@ -539,6 +539,53 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             b"You can only invite members from groups you belong to.", response.data
         )
 
+    def test_delete_tournament(self) -> None:
+        """Test successfully deleting a tournament as admin."""
+        self._set_session_user(is_admin=True)
+        tournament_id = "test_tournament_id"
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Test Tournament",
+                "organizer_id": "other",
+                "participant_ids": [],
+            }
+        )
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/delete", follow_redirects=True
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Tournament deleted successfully.", response.data)
+        self.assertFalse(
+            self.mock_db.collection("tournaments")
+            .document(tournament_id)
+            .get()
+            .exists
+        )
+
+    def test_delete_tournament_non_admin(self) -> None:
+        """Test that a non-admin cannot delete a tournament they don't own."""
+        self._set_session_user(is_admin=False)
+        tournament_id = "test_tournament_id"
+        self.mock_db.collection("tournaments").document(tournament_id).set(
+            {
+                "name": "Test Tournament",
+                "organizer_id": "other",
+                "participant_ids": [],
+            }
+        )
+
+        response = self.client.post(
+            f"/tournaments/{tournament_id}/delete", follow_redirects=True
+        )
+        self.assertIn(b"Unauthorized", response.data)
+        self.assertTrue(
+            self.mock_db.collection("tournaments")
+            .document(tournament_id)
+            .get()
+            .exists
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
