@@ -129,6 +129,8 @@ def _get_match_participants(
     match_dict: dict[str, Any], users_map: dict[str, Any]
 ) -> tuple[Any, Any]:
     """Extract participant info for both sides of a match."""
+    p1_info: Any
+    p2_info: Any
     if match_dict.get("matchType") == "doubles":
         p1_info = [_get_player_info(r, users_map) for r in match_dict.get("team1", [])]
         p2_info = [_get_player_info(r, users_map) for r in match_dict.get("team2", [])]
@@ -200,29 +202,31 @@ def format_matches_for_dashboard(
     # Batch fetch everything
     users_map = {}
     if user_refs:
-        users_map = {
-            doc.id: {**doc.to_dict(), "id": doc.id}
-            for doc in db.get_all(list(user_refs))
-            if doc.exists and doc.to_dict()
-        }
+        for doc in db.get_all(list(user_refs)):
+            if doc.exists:
+                d = doc.to_dict()
+                if d is not None:
+                    d["id"] = doc.id
+                    users_map[doc.id] = d
 
     teams_map = {}
     if team_refs:
-        teams_map = {
-            doc.id: {**doc.to_dict(), "id": doc.id}
-            for doc in db.get_all(list(team_refs))
-            if doc.exists and doc.to_dict()
-        }
+        for doc in db.get_all(list(team_refs)):
+            if doc.exists:
+                d = doc.to_dict()
+                if d is not None:
+                    d["id"] = doc.id
+                    teams_map[doc.id] = d
 
     tournaments_map = {}
     if tournament_ids:
-        tournaments_map = {
-            doc.id: {**doc.to_dict(), "id": doc.id}
-            for doc in db.get_all(
-                [db.collection("tournaments").document(tid) for tid in tournament_ids]
-            )
-            if doc.exists and doc.to_dict()
-        }
+        t_refs = [db.collection("tournaments").document(tid) for tid in tournament_ids]
+        for doc in db.get_all(t_refs):
+            if doc.exists:
+                d = doc.to_dict()
+                if d is not None:
+                    d["id"] = doc.id
+                    tournaments_map[doc.id] = d
 
     matches_data = []
     for match_doc in matches:
@@ -239,6 +243,11 @@ def format_matches_for_dashboard(
         _ = _get_opponent_name(match_dict, user_id, users_map, teams_map)
         _ = _format_match_score(match_dict)
 
+        tournament_id = match_dict.get("tournamentId")
+        tournament_name = None
+        if tournament_id and isinstance(tournament_id, str):
+            tournament_name = tournaments_map.get(tournament_id, {}).get("name")
+
         matches_data.append(
             {
                 "id": match_doc.id,
@@ -253,11 +262,9 @@ def format_matches_for_dashboard(
                 "user_result": _determine_match_result(match_dict, user_id),
                 "team1_name": t1_name,
                 "team2_name": t2_name,
-                "tournament_name": tournaments_map.get(
-                    match_dict.get("tournamentId"), {}
-                ).get("name"),
+                "tournament_name": tournament_name,
                 "created_by": match_dict.get("createdBy"),
-                "tournament_id": match_dict.get("tournamentId"),
+                "tournament_id": tournament_id,
                 "player_1_data": match_dict.get("player_1_data"),
                 "player_2_data": match_dict.get("player_2_data"),
             }
