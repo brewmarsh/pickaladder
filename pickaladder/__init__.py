@@ -319,6 +319,7 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
         mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
 
     app.config.from_mapping(
+        ENV=os.environ.get("FLASK_ENV") or "development",
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
         FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
         GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
