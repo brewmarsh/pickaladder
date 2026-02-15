@@ -62,6 +62,54 @@ class Score(TypedDict, total=False):
     player2Score: int
 
 
+@dataclass
+class MatchSubmission:
+    """Represents a match submission."""
+
+    player_1_id: str
+    player_2_id: str
+    score_p1: int
+    score_p2: int
+    match_type: str
+    match_date: Any = None
+    partner_id: str | None = None
+    opponent_2_id: str | None = None
+    group_id: str | None = None
+    tournament_id: str | None = None
+    created_by: str | None = None
+
+    def __getitem__(self, key: str) -> Any:
+        """Allow dict-like access for compatibility."""
+        return getattr(self, key)
+
+
+@dataclass
+class MatchResult:
+    """Result of recording a match."""
+
+    id: str
+    matchType: str
+    player1Score: int
+    player2Score: int
+    matchDate: Any
+    createdAt: Any
+    createdBy: str
+    winner: str
+    winnerId: str
+    loserId: str
+    is_upset: bool = False
+    groupId: str | None = None
+    tournamentId: str | None = None
+    player1Ref: Any = None
+    player2Ref: Any = None
+    team1: list[Any] | None = None
+    team2: list[Any] | None = None
+    team1Id: str | None = None
+    team2Id: str | None = None
+    team1Ref: Any = None
+    team2Ref: Any = None
+
+
 class Match(FirestoreDocument, Score, total=False):
     """A match document in Firestore."""
 
