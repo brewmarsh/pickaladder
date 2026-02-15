@@ -19,46 +19,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
 
-MIN_PARTICIPANTS = 2
-
-
-class TournamentGenerator:
-    """Helper to generate tournament brackets and pairings."""
-
-    @staticmethod
-    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
-        """Generate round robin pairings using the circle method."""
-        if len(participant_ids) < MIN_PARTICIPANTS:
-            return []
-
-        # Simple Circle Method implementation
-        ids = list(participant_ids)
-        if len(ids) % 2 != 0:
-            ids.append("BYE")
-
-        n = len(ids)
-        pairings = []
-        db = firestore.client()
-
-        for _ in range(n - 1):
-            for i in range(n // 2):
-                p1 = ids[i]
-                p2 = ids[n - 1 - i]
-                if p1 != "BYE" and p2 != "BYE":
-                    pairings.append(
-                        {
-                            "player1Ref": db.collection("users").document(p1),
-                            "player2Ref": db.collection("users").document(p2),
-                            "matchType": "singles",
-                            "status": "PENDING",
-                            "createdAt": firestore.SERVER_TIMESTAMP,
-                        }
-                    )
-            # Rotate
-            ids = [ids[0]] + [ids[-1]] + ids[1:-1]
-
-        return pairings
-
 
 MIN_PARTICIPANTS = 2
 
@@ -288,14 +248,10 @@ class TournamentService:
             db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
 
-        # Handle field mappings from form
-        tournament_date = data.get("start_date") or data.get("date")
-        location = data.get("address") or data.get("location")
-
         tournament_payload = {
             "name": data["name"],
-            "date": tournament_date,
-            "location": location,
+            "date": data["date"],
+            "location": data["location"],
             "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
             "mode": data.get("mode", "SINGLES"),
             "location_data": data.get("location_data"),
@@ -487,7 +443,7 @@ class TournamentService:
 
     @staticmethod
     def _prepare_group_invites(
-        member_docs: list[Any], current_ids: set[str]
+        member_docs: list[DocumentSnapshot], current_ids: set[str]
     ) -> tuple[list[dict[str, Any]], list[str]]:
         """Filter group members and prepare invite objects."""
         new_parts = []
@@ -530,15 +486,12 @@ class TournamentService:
         )
 
         if new_parts:
-            batch = db.batch()
-            batch.update(
-                t_ref,
+            t_ref.update(
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                },
+                }
             )
-            batch.commit()
         return len(new_parts)
 
     @staticmethod
@@ -803,33 +756,6 @@ class TournamentService:
         )
 
         return True
-
-    @staticmethod
-    def delete_tournament(
-        tournament_id: str, user_uid: str, db: Client | None = None
-    ) -> None:
-        """Delete a tournament (admin or owner only)."""
-        if db is None:
-            db = firestore.client()
-        ref = db.collection("tournaments").document(tournament_id)
-        doc = cast(Any, ref.get())
-        if not doc.exists:
-            raise ValueError("Tournament not found")
-        data = cast(dict[str, Any], doc.to_dict())
-        owner_id = data.get("organizer_id")
-        if not owner_id and data.get("ownerRef"):
-            owner_id = data["ownerRef"].id
-
-        # Check if user is owner or admin
-        user_doc = cast(Any, db.collection("users").document(user_uid).get())
-        is_admin = (
-            user_doc.to_dict().get("isAdmin", False) if user_doc.exists else False
-        )
-
-        if owner_id != user_uid and not is_admin:
-            raise PermissionError("Unauthorized")
-
-        ref.delete()
 
     @staticmethod
     def generate_bracket(tournament_id: str, db: Client | None = None) -> list[Any]:
