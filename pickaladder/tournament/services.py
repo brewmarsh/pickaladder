@@ -18,8 +18,7 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
 
-
-MIN_PARTICIPANTS_FOR_RR = 2
+MIN_PARTICIPANTS = 2
 
 
 class TournamentGenerator:
@@ -28,7 +27,7 @@ class TournamentGenerator:
     @staticmethod
     def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
         """Generate round robin pairings using the circle method."""
-        if len(participant_ids) < MIN_PARTICIPANTS_FOR_RR:
+        if len(participant_ids) < MIN_PARTICIPANTS:
             return []
 
         # Simple Circle Method implementation
@@ -241,19 +240,14 @@ class TournamentService:
             db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
 
+        # Handle field mappings from form
+        tournament_date = data.get("start_date") or data.get("date")
+        location = data.get("address") or data.get("location")
+
         tournament_payload = {
             "name": data["name"],
-            "date": data["date"],
-            "location": data["location"],
-            "venue_name": data.get("venue_name"),
-            "address": data.get("address"),
-            "location_data": {
-                "name": data.get("venue_name"),
-                "address": data.get("address"),
-            }
-            if data.get("venue_name") or data.get("address")
-            else None,
-            "description": data.get("description"),
+            "date": tournament_date,
+            "location": location,
             "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
             "mode": data.get("mode", "SINGLES"),
             "ownerRef": user_ref,
@@ -377,12 +371,6 @@ class TournamentService:
         # Handle start_date / date compatibility
         if "start_date" in update_data:
             update_data["date"] = update_data["start_date"]
-
-        # Update location_data if venue_name or address changed
-        if "venue_name" in update_data or "address" in update_data:
-            v_name = update_data.get("venue_name") or data.get("venue_name")
-            addr = update_data.get("address") or data.get("address")
-            update_data["location_data"] = {"name": v_name, "address": addr}
 
         # If changing match type, ensure no matches exist
         if "matchType" in update_data:
@@ -768,6 +756,33 @@ class TournamentService:
         return True
 
     @staticmethod
+    def delete_tournament(
+        tournament_id: str, user_uid: str, db: Client | None = None
+    ) -> None:
+        """Delete a tournament (admin or owner only)."""
+        if db is None:
+            db = firestore.client()
+        ref = db.collection("tournaments").document(tournament_id)
+        doc = cast(Any, ref.get())
+        if not doc.exists:
+            raise ValueError("Tournament not found")
+        data = cast(dict[str, Any], doc.to_dict())
+        owner_id = data.get("organizer_id")
+        if not owner_id and data.get("ownerRef"):
+            owner_id = data["ownerRef"].id
+
+        # Check if user is owner or admin
+        user_doc = cast(Any, db.collection("users").document(user_uid).get())
+        is_admin = (
+            user_doc.to_dict().get("isAdmin", False) if user_doc.exists else False
+        )
+
+        if owner_id != user_uid and not is_admin:
+            raise PermissionError("Unauthorized")
+
+        ref.delete()
+
+    @staticmethod
     def generate_bracket(tournament_id: str, db: Client | None = None) -> list[Any]:
         """Generate a tournament bracket based on participants or teams."""
         if db is None:
@@ -818,13 +833,3 @@ class TournamentService:
                     }
                 )
         return bracket
-
-    @staticmethod
-    def delete_tournament(
-        tournament_id: str, user_uid: str, db: Client | None = None
-    ) -> None:
-        """Delete a tournament and its associated data."""
-        if db is None:
-            db = firestore.client()
-        ref = db.collection("tournaments").document(tournament_id)
-        ref.delete()

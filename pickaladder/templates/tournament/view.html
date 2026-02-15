@@ -17,7 +17,11 @@
 {% endif %}
 
 <div class="card hero-stats-card" style="
-    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url or url_for('static', filename='court_bg.jpg') }}');
+    {% if tournament.banner_url %}
+    background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url }}');
+    {% else %}
+    background-color: var(--primary-color);
+    {% endif %}
     background-size: cover;
     background-position: center;
     height: 300px;
@@ -31,8 +35,8 @@
     text-align: center;
     position: relative;
 ">
-    {% if g.user.isAdmin %}
-        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">⚙️</a>
+    {% if is_owner %}
+        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" title="Edit Tournament">⚙️</a>
     {% endif %}
     <h1 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h1>
     <p style="font-size: 1.25rem; text-shadow: 0 2px 4px rgba(0,0,0,1);">
@@ -47,10 +51,10 @@
     <!-- Left Column: Tabs and Content -->
     <div class="dashboard-column-left">
         <!-- Tabs -->
-        <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
-            <button class="tab-btn active" onclick="openTab(event, 'overview')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid var(--accent-color); font-weight: bold;">Overview</button>
-            <button class="tab-btn" onclick="openTab(event, 'bracket')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Bracket</button>
-            <button class="tab-btn" onclick="openTab(event, 'players')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Players</button>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab(event, 'overview')">Overview</button>
+            <button class="tab-btn" onclick="openTab(event, 'bracket')">Bracket</button>
+            <button class="tab-btn" onclick="openTab(event, 'players')">Players</button>
         </div>
 
         <!-- Tab Content -->
@@ -231,7 +235,7 @@
             {% endif %}
         </div>
 
-        {% if g.user.isAdmin %}
+        {% if is_owner %}
             {% if tournament.status != 'Completed' %}
             <div class="card">
                 <h4 class="card-header">Management</h4>

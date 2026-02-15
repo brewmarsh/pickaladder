@@ -65,3 +65,34 @@ function handleFlashMessages() {
         }
     });
 }
+
+/**
+ * Standardized tab switching function
+ * @param {Event} evt - The click event
+ * @param {string} tabName - ID of the tab content to show
+ */
+function openTab(evt, tabName) {
+    let i, tabcontent, tabbuttons;
+
+    // Hide all tab content
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+
+    // Deactivate all tab buttons (supporting both .tab-button and .tab-btn)
+    tabbuttons = document.querySelectorAll(".tab-button, .tab-btn");
+    for (i = 0; i < tabbuttons.length; i++) {
+        tabbuttons[i].classList.remove("active");
+    }
+
+    // Show the specific tab and add an "active" class to the button that opened the tab
+    const targetTab = document.getElementById(tabName);
+    if (targetTab) {
+        targetTab.style.display = "block";
+    }
+
+    if (evt && evt.currentTarget) {
+        evt.currentTarget.classList.add("active");
+    }
+}
