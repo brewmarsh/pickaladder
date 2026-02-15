@@ -264,6 +264,22 @@ class MockTransaction(Transaction):
         self._max_attempts = 5
         self._retry_id = None
 
+    def _rollback(self):
+        pass
+
+    def _begin(self, **kwargs):
+        pass
+
+    def _commit(self):
+        pass
+
+    def _clean_up(self):
+        pass
+
+    def _rollback(self) -> None:
+        """Mock rollback."""
+        pass
+
     def __getattr__(self, name: str) -> Any:
         """Handle missing attributes by returning a no-op or mock."""
         if name.startswith("_"):
@@ -272,7 +288,7 @@ class MockTransaction(Transaction):
             f"'{self.__class__.__name__}' object has no attribute '{name}'"
         )
 
-    def _begin(self, **kwargs: Any) -> None:
+    def _begin(self, retry_id: Any = None) -> None:
         """Mock begin."""
         pass
 

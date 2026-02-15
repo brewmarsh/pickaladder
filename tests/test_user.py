@@ -87,7 +87,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_db.collection("users").document(user_id).set(MOCK_FIRESTORE_USER_DATA)
 
     def _mock_firestore_user(
-        self, user_id: str = MOCK_USER_ID, data: dict[str, Any] | None = None
+        self, user_id: str = MOCK_USER_ID, data: dict = None
     ) -> Any:
         """Setup a mock user document in Firestore and return the reference."""
         if data is None:
@@ -210,7 +210,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "player2Ref": self.mock_db.collection("users").document("user2"),
             "player1Score": 10,
             "player2Score": 5,
-            "matchDate": datetime.datetime(2023, 1, 1, tzinfo=datetime.timezone.utc),
+            "matchDate": datetime.datetime(2023, 1, 1),
             "groupId": "group123",
         }
         self.mock_db.collection("matches").add(match_data)
@@ -239,7 +239,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         )
 
         match_data = {
-            "matchDate": datetime.datetime(2023, 1, 1, tzinfo=datetime.timezone.utc),
+            "matchDate": datetime.datetime(2023, 1, 1),
             "player1Score": 11,
             "player2Score": 9,
             "player1Ref": self.mock_db.collection("users").document(

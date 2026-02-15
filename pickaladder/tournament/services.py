@@ -18,8 +18,7 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
 
-
-MIN_PARTICIPANTS_FOR_RR = 2
+MIN_PARTICIPANTS = 2
 
 
 class TournamentGenerator:
@@ -28,7 +27,7 @@ class TournamentGenerator:
     @staticmethod
     def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
         """Generate round robin pairings using the circle method."""
-        if len(participant_ids) < MIN_PARTICIPANTS_FOR_RR:
+        if len(participant_ids) < MIN_PARTICIPANTS:
             return []
 
         # Simple Circle Method implementation
@@ -245,15 +244,6 @@ class TournamentService:
             "name": data["name"],
             "date": data["date"],
             "location": data["location"],
-            "venue_name": data.get("venue_name"),
-            "address": data.get("address"),
-            "location_data": {
-                "name": data.get("venue_name"),
-                "address": data.get("address"),
-            }
-            if data.get("venue_name") or data.get("address")
-            else None,
-            "description": data.get("description"),
             "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
             "mode": data.get("mode", "SINGLES"),
             "ownerRef": user_ref,
@@ -378,12 +368,6 @@ class TournamentService:
         if "start_date" in update_data:
             update_data["date"] = update_data["start_date"]
 
-        # Update location_data if venue_name or address changed
-        if "venue_name" in update_data or "address" in update_data:
-            v_name = update_data.get("venue_name") or data.get("venue_name")
-            addr = update_data.get("address") or data.get("address")
-            update_data["location_data"] = {"name": v_name, "address": addr}
-
         # If changing match type, ensure no matches exist
         if "matchType" in update_data:
             matches = (
@@ -493,15 +477,12 @@ class TournamentService:
         )
 
         if new_parts:
-            batch = db.batch()
-            batch.update(
-                t_ref,
+            t_ref.update(
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                },
+                }
             )
-            batch.commit()
         return len(new_parts)
 
     @staticmethod
@@ -818,13 +799,3 @@ class TournamentService:
                     }
                 )
         return bracket
-
-    @staticmethod
-    def delete_tournament(
-        tournament_id: str, user_uid: str, db: Client | None = None
-    ) -> None:
-        """Delete a tournament and its associated data."""
-        if db is None:
-            db = firestore.client()
-        ref = db.collection("tournaments").document(tournament_id)
-        ref.delete()

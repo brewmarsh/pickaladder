@@ -53,6 +53,7 @@ class MatchResult:
     winner: str
     winnerId: str
     loserId: str
+    is_upset: bool = False
     groupId: str | None = None
     tournamentId: str | None = None
     player1Ref: Any = None
@@ -63,7 +64,6 @@ class MatchResult:
     team2Id: str | None = None
     team1Ref: Any = None
     team2Ref: Any = None
-    is_upset: bool = False
 
 
 class Match(FirestoreDocument, Score, total=False):

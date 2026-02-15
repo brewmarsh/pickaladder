@@ -5,20 +5,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
-from flask import (
-    flash,
-    g,
-    jsonify,
-    redirect,
-    render_template,
-    request,
-    url_for,
-)
+from flask import flash, g, jsonify, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import MatchForm
+
+# Added import to support the structured submission used in the fix branch
 from .models import MatchSubmission
 from .services import MatchService
 
@@ -121,7 +115,7 @@ def _populate_match_form_choices(
 
     form.player1.choices = [(u, str(all_names.get(u, u))) for u in p1_cands]
     others = [(u, str(all_names.get(u, u))) for u in other_cands]
-    form.player2.choices = form.partner.choices = form.opponent2.choices = others  # type: ignore[assignment]
+    form.player2.choices = form.partner.choices = form.opponent2.choices = others
 
 
 def _handle_record_match_get(
