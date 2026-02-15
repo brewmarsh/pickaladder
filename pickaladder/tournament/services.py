@@ -19,21 +19,22 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.transaction import Transaction
 
 
+MIN_PARTICIPANTS_FOR_RR = 2
+
+
 class TournamentGenerator:
     """Helper to generate tournament brackets and pairings."""
 
     @staticmethod
     def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
         """Generate round robin pairings using the circle method."""
-        if len(participant_ids) < 2:
+        if len(participant_ids) < MIN_PARTICIPANTS_FOR_RR:
             return []
 
         # Simple Circle Method implementation
         ids = list(participant_ids)
-        has_bye = False
         if len(ids) % 2 != 0:
             ids.append("BYE")
-            has_bye = True
 
         n = len(ids)
         pairings = []
@@ -244,6 +245,15 @@ class TournamentService:
             "name": data["name"],
             "date": data["date"],
             "location": data["location"],
+            "venue_name": data.get("venue_name"),
+            "address": data.get("address"),
+            "location_data": {
+                "name": data.get("venue_name"),
+                "address": data.get("address"),
+            }
+            if data.get("venue_name") or data.get("address")
+            else None,
+            "description": data.get("description"),
             "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
             "mode": data.get("mode", "SINGLES"),
             "ownerRef": user_ref,
@@ -368,6 +378,12 @@ class TournamentService:
         if "start_date" in update_data:
             update_data["date"] = update_data["start_date"]
 
+        # Update location_data if venue_name or address changed
+        if "venue_name" in update_data or "address" in update_data:
+            v_name = update_data.get("venue_name") or data.get("venue_name")
+            addr = update_data.get("address") or data.get("address")
+            update_data["location_data"] = {"name": v_name, "address": addr}
+
         # If changing match type, ensure no matches exist
         if "matchType" in update_data:
             matches = (
@@ -477,12 +493,15 @@ class TournamentService:
         )
 
         if new_parts:
-            t_ref.update(
+            batch = db.batch()
+            batch.update(
+                t_ref,
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                }
+                },
             )
+            batch.commit()
         return len(new_parts)
 
     @staticmethod
@@ -800,10 +819,12 @@ class TournamentService:
                 )
         return bracket
 
-
-class TournamentGenerator:
-    """Placeholder for tournament bracket generation logic."""
-
     @staticmethod
-    def generate_round_robin(participants: list[Any]) -> list[Any]:
-        return []
+    def delete_tournament(
+        tournament_id: str, user_uid: str, db: Client | None = None
+    ) -> None:
+        """Delete a tournament and its associated data."""
+        if db is None:
+            db = firestore.client()
+        ref = db.collection("tournaments").document(tournament_id)
+        ref.delete()

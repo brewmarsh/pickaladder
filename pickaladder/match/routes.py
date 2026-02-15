@@ -5,13 +5,20 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
-from flask import flash, g, jsonify, redirect, render_template, request, url_for
+from flask import (
+    flash,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import MatchForm
-# Added import to support the structured submission used in the fix branch
 from .models import MatchSubmission
 from .services import MatchService
 
@@ -114,7 +121,7 @@ def _populate_match_form_choices(
 
     form.player1.choices = [(u, str(all_names.get(u, u))) for u in p1_cands]
     others = [(u, str(all_names.get(u, u))) for u in other_cands]
-    form.player2.choices = form.partner.choices = form.opponent2.choices = others
+    form.player2.choices = form.partner.choices = form.opponent2.choices = others  # type: ignore[assignment]
 
 
 def _handle_record_match_get(
@@ -162,7 +169,7 @@ def record_match() -> Any:
         # Ensure ID context is preserved if not present in form body
         data["group_id"] = data.get("group_id") or group_id
         data["tournament_id"] = data.get("tournament_id") or t_id
-        
+
         try:
             # Using structured submission from fix branch
             submission = MatchSubmission(
@@ -178,13 +185,13 @@ def record_match() -> Any:
                 tournament_id=data.get("tournament_id"),
             )
             result = MatchService.record_match(db, submission, g.user)
-            
+
             m_id = result.id
             if request.is_json:
                 return jsonify({"status": "success", "match_id": m_id}), 200
-            
+
             flash("Match recorded successfully.", "success")
-            
+
             # Prioritize redirects: Tournament -> Group -> Summary
             if tid := data.get("tournament_id"):
                 return redirect(
@@ -192,9 +199,9 @@ def record_match() -> Any:
                 )
             if gid := data.get("group_id"):
                 return redirect(url_for("group.view_group", group_id=gid))
-            
+
             return redirect(url_for("match.view_match_summary", match_id=m_id))
-            
+
         except Exception as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400

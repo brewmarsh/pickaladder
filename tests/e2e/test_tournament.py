@@ -11,7 +11,7 @@ from playwright.sync_api import Page, expect
 def test_tournament_flow(
     app_server: str, page_with_firebase: Page, mock_db: Any
 ) -> None:
-    """Test the complete tournament flow: creation and completion."""
+    """Test the complete tournament flow: creation, match recording, and completion."""
     page = page_with_firebase
     base_url = app_server
     page.on("dialog", lambda dialog: dialog.accept())
@@ -41,37 +41,39 @@ def test_tournament_flow(
 
     page.wait_for_selector("input[name='name']")
     page.fill("input[name='name']", "Winter Open")
-
-    # We standardized to start_date in the form
     page.fill("input[name='start_date']", "2026-12-01")
-    page.fill("input[name='address']", "Central Park")
-
-    # Click radio button by label
-    page.click("label:has-text('Singles')")
+    
+    # Combined field requirements from main and fix branches
+    page.fill("input[name='venue_name']", "Central Park")
+    page.fill("input[name='address']", "Central Park, New York, NY")
+    
+    # Select Match Type (Handles Radio or Select implementation)
+    if page.is_visible("input[name='match_type'][value='singles']"):
+        page.check("input[name='match_type'][value='singles']")
+    else:
+        page.click("label:has-text('Singles')")
 
     with page.expect_navigation():
         page.click("button:has-text('Create Tournament')")
 
-    # The title should be in the hero card
+    # Verify hero section title
     expect(page.locator("h1").first).to_contain_text("Winter Open")
     expect(page.locator(".badge-warning", has_text="Active")).to_be_visible()
 
     # Create a friend to verify the Invite dropdown
     friend_id = "friend_user"
-    mock_db.collection("users").document(friend_id).set(
-        {
-            "username": "friend_user",
-            "email": "friend@example.com",
-            "name": "Friend User",
-            "createdAt": "2023-01-01T00:00:00",
-        }
-    )
+    mock_db.collection("users").document(friend_id).set({
+        "username": "friend_user",
+        "email": "friend@example.com",
+        "name": "Friend User",
+        "createdAt": "2023-01-01T00:00:00",
+    })
     mock_db.collection("users").document("admin").collection("friends").document(
         friend_id
     ).set({"status": "accepted"})
 
     page.reload()
-    expect(page.locator("select[name='user_id']")).to_contain_text("friend_user")
+    expect(page.locator("select[name='user_id']")).to_contain_text("Friend User")
 
     # 3. Check Directions button
     directions_btn = page.locator("text=Directions")
@@ -81,14 +83,13 @@ def test_tournament_flow(
     )
 
     # 4. Record a Match (Verify Summary Redirect)
-    # First, ensure friend_user is a participant for the match recording to work easily
     tournament_id = page.url.split("/")[-1]
-    mock_db.collection("tournaments").document(tournament_id).update(
-        {"participant_ids": ["admin", "friend_user"]}
-    )
+    mock_db.collection("tournaments").document(tournament_id).update({
+        "participant_ids": ["admin", "friend_user"]
+    })
     page.reload()
 
-    # Click the Bracket tab to see the Record Match button
+    # Navigate to Bracket tab to reveal Record Match button
     page.click("button:has-text('Bracket')")
     expect(page.locator("#bracket")).to_be_visible()
 
@@ -103,10 +104,10 @@ def test_tournament_flow(
     with page.expect_navigation():
         page.click("button:has-text('Record Match')")
 
-    # Verify redirection back to tournament view
+    # Verify redirection back to tournament lobby
     expect(page).to_have_url(re.compile(f".*/tournaments/{tournament_id}"))
 
-    # 5. Complete Tournament (as owner)
+    # 5. Complete Tournament (as owner/admin)
     with page.expect_navigation():
         page.click("text=Complete Tournament")
 
