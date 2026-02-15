@@ -10,26 +10,23 @@ class TournamentForm(FlaskForm):
     """Form for creating/editing a tournament."""
 
     name = StringField("Tournament Name", validators=[DataRequired()])
-
+    banner = FileField(
+        "Banner Image",
+        validators=[Optional(), FileAllowed(["jpg", "png", "jpeg"], "Images only!")],
+    )
     start_date = DateField("Start Date", validators=[DataRequired()])
-
-    venue_name = StringField("Venue Name", validators=[DataRequired()])
-
-    address = StringField("Address", validators=[DataRequired()])
-
-    match_type = SelectField(
+    match_type = RadioField(
         "Match Type",
         choices=[("singles", "Singles"), ("doubles", "Doubles")],
-        validators=[DataRequired()],
+        validators=[Optional()],
+        default="singles",
     )
-
     mode = RadioField(
         "Competition Mode",
         choices=[("SINGLES", "👤 Singles (1v1)"), ("DOUBLES", "👥 Doubles (2v2)")],
         validators=[DataRequired()],
         default="SINGLES",
     )
-
     format = SelectField(
         "Tournament Format",
         choices=[
@@ -39,20 +36,10 @@ class TournamentForm(FlaskForm):
         validators=[DataRequired()],
         default="ROUND_ROBIN",
     )
-
-    banner = FileField(
-        "Tournament Banner",
-        validators=[
-            Optional(),
-            FileAllowed(["jpg", "jpeg", "png", "webp"], "Images only!"),
-        ],
-    )
-
+    venue_name = StringField("Venue Name", validators=[Optional()])
+    address = StringField("Address", validators=[Optional()])
     description = TextAreaField("Description", validators=[Optional()])
-
-    # Legacy fields for compatibility if needed
-    date = DateField("Date (Legacy)", validators=[Optional()])
-    location = StringField("Location (Legacy)", validators=[Optional()])
+    location = StringField("Location", validators=[Optional()])
 
 
 class InvitePlayerForm(FlaskForm):

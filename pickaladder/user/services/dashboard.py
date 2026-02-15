@@ -84,21 +84,25 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
 
-    # 4. Calculate onboarding progress with robust key checking
+    # Calculate onboarding progress
+    has_avatar = bool(user_data.get("profilePictureUrl") or user_data.get("avatar_url"))
+    has_dupr = bool(user_data.get("dupr_id") or user_data.get("duprRating"))
+    has_group = bool(group_rankings)
+    has_match = bool(matches)
+    has_friend = bool(friends)
+
+    tasks = [has_avatar, has_dupr, has_group, has_match, has_friend]
+    percent = int(sum(tasks) / len(tasks) * 100) if tasks else 0
+
     onboarding_progress = {
-        "has_avatar": bool(user_data.get("profilePictureUrl") or user_data.get("avatar_url")),
-        "has_dupr": bool(user_data.get("dupr_id") or user_data.get("duprRating")),
-        "has_group": len(group_rankings) > 0,
-        "has_match": len(matches) > 0,
-        "has_friend": len(friends) > 0,
+        "percent": percent,
+        "has_avatar": has_avatar,
+        "has_dupr": has_dupr,
+        "has_rating": has_dupr,
+        "has_group": has_group,
+        "has_match": has_match,
+        "has_friend": has_friend,
     }
-    
-    # Template compatibility key
-    onboarding_progress["has_rating"] = onboarding_progress["has_dupr"]
-    
-    steps = ["has_avatar", "has_dupr", "has_group", "has_match", "has_friend"]
-    completed = sum(1 for step in steps if onboarding_progress[step])
-    onboarding_progress["percent"] = int((completed / len(steps)) * 100)
 
     return {
         "user": user_data,
