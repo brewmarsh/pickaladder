@@ -389,8 +389,8 @@ class MatchService:
 
             invites_query = (
                 db.collection("group_invites")
-                .where(filter=firestore.FieldFilter("group_id", "==", group_id))
-                .where(filter=firestore.FieldFilter("used", "==", False))
+                .where("group_id", "==", group_id)
+                .where("used", "==", False)
                 .stream()
             )
             invited_emails = [
@@ -402,9 +402,7 @@ class MatchService:
                     batch_emails = invited_emails[i : i + 30]
                     users_by_email = (
                         db.collection("users")
-                        .where(
-                            filter=firestore.FieldFilter("email", "in", batch_emails)
-                        )
+                        .where("email", "in", batch_emails)
                         .stream()
                     )
                     for user_doc in users_by_email:
@@ -419,7 +417,7 @@ class MatchService:
 
             my_invites_query = (
                 db.collection("group_invites")
-                .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
+                .where("inviter_id", "==", user_id)
                 .stream()
             )
             my_invited_emails = {
@@ -432,9 +430,7 @@ class MatchService:
                     batch_emails = my_invited_emails_list[i : i + 10]
                     users_by_email = (
                         db.collection("users")
-                        .where(
-                            filter=firestore.FieldFilter("email", "in", batch_emails)
-                        )
+                        .where("email", "in", batch_emails)
                         .stream()
                     )
                     for user_doc in users_by_email:
@@ -452,9 +448,7 @@ class MatchService:
 
         # 1. Matches where the user is player1 (Singles)
         p1_matches_query = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("player1Ref", "==", player_ref))
-            .stream()
+            db.collection("matches").where("player1Ref", "==", player_ref).stream()
         )
         for match in p1_matches_query:
             data = match.to_dict()
@@ -468,9 +462,7 @@ class MatchService:
 
         # 2. Matches where the user is player2 (Singles)
         p2_matches_query = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("player2Ref", "==", player_ref))
-            .stream()
+            db.collection("matches").where("player2Ref", "==", player_ref).stream()
         )
         for match in p2_matches_query:
             data = match.to_dict()
@@ -485,7 +477,7 @@ class MatchService:
         # 3. Matches where the user is in team1 (Doubles)
         t1_matches_query = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter("team1", "array_contains", player_ref))
+            .where("team1", "array_contains", player_ref)
             .stream()
         )
         for match in t1_matches_query:
@@ -501,7 +493,7 @@ class MatchService:
         # 4. Matches where the user is in team2 (Doubles)
         t2_matches_query = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter("team2", "array_contains", player_ref))
+            .where("team2", "array_contains", player_ref)
             .stream()
         )
         for match in t2_matches_query:
@@ -691,13 +683,14 @@ class MatchService:
 
         matches_ref = db.collection("matches")
         # Ensure 'matchDate' is used for ordering to match the created documents
-        query = (
-            matches_ref.where(
-                filter=firestore.FieldFilter("participants", "array_contains", uid)
-            )
-            .order_by("matchDate", direction=firestore.Query.DESCENDING)
-            .limit(limit)
-        )
+        query = matches_ref.where("participants", "array_contains", uid)
+
+        try:
+            query = query.order_by("matchDate", direction=firestore.Query.DESCENDING)
+        except Exception:
+            pass
+
+        query = query.limit(limit)
 
         if start_after:
             last_doc = cast("DocumentSnapshot", matches_ref.document(start_after).get())

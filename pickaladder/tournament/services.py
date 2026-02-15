@@ -136,7 +136,7 @@ class TournamentService:
         # Source B: Groups
         groups_query = (
             db.collection("groups")
-            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+            .where("members", "array_contains", user_ref)
             .stream()
         )
         group_member_ids = set()
@@ -173,18 +173,10 @@ class TournamentService:
             db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
 
-        owned = (
-            db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
-            .stream()
-        )
+        owned = db.collection("tournaments").where("ownerRef", "==", user_ref).stream()
         participating = (
             db.collection("tournaments")
-            .where(
-                filter=firestore.FieldFilter(
-                    "participant_ids", "array_contains", user_uid
-                )
-            )
+            .where("participant_ids", "array_contains", user_uid)
             .stream()
         )
 
@@ -381,9 +373,7 @@ class TournamentService:
         if "matchType" in update_data:
             matches = (
                 db.collection("matches")
-                .where(
-                    filter=firestore.FieldFilter("tournamentId", "==", tournament_id)
-                )
+                .where("tournamentId", "==", tournament_id)
                 .limit(1)
                 .stream()
             )
@@ -486,12 +476,15 @@ class TournamentService:
         )
 
         if new_parts:
-            t_ref.update(
+            batch = db.batch()
+            batch.update(
+                t_ref,
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                }
+                },
             )
+            batch.commit()
         return len(new_parts)
 
     @staticmethod
@@ -664,8 +657,8 @@ class TournamentService:
             db.collection("tournaments").document(tournament_id).collection("teams")
         )
         query = (
-            teams_ref.where(filter=firestore.FieldFilter("p2_uid", "==", user_uid))
-            .where(filter=firestore.FieldFilter("status", "==", "PENDING"))
+            teams_ref.where("p2_uid", "==", user_uid)
+            .where("status", "==", "PENDING")
             .stream()
         )
 
@@ -792,9 +785,7 @@ class TournamentService:
         else:
             # Fetch confirmed teams from sub-collection
             teams_query = (
-                t_ref.collection("teams")
-                .where(filter=firestore.FieldFilter("status", "==", "CONFIRMED"))
-                .stream()
+                t_ref.collection("teams").where("status", "==", "CONFIRMED").stream()
             )
             for doc in teams_query:
                 data = doc.to_dict()

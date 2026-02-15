@@ -31,7 +31,7 @@
     text-align: center;
     position: relative;
 ">
-    {% if is_owner %}
+    {% if g.user.is_admin and is_owner %}
         <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">⚙️</a>
     {% endif %}
     <h1 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h1>
@@ -217,7 +217,7 @@
             {% endif %}
         </div>
 
-        {% if is_owner %}
+        {% if g.user.is_admin and is_owner %}
             {% if tournament.status != 'Completed' %}
             <div class="card">
                 <h4 class="card-header">Management</h4>
