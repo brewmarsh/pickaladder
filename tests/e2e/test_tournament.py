@@ -45,8 +45,10 @@ def test_tournament_flow(
     with page.expect_navigation():
         page.click("button:has-text('Create Tournament')")
 
-    expect(page.locator("h2")).to_contain_text("Winter Open")
-    expect(page.locator(".badge-warning", has_text="Active")).to_be_visible()
+    page.screenshot(path="verification/tournament_view.png")
+    print(f"URL: {page.url}")
+    expect(page.locator("h1")).to_contain_text("Winter Open")
+    expect(page.locator(".badge-primary", has_text="Active")).to_be_visible()
 
     # Create a friend to verify the Invite dropdown
     friend_id = "friend_user"
@@ -79,6 +81,9 @@ def test_tournament_flow(
         {"participant_ids": ["admin", "friend_user"]}
     )
     page.reload()
+
+    # Click the "Standings" tab to reveal the "Record Match" button
+    page.click("button:has-text('Standings')")
 
     with page.expect_navigation():
         page.click("text=Record Match")

@@ -95,5 +95,6 @@ class UserSession(UserDict, UserMixin):
         if profile_picture_url := self.get("profile_picture_url"):
             return str(profile_picture_url)
 
-        # Fallback to "default"
-        return "default"
+        # Fallback to DiceBear Avatars
+        seed = self.get("username") or self.get("email") or "User"
+        return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"

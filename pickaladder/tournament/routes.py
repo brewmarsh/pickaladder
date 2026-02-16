@@ -60,20 +60,20 @@ def create_tournament() -> Any:
             if date_val is None:
                 raise ValueError("Date is required")
 
-            location_data = {
-                "name": form.venue_name.data,
-                "address": form.address.data,
-                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
-            }
-
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
                 "location": form.location.data,
-                "location_data": location_data,
                 "mode": form.mode.data,
                 "matchType": form.mode.data.lower(),
             }
+
+            if form.venue_name.data or form.address.data:
+                data["location_data"] = {
+                    "name": form.venue_name.data,
+                    "address": form.address.data,
+                    "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
+                }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
             # Handle banner upload if present
@@ -173,20 +173,20 @@ def edit_tournament(tournament_id: str) -> Any:
                 action="Edit",
             )
 
-        location_data = {
-            "name": form.venue_name.data,
-            "address": form.address.data,
-            "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
-        }
-
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
             "location": form.location.data,
-            "location_data": location_data,
             "mode": form.mode.data,
             "matchType": form.mode.data.lower(),
         }
+
+        if form.venue_name.data or form.address.data:
+            update_data["location_data"] = {
+                "name": form.venue_name.data,
+                "address": form.address.data,
+                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
+            }
 
         # Handle banner upload
         banner_file = request.files.get("banner")
