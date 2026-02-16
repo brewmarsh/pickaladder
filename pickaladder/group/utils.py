@@ -13,7 +13,6 @@ from firebase_admin import firestore
 
 if TYPE_CHECKING:
     from flask import Flask
-from google.cloud.firestore import FieldFilter
 
 from pickaladder.core.constants import (
     FIRESTORE_BATCH_LIMIT,
@@ -254,9 +253,7 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
 
     # Fetch all matches for this group
     all_matches_stream = (
-        db.collection("matches")
-        .where(filter=FieldFilter("groupId", "==", group_id))
-        .stream()
+        db.collection("matches").where("groupId", "==", group_id).stream()
     )
     all_matches = list(all_matches_stream)
 
@@ -382,9 +379,7 @@ def _update_trend_player_stats(
 def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
     """Generate data for a leaderboard trend chart."""
     db = firestore.client()
-    matches_query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
-    )
+    matches_query = db.collection("matches").where("groupId", "==", group_id)
     matches = [m for m in matches_query.stream() if m.to_dict().get("matchDate")]
     matches.sort(key=lambda x: x.to_dict().get("matchDate"))
     if not matches:
@@ -456,9 +451,7 @@ def get_user_group_stats(group_id: str, user_id: str) -> dict[str, Any]:
         stats["wins"] = user_data.get("wins", 0)
         stats["losses"] = user_data.get("losses", 0)
 
-    matches_query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
-    )
+    matches_query = db.collection("matches").where("groupId", "==", group_id)
     all_matches = list(matches_query.stream())
     user_ref = db.collection("users").document(user_id)
 
@@ -629,9 +622,7 @@ def get_head_to_head_stats(
 ) -> dict[str, Any]:
     """Calculates head-to-head statistics for two players in doubles matches."""
     db = firestore.client()
-    query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
-    )
+    query = db.collection("matches").where("groupId", "==", group_id)
     all_matches_in_group = list(query.stream())
 
     h2h_stats: dict[str, Any] = {

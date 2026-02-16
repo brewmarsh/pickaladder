@@ -21,7 +21,6 @@ from werkzeug.wrappers import Response
 from pickaladder.auth.decorators import login_required
 from pickaladder.match.services import MatchService
 from pickaladder.user import UserService
-from pickaladder.user.models import UserSession
 
 from . import bp
 from .services import AdminService
@@ -195,7 +194,7 @@ def admin_delete_user() -> Response:
         # Try to find by Email
         users = list(
             db.collection("users")
-            .where(filter=firestore.FieldFilter("email", "==", user_identifier))
+            .where("email", "==", user_identifier)
             .limit(1)
             .stream()
         )
@@ -322,7 +321,7 @@ def generate_matches() -> Response:
                 s1, s2 = s2, s1
 
             # Use a dummy current_user dict for MatchService
-            dummy_user = UserSession({"uid": p1_id})
+            dummy_user = {"uid": p1_id}
 
             submission = MatchSubmission(
                 player_1_id=p1_id,

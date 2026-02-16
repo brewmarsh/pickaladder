@@ -60,17 +60,20 @@
 }
 
 .avatar {
-    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    object-fit: cover !important;
     border-radius: 50% !important;
+    display: block;
     flex-shrink: 0;
     background-color: var(--bg-color);
     aspect-ratio: 1/1;
 }
 
-.avatar-sm { width: 32px; height: 32px; }
-.avatar-md { width: 48px; height: 48px; }
-.avatar-lg { width: 80px; height: 80px; }
-.avatar-xl { width: 120px; height: 120px; }
+.avatar-sm { width: 32px !important; height: 32px !important; object-fit: cover !important; }
+.avatar-md { width: 48px !important; height: 48px !important; object-fit: cover !important; }
+.avatar-lg { width: 80px !important; height: 80px !important; object-fit: cover !important; }
+.avatar-xl { width: 120px !important; height: 120px !important; object-fit: cover !important; }
 
 /* Vanity Stats */
 .vanity-stats-container {

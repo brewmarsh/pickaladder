@@ -43,7 +43,7 @@ class GroupService:
         """Fetch and enrich all groups the user belongs to."""
         user_ref = db.collection("users").document(user_id)
         my_groups_query = db.collection("groups").where(
-            filter=firestore.FieldFilter("members", "array_contains", user_ref)
+            "members", "array_contains", user_ref
         )
         my_group_docs = list(my_groups_query.stream())
 
@@ -321,9 +321,7 @@ class GroupService:
     ) -> list[Any]:
         """Fetch friends of the user who are not already in the group."""
         friends_query = (
-            user_ref.collection("friends")
-            .where(filter=firestore.FieldFilter("status", "==", "accepted"))
-            .stream()
+            user_ref.collection("friends").where("status", "==", "accepted").stream()
         )
         friend_ids = {doc.id for doc in friends_query}
         eligible_friend_ids = list(friend_ids - member_ids)
@@ -344,7 +342,7 @@ class GroupService:
         """Fetch and enrich recent matches for a group."""
         matches_ref = db.collection("matches")
         matches_query = (
-            matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
+            matches_ref.where("groupId", "==", group_id)
             .order_by("matchDate", direction=firestore.Query.DESCENDING)
             .limit(20)
         )
@@ -567,9 +565,7 @@ class GroupService:
         """Fetch pending invites for a group."""
         pending_members = []
         invites_ref = db.collection("group_invites")
-        query = invites_ref.where(
-            filter=firestore.FieldFilter("group_id", "==", group_id)
-        ).where(filter=firestore.FieldFilter("used", "==", False))
+        query = invites_ref.where("group_id", "==", group_id).where("used", "==", False)
 
         pending_invites_docs = list(query.stream())
         for doc in pending_invites_docs:
@@ -585,9 +581,7 @@ class GroupService:
             for i in range(0, len(invite_emails), 30):
                 chunk = invite_emails[i : i + 30]
                 users_ref = db.collection("users")
-                user_query = users_ref.where(
-                    filter=firestore.FieldFilter("email", "in", chunk)
-                )
+                user_query = users_ref.where("email", "in", chunk)
                 for doc in user_query.stream():
                     user_docs[doc.to_dict()["email"]] = doc.to_dict()
 
@@ -646,17 +640,13 @@ class GroupService:
         users_ref = db.collection("users")
         existing_user = None
 
-        query_lower = users_ref.where(
-            filter=firestore.FieldFilter("email", "==", email)
-        ).limit(1)
+        query_lower = users_ref.where("email", "==", email).limit(1)
         docs = list(query_lower.stream())
 
         if docs:
             existing_user = docs[0]
         elif original_email != email:
-            query_orig = users_ref.where(
-                filter=firestore.FieldFilter("email", "==", original_email)
-            ).limit(1)
+            query_orig = users_ref.where("email", "==", original_email).limit(1)
             docs = list(query_orig.stream())
             if docs:
                 existing_user = docs[0]
