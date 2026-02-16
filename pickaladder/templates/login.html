@@ -90,7 +90,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return fetch("{{ url_for('auth.session_login') }}", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({ idToken: idToken, remember: remember }),
                 });
@@ -127,7 +128,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return fetch("{{ url_for('auth.session_login') }}", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({ idToken: idToken, remember: remember }),
                 });

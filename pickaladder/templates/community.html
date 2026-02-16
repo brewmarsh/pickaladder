@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <h1 class="mb-0">Community Hub</h1>
-    <button id="invite-friend-btn" class="btn btn-primary w-auto btn-action">
+    <button id="invite-friend-btn" class="btn btn-primary w-auto btn-action" data-csrf="{{ csrf_token() }}">
         <i class="fas fa-user-plus me-1"></i> Invite Friend
     </button>
 </div>
@@ -296,10 +296,12 @@
 
         if (inviteButton) {
             inviteButton.addEventListener('click', function () {
+                const csrfToken = this.getAttribute('data-csrf');
                 fetch("{{ url_for('user.create_invite') }}", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken,
                     },
                 })
                     .then(response => response.json())
@@ -350,12 +352,14 @@
                 e.preventDefault();
                 const form = btn.closest('form');
                 const url = form.action;
+                const csrfToken = form.querySelector('input[name="csrf_token"]').value;
 
                 fetch(url, {
                     method: "POST",
                     headers: {
                         "X-Requested-With": "XMLHttpRequest",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
                     },
                     body: JSON.stringify({})
                 })

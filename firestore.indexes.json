@@ -4,9 +4,16 @@
 "collectionGroup": "matches",
 "queryScope": "COLLECTION",
 "fields": [
-{ "fieldPath": "participants", "order": "ASCENDING" },
-{ "fieldPath": "matchDate", "order": "DESCENDING" },
-{ "fieldPath": "name", "order": "DESCENDING" }
+{ "fieldPath": "team1Ref", "order": "ASCENDING" },
+{ "fieldPath": "matchDate", "order": "DESCENDING" }
+]
+},
+{
+"collectionGroup": "matches",
+"queryScope": "COLLECTION",
+"fields": [
+{ "fieldPath": "team2Ref", "order": "ASCENDING" },
+{ "fieldPath": "matchDate", "order": "DESCENDING" }
 ]
 }
 ],

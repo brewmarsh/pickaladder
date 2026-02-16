@@ -114,6 +114,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const addFriendBtns = document.querySelectorAll(".add-friend-btn");
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         addFriendBtns.forEach(btn => {
             btn.addEventListener("click", (e) => {
@@ -134,7 +135,8 @@
                     method: "POST",
                     headers: {
                         "X-Requested-With": "XMLHttpRequest",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
                     },
                     body: JSON.stringify({})
                 })
