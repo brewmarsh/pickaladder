@@ -14,9 +14,56 @@ from pickaladder.utils import send_email
 from .utils import get_tournament_standings
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
+
+
+class TournamentGenerator:
+    """Utility class for generating tournament pairings and brackets."""
+
+    @staticmethod
+    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
+        """
+        Generate Round Robin pairings using the Circle Method.
+        Supports odd participant counts by adding a "BYE".
+        """
+        if len(participant_ids) < 2:  # noqa: PLR2004
+            return []
+
+        ids = list(participant_ids)
+        if len(ids) % 2 != 0:
+            ids.append("BYE")
+
+        n = len(ids)
+        pairings = []
+        rounds = n - 1
+
+        for r in range(rounds):
+            for i in range(n // 2):
+                p1 = ids[i]
+                p2 = ids[n - 1 - i]
+
+                if p1 != "BYE" and p2 != "BYE":
+                    pairings.append(
+                        {
+                            "player1Ref": firestore.client()
+                            .collection("users")
+                            .document(p1),
+                            "player2Ref": firestore.client()
+                            .collection("users")
+                            .document(p2),
+                            "status": "PENDING",
+                            "round": r + 1,
+                            "matchType": "singles",
+                        }
+                    )
+
+            # Rotate ids (Circle Method: keep first element fixed, rotate others)
+            ids = [ids[0]] + [ids[-1]] + ids[1:-1]
+
+        return pairings
 
 
 class TournamentService:
@@ -279,8 +326,8 @@ class TournamentService:
         from pickaladder.user import UserService  # noqa: PLC0415
 
         user_groups = UserService.get_user_groups(db, user_uid)
-        team_status, pending_partner_invite = TournamentService._get_team_status_for_user(
-            db, tournament_id, user_uid
+        team_status, pending_partner_invite = (
+            TournamentService._get_team_status_for_user(db, tournament_id, user_uid)
         )
 
         is_owner = data.get("organizer_id") == user_uid or (

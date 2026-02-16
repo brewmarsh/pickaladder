@@ -60,18 +60,14 @@ def create_tournament() -> Any:
             if date_val is None:
                 raise ValueError("Date is required")
 
-            location_data = {
-                "name": form.venue_name.data,
-                "address": form.address.data,
-                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
-            }
-
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": form.location.data,
-                "mode": form.mode.data,
-                "matchType": form.mode.data.lower(),
+                "location": form.venue_name.data,
+                "address": form.address.data,
+                "description": form.description.data,
+                "mode": form.match_type.data,
+                "matchType": form.match_type.data.lower(),
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -172,18 +168,14 @@ def edit_tournament(tournament_id: str) -> Any:
                 action="Edit",
             )
 
-        location_data = {
-            "name": form.venue_name.data,
-            "address": form.address.data,
-            "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
-        }
-
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": form.location.data,
-            "mode": form.mode.data,
-            "matchType": form.mode.data.lower(),
+            "location": form.venue_name.data,
+            "address": form.address.data,
+            "description": form.description.data,
+            "mode": form.match_type.data,
+            "matchType": form.match_type.data.lower(),
         }
 
         # Handle banner upload
@@ -208,8 +200,10 @@ def edit_tournament(tournament_id: str) -> Any:
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
-        form.location.data = tournament_data.get("location")
-        form.mode.data = (
+        form.venue_name.data = tournament_data.get("location")
+        form.address.data = tournament_data.get("address")
+        form.description.data = tournament_data.get("description")
+        form.match_type.data = (
             tournament_data.get("mode")
             or tournament_data.get("matchType", "SINGLES").upper()
         )

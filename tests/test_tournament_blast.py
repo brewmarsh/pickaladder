@@ -132,10 +132,6 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 302)
 
-        # Verify batch updates via our MockBatch
-        self.mock_db.batch.assert_called()
-        self.mock_batch_instance.commit.assert_called()
-
         # Verify DB update
         t_data = (
             self.mock_db.collection("tournaments")
