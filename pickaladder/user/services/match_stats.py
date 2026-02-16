@@ -3,6 +3,8 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any, cast
 
+from google.cloud.firestore import FieldFilter
+
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
@@ -23,7 +25,7 @@ def get_user_matches(
 
     # Scalable query using the 'participants' array of UIDs (strings)
     query = matches_ref.where(
-        filter=firestore.FieldFilter("participants", "array_contains", user_id)
+        filter=FieldFilter("participants", "array_contains", user_id)
     ).order_by("matchDate", direction=firestore.Query.DESCENDING)
 
     if limit:
@@ -481,29 +483,25 @@ def _process_h2h_match(
 
 def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] | None:
     """Fetch head-to-head statistics between two users."""
-    from firebase_admin import firestore
-
     wins = losses = points = 0
 
     # Build queries
     matches_ref = db.collection("matches")
 
     q1 = (
-        matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_1))
-        .where(filter=firestore.FieldFilter("player2Id", "==", user_id_2))
-        .where(filter=firestore.FieldFilter("status", "==", "completed"))
+        matches_ref.where(filter=FieldFilter("player1Id", "==", user_id_1))
+        .where(filter=FieldFilter("player2Id", "==", user_id_2))
+        .where(filter=FieldFilter("status", "==", "completed"))
     )
     q2 = (
-        matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_2))
-        .where(filter=firestore.FieldFilter("player2Id", "==", user_id_1))
-        .where(filter=firestore.FieldFilter("status", "==", "completed"))
+        matches_ref.where(filter=FieldFilter("player1Id", "==", user_id_2))
+        .where(filter=FieldFilter("player2Id", "==", user_id_1))
+        .where(filter=FieldFilter("status", "==", "completed"))
     )
     q3 = (
-        matches_ref.where(
-            filter=firestore.FieldFilter("participants", "array_contains", user_id_1)
-        )
-        .where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
-        .where(filter=firestore.FieldFilter("status", "==", "completed"))
+        matches_ref.where(filter=FieldFilter("participants", "array_contains", user_id_1))
+        .where(filter=FieldFilter("matchType", "==", "doubles"))
+        .where(filter=FieldFilter("status", "==", "completed"))
     )
 
     for q_obj in [q1, q2, q3]:
