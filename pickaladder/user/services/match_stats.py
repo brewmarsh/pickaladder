@@ -499,7 +499,9 @@ def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] 
         .where(filter=FieldFilter("status", "==", "completed"))
     )
     q3 = (
-        matches_ref.where(filter=FieldFilter("participants", "array_contains", user_id_1))
+        matches_ref.where(
+            filter=FieldFilter("participants", "array_contains", user_id_1)
+        )
         .where(filter=FieldFilter("matchType", "==", "doubles"))
         .where(filter=FieldFilter("status", "==", "completed"))
     )
