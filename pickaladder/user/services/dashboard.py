@@ -9,7 +9,6 @@ from pickaladder.user.services.activity import (
     get_group_rankings,
     get_past_tournaments,
     get_pending_tournament_invites,
-    get_user_groups,
 )
 from pickaladder.user.services.core import get_user_by_id
 from pickaladder.user.services.friendship import (
@@ -84,26 +83,31 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     pending_tournament_invites = get_pending_tournament_invites(db, user_id)
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
-    user_groups = get_user_groups(db, user_id)
 
     # 4. Onboarding Progress calculation
-    has_avatar = bool(
-        user_data.get("profilePictureUrl")
-        or user_data.get("profilePictureThumbnailUrl")
+    has_avatar = bool(user_data.get("profilePictureUrl") or user_data.get("avatar_url"))
+    # Check for various DUPR field names across different schemas
+    has_dupr = bool(
+        user_data.get("dupr_id")
+        or user_data.get("dupr_rating")
+        or user_data.get("duprRating")
     )
-    has_dupr = bool(user_data.get("duprRating") or user_data.get("dupr_rating"))
-    has_group = len(user_groups) > 0
-    has_match = len(recent_docs) > 0
+    has_group = len(group_rankings) > 0
+    has_match = len(matches) > 0
+    has_friend = len(friends) > 0
 
-    steps_done = [has_avatar, has_dupr, has_group, has_match]
-    percent = int(sum(steps_done) / len(steps_done) * 100)
+    onboarding_steps = [has_avatar, has_dupr, has_group, has_match, has_friend]
+    completed_steps = sum(1 for step in onboarding_steps if step)
+    onboarding_percent = int((completed_steps / len(onboarding_steps)) * 100)
 
     onboarding_progress = {
-        "percent": percent,
+        "percent": onboarding_percent,
         "has_avatar": has_avatar,
         "has_dupr": has_dupr,
+        "has_rating": has_dupr,  # Template uses has_rating for the quest icon
         "has_group": has_group,
         "has_match": has_match,
+        "has_friend": has_friend,
     }
 
     return {

@@ -48,7 +48,8 @@
 
                         {% if not is_friend and not friend_request_sent and user.id != profile_user.id %}
                         <button class="btn btn-volt btn-block mb-2" id="addFriendBtn"
-                            data-url="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}">Add Friend</button>
+                            data-url="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}"
+                            data-csrf="{{ csrf_token() }}">Add Friend</button>
                         {% elif friend_request_sent %}
                         <button class="btn btn-secondary btn-block mb-2" disabled>Friend Request Sent</button>
                         {% endif %}
@@ -173,11 +174,13 @@
         if (addFriendBtn) {
             addFriendBtn.addEventListener("click", (e) => {
                 const url = addFriendBtn.dataset.url;
+                const csrfToken = addFriendBtn.dataset.csrf;
                 fetch(url, {
                     method: "POST",
                     headers: {
                         "X-Requested-With": "XMLHttpRequest",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken
                     },
                     body: JSON.stringify({})
                 })
