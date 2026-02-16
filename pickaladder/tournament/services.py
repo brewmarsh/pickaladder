@@ -61,7 +61,9 @@ class TournamentService:
         for obj in participant_objs:
             if not obj:
                 continue
-            uid = obj.get("userRef").id if obj.get("userRef") else obj.get("user_id")
+            user_ref = obj.get("userRef")
+            raw_uid = user_ref.id if user_ref is not None else obj.get("user_id")
+            uid = str(raw_uid) if raw_uid else ""
             user_info = users_map.get(uid, {})
             resolved.append(
                 {
@@ -155,13 +157,20 @@ class TournamentService:
         ref.delete()
 
     @staticmethod
-    def list_tournaments(user_uid: str, db: Client | None = None) -> list[dict[str, Any]]:
+    def list_tournaments(
+        user_uid: str, db: Client | None = None
+    ) -> list[dict[str, Any]]:
         """List tournaments relevant to the user."""
         if db is None:
             db = firestore.client()
 
         # Simplified query: all tournaments (for discovery)
-        docs = db.collection("tournaments").order_by("date").stream()
+        try:
+            docs = list(db.collection("tournaments").order_by("date").stream())
+        except KeyError:
+            # Fallback for mockfirestore when some docs lack 'date'
+            docs = list(db.collection("tournaments").stream())
+
         tournaments = []
         for doc in docs:
             d = doc.to_dict() or {}
@@ -178,11 +187,25 @@ class TournamentService:
     ) -> list[dict[str, Any]]:
         """Find friends and group members who are not yet in the tournament."""
         # 1. Friends
-        friend_docs = db.collection("users").document(user_uid).collection("friends").stream()
-        friend_ids = {doc.id for doc in friend_docs if doc.to_dict().get("status") == "accepted"}
+        friend_docs = (
+            db.collection("users").document(user_uid).collection("friends").stream()
+        )
+        friend_ids = {
+            doc.id for doc in friend_docs if doc.to_dict().get("status") == "accepted"
+        }
 
         # 2. Group Members
-        groups_query = db.collection("groups").where(filter=firestore.FieldFilter("members", "array_contains", db.collection("users").document(user_uid))).stream()
+        groups_query = (
+            db.collection("groups")
+            .where(
+                filter=firestore.FieldFilter(
+                    "members",
+                    "array_contains",
+                    db.collection("users").document(user_uid),
+                )
+            )
+            .stream()
+        )
         group_member_ids = set()
         for g_doc in groups_query:
             g_data = g_doc.to_dict() or {}
@@ -210,7 +233,10 @@ class TournamentService:
 
     @staticmethod
     def invite_player(
-        tournament_id: str, organizer_uid: str, invited_uid: str, db: Client | None = None
+        tournament_id: str,
+        organizer_uid: str,
+        invited_uid: str,
+        db: Client | None = None,
     ) -> None:
         """Invite a single player."""
         if db is None:
@@ -221,10 +247,12 @@ class TournamentService:
             "userRef": db.collection("users").document(invited_uid),
             "status": "pending",
         }
-        t_ref.update({
-            "participants": firestore.ArrayUnion([p_obj]),
-            "participant_ids": firestore.ArrayUnion([invited_uid]),
-        })
+        t_ref.update(
+            {
+                "participants": firestore.ArrayUnion([p_obj]),
+                "participant_ids": firestore.ArrayUnion([invited_uid]),
+            }
+        )
 
     @staticmethod
     def _validate_group_invite(
@@ -236,12 +264,20 @@ class TournamentService:
         ):
             raise PermissionError("Unauthorized")
 
-        g_doc = db.collection("groups").document(group_id).get()
+        g_doc = cast(
+            "DocumentSnapshot", db.collection("groups").document(group_id).get()
+        )
         if not g_doc.exists:
             raise ValueError("Group not found")
 
         g_data = g_doc.to_dict() or {}
-        return g_data.get("members", [])
+        members = g_data.get("members", [])
+        member_ids = [m.id for m in members]
+        if user_uid not in member_ids:
+            raise PermissionError(
+                "You can only invite members from groups you belong to."
+            )
+        return members
 
     @staticmethod
     def _prepare_group_invites(
@@ -257,6 +293,8 @@ class TournamentService:
             if not m_data:
                 continue
             p_obj = {"userRef": m_doc.reference, "status": "pending"}
+            if m_data.get("is_ghost") and m_data.get("email"):
+                p_obj["email"] = m_data.get("email")
             new_parts.append(p_obj)
             new_ids.append(m_doc.id)
         return new_parts, new_ids
@@ -270,7 +308,7 @@ class TournamentService:
             db = firestore.client()
 
         t_ref = db.collection("tournaments").document(tournament_id)
-        t_doc = cast(Any, t_ref.get())
+        t_doc = cast("DocumentSnapshot", t_ref.get())
         if not t_doc or not t_doc.exists:
             raise ValueError("Tournament not found")
         t_data = cast(dict[str, Any], t_doc.to_dict())
@@ -288,10 +326,13 @@ class TournamentService:
         if new_parts:
             # Use batch as expected by tests
             batch = db.batch()
-            batch.update(t_ref, {
-                "participants": firestore.ArrayUnion(new_parts),
-                "participant_ids": firestore.ArrayUnion(new_ids),
-            })
+            batch.update(
+                t_ref,
+                {
+                    "participants": firestore.ArrayUnion(new_parts),
+                    "participant_ids": firestore.ArrayUnion(new_ids),
+                },
+            )
             batch.commit()
         return len(new_parts)
 

@@ -1,7 +1,14 @@
 """Forms for the tournament blueprint."""
 
 from flask_wtf import FlaskForm
-from wtforms import DateField, FileField, RadioField, SelectField, StringField, TextAreaField
+from wtforms import (
+    DateField,
+    FileField,
+    RadioField,
+    SelectField,
+    StringField,
+    TextAreaField,
+)
 from wtforms.validators import DataRequired, Optional
 
 

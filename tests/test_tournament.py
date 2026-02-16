@@ -106,6 +106,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "date": "2024-06-01",
                 "location": "Courtside",
                 "mode": "SINGLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -131,7 +132,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Summer Open",
                 "date": "2024-06-01",
                 "location": "Courtside",
-                "match_type": "singles",
+                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -166,6 +167,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "date": "2024-07-01",
                 "location": "Updated Location",
                 "mode": "DOUBLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -237,10 +239,11 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Updated Name",
-                "start_date": "2024-07-01",
+                "date": "2024-07-01",
+                "location": "Original Location",
                 "venue_name": "Updated Venue",
                 "address": "456 Updated St",
-                "match_type": "doubles",
+                "mode": "DOUBLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -548,7 +551,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         tournament_id = "test_tournament_id"
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "To be deleted"}
+            {"name": "To be deleted", "organizer_id": MOCK_USER_ID}
         )
 
         response = self.client.post(

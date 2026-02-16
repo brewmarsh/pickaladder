@@ -87,7 +87,10 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     user_groups = get_user_groups(db, user_id)
 
     # 4. Onboarding Progress calculation
-    has_avatar = bool(user_data.get("profilePictureUrl") or user_data.get("profilePictureThumbnailUrl"))
+    has_avatar = bool(
+        user_data.get("profilePictureUrl")
+        or user_data.get("profilePictureThumbnailUrl")
+    )
     has_dupr = bool(user_data.get("duprRating") or user_data.get("dupr_rating"))
     has_group = len(user_groups) > 0
     has_match = len(recent_docs) > 0
@@ -100,7 +103,7 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         "has_avatar": has_avatar,
         "has_dupr": has_dupr,
         "has_group": has_group,
-        "has_match": has_match
+        "has_match": has_match,
     }
 
     return {
