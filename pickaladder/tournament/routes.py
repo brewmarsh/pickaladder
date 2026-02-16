@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import logging
 from typing import Any
 
 from firebase_admin import firestore  # noqa: F401

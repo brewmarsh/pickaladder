@@ -106,6 +106,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "date": "2024-06-01",
                 "location": "Courtside",
                 "mode": "SINGLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -166,6 +167,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "date": "2024-07-01",
                 "location": "Updated Location",
                 "mode": "DOUBLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )

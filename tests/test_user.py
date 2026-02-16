@@ -40,10 +40,6 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_storage_service = MagicMock()
 
         patch("firebase_admin.initialize_app").start()
-        patch(
-            "firebase_admin.firestore.client",
-            return_value=self.mock_firestore_service.client.return_value,
-        ).start()
         patch("pickaladder.user.services.core.auth", new=self.mock_auth_service).start()
         patch(
             "pickaladder.user.services.profile.auth", new=self.mock_auth_service
@@ -58,6 +54,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         patch("firebase_admin.auth.verify_id_token").start()
         patch("pickaladder.user.services.core.auth", new=self.mock_auth_service).start()
         patch("pickaladder.user.services.core.send_email").start()
+
 
         # Patch firestore.client() to return our mock_db
         self.patcher_firestore = patch(
