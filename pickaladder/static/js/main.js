@@ -1,3 +1,30 @@
+// Intercept fetch to add CSRF and Auth tokens
+(function () {
+    const originalFetch = window.fetch;
+    window.fetch = function (url, options) {
+        options = options || {};
+        options.headers = options.headers || {};
+
+        // Add CSRF token for non-safe methods
+        const method = (options.method || 'GET').toUpperCase();
+        const safeMethods = ['GET', 'HEAD', 'OPTIONS', 'TRACE'];
+        if (!safeMethods.includes(method)) {
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            if (csrfMeta) {
+                options.headers['X-CSRFToken'] = csrfMeta.getAttribute('content');
+            }
+        }
+
+        // Add Firebase Auth token if available
+        const token = localStorage.getItem('firebaseIdToken');
+        if (token) {
+            options.headers['Authorization'] = 'Bearer ' + token;
+        }
+
+        return originalFetch(url, options);
+    };
+})();
+
 document.addEventListener('DOMContentLoaded', function () {
     // Handle form submissions with loading spinner
     const forms = document.querySelectorAll('form');
