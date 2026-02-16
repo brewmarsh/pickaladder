@@ -33,7 +33,7 @@
     {% endif %}
 
     {# Onboarding Quest Card replaces Performance Chart row during activation #}
-    {% if onboarding_progress and (onboarding_progress.percent < 100 or not onboarding_progress.has_match) %}
+    {% if onboarding_progress.percent < 100 or not onboarding_progress.has_match %}
     <div class="card onboarding-card mb-4" style="border-left: 5px solid var(--accent-color);">
         <div class="card-body">
             <h4 class="mb-3">Welcome to pickaladder! 🚀 Let's get you ranked.</h4>
@@ -120,7 +120,7 @@
     {% endif %}
 
     {# Jump Back In Section #}
-    {% if recent_opponents and onboarding_progress and onboarding_progress.percent == 100 %}
+    {% if recent_opponents and onboarding_progress.percent == 100 %}
     <div class="card mb-4">
         <div class="card-body">
             <h4 class="card-header" style="border-bottom: none; margin-bottom: 0; padding-left: 0;">Jump Back In</h4>
@@ -231,7 +231,7 @@
 
         {# Right Column: Competition Stack / Rookie Quest #}
         <div class="dashboard-column-right">
-            {% if not is_active and onboarding_progress %}
+            {% if not is_active %}
             <div class="card rookie-quest-card">
                 <div class="card-header" style="border-bottom: none; margin-bottom: 0; padding-left: 0;">
                     <h3>Rookie Quest</h3>

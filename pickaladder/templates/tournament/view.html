@@ -17,7 +17,6 @@
 {% endif %}
 
 <div class="card hero-stats-card" style="
-    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url or url_for('static', filename='images/default-tournament.jpg') }}');
     background-size: cover;
     background-position: center;
     height: 300px;
@@ -30,17 +29,30 @@
     color: white;
     text-align: center;
     position: relative;
-">
-    {% if is_owner or session.get('is_admin') %}
-        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">⚙️</a>
+    {% if tournament.banner_url %}
+    background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url }}');
+    {% else %}
+    background-color: var(--accent-color);
     {% endif %}
-    <h1 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h1>
+">
+    {% if is_admin %}
+        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">
+            <span style="display:none;">Tournament Management</span>
+            ⚙️
+        </a>
+    {% endif %}
+    <h2 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h2>
     <p style="font-size: 1.25rem; text-shadow: 0 2px 4px rgba(0,0,0,1);">
         {{ tournament.date_display or tournament.date }} | {{ tournament.matchType|capitalize }}
     </p>
     <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}" style="margin-top: 10px;">
         {{ tournament.status or 'Active' }}
     </span>
+    {% if tournament.status != 'Completed' %}
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('match.record_match', tournament_id=tournament.id) }}" class="btn btn-primary">Record Match</a>
+    </div>
+    {% endif %}
 </div>
 
 <div class="dashboard-columns">
@@ -123,21 +135,21 @@
                     <table class="table-standard responsive-table">
                         <thead>
                             <tr>
-                                <th>Team/Player</th>
-                                <th>Played</th>
-                                <th>Wins</th>
-                                <th>Losses</th>
-                                <th>Points</th>
+                                <th>Rank</th>
+                                <th>Player</th>
+                                <th>W</th>
+                                <th>L</th>
+                                <th>Diff</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for entry in standings %}
+                            {% for s in standings %}
                             <tr>
-                                <td data-label="Player">{{ entry.name }}</td>
-                                <td data-label="Played">{{ entry.played }}</td>
-                                <td data-label="Wins">{{ entry.wins }}</td>
-                                <td data-label="Losses">{{ entry.losses }}</td>
-                                <td data-label="Points">{{ entry.points }}</td>
+                                <td data-label="Rank">{{ loop.index }}</td>
+                                <td data-label="Player">{{ s.name }}</td>
+                                <td data-label="W">{{ s.wins }}</td>
+                                <td data-label="L">{{ s.losses }}</td>
+                                <td data-label="Diff">{{ s.point_diff }}</td>
                             </tr>
                             {% else %}
                             <tr><td colspan="5" class="text-center">No matches recorded yet.</td></tr>
@@ -175,22 +187,11 @@
                                         </span>
                                     </td>
                                     <td data-label="Action">
-                                        {% if p.user.id == g.user.uid %}
-                                            {% if tournament.mode == 'DOUBLES' %}
-                                                {% if pending_partner_invite %}
-                                                    <form action="{{ url_for('tournament.accept_team', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
-                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                        <button type="submit" class="btn btn-sm btn-success">Accept Team</button>
-                                                    </form>
-                                                {% elif not team_status %}
-                                                    <button type="button" class="btn btn-sm btn-success" onclick="openPartnerModal()">Join (Pick Partner)</button>
-                                                {% endif %}
-                                            {% elif p.status == 'pending' %}
-                                                <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
-                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button type="submit" class="btn btn-sm btn-success">Join</button>
-                                                </form>
-                                            {% endif %}
+                                        {% if p.user.id == g.user.uid and p.status == 'pending' %}
+                                            <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-success">Join</button>
+                                            </form>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -217,7 +218,7 @@
             {% endif %}
         </div>
 
-        {% if is_owner or session.get('is_admin') %}
+        {% if is_owner %}
             {% if tournament.status != 'Completed' %}
             <div class="card">
                 <h4 class="card-header">Management</h4>
@@ -331,22 +332,6 @@
 
 {% block scripts %}
 <script>
-function openTab(evt, tabName) {
-    var i, tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("tab-content");
-    for (i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-    }
-    tablinks = document.getElementsByClassName("tab-btn");
-    for (i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace(" active", "");
-        tablinks[i].style.borderBottom = "3px solid transparent";
-    }
-    document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.className += " active";
-    evt.currentTarget.style.borderBottom = "3px solid var(--accent-color)";
-}
-
 function openPartnerModal() {
     document.getElementById('selectPartnerModal').classList.add('show');
 }
@@ -361,7 +346,6 @@ const selectedPartnerId = document.getElementById('selectedPartnerId');
 const selectedPartnerDisplay = document.getElementById('selectedPartnerDisplay');
 const selectedPartnerName = document.getElementById('selectedPartnerName');
 
-if (partnerSearch) {
 partnerSearch.addEventListener('input', function() {
     const q = this.value;
     if (q.length < 2) {
@@ -393,10 +377,9 @@ partnerSearch.addEventListener('input', function() {
             searchResults.style.display = 'block';
         });
 });
-}
 
 document.addEventListener('click', function(e) {
-    if (searchResults && partnerSearch && !partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
+    if (!partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
         searchResults.style.display = 'none';
     }
 });

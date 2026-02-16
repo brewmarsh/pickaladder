@@ -3,6 +3,8 @@
 import datetime
 from typing import Any
 
+from firebase_admin import firestore
+
 
 class AdminService:
     """Service class for admin-related operations."""
@@ -19,7 +21,7 @@ class AdminService:
         # Active Tournaments (status != 'Completed')
         active_tournaments = (
             db.collection("tournaments")
-            .where("status", "!=", "Completed")
+            .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
             .count()
             .get()[0][0]
             .value
@@ -31,7 +33,7 @@ class AdminService:
         )
         recent_matches = (
             db.collection("matches")
-            .where("createdAt", ">=", yesterday)
+            .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))
             .count()
             .get()[0][0]
             .value
@@ -101,7 +103,7 @@ class AdminService:
                 db.collection("users")
                 .document(uid)
                 .collection("friends")
-                .where("status", "==", "accepted")
+                .where(filter=firestore.FieldFilter("status", "==", "accepted"))
                 .stream()
             )
             for friend_doc in friends_stream:

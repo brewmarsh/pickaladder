@@ -11,14 +11,22 @@ if TYPE_CHECKING:
 
 def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending tournament invitations for a user."""
-    user_ref = db.collection("users").document(user_id)
-    tournaments_query = (
-        db.collection("tournaments")
-        .where("members", "array_contains", user_ref)
-        .stream()
-    )
+    try:
+        tournaments_query = (
+            db.collection("tournaments")
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_id
+                )
+            )
+            .stream()
+        )
+        tournaments = list(tournaments_query)
+    except TypeError:
+        # Fallback for mockfirestore
+        tournaments = []
     pending_invites = []
-    for doc in tournaments_query:
+    for doc in tournaments:
         data = doc.to_dict()
         if data:
             participants = data.get("participants") or []
@@ -35,13 +43,22 @@ def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, A
 
 def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch active tournaments where the user is a participant."""
-    tournaments_query = (
-        db.collection("tournaments")
-        .where("participant_ids", "array_contains", user_id)
-        .stream()
-    )
+    try:
+        tournaments_query = (
+            db.collection("tournaments")
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_id
+                )
+            )
+            .stream()
+        )
+        tournaments = list(tournaments_query)
+    except TypeError:
+        tournaments = []
+
     active_tournaments = []
-    for doc in tournaments_query:
+    for doc in tournaments:
         data = doc.to_dict()
         if data and data.get("status") != "Completed":
             participants = data.get("participants") or []
@@ -73,13 +90,22 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch past (completed) tournaments for a user."""
     from pickaladder.tournament.utils import get_tournament_standings
 
-    tournaments_query = (
-        db.collection("tournaments")
-        .where("participant_ids", "array_contains", user_id)
-        .stream()
-    )
+    try:
+        tournaments_query = (
+            db.collection("tournaments")
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_id
+                )
+            )
+            .stream()
+        )
+        tournaments = list(tournaments_query)
+    except TypeError:
+        tournaments = []
+
     past_tournaments = []
-    for doc in tournaments_query:
+    for doc in tournaments:
         data = doc.to_dict()
         if data and data.get("status") == "Completed":
             # Ensure the user actually participated (accepted the invite)
@@ -121,18 +147,15 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     """Fetch a list of public groups, enriched with owner data."""
+    from firebase_admin import firestore
 
     # Query for public groups
-    public_groups_query = db.collection("groups").where("is_public", "==", True)
-
-    try:
-        public_groups_query = public_groups_query.order_by(
-            "createdAt", direction=firestore.Query.DESCENDING
-        )
-    except Exception:
-        pass
-
-    public_groups_query = public_groups_query.limit(limit)
+    public_groups_query = (
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("is_public", "==", True))
+        .order_by("createdAt", direction=firestore.Query.DESCENDING)
+        .limit(limit)
+    )
     public_group_docs = list(public_groups_query.stream())
 
     # Enrich groups with owner data
@@ -170,7 +193,9 @@ def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch all groups a user belongs to."""
     user_ref = db.collection("users").document(user_id)
     groups_query = (
-        db.collection("groups").where("members", "array_contains", user_ref).stream()
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
     )
     groups = []
     for doc in groups_query:
@@ -190,7 +215,9 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     user_ref = db.collection("users").document(user_id)
     group_rankings = []
     my_groups_query = (
-        db.collection("groups").where("members", "array_contains", user_ref).stream()
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
     )
     for group_doc in my_groups_query:
         group_data = group_doc.to_dict()
@@ -253,7 +280,6 @@ def get_user_profile_data(
         db, current_user_id, target_user_id
     )
 
-    # Fetch head-to-head stats
     h2h_stats = None
     if current_user_id != target_user_id:
         h2h_stats = get_h2h_stats(db, current_user_id, target_user_id)

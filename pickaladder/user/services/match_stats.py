@@ -7,8 +7,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
-    from ..models import User
-
 
 def get_user_matches(
     db: Client, user_id: str, limit: int | None = None
@@ -22,13 +20,17 @@ def get_user_matches(
     matches_ref = db.collection("matches")
 
     # Scalable query using the 'participants' array of UIDs (strings)
-    query = matches_ref.where("participants", "array_contains", user_id)
+    query = matches_ref.where(
+        filter=firestore.FieldFilter("participants", "array_contains", user_id)
+    )
 
     try:
         query = query.order_by("matchDate", direction=firestore.Query.DESCENDING)
-    except Exception:
-        # Fallback for mockfirestore
-        pass
+    except Exception as e:
+        # Fallback for environments without the composite index
+        from flask import current_app
+
+        current_app.logger.debug(f"Sorting by matchDate failed: {e}")
 
     if limit:
         query = query.limit(limit)
@@ -111,30 +113,33 @@ def format_matches_for_dashboard(
     users_map = {}
     if user_refs:
         for doc in db.get_all(list(user_refs)):
-            if doc.exists:
-                d = doc.to_dict()
+            d_snap = cast("DocumentSnapshot", doc)
+            if d_snap.exists:
+                d = d_snap.to_dict()
                 if d:
-                    d["id"] = doc.id
-                    users_map[doc.id] = d
+                    d["id"] = d_snap.id
+                    users_map[d_snap.id] = d
 
     teams_map = {}
     if team_refs:
         for doc in db.get_all(list(team_refs)):
-            if doc.exists:
-                d = doc.to_dict()
+            d_snap = cast("DocumentSnapshot", doc)
+            if d_snap.exists:
+                d = d_snap.to_dict()
                 if d:
-                    d["id"] = doc.id
-                    teams_map[doc.id] = d
+                    d["id"] = d_snap.id
+                    teams_map[d_snap.id] = d
 
     tournaments_map = {}
     if tournament_ids:
         t_refs = [db.collection("tournaments").document(tid) for tid in tournament_ids]
         for doc in db.get_all(t_refs):
-            if doc.exists:
-                d = doc.to_dict()
+            d_snap = cast("DocumentSnapshot", doc)
+            if d_snap.exists:
+                d = d_snap.to_dict()
                 if d:
-                    d["id"] = doc.id
-                    tournaments_map[doc.id] = d
+                    d["id"] = d_snap.id
+                    tournaments_map[d_snap.id] = d
 
     matches_data = []
     for match_doc in matches:
@@ -201,7 +206,7 @@ def format_matches_for_dashboard(
                 "player2_score": m_data.get("player2Score", 0),
                 "winner": winner,
                 "date": date_str,
-                "is_group_match": 1 if (m_data.get("groupId") or m_data.get("group_id")) else 0,
+                "is_group_match": bool(m_data.get("groupId")),
                 "match_type": m_data.get("matchType", "singles"),
                 "user_result": user_result,
                 "team1_name": t1_name,
@@ -279,7 +284,7 @@ def calculate_current_streak(user_id: str, matches: list[Any]) -> int:
 
 def get_recent_opponents(
     db: Client, user_id: str, matches: list[Any], limit: int = 4
-) -> list[User]:
+) -> list[dict[str, Any]]:
     """Identify recent unique 1v1 opponents."""
     opponent_ids: list[str] = []
     for m in matches:
@@ -314,16 +319,15 @@ def get_recent_opponents(
     docs = db.get_all(refs)
     opponents_map = {}
     for doc in docs:
-        if doc.exists:
-            d = doc.to_dict()
+        d_snap = cast("DocumentSnapshot", doc)
+        if d_snap.exists:
+            d = d_snap.to_dict()
             if d:
-                d["id"] = doc.id
-                d["uid"] = doc.id
-                opponents_map[doc.id] = d
+                d["id"] = d_snap.id
+                d["uid"] = d_snap.id
+                opponents_map[d_snap.id] = d
 
-    return [
-        cast("User", opponents_map[oid]) for oid in opponent_ids if oid in opponents_map
-    ]
+    return [opponents_map[oid] for oid in opponent_ids if oid in opponents_map]
 
 
 def _calculate_streak(processed: list[dict[str, Any]]) -> tuple[int, str]:
@@ -368,7 +372,7 @@ def calculate_stats(matches: list[DocumentSnapshot], user_id: str) -> dict[str, 
         )
 
     total = wins + losses
-    win_rate = (wins / total) * 100 if total > 0 else 0
+    win_rate = (wins / total * 100) if total > 0 else 0
     processed.sort(key=lambda x: x["date"] or datetime.datetime.min, reverse=True)
 
     streak, s_type = _calculate_streak(processed)
@@ -425,6 +429,7 @@ def _process_h2h_match(
 
 def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] | None:
     """Fetch head-to-head statistics between two users."""
+    from firebase_admin import firestore
 
     wins = losses = points = 0
 
@@ -432,19 +437,21 @@ def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] 
     matches_ref = db.collection("matches")
 
     q1 = (
-        matches_ref.where("player1Id", "==", user_id_1)
-        .where("player2Id", "==", user_id_2)
-        .where("status", "==", "completed")
+        matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_1))
+        .where(filter=firestore.FieldFilter("player2Id", "==", user_id_2))
+        .where(filter=firestore.FieldFilter("status", "==", "completed"))
     )
     q2 = (
-        matches_ref.where("player1Id", "==", user_id_2)
-        .where("player2Id", "==", user_id_1)
-        .where("status", "==", "completed")
+        matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_2))
+        .where(filter=firestore.FieldFilter("player2Id", "==", user_id_1))
+        .where(filter=firestore.FieldFilter("status", "==", "completed"))
     )
     q3 = (
-        matches_ref.where("participants", "array_contains", user_id_1)
-        .where("matchType", "==", "doubles")
-        .where("status", "==", "completed")
+        matches_ref.where(
+            filter=firestore.FieldFilter("participants", "array_contains", user_id_1)
+        )
+        .where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
+        .where(filter=firestore.FieldFilter("status", "==", "completed"))
     )
 
     for q_obj in [q1, q2, q3]:

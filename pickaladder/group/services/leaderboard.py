@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from firebase_admin import firestore
+from google.cloud.firestore import FieldFilter
 
 from pickaladder.core.constants import (
     HOT_STREAK_THRESHOLD,
@@ -205,7 +206,9 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
         return []
 
     all_matches_stream = (
-        db.collection("matches").where("groupId", "==", group_id).stream()
+        db.collection("matches")
+        .where(filter=FieldFilter("groupId", "==", group_id))
+        .stream()
     )
     all_matches = list(all_matches_stream)
 
@@ -328,7 +331,9 @@ def _update_trend_player_stats(
 def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
     """Generate data for a leaderboard trend chart."""
     db = firestore.client()
-    matches_query = db.collection("matches").where("groupId", "==", group_id)
+    matches_query = db.collection("matches").where(
+        filter=FieldFilter("groupId", "==", group_id)
+    )
     matches = [m for m in matches_query.stream() if m.to_dict().get("matchDate")]
     matches.sort(key=lambda x: x.to_dict().get("matchDate"))
     if not matches:

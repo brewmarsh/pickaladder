@@ -27,9 +27,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
 
-ONBOARDING_COMPLETE_THRESHOLD = 100
-
-
 def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     """Aggregate all data required for the user dashboard."""
     # Fetch user data (includes stored stats for scalability)
@@ -87,34 +84,30 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
 
-    # 4. Onboarding Progress
-    has_avatar = bool(
-        user_data.get("profilePictureUrl")
-        and user_data.get("profilePictureUrl") != "default"
-    )
-    has_dupr = bool(user_data.get("duprRating") or user_data.get("dupr_rating"))
+    # 4. Onboarding Progress Calculation
+    has_avatar = bool(user_data.get("profilePictureUrl"))
+    has_rating = bool(user_data.get("dupr_rating") or user_data.get("duprRating"))
     has_friend = len(friends) > 0
     has_group = len(group_rankings) > 0
-    has_match = total_games > 0
+    has_match = len(recent_docs) > 0
 
-    steps = [has_avatar, has_dupr, has_friend, has_group, has_match]
-    done_count = sum(1 for s in steps if s)
-    percent = int((done_count / len(steps)) * 100)
+    onboarding_tasks = [has_avatar, has_rating, has_friend, has_group, has_match]
+    completed_tasks = sum(1 for task in onboarding_tasks if task)
+    percent = int((completed_tasks / len(onboarding_tasks)) * 100)
 
     onboarding_progress = {
         "percent": percent,
         "has_avatar": has_avatar,
-        "has_dupr": has_dupr,
-        "has_rating": has_dupr,
+        "has_rating": has_rating,
+        "has_dupr": has_rating,  # Compatibility
         "has_friend": has_friend,
         "has_group": has_group,
         "has_match": has_match,
     }
 
-    is_active = percent == ONBOARDING_COMPLETE_THRESHOLD
-
     return {
         "user": user_data,
+        "onboarding_progress": onboarding_progress,
         "matches": matches,
         "next_cursor": next_cursor,
         "stats": stats,
@@ -126,6 +119,4 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         "pending_tournament_invites": pending_tournament_invites,
         "active_tournaments": active_tournaments,
         "past_tournaments": past_tournaments,
-        "onboarding_progress": onboarding_progress,
-        "is_active": is_active,
     }

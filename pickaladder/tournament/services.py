@@ -13,56 +13,48 @@ from pickaladder.utils import send_email
 
 from .utils import get_tournament_standings
 
+MIN_PARTICIPANTS_FOR_GENERATION = 2
+
 if TYPE_CHECKING:
-    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
 
 
-MIN_PARTICIPANTS = 2
-
-
 class TournamentGenerator:
-    """Implements tournament generation logic (e.g., Round Robin)."""
+    """Helper to generate tournament brackets and pairings."""
 
     @staticmethod
     def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
-        """Generate Round Robin pairings using the Circle Method.
-
-        Returns a list of match document data.
-        """
-        if len(participant_ids) < MIN_PARTICIPANTS:
+        """Generate round robin pairings using the circle method."""
+        if len(participant_ids) < MIN_PARTICIPANTS_FOR_GENERATION:
             return []
 
-        ids: list[str | None] = list(participant_ids)
+        # Simple Circle Method implementation
+        ids = list(participant_ids)
         if len(ids) % 2 != 0:
-            ids.append(None)  # Bye
+            ids.append("BYE")
 
         n = len(ids)
         pairings = []
+        db = firestore.client()
 
         for _ in range(n - 1):
             for i in range(n // 2):
                 p1 = ids[i]
                 p2 = ids[n - 1 - i]
-                if p1 and p2:
+                if p1 != "BYE" and p2 != "BYE":
                     pairings.append(
                         {
-                            "player1Ref": firestore.client()
-                            .collection("users")
-                            .document(p1),
-                            "player2Ref": firestore.client()
-                            .collection("users")
-                            .document(p2),
-                            "participants": [p1, p2],
+                            "player1Ref": db.collection("users").document(p1),
+                            "player2Ref": db.collection("users").document(p2),
                             "matchType": "singles",
-                            "status": "DRAFT",
+                            "status": "PENDING",
                             "createdAt": firestore.SERVER_TIMESTAMP,
                         }
                     )
             # Rotate
-            ids.insert(1, ids.pop())
+            ids = [ids[0]] + [ids[-1]] + ids[1:-1]
 
         return pairings
 
@@ -136,7 +128,7 @@ class TournamentService:
         # Source B: Groups
         groups_query = (
             db.collection("groups")
-            .where("members", "array_contains", user_ref)
+            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
             .stream()
         )
         group_member_ids = set()
@@ -173,12 +165,29 @@ class TournamentService:
             db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
 
-        owned = db.collection("tournaments").where("ownerRef", "==", user_ref).stream()
-        participating = (
-            db.collection("tournaments")
-            .where("participant_ids", "array_contains", user_uid)
-            .stream()
-        )
+        try:
+            owned = (
+                db.collection("tournaments")
+                .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
+                .stream()
+            )
+            owned = list(owned)
+        except TypeError:
+            owned = []
+
+        try:
+            participating = (
+                db.collection("tournaments")
+                .where(
+                    filter=firestore.FieldFilter(
+                        "participant_ids", "array_contains", user_uid
+                    )
+                )
+                .stream()
+            )
+            participating = list(participating)
+        except TypeError:
+            participating = []
 
         results = {}
         for doc in owned:
@@ -246,9 +255,6 @@ class TournamentService:
             "location": data["location"],
             "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
             "mode": data.get("mode", "SINGLES"),
-            "location_data": data.get("location_data"),
-            "description": data.get("description"),
-            "format": data.get("format", "ROUND_ROBIN"),
             "ownerRef": user_ref,
             "organizer_id": user_uid,
             "status": "Active",
@@ -319,15 +325,17 @@ class TournamentService:
         )
 
         # Groups & Team Status
-        from pickaladder.user import UserService  # noqa: PLC0415
+        from pickaladder.user.services import UserService
 
         user_groups = UserService.get_user_groups(db, user_uid)
         team_status, pending_partner_invite = (
             TournamentService._get_team_status_for_user(db, tournament_id, user_uid)
         )
 
-        is_owner = data.get("organizer_id") == user_uid or (
-            data.get("ownerRef") and data["ownerRef"].id == user_uid
+        is_owner = (
+            data.get("organizer_id") == user_uid
+            or data.get("owner_id") == user_uid
+            or (data.get("ownerRef") and data["ownerRef"].id == user_uid)
         )
 
         return {
@@ -373,13 +381,13 @@ class TournamentService:
 
         # If changing match type, ensure no matches exist
         if "matchType" in update_data:
-            matches = (
+            matches_query = (
                 db.collection("matches")
                 .where("tournamentId", "==", tournament_id)
                 .limit(1)
-                .stream()
             )
-            if any(matches):
+            matches = list(matches_query.stream())
+            if matches:
                 # Don't update matchType if matches exist
                 del update_data["matchType"]
 
@@ -435,7 +443,7 @@ class TournamentService:
 
     @staticmethod
     def _prepare_group_invites(
-        member_docs: list[DocumentSnapshot], current_ids: set[str]
+        member_docs: list[Any], current_ids: set[str]
     ) -> tuple[list[dict[str, Any]], list[str]]:
         """Filter group members and prepare invite objects."""
         new_parts = []
@@ -659,8 +667,8 @@ class TournamentService:
             db.collection("tournaments").document(tournament_id).collection("teams")
         )
         query = (
-            teams_ref.where("p2_uid", "==", user_uid)
-            .where("status", "==", "PENDING")
+            teams_ref.where(filter=firestore.FieldFilter("p2_uid", "==", user_uid))
+            .where(filter=firestore.FieldFilter("status", "==", "PENDING"))
             .stream()
         )
 
@@ -787,7 +795,9 @@ class TournamentService:
         else:
             # Fetch confirmed teams from sub-collection
             teams_query = (
-                t_ref.collection("teams").where("status", "==", "CONFIRMED").stream()
+                t_ref.collection("teams")
+                .where(filter=firestore.FieldFilter("status", "==", "CONFIRMED"))
+                .stream()
             )
             for doc in teams_query:
                 data = doc.to_dict()

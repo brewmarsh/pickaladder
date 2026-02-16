@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import Any
 
 from firebase_admin import firestore  # noqa: F401
@@ -59,26 +60,25 @@ def create_tournament() -> Any:
             if date_val is None:
                 raise ValueError("Date is required")
 
-            venue_name = form.venue_name.data or form.location.data or "Unknown Venue"
-            address = form.address.data or venue_name
+            # Fallback for mode vs match_type
+            mode = form.match_type.data or form.mode.data or "SINGLES"
 
-            location_data = {
-                "name": venue_name,
-                "address": address,
-                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={address}",
-            }
-
-            mode_val = form.match_type.data or form.mode.data or "SINGLES"
+            # Fallback for location vs venue_name/address
+            location = form.location.data
+            if not location and (form.venue_name.data or form.address.data):
+                location = (
+                    f"{form.venue_name.data or ''}, {form.address.data or ''}".strip(
+                        ", "
+                    )
+                )
 
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": venue_name,
-                "mode": mode_val,
-                "matchType": mode_val.lower(),
-                "location_data": location_data,
+                "location": location or "TBD",
+                "mode": mode,
+                "matchType": mode.lower(),
                 "description": form.description.data,
-                "format": form.format.data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -145,9 +145,11 @@ def view_tournament(tournament_id: str) -> Any:
         except Exception as e:
             flash(f"Error sending invite: {e}", "danger")
 
+    is_admin = g.user.get("isAdmin", False)
     return render_template(
         "tournament/view.html",
         invite_form=invite_form,
+        is_admin=is_admin,
         **details,
     )
 
@@ -161,7 +163,7 @@ def edit_tournament(tournament_id: str) -> Any:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
 
-    if not details["is_owner"]:
+    if not details["is_owner"] and not g.user.get("isAdmin"):
         flash("Unauthorized.", "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
@@ -179,26 +181,23 @@ def edit_tournament(tournament_id: str) -> Any:
                 action="Edit",
             )
 
-        venue_name = form.venue_name.data or form.location.data or "Unknown Venue"
-        address = form.address.data or venue_name
+        # Fallback for mode vs match_type
+        mode = form.match_type.data or form.mode.data or "SINGLES"
 
-        location_data = {
-            "name": venue_name,
-            "address": address,
-            "google_map_link": f"https://www.google.com/maps/search/?api=1&query={address}",
-        }
-
-        mode_val = form.match_type.data or form.mode.data or "SINGLES"
+        # Fallback for location vs venue_name/address
+        location = form.location.data
+        if not location and (form.venue_name.data or form.address.data):
+            location = f"{form.venue_name.data or ''}, {form.address.data or ''}".strip(
+                ", "
+            )
 
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": venue_name,
-            "mode": mode_val,
-            "matchType": mode_val.lower(),
-            "location_data": location_data,
+            "location": location or "TBD",
+            "mode": mode,
+            "matchType": mode.lower(),
             "description": form.description.data,
-            "format": form.format.data,
         }
 
         # Handle banner upload
@@ -221,26 +220,18 @@ def edit_tournament(tournament_id: str) -> Any:
         except Exception as e:
             flash(f"An error occurred: {e}", "danger")
 
-    if request.method == "GET":
+    elif request.method == "GET":
         form.name.data = tournament_data.get("name")
-        t_date = tournament_data.get("date")
-        if t_date:
-            if hasattr(t_date, "to_datetime"):
-                form.start_date.data = t_date.to_datetime().date()
-            elif isinstance(t_date, datetime.datetime):
-                form.start_date.data = t_date.date()
-            form.date.data = form.start_date.data
+        form.location.data = tournament_data.get("location")
+        form.mode.data = (
+            tournament_data.get("mode")
+            or tournament_data.get("matchType", "SINGLES").upper()
+        )
+        raw_date = tournament_data.get("date")
+        if hasattr(raw_date, "to_datetime"):
+            form.start_date.data = raw_date.to_datetime().date()
 
-        form.venue_name.data = tournament_data.get("location_data", {}).get(
-            "name"
-        ) or tournament_data.get("location")
-        form.location.data = form.venue_name.data
-        form.address.data = tournament_data.get("location_data", {}).get("address")
-        form.match_type.data = tournament_data.get("mode")
-        form.mode.data = form.match_type.data
-        form.description.data = tournament_data.get("description")
-        form.format.data = tournament_data.get("format")
-
+    logging.warning(f"Type of form in edit_tournament: {type(form)}")
     return render_template(
         "tournaments/create_edit.html",
         form=form,
@@ -292,6 +283,19 @@ def invite_group(tournament_id: str) -> Any:
         flash(f"Error: {e}", "danger")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    db = firestore.client()
+    try:
+        db.collection("tournaments").document(tournament_id).delete()
+        flash("Tournament deleted successfully.", "success")
+    except Exception as e:
+        flash(f"Error: {e}", "danger")
+    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/accept", methods=["POST"])

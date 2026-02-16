@@ -44,7 +44,11 @@ def register() -> Any:
 
         # Check if username is already taken in Firestore
         users_ref = db.collection("users")
-        taken = users_ref.where("username", "==", username).limit(1).get()
+        taken = (
+            users_ref.where(filter=firestore.FieldFilter("username", "==", username))
+            .limit(1)
+            .get()
+        )
         if len(list(taken)) > 0:
             flash("Username already exists. Please choose a different one.", "danger")
             return redirect(url_for(".register"))
@@ -162,7 +166,12 @@ def login() -> Any:
     current_app.logger.info("Login page loaded")
     db = firestore.client()
     # Check if an admin user exists to determine if we should run install
-    admin_query = db.collection("users").where("isAdmin", "==", True).limit(1).get()
+    admin_query = (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("isAdmin", "==", True))
+        .limit(1)
+        .get()
+    )
     if not admin_query:
         return redirect(url_for("auth.install"))
 
@@ -176,7 +185,12 @@ def _generate_unique_username(db: Any, base_username: str) -> str:
     """Generate a unique username by appending a number if the base username exists."""
     username = base_username
     i = 1
-    while db.collection("users").where("username", "==", username).limit(1).get():
+    while (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("username", "==", username))
+        .limit(1)
+        .get()
+    ):
         username = f"{base_username}{i}"
         i += 1
     return username
@@ -260,7 +274,12 @@ def install() -> Any:
     """Install the application by creating an admin user."""
     db = firestore.client()
     # Check if an admin user already exists
-    admin_query = db.collection("users").where("isAdmin", "==", True).limit(1).get()
+    admin_query = (
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("isAdmin", "==", True))
+        .limit(1)
+        .get()
+    )
     if admin_query:
         return redirect(url_for("auth.login"))
 
