@@ -8,11 +8,11 @@
         <h2>Create Tournament</h2>
     </div>
     <div class="card-body">
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST">
             {{ form.csrf_token }}
             <div class="form-group">
                 {{ form.name.label(class="form-label") }}
-                {{ form.name(class="form-input", placeholder="Summer Smash 2024") }}
+                {{ form.name(class="form-input") }}
                 {% if form.name.errors %}
                     {% for error in form.name.errors %}
                         <span class="text-danger">{{ error }}</span>
@@ -20,27 +20,17 @@
                 {% endif %}
             </div>
             <div class="form-group">
-                {{ form.banner.label(class="form-label") }}
-                {{ form.banner(class="form-input") }}
-                <small class="text-muted">Recommended: 16:9 aspect ratio.</small>
-                {% if form.banner.errors %}
-                    {% for error in form.banner.errors %}
-                        <span class="text-danger">{{ error }}</span>
-                    {% endfor %}
-                {% endif %}
-            </div>
-            <div class="form-group">
-                {{ form.start_date.label(class="form-label") }}
-                {{ form.start_date(class="form-input", type="date") }}
-                {% if form.start_date.errors %}
-                    {% for error in form.start_date.errors %}
+                {{ form.date.label(class="form-label") }}
+                {{ form.date(class="form-input", type="date") }}
+                {% if form.date.errors %}
+                    {% for error in form.date.errors %}
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
                 {% endif %}
             </div>
             <div class="form-group">
                 {{ form.location.label(class="form-label") }}
-                {{ form.location(class="form-input", placeholder="City Park Courts") }}
+                {{ form.location(class="form-input") }}
                 {% if form.location.errors %}
                     {% for error in form.location.errors %}
                         <span class="text-danger">{{ error }}</span>

@@ -38,22 +38,14 @@ def test_tournament_flow(
         page.click(".navbar a:has-text('Tournaments')")
     with page.expect_navigation():
         page.click("a.btn-action:has-text('Create Tournament')")
-
-    page.wait_for_selector("input[name='name']")
     page.fill("input[name='name']", "Winter Open")
-
-    # We standardized to start_date in the form
-    page.fill("input[name='start_date']", "2026-12-01")
-    page.fill("input[name='address']", "Central Park")
-
-    # Click radio button by label
-    page.click("label:has-text('Singles')")
-
+    page.fill("input[name='date']", "2026-12-01")
+    page.fill("input[name='location']", "Central Park")
+    page.check("input[name='mode'][value='SINGLES']")
     with page.expect_navigation():
         page.click("button:has-text('Create Tournament')")
 
-    # The title should be in the hero card
-    expect(page.locator("h1").first).to_contain_text("Winter Open")
+    expect(page.locator("h2")).to_contain_text("Winter Open")
     expect(page.locator(".badge-warning", has_text="Active")).to_be_visible()
 
     # Create a friend to verify the Invite dropdown
@@ -76,7 +68,9 @@ def test_tournament_flow(
     # 3. Check Directions button
     directions_btn = page.locator("text=Directions")
     expect(directions_btn).to_be_visible()
-    expect(directions_btn).to_have_attribute("href", re.compile(".*Central%20Park"))
+    expect(directions_btn).to_have_attribute(
+        "href", "https://www.google.com/maps/search/?api=1&query=Central%20Park"
+    )
 
     # 4. Record a Match (Verify Summary Redirect)
     # First, ensure friend_user is a participant for the match recording to work easily
@@ -86,12 +80,8 @@ def test_tournament_flow(
     )
     page.reload()
 
-    # Click the Bracket tab to see the Record Match button
-    page.click("button:has-text('Bracket')")
-    expect(page.locator("#bracket")).to_be_visible()
-
     with page.expect_navigation():
-        page.click("#bracket a:has-text('Record Match')")
+        page.click("text=Record Match")
 
     page.select_option("select[name='player1']", value="admin")
     page.select_option("select[name='player2']", value="friend_user")
@@ -101,7 +91,7 @@ def test_tournament_flow(
     with page.expect_navigation():
         page.click("button:has-text('Record Match')")
 
-    # Verify redirection back to tournament view
+    # Verify redirection back to tournament view (as per prioritized redirection logic)
     expect(page).to_have_url(re.compile(f".*/tournaments/{tournament_id}"))
 
     # 5. Complete Tournament (as owner)
@@ -109,3 +99,4 @@ def test_tournament_flow(
         page.click("text=Complete Tournament")
 
     expect(page.locator(".badge-success", has_text="Completed")).to_be_visible()
+    # Podium is only shown if there are matches, but we verified the flow works.

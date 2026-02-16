@@ -240,7 +240,8 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         user_doc = MagicMock()
         user_doc.exists = True
         user_doc.to_dict.return_value = {"name": "Some User"}
-        mock_db.get_all.return_value = [user_doc, user_doc]
+        # Needs 4 users for doubles
+        mock_db.get_all.return_value = [user_doc, user_doc, user_doc, user_doc]
 
         response = self.client.get(
             f"/match/summary/{mock_match_id}", headers=self._get_auth_headers()
@@ -329,6 +330,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         found_inviter_query = False
         for call in calls:
+            # Check for FieldFilter in kwargs
             if "filter" in call.kwargs:
                 f = call.kwargs["filter"]
                 if (
@@ -336,6 +338,15 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
                     and f.field_path == "inviter_id"
                     and f.op_string == "=="
                     and f.value == MOCK_USER_ID
+                ):
+                    found_inviter_query = True
+                    break
+            # Check for positional arguments
+            elif len(call.args) >= 3:
+                if (
+                    call.args[0] == "inviter_id"
+                    and call.args[1] == "=="
+                    and call.args[2] == MOCK_USER_ID
                 ):
                     found_inviter_query = True
                     break
