@@ -19,29 +19,8 @@ class Score(TypedDict, total=False):
 
 
 @dataclass
-class MatchSubmission:
-    """Represents a match submission from the UI or API."""
-
-    player_1_id: str
-    player_2_id: str
-    score_p1: int
-    score_p2: int
-    match_type: str
-    match_date: str | Any | None = None
-    partner_id: str | None = None
-    opponent_2_id: str | None = None
-    group_id: str | None = None
-    tournament_id: str | None = None
-    created_by: str | None = None
-
-    def __getitem__(self, key: str) -> Any:
-        """Allow dict-like access for compatibility with legacy service handlers."""
-        return getattr(self, key)
-
-
-@dataclass
 class MatchResult:
-    """Result of recording a match, including resolved references and winner IDs."""
+    """The result of a recorded match."""
 
     id: str
     matchType: str
@@ -53,7 +32,6 @@ class MatchResult:
     winner: str
     winnerId: str
     loserId: str
-    is_upset: bool = False
     groupId: str | None = None
     tournamentId: str | None = None
     player1Ref: Any = None
@@ -64,10 +42,27 @@ class MatchResult:
     team2Id: str | None = None
     team1Ref: Any = None
     team2Ref: Any = None
+    is_upset: bool = False
+
+
+@dataclass
+class MatchSubmission:
+    """A match submission from the UI."""
+
+    match_type: str
+    player_1_id: str
+    player_2_id: str
+    score_p1: int
+    score_p2: int
+    match_date: str | Any | None = None
+    partner_id: str | None = None
+    opponent_2_id: str | None = None
+    group_id: str | None = None
+    tournament_id: str | None = None
 
 
 class Match(FirestoreDocument, Score, total=False):
-    """A denormalized match document in Firestore with UI-calculated fields."""
+    """A match document in Firestore."""
 
     matchType: str
     matchDate: Any
@@ -86,7 +81,7 @@ class Match(FirestoreDocument, Score, total=False):
     winnerId: str
     participants: list[str]
 
-    # UI and calculated fields for rendering
+    # UI and calculated fields
     player1: User | list[User] | dict[str, Any]
     player2: User | list[User] | dict[str, Any]
     player1_score: int
@@ -107,6 +102,6 @@ class Match(FirestoreDocument, Score, total=False):
     winner_score: int
     loser_score: int
 
-    # Denormalized player data snapshots
+    # Denormalized player data
     player_1_data: dict[str, Any]
     player_2_data: dict[str, Any]
