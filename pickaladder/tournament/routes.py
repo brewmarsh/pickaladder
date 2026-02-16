@@ -56,23 +56,30 @@ def create_tournament() -> Any:
     form = TournamentForm()
     if form.validate_on_submit():
         try:
-            date_val = form.start_date.data
+            date_val = form.start_date.data or form.date.data
             if date_val is None:
                 raise ValueError("Date is required")
 
+            venue_name = form.venue_name.data or form.location.data or "Unknown Venue"
+            address = form.address.data or venue_name
+
             location_data = {
-                "name": form.venue_name.data,
-                "address": form.address.data,
-                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
+                "name": venue_name,
+                "address": address,
+                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={address}",
             }
+
+            mode_val = form.match_type.data or form.mode.data or "SINGLES"
 
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": form.location.data,
-                "mode": form.mode.data,
-                "matchType": form.mode.data.lower(),
+                "location": venue_name,
+                "mode": mode_val,
+                "matchType": mode_val.lower(),
                 "location_data": location_data,
+                "description": form.description.data,
+                "format": form.format.data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -163,7 +170,7 @@ def edit_tournament(tournament_id: str) -> Any:
     form = TournamentForm()
 
     if form.validate_on_submit():
-        date_val = form.start_date.data
+        date_val = form.start_date.data or form.date.data
         if date_val is None:
             flash("Date is required.", "danger")
             return render_template(
@@ -173,19 +180,26 @@ def edit_tournament(tournament_id: str) -> Any:
                 action="Edit",
             )
 
+        venue_name = form.venue_name.data or form.location.data or "Unknown Venue"
+        address = form.address.data or venue_name
+
         location_data = {
-            "name": form.venue_name.data,
-            "address": form.address.data,
-            "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
+            "name": venue_name,
+            "address": address,
+            "google_map_link": f"https://www.google.com/maps/search/?api=1&query={address}",
         }
+
+        mode_val = form.match_type.data or form.mode.data or "SINGLES"
 
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": form.location.data,
-            "mode": form.mode.data,
-            "matchType": form.mode.data.lower(),
+            "location": venue_name,
+            "mode": mode_val,
+            "matchType": mode_val.lower(),
             "location_data": location_data,
+            "description": form.description.data,
+            "format": form.format.data,
         }
 
         # Handle banner upload
@@ -208,18 +222,26 @@ def edit_tournament(tournament_id: str) -> Any:
         except Exception as e:
             flash(f"An error occurred: {e}", "danger")
 
-    elif request.method == "GET":
+    if request.method == "GET":
         form.name.data = tournament_data.get("name")
-        form.location.data = tournament_data.get("location")
-        form.mode.data = (
-            tournament_data.get("mode")
-            or tournament_data.get("matchType", "SINGLES").upper()
-        )
-        raw_date = tournament_data.get("date")
-        if hasattr(raw_date, "to_datetime"):
-            form.start_date.data = raw_date.to_datetime().date()
+        t_date = tournament_data.get("date")
+        if t_date:
+            if hasattr(t_date, "to_datetime"):
+                form.start_date.data = t_date.to_datetime().date()
+            elif isinstance(t_date, datetime.datetime):
+                form.start_date.data = t_date.date()
+            form.date.data = form.start_date.data
 
-    logging.warning(f"Type of form in edit_tournament: {type(form)}")
+        form.venue_name.data = tournament_data.get("location_data", {}).get(
+            "name"
+        ) or tournament_data.get("location")
+        form.location.data = form.venue_name.data
+        form.address.data = tournament_data.get("location_data", {}).get("address")
+        form.match_type.data = tournament_data.get("mode")
+        form.mode.data = form.match_type.data
+        form.description.data = tournament_data.get("description")
+        form.format.data = tournament_data.get("format")
+
     return render_template(
         "tournaments/create_edit.html",
         form=form,

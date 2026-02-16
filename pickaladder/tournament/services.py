@@ -247,6 +247,8 @@ class TournamentService:
             "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
             "mode": data.get("mode", "SINGLES"),
             "location_data": data.get("location_data"),
+            "description": data.get("description"),
+            "format": data.get("format", "ROUND_ROBIN"),
             "ownerRef": user_ref,
             "organizer_id": user_uid,
             "status": "Active",

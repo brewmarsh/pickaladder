@@ -201,9 +201,7 @@ def format_matches_for_dashboard(
                 "player2_score": m_data.get("player2Score", 0),
                 "winner": winner,
                 "date": date_str,
-                "is_group_match": 1
-                if m_data.get("groupId") or m_data.get("group_id")
-                else 0,
+                "is_group_match": 1 if (m_data.get("groupId") or m_data.get("group_id")) else 0,
                 "match_type": m_data.get("matchType", "singles"),
                 "user_result": user_result,
                 "team1_name": t1_name,

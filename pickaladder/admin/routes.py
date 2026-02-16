@@ -195,7 +195,7 @@ def admin_delete_user() -> Response:
         # Try to find by Email
         users = list(
             db.collection("users")
-            .where(filter=firestore.FieldFilter("email", "==", user_identifier))
+            .where("email", "==", user_identifier)
             .limit(1)
             .stream()
         )

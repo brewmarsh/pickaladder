@@ -95,7 +95,7 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     has_dupr = bool(user_data.get("duprRating") or user_data.get("dupr_rating"))
     has_friend = len(friends) > 0
     has_group = len(group_rankings) > 0
-    has_match = stats.get("total_games", 0) > 0
+    has_match = total_games > 0
 
     steps = [has_avatar, has_dupr, has_friend, has_group, has_match]
     done_count = sum(1 for s in steps if s)

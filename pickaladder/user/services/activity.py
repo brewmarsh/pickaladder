@@ -253,6 +253,7 @@ def get_user_profile_data(
         db, current_user_id, target_user_id
     )
 
+    # Fetch head-to-head stats
     h2h_stats = None
     if current_user_id != target_user_id:
         h2h_stats = get_h2h_stats(db, current_user_id, target_user_id)
