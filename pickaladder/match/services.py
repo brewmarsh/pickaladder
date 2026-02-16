@@ -160,24 +160,24 @@ class MatchService:
         user_ref = db.collection("users").document(user_id)
 
         # Helper to bridge field name differences and support both dict and object access
-        def get_val(key_list: list[str]) -> Any:
-            for k in key_list:
-                if isinstance(submission, dict):
-                    if k in submission:
-                        return submission[k]
-                elif hasattr(submission, k):
-                    return getattr(submission, k)
+        def get_val(obj: Any, keys: list[str]) -> Any:
+            for k in keys:
+                if isinstance(obj, dict):
+                    if k in obj:
+                        return obj[k]
+                elif hasattr(obj, k):
+                    return getattr(obj, k)
             return None
 
-        match_type = get_val(["match_type", "matchType"]) or "singles"
-        p1_id = get_val(["player_1_id", "player1"])
-        p2_id = get_val(["player_2_id", "player2"])
-        partner_id = get_val(["partner_id", "partner"])
-        opponent2_id = get_val(["opponent2_id", "opponent2", "opponent_2_id"])
+        match_type = get_val(submission, ["match_type", "matchType"]) or "singles"
+        p1_id = get_val(submission, ["player_1_id", "player1"])
+        p2_id = get_val(submission, ["player_2_id", "player2"])
+        partner_id = get_val(submission, ["partner_id", "partner"])
+        opponent2_id = get_val(submission, ["opponent2_id", "opponent2", "opponent_2_id"])
 
         # Candidate Validation (Service-side because it requires DB)
-        group_id = get_val(["group_id", "groupId"])
-        tournament_id = get_val(["tournament_id", "tournamentId"])
+        group_id = get_val(submission, ["group_id", "groupId"])
+        tournament_id = get_val(submission, ["tournament_id", "tournamentId"])
 
         candidate_ids = MatchService.get_candidate_player_ids(
             db, user_id, group_id, tournament_id
@@ -197,7 +197,7 @@ class MatchService:
                 raise ValueError("Invalid Opponent 2 selected.")
 
         # Determine Date
-        match_date_input = get_val(["match_date", "matchDate"])
+        match_date_input = get_val(submission, ["match_date", "matchDate"])
         if isinstance(match_date_input, str) and match_date_input:
             match_date = datetime.datetime.strptime(
                 match_date_input, "%Y-%m-%d"
@@ -213,8 +213,8 @@ class MatchService:
         else:
             match_date = datetime.datetime.now(datetime.timezone.utc)
 
-        player1_score = get_val(["score_p1", "player1_score", "player1Score"]) or 0
-        player2_score = get_val(["score_p2", "player2_score", "player2Score"]) or 0
+        player1_score = get_val(submission, ["score_p1", "player1_score", "player1Score"]) or 0
+        player2_score = get_val(submission, ["score_p2", "player2_score", "player2Score"]) or 0
 
         match_doc_data: dict[str, Any] = {
             "player1Score": player1_score,
