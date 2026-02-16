@@ -125,6 +125,9 @@ class TournamentInvitesTestCase(unittest.TestCase):
         mock_snapshot.exists = True
         mock_user_ref = MagicMock()
         mock_user_ref.id = MOCK_USER_ID
+        mock_snapshot.to_dict.return_value = {
+            "participants": [{"userRef": mock_user_ref, "status": "pending"}]
+        }
         mock_snapshot.get.side_effect = lambda key: {
             "participants": [{"userRef": mock_user_ref, "status": "pending"}]
         }[key]
@@ -170,6 +173,10 @@ class TournamentInvitesTestCase(unittest.TestCase):
         mock_snapshot.exists = True
         mock_user_ref = MagicMock()
         mock_user_ref.id = MOCK_USER_ID
+        mock_snapshot.to_dict.return_value = {
+            "participants": [{"userRef": mock_user_ref, "status": "pending"}],
+            "participant_ids": [MOCK_USER_ID],
+        }
         mock_snapshot.get.side_effect = lambda key: {
             "participants": [{"userRef": mock_user_ref, "status": "pending"}],
             "participant_ids": [MOCK_USER_ID],

@@ -126,6 +126,8 @@ def _sort_leaderboard(stats: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
             "name": smart_display_name(user_data),
             "username": user_data.get("username"),
             "email": user_data.get("email"),
+            "profilePictureUrl": user_data.get("profilePictureUrl"),
+            "profilePictureThumbnailUrl": user_data.get("profilePictureThumbnailUrl"),
             "is_ghost": is_ghost,
             "wins": s["wins"],
             "losses": s["losses"],
@@ -304,10 +306,11 @@ def _get_involved_player_data(db: Any, matches: list[Any]) -> dict[str, dict[str
     players_data = {}
     for doc in player_docs:
         if doc.exists:
-            data = doc.to_dict()
+            data = doc.to_dict() or {}
             players_data[doc.id] = {
                 "name": data.get("name", "Unknown"),
                 "profilePictureUrl": data.get("profilePictureUrl"),
+                "profilePictureThumbnailUrl": data.get("profilePictureThumbnailUrl"),
             }
     return players_data
 
