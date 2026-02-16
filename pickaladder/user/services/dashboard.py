@@ -27,9 +27,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
 
-ONBOARDING_COMPLETE_THRESHOLD = 100
-
-
 def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     """Aggregate all data required for the user dashboard."""
     # Fetch user data (includes stored stats for scalability)
@@ -39,9 +36,13 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         user_stats = {}
 
     # 1. Scalable Vanity Stats (from user document)
+    wins = user_stats.get("wins", 0)
+    losses = user_stats.get("losses", 0)
+
+    # Ensure we have numbers (handles mocks in tests and potential None in DB)
     try:
-        wins = int(user_stats.get("wins", 0)) if user_stats.get("wins") is not None else 0
-        losses = int(user_stats.get("losses", 0)) if user_stats.get("losses") is not None else 0
+        wins = int(wins) if wins is not None else 0
+        losses = int(losses) if losses is not None else 0
     except (TypeError, ValueError):
         wins = 0
         losses = 0
@@ -49,12 +50,12 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     total_games = wins + losses
     win_rate = (wins / total_games * 100) if total_games > 0 else 0
 
-    # 2. Scalable Match History
+    # 2. Scalable Match History (Limit to initial 20)
     recent_docs = get_user_matches(db, user_id, limit=20)
     matches = format_matches_for_dashboard(db, recent_docs, user_id)
     next_cursor = recent_docs[-1].id if recent_docs else None
 
-    # 3. Engagement Metrics
+    # 3. Calculate Engagement Stats from the recent batch
     processed = []
     for doc in recent_docs:
         d = doc.to_dict() or {}
@@ -64,6 +65,7 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     current_streak, streak_type = _calculate_streak(processed)
     recent_opponents = get_recent_opponents(db, user_id, recent_docs)
 
+    # Reconstruct a compatible stats object for the dashboard
     stats = {
         "wins": wins,
         "losses": losses,
@@ -71,6 +73,7 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         "win_rate": win_rate,
         "current_streak": current_streak,
         "streak_type": streak_type,
+        "processed_matches": [{"doc": d, "data": d.to_dict()} for d in recent_docs],
     }
 
     # Fetch other related data
@@ -81,32 +84,26 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
 
-    # 4. Onboarding Progress: Merged validation logic
-    has_avatar = bool(
-        user_data.get("profilePictureUrl")
-        and user_data.get("profilePictureUrl") != "default"
-    )
-    # Check both potential field names for DUPR ratings
-    has_dupr = bool(user_data.get("duprRating") or user_data.get("dupr_rating"))
+    # 4. Onboarding Progress Calculation
+    has_avatar = bool(user_data.get("profilePictureUrl"))
+    has_rating = bool(user_data.get("dupr_rating") or user_data.get("duprRating"))
     has_friend = len(friends) > 0
     has_group = len(group_rankings) > 0
-    has_match = total_games > 0
+    has_match = len(recent_docs) > 0
 
-    steps = [has_avatar, has_dupr, has_friend, has_group, has_match]
-    percent = int((sum(1 for s in steps if s) / len(steps)) * 100)
+    onboarding_tasks = [has_avatar, has_rating, has_friend, has_group, has_match]
+    completed_tasks = sum(1 for task in onboarding_tasks if task)
+    percent = int((completed_tasks / len(onboarding_tasks)) * 100)
 
     onboarding_progress = {
         "percent": percent,
         "has_avatar": has_avatar,
-        "has_dupr": has_dupr,
-        "has_rating": has_dupr, # Backwards compatibility for templates
+        "has_rating": has_rating,
+        "has_dupr": has_rating,  # Compatibility
         "has_friend": has_friend,
         "has_group": has_group,
         "has_match": has_match,
     }
-
-    # Identify if the user is out of the "Rookie" state
-    is_active = percent == ONBOARDING_COMPLETE_THRESHOLD
 
     return {
         "user": user_data,
@@ -122,5 +119,4 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         "pending_tournament_invites": pending_tournament_invites,
         "active_tournaments": active_tournaments,
         "past_tournaments": past_tournaments,
-        "is_active": is_active,
     }

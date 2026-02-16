@@ -4,12 +4,18 @@ from __future__ import annotations
 
 from typing import Any
 
+from firebase_admin import firestore
+
 from pickaladder.user.helpers import smart_display_name
 
 
 def fetch_tournament_matches(db: Any, tournament_id: str) -> Any:
     """Fetch all match documents associated with the tournament_id."""
-    return db.collection("matches").where("tournamentId", "==", tournament_id).stream()
+    return (
+        db.collection("matches")
+        .where(filter=firestore.FieldFilter("tournamentId", "==", tournament_id))
+        .stream()
+    )
 
 
 def aggregate_match_data(matches: Any, match_type: str) -> dict[str, dict[str, Any]]:
