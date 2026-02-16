@@ -39,26 +39,40 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div class="form-group">
-                    {{ form.start_date.label(class="form-label") }}
-                    {{ form.start_date(class="form-input", type="date") }}
-                    {% if form.start_date.errors %}
-                        {% for error in form.start_date.errors %}
+                    {{ form.date.label(class="form-label") }}
+                    {{ form.date(class="form-input", type="date") }}
+                    {% if form.date.errors %}
+                        {% for error in form.date.errors %}
                             <span class="text-danger">{{ error }}</span>
                         {% endfor %}
                     {% endif %}
                 </div>
                 <div class="form-group">
-                    {{ form.mode.label(class="form-label") }}
-                    <div class="d-flex gap-3 mt-2">
-                        {% for subfield in form.mode %}
-                            <div class="form-check">
-                                {{ subfield(class="form-check-input") }}
-                                {{ subfield.label(class="form-check-label") }}
-                            </div>
+                    {{ form.location.label(class="form-label") }}
+                    {{ form.location(class="form-input", placeholder="City, State") }}
+                    {% if form.location.errors %}
+                        {% for error in form.location.errors %}
+                            <span class="text-danger">{{ error }}</span>
                         {% endfor %}
-                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    {{ form.mode.label(class="form-label") }}
+                    {{ form.mode(class="form-input") }}
                     {% if form.mode.errors %}
                         {% for error in form.mode.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    {{ form.format.label(class="form-label") }}
+                    {{ form.format(class="form-input") }}
+                    {% if form.format.errors %}
+                        {% for error in form.format.errors %}
                             <span class="text-danger">{{ error }}</span>
                         {% endfor %}
                     {% endif %}

@@ -1,3 +1,30 @@
+// Intercept fetch to add CSRF and Auth tokens
+(function () {
+    const originalFetch = window.fetch;
+    window.fetch = function (url, options) {
+        options = options || {};
+        options.headers = options.headers || {};
+
+        // Add CSRF token for non-safe methods
+        const method = (options.method || 'GET').toUpperCase();
+        const safeMethods = ['GET', 'HEAD', 'OPTIONS', 'TRACE'];
+        if (!safeMethods.includes(method)) {
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            if (csrfMeta) {
+                options.headers['X-CSRFToken'] = csrfMeta.getAttribute('content');
+            }
+        }
+
+        // Add Firebase Auth token if available
+        const token = localStorage.getItem('firebaseIdToken');
+        if (token) {
+            options.headers['Authorization'] = 'Bearer ' + token;
+        }
+
+        return originalFetch(url, options);
+    };
+})();
+
 document.addEventListener('DOMContentLoaded', function () {
     // Handle form submissions with loading spinner
     const forms = document.querySelectorAll('form');
@@ -64,35 +91,4 @@ function handleFlashMessages() {
             }
         }
     });
-}
-
-/**
- * Standardized tab switching function
- * @param {Event} evt - The click event
- * @param {string} tabName - ID of the tab content to show
- */
-function openTab(evt, tabName) {
-    let i, tabcontent, tabbuttons;
-
-    // Hide all tab content
-    tabcontent = document.getElementsByClassName("tab-content");
-    for (i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-    }
-
-    // Deactivate all tab buttons (supporting both .tab-button and .tab-btn)
-    tabbuttons = document.querySelectorAll(".tab-button, .tab-btn");
-    for (i = 0; i < tabbuttons.length; i++) {
-        tabbuttons[i].classList.remove("active");
-    }
-
-    // Show the specific tab and add an "active" class to the button that opened the tab
-    const targetTab = document.getElementById(tabName);
-    if (targetTab) {
-        targetTab.style.display = "block";
-    }
-
-    if (evt && evt.currentTarget) {
-        evt.currentTarget.classList.add("active");
-    }
 }

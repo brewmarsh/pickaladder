@@ -216,17 +216,6 @@
             appId: "1:402457219675:web:a346e2dc0dfa732d31e57e",
             measurementId: "G-E28CXCXTSK"
         };
-        // Intercept fetch to add the auth token
-        const originalFetch = window.fetch;
-        window.fetch = function (url, options) {
-            const token = localStorage.getItem('firebaseIdToken');
-            if (token) {
-                options = options || {};
-                options.headers = options.headers || {};
-                options.headers['Authorization'] = 'Bearer ' + token;
-            }
-            return originalFetch(url, options);
-        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);

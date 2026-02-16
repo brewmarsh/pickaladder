@@ -268,7 +268,7 @@ class MockTransaction(Transaction):
         """Mock rollback."""
         pass
 
-    def _begin(self, **kwargs: Any) -> None:
+    def _begin(self, retry_id: Any = None, **kwargs: Any) -> None:
         """Mock begin."""
         pass
 

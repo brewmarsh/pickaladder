@@ -1,60 +1,33 @@
 {% extends "layout.html" %}
-{% block title %}{{ tournament.name }}{% endblock %}
-{% block content %}
-{% if claim_team_data %}
-<div class="alert alert-info border-info shadow-sm mb-4" style="margin: 20px; padding: 20px; border-left: 5px solid var(--accent-color);">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <div>
-            <h4 class="alert-heading mb-1" style="color: var(--text-color);">👥 Team Invitation</h4>
-            <p class="mb-0"><strong>{{ claim_team_data.p1_name }}</strong> has invited you to join team <strong>"{{ claim_team_data.team_name }}"</strong> for this tournament!</p>
-        </div>
-        <form action="{{ url_for('.claim_team', tournament_id=tournament.id, team_id=claim_team_data.id) }}" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-primary">Join Team</button>
-        </form>
-    </div>
-</div>
-{% endif %}
 
-<div class="card hero-stats-card" style="
-    {% if tournament.banner_url %}
-    background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url }}');
-    {% else %}
-    background-color: var(--primary-color);
-    {% endif %}
-    background-size: cover;
-    background-position: center;
-    height: 300px;
-    border-radius: var(--radius-lg);
-    margin-bottom: 24px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    text-align: center;
-    position: relative;
-">
-    {% if is_owner %}
-        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" title="Edit Tournament">⚙️</a>
-    {% endif %}
-    <h1 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h1>
-    <p style="font-size: 1.25rem; text-shadow: 0 2px 4px rgba(0,0,0,1);">
-        {{ tournament.date_display or tournament.date }} | {{ tournament.matchType|capitalize }}
-    </p>
-    <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}" style="margin-top: 10px;">
-        {{ tournament.status or 'Active' }}
-    </span>
+{% block title %}{{ tournament.name }} - Tournament{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div class="header-main">
+        <h1 class="h2 mb-0">{{ tournament.name }}</h1>
+        <div class="text-muted">
+            {{ tournament.date_display or 'Date TBD' }} | {{ tournament.location }}
+        </div>
+    </div>
+    <div class="header-actions">
+        {% if g.user.isAdmin %}
+            <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn btn-outline-primary">Edit Tournament</a>
+        {% endif %}
+        <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-primary' }}">
+            {{ tournament.status or 'Active' }}
+        </span>
+    </div>
 </div>
 
 <div class="dashboard-columns">
     <!-- Left Column: Tabs and Content -->
     <div class="dashboard-column-left">
         <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab-btn active" onclick="openTab(event, 'overview')">Overview</button>
-            <button class="tab-btn" onclick="openTab(event, 'bracket')">Bracket</button>
-            <button class="tab-btn" onclick="openTab(event, 'players')">Players</button>
+        <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+            <button class="tab-btn active" onclick="openTab(event, 'overview')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid var(--accent-color); font-weight: bold;">Overview</button>
+            <button class="tab-btn" onclick="openTab(event, 'bracket')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Standings</button>
+            <button class="tab-btn" onclick="openTab(event, 'players')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Players</button>
         </div>
 
         <!-- Tab Content -->
@@ -128,13 +101,42 @@
                         <thead>
                             <tr>
                                 <th>Player</th>
+                                <th>Wins</th>
+                                <th>Losses</th>
+                                <th>+/-</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in standings %}
+                                <tr>
+                                    <td data-label="Player">{{ s.name }}</td>
+                                    <td data-label="Wins">{{ s.wins }}</td>
+                                    <td data-label="Losses">{{ s.losses }}</td>
+                                    <td data-label="Point Diff">{{ s.point_diff }}</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="4" class="text-center">No matches recorded yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="players" class="tab-content" style="display: none;">
+            <div class="card">
+                <h3 class="card-header">Participants</h3>
+                <div class="table-container">
+                    <table class="table-standard responsive-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% if participants %}
-                                {% for p in participants %}
+                            {% for p in participants %}
                                 <tr>
                                     <td data-label="Player">
                                         <div style="display: flex; align-items: center; gap: 10px;">
@@ -169,51 +171,6 @@
                                         {% endif %}
                                     </td>
                                 </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr><td colspan="3" class="text-center">No participants yet.</td></tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="players" class="tab-content" style="display: none;">
-            <div class="card">
-                <h3 class="card-header">Participants</h3>
-                <div class="table-container">
-                    <table class="table-standard responsive-table">
-                        <thead>
-                            <tr>
-                                <th>Player</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for p in participants %}
-                                <tr>
-                                    <td data-label="Player">
-                                        <div style="display: flex; align-items: center; gap: 10px;">
-                                            <img src="{{ p.user | avatar_url }}" alt="Avatar" class="friend-avatar" style="width: 32px; height: 32px;" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                            <span>{{ p.display_name }}</span>
-                                        </div>
-                                    </td>
-                                    <td data-label="Status">
-                                        <span class="badge {{ 'badge-success' if p.status == 'accepted' else 'badge-warning' if p.status == 'pending' else 'badge-info' }}">
-                                            {{ 'Confirmed' if p.status == 'accepted' else 'Pending' if p.status == 'pending' else 'Invited (Email)' }}
-                                        </span>
-                                    </td>
-                                    <td data-label="Action">
-                                        {% if p.user.id == g.user.uid and p.status == 'pending' %}
-                                            <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-sm btn-success">Join</button>
-                                            </form>
-                                        {% endif %}
-                                    </td>
-                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -237,10 +194,10 @@
             {% endif %}
         </div>
 
-        {% if is_owner %}
+        {% if g.user.isAdmin %}
             {% if tournament.status != 'Completed' %}
             <div class="card">
-                <h4 class="card-header">Management</h4>
+                <h4 class="card-header">Tournament Management</h4>
                 <form action="{{ url_for('tournament.complete_tournament', tournament_id=tournament.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to complete this tournament? This will notify all participants of the final results.');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger" style="margin-top: 10px; width: 100%;">Complete Tournament</button>
@@ -322,35 +279,26 @@
     </div>
 </div>
 
-<style>
-.search-results-dropdown .search-item {
-    padding: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.search-results-dropdown .search-item:hover {
-    background: var(--bg-hover);
-}
-.search-item img {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-}
-.btn-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--text-muted);
-}
-</style>
-
 {% endblock %}
 
 {% block scripts %}
 <script>
+function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tab-btn");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+        tablinks[i].style.borderBottom = "3px solid transparent";
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+    evt.currentTarget.style.borderBottom = "3px solid var(--accent-color)";
+}
+
 function openPartnerModal() {
     document.getElementById('selectPartnerModal').classList.add('show');
 }
@@ -365,40 +313,42 @@ const selectedPartnerId = document.getElementById('selectedPartnerId');
 const selectedPartnerDisplay = document.getElementById('selectedPartnerDisplay');
 const selectedPartnerName = document.getElementById('selectedPartnerName');
 
-partnerSearch.addEventListener('input', function() {
-    const q = this.value;
-    if (q.length < 2) {
-        searchResults.style.display = 'none';
-        return;
-    }
+if (partnerSearch) {
+    partnerSearch.addEventListener('input', function() {
+        const q = this.value;
+        if (q.length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
 
-    fetch(`/user/api/search?q=${encodeURIComponent(q)}`)
-        .then(r => r.json())
-        .then(users => {
-            searchResults.innerHTML = '';
-            if (users.length === 0) {
-                searchResults.innerHTML = '<div class="search-item">No users found</div>';
-            } else {
-                users.forEach(u => {
-                    const div = document.createElement('div');
-                    div.className = 'search-item';
-                    div.innerHTML = `<img src="${u.avatar}" onerror="this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
-                    div.onclick = () => {
-                        selectedPartnerId.value = u.id;
-                        selectedPartnerName.innerText = u.name;
-                        selectedPartnerDisplay.style.display = 'block';
-                        searchResults.style.display = 'none';
-                        partnerSearch.value = '';
-                    };
-                    searchResults.appendChild(div);
-                });
-            }
-            searchResults.style.display = 'block';
-        });
-});
+        fetch(`/user/api/search?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(users => {
+                searchResults.innerHTML = '';
+                if (users.length === 0) {
+                    searchResults.innerHTML = '<div class="search-item">No users found</div>';
+                } else {
+                    users.forEach(u => {
+                        const div = document.createElement('div');
+                        div.className = 'search-item';
+                        div.innerHTML = `<img src="${u.avatar}" onerror="this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
+                        div.onclick = () => {
+                            selectedPartnerId.value = u.id;
+                            selectedPartnerName.innerText = u.name;
+                            selectedPartnerDisplay.style.display = 'block';
+                            searchResults.style.display = 'none';
+                            partnerSearch.value = '';
+                        };
+                        searchResults.appendChild(div);
+                    });
+                }
+                searchResults.style.display = 'block';
+            });
+    });
+}
 
 document.addEventListener('click', function(e) {
-    if (!partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
+    if (searchResults && !partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
         searchResults.style.display = 'none';
     }
 });
