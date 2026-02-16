@@ -99,8 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return fetch("{{ url_for('auth.session_login') }}", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        "Content-Type": "application/json"
                     },
                     body: JSON.stringify({ idToken: idToken }),
                 });
