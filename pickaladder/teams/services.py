@@ -30,7 +30,7 @@ class TeamService:
 
         if docs:
             # Team already exists, return its ID
-            return docs[0].id
+            return str(docs[0].id)
         else:
             # Team does not exist, so create it
             user_a_ref = db.collection("users").document(user_a_id)
@@ -55,7 +55,7 @@ class TeamService:
             # Add the new team to the 'teams' collection
             new_team_ref = teams_ref.document()
             new_team_ref.set(new_team_data)
-            return new_team_ref.id
+            return str(new_team_ref.id)
 
     @staticmethod
     def migrate_user_teams(
@@ -108,7 +108,6 @@ class TeamService:
                 )
 
                 # Update matches to point to the existing team
-                # This will be handled by match migration, but mark team for deletion
                 batch.delete(team_doc.reference)
             else:
                 # No existing team, just update the current team's members
@@ -252,7 +251,7 @@ class TeamService:
         wins = stats.get("wins", 0)
         losses = stats.get("losses", 0)
         total_games = wins + losses
-        win_percentage = (wins / total_games) * 100 if total_games > 0 else 0
+        win_percentage = (wins / total_games * 100) if total_games > 0 else 0
 
         # Calculate streak from sorted matches (newest to oldest)
         streak = 0

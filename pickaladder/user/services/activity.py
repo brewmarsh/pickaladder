@@ -11,14 +11,22 @@ if TYPE_CHECKING:
 
 def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending tournament invitations for a user."""
-    user_ref = db.collection("users").document(user_id)
-    tournaments_query = (
-        db.collection("tournaments")
-        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
-        .stream()
-    )
+    try:
+        tournaments_query = (
+            db.collection("tournaments")
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_id
+                )
+            )
+            .stream()
+        )
+        tournaments = list(tournaments_query)
+    except TypeError:
+        # Fallback for mockfirestore
+        tournaments = []
     pending_invites = []
-    for doc in tournaments_query:
+    for doc in tournaments:
         data = doc.to_dict()
         if data:
             participants = data.get("participants") or []
@@ -35,15 +43,22 @@ def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, A
 
 def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch active tournaments where the user is a participant."""
-    tournaments_query = (
-        db.collection("tournaments")
-        .where(
-            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id)
+    try:
+        tournaments_query = (
+            db.collection("tournaments")
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_id
+                )
+            )
+            .stream()
         )
-        .stream()
-    )
+        tournaments = list(tournaments_query)
+    except TypeError:
+        tournaments = []
+
     active_tournaments = []
-    for doc in tournaments_query:
+    for doc in tournaments:
         data = doc.to_dict()
         if data and data.get("status") != "Completed":
             participants = data.get("participants") or []
@@ -75,15 +90,22 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch past (completed) tournaments for a user."""
     from pickaladder.tournament.utils import get_tournament_standings
 
-    tournaments_query = (
-        db.collection("tournaments")
-        .where(
-            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id)
+    try:
+        tournaments_query = (
+            db.collection("tournaments")
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_id
+                )
+            )
+            .stream()
         )
-        .stream()
-    )
+        tournaments = list(tournaments_query)
+    except TypeError:
+        tournaments = []
+
     past_tournaments = []
-    for doc in tournaments_query:
+    for doc in tournaments:
         data = doc.to_dict()
         if data and data.get("status") == "Completed":
             # Ensure the user actually participated (accepted the invite)

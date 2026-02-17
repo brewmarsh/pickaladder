@@ -10,25 +10,39 @@ class TournamentForm(FlaskForm):
     """Form for creating/editing a tournament."""
 
     name = StringField("Tournament Name", validators=[DataRequired()])
+    
     banner = FileField(
         "Tournament Banner",
         validators=[Optional(), FileAllowed(["jpg", "png", "jpeg"])],
     )
-    start_date = DateField("Date", validators=[DataRequired()])
-    location = StringField("Location", validators=[DataRequired()])
-    venue_name = StringField("Venue Name", validators=[Optional()])
-    address = StringField("Address", validators=[Optional()])
+
+    # Date handling with backward compatibility
+    start_date = DateField("Start Date", validators=[Optional()])
+    date = DateField("Date", validators=[Optional()])
+
+    # Competition Mode handling (SelectField and RadioField for UI flexibility)
     match_type = SelectField(
-        "Match Type",
-        choices=[("singles", "Singles"), ("doubles", "Doubles")],
-        validators=[DataRequired()],
+        "Competition Mode",
+        choices=[
+            ("SINGLES", "👤 Singles (1v1)"),
+            ("DOUBLES", "👥 Doubles (2v2)"),
+            ("singles", "👤 Singles (1v1)"),
+            ("doubles", "👥 Doubles (2v2)"),
+        ],
+        validators=[Optional()],
     )
+
     mode = RadioField(
         "Competition Mode",
-        choices=[("SINGLES", "👤 Singles (1v1)"), ("DOUBLES", "👥 Doubles (2v2)")],
-        validators=[DataRequired()],
-        default="SINGLES",
+        choices=[
+            ("SINGLES", "👤 Singles (1v1)"),
+            ("DOUBLES", "👥 Doubles (2v2)"),
+            ("singles", "👤 Singles (1v1)"),
+            ("doubles", "👥 Doubles (2v2)"),
+        ],
+        validators=[Optional()],
     )
+
     format = SelectField(
         "Tournament Format",
         choices=[
@@ -36,7 +50,14 @@ class TournamentForm(FlaskForm):
             ("SINGLE_ELIMINATION", "Single Elimination"),
         ],
         validators=[DataRequired()],
+        default="ROUND_ROBIN",
     )
+
+    # Location handling
+    venue_name = StringField("Venue Name", validators=[Optional()])
+    address = StringField("Address", validators=[Optional()])
+    location = StringField("Location", validators=[Optional()])
+
     description = TextAreaField("Description", validators=[Optional()])
 
 

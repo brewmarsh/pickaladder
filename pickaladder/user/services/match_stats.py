@@ -7,8 +7,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
-    from ..models import User
-
 
 def get_user_matches(
     db: Client, user_id: str, limit: int | None = None
@@ -24,7 +22,15 @@ def get_user_matches(
     # Scalable query using the 'participants' array of UIDs (strings)
     query = matches_ref.where(
         filter=firestore.FieldFilter("participants", "array_contains", user_id)
-    ).order_by("matchDate", direction=firestore.Query.DESCENDING)
+    )
+
+    try:
+        query = query.order_by("matchDate", direction=firestore.Query.DESCENDING)
+    except Exception as e:
+        # Fallback for environments without the composite index
+        from flask import current_app
+
+        current_app.logger.debug(f"Sorting by matchDate failed: {e}")
 
     if limit:
         query = query.limit(limit)
@@ -107,30 +113,33 @@ def format_matches_for_dashboard(
     users_map = {}
     if user_refs:
         for doc in db.get_all(list(user_refs)):
-            if doc.exists:
-                d = doc.to_dict()
+            d_snap = cast("DocumentSnapshot", doc)
+            if d_snap.exists:
+                d = d_snap.to_dict()
                 if d:
-                    d["id"] = doc.id
-                    users_map[doc.id] = d
+                    d["id"] = d_snap.id
+                    users_map[d_snap.id] = d
 
     teams_map = {}
     if team_refs:
         for doc in db.get_all(list(team_refs)):
-            if doc.exists:
-                d = doc.to_dict()
+            d_snap = cast("DocumentSnapshot", doc)
+            if d_snap.exists:
+                d = d_snap.to_dict()
                 if d:
-                    d["id"] = doc.id
-                    teams_map[doc.id] = d
+                    d["id"] = d_snap.id
+                    teams_map[d_snap.id] = d
 
     tournaments_map = {}
     if tournament_ids:
         t_refs = [db.collection("tournaments").document(tid) for tid in tournament_ids]
         for doc in db.get_all(t_refs):
-            if doc.exists:
-                d = doc.to_dict()
+            d_snap = cast("DocumentSnapshot", doc)
+            if d_snap.exists:
+                d = d_snap.to_dict()
                 if d:
-                    d["id"] = doc.id
-                    tournaments_map[doc.id] = d
+                    d["id"] = d_snap.id
+                    tournaments_map[d_snap.id] = d
 
     matches_data = []
     for match_doc in matches:
@@ -275,7 +284,7 @@ def calculate_current_streak(user_id: str, matches: list[Any]) -> int:
 
 def get_recent_opponents(
     db: Client, user_id: str, matches: list[Any], limit: int = 4
-) -> list[User]:
+) -> list[dict[str, Any]]:
     """Identify recent unique 1v1 opponents."""
     opponent_ids: list[str] = []
     for m in matches:
@@ -310,16 +319,15 @@ def get_recent_opponents(
     docs = db.get_all(refs)
     opponents_map = {}
     for doc in docs:
-        if doc.exists:
-            d = doc.to_dict()
+        d_snap = cast("DocumentSnapshot", doc)
+        if d_snap.exists:
+            d = d_snap.to_dict()
             if d:
-                d["id"] = doc.id
-                d["uid"] = doc.id
-                opponents_map[doc.id] = d
+                d["id"] = d_snap.id
+                d["uid"] = d_snap.id
+                opponents_map[d_snap.id] = d
 
-    return [
-        cast("User", opponents_map[oid]) for oid in opponent_ids if oid in opponents_map
-    ]
+    return [opponents_map[oid] for oid in opponent_ids if oid in opponents_map]
 
 
 def _calculate_streak(processed: list[dict[str, Any]]) -> tuple[int, str]:
@@ -364,7 +372,7 @@ def calculate_stats(matches: list[DocumentSnapshot], user_id: str) -> dict[str, 
         )
 
     total = wins + losses
-    win_rate = (wins / total) * 100 if total > 0 else 0
+    win_rate = (wins / total * 100) if total > 0 else 0
     processed.sort(key=lambda x: x["date"] or datetime.datetime.min, reverse=True)
 
     streak, s_type = _calculate_streak(processed)

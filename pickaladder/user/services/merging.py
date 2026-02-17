@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from flask import current_app
 
 if TYPE_CHECKING:
-    from firebase_admin import firestore as _firestore
+    from google.cloud.firestore_v1.batch import WriteBatch
     from google.cloud.firestore_v1.client import Client
 
 
@@ -53,7 +53,7 @@ def merge_users(db: Client, source_id: str, target_id: str) -> None:
 
 
 def _migrate_user_references(
-    db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    db: Client, batch: WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Orchestrate the migration of all user references."""
     _migrate_singles_matches(db, batch, ghost_ref, real_user_ref)
@@ -63,7 +63,7 @@ def _migrate_user_references(
 
 
 def _migrate_singles_matches(
-    db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    db: Client, batch: WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update singles matches where the user is player 1 or 2."""
 
@@ -80,7 +80,7 @@ def _migrate_singles_matches(
 
 
 def _migrate_doubles_matches(
-    db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    db: Client, batch: WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update doubles matches where the user is in a team array."""
     from pickaladder.teams.services import TeamService  # noqa: PLC0415
@@ -128,7 +128,7 @@ def _migrate_doubles_matches(
 
 
 def _migrate_groups(
-    db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    db: Client, batch: WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update group memberships."""
 
@@ -146,7 +146,7 @@ def _migrate_groups(
 
 
 def _migrate_tournaments(
-    db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+    db: Client, batch: WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update tournament participant lists and IDs."""
 

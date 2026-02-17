@@ -84,24 +84,25 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
 
-    # Calculate Onboarding Progress
+    # 4. Onboarding Progress Calculation
     has_avatar = bool(user_data.get("profilePictureUrl"))
-    has_dupr = bool(user_data.get("duprRating") or user_data.get("dupr_rating"))
-    has_match = len(matches) > 0
-    has_group = len(group_rankings) > 0
+    has_rating = bool(user_data.get("dupr_rating") or user_data.get("duprRating"))
     has_friend = len(friends) > 0
+    has_group = len(group_rankings) > 0
+    has_match = len(recent_docs) > 0
 
-    steps = [has_avatar, has_dupr, has_match, has_group, has_friend]
-    percent = int((sum(steps) / len(steps)) * 100)
+    onboarding_tasks = [has_avatar, has_rating, has_friend, has_group, has_match]
+    completed_tasks = sum(1 for task in onboarding_tasks if task)
+    percent = int((completed_tasks / len(onboarding_tasks)) * 100)
 
     onboarding_progress = {
-        "has_avatar": has_avatar,
-        "has_dupr": has_dupr,
-        "has_rating": has_dupr,
-        "has_match": has_match,
-        "has_group": has_group,
-        "has_friend": has_friend,
         "percent": percent,
+        "has_avatar": has_avatar,
+        "has_rating": has_rating,
+        "has_dupr": has_rating,  # Compatibility for older templates
+        "has_friend": has_friend,
+        "has_group": has_group,
+        "has_match": has_match,
     }
 
     return {
