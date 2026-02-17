@@ -8,7 +8,6 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 from mockfirestore import MockFirestore
-from tests.mock_utils import patch_mockfirestore
 
 from pickaladder import create_app
 from pickaladder.tournament import TournamentService  # noqa: F401
@@ -32,7 +31,6 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         """Set up a test client and a comprehensive mock environment."""
         patch_mockfirestore()
         self.mock_db = MockFirestore()
-        patch_mockfirestore()
 
         self.mock_batch_instance = MockBatch(self.mock_db)
         self.mock_db.batch = MagicMock(return_value=self.mock_batch_instance)
@@ -55,7 +53,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_client": patch("firebase_admin.firestore.client"),
+            "firestore_client": patch(
+                "firebase_admin.firestore.client", return_value=self.mock_db
+            ),
             "firestore_services": patch(
                 "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,
@@ -67,7 +67,6 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}
-        self.mocks["firestore_client"].return_value = self.mock_db
         for p in patchers.values():
             self.addCleanup(p.stop)
 
@@ -558,9 +557,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user(is_admin=True)
 
         tournament_id = "test_tournament_id"
-        # Seed with required fields for mockfirestore's where/array_contains
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "To be deleted", "participant_ids": [], "ownerRef": None}
+            {"name": "To be deleted"}
         )
 
         response = self.client.post(
@@ -580,9 +578,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user(is_admin=False)
 
         tournament_id = "test_tournament_id"
-        # Seed with required fields for mockfirestore's where/array_contains
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "Not deleted", "participant_ids": [], "ownerRef": None}
+            {"name": "Not deleted"}
         )
 
         response = self.client.post(
