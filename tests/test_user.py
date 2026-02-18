@@ -58,11 +58,15 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             "firestore_client": patch("firebase_admin.firestore.client"),
             "storage_bucket": patch("firebase_admin.storage.bucket"),
             "auth_module": patch("firebase_admin.auth"),
-            "firestore_module": patch("pickaladder.firestore", new=self.mock_firestore_module),
+            "firestore_module": patch(
+                "pickaladder.firestore", new=self.mock_firestore_module
+            ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
             # Also patch specifically where it's used in services to avoid 'default app' issues
             "service_storage": patch("pickaladder.user.services.profile.storage"),
-            "service_auth": patch("pickaladder.user.services.core.auth", new=self.mock_auth),
+            "service_auth": patch(
+                "pickaladder.user.services.core.auth", new=self.mock_auth
+            ),
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}
@@ -77,7 +81,9 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.app_context.push()
 
         # Setup current user in mock DB
-        self.mock_db.collection("users").document(MOCK_USER_ID).set(MOCK_USER_DATA.copy())
+        self.mock_db.collection("users").document(MOCK_USER_ID).set(
+            MOCK_USER_DATA.copy()
+        )
 
     def tearDown(self) -> None:
         """Tear down the test client."""
@@ -131,7 +137,9 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user()
 
         # Mock auth to raise EmailAlreadyExistsError
-        self.mock_auth.update_user.side_effect = self.mock_auth.EmailAlreadyExistsError()
+        self.mock_auth.update_user.side_effect = (
+            self.mock_auth.EmailAlreadyExistsError()
+        )
 
         response = self.client.post(
             "/user/settings",

@@ -103,9 +103,11 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "date": "2024-06-01",
+                "start_date": "2024-06-01",
+                "venue_name": "Courtside",
+                "match_type": "singles",
                 "location": "Courtside",
-                "mode": "SINGLES",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
@@ -163,9 +165,11 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Updated Name",
-                "date": "2024-07-01",
+                "start_date": "2024-07-01",
+                "venue_name": "Updated Location",
                 "location": "Updated Location",
-                "mode": "DOUBLES",
+                "match_type": "doubles",
+                "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
         )
