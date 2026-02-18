@@ -1,26 +1,51 @@
 """Forms for the tournament blueprint."""
 
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField
-from wtforms import DateField, SelectField, StringField, TextAreaField
-from wtforms.validators import DataRequired
+from flask_wtf.file import FileAllowed, FileField
+from wtforms import DateField, RadioField, SelectField, StringField, TextAreaField
+from wtforms.validators import DataRequired, Optional
 
 
 class TournamentForm(FlaskForm):
     """Form for creating/editing a tournament."""
 
     name = StringField("Tournament Name", validators=[DataRequired()])
-    banner = FileField("Tournament Banner")
+    
+    banner = FileField(
+        "Tournament Banner",
+        validators=[Optional(), FileAllowed(["jpg", "png", "jpeg"])],
+    )
+    
     start_date = DateField("Date", validators=[DataRequired()])
+    
+    # Required for Google Maps integration
+    location = StringField("Location", validators=[DataRequired()])
+    venue_name = StringField("Venue Name", validators=[Optional()])
+    address = StringField("Address", validators=[Optional()])
+    
     match_type = SelectField(
+        "Match Type",
+        choices=[("singles", "Singles"), ("doubles", "Doubles")],
+        validators=[DataRequired()],
+    )
+    
+    mode = RadioField(
         "Competition Mode",
         choices=[("SINGLES", "👤 Singles (1v1)"), ("DOUBLES", "👥 Doubles (2v2)")],
         validators=[DataRequired()],
         default="SINGLES",
     )
-    venue_name = StringField("Venue Name", validators=[DataRequired()])
-    address = StringField("Address")
-    description = TextAreaField("Description")
+
+    format = SelectField(
+        "Tournament Format",
+        choices=[
+            ("ROUND_ROBIN", "Round Robin"),
+            ("SINGLE_ELIMINATION", "Single Elimination"),
+        ],
+        validators=[DataRequired()],
+    )
+    
+    description = TextAreaField("Description", validators=[Optional()])
 
 
 class InvitePlayerForm(FlaskForm):

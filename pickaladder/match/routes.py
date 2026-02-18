@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     pass
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
 @login_required
 def edit_match(match_id: str) -> Any:
@@ -47,7 +46,6 @@ def edit_match(match_id: str) -> Any:
             flash(f"An unexpected error occurred: {e}", "danger")
 
     # For GET or on error, render the edit page
-    # Fetch player names for the UI
     m_dict = cast("dict[str, Any]", match_data)
     match_type = m_dict.get("matchType", "singles")
     player1_name = "Player 1"
@@ -160,33 +158,32 @@ def record_match() -> Any:
 
     if form.validate_on_submit():
         data = form.data
-        data["group_id"] = data.get("group_id") or group_id
-        data["tournament_id"] = data.get("tournament_id") or t_id
+        # Explicit type casting for Proxy/Infrastructure stability
+        submission = MatchSubmission(
+            match_type=str(data["match_type"]),
+            player_1_id=str(data["player1"]),
+            player_2_id=str(data["player2"]),
+            score_p1=int(data["player1_score"]),
+            score_p2=int(data["player2_score"]),
+            match_date=data["match_date"],
+            partner_id=data.get("partner"),
+            opponent_2_id=data.get("opponent2"),
+            group_id=data.get("group_id") or group_id,
+            tournament_id=data.get("tournament_id") or t_id,
+        )
         try:
-            submission = MatchSubmission(
-                match_type=str(data["match_type"]),
-                player_1_id=str(data["player1"]),
-                player_2_id=str(data["player2"]),
-                score_p1=int(data["player1_score"]),
-                score_p2=int(data["player2_score"]),
-                partner_id=data.get("partner"),
-                opponent_2_id=data.get("opponent2"),
-                group_id=data.get("group_id"),
-                tournament_id=data.get("tournament_id"),
-                match_date=data.get("match_date"),
-            )
             result = MatchService.record_match(db, submission, g.user)
-            m_id = result.id
             if request.is_json:
-                return jsonify({"status": "success", "match_id": m_id}), 200
+                return jsonify({"status": "success", "match_id": result.id}), 200
+            
             flash("Match recorded successfully.", "success")
-            if tid := data.get("tournament_id"):
-                return redirect(
-                    url_for("tournament.view_tournament", tournament_id=tid)
-                )
-            if gid := data.get("group_id"):
+            
+            if tid := submission.tournament_id:
+                return redirect(url_for("tournament.view_tournament", tournament_id=tid))
+            if gid := submission.group_id:
                 return redirect(url_for("group.view_group", group_id=gid))
-            return redirect(url_for("match.view_match_summary", match_id=m_id))
+            
+            return redirect(url_for("match.view_match_summary", match_id=result.id))
         except Exception as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400
@@ -206,7 +203,6 @@ def record_match() -> Any:
     )
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/history")
 @login_required
 def get_match_history() -> Any:
@@ -224,11 +220,7 @@ def get_match_history() -> Any:
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
-    """Display a global leaderboard.
-
-    Note: This is a simplified, non-scalable implementation. A production-ready
-    leaderboard on Firestore would likely require denormalization and Cloud Functions.
-    """
+    """Display a global leaderboard."""
     db = firestore.client()
     try:
         # Exclude players with 0 games and sort by Win Percentage
