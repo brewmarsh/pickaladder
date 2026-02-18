@@ -243,7 +243,12 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         if not user:
             return ""
         wrapped = wrap_user(user)
-        return wrapped.avatar_url if wrapped else ""
+        url = wrapped.avatar_url if wrapped else ""
+        if url == "default":
+            # Fallback to DiceBear Avatars (avataaars style)
+            seed = user.get("username") or user.get("email") or "User"
+            return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
+        return url
 
     @app.template_filter("pluralize")
     def pluralize_filter(
@@ -315,6 +320,7 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
 
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
+        FLASK_ENV=os.environ.get("FLASK_ENV", "development"),
         FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
         GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
         MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",

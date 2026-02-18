@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 from flask import flash, g, jsonify, redirect, render_template, request, url_for
@@ -11,9 +11,14 @@ from pickaladder.auth.decorators import login_required
 
 from . import bp
 from .forms import MatchForm
+from .models import MatchSubmission
 from .services import MatchService
 
+if TYPE_CHECKING:
+    pass
 
+
+# TODO: Add type hints for Agent clarity
 @bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
 @login_required
 def edit_match(match_id: str) -> Any:
@@ -107,8 +112,10 @@ def _populate_match_form_choices(
                 all_names[doc.id] = doc.to_dict().get("name", doc.id)
 
     form.player1.choices = cast(Any, [(u, str(all_names.get(u, u))) for u in p1_cands])
-    others = cast(Any, [(u, str(all_names.get(u, u))) for u in other_cands])
-    form.player2.choices = form.partner.choices = form.opponent2.choices = others
+    others = [(u, str(all_names.get(u, u))) for u in other_cands]
+    form.player2.choices = form.partner.choices = form.opponent2.choices = cast(
+        Any, others
+    )
 
 
 def _handle_record_match_get(
@@ -153,42 +160,30 @@ def record_match() -> Any:
 
     if form.validate_on_submit():
         data = form.data
-        # Ensure ID context is preserved if not present in form body
-        data["group_id"] = data.get("group_id") or group_id
-        data["tournament_id"] = data.get("tournament_id") or t_id
-
+        submission = MatchSubmission(
+            match_type=data["match_type"],
+            player_1_id=data["player1"],
+            player_2_id=data["player2"],
+            score_p1=data["player1_score"],
+            score_p2=data["player2_score"],
+            match_date=data["match_date"],
+            partner_id=data.get("partner"),
+            opponent_2_id=data.get("opponent2"),
+            group_id=data.get("group_id") or group_id,
+            tournament_id=data.get("tournament_id") or t_id,
+        )
         try:
-            from .models import MatchSubmission
-
-            # Using structured submission from fix branch
-            submission = MatchSubmission(
-                player1=data["player1"],
-                player2=data["player2"],
-                player1_score=data["player1_score"],
-                player2_score=data["player2_score"],
-                group_id=data.get("group_id"),
-                tournament_id=data.get("tournament_id"),
-            )
-            # MatchSubmission in models.py doesn't have match_type etc currently?
-            # Wait, let me check models.py again.
             result = MatchService.record_match(db, submission, g.user)
-
-            m_id = result.id
             if request.is_json:
-                return jsonify({"status": "success", "match_id": m_id}), 200
-
+                return jsonify({"status": "success", "match_id": result.id}), 200
             flash("Match recorded successfully.", "success")
-
-            # Prioritize redirects: Tournament -> Group -> Summary
-            if tid := data.get("tournament_id"):
+            if tid := submission.tournament_id:
                 return redirect(
                     url_for("tournament.view_tournament", tournament_id=tid)
                 )
-            if gid := data.get("group_id"):
+            if gid := submission.group_id:
                 return redirect(url_for("group.view_group", group_id=gid))
-
-            return redirect(url_for("match.view_match_summary", match_id=m_id))
-
+            return redirect(url_for("match.view_match_summary", match_id=result.id))
         except Exception as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400
@@ -208,6 +203,7 @@ def record_match() -> Any:
     )
 
 
+# TODO: Add type hints for Agent clarity
 @bp.route("/history")
 @login_required
 def get_match_history() -> Any:
@@ -225,7 +221,11 @@ def get_match_history() -> Any:
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
-    """Display a global leaderboard."""
+    """Display a global leaderboard.
+
+    Note: This is a simplified, non-scalable implementation. A production-ready
+    leaderboard on Firestore would likely require denormalization and Cloud Functions.
+    """
     db = firestore.client()
     try:
         # Exclude players with 0 games and sort by Win Percentage

@@ -272,7 +272,7 @@ class MockTransaction(Transaction):
             f"'{self.__class__.__name__}' object has no attribute '{name}'"
         )
 
-    def _begin(self, **kwargs: Any) -> None:
+    def _begin(self, retry_id: Any = None, **kwargs: Any) -> None:
         """Mock begin."""
         pass
 
@@ -461,8 +461,8 @@ def app_server(
 
     os.environ["FIREBASE_PROJECT_ID"] = "test-project"
     os.environ["SECRET_KEY"] = "dev"  # nosec B105
-    os.environ["MAIL_USERNAME"] = "test"  # nosec
-    os.environ["MAIL_PASSWORD"] = "test"  # nosec
+    os.environ["MAIL_USERNAME"] = "test"  # nosec B105
+    os.environ["MAIL_PASSWORD"] = "test"  # nosec B105
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
 
