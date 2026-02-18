@@ -84,23 +84,28 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     active_tournaments = get_active_tournaments(db, user_id)
     past_tournaments = get_past_tournaments(db, user_id)
 
-    # 4. Calculate Onboarding Progress
-    has_avatar = bool(
-        user_data.get("profilePictureUrl")
-        or user_data.get("profilePictureThumbnailUrl")
-    )
-    has_dupr = bool(user_data.get("dupr_id") or user_data.get("duprRating") or user_data.get("dupr_rating"))
-    has_rating = has_dupr  # Alias for template compatibility
+    # 4. Calculate onboarding progress
+    has_avatar = bool(user_data.get("profilePictureUrl"))
+    has_dupr = bool(user_data.get("duprId"))
+    has_rating = bool(user_data.get("duprRating"))
     has_group = len(group_rankings) > 0
     has_match = len(matches) > 0
     has_friend = len(friends) > 0
 
-    total_steps = 5
-    completed_steps = sum([has_avatar, has_dupr, has_group, has_match, has_friend])
-    onboarding_percent = int((completed_steps / total_steps) * 100)
+    points = 0
+    if has_avatar:
+        points += 20
+    if has_dupr:
+        points += 20
+    if has_group:
+        points += 20
+    if has_match:
+        points += 20
+    if has_friend:
+        points += 20
 
     onboarding_progress = {
-        "percent": onboarding_percent,
+        "percent": points,
         "has_avatar": has_avatar,
         "has_dupr": has_dupr,
         "has_rating": has_rating,
@@ -111,7 +116,6 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
 
     return {
         "user": user_data,
-        "onboarding_progress": onboarding_progress,
         "matches": matches,
         "next_cursor": next_cursor,
         "stats": stats,
@@ -123,4 +127,5 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         "pending_tournament_invites": pending_tournament_invites,
         "active_tournaments": active_tournaments,
         "past_tournaments": past_tournaments,
+        "onboarding_progress": onboarding_progress,
     }

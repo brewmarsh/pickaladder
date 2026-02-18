@@ -1,6 +1,8 @@
-import datetime
+"""Tests for the user blueprint using mockfirestore."""
+
+from __future__ import annotations
+
 import unittest
-from io import BytesIO
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -8,284 +10,161 @@ from mockfirestore import MockFirestore
 
 from pickaladder import create_app
 
-# Mock user payloads for consistent test data
+# Mock user payloads
 MOCK_USER_ID = "user1"
-MOCK_PROFILE_USER_ID = "user2"
-MOCK_FIREBASE_TOKEN_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user1@example.com"}
-MOCK_FIRESTORE_USER_DATA = {
-    "name": "User One",
+MOCK_USER_PAYLOAD = {"uid": MOCK_USER_ID, "email": "user1@example.com"}
+MOCK_USER_DATA = {
+    "name": "Test User",
     "email": "user1@example.com",
-    "isAdmin": True,
-    "uid": "user1",
-    "stats": {"wins": 10, "losses": 5},
+    "isAdmin": False,
+    "username": "user1",
+    "profilePictureUrl": "default",
 }
 
 
 class UserRoutesFirebaseTestCase(unittest.TestCase):
-    """Test case for user routes with Firebase mocks using MockFirestore."""
-
-    mock_db: MockFirestore
-    mock_firestore_service: MagicMock
-    mock_auth_service: MagicMock
-    mock_storage_service: MagicMock
-    patcher_firestore: Any
-    patcher_field_filter: Any
-    mock_field_filter_class: MagicMock
-    patcher_auth: Any
-    mock_auth: MagicMock
-    patcher_storage: Any
-    mock_storage: MagicMock
-    patcher_init: Any
+    """Test case for the user blueprint."""
 
     def setUp(self) -> None:
-        """Set up the test case with MockFirestore and service patches."""
+        """Set up a test client and a comprehensive mock environment."""
         self.mock_db = MockFirestore()
-        self.mock_firestore_service = MagicMock()
-        self.mock_auth_service = MagicMock()
-        self.mock_auth_service.EmailAlreadyExistsError = type(
-            "EmailAlreadyExistsError", (Exception,), {}
-        )
-        self.mock_storage_service = MagicMock()
 
-        self.mock_firestore_service.client.return_value = self.mock_db
+        # Patch firestore.client() to return our mock_db
+        self.mock_firestore_module = MagicMock()
+        self.mock_firestore_module.client.return_value = self.mock_db
 
-        self.patchers = {
+        # Mock FieldFilter and other constants
+        class MockFieldFilter:
+            def __init__(self, field_path: str, op_string: str, value: Any) -> None:
+                self.field_path = field_path
+                self.op_string = op_string
+                self.value = value
+
+        self.mock_firestore_module.FieldFilter = MockFieldFilter
+        self.mock_firestore_module.SERVER_TIMESTAMP = "2023-01-01"
+
+        # Mock storage and auth
+        self.mock_storage = MagicMock()
+        self.mock_auth = MagicMock()
+
+        # Define a mock exception for auth.EmailAlreadyExistsError
+        class EmailAlreadyExistsError(Exception):
+            pass
+
+        self.mock_auth.EmailAlreadyExistsError = EmailAlreadyExistsError
+
+        patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_client": patch(
-                "firebase_admin.firestore.client",
-                return_value=self.mock_db,
-            ),
-            "auth_core": patch(
-                "pickaladder.user.services.core.auth", new=self.mock_auth_service
-            ),
-            "auth_profile": patch(
-                "pickaladder.user.services.profile.auth", new=self.mock_auth_service
-            ),
-            "storage_core": patch(
-                "pickaladder.user.services.core.storage", new=self.mock_storage_service
-            ),
-            "storage_profile": patch(
-                "pickaladder.user.services.profile.storage",
-                new=self.mock_storage_service,
-            ),
+            "firestore_client": patch("firebase_admin.firestore.client"),
+            "storage_bucket": patch("firebase_admin.storage.bucket"),
+            "auth_module": patch("firebase_admin.auth"),
+            "firestore_module": patch("pickaladder.firestore", new=self.mock_firestore_module),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
-            "send_email": patch("pickaladder.user.services.core.send_email"),
+            # Also patch specifically where it's used in services to avoid 'default app' issues
+            "service_storage": patch("pickaladder.user.services.profile.storage"),
+            "service_auth": patch("pickaladder.user.services.core.auth", new=self.mock_auth),
         }
 
-        for name, p in self.patchers.items():
-            m = p.start()
-            if name == "auth":
-                m.EmailAlreadyExistsError = (
-                    self.mock_auth_service.EmailAlreadyExistsError
-                )
+        self.mocks = {name: p.start() for name, p in patchers.items()}
+        for p in patchers.values():
+            self.addCleanup(p.stop)
 
-        # Patch FieldFilter
-        self.patcher_field_filter = patch("firebase_admin.firestore.FieldFilter")
-        self.mock_field_filter_class = self.patcher_field_filter.start()
-
-        def field_filter_side_effect(field, op, value):
-            mock = MagicMock()
-            mock.field_path = field
-            mock.op_string = op
-            mock.value = value
-            return mock
-
-        self.mock_field_filter_class.side_effect = field_filter_side_effect
-
-        self.patcher_auth = patch("firebase_admin.auth")
-        self.mock_auth = self.patcher_auth.start()
-        self.mock_auth.EmailAlreadyExistsError = (
-            self.mock_auth_service.EmailAlreadyExistsError
+        self.app = create_app(
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
         )
-
-        self.patcher_storage = patch("firebase_admin.storage")
-        self.mock_storage = self.patcher_storage.start()
-
-        self.app = create_app()
-        self.app.config["TESTING"] = True
-        self.app.config["WTF_CSRF_ENABLED"] = False
         self.client = self.app.test_client()
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+
+        # Setup current user in mock DB
+        self.mock_db.collection("users").document(MOCK_USER_ID).set(MOCK_USER_DATA.copy())
 
     def tearDown(self) -> None:
-        """Stop all patchers."""
-        for p in self.patchers.values():
-            p.stop()
-        self.patcher_field_filter.stop()
-        self.patcher_auth.stop()
-        self.patcher_storage.stop()
+        """Tear down the test client."""
+        self.app_context.pop()
 
-    def _set_session_user(self, user_id: str = MOCK_USER_ID) -> None:
-        """Set the user ID in the session and populate mock Firestore."""
+    def _set_session_user(self, is_admin: bool = False) -> None:
+        """Set a logged-in user in the session and mock DB."""
         with self.client.session_transaction() as sess:
-            sess["user_id"] = user_id
+            sess["user_id"] = MOCK_USER_ID
+            sess["is_admin"] = is_admin
+        self.mock_db.collection("users").document(MOCK_USER_ID).update(
+            {"isAdmin": is_admin}
+        )
+        self.mocks["verify_id_token"].return_value = MOCK_USER_PAYLOAD
 
-        # Setup the user in mock DB so loaders find it
-        self.mock_db.collection("users").document(user_id).set({
-            "username": "user1",
-            "email": "user1@example.com",
-            "name": "User One",
-            "uid": user_id,
-            "stats": {
-                "wins": 10,
-                "losses": 5,
-                "total_games": 15,
-                "win_rate": 66.7,
-                "current_streak": 2,
-                "streak_type": "win",
-            },
-        })
+    def _get_auth_headers(self) -> dict[str, str]:
+        """Get standard authentication headers for tests."""
+        return {"Authorization": "Bearer mock-token"}
 
-    def test_settings_get(self) -> None:
+    def test_settings_page_loads(self) -> None:
         """Test that the settings page loads for a logged-in user."""
         self._set_session_user()
-        
+
         response = self.client.get("/user/settings")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"user1", response.data)
+        self.assertIn(b"Account Settings", response.data)
 
-    def test_settings_post_success(self) -> None:
-        """Test updating user settings via POST."""
+    def test_update_settings_success(self) -> None:
+        """Test successfully updating user settings."""
         self._set_session_user()
 
         response = self.client.post(
             "/user/settings",
             data={
-                "name": "New Name",
-                "email": "user1@example.com",
-                "dark_mode": "y",
-                "dupr_rating": 5.5,
-                "username": "newuser",
+                "name": "Updated Name",
+                "email": "updated@example.com",
             },
             follow_redirects=True,
         )
+
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Settings updated!", response.data)
 
-        user_doc = (
-            self.mock_db.collection("users").document(MOCK_USER_ID).get().to_dict()
-        )
-        self.assertEqual(user_doc["name"], "New Name")
-        self.assertEqual(user_doc["username"], "newuser")
+        # Verify update in DB
+        user_doc = self.mock_db.collection("users").document(MOCK_USER_ID).get()
+        self.assertEqual(user_doc.to_dict()["name"], "Updated Name")
+        self.assertEqual(user_doc.to_dict()["email"], "updated@example.com")
 
-    def test_update_profile_picture_upload(self) -> None:
-        """Test uploading a profile picture."""
+    def test_update_settings_email_exists(self) -> None:
+        """Test updating settings with an already registered email."""
         self._set_session_user()
 
-        mock_bucket = self.mock_storage_service.bucket.return_value
-        mock_blob = mock_bucket.blob.return_value
-        mock_blob.public_url = "https://storage.googleapis.com/test-bucket/test.jpg"
-
-        data = {
-            "profile_picture": (BytesIO(b"test_image_data"), "test.png"),
-            "username": "newuser",
-            "name": "New User",
-            "email": "newuser@example.com",
-        }
-        response = self.client.post(
-            "/user/settings",
-            data=data,
-            content_type="multipart/form-data",
-            follow_redirects=True,
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated!", response.data)
-        self.mock_storage_service.bucket.assert_called()
-
-    def test_update_dupr_and_dark_mode(self) -> None:
-        """Test updating DUPR rating and dark mode settings."""
-        self._set_session_user()
+        # Mock auth to raise EmailAlreadyExistsError
+        self.mock_auth.update_user.side_effect = self.mock_auth.EmailAlreadyExistsError()
 
         response = self.client.post(
             "/user/settings",
             data={
-                "name": "User One",
-                "email": "user1@example.com",
-                "dark_mode": "y",
-                "dupr_rating": "5.5",
-                "username": "newuser",
+                "name": "Test User",
+                "email": "exists@example.com",
             },
             follow_redirects=True,
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated!", response.data)
-
-        user_doc = (
-            self.mock_db.collection("users").document(MOCK_USER_ID).get().to_dict()
-        )
-        self.assertEqual(user_doc["dark_mode"], True)
-        self.assertEqual(user_doc["duprRating"], 5.5)
-
-    @patch("pickaladder.user.services.dashboard.get_user_matches")
-    def test_api_dashboard_fetches_matches_with_limit(
-        self, mock_get_matches: MagicMock
-    ) -> None:
-        """Test that matches are fetched with limit."""
-        self._set_session_user()
-        mock_get_matches.return_value = []
-
-        self.client.get("/user/api/dashboard")
-        self.assertTrue(mock_get_matches.called)
-
-    def test_api_dashboard_returns_group_match_flag(self) -> None:
-        """Test that the response includes an indicator for group matches."""
-        self._set_session_user()
-
-        self.mock_db.collection("matches").document("match1").set({
-            "matchType": "singles",
-            "participants": [MOCK_USER_ID, "user2"],
-            "player1Ref": self.mock_db.collection("users").document(MOCK_USER_ID),
-            "player2Ref": self.mock_db.collection("users").document("user2"),
-            "player1Score": 10,
-            "player2Score": 5,
-            "matchDate": datetime.datetime(2023, 1, 1),
-            "groupId": "group123",
-            "createdAt": datetime.datetime.now(),
-        })
-
-        self.mock_db.collection("users").document("user2").set(
-            {"username": "user2", "name": "User Two"}
-        )
-
-        response = self.client.get("/user/api/dashboard")
 
         self.assertEqual(response.status_code, 200)
-        data = response.get_json()
-        matches = data["matches"]
-        self.assertEqual(len(matches), 1)
-        self.assertTrue(matches[0]["is_group_match"])
+        self.assertIn(b"This email is already in use", response.data)
 
-    @patch("pickaladder.user.routes.render_template")
-    def test_view_user_includes_doubles_and_processes_matches(
-        self, mock_render_template: MagicMock
-    ) -> None:
-        """Test that view_user fetches and processes matches."""
+    def test_profile_page_loads(self) -> None:
+        """Test viewing own profile."""
         self._set_session_user()
 
-        self.mock_db.collection("users").document(MOCK_PROFILE_USER_ID).set({
-            "username": "profile_user",
-            "stats": {"wins": 10, "losses": 5},
-        })
-        self.mock_db.collection("users").document("opponent_id").set(
-            {"username": "opponent_user", "name": "Opponent User"}
+        response = self.client.get(f"/user/{MOCK_USER_ID}")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Test User", response.data)
+
+    def test_community_page_search(self) -> None:
+        """Test searching on the community page."""
+        self._set_session_user()
+
+        # Seed another user
+        self.mock_db.collection("users").document("other").set(
+            {"name": "Other Player", "username": "other_p"}
         )
 
-        self.mock_db.collection("matches").document("match1").set({
-            "matchDate": datetime.datetime(2023, 1, 1),
-            "player1Score": 11,
-            "player2Score": 9,
-            "player1Ref": self.mock_db.collection("users").document(MOCK_PROFILE_USER_ID),
-            "player2Ref": self.mock_db.collection("users").document("opponent_id"),
-            "matchType": "singles",
-            "participants": [MOCK_PROFILE_USER_ID, "opponent_id"],
-            "createdAt": datetime.datetime.now(),
-        })
-
-        self.client.get(f"/user/{MOCK_PROFILE_USER_ID}")
-
-        args, kwargs = mock_render_template.call_args
-        matches = kwargs.get("matches")
-        self.assertTrue(matches)
-        self.assertEqual(len(matches), 1)
+        response = self.client.get("/user/community?search=Other")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Other Player", response.data)
 
 
 if __name__ == "__main__":

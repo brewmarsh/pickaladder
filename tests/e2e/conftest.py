@@ -179,6 +179,9 @@ def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
     others = {k: v for k, v in data.items() if not isinstance(v, MockSentinel)}
 
     if others:
+        # Handle dot notation for mockfirestore manually if needed
+        # but mockfirestore usually handles it.
+        # We'll just use the original update and hope for the best.
         original_update(self, others)
 
     if sentinels:
@@ -261,6 +264,22 @@ class MockTransaction(Transaction):
         self._max_attempts = 5
         self._retry_id = None
 
+    def _rollback(self) -> None:
+        """Mock rollback."""
+        pass
+
+    def _begin(self, **kwargs: Any) -> None:
+        """Mock begin."""
+        pass
+
+    def _commit(self) -> list[Any]:
+        """Mock commit."""
+        return []
+
+    def _clean_up(self) -> None:
+        """Mock clean up."""
+        pass
+
     def __getattr__(self, name: str) -> Any:
         """Handle missing attributes by returning a no-op or mock."""
         if name.startswith("_"):
@@ -268,22 +287,6 @@ class MockTransaction(Transaction):
         raise AttributeError(
             f"'{self.__class__.__name__}' object has no attribute '{name}'"
         )
-
-    def _begin(self, retry_id: Any = None, **kwargs: Any) -> None:
-        """Mock begin."""
-        pass
-
-    def _rollback(self) -> None:
-        """Mock rollback."""
-        pass
-
-    def _clean_up(self) -> None:
-        """Mock clean up."""
-        pass
-
-    def _commit(self) -> list[Any]:
-        """Mock commit."""
-        return []
 
     def get(self, ref_or_query: Any, **kwargs: Any) -> Any:
         """Mock get."""
@@ -458,8 +461,8 @@ def app_server(
 
     os.environ["FIREBASE_PROJECT_ID"] = "test-project"
     os.environ["SECRET_KEY"] = "dev"  # nosec B105
-    os.environ["MAIL_USERNAME"] = "test"  # nosec B105
-    os.environ["MAIL_PASSWORD"] = "test"  # nosec B105
+    os.environ["MAIL_USERNAME"] = "test"  # nosec
+    os.environ["MAIL_PASSWORD"] = "test"  # nosec
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
 
