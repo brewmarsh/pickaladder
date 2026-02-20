@@ -91,7 +91,9 @@ def sort_and_format_standings(
             if doc.exists
         }
         for s in standings_list:
-            user_data = users_map.get(s["id"], {"id": s["id"], "name": "Unknown Player"})
+            user_data = users_map.get(
+                s["id"], {"id": s["id"], "name": "Unknown Player"}
+            )
             s["name"] = smart_display_name(user_data) or "Unknown Player"
             s["user"] = user_data
 
