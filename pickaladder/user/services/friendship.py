@@ -14,6 +14,7 @@ def get_user_friends(
 ) -> list[dict[str, Any]]:
     """Fetch a user's friends."""
     from .core import filter_public_user_data
+
     user_ref = db.collection("users").document(user_id)
     query = user_ref.collection("friends").where("status", "==", "accepted")
     if limit:
@@ -67,6 +68,7 @@ def get_user_pending_requests(
 ) -> list[dict[str, Any]]:
     """Fetch pending friend requests where the user is the recipient."""
     from .core import filter_public_user_data
+
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")
@@ -97,6 +99,7 @@ def get_user_sent_requests(
 ) -> list[dict[str, Any]]:
     """Fetch pending friend requests where the user is the initiator."""
     from .core import filter_public_user_data
+
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")

@@ -141,7 +141,9 @@ def view_community() -> Any:
         db, g.user["uid"], is_admin=is_admin
     )
 
-    data = UserService.get_community_data(db, g.user["uid"], search_term, is_admin=is_admin)
+    data = UserService.get_community_data(
+        db, g.user["uid"], search_term, is_admin=is_admin
+    )
 
     # Filter out incoming/outgoing requests from data to avoid multiple values error
     filtered_data = {

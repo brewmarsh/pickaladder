@@ -305,6 +305,7 @@ class TournamentService:
         tournament_id: str,
         user_uid: str,
         update_data: dict[str, Any],
+        is_admin: bool = False,
         db: Client | None = None,
     ) -> None:
         """Update tournament details with ownership check."""
@@ -322,7 +323,7 @@ class TournamentService:
         if not owner_id and data.get("ownerRef"):
             owner_id = data["ownerRef"].id
 
-        if owner_id != user_uid:
+        if not is_admin and owner_id != user_uid:
             raise PermissionError("Unauthorized.")
 
         # Handle start_date / date compatibility
@@ -343,23 +344,29 @@ class TournamentService:
                 # Don't update matchType if matches exist
                 del update_data["matchType"]
 
-        # If any matches exist, tournament cannot be edited at all
+        # If matches exist, block critical field updates
         matches = (
             db.collection("matches")
-            .where("tournamentId", "==", tournament_id)
+            .where(filter=firestore.FieldFilter("tournamentId", "==", tournament_id))
             .limit(1)
             .stream()
         )
         if any(matches):
-            raise ValueError("Tournament has already started and cannot be edited.")
+            critical_fields = {"matchType", "mode", "format"}
+            for field in critical_fields:
+                if field in update_data:
+                    del update_data[field]
 
         ref.update(update_data)
 
     @staticmethod
     def delete_tournament(
-        tournament_id: str, user_uid: str, db: Client | None = None
+        tournament_id: str,
+        user_uid: str,
+        is_admin: bool = False,
+        db: Client | None = None,
     ) -> None:
-        """Delete a tournament if owner."""
+        """Delete a tournament if owner or admin."""
         if db is None:
             db = firestore.client()
         ref = db.collection("tournaments").document(tournament_id)
@@ -374,7 +381,7 @@ class TournamentService:
         if not owner_id and data.get("ownerRef"):
             owner_id = data["ownerRef"].id
 
-        if owner_id != user_uid:
+        if not is_admin and owner_id != user_uid:
             raise PermissionError("Unauthorized")
 
         # Optional: check if matches exist before deleting

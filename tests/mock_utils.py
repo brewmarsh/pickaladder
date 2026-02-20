@@ -114,6 +114,17 @@ class MockFirestoreBuilder:
 
             DocumentReference.get = doc_ref_get
 
+        # Patch Query._compare_func to handle array_contains on missing fields
+        if not hasattr(Query, "_orig_compare_func"):
+            Query._orig_compare_func = Query._compare_func
+
+            def patched_compare_func(self: Any, op: str) -> Any:
+                if op == "array_contains":
+                    return lambda x, y: x is not None and y in x
+                return self._orig_compare_func(op)
+
+            Query._compare_func = patched_compare_func
+
     @staticmethod
     def patch_db_write() -> None:
         """Apply monkeypatches to mockfirestore to support update with sentinels."""

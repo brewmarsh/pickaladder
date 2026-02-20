@@ -247,6 +247,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             data={
                 "name": "Updated Name",
                 "start_date": "2024-07-01",
+                "location": "Updated Location",
                 "venue_name": "Updated Venue",
                 "address": "456 Updated St",
                 "match_type": "doubles",
