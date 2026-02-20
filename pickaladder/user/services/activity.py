@@ -252,7 +252,7 @@ def get_user_profile_data(
     db: Client, current_user_id: str, target_user_id: str
 ) -> dict[str, Any] | None:
     """Fetch all data for a user's public profile."""
-    from .core import _sanitize_user_data, get_user_by_id
+    from .core import get_user_by_id
     from .friendship import get_friendship_info, get_user_friends
     from .match_stats import (
         calculate_stats,
