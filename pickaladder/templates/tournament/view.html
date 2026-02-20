@@ -31,7 +31,7 @@
     text-align: center;
     position: relative;
 ">
-    {% if is_owner and g.user.get('isAdmin') %}
+    {% if is_owner and g.user.is_admin %}
         <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" data-testid="tournament-settings-btn" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">⚙️</a>
     {% endif %}
     <h1 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h1>
@@ -233,10 +233,10 @@
             {% endif %}
         </div>
 
-        {% if is_owner %}
+        {% if is_owner and g.user.is_admin %}
             {% if tournament.status != 'Completed' %}
             <div class="card">
-                <h4 class="card-header">Management</h4>
+                <h4 class="card-header">Tournament Management</h4>
                 <form action="{{ url_for('tournament.complete_tournament', tournament_id=tournament.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to complete this tournament? This will notify all participants of the final results.');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger" style="margin-top: 10px; width: 100%;">Complete Tournament</button>

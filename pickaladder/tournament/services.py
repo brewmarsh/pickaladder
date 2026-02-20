@@ -343,15 +343,20 @@ class TournamentService:
                 # Don't update matchType if matches exist
                 del update_data["matchType"]
 
-        # If any matches exist, tournament cannot be edited at all
-        matches = (
-            db.collection("matches")
-            .where("tournamentId", "==", tournament_id)
-            .limit(1)
-            .stream()
-        )
-        if any(matches):
-            raise ValueError("Tournament has already started and cannot be edited.")
+        # Block critical updates if matches exist
+        critical_fields = ["matchType", "mode", "format"]
+        if any(field in update_data for field in critical_fields):
+            matches = (
+                db.collection("matches")
+                .where(
+                    filter=firestore.FieldFilter("tournamentId", "==", tournament_id)
+                )
+                .limit(1)
+                .stream()
+            )
+            if any(matches):
+                for field in critical_fields:
+                    update_data.pop(field, None)
 
         ref.update(update_data)
 
