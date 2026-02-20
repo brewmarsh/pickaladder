@@ -133,10 +133,15 @@ def view_community() -> Any:
     db = firestore.client()
     search_term = request.args.get("search", "").strip()
 
-    incoming_requests = UserService.get_user_pending_requests(db, g.user["uid"])
-    outgoing_requests = UserService.get_user_sent_requests(db, g.user["uid"])
+    is_admin = g.user.get("isAdmin", False)
+    incoming_requests = UserService.get_user_pending_requests(
+        db, g.user["uid"], is_admin=is_admin
+    )
+    outgoing_requests = UserService.get_user_sent_requests(
+        db, g.user["uid"], is_admin=is_admin
+    )
 
-    data = UserService.get_community_data(db, g.user["uid"], search_term)
+    data = UserService.get_community_data(db, g.user["uid"], search_term, is_admin=is_admin)
 
     # Filter out incoming/outgoing requests from data to avoid multiple values error
     filtered_data = {
@@ -160,8 +165,9 @@ def view_community() -> Any:
 def users() -> Any:
     """List and allows searching for users."""
     search_term = request.args.get("search", "")
+    is_admin = g.user.get("isAdmin", False)
     user_items = UserService.search_users(
-        firestore.client(), g.user["uid"], search_term
+        firestore.client(), g.user["uid"], search_term, is_admin=is_admin
     )
     return render_template(
         "users.html",
@@ -274,7 +280,8 @@ def api_search_users() -> Any:
     """Search for users and return JSON."""
     search_term = request.args.get("q", "")
     db = firestore.client()
-    users = UserService.search_users(db, g.user["uid"], search_term)
+    is_admin = g.user.get("isAdmin", False)
+    users = UserService.search_users(db, g.user["uid"], search_term, is_admin=is_admin)
     results = []
     for user_data, _, _ in users:
         results.append(

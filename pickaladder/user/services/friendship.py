@@ -10,9 +10,10 @@ if TYPE_CHECKING:
 
 
 def get_user_friends(
-    db: Client, user_id: str, limit: int | None = None
+    db: Client, user_id: str, limit: int | None = None, is_admin: bool = False
 ) -> list[dict[str, Any]]:
     """Fetch a user's friends."""
+    from .core import filter_public_user_data
     user_ref = db.collection("users").document(user_id)
     query = user_ref.collection("friends").where("status", "==", "accepted")
     if limit:
@@ -30,7 +31,10 @@ def get_user_friends(
         if doc.exists:
             data = doc.to_dict()
             if data is not None:
-                results.append({"id": doc.id, **data})
+                data["id"] = doc.id
+                if not is_admin:
+                    data = filter_public_user_data(data)
+                results.append(data)
     return results
 
 
@@ -58,8 +62,11 @@ def get_friendship_info(
     return is_friend, friend_request_sent
 
 
-def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
+def get_user_pending_requests(
+    db: Client, user_id: str, is_admin: bool = False
+) -> list[dict[str, Any]]:
     """Fetch pending friend requests where the user is the recipient."""
+    from .core import filter_public_user_data
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")
@@ -78,12 +85,18 @@ def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
         if doc.exists:
             data = doc.to_dict()
             if data is not None:
-                results.append({"id": doc.id, **data})
+                data["id"] = doc.id
+                if not is_admin:
+                    data = filter_public_user_data(data)
+                results.append(data)
     return results
 
 
-def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
+def get_user_sent_requests(
+    db: Client, user_id: str, is_admin: bool = False
+) -> list[dict[str, Any]]:
     """Fetch pending friend requests where the user is the initiator."""
+    from .core import filter_public_user_data
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")
@@ -102,7 +115,10 @@ def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
         if doc.exists:
             data = doc.to_dict()
             if data is not None:
-                results.append({"id": doc.id, **data})
+                data["id"] = doc.id
+                if not is_admin:
+                    data = filter_public_user_data(data)
+                results.append(data)
     return results
 
 
