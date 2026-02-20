@@ -558,13 +558,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user(is_admin=True)
 
         tournament_id = "test_tournament_id"
-        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {
-                "name": "To be deleted",
-                "ownerRef": user_ref,
-                "organizer_id": MOCK_USER_ID,
-            }
+            {"name": "To be deleted"}
         )
 
         response = self.client.post(

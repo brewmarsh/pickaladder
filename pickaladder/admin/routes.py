@@ -34,7 +34,10 @@ MIN_USERS_FOR_MATCH_GENERATION = 2
 @login_required(admin_required=True)
 def admin() -> Union[str, Response]:
     """Render the main admin dashboard."""
-    # Authorization check ensures only real admins (or those impersonating) gain access
+    # Authorization check is now here, after g.user is guaranteed to be loaded.
+    # We allow access if the user is an admin OR if they are an admin currently
+    # impersonating someone else. The login_required(admin_required=True)
+    # decorator already checks session['is_admin'].
     if not g.user or (not g.user.get("isAdmin") and not g.get("is_impersonating")):
         flash("You are not authorized to view this page.", "danger")
         return redirect(url_for("auth.login"))
@@ -48,8 +51,8 @@ def admin() -> Union[str, Response]:
     setting_ref = db.collection("settings").document("enforceEmailVerification")
     email_verification_setting = setting_ref.get()
 
-    # RESOLVED CONFLICT: Fetch all users including private ones for management
-    users = UserService.get_all_users(db, limit=50, public_only=False)
+    # Fetch Users for Management Table
+    users = UserService.get_all_users(db, limit=50, is_admin=True)
 
     return render_template(
         "admin/admin.html",
@@ -60,16 +63,293 @@ def admin() -> Union[str, Response]:
         else {"value": False},
     )
 
-# ... (merge_ghost, announcement, and toggle_email_verification remain unchanged)
+
+@bp.route("/merge-ghost", methods=["POST"])
+@login_required(admin_required=True)
+def merge_ghost() -> Response:
+    """Merge a ghost account into a real user profile."""
+    target_user_id = request.form.get("target_user_id")
+    ghost_email = request.form.get("ghost_email")
+
+    if not target_user_id or not ghost_email:
+        flash("Target User ID and Ghost Email are required.", "danger")
+        return redirect(url_for(".admin"))
+
+    db = firestore.client()
+    real_user_ref = db.collection("users").document(target_user_id)
+
+    try:
+        success = UserService.merge_ghost_user(db, real_user_ref, ghost_email)
+        if success:
+            flash("Ghost user merged successfully", "success")
+        else:
+            flash("Merge failed or ghost user not found", "danger")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/announcement", methods=["POST"])
+@login_required(admin_required=True)
+def announcement() -> Response:
+    """Update the global system announcement."""
+    db = firestore.client()
+    announcement_text = request.form.get("announcement_text")
+    is_active = request.form.get("is_active") == "on"
+    level = request.form.get("level", "info")
+
+    try:
+        db.collection("system").document("settings").set(
+            {
+                "announcement_text": announcement_text,
+                "is_active": is_active,
+                "level": level,
+            },
+            merge=True,
+        )
+        flash("Global announcement updated successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred while updating the announcement: {e}", "danger")
+
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/toggle_email_verification", methods=["POST"])
+@login_required(admin_required=True)
+def toggle_email_verification() -> Response:
+    """Toggle the global setting for requiring email verification."""
+    db = firestore.client()
+    try:
+        new_value = AdminService.toggle_setting(db, "enforceEmailVerification")
+        new_status = "enabled" if new_value else "disabled"
+        flash(f"Email verification requirement has been {new_status}.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/matches")
+@login_required(admin_required=True)
+def admin_matches() -> str:
+    """Display a list of all matches."""
+    db = firestore.client()
+    try:
+        matches_query = (
+            db.collection("matches")
+            .order_by("createdAt", direction=firestore.Query.DESCENDING)
+            .limit(50)
+        )
+        matches = matches_query.stream()
+    except KeyError:
+        # Fallback for mockfirestore
+        matches_query = db.collection("matches").limit(50)
+        matches = matches_query.stream()
+    # This is a simplified view. A full view would need to resolve player refs.
+    return render_template("admin/matches.html", matches=matches)
+
+
+@bp.route("/delete_match/<string:match_id>", methods=["POST"])
+@login_required(admin_required=True)
+def admin_delete_match(match_id: str) -> Response:
+    """Delete a match document from Firestore."""
+    db = firestore.client()
+    try:
+        db.collection("matches").document(match_id).delete()
+        flash("Match deleted successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin_matches"))
+
+
+@bp.route("/friend_graph_data")
+@login_required(admin_required=True)
+def friend_graph_data() -> Union[Response, str, tuple[Response, int]]:
+    """Provide data for a network graph of users and their friendships."""
+    db = firestore.client()
+    try:
+        graph_data = AdminService.build_friend_graph(db)
+        return jsonify(graph_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/delete_user", methods=["POST"])
+@login_required(admin_required=True)
+def admin_delete_user() -> Response:
+    """Delete a user by ID or Email."""
+    user_identifier = request.form.get("user_identifier")
+    if not user_identifier:
+        flash("User ID or Email is required.", "danger")
+        return redirect(url_for(".admin"))
+
+    db = firestore.client()
+    uid = None
+    email = None
+
+    # Try to find by UID first
+    user_doc = db.collection("users").document(user_identifier).get()
+    if user_doc.exists:
+        uid = user_doc.id
+        email = user_doc.to_dict().get("email")
+    else:
+        # Try to find by Email
+        users = list(
+            db.collection("users")
+            .where(filter=firestore.FieldFilter("email", "==", user_identifier))
+            .limit(1)
+            .stream()
+        )
+        if users:
+            uid = users[0].id
+            email = users[0].to_dict().get("email")
+
+    if uid:
+        try:
+            AdminService.delete_user(db, uid)
+            flash(f"User {email or uid} deleted.", "success")
+        except Exception as e:
+            flash(f"An error occurred: {e}", "danger")
+    else:
+        flash(f"User {user_identifier} not found.", "danger")
+
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/delete_user/<string:user_id>", methods=["POST"])
+@login_required(admin_required=True)
+def delete_user(user_id: str) -> Response:
+    """Delete a user from Firebase Auth and Firestore."""
+    db = firestore.client()
+    try:
+        AdminService.delete_user(db, user_id)
+        flash("User deleted successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/promote_user/<string:user_id>", methods=["POST"])
+@login_required(admin_required=True)
+def promote_user(user_id: str) -> Response:
+    """Promote a user to admin status in Firestore."""
+    db = firestore.client()
+    try:
+        username = AdminService.promote_user(db, user_id)
+        flash(f"{username} has been promoted to admin.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/verify_user/<string:user_id>", methods=["POST"])
+@login_required(admin_required=True)
+def verify_user(user_id: str) -> Response:
+    """Manually verify a user's email."""
+    db = firestore.client()
+    try:
+        AdminService.verify_user(db, user_id)
+        flash("User email verified successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+    return redirect(url_for(".admin"))
+
+
+@bp.route("/generate_users", methods=["POST"])
+def generate_users() -> str:
+    """Generate a number of fake users for testing."""
+    db = firestore.client()
+    fake = Faker()
+    users_to_create = 10
+    new_users = []
+    try:
+        for _ in range(users_to_create):
+            username = fake.user_name()
+            email = fake.email()
+            password = fake.password(
+                length=12,
+                special_chars=True,
+                digits=True,
+                upper_case=True,
+                lower_case=True,
+            )
+
+            # Create user in Auth
+            user_record = auth.create_user(email=email, password=password)
+
+            # Create user in Firestore
+            user_doc = {
+                "username": username,
+                "email": email,
+                "name": fake.name(),
+                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec
+                "isAdmin": False,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
+            db.collection("users").document(user_record.uid).set(user_doc)
+            new_users.append({"uid": user_record.uid, **user_doc})
+
+        flash(f"{len(new_users)} users generated successfully.", "success")
+    except Exception as e:
+        flash(f"An error occurred while generating users: {e}", "danger")
+
+    return render_template("generated_users.html", users=new_users)
+
+
+@bp.route("/generate_matches", methods=["POST"])
+@login_required(admin_required=True)
+def generate_matches() -> Response:
+    """Generate random matches between existing users."""
+    db = firestore.client()
+    try:
+        users = list(db.collection("users").limit(20).stream())
+        if len(users) < MIN_USERS_FOR_MATCH_GENERATION:
+            flash("Not enough users to generate matches.", "warning")
+            return redirect(url_for(".admin"))
+
+        matches_to_create = 10
+        matches_created = 0
+        for _ in range(matches_to_create):
+            p1, p2 = random.sample(users, 2)  # nosec B311
+            p1_id = p1.id
+            p2_id = p2.id
+
+            # Ensure a valid score (one reaches 11, margin 2)
+            s1 = 11
+            s2 = random.randint(0, 9)  # nosec B311
+            if random.choice([True, False]):  # nosec B311
+                s1, s2 = s2, s1
+
+            # Use a dummy current_user dict for MatchService
+            dummy_user = UserSession({"uid": p1_id})
+
+            submission = MatchSubmission(
+                player_1_id=p1_id,
+                player_2_id=p2_id,
+                score_p1=s1,
+                score_p2=s2,
+                match_type="singles",
+                match_date=datetime.datetime.now(datetime.timezone.utc),
+                created_by=p1_id,
+            )
+            try:
+                MatchService.record_match(db, submission, dummy_user)
+                matches_created += 1
+            except Exception as e:
+                print(f"Error generating match: {e}")
+
+        flash(f"{matches_created} random matches generated.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+
+    return redirect(url_for(".admin"))
+
 
 @bp.route("/merge_players", methods=["GET", "POST"])
 @login_required(admin_required=True)
 def merge_players() -> Union[str, Response]:
     """Merge two player accounts (Source -> Target). Source is deleted."""
-    # RESOLVED CONFLICT: Admin needs to see non-public (ghost) users to merge them
-    users = UserService.get_all_users(
-        firestore.client(), exclude_ids=[], public_only=False
-    )
+    users = UserService.get_all_users(firestore.client(), exclude_ids=[], is_admin=True)
 
     # Sort users for the dropdown (Real users first, then Ghosts)
     sorted_users = sorted(
@@ -89,6 +369,8 @@ def merge_players() -> Union[str, Response]:
             return redirect(url_for("admin.merge_players"))
 
         try:
+            # Call the service to perform the deep merge
+            # Note: You need to ensure merge_users is available in UserService
             UserService.merge_users(firestore.client(), source_id, target_id)
             flash("Players merged successfully. Source account deleted.", "success")
         except Exception as e:
@@ -98,4 +380,33 @@ def merge_players() -> Union[str, Response]:
 
     return render_template("admin/merge_players.html", users=sorted_users)
 
-# ... (remaining routes remain unchanged)
+
+@bp.route("/styleguide")
+@login_required(admin_required=True)
+def styleguide() -> str:
+    """Render the design system styleguide."""
+    return render_template("admin/styleguide.html")
+
+
+@bp.route("/impersonate/<string:user_id>")
+@login_required(admin_required=True)
+def impersonate(user_id: str) -> Response:
+    """Start impersonating another user."""
+    # current_user must be an admin to reach here due to decorator
+    session["impersonate_id"] = user_id
+
+    db = firestore.client()
+    user_doc = db.collection("users").document(user_id).get()
+    name = user_doc.to_dict().get("name", "User") if user_doc.exists else "User"
+
+    flash(f"You are now impersonating {name}.", "success")
+    return redirect(url_for("user.dashboard"))
+
+
+@bp.route("/stop_impersonating")
+@login_required
+def stop_impersonating() -> Response:
+    """Stop impersonating and return to admin profile."""
+    session.pop("impersonate_id", None)
+    flash("Welcome back, Admin.", "success")
+    return redirect(url_for("admin.admin"))
