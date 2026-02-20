@@ -247,6 +247,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             data={
                 "name": "Updated Name",
                 "start_date": "2024-07-01",
+                "location": "Updated Location",
                 "venue_name": "Updated Venue",
                 "address": "456 Updated St",
                 "match_type": "doubles",
@@ -557,8 +558,13 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user(is_admin=True)
 
         tournament_id = "test_tournament_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "To be deleted"}
+            {
+                "name": "To be deleted",
+                "ownerRef": user_ref,
+                "organizer_id": MOCK_USER_ID,
+            }
         )
 
         response = self.client.post(

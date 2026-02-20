@@ -264,7 +264,6 @@ def get_user_profile_data(
     profile_user_data = get_user_by_id(db, target_user_id)
     if not profile_user_data:
         return None
-    profile_user_data = _sanitize_user_data(profile_user_data)
 
     is_friend, friend_request_sent = get_friendship_info(
         db, current_user_id, target_user_id

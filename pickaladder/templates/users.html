@@ -76,7 +76,7 @@
                     </form>
                     {% endif %}
 
-                    {% if g.user.get('isAdmin') %}
+                    {% if g.user.is_admin %}
                     <a href="{{ url_for('admin.impersonate', user_id=user.id) }}" class="btn btn-info" title="Impersonate">
                         <i class="fa fa-user-secret"></i>
                     </a>
