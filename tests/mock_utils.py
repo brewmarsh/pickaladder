@@ -105,6 +105,17 @@ class MockFirestoreBuilder:
             DocumentReference.__hash__ = lambda self: hash(tuple(self._path))
 
         # Patch DocumentReference.get to handle transaction argument
+        # Patch Query._compare_func to handle array_contains with missing fields
+        if not hasattr(Query, "_orig_compare_func"):
+            Query._orig_compare_func = Query._compare_func
+
+            def patched_compare_func(self: Any, op: str) -> Any:
+                if op == "array_contains":
+                    return lambda x, y: x is not None and y in x
+                return self._orig_compare_func(op)
+
+            Query._compare_func = patched_compare_func
+
         if not hasattr(DocumentReference, "_orig_get"):
             DocumentReference._orig_get = DocumentReference.get
 

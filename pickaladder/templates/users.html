@@ -25,10 +25,10 @@
         <tbody>
             {% for user in fof %}
             <tr>
-                <td data-label="Username">{{ user.username }}</td>
-                <td data-label="Name">{{ user.name }}</td>
-                <td data-label="DUPR Rating">{{ user.dupr_rating }}</td>
-                <td data-label="Actions" class="actions-cell">
+                <td><i class="fa-solid fa-at"></i> {{ user.username }}</td>
+                <td><i class="fa-solid fa-user"></i> {{ user.name }}</td>
+                <td><i class="fa-solid fa-star"></i> {{ user.dupr_rating }}</td>
+                <td class="actions-cell">
                     <a href="{{ url_for('user.send_friend_request', friend_id=user.id) }}"
                         class="btn add-friend-btn">Add Friend</a>
                 </td>
@@ -57,11 +57,11 @@
                     <img src="{{ user | avatar_url }}" alt="Profile Picture" class="avatar avatar-md"
                         onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                 </td>
-                <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=user.id) }}">{{ user.username
+                <td><a href="{{ url_for('user.view_user', user_id=user.id) }}"><i class="fa-solid fa-at"></i> {{ user.username
                         }}</a></td>
-                <td data-label="Name">{{ user.name }}</td>
-                <td data-label="DUPR Rating">{{ user.duprRating }}</td>
-                <td data-label="Actions" class="actions-cell">
+                <td><i class="fa-solid fa-user"></i> {{ user.name }}</td>
+                <td><i class="fa-solid fa-star"></i> {{ user.duprRating }}</td>
+                <td class="actions-cell">
                     {% if sent_status == 'accepted' or received_status == 'accepted' %}
                     <button class="btn" disabled title="Friends">
                         <i class="fas fa-user-friends"></i> <span class="d-none d-md-inline">Friends</span>
