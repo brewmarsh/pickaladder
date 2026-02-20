@@ -233,10 +233,10 @@
             {% endif %}
         </div>
 
-        {% if is_owner %}
+        {% if is_owner and g.user.get('isAdmin') %}
             {% if tournament.status != 'Completed' %}
             <div class="card">
-                <h4 class="card-header">Management</h4>
+                <h4 class="card-header">Tournament Management</h4>
                 <form action="{{ url_for('tournament.complete_tournament', tournament_id=tournament.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to complete this tournament? This will notify all participants of the final results.');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger" style="margin-top: 10px; width: 100%;">Complete Tournament</button>
