@@ -236,6 +236,60 @@
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
+
+        /**
+         * Synchronizes the Firebase ID token with the Flask session.
+         * Resolves the "double login" and session persistence bugs.
+         */
+        async function syncSession(idToken, remember = false) {
+            try {
+                const response = await fetch("{{ url_for('auth.session_login') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ idToken: idToken, remember: remember }),
+                });
+
+                if (response.ok) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const nextUrl = urlParams.get('next');
+                    // Successful sync: redirect to dashboard or the 'next' URL
+                    if (nextUrl && nextUrl.startsWith('/')) {
+                        window.location.href = nextUrl;
+                    } else if (window.location.pathname === "{{ url_for('auth.login') }}" || window.location.pathname === "/") {
+                        window.location.href = "{{ url_for('user.dashboard') }}";
+                    }
+                }
+            } catch (error) {
+                console.error("Session synchronization failed:", error);
+            }
+        }
+
+        // Listen for auth state changes to keep the Flask session in sync with Firebase
+        firebase.auth().onIdTokenChanged(async (user) => {
+            if (user) {
+                const idToken = await user.getIdToken();
+                localStorage.setItem('firebaseIdToken', idToken);
+
+                // Auto-sync if Firebase is authenticated but Flask session is missing
+                {% if not g.user %}
+                const isLoginPage = window.location.pathname === "{{ url_for('auth.login') }}" || window.location.pathname === "/";
+                if (isLoginPage) {
+                    // Recover 'remember' preference from localStorage if available
+                    const remember = localStorage.getItem('rememberMe') === 'true';
+                    syncSession(idToken, remember);
+                }
+                {% endif %}
+            } else {
+                localStorage.removeItem('firebaseIdToken');
+                {% if g.user %}
+                // If Flask thinks we are logged in but Firebase says otherwise, log out
+                window.location.href = "{{ url_for('auth.logout') }}";
+                {% endif %}
+            }
+        });
     </script>
 
     {% block scripts %}{% endblock %}
