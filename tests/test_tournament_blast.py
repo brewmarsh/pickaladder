@@ -14,6 +14,7 @@ from tests.mock_utils import (
     MockArrayRemove,
     MockArrayUnion,
     MockBatch,
+    patch_mockfirestore,
 )
 
 # Mock user payloads
@@ -27,6 +28,7 @@ class TournamentBlastTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
+        patch_mockfirestore()
         self.mock_db = MockFirestore()
 
         self.mock_batch_instance = MockBatch(self.mock_db)

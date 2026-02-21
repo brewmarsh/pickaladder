@@ -60,25 +60,20 @@ def create_tournament() -> Any:
             if date_val is None:
                 raise ValueError("Date is required")
 
-            # RESOLVED: Structured data mapping and normalization from jules branch
-            mode_val = form.mode.data or form.match_type.data or "SINGLES"
-            venue = form.venue_name.data or form.location.data or "Unknown Venue"
-            address = form.address.data or venue
             location_data = {
-                "name": venue,
-                "address": address,
-                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={address}",
+                "name": form.venue_name.data,
+                "address": form.address.data,
+                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
             }
 
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": venue,
-                "address": address,
+                "location": form.location.data,
                 "location_data": location_data,
                 "description": form.description.data,
-                "mode": mode_val,
-                "matchType": mode_val.lower(),
+                "mode": form.match_type.data,
+                "matchType": form.match_type.data.lower(),
                 "format": form.format.data,
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
@@ -180,24 +175,20 @@ def edit_tournament(tournament_id: str) -> Any:
                 action="Edit",
             )
 
-        # RESOLVED: Normalization logic from jules branch
-        venue = form.venue_name.data or form.location.data or "Unknown Venue"
-        address = form.address.data or venue
-        mode_val = form.mode.data or form.match_type.data or "SINGLES"
+        location_data = {
+            "name": form.venue_name.data,
+            "address": form.address.data,
+            "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
+        }
 
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": venue,
-            "address": address,
-            "location_data": {
-                "name": venue,
-                "address": address,
-                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={address}",
-            },
+            "location": form.location.data,
+            "location_data": location_data,
             "description": form.description.data,
-            "mode": mode_val,
-            "matchType": mode_val.lower(),
+            "mode": form.match_type.data,
+            "matchType": form.match_type.data.lower(),
             "format": form.format.data,
         }
 
@@ -223,19 +214,16 @@ def edit_tournament(tournament_id: str) -> Any:
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
-        form.venue_name.data = tournament_data.get("location")
-        form.address.data = tournament_data.get("address")
-        form.description.data = tournament_data.get("description")
-        form.mode.data = (
+        form.location.data = tournament_data.get("location")
+        form.match_type.data = (
             tournament_data.get("mode")
             or tournament_data.get("matchType", "SINGLES").upper()
         )
-        form.match_type.data = form.mode.data.lower()
-        
         raw_date = tournament_data.get("date")
         if hasattr(raw_date, "to_datetime"):
             form.start_date.data = raw_date.to_datetime().date()
 
+    logging.warning(f"Type of form in edit_tournament: {type(form)}")
     return render_template(
         "tournaments/create_edit.html",
         form=form,
@@ -244,31 +232,12 @@ def edit_tournament(tournament_id: str) -> Any:
     )
 
 
-@bp.route("/<string:tournament_id>/delete", methods=["POST"])
-@admin_required
-def delete_tournament(tournament_id: str) -> Any:
-    """Delete a tournament."""
-    try:
-        TournamentService.delete_tournament(
-            tournament_id, g.user["uid"], is_admin=g.user.is_admin
-        )
-        flash("Tournament deleted successfully.", "success")
-    except ValueError as e:
-        flash(str(e), "danger")
-    except PermissionError:
-        flash("Unauthorized.", "danger")
-    except Exception as e:
-        flash(f"An unexpected error occurred: {e}", "danger")
-
-    return redirect(url_for(".list_tournaments"))
-
-
 @bp.route("/<string:tournament_id>/invite", methods=["POST"])
 @login_required
 def invite_player(tournament_id: str) -> Any:
     """Invite a player to a tournament."""
     form = InvitePlayerForm()
-    # Dynamically set choices to allow validation
+    # Dynamically set choices to allow validation (hacky but standard in this app)
     submitted_uid = request.form.get("user_id")
     if submitted_uid:
         form.user_id.choices = [(submitted_uid, "")]
@@ -418,14 +387,28 @@ def join_tournament(tournament_id: str) -> Any:
     return accept_invite(tournament_id)
 
 
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    try:
+        TournamentService.delete_tournament(tournament_id)
+        flash("Tournament deleted successfully.", "success")
+    except Exception as e:
+        flash(f"Error deleting tournament: {e}", "danger")
+
+    return redirect(url_for(".list_tournaments"))
+
+
 @bp.route("/<string:tournament_id>/register_team", methods=["POST"])
 @login_required
 def register_team(tournament_id: str) -> Any:
     """Register a doubles team for the tournament."""
+    # Check if it's an AJAX request (invite link generation)
     if request.is_json:
         data = request.get_json()
         team_name = data.get("team_name")
-        partner_id = data.get("partner_id")
+        partner_id = data.get("partner_id")  # Might be None for invite link
     else:
         partner_id = request.form.get("partner_id")
         team_name = request.form.get("team_name")

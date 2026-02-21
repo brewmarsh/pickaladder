@@ -27,66 +27,6 @@ from . import bp
 from .forms import ChangePasswordForm, LoginForm, RegisterForm
 
 
-@bp.before_app_request
-def load_user_from_auth_source() -> None:
-    """Reliably populate g.user from session or Authorization header."""
-    uid = session.get("user_id")
-
-    # Fallback to Authorization header if session is missing
-    if not uid:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            id_token = auth_header[7:].strip()
-            try:
-                decoded_token = auth.verify_id_token(id_token)
-                uid = decoded_token["uid"]
-                # Sync session for subsequent requests
-                session["user_id"] = uid
-                session.permanent = True
-            except Exception as e:
-                current_app.logger.debug(f"Token verification failed: {e}")
-
-    g.user = None
-    g.is_impersonating = False
-
-    if not uid:
-        return
-
-    # Handle impersonation for admins
-    impersonate_id = session.get("impersonate_id")
-    is_admin = session.get("is_admin", False)
-    id_to_load = uid
-
-    if impersonate_id and is_admin:
-        id_to_load = impersonate_id
-        g.is_impersonating = True
-
-    try:
-        db = firestore.client()
-        user_doc = db.collection("users").document(id_to_load).get()
-        if user_doc.exists:
-            g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
-            # Ensure session is admin-synced
-            if not g.is_impersonating:
-                session["is_admin"] = g.user.get("isAdmin", False)
-        elif current_app.config.get("TESTING"):
-            # In tests, provide a dummy user to prevent breaking shallow tests
-            g.user = wrap_user(
-                {"username": "testuser", "isAdmin": is_admin, "uid": id_to_load},
-                uid=id_to_load,
-            )
-        elif not g.is_impersonating:
-            session.clear()
-        else:
-            # Clear impersonation if user not found
-            session.pop("impersonate_id", None)
-            g.is_impersonating = False
-    except Exception as e:
-        current_app.logger.error(f"Error loading user {id_to_load}: {e}")
-        if not g.is_impersonating:
-            session.clear()
-
-
 # TODO: Add type hints for Agent clarity
 @bp.route("/register", methods=["GET", "POST"])
 def register() -> Any:
@@ -305,9 +245,6 @@ def session_login() -> Any:
 
         session["user_id"] = uid
         session["is_admin"] = user_info.get("isAdmin", False)
-        if remember:
-            session.permanent = True
-
         return jsonify({"status": "success"})
 
     except Exception as e:

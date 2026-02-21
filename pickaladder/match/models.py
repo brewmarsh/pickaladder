@@ -13,13 +13,13 @@ if TYPE_CHECKING:
 
 @dataclass
 class MatchSubmission:
-    """Represents a match submission with support for dict-like access."""
+    """Represents a match submission."""
 
-    match_type: str
     player_1_id: str
     player_2_id: str
     score_p1: int
     score_p2: int
+    match_type: str = "singles"
     match_date: Any = None
     partner_id: str | None = None
     opponent_2_id: str | None = None
@@ -27,18 +27,10 @@ class MatchSubmission:
     tournament_id: str | None = None
     created_by: str | None = None
 
-    def __getitem__(self, key: str) -> Any:
-        """Allow dict-like access for backward compatibility or convenience."""
-        return getattr(self, key)
-
-    def get(self, key: str, default: Any = None) -> Any:
-        """Allow dict-like get for backward compatibility."""
-        return getattr(self, key, default)
-
 
 @dataclass
 class MatchResult:
-    """Represents the result of recording a match."""
+    """Represents the result of a match recording."""
 
     id: str
     matchType: str
@@ -50,7 +42,6 @@ class MatchResult:
     winner: str
     winnerId: str
     loserId: str
-    is_upset: bool = False
     groupId: str | None = None
     tournamentId: str | None = None
     player1Ref: Any = None
@@ -59,8 +50,9 @@ class MatchResult:
     team2: list[Any] | None = None
     team1Id: str | None = None
     team2Id: str | None = None
-    team1Ref: Any = None
-    team2Ref: Any = None
+    team1Ref: Any | None = None
+    team2Ref: Any | None = None
+    is_upset: bool = False
 
 
 class Score(TypedDict, total=False):

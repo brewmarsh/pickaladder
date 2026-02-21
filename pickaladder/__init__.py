@@ -7,13 +7,12 @@ import os
 import sys
 import uuid
 from contextlib import suppress
-from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
 import firebase_admin
 from firebase_admin import credentials, firestore
-from flask import Flask, current_app, session
+from flask import Flask, current_app, g, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
 
@@ -265,6 +264,43 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     # make url_for('index') == url_for('auth.login')
     app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
 
+    @app.before_request
+    def load_logged_in_user() -> None:
+        """Load user from session."""
+        real_user_id = session.get("user_id")
+        impersonate_id = session.get("impersonate_id")
+        is_admin = session.get("is_admin", False)
+
+        g.user = None
+        g.is_impersonating = False
+
+        if real_user_id is None:
+            return
+
+        id_to_load = real_user_id
+        if impersonate_id and is_admin:
+            id_to_load = impersonate_id
+            g.is_impersonating = True
+
+        try:
+            db = firestore.client()
+            user_doc = db.collection("users").document(id_to_load).get()
+            if user_doc.exists:
+                g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
+            elif not g.is_impersonating:
+                session.clear()
+                current_app.logger.warning(
+                    f"User {id_to_load} in session but not found in Firestore."
+                )
+            else:
+                # Clear impersonation if user not found
+                session.pop("impersonate_id", None)
+                g.is_impersonating = False
+        except Exception as e:
+            current_app.logger.error(f"Error loading user from session: {e}")
+            if not g.is_impersonating:
+                session.clear()
+
     _register_context_processors(app)
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
@@ -297,11 +333,6 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
         MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
         or "noreply@pickaladder.com",
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
-        SESSION_PERMANENT=True,
-        PERMANENT_SESSION_LIFETIME=timedelta(days=31),
-        SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE="Lax",
-        SESSION_COOKIE_SECURE=os.environ.get("FLASK_ENV") != "development",
     )
 
     if test_config:
