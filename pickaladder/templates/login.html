@@ -28,10 +28,7 @@
                     {{ form.remember(class="form-check-input") }}
                     {{ form.remember.label(class="form-check-label") }}
                 </div>
-                <button type="submit" id="login-submit-btn" class="btn btn-primary" data-testid="login-submit">
-                    <span class="button-text">Login</span>
-                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                </button>
+                <button type="submit" name="submit" class="btn" data-testid="login-submit">Login</button>
             </form>
             <div class="or-separator">OR</div>
             <button id="google-signin-btn" class="btn btn-google">Sign in with Google</button>
@@ -66,27 +63,11 @@
     </div>
 </div>
 {% endblock %}
-
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const googleSignInButton = document.getElementById('google-signin-btn');
     const form = document.querySelector('form');
-    const loginBtn = document.getElementById('login-submit-btn');
-    const loginBtnText = loginBtn.querySelector('.button-text');
-    const loginBtnSpinner = loginBtn.querySelector('.spinner-border');
-
-    function setLoading(loading) {
-        if (loading) {
-            loginBtn.disabled = true;
-            loginBtnText.textContent = 'Logging in...';
-            loginBtnSpinner.classList.remove('d-none');
-        } else {
-            loginBtn.disabled = false;
-            loginBtnText.textContent = 'Login';
-            loginBtnSpinner.classList.add('d-none');
-        }
-    }
 
     function handleLoginSuccess() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -98,97 +79,126 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    /**
-     * processSessionLogin: Handled server-side session sync and token storage.
-     * Merged from main branch.
-     */
-    async function processSessionLogin(idToken, remember) {
-        const response = await fetch("{{ url_for('auth.session_login') }}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({ idToken: idToken, remember: remember }),
-        });
-
-        if (!response.ok) {
-            throw new Error("Server-side session creation failed.");
-        }
-
-        // Store token for consistency with the fetch interceptor in layout.html
-        localStorage.setItem('firebaseIdToken', idToken);
-        handleLoginSuccess();
-    }
-
-    // Google Sign-in Handler
-    googleSignInButton.addEventListener('click', async function() {
-        try {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            const remember = document.getElementById('remember').checked;
-            const result = await firebase.auth().signInWithPopup(provider);
-            const idToken = await result.user.getIdToken();
-            await processSessionLogin(idToken, remember);
-        } catch (error) {
-            console.error("Google Sign-in error:", error);
-            const flashes = document.querySelector('.flashes');
-            flashes.innerHTML = `<div class="alert alert-danger">Google Sign-in failed: ${error.message}</div>`;
-        }
+    googleSignInButton.addEventListener('click', function() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const remember = document.getElementById('remember').checked;
+        firebase.auth().signInWithPopup(provider)
+            .then((result) => {
+                return result.user.getIdToken();
+            })
+            .then((idToken) => {
+                localStorage.setItem('firebaseIdToken', idToken);
+                return fetch("{{ url_for('auth.session_login') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ idToken: idToken, remember: remember }),
+                });
+            })
+            .then(response => {
+                if (response.ok) {
+                    handleLoginSuccess();
+                } else {
+                    throw new Error("Server-side session creation failed.");
+                }
+            })
+            .catch((error) => {
+                const errorMessage = error.message;
+                const flashes = document.querySelector('.flashes');
+                flashes.innerHTML = ''; // Clear previous messages
+                const flash = document.createElement('div');
+                flash.className = 'alert alert-danger';
+                flash.textContent = `Google Sign-in failed: ${errorMessage}`;
+                flashes.appendChild(flash);
+            });
     });
 
-    // Email/Password Form Handler
-    form.addEventListener('submit', async function (event) {
+    form.addEventListener('submit', function (event) {
         event.preventDefault();
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
 
-        setLoading(true);
+        firebase.auth().signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                return userCredential.user.getIdToken();
+            })
+            .then((idToken) => {
+                localStorage.setItem('firebaseIdToken', idToken);
+                return fetch("{{ url_for('auth.session_login') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ idToken: idToken, remember: remember }),
+                });
+            })
+            .then(response => {
+                if (response.ok) {
+                    handleLoginSuccess();
+                } else {
+                    throw new Error("Server-side session creation failed.");
+                }
+            })
+            .catch((error) => {
+                console.error("Login error:", error);
 
-        try {
-            const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-            const idToken = await userCredential.user.getIdToken();
-            await processSessionLogin(idToken, remember);
-        } catch (error) {
-            console.error("Login error:", error);
-            setLoading(false);
+                // Re-enable the submit button on failure
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    if (submitBtn.dataset.originalText) {
+                        submitBtn.innerHTML = submitBtn.dataset.originalText;
+                    }
+                }
 
-            const errorCode = error.code;
-            let errorMessage = error.message;
+                const errorCode = error.code;
+                let errorMessage = error.message;
 
-            // Attempt to parse JSON error message if it's a technical blob
-            // Merged from auth-session-fix-robust branch
-            if (typeof errorMessage === 'string' && errorMessage.startsWith('{')) {
-                try {
-                    const parsedError = JSON.parse(errorMessage);
-                    errorMessage = parsedError.error?.message || parsedError.message || errorMessage;
-                } catch (e) { /* ignore */ }
-            }
+                // Attempt to parse JSON error message
+                if (typeof errorMessage === 'string' && errorMessage.startsWith('{')) {
+                    try {
+                        const parsedError = JSON.parse(errorMessage);
+                        if (parsedError.error && parsedError.error.message) {
+                            errorMessage = parsedError.error.message;
+                        } else if (parsedError.message) {
+                            errorMessage = parsedError.message;
+                        }
+                    } catch (e) {
+                        // Ignore parse error
+                    }
+                }
 
-            const flashes = document.querySelector('.flashes');
-            flashes.innerHTML = '';
-            const flash = document.createElement('div');
-            flash.className = 'alert';
+                const flashes = document.querySelector('.flashes');
+                flashes.innerHTML = ''; // Clear previous messages
+                const flash = document.createElement('div');
+                flash.className = 'alert';
 
-            const invalidCredentialsCodes = [
-                'auth/wrong-password',
-                'auth/user-not-found',
-                'auth/invalid-login-credentials',
-                'INVALID_LOGIN_CREDENTIALS'
-            ];
+                const invalidCredentialsCodes = [
+                    'auth/wrong-password',
+                    'auth/user-not-found',
+                    'auth/invalid-login-credentials',
+                    'INVALID_LOGIN_CREDENTIALS'
+                ];
 
-            if (errorCode === 'auth/user-disabled') {
-                flash.classList.add('alert-warning');
-                flash.textContent = 'Please verify your email address before logging in.';
-            } else if (invalidCredentialsCodes.includes(errorCode) || invalidCredentialsCodes.includes(errorMessage)) {
-                flash.classList.add('alert-danger');
-                flash.textContent = 'Invalid email or password.';
-            } else {
-                flash.classList.add('alert-danger');
-                flash.textContent = `Login failed: ${errorMessage}`;
-            }
-            flashes.appendChild(flash);
-        }
+                if (errorCode === 'auth/user-disabled') {
+                    flash.classList.add('alert-warning');
+                    flash.textContent = 'Please verify your email address before logging in.';
+                } else if (
+                    invalidCredentialsCodes.includes(errorCode) ||
+                    invalidCredentialsCodes.includes(errorMessage)
+                ) {
+                    flash.classList.add('alert-danger');
+                    flash.textContent = 'Invalid email or password.';
+                } else {
+                    flash.classList.add('alert-danger');
+                    flash.textContent = `Login failed: ${errorMessage}`;
+                }
+                flashes.appendChild(flash);
+            });
     });
 });
 </script>
