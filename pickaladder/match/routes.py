@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     pass
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
 @login_required
 def edit_match(match_id: str) -> Any:
@@ -192,7 +191,6 @@ def record_match() -> Any:
     )
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/history")
 @login_required
 def get_match_history() -> Any:
@@ -210,14 +208,9 @@ def get_match_history() -> Any:
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
-    """Display a global leaderboard.
-
-    Note: This is a simplified, non-scalable implementation. A production-ready
-    leaderboard on Firestore would likely require denormalization and Cloud Functions.
-    """
+    """Display a global leaderboard."""
     db = firestore.client()
     try:
-        # Exclude players with 0 games and sort by Win Percentage
         players = MatchService.get_leaderboard_data(db, min_games=1)
     except Exception as e:
         players = []

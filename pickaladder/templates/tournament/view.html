@@ -318,6 +318,24 @@
 
 {% block scripts %}
 <script>
+function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tab-btn");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+        tablinks[i].style.borderBottom = "3px solid transparent";
+        tablinks[i].style.fontWeight = "normal";
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+    evt.currentTarget.style.borderBottom = "3px solid var(--accent-color)";
+    evt.currentTarget.style.fontWeight = "bold";
+}
+
 function openPartnerModal() {
     document.getElementById('selectPartnerModal').classList.add('show');
 }
@@ -332,40 +350,42 @@ const selectedPartnerId = document.getElementById('selectedPartnerId');
 const selectedPartnerDisplay = document.getElementById('selectedPartnerDisplay');
 const selectedPartnerName = document.getElementById('selectedPartnerName');
 
-partnerSearch.addEventListener('input', function() {
-    const q = this.value;
-    if (q.length < 2) {
-        searchResults.style.display = 'none';
-        return;
-    }
+if (partnerSearch) {
+    partnerSearch.addEventListener('input', function() {
+        const q = this.value;
+        if (q.length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
 
-    fetch(`/user/api/search?q=${encodeURIComponent(q)}`)
-        .then(r => r.json())
-        .then(users => {
-            searchResults.innerHTML = '';
-            if (users.length === 0) {
-                searchResults.innerHTML = '<div class="search-item">No users found</div>';
-            } else {
-                users.forEach(u => {
-                    const div = document.createElement('div');
-                    div.className = 'search-item';
-                    div.innerHTML = `<img src="${u.avatar}" onerror="this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
-                    div.onclick = () => {
-                        selectedPartnerId.value = u.id;
-                        selectedPartnerName.innerText = u.name;
-                        selectedPartnerDisplay.style.display = 'block';
-                        searchResults.style.display = 'none';
-                        partnerSearch.value = '';
-                    };
-                    searchResults.appendChild(div);
-                });
-            }
-            searchResults.style.display = 'block';
-        });
-});
+        fetch(`/user/api/search?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(users => {
+                searchResults.innerHTML = '';
+                if (users.length === 0) {
+                    searchResults.innerHTML = '<div class="search-item">No users found</div>';
+                } else {
+                    users.forEach(u => {
+                        const div = document.createElement('div');
+                        div.className = 'search-item';
+                        div.innerHTML = `<img src="${u.avatar}" onerror="this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
+                        div.onclick = () => {
+                            selectedPartnerId.value = u.id;
+                            selectedPartnerName.innerText = u.name;
+                            selectedPartnerDisplay.style.display = 'block';
+                            searchResults.style.display = 'none';
+                            partnerSearch.value = '';
+                        };
+                        searchResults.appendChild(div);
+                    });
+                }
+                searchResults.style.display = 'block';
+            });
+    });
+}
 
 document.addEventListener('click', function(e) {
-    if (!partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
+    if (partnerSearch && !partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
         searchResults.style.display = 'none';
     }
 });
