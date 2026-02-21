@@ -105,7 +105,16 @@ class MockFirestoreBuilder:
             DocumentReference.__hash__ = lambda self: hash(tuple(self._path))
 
         # Patch DocumentReference.get to handle transaction argument
-        # Patch Query._compare_func to handle array_contains with missing fields
+        if not hasattr(DocumentReference, "_orig_get"):
+            DocumentReference._orig_get = DocumentReference.get
+
+            def doc_ref_get(self: Any, transaction: Any = None) -> Any:
+                """Handle transaction argument in get."""
+                return self._orig_get()
+
+            DocumentReference.get = doc_ref_get
+
+        # Patch Query._compare_func to handle array_contains on missing fields
         if not hasattr(Query, "_orig_compare_func"):
             Query._orig_compare_func = Query._compare_func
 
@@ -115,15 +124,6 @@ class MockFirestoreBuilder:
                 return self._orig_compare_func(op)
 
             Query._compare_func = patched_compare_func
-
-        if not hasattr(DocumentReference, "_orig_get"):
-            DocumentReference._orig_get = DocumentReference.get
-
-            def doc_ref_get(self: Any, transaction: Any = None) -> Any:
-                """Handle transaction argument in get."""
-                return self._orig_get()
-
-            DocumentReference.get = doc_ref_get
 
     @staticmethod
     def patch_db_write() -> None:
