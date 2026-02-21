@@ -4,17 +4,17 @@ from typing import TYPE_CHECKING, Any, cast
 
 from flask import current_app
 
+from .core import _sanitize_user_data
+
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
 
 def get_user_friends(
-    db: Client, user_id: str, limit: int | None = None, is_admin: bool = False
+    db: Client, user_id: str, limit: int | None = None
 ) -> list[dict[str, Any]]:
     """Fetch a user's friends."""
-    from .core import filter_public_user_data
-
     user_ref = db.collection("users").document(user_id)
     query = user_ref.collection("friends").where("status", "==", "accepted")
     if limit:
@@ -33,9 +33,7 @@ def get_user_friends(
             data = doc.to_dict()
             if data is not None:
                 data["id"] = doc.id
-                if not is_admin:
-                    data = filter_public_user_data(data)
-                results.append(data)
+                results.append(_sanitize_user_data(data))
     return results
 
 
@@ -63,12 +61,8 @@ def get_friendship_info(
     return is_friend, friend_request_sent
 
 
-def get_user_pending_requests(
-    db: Client, user_id: str, is_admin: bool = False
-) -> list[dict[str, Any]]:
+def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending friend requests where the user is the recipient."""
-    from .core import filter_public_user_data
-
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")
@@ -88,18 +82,12 @@ def get_user_pending_requests(
             data = doc.to_dict()
             if data is not None:
                 data["id"] = doc.id
-                if not is_admin:
-                    data = filter_public_user_data(data)
-                results.append(data)
+                results.append(_sanitize_user_data(data))
     return results
 
 
-def get_user_sent_requests(
-    db: Client, user_id: str, is_admin: bool = False
-) -> list[dict[str, Any]]:
+def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending friend requests where the user is the initiator."""
-    from .core import filter_public_user_data
-
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")
@@ -119,9 +107,7 @@ def get_user_sent_requests(
             data = doc.to_dict()
             if data is not None:
                 data["id"] = doc.id
-                if not is_admin:
-                    data = filter_public_user_data(data)
-                results.append(data)
+                results.append(_sanitize_user_data(data))
     return results
 
 
@@ -224,7 +210,13 @@ def get_friends_page_data(db: Client, user_id: str) -> dict[str, Any]:
             return []
         refs = [db.collection("users").document(uid) for uid in ids]
         docs = cast(list["DocumentSnapshot"], db.get_all(refs))
-        return [{"id": doc.id, **(doc.to_dict() or {})} for doc in docs if doc.exists]
+        results = []
+        for doc in docs:
+            if doc.exists:
+                data = doc.to_dict() or {}
+                data["id"] = doc.id
+                results.append(_sanitize_user_data(data))
+        return results
 
     # Fetch accepted friends
     accepted_ids = [
