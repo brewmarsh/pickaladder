@@ -7,6 +7,7 @@ import os
 import sys
 import uuid
 from contextlib import suppress
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -334,6 +335,12 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
         MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
         or "noreply@pickaladder.com",
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
+        # Session configuration for persistence
+        PERMANENT_SESSION_LIFETIME=timedelta(days=30),
+        REMEMBER_COOKIE_DURATION=timedelta(days=30),
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SECURE=os.environ.get("FLASK_ENV") != "development",
+        SESSION_COOKIE_SAMESITE="Lax",
     )
 
     if test_config:

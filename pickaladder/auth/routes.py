@@ -243,6 +243,8 @@ def session_login() -> Any:
         user = wrap_user(user_info, uid=uid)
         login_user(user, remember=remember)
 
+        # Set session as permanent if 'remember' is True to persist across restarts
+        session.permanent = remember
         session["user_id"] = uid
         session["is_admin"] = user_info.get("isAdmin", False)
         return jsonify({"status": "success"})
