@@ -85,13 +85,17 @@ def sort_and_format_standings(
         user_ids = [s["id"] for s in standings_list]
         user_refs = [db.collection("users").document(uid) for uid in user_ids]
         user_docs = db.get_all(user_refs)
-        users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
+        users_map = {
+            doc.id: {**(doc.to_dict() or {}), "id": doc.id}
+            for doc in user_docs
+            if doc.exists
+        }
         for s in standings_list:
-            user_data = users_map.get(s["id"], {})
-            user_data["id"] = s["id"]
-            s["user"] = user_data
+            user_data = users_map.get(
+                s["id"], {"id": s["id"], "name": "Unknown Player"}
+            )
             s["name"] = smart_display_name(user_data) or "Unknown Player"
-            s["display_name"] = s["name"]
+            s["user"] = user_data
 
     # Sort by wins (desc), losses (asc), then point_diff (desc)
     standings_list.sort(
