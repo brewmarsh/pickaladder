@@ -229,7 +229,7 @@ class TournamentService:
         bucket = storage.bucket()
         blob = bucket.blob(f"tournaments/{tournament_id}/{filename}")
 
-        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1]) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1], delete=False) as tmp:
             banner_file.save(tmp.name)
             blob.upload_from_filename(tmp.name)
 
@@ -373,8 +373,9 @@ class TournamentService:
         if "start_date" in update_data:
             update_data["date"] = update_data["start_date"]
 
-        # If changing match type, ensure no matches exist
-        if "matchType" in update_data:
+        # RESOLVED: Block critical updates if matches exist (Logic from main)
+        critical_fields = ["matchType", "mode", "format"]
+        if any(field in update_data for field in critical_fields):
             matches = (
                 db.collection("matches")
                 .where(
@@ -384,8 +385,9 @@ class TournamentService:
                 .stream()
             )
             if any(matches):
-                # Don't update matchType if matches exist
-                del update_data["matchType"]
+                for field in critical_fields:
+                    update_data.pop(field, None)
+                logging.warning(f"Prevented critical field update for tournament {tournament_id}: matches already exist.")
 
         ref.update(update_data)
 

@@ -31,9 +31,15 @@
     text-align: center;
     position: relative;
 ">
-    {% if is_owner %}
-        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">⚙️</a>
+    {# RESOLVED: Combined ownership check and admin flag with test-id from main #}
+    {% if is_owner and g.user.is_admin %}
+        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" 
+           class="btn-edit-gear" 
+           data-testid="tournament-settings-btn" 
+           style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" 
+           title="Edit Tournament">⚙️</a>
     {% endif %}
+
     <h1 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h1>
     <p style="font-size: 1.25rem; text-shadow: 0 2px 4px rgba(0,0,0,1);">
         {{ tournament.date_display or tournament.date }} | {{ tournament.matchType|capitalize }}
@@ -49,16 +55,13 @@
 </div>
 
 <div class="dashboard-columns">
-    <!-- Left Column: Tabs and Content -->
     <div class="dashboard-column-left">
-        <!-- Tabs -->
         <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
             <button class="tab-btn active" onclick="openTab(event, 'overview')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid var(--accent-color); font-weight: bold;">Overview</button>
             <button class="tab-btn" onclick="openTab(event, 'bracket')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Bracket</button>
             <button class="tab-btn" onclick="openTab(event, 'players')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Players</button>
         </div>
 
-        <!-- Tab Content -->
         <div id="overview" class="tab-content">
             {% if tournament.description %}
             <div class="card">
@@ -210,9 +213,7 @@
         </div>
     </div>
 
-    <!-- Right Column: Sidebar -->
     <div class="dashboard-column-right">
-        <!-- Location Card -->
         <div class="card">
             <h4 class="card-header">📍 Location</h4>
             {% if tournament.location_data %}
@@ -225,10 +226,10 @@
             {% endif %}
         </div>
 
-        {% if is_owner %}
+        {% if is_owner and g.user.is_admin %}
             {% if tournament.status != 'Completed' %}
             <div class="card">
-                <h4 class="card-header">Management</h4>
+                <h4 class="card-header">Tournament Management</h4>
                 <form action="{{ url_for('tournament.complete_tournament', tournament_id=tournament.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to complete this tournament? This will notify all participants of the final results.');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger" style="margin-top: 10px; width: 100%;">Complete Tournament</button>
@@ -266,7 +267,6 @@
     </div>
 </div>
 
-<!-- Select Partner Modal -->
 <div class="modal" id="selectPartnerModal">
     <div class="modal-content">
         <div class="modal-header">
@@ -355,6 +355,14 @@ function openTab(evt, tabName) {
     evt.currentTarget.style.borderBottom = "3px solid var(--accent-color)";
 }
 
+function openPartnerModal() {
+    document.getElementById('selectPartnerModal').classList.add('show');
+}
+
+function closePartnerModal() {
+    document.getElementById('selectPartnerModal').classList.remove('show');
+}
+
 const partnerSearch = document.getElementById('partnerSearch');
 const searchResults = document.getElementById('searchResults');
 const selectedPartnerId = document.getElementById('selectedPartnerId');
@@ -379,7 +387,7 @@ if (partnerSearch) {
                     users.forEach(u => {
                         const div = document.createElement('div');
                         div.className = 'search-item';
-                        div.innerHTML = `<img src="${u.avatar}" onerror="this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
+                        div.innerHTML = `<img src="${u.avatar}" onerror="this.onerror=null;this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
                         div.onclick = () => {
                             selectedPartnerId.value = u.id;
                             selectedPartnerName.innerText = u.name;

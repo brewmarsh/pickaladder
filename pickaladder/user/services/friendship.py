@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 from flask import current_app
 
+from .core import _sanitize_user_data
+
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
@@ -30,7 +32,8 @@ def get_user_friends(
         if doc.exists:
             data = doc.to_dict()
             if data is not None:
-                results.append({"id": doc.id, **data})
+                data["id"] = doc.id
+                results.append(_sanitize_user_data(data))
     return results
 
 
@@ -78,7 +81,8 @@ def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
         if doc.exists:
             data = doc.to_dict()
             if data is not None:
-                results.append({"id": doc.id, **data})
+                data["id"] = doc.id
+                results.append(_sanitize_user_data(data))
     return results
 
 
@@ -102,7 +106,8 @@ def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
         if doc.exists:
             data = doc.to_dict()
             if data is not None:
-                results.append({"id": doc.id, **data})
+                data["id"] = doc.id
+                results.append(_sanitize_user_data(data))
     return results
 
 
@@ -205,7 +210,13 @@ def get_friends_page_data(db: Client, user_id: str) -> dict[str, Any]:
             return []
         refs = [db.collection("users").document(uid) for uid in ids]
         docs = cast(list["DocumentSnapshot"], db.get_all(refs))
-        return [{"id": doc.id, **(doc.to_dict() or {})} for doc in docs if doc.exists]
+        results = []
+        for doc in docs:
+            if doc.exists:
+                data = doc.to_dict() or {}
+                data["id"] = doc.id
+                results.append(_sanitize_user_data(data))
+        return results
 
     # Fetch accepted friends
     accepted_ids = [

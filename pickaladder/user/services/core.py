@@ -18,6 +18,31 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
 
+def _sanitize_user_data(
+    user_data: dict[str, Any], public_only: bool = True
+) -> dict[str, Any]:
+    """Filter user data to include only standard public fields."""
+    if not user_data:
+        return {}
+    res = {
+        "id": user_data.get("id") or user_data.get("uid"),
+        "uid": user_data.get("uid") or user_data.get("id"),
+        "name": user_data.get("name"),
+        "username": user_data.get("username"),
+        "dupr_id": user_data.get("dupr_id"),
+        "duprRating": user_data.get("duprRating") or user_data.get("dupr_rating"),
+        "dupr_rating": user_data.get("dupr_rating") or user_data.get("duprRating"),
+        "profilePictureUrl": user_data.get("profilePictureUrl"),
+        "profilePictureThumbnailUrl": user_data.get("profilePictureThumbnailUrl"),
+        "isAdmin": user_data.get("isAdmin", False),
+        "is_admin": user_data.get("isAdmin", False),
+    }
+    if not public_only:
+        res["email"] = user_data.get("email")
+        res["email_verified"] = user_data.get("email_verified")
+    return res
+
+
 def smart_display_name(user: dict[str, Any]) -> str:
     """Return a smart display name for a user."""
     return _smart_display_name(user)
@@ -52,7 +77,10 @@ def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
 
 
 def get_all_users(
-    db: Client, exclude_ids: list[str] | None = None, limit: int = 20
+    db: Client,
+    exclude_ids: list[str] | None = None,
+    limit: int = 20,
+    public_only: bool = True,
 ) -> list[dict[str, Any]]:
     """Fetch a list of users, excluding given IDs, sorted by date."""
     if exclude_ids is None:
@@ -76,7 +104,7 @@ def get_all_users(
         data = doc.to_dict()
         if data is not None and "username" in data:
             data["id"] = doc.id
-            users.append(data)
+            users.append(_sanitize_user_data(data, public_only=public_only))
         if len(users) >= limit:
             break
     return users
@@ -227,7 +255,7 @@ def update_settings(
 
 
 def search_users(
-    db: Client, current_user_id: str, search_term: str
+    db: Client, current_user_id: str, search_term: str, public_only: bool = True
 ) -> list[tuple[dict[str, Any], str | None, str | None]]:
     """Search for users and return their friend status with the current user."""
     query: Any = db.collection("users")
@@ -247,6 +275,7 @@ def search_users(
     for user_doc in all_users_docs:
         user_data = user_doc.to_dict() or {}
         user_data["id"] = user_doc.id
+        sanitized_data = _sanitize_user_data(user_data, public_only=public_only)
         sent_status = received_status = None
         if friend_data := friend_statuses.get(user_doc.id):
             status = friend_data.get("status")
@@ -254,7 +283,7 @@ def search_users(
                 sent_status = status
             else:
                 received_status = status
-        user_items.append((user_data, sent_status, received_status))
+        user_items.append((sanitized_data, sent_status, received_status))
     return user_items
 
 
