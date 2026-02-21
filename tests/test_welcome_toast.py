@@ -121,17 +121,23 @@ class WelcomeToastTestCase(unittest.TestCase):
 
         mock_get_invites.assert_not_called()
 
-    @patch("pickaladder.auth.routes.AuthService")
+    @patch("pickaladder.auth.routes.send_email")
+    @patch("pickaladder.auth.routes.UserService.get_pending_tournament_invites")
     def test_welcome_toast_triggered_on_register(
-        self, mock_auth_service: MagicMock
+        self, mock_get_invites: MagicMock, mock_send_email: MagicMock
     ) -> None:
         """Test welcome toast flag is set when a user registers and is merged."""
-        # Mock AuthService.register_user to return a pending invites count
-        mock_auth_service.register_user.return_value = {
-            "uid": MOCK_USER_ID,
-            "merged": True,
-            "pending_invites_count": 1,
-        }
+        # Mock auth create_user
+        self.mock_auth_service.create_user.return_value = MagicMock(uid=MOCK_USER_ID)
+        self.mock_auth_service.generate_email_verification_link.return_value = (
+            "http://link"
+        )
+
+        # 3. Mock merge_ghost_user to return True
+        self.mock_merge_ghost_user.return_value = True
+
+        # 4. Mock pending invites count
+        mock_get_invites.return_value = [{"id": "t1"}]
 
         # 5. Call register
         response = self.client.post(

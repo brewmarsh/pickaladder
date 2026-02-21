@@ -52,7 +52,7 @@ def admin() -> Union[str, Response]:
     email_verification_setting = setting_ref.get()
 
     # Fetch Users for Management Table
-    users = UserService.get_all_users(db, limit=50, is_admin=True)
+    users = UserService.get_all_users(db, limit=50, public_only=False)
 
     return render_template(
         "admin/admin.html",
@@ -349,7 +349,9 @@ def generate_matches() -> Response:
 @login_required(admin_required=True)
 def merge_players() -> Union[str, Response]:
     """Merge two player accounts (Source -> Target). Source is deleted."""
-    users = UserService.get_all_users(firestore.client(), exclude_ids=[], is_admin=True)
+    users = UserService.get_all_users(
+        firestore.client(), exclude_ids=[], public_only=False
+    )
 
     # Sort users for the dropdown (Real users first, then Ghosts)
     sorted_users = sorted(

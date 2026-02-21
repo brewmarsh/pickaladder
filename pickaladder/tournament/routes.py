@@ -63,8 +63,7 @@ def create_tournament() -> Any:
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": form.venue_name.data or form.location.data,
-                "address": form.address.data,
+                "location": form.location.data,
                 "mode": form.mode.data,
                 "matchType": form.mode.data.lower(),
             }
@@ -78,10 +77,7 @@ def create_tournament() -> Any:
                 )
                 if banner_url:
                     TournamentService.update_tournament(
-                        tournament_id,
-                        g.user["uid"],
-                        {"banner_url": banner_url},
-                        is_admin=g.user.is_admin,
+                        tournament_id, g.user["uid"], {"banner_url": banner_url}
                     )
 
             flash("Tournament created successfully.", "success")
@@ -173,8 +169,7 @@ def edit_tournament(tournament_id: str) -> Any:
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": form.venue_name.data or form.location.data,
-            "address": form.address.data,
+            "location": form.location.data,
             "mode": form.mode.data,
             "matchType": form.mode.data.lower(),
         }
@@ -188,7 +183,7 @@ def edit_tournament(tournament_id: str) -> Any:
 
         try:
             TournamentService.update_tournament(
-                tournament_id, g.user["uid"], update_data, is_admin=g.user.is_admin
+                tournament_id, g.user["uid"], update_data
             )
             flash("Tournament updated successfully.", "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
@@ -202,8 +197,6 @@ def edit_tournament(tournament_id: str) -> Any:
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
         form.location.data = tournament_data.get("location")
-        form.venue_name.data = tournament_data.get("location")
-        form.address.data = tournament_data.get("address")
         form.mode.data = (
             tournament_data.get("mode")
             or tournament_data.get("matchType", "SINGLES").upper()
@@ -226,9 +219,7 @@ def edit_tournament(tournament_id: str) -> Any:
 def delete_tournament(tournament_id: str) -> Any:
     """Delete a tournament."""
     try:
-        TournamentService.delete_tournament(
-            tournament_id, g.user["uid"], is_admin=g.user.is_admin
-        )
+        TournamentService.delete_tournament(tournament_id, g.user["uid"])
         flash("Tournament deleted successfully.", "success")
     except ValueError as e:
         flash(str(e), "danger")

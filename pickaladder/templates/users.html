@@ -25,10 +25,10 @@
         <tbody>
             {% for user in fof %}
             <tr>
-                <td data-label="Username">{{ user.username }}</td>
-                <td data-label="Name">{{ user.name }}</td>
-                <td data-label="DUPR Rating">{{ user.dupr_rating }}</td>
-                <td data-label="Actions" class="actions-cell">
+                <td><i class="fa-solid fa-at"></i> {{ user.username }}</td>
+                <td><i class="fa-solid fa-user"></i> {{ user.name }}</td>
+                <td><i class="fa-solid fa-star"></i> {{ user.dupr_rating }}</td>
+                <td class="actions-cell">
                     <a href="{{ url_for('user.send_friend_request', friend_id=user.id) }}"
                         class="btn add-friend-btn">Add Friend</a>
                 </td>
@@ -57,30 +57,22 @@
                     <img src="{{ user | avatar_url }}" alt="Profile Picture" class="avatar avatar-md"
                         onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                 </td>
-                <td data-label="Username"><a href="{{ url_for('user.view_user', user_id=user.id) }}">{{ user.username
+                <td><a href="{{ url_for('user.view_user', user_id=user.id) }}"><i class="fa-solid fa-at"></i> {{ user.username
                         }}</a></td>
-                <td data-label="Name">{{ user.name }}</td>
-                <td data-label="DUPR Rating">{{ user.duprRating }}</td>
-                <td data-label="Actions" class="actions-cell">
+                <td><i class="fa-solid fa-user"></i> {{ user.name }}</td>
+                <td><i class="fa-solid fa-star"></i> {{ user.duprRating }}</td>
+                <td class="actions-cell">
                     {% if sent_status == 'accepted' or received_status == 'accepted' %}
-                    <button class="btn" disabled title="Friends">
-                        <i class="fas fa-user-friends"></i> <span class="d-none d-md-inline">Friends</span>
-                    </button>
+                    <button class="btn" disabled>Friends</button>
                     {% elif sent_status == 'pending' %}
-                    <button class="btn" disabled title="Request Sent">
-                        <i class="fas fa-paper-plane"></i> <span class="d-none d-md-inline">Request Sent</span>
-                    </button>
+                    <button class="btn" disabled>Request Sent</button>
                     {% elif received_status == 'pending' %}
-                    <a href="{{ url_for('user.view_community') }}" class="btn btn-warning" title="Review Request">
-                        <i class="fas fa-user-clock"></i> <span class="d-none d-md-inline">Review Request</span>
-                    </a>
+                    <a href="{{ url_for('user.view_community') }}" class="btn btn-warning">Review Request</a>
                     {% else %}
                     <form method="post" action="{{ url_for('user.send_friend_request', friend_id=user.id) }}"
                         style="display: inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn add-friend-btn" title="Add Friend">
-                            <i class="fas fa-user-plus"></i> <span class="d-none d-md-inline">Add Friend</span>
-                        </button>
+                        <button type="submit" class="btn add-friend-btn">Add Friend</button>
                     </form>
                     {% endif %}
 
@@ -88,25 +80,13 @@
                     <a href="{{ url_for('admin.impersonate', user_id=user.id) }}" class="btn btn-info" title="Impersonate">
                         <i class="fa fa-user-secret"></i>
                     </a>
-                    <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" style="display: inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this user?');">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </form>
-                    <form action="{{ url_for('admin.promote_user', user_id=user.id) }}" method="post" style="display: inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-warning" title="Promote to Admin">
-                            <i class="fas fa-user-shield"></i>
-                        </button>
-                    </form>
+                    <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
+                    <a href="{{ url_for('admin.promote_user', user_id=user.id) }}" class="btn btn-warning">Promote</a>
                     {% if not user.email_verified %}
                     <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="post"
                         style="display: inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-success" title="Verify Email">
-                            <i class="fas fa-check-double"></i>
-                        </button>
+                        <button type="submit" class="btn btn-success">Verify</button>
                     </form>
                     {% endif %}
                     {% endif %}
