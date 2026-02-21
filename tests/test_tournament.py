@@ -15,7 +15,6 @@ from tests.mock_utils import (
     MockArrayRemove,
     MockArrayUnion,
     MockBatch,
-    patch_mockfirestore,
 )
 
 # Mock user payloads
@@ -29,7 +28,6 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
-        patch_mockfirestore()
         self.mock_db = MockFirestore()
 
         self.mock_batch_instance = MockBatch(self.mock_db)
@@ -53,9 +51,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_client": patch(
-                "firebase_admin.firestore.client", return_value=self.mock_db
-            ),
+            "firestore_client": patch("firebase_admin.firestore.client"),
             "firestore_services": patch(
                 "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,
@@ -108,9 +104,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             data={
                 "name": "Summer Open",
                 "start_date": "2024-06-01",
-                "location": "Courtside",
+                "venue_name": "Courtside",
                 "match_type": "singles",
-                "mode": "SINGLES",
+                "location": "Courtside",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -135,10 +131,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "start_date": "2024-06-01",
+                "date": "2024-06-01",
                 "location": "Courtside",
                 "match_type": "singles",
-                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -171,9 +166,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             data={
                 "name": "Updated Name",
                 "start_date": "2024-07-01",
+                "venue_name": "Updated Location",
                 "location": "Updated Location",
                 "match_type": "doubles",
-                "mode": "DOUBLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -251,7 +246,6 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "venue_name": "Updated Venue",
                 "address": "456 Updated St",
                 "match_type": "doubles",
-                "mode": "DOUBLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,

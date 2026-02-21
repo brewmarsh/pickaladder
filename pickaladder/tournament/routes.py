@@ -63,9 +63,11 @@ def create_tournament() -> Any:
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
-                "location": form.location.data,
-                "mode": form.mode.data,
-                "matchType": form.mode.data.lower(),
+                "location": form.venue_name.data,
+                "address": form.address.data,
+                "description": form.description.data,
+                "mode": form.match_type.data,
+                "matchType": form.match_type.data.lower(),
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -169,9 +171,11 @@ def edit_tournament(tournament_id: str) -> Any:
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": form.location.data,
-            "mode": form.mode.data,
-            "matchType": form.mode.data.lower(),
+            "location": form.venue_name.data,
+            "address": form.address.data,
+            "description": form.description.data,
+            "mode": form.match_type.data,
+            "matchType": form.match_type.data.lower(),
         }
 
         # Handle banner upload
@@ -196,8 +200,10 @@ def edit_tournament(tournament_id: str) -> Any:
 
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
-        form.location.data = tournament_data.get("location")
-        form.mode.data = (
+        form.venue_name.data = tournament_data.get("location")
+        form.address.data = tournament_data.get("address")
+        form.description.data = tournament_data.get("description")
+        form.match_type.data = (
             tournament_data.get("mode")
             or tournament_data.get("matchType", "SINGLES").upper()
         )
@@ -212,23 +218,6 @@ def edit_tournament(tournament_id: str) -> Any:
         tournament=tournament_data,
         action="Edit",
     )
-
-
-@bp.route("/<string:tournament_id>/delete", methods=["POST"])
-@admin_required
-def delete_tournament(tournament_id: str) -> Any:
-    """Delete a tournament."""
-    try:
-        TournamentService.delete_tournament(tournament_id, g.user["uid"])
-        flash("Tournament deleted successfully.", "success")
-    except ValueError as e:
-        flash(str(e), "danger")
-    except PermissionError:
-        flash("Unauthorized.", "danger")
-    except Exception as e:
-        flash(f"An unexpected error occurred: {e}", "danger")
-
-    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/invite", methods=["POST"])

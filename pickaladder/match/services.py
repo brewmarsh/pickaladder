@@ -47,32 +47,28 @@ class MatchService:
         snapshots_iterable = db.get_all([p1_ref, p2_ref])
         snapshots_map = {snap.id: snap for snap in snapshots_iterable if snap.exists}
 
-        p1_snapshot = cast("DocumentSnapshot", snapshots_map.get(p1_ref.id))
-        p2_snapshot = cast("DocumentSnapshot", snapshots_map.get(p2_ref.id))
+        p1_snapshot = snapshots_map.get(p1_ref.id)
+        p2_snapshot = snapshots_map.get(p2_ref.id)
 
-        p1_data = p1_snapshot.to_dict() if p1_snapshot else {}
-        p2_data = p2_snapshot.to_dict() if p2_snapshot else {}
+        p1_data = (p1_snapshot.to_dict() if p1_snapshot else None) or {}
+        p2_data = (p2_snapshot.to_dict() if p2_snapshot else None) or {}
 
         # 1.5 Denormalize Player Data (Snapshots)
         if match_type == "singles":
             match_data["player_1_data"] = {
                 "uid": p1_ref.id,
-                "display_name": smart_display_name(p1_data or {}),
-                "avatar_url": get_avatar_url(p1_data or {}),
+                "display_name": smart_display_name(p1_data),
+                "avatar_url": get_avatar_url(p1_data),
                 "dupr_at_match_time": float(
-                    (p1_data or {}).get("duprRating")
-                    or (p1_data or {}).get("dupr_rating")
-                    or 0.0
+                    p1_data.get("duprRating") or p1_data.get("dupr_rating") or 0.0
                 ),
             }
             match_data["player_2_data"] = {
                 "uid": p2_ref.id,
-                "display_name": smart_display_name(p2_data or {}),
-                "avatar_url": get_avatar_url(p2_data or {}),
+                "display_name": smart_display_name(p2_data),
+                "avatar_url": get_avatar_url(p2_data),
                 "dupr_at_match_time": float(
-                    (p2_data or {}).get("duprRating")
-                    or (p2_data or {}).get("dupr_rating")
-                    or 0.0
+                    p2_data.get("duprRating") or p2_data.get("dupr_rating") or 0.0
                 ),
             }
 
@@ -813,9 +809,10 @@ class MatchService:
             return names
         u_refs = [db.collection("users").document(uid) for uid in uids]
         for doc in db.get_all(u_refs):
-            if doc.exists:
-                d = doc.to_dict() or {}
-                names[doc.id] = d.get("name", doc.id)
+            doc_snap = cast("DocumentSnapshot", doc)
+            if doc_snap.exists:
+                d = doc_snap.to_dict() or {}
+                names[doc_snap.id] = d.get("name", doc_snap.id)
         return names
 
     @staticmethod
@@ -838,12 +835,8 @@ class MatchService:
     @staticmethod
     def get_team_names(db: Client, team1_id: str, team2_id: str) -> tuple[str, str]:
         """Fetch names for two teams."""
-        t1_doc = cast(
-            "DocumentSnapshot", db.collection("teams").document(team1_id).get()
-        )
-        t2_doc = cast(
-            "DocumentSnapshot", db.collection("teams").document(team2_id).get()
-        )
+        t1_doc = cast("DocumentSnapshot", db.collection("teams").document(team1_id).get())
+        t2_doc = cast("DocumentSnapshot", db.collection("teams").document(team2_id).get())
 
         name1 = (
             (t1_doc.to_dict() or {}).get("name", "Team 1")
@@ -866,7 +859,7 @@ class MatchService:
 
         m_dict = cast("dict[str, Any]", match_data)
         match_type = m_dict.get("matchType", "singles")
-        context: dict[str, Any] = {"match": match_data, "match_type": match_type}
+        context = {"match": match_data, "match_type": match_type}
 
         if match_type == "doubles":
             team1_refs = m_dict.get("team1", [])
@@ -875,19 +868,19 @@ class MatchService:
             team1_data = []
             if team1_refs:
                 for doc in db.get_all(team1_refs):
-                    d_snap = cast("DocumentSnapshot", doc)
-                    if d_snap.exists:
-                        p_data = d_snap.to_dict() or {}
-                        p_data["id"] = d_snap.id
+                    doc_snap = cast("DocumentSnapshot", doc)
+                    if doc_snap.exists:
+                        p_data = doc_snap.to_dict() or {}
+                        p_data["id"] = doc_snap.id
                         team1_data.append(p_data)
 
             team2_data = []
             if team2_refs:
                 for doc in db.get_all(team2_refs):
-                    d_snap = cast("DocumentSnapshot", doc)
-                    if d_snap.exists:
-                        p_data = d_snap.to_dict() or {}
-                        p_data["id"] = d_snap.id
+                    doc_snap = cast("DocumentSnapshot", doc)
+                    if doc_snap.exists:
+                        p_data = doc_snap.to_dict() or {}
+                        p_data["id"] = doc_snap.id
                         team2_data.append(p_data)
 
             context["team1"] = team1_data
