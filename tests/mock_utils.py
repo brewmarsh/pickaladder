@@ -59,8 +59,8 @@ class MockFirestoreBuilder:
     """Builder to modularize mockfirestore and firebase_admin patching."""
 
     @staticmethod
-    def patch_db_read() -> None:
-        """Apply monkeypatches to mockfirestore to support FieldFilter and equality."""
+    def _patch_where_methods() -> None:
+        """Extract where monkeypatching for CollectionReference and Query."""
 
         def collection_where(
             self: Any,
@@ -92,6 +92,10 @@ class MockFirestoreBuilder:
             Query._where = Query.where
             Query.where = query_where
 
+    @staticmethod
+    def _patch_doc_ref_identity() -> None:
+        """Extract monkeypatching for DocumentReference equality and hash."""
+
         def doc_ref_eq(self: Any, other: Any) -> bool:
             if not isinstance(other, DocumentReference):
                 return False
@@ -104,8 +108,9 @@ class MockFirestoreBuilder:
         if not hasattr(DocumentReference, "__hash__"):
             DocumentReference.__hash__ = lambda self: hash(tuple(self._path))
 
-        # Patch DocumentReference.get to handle transaction argument
-        # Patch Query._compare_func to handle array_contains with missing fields
+    @staticmethod
+    def _patch_query_comparison() -> None:
+        """Extract monkeypatching for Query._compare_func."""
         if not hasattr(Query, "_orig_compare_func"):
             Query._orig_compare_func = Query._compare_func
 
@@ -116,6 +121,9 @@ class MockFirestoreBuilder:
 
             Query._compare_func = patched_compare_func
 
+    @staticmethod
+    def _patch_doc_ref_get() -> None:
+        """Extract monkeypatching for DocumentReference.get."""
         if not hasattr(DocumentReference, "_orig_get"):
             DocumentReference._orig_get = DocumentReference.get
 
@@ -124,6 +132,14 @@ class MockFirestoreBuilder:
                 return self._orig_get()
 
             DocumentReference.get = doc_ref_get
+
+    @staticmethod
+    def patch_db_read() -> None:
+        """Apply monkeypatches to mockfirestore to support FieldFilter and equality."""
+        MockFirestoreBuilder._patch_where_methods()
+        MockFirestoreBuilder._patch_doc_ref_identity()
+        MockFirestoreBuilder._patch_query_comparison()
+        MockFirestoreBuilder._patch_doc_ref_get()
 
     @staticmethod
     def patch_db_write() -> None:
