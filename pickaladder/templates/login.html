@@ -1,3 +1,68 @@
+{% extends "layout.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="login-landing-container">
+    <div class="login-form-side">
+        <div class="form-container" style="margin: 0; max-width: 100%;">
+            <div class="flashes">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            </div>
+            <h2>Login</h2>
+            <form method="post">
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    {{ form.email.label }}
+                    {{ form.email(class="form-control", autocomplete="email", data_testid="login-email") }}
+                </div>
+                <div class="form-group">
+                    {{ form.password.label }}
+                    {{ form.password(class="form-control", autocomplete="current-password") }}
+                </div>
+                <div class="form-group form-check">
+                    {{ form.remember(class="form-check-input") }}
+                    {{ form.remember.label(class="form-check-label") }}
+                </div>
+                <button type="submit" name="submit" class="btn" data-testid="login-submit">Login</button>
+            </form>
+            <div class="or-separator">OR</div>
+            <button id="google-signin-btn" class="btn btn-google">Sign in with Google</button>
+            <p class="text-center" style="margin-top: 20px;">Don't have an account? <a href="{{ url_for('auth.register', next=request.args.get('next')) }}">Register here</a>.</p>
+        </div>
+    </div>
+
+    <div class="feature-hero-side d-none d-lg-flex">
+        <div class="hero-content">
+            <h1>Track. Compete. Climb.</h1>
+            <ul class="feature-list">
+                <li><span style="font-size: 1.5rem;">🏆</span> <strong>Run Ladders</strong></li>
+                <li><span style="font-size: 1.5rem;">📈</span> <strong>Track ELO</strong></li>
+                <li><span style="font-size: 1.5rem;">📊</span> <strong>Visualize Progress</strong></li>
+            </ul>
+            <div class="hero-image-placeholder">
+                <div style="background: var(--bg-color); height: 300px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); position: relative; overflow: hidden;">
+                    <div style="width: 80%; height: 200px; background: white; border-radius: 8px; box-shadow: var(--shadow-md); padding: 20px;">
+                        <div style="height: 20px; width: 40%; background: var(--border-color); margin-bottom: 20px; border-radius: 4px;"></div>
+                        {% for i in range(4) %}
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                            <div style="width: 24px; height: 24px; background: var(--border-color); border-radius: 50%;"></div>
+                            <div style="height: 12px; flex: 1; background: var(--border-color); border-radius: 4px;"></div>
+                            <div style="width: 40px; height: 12px; background: var(--accent-color); border-radius: 4px;"></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <p class="text-center text-muted mt-2 small">Live Leaderboards & Real-time Stats</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -14,28 +79,35 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Google Sign-in Implementation
     googleSignInButton.addEventListener('click', function() {
         const provider = new firebase.auth.GoogleAuthProvider();
         const remember = document.getElementById('remember').checked;
-        localStorage.setItem('rememberMe', remember);
-
         firebase.auth().signInWithPopup(provider)
             .then((result) => {
                 return result.user.getIdToken();
             })
             .then((idToken) => {
-                // Resolved: Store token for fetch interceptors then use syncSession helper
                 localStorage.setItem('firebaseIdToken', idToken);
-                return syncSession(idToken, remember);
+                return fetch("{{ url_for('auth.session_login') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ idToken: idToken, remember: remember }),
+                });
             })
-            .then(() => {
-                handleLoginSuccess();
+            .then(response => {
+                if (response.ok) {
+                    handleLoginSuccess();
+                } else {
+                    throw new Error("Server-side session creation failed.");
+                }
             })
             .catch((error) => {
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
-                flashes.innerHTML = ''; 
+                flashes.innerHTML = ''; // Clear previous messages
                 const flash = document.createElement('div');
                 flash.className = 'alert alert-danger';
                 flash.textContent = `Google Sign-in failed: ${errorMessage}`;
@@ -43,25 +115,33 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     });
 
-    // Email/Password Implementation
     form.addEventListener('submit', function (event) {
         event.preventDefault();
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
-        localStorage.setItem('rememberMe', remember);
 
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
                 return userCredential.user.getIdToken();
             })
             .then((idToken) => {
-                // Resolved: Combined robust local storage with global syncSession
                 localStorage.setItem('firebaseIdToken', idToken);
-                return syncSession(idToken, remember);
+                return fetch("{{ url_for('auth.session_login') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ idToken: idToken, remember: remember }),
+                });
             })
-            .then(() => {
-                handleLoginSuccess();
+            .then(response => {
+                if (response.ok) {
+                    handleLoginSuccess();
+                } else {
+                    throw new Error("Server-side session creation failed.");
+                }
             })
             .catch((error) => {
                 console.error("Login error:", error);
@@ -75,11 +155,49 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
 
-                // ... (Error parsing logic from main remains unchanged)
                 const errorCode = error.code;
                 let errorMessage = error.message;
-                
-                // [Error display logic truncated for brevity, identical to main]
+
+                // Attempt to parse JSON error message
+                if (typeof errorMessage === 'string' && errorMessage.startsWith('{')) {
+                    try {
+                        const parsedError = JSON.parse(errorMessage);
+                        if (parsedError.error && parsedError.error.message) {
+                            errorMessage = parsedError.error.message;
+                        } else if (parsedError.message) {
+                            errorMessage = parsedError.message;
+                        }
+                    } catch (e) {
+                        // Ignore parse error
+                    }
+                }
+
+                const flashes = document.querySelector('.flashes');
+                flashes.innerHTML = ''; // Clear previous messages
+                const flash = document.createElement('div');
+                flash.className = 'alert';
+
+                const invalidCredentialsCodes = [
+                    'auth/wrong-password',
+                    'auth/user-not-found',
+                    'auth/invalid-login-credentials',
+                    'INVALID_LOGIN_CREDENTIALS'
+                ];
+
+                if (errorCode === 'auth/user-disabled') {
+                    flash.classList.add('alert-warning');
+                    flash.textContent = 'Please verify your email address before logging in.';
+                } else if (
+                    invalidCredentialsCodes.includes(errorCode) ||
+                    invalidCredentialsCodes.includes(errorMessage)
+                ) {
+                    flash.classList.add('alert-danger');
+                    flash.textContent = 'Invalid email or password.';
+                } else {
+                    flash.classList.add('alert-danger');
+                    flash.textContent = `Login failed: ${errorMessage}`;
+                }
+                flashes.appendChild(flash);
             });
     });
 });
