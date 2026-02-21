@@ -143,75 +143,32 @@ def view_tournament(tournament_id: str) -> Any:
 @admin_required
 def edit_tournament(tournament_id: str) -> Any:
     """Edit tournament details."""
-    details = TournamentService.get_tournament_details(tournament_id, g.user["uid"])
-    if not details:
-        flash("Tournament not found.", "danger")
-        return redirect(url_for(".list_tournaments"))
-
-    if not details["is_owner"]:
-        flash("Unauthorized.", "danger")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
-
-    tournament_data = details["tournament"]
     form = TournamentForm()
-
-    if form.validate_on_submit():
-        date_val = form.start_date.data
-        if date_val is None:
-            flash("Date is required.", "danger")
-            return render_template(
-                "tournaments/create_edit.html",
-                form=form,
-                tournament=tournament_data,
-                action="Edit",
-            )
-
-        update_data = {
-            "name": form.name.data,
-            "date": datetime.datetime.combine(date_val, datetime.time.min),
-            "location": form.location.data,
-            "mode": form.mode.data,
-            "matchType": form.mode.data.lower(),
-        }
-
-        # Handle banner upload
-        banner_file = request.files.get("banner")
-        if banner_file and banner_file.filename:
-            banner_url = TournamentService._upload_banner(tournament_id, banner_file)
-            if banner_url:
-                update_data["banner_url"] = banner_url
-
-        try:
-            TournamentService.update_tournament(
-                tournament_id, g.user["uid"], update_data
+    try:
+        tournament = TournamentService.get_tournament_for_edit(
+            tournament_id, g.user["uid"]
+        )
+        if form.validate_on_submit():
+            TournamentService.update_tournament_from_form(
+                tournament_id, g.user["uid"], form.data, request.files.get("banner")
             )
             flash("Tournament updated successfully.", "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
-        except ValueError as e:
-            flash(str(e), "danger")
-        except PermissionError:
-            flash("Unauthorized.", "danger")
-        except Exception as e:
-            flash(f"An error occurred: {e}", "danger")
 
-    elif request.method == "GET":
-        form.name.data = tournament_data.get("name")
-        form.location.data = tournament_data.get("location")
-        form.mode.data = (
-            tournament_data.get("mode")
-            or tournament_data.get("matchType", "SINGLES").upper()
+        if request.method == "GET":
+            form.process(data=tournament)
+            if hasattr(tournament.get("date"), "to_datetime"):
+                form.start_date.data = tournament["date"].to_datetime().date()
+
+        return render_template(
+            "tournaments/create_edit.html", form=form, tournament=tournament, action="Edit"
         )
-        raw_date = tournament_data.get("date")
-        if hasattr(raw_date, "to_datetime"):
-            form.start_date.data = raw_date.to_datetime().date()
-
-    logging.warning(f"Type of form in edit_tournament: {type(form)}")
-    return render_template(
-        "tournaments/create_edit.html",
-        form=form,
-        tournament=tournament_data,
-        action="Edit",
-    )
+    except (ValueError, PermissionError) as e:
+        flash(str(e), "danger")
+        return redirect(url_for(".list_tournaments"))
+    except Exception as e:
+        flash(f"An unexpected error occurred: {e}", "danger")
+        return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/delete", methods=["POST"])

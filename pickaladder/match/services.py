@@ -925,3 +925,64 @@ class MatchService:
             )
 
         return context
+
+    @staticmethod
+    def get_match_edit_context(match_id: str) -> dict[str, Any] | None:
+        """Fetch data needed for editing a match."""
+        db = firestore.client()
+        match_data = MatchService.get_match_by_id(db, match_id)
+        if match_data is None:
+            return None
+
+        m_dict = cast("dict[str, Any]", match_data)
+        match_type = m_dict.get("matchType", "singles")
+        player1_name = "Player 1"
+        player2_name = "Player 2"
+
+        if match_type == "doubles":
+            team1_id = m_dict.get("team1Id")
+            team2_id = m_dict.get("team2Id")
+            if team1_id and team2_id:
+                player1_name, player2_name = MatchService.get_team_names(
+                    db, team1_id, team2_id
+                )
+        else:
+            p1_ref = m_dict.get("player1Ref")
+            p2_ref = m_dict.get("player2Ref")
+            uids = []
+            if p1_ref:
+                uids.append(p1_ref.id)
+            if p2_ref:
+                uids.append(p2_ref.id)
+            names = MatchService.get_player_names(db, uids)
+            if p1_ref:
+                player1_name = names.get(p1_ref.id, "Player 1")
+            if p2_ref:
+                player2_name = names.get(p2_ref.id, "Player 2")
+
+        return {
+            "match": match_data,
+            "player1_name": player1_name,
+            "player2_name": player2_name,
+        }
+
+
+class MatchCommandService:
+    """Service for match commands (writes)."""
+
+    @staticmethod
+    def update_match_score(
+        match_id: str,
+        p1_score_raw: Any,
+        p2_score_raw: Any,
+        editor_uid: str,
+    ) -> None:
+        """Update match score with data preparation and orchestration."""
+        db = firestore.client()
+        try:
+            p1_score = int(p1_score_raw or 0)
+            p2_score = int(p2_score_raw or 0)
+        except (ValueError, TypeError):
+            raise ValueError("Scores must be valid integers.")
+
+        MatchService.update_match_score(db, match_id, p1_score, p2_score, editor_uid)
