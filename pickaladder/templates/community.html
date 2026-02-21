@@ -39,12 +39,16 @@
                         <div class="d-flex justify-content-end gap-2 flex-wrap">
                             <form action="{{ url_for('user.accept_request', requester_id=request.id) }}" method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-primary btn-sm">Accept</button>
+                                <button type="submit" class="btn btn-primary btn-sm" title="Accept">
+                                    <i class="fas fa-check"></i> <span class="d-none d-md-inline">Accept</span>
+                                </button>
                             </form>
                             <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-secondary btn-sm"
-                                    onclick="return confirm('Are you sure you want to decline this friend request?');">Decline</button>
+                                <button type="submit" class="btn btn-secondary btn-sm" title="Decline"
+                                    onclick="return confirm('Are you sure you want to decline this friend request?');">
+                                    <i class="fas fa-times"></i> <span class="d-none d-md-inline">Decline</span>
+                                </button>
                             </form>
                         </div>
                     </td>
@@ -86,21 +90,19 @@
                 <tr>
                     <td data-label="User">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="{{ request | avatar_url }}" alt="{% if request.username.startswith('ghost_') %}{{ request.email or 'Invited User (Pending)' }}{% else %}{{ request.username }}{% endif %}" class="avatar avatar-md">
+                            <img src="{{ request | avatar_url }}" alt="{{ request | smart_display_name }}" class="avatar avatar-md">
                             <a href="{{ url_for('user.view_user', user_id=request.id) }}"><strong>
-                                {% if request.username.startswith('ghost_') %}
-                                    {{ request.email or "Invited User (Pending)" }}
-                                {% else %}
-                                    {{ request | smart_display_name }}
-                                {% endif %}
+                                {{ request | smart_display_name }}
                             </strong></a>
                         </div>
                     </td>
                     <td data-label="Actions" style="text-align: right;">
                         <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('Are you sure you want to cancel this friend request?');">Cancel</button>
+                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Cancel Request"
+                                onclick="return confirm('Are you sure you want to cancel this friend request?');">
+                                <i class="fas fa-ban"></i> <span class="d-none d-md-inline">Cancel</span>
+                            </button>
                         </form>
                     </td>
                 </tr>
@@ -161,13 +163,9 @@
         <div class="friend-card card-action" data-testid="friend-card-{{ friend.username }}">
             <a href="{{ url_for('user.view_user', user_id=friend.id) }}" class="friend-card-link">
                 <div class="friend-card-content">
-                    <img src="{{ friend | avatar_url }}" alt="{% if friend.username.startswith('ghost_') %}{{ friend.email or 'Invited User (Pending)' }}{% else %}{{ friend.username }}{% endif %}" class="avatar avatar-lg">
+                    <img src="{{ friend | avatar_url }}" alt="{{ friend | smart_display_name }}" class="avatar avatar-lg">
                     <h3 class="friend-name">
-                        {% if friend.username.startswith('ghost_') %}
-                            {{ friend.email or "Invited User (Pending)" }}
-                        {% else %}
-                            {{ friend.name or friend.username }}
-                        {% endif %}
+                        {{ friend | smart_display_name }}
                     </h3>
                     {% if not friend.username.startswith('ghost_') and friend.name and friend.name != friend.username %}
                     <p class="text-muted" style="margin-top: -5px; font-size: 0.85em;">@{{ friend.username }}</p>
@@ -180,7 +178,9 @@
             </a>
             <div class="friend-card-actions">
                 <a href="{{ url_for('match.record_match', opponent=friend.id) }}"
-                    class="btn btn-volt challenge-btn">Challenge</a>
+                    class="btn btn-volt challenge-btn" title="Challenge">
+                    <i class="fas fa-trophy"></i> <span class="d-none d-md-inline">Challenge</span>
+                </a>
             </div>
         </div>
         {% endfor %}
@@ -198,13 +198,9 @@
         <div class="friend-card card-action">
             <a href="{{ url_for('user.view_user', user_id=user_data.id) }}" class="friend-card-link">
                 <div class="friend-card-content">
-                    <img src="{{ user_data | avatar_url }}" alt="{% if user_data.username.startswith('ghost_') %}{{ user_data.email or 'Invited User (Pending)' }}{% else %}{{ user_data.username }}{% endif %}" class="avatar avatar-lg">
+                    <img src="{{ user_data | avatar_url }}" alt="{{ user_data | smart_display_name }}" class="avatar avatar-lg">
                     <h3 class="friend-name">
-                        {% if user_data.username.startswith('ghost_') %}
-                            {{ user_data.email or "Invited User (Pending)" }}
-                        {% else %}
-                            {{ user_data.name or user_data.username }}
-                        {% endif %}
+                        {{ user_data | smart_display_name }}
                     </h3>
                     {% if not user_data.username.startswith('ghost_') and user_data.name and user_data.name != user_data.username %}
                     <p class="text-muted" style="margin-top: -5px; font-size: 0.85em;">@{{ user_data.username }}</p>
@@ -218,7 +214,9 @@
             <div class="friend-card-actions">
                 <form method="post" action="{{ url_for('user.send_friend_request', friend_id=user_data.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn add-friend-btn">Add Friend</button>
+                    <button type="submit" class="btn add-friend-btn" title="Add Friend">
+                        <i class="fas fa-user-plus"></i> <span class="d-none d-md-inline">Add Friend</span>
+                    </button>
                 </form>
             </div>
         </div>

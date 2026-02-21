@@ -53,63 +53,21 @@ class UUIDConverter(BaseConverter):
 def _configure_mail_logging(app: Flask) -> None:
     """Configure detailed mail configuration logging."""
     if not app.config.get("TESTING"):
-        print(
-            f"DEBUG: Mail User loaded: {bool(app.config.get('MAIL_USERNAME'))}",
-            file=sys.stderr,
-        )
-        print(
-            f"DEBUG: Mail Password loaded: {bool(app.config.get('MAIL_PASSWORD'))}",
-            file=sys.stderr,
-        )
-        print(
-            f"DEBUG: Mail Config - User: {app.config.get('MAIL_USERNAME')}",
-            file=sys.stderr,
-        )
-        print(
-            f"DEBUG: Mail Config - Server: {app.config.get('MAIL_SERVER')}",
-            file=sys.stderr,
-        )
-        print(
-            f"DEBUG: Mail Config - Port: {app.config.get('MAIL_PORT')}", file=sys.stderr
-        )
-        print(
-            f"DEBUG: Mail Config - TLS: {app.config.get('MAIL_USE_TLS')}",
-            file=sys.stderr,
-        )
-        print(
-            f"DEBUG: Mail Config - SSL: {app.config.get('MAIL_USE_SSL')}",
-            file=sys.stderr,
-        )
+        print(f"DEBUG: Mail User loaded: {bool(app.config.get('MAIL_USERNAME'))}", file=sys.stderr)
+        print(f"DEBUG: Mail Password loaded: {bool(app.config.get('MAIL_PASSWORD'))}", file=sys.stderr)
+        print(f"DEBUG: Mail Config - Server: {app.config.get('MAIL_SERVER')}", file=sys.stderr)
+        
         pwd = app.config.get("MAIL_PASSWORD")
-        if pwd:
-            print(
-                f"DEBUG: Mail Config - Password Length: {len(pwd)}",
-                file=sys.stderr,
-            )
-            if len(pwd) == APP_PASSWORD_LENGTH:
-                print(
-                    "DEBUG: Password length matches standard App Password length "
-                    f"({APP_PASSWORD_LENGTH}).",
-                    file=sys.stderr,
-                )
-            else:
-                print(
-                    "DEBUG: Password length DOES NOT match standard App Password "
-                    f"length ({APP_PASSWORD_LENGTH}). Possible regular password used?",
-                    file=sys.stderr,
-                )
-        else:
-            print("DEBUG: Mail Config - No Password set!", file=sys.stderr)
+        if pwd and len(pwd) != APP_PASSWORD_LENGTH:
+             print(f"DEBUG: Mail Config - Password Length ({len(pwd)}) DOES NOT match App Password standard.", file=sys.stderr)
 
 
 def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
     """Load Firebase credentials from environment, file, or defaults."""
     cred = None
     project_id = None
-
     flask_env = os.environ.get("FLASK_ENV")
 
-    # First, try to load from environment variable (for production/beta)
     if flask_env == "beta":
         cred_json = os.environ.get("FIREBASE_CREDENTIALS_BETA")
     else:
@@ -121,7 +79,6 @@ def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
             project_id = cred_info.get("project_id")
             cred = credentials.Certificate(cred_info)
 
-    # If env var fails or is not present, try loading from file (for local dev)
     if not cred:
         if flask_env == "beta":
             cred_path = Path(__file__).parent.parent / "firebase_credentials_beta.json"
@@ -132,10 +89,9 @@ def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
             with suppress(json.JSONDecodeError, ValueError):
                 with cred_path.open() as f:
                     cred_info = json.load(f)
-                project_id = cred_info.get("project_id")
-                cred = credentials.Certificate(str(cred_path))
+                    project_id = cred_info.get("project_id")
+                    cred = credentials.Certificate(str(cred_path))
 
-    # If both methods fail, fallback to default credentials
     if not cred:
         with suppress(Exception):
             cred = credentials.ApplicationDefault()
@@ -151,7 +107,6 @@ def _initialize_firebase(app: Flask) -> None:
 
     cred, project_id = _get_firebase_credentials(app)
 
-    # Initialize the app if credentials were found
     if cred and not firebase_admin._apps:
         try:
             storage_bucket = os.environ.get("FIREBASE_STORAGE_BUCKET")
@@ -164,7 +119,6 @@ def _initialize_firebase(app: Flask) -> None:
 
             firebase_admin.initialize_app(cred, firebase_options)
         except ValueError:
-            # This can happen if the app is already initialized, which is fine.
             app.logger.info("Firebase app already initialized.")
 
 
@@ -189,144 +143,8 @@ def _register_context_processors(app: Flask) -> None:
     app.context_processor(inject_firebase_api_key)
 
 
-def create_app(test_config: dict[str, Any] | None = None) -> Flask:
-    """Create and configure an instance of the Flask application."""
-    app = Flask(
-        __name__,
-        instance_relative_config=True,
-        static_folder="static",
-        static_url_path="/static",
-    )
-    app.url_map.converters["uuid"] = UUIDConverter
-
-    # Load configuration
-    _load_app_config(app, test_config)
-
-    _configure_mail_logging(app)
-    _initialize_firebase(app)
-
-    # Ensure the instance folder exists
-    with suppress(OSError):
-        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
-
-    # Initialize extensions
-    mail.init_app(app)
-    csrf.init_app(app)
-    login_manager.init_app(app)
-    login_manager.login_view = "auth.login"
-
-    @login_manager.user_loader
-    def load_user(user_id: str) -> Any:
-        """Load user by ID for Flask-Login."""
-        impersonate_id = session.get("impersonate_id")
-        is_admin = session.get("is_admin", False)
-
-        id_to_load = user_id
-        if impersonate_id and is_admin:
-            id_to_load = impersonate_id
-
-        try:
-            db = firestore.client()
-            user_doc = db.collection("users").document(id_to_load).get()
-            if user_doc.exists:
-                return wrap_user(user_doc.to_dict(), uid=id_to_load)
-        except Exception as e:
-            current_app.logger.error(f"Error in user_loader: {e}")
-        return None
-
-    # Register filters
-    app.template_filter("smart_display_name")(smart_display_name)
-    app.template_filter("display_name")(smart_display_name)
-
-    @app.template_filter("avatar_url")
-    def avatar_url_filter(user: dict[str, Any]) -> str:
-        """Return the avatar URL for a user."""
-        if not user:
-            return ""
-        wrapped = wrap_user(user)
-        url = wrapped.avatar_url if wrapped else ""
-        if url == "default":
-            # Fallback to DiceBear Avatars (avataaars style)
-            seed = user.get("username") or user.get("email") or "User"
-            return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
-        return url
-
-    @app.template_filter("pluralize")
-    def pluralize_filter(
-        number: int, singular: str = "", plural: str | None = None
-    ) -> str:
-        """Pluralize a word based on a number."""
-        if number == 1:
-            return singular
-        return plural if plural is not None else f"{singular}s"
-
-    _register_blueprints(app)
-
-    # make url_for('index') == url_for('auth.login')
-    app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
-
-    @app.before_request
-    def load_logged_in_user() -> None:
-        """Reliably populate g.user from session or Authorization header."""
-        uid = session.get("user_id")
-
-        # Fallback to Authorization header if session is missing
-        if not uid:
-            auth_header = request.headers.get("Authorization")
-            if auth_header and auth_header.startswith("Bearer "):
-                id_token = auth_header[7:].strip()
-                try:
-                    decoded_token = auth.verify_id_token(id_token)
-                    uid = decoded_token["uid"]
-                    # Sync session for subsequent requests
-                    session["user_id"] = uid
-                    session.permanent = True
-                except Exception as e:
-                    app.logger.debug(f"Token verification failed: {e}")
-
-        g.user = None
-        g.is_impersonating = False
-
-        if not uid:
-            return
-
-        # Handle impersonation for admins
-        impersonate_id = session.get("impersonate_id")
-        is_admin = session.get("is_admin", False)
-        id_to_load = uid
-
-        if impersonate_id and is_admin:
-            id_to_load = impersonate_id
-            g.is_impersonating = True
-
-        try:
-            db = firestore.client()
-            user_doc = db.collection("users").document(id_to_load).get()
-            if user_doc.exists:
-                g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
-                # Ensure session is admin-synced
-                if not g.is_impersonating:
-                    session["is_admin"] = g.user.get("isAdmin", False)
-            elif not g.is_impersonating:
-                session.clear()
-            else:
-                # Clear impersonation if user not found
-                session.pop("impersonate_id", None)
-                g.is_impersonating = False
-        except Exception as e:
-            app.logger.error(f"Error loading user {id_to_load}: {e}")
-            if not g.is_impersonating:
-                session.clear()
-
-    _register_context_processors(app)
-
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
-
-    return app
-
-
 def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
-    """Load and process application configuration."""
+    """Load and process application configuration with robust session handling."""
     mail_username = os.environ.get("MAIL_USERNAME")
     if mail_username:
         mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
@@ -342,17 +160,17 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
         GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
         MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
         MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
-        MAIL_USE_TLS=(os.environ.get("MAIL_USE_TLS") or "true").lower()
-        in ("true", "1", "t"),
-        MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower()
-        in ("true", "1", "t"),
+        MAIL_USE_TLS=(os.environ.get("MAIL_USE_TLS") or "true").lower() in ("true", "1", "t"),
+        MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower() in ("true", "1", "t"),
         MAIL_USERNAME=mail_username,
         MAIL_PASSWORD=mail_password,
-        MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
-        or "noreply@pickaladder.com",
+        MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER") or "noreply@pickaladder.com",
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
+        
+        # Merged Session Configuration
         SESSION_PERMANENT=True,
         PERMANENT_SESSION_LIFETIME=timedelta(days=31),
+        REMEMBER_COOKIE_DURATION=timedelta(days=31),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=os.environ.get("FLASK_ENV") != "development",
@@ -360,3 +178,109 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
 
     if test_config:
         app.config.update(test_config)
+
+
+def create_app(test_config: dict[str, Any] | None = None) -> Flask:
+    """Create and configure an instance of the Flask application."""
+    app = Flask(
+        __name__,
+        instance_relative_config=True,
+        static_folder="static",
+        static_url_path="/static",
+    )
+    app.url_map.converters["uuid"] = UUIDConverter
+
+    _load_app_config(app, test_config)
+    _configure_mail_logging(app)
+    _initialize_firebase(app)
+
+    with suppress(OSError):
+        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+
+    mail.init_app(app)
+    csrf.init_app(app)
+    login_manager.init_app(app)
+    login_manager.login_view = "auth.login"
+
+    @login_manager.user_loader
+    def load_user(user_id: str) -> Any:
+        impersonate_id = session.get("impersonate_id")
+        is_admin = session.get("is_admin", False)
+        id_to_load = impersonate_id if (impersonate_id and is_admin) else user_id
+
+        try:
+            db = firestore.client()
+            user_doc = db.collection("users").document(id_to_load).get()
+            if user_doc.exists:
+                return wrap_user(user_doc.to_dict(), uid=id_to_load)
+        except Exception as e:
+            current_app.logger.error(f"Error in user_loader: {e}")
+        return None
+
+    app.template_filter("smart_display_name")(smart_display_name)
+    app.template_filter("display_name")(smart_display_name)
+
+    @app.template_filter("avatar_url")
+    def avatar_url_filter(user: dict[str, Any]) -> str:
+        if not user: return ""
+        wrapped = wrap_user(user)
+        url = wrapped.avatar_url if wrapped else ""
+        if url == "default":
+            seed = user.get("username") or user.get("email") or "User"
+            return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
+        return url
+
+    @app.template_filter("pluralize")
+    def pluralize_filter(number: int, singular: str = "", plural: str | None = None) -> str:
+        if number == 1: return singular
+        return plural if plural is not None else f"{singular}s"
+
+    _register_blueprints(app)
+    app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
+
+    @app.before_request
+    def load_logged_in_user() -> None:
+        uid = session.get("user_id")
+        if not uid:
+            auth_header = request.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                id_token = auth_header[7:].strip()
+                try:
+                    decoded_token = auth.verify_id_token(id_token)
+                    uid = decoded_token["uid"]
+                    session["user_id"] = uid
+                    session.permanent = True
+                except Exception as e:
+                    app.logger.debug(f"Token verification failed: {e}")
+
+        g.user = None
+        g.is_impersonating = False
+        if not uid: return
+
+        impersonate_id = session.get("impersonate_id")
+        is_admin = session.get("is_admin", False)
+        id_to_load = uid
+
+        if impersonate_id and is_admin:
+            id_to_load = impersonate_id
+            g.is_impersonating = True
+
+        try:
+            db = firestore.client()
+            user_doc = db.collection("users").document(id_to_load).get()
+            if user_doc.exists:
+                g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
+                if not g.is_impersonating:
+                    session["is_admin"] = g.user.get("isAdmin", False)
+            elif not g.is_impersonating:
+                session.clear()
+            else:
+                session.pop("impersonate_id", None)
+                g.is_impersonating = False
+        except Exception as e:
+            app.logger.error(f"Error loading user {id_to_load}: {e}")
+            if not g.is_impersonating: session.clear()
+
+    _register_context_processors(app)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1) # type: ignore
+    return app

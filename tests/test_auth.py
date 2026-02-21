@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 # Pre-emptive imports to ensure patch targets exist.
 from pickaladder import create_app
+from pickaladder.errors import DuplicateResourceError
 
 # Mock user payloads
 MOCK_USER_ID = "user1"
@@ -26,7 +27,12 @@ class AuthFirebaseTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
         self.mock_auth_service = MagicMock()
+        # Mock EmailAlreadyExistsError to be a real exception class for catch blocks
+        self.mock_auth_service.EmailAlreadyExistsError = type(
+            "EmailAlreadyExistsError", (Exception,), {}
+        )
         self.mock_firestore_service = MagicMock()
+        self.mock_auth_service_provider = MagicMock()
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
@@ -37,6 +43,10 @@ class AuthFirebaseTestCase(unittest.TestCase):
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
+            "auth_service": patch(
+                "pickaladder.auth.routes.AuthService",
+                new=self.mock_auth_service_provider,
+            ),
         }
 
         self.mocks = {name: p.start() for name, p in patchers.items()}
@@ -46,19 +56,14 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.app = create_app({"TESTING": True, "SERVER_NAME": "localhost"})
         self.client = self.app.test_client()
 
-    @patch("pickaladder.auth.routes.send_email")
-    def test_successful_registration(self, mock_send_email: MagicMock) -> None:
+    def test_successful_registration(self) -> None:
         """Test user registration with valid data."""
-        # Mock the username check to return an empty list, simulating username is
-        # available.
-        mock_db = self.mock_firestore_service.client.return_value
-        mock_users_collection = mock_db.collection("users")
-        (
-            mock_users_collection.where.return_value.limit.return_value.get.return_value
-        ) = []
-
-        # Mock the return value of create_user
-        self.mock_auth_service.create_user.return_value = MagicMock(uid="new_user_uid")
+        # Mock the AuthService.register_user call
+        self.mock_auth_service_provider.register_user.return_value = {
+            "uid": "new_user_uid",
+            "merged": False,
+            "pending_invites_count": 0,
+        }
 
         # First, get the register page to get a valid CSRF token
         register_page_response = self.client.get("/auth/register")
@@ -84,11 +89,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Registration successful!", response.data)
-        self.mock_auth_service.create_user.assert_called_once()
-        self.mock_firestore_service.client.return_value.collection("users").document(
-            "new_user_uid"
-        ).set.assert_called_once()
-        mock_send_email.assert_called_once()
+        self.mock_auth_service_provider.register_user.assert_called_once()
 
     def test_login_page_loads(self) -> None:
         """Test that the login page loads correctly."""
@@ -196,27 +197,14 @@ class AuthFirebaseTestCase(unittest.TestCase):
         mock_user_doc.set.assert_called_once()
         mock_settings_doc.set.assert_called_once_with({"value": True})
 
-    @patch("pickaladder.auth.routes.send_email")
-    def test_registration_with_invite_token(self, mock_send_email: MagicMock) -> None:
+    def test_registration_with_invite_token(self) -> None:
         """Test user registration with a valid invite token."""
-        # Mock the username check to return an empty list, simulating username is
-        # available.
-        mock_db = self.mock_firestore_service.client.return_value
-        mock_users_collection = mock_db.collection("users")
-        (
-            mock_users_collection.where.return_value.limit.return_value.get.return_value
-        ) = []
-
-        # Mock the invite token
-        mock_invite_doc = MagicMock()
-        mock_invite_doc.exists = True
-        mock_invite_doc.to_dict.return_value = {"userId": "inviter_uid", "used": False}
-        (
-            mock_db.collection("invites").document.return_value.get.return_value
-        ) = mock_invite_doc
-
-        # Mock the return value of create_user
-        self.mock_auth_service.create_user.return_value = MagicMock(uid="new_user_uid")
+        # Mock the AuthService.register_user call
+        self.mock_auth_service_provider.register_user.return_value = {
+            "uid": "new_user_uid",
+            "merged": False,
+            "pending_invites_count": 0,
+        }
 
         # First, get the register page to get a valid CSRF token and set the
         # invite token in the session
@@ -248,11 +236,41 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Registration successful!", response.data)
 
-        # Check that the friendship was created
-        mock_db.batch.assert_called_once()
-        mock_db.collection("invites").document(
-            "test_invite_token"
-        ).update.assert_called_once_with({"used": True})
+        # Check that the service was called with the invite token
+        self.mock_auth_service_provider.register_user.assert_called_once()
+        args, kwargs = self.mock_auth_service_provider.register_user.call_args
+        self.assertEqual(kwargs.get("invite_token"), "test_invite_token")
+
+    def test_registration_username_taken(self) -> None:
+        """Test registration when username is already taken."""
+        self.mock_auth_service_provider.register_user.side_effect = (
+            DuplicateResourceError("Username already exists.")
+        )
+
+        # First, get the register page to get a valid CSRF token
+        register_page_response = self.client.get("/auth/register")
+        csrf_token_match = re.search(
+            r'<input id="csrf_token" name="csrf_token" type="hidden" value="([^"]+)">',
+            register_page_response.data.decode(),
+        )
+        self.assertIsNotNone(csrf_token_match)
+        csrf_token = cast("Match[str]", csrf_token_match).group(1)
+
+        response = self.client.post(
+            "/auth/register",
+            data={
+                "csrf_token": csrf_token,
+                "username": "taken",
+                "email": "new@example.com",
+                "password": MOCK_PASSWORD,
+                "confirm_password": MOCK_PASSWORD,
+                "name": "New User",
+                "dupr_rating": 4.5,
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Username already exists.", response.data)
 
     def test_google_signin_new_user(self) -> None:
         """Test that a new user signing in with Google has their account created."""
