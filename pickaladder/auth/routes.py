@@ -41,10 +41,10 @@ def register() -> Any:
         try:
             result = AuthService.register_user(
                 db=db,
-                email=form.email.data,
-                password=form.password.data,
-                username=form.username.data,
-                name=form.name.data,
+                email=str(form.email.data),
+                password=str(form.password.data),
+                username=str(form.username.data),
+                name=str(form.name.data),
                 dupr_rating=float(form.dupr_rating.data)
                 if form.dupr_rating.data is not None
                 else 0.0,

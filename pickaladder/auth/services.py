@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import auth, firestore
 from flask import current_app
@@ -10,6 +10,7 @@ from pickaladder.user import UserService
 from pickaladder.utils import send_email
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
 
@@ -17,7 +18,7 @@ class AuthService:
     """Service class for authentication-related operations."""
 
     @staticmethod
-    def register_user(
+    def register_user(  # noqa: PLR0913
         db: Client,
         email: str,
         password: str,
@@ -117,27 +118,29 @@ class AuthService:
         # 7. Handle invite token for friendship
         if invite_token:
             invite_ref = db.collection("invites").document(invite_token)
-            invite = invite_ref.get()
-            if invite.exists and not invite.to_dict().get("used"):
-                inviter_id = invite.to_dict()["userId"]
-                # Create friendship
-                batch = db.batch()
-                batch.set(
-                    db.collection("users")
-                    .document(user_record.uid)
-                    .collection("friends")
-                    .document(inviter_id),
-                    {"status": "accepted"},
-                )
-                batch.set(
-                    db.collection("users")
-                    .document(inviter_id)
-                    .collection("friends")
-                    .document(user_record.uid),
-                    {"status": "accepted"},
-                )
-                batch.commit()
-                invite_ref.update({"used": True})
+            invite = cast("DocumentSnapshot", invite_ref.get())
+            if invite.exists:
+                invite_data = invite.to_dict()
+                if invite_data and not invite_data.get("used"):
+                    inviter_id = invite_data["userId"]
+                    # Create friendship
+                    batch = db.batch()
+                    batch.set(
+                        db.collection("users")
+                        .document(user_record.uid)
+                        .collection("friends")
+                        .document(inviter_id),
+                        {"status": "accepted"},
+                    )
+                    batch.set(
+                        db.collection("users")
+                        .document(inviter_id)
+                        .collection("friends")
+                        .document(user_record.uid),
+                        {"status": "accepted"},
+                    )
+                    batch.commit()
+                    invite_ref.update({"used": True})
 
         return {
             "uid": user_record.uid,
