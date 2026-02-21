@@ -52,7 +52,7 @@ def admin() -> Union[str, Response]:
     email_verification_setting = setting_ref.get()
 
     # Fetch Users for Management Table
-    users = UserService.get_all_users(db, limit=50, is_admin=True)
+    users = UserService.get_all_users(db, limit=50, public_only=False)
 
     return render_template(
         "admin/admin.html",
@@ -320,7 +320,7 @@ def generate_matches() -> Response:
             if random.choice([True, False]):  # nosec B311
                 s1, s2 = s2, s1
 
-            # Use a dummy current_user dict for MatchService
+            # Use a dummy current_user for MatchService
             dummy_user = UserSession({"uid": p1_id})
 
             submission = MatchSubmission(
@@ -330,7 +330,6 @@ def generate_matches() -> Response:
                 score_p2=s2,
                 match_type="singles",
                 match_date=datetime.datetime.now(datetime.timezone.utc),
-                created_by=p1_id,
             )
             try:
                 MatchService.record_match(db, submission, dummy_user)
@@ -349,7 +348,9 @@ def generate_matches() -> Response:
 @login_required(admin_required=True)
 def merge_players() -> Union[str, Response]:
     """Merge two player accounts (Source -> Target). Source is deleted."""
-    users = UserService.get_all_users(firestore.client(), exclude_ids=[], is_admin=True)
+    users = UserService.get_all_users(
+        firestore.client(), exclude_ids=[], public_only=False
+    )
 
     # Sort users for the dropdown (Real users first, then Ghosts)
     sorted_users = sorted(

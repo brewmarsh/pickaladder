@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <title>pickaladder{% if config['FLASK_ENV'] == 'beta' %} (BETA){% endif %} - {% block title %}{% endblock %}</title>
+    <title>pickaladder - {% block title %}{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -38,12 +38,6 @@
 
 <body {% if g.user and g.user.dark_mode %}data-theme="dark" {% endif %}
     {% if is_testing %}data-is-testing="true" {% endif %}>
-    {% if config['FLASK_ENV'] == 'beta' %}
-    <div class="alert alert-primary text-center m-0"
-        style="background-color: var(--primary-color); color: white; border: none; border-radius: 0;">
-        <strong>BETA MODE:</strong> Data is refreshed daily. Actions taken here will NOT be saved to Production.
-    </div>
-    {% endif %}
     {% if g.get('is_impersonating') %}
     <div class="alert alert-warning text-center m-0">
         🕵️ You are impersonating <strong>{{ g.user.name }}</strong>.
@@ -236,60 +230,6 @@
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-
-        /**
-         * Synchronizes the Firebase ID token with the Flask session.
-         * Resolves the "double login" and session persistence bugs.
-         */
-        async function syncSession(idToken, remember = false) {
-            try {
-                const response = await fetch("{{ url_for('auth.session_login') }}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({ idToken: idToken, remember: remember }),
-                });
-
-                if (response.ok) {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const nextUrl = urlParams.get('next');
-                    // Successful sync: redirect to dashboard or the 'next' URL
-                    if (nextUrl && nextUrl.startsWith('/')) {
-                        window.location.href = nextUrl;
-                    } else if (window.location.pathname === "{{ url_for('auth.login') }}" || window.location.pathname === "/") {
-                        window.location.href = "{{ url_for('user.dashboard') }}";
-                    }
-                }
-            } catch (error) {
-                console.error("Session synchronization failed:", error);
-            }
-        }
-
-        // Listen for auth state changes to keep the Flask session in sync with Firebase
-        firebase.auth().onIdTokenChanged(async (user) => {
-            if (user) {
-                const idToken = await user.getIdToken();
-                localStorage.setItem('firebaseIdToken', idToken);
-
-                // Auto-sync if Firebase is authenticated but Flask session is missing
-                {% if not g.user %}
-                const isLoginPage = window.location.pathname === "{{ url_for('auth.login') }}" || window.location.pathname === "/";
-                if (isLoginPage) {
-                    // Recover 'remember' preference from localStorage if available
-                    const remember = localStorage.getItem('rememberMe') === 'true';
-                    syncSession(idToken, remember);
-                }
-                {% endif %}
-            } else {
-                localStorage.removeItem('firebaseIdToken');
-                {% if g.user %}
-                // If Flask thinks we are logged in but Firebase says otherwise, log out
-                window.location.href = "{{ url_for('auth.logout') }}";
-                {% endif %}
-            }
-        });
     </script>
 
     {% block scripts %}{% endblock %}

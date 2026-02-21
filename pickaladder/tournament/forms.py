@@ -2,7 +2,13 @@
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField
-from wtforms import DateField, RadioField, SelectField, StringField, TextAreaField
+from wtforms import (
+    DateField, 
+    RadioField, 
+    SelectField, 
+    StringField, 
+    TextAreaField
+)
 from wtforms.validators import DataRequired, Optional
 
 
@@ -11,15 +17,16 @@ class TournamentForm(FlaskForm):
 
     name = StringField("Tournament Name", validators=[DataRequired()])
     
-    # RESOLVED: Security validation from main branch
+    # RESOLVED: Security validation for banner uploads
     banner = FileField(
         "Tournament Banner",
         validators=[Optional(), FileAllowed(["jpg", "png", "jpeg"], "Images only!")]
     )
     
+    # RESOLVED: Normalizing on start_date for modern CI/CD consistency
     start_date = DateField("Date", validators=[DataRequired()])
     
-    # RESOLVED: Optionality from main branch to support fallback logic in routes
+    # RESOLVED: Granular location fields to support fallback logic and mapping
     location = StringField("Location", validators=[Optional()])
     venue_name = StringField("Venue Name", validators=[Optional()])
     address = StringField("Address", validators=[Optional()])

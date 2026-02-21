@@ -81,28 +81,28 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
 
     # 4. Onboarding Progress Calculation (Merged logic)
     has_avatar = bool(user_data.get("profilePictureUrl"))
-    has_dupr = bool(user_data.get("duprRating") or user_data.get("dupr_rating"))
-    has_match = len(matches) > 0
+    has_dupr = bool(user_data.get("duprId"))
+    has_rating = bool(user_data.get("duprRating"))
     has_group = len(group_rankings) > 0
+    has_match = len(matches) > 0
     has_friend = len(friends) > 0
 
     # Steps include all five key engagement milestones
-    steps = [has_avatar, has_dupr, has_match, has_group, has_friend]
-    percent = int((sum(steps) / len(steps)) * 100) if steps else 0
+    milestones = [has_avatar, has_dupr, has_match, has_group, has_friend]
+    percent = int((sum(milestones) / len(milestones)) * 100) if milestones else 0
 
     onboarding_progress = {
         "percent": percent,
         "has_avatar": has_avatar,
         "has_dupr": has_dupr,
-        "has_rating": has_dupr,  # Compatibility key
-        "has_match": has_match,
+        "has_rating": has_rating,
         "has_group": has_group,
+        "has_match": has_match,
         "has_friend": has_friend,
     }
 
     return {
         "user": user_data,
-        "onboarding_progress": onboarding_progress,
         "matches": matches,
         "next_cursor": next_cursor,
         "stats": stats,
@@ -114,4 +114,5 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         "pending_tournament_invites": pending_tournament_invites,
         "active_tournaments": active_tournaments,
         "past_tournaments": past_tournaments,
+        "onboarding_progress": onboarding_progress,
     }

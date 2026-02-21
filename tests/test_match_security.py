@@ -29,27 +29,15 @@ class MatchSecurityTestCase(unittest.TestCase):
         mock_get_candidates.return_value = {"player1", "player2"}
 
         # Simulate form data with injected fields
-        form_data = {
-            "player1": "player1",
-            "player2": "player2",
-            "player1_score": 11,
-            "player2_score": 5,
-            "match_type": "singles",
-            "is_winner": "player2",  # Injected
-            "is_upset": True,  # Injected
-            "rating": 5.0,  # Injected
-        }
+        submission = MatchSubmission(
+            player_1_id="player1",
+            player_2_id="player2",
+            score_p1=11,
+            score_p2=5,
+            match_type="singles",
+        )
 
         current_user = cast("UserSession", {"uid": "player1"})
-
-        submission = MatchSubmission(
-            match_type=cast(str, form_data["match_type"]),
-            player_1_id=cast(str, form_data["player1"]),
-            player_2_id=cast(str, form_data["player2"]),
-            score_p1=cast(int, form_data["player1_score"]),
-            score_p2=cast(int, form_data["player2_score"]),
-            match_date=None,
-        )
 
         MatchService.record_match(mock_db, submission, current_user)
 

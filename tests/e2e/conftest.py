@@ -214,22 +214,29 @@ class MockTransaction(Transaction):
         self._max_attempts = 5
         self._retry_id = None
 
-    def __getattr__(self, name: str) -> Any:
-        if name.startswith("_"):
-            return MagicMock()
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-
     def _begin(self, retry_id: Any = None, **kwargs: Any) -> None:
+        """Mock begin."""
         pass
 
     def _rollback(self) -> None:
-        pass
-
-    def _clean_up(self) -> None:
+        """Mock rollback."""
         pass
 
     def _commit(self) -> list[Any]:
+        """Mock commit."""
         return []
+
+    def _clean_up(self) -> None:
+        """Mock clean up."""
+        pass
+
+    def __getattr__(self, name: str) -> Any:
+        """Handle missing attributes by returning a no-op or mock."""
+        if name.startswith("_"):
+            return MagicMock()
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        )
 
     def get(self, ref_or_query: Any, **kwargs: Any) -> Any:
         return ref_or_query.get()
@@ -330,6 +337,7 @@ def app_server(mock_db: EnhancedMockFirestore, mock_auth: MockAuthService) -> Ge
     for p in patches: p.start()
     pickaladder = importlib.import_module("pickaladder")
 
+    # RESOLVED: Combined environment configuration
     os.environ.update({
         "FIREBASE_PROJECT_ID": "test-project",
         "SECRET_KEY": "dev",

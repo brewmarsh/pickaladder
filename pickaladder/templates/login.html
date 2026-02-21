@@ -82,15 +82,27 @@ document.addEventListener('DOMContentLoaded', function () {
     googleSignInButton.addEventListener('click', function() {
         const provider = new firebase.auth.GoogleAuthProvider();
         const remember = document.getElementById('remember').checked;
-        localStorage.setItem('rememberMe', remember);
-
         firebase.auth().signInWithPopup(provider)
             .then((result) => {
                 return result.user.getIdToken();
             })
             .then((idToken) => {
-                // Use global syncSession to resolve race conditions
-                return syncSession(idToken, remember);
+                localStorage.setItem('firebaseIdToken', idToken);
+                return fetch("{{ url_for('auth.session_login') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ idToken: idToken, remember: remember }),
+                });
+            })
+            .then(response => {
+                if (response.ok) {
+                    handleLoginSuccess();
+                } else {
+                    throw new Error("Server-side session creation failed.");
+                }
             })
             .catch((error) => {
                 const errorMessage = error.message;
@@ -108,15 +120,28 @@ document.addEventListener('DOMContentLoaded', function () {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
-        localStorage.setItem('rememberMe', remember);
 
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
                 return userCredential.user.getIdToken();
             })
             .then((idToken) => {
-                // Use global syncSession to resolve race conditions
-                return syncSession(idToken, remember);
+                localStorage.setItem('firebaseIdToken', idToken);
+                return fetch("{{ url_for('auth.session_login') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ idToken: idToken, remember: remember }),
+                });
+            })
+            .then(response => {
+                if (response.ok) {
+                    handleLoginSuccess();
+                } else {
+                    throw new Error("Server-side session creation failed.");
+                }
             })
             .catch((error) => {
                 console.error("Login error:", error);
