@@ -132,8 +132,8 @@ def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
             with suppress(json.JSONDecodeError, ValueError):
                 with cred_path.open() as f:
                     cred_info = json.load(f)
-                project_id = cred_info.get("project_id")
-                cred = credentials.Certificate(str(cred_path))
+                    project_id = cred_info.get("project_id")
+                    cred = credentials.Certificate(str(cred_path))
 
     # If both methods fail, fallback to default credentials
     if not cred:
@@ -187,6 +187,44 @@ def _register_context_processors(app: Flask) -> None:
     app.context_processor(inject_incoming_requests_count)
     app.context_processor(inject_pending_tournament_invites)
     app.context_processor(inject_firebase_api_key)
+
+
+def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
+    """Load and process application configuration."""
+    mail_username = os.environ.get("MAIL_USERNAME")
+    if mail_username:
+        mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
+
+    mail_password = os.environ.get("MAIL_PASSWORD")
+    if mail_password:
+        mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
+
+    app.config.from_mapping(
+        SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
+        FLASK_ENV=os.environ.get("FLASK_ENV", "development"),
+        FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
+        GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
+        MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
+        MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
+        MAIL_USE_TLS=(os.environ.get("MAIL_USE_TLS") or "true").lower()
+        in ("true", "1", "t"),
+        MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower()
+        in ("true", "1", "t"),
+        MAIL_USERNAME=mail_username,
+        MAIL_PASSWORD=mail_password,
+        MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
+        or "noreply@pickaladder.com",
+        UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
+        # Merged Session Configuration for persistence and security
+        SESSION_PERMANENT=True,
+        PERMANENT_SESSION_LIFETIME=timedelta(days=31),
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=os.environ.get("FLASK_ENV") != "development",
+    )
+
+    if test_config:
+        app.config.update(test_config)
 
 
 def create_app(test_config: dict[str, Any] | None = None) -> Flask:
@@ -270,40 +308,3 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
 
     return app
-
-
-def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
-    """Load and process application configuration."""
-    mail_username = os.environ.get("MAIL_USERNAME")
-    if mail_username:
-        mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
-
-    mail_password = os.environ.get("MAIL_PASSWORD")
-    if mail_password:
-        mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
-
-    app.config.from_mapping(
-        SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
-        FLASK_ENV=os.environ.get("FLASK_ENV", "development"),
-        FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
-        GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
-        MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
-        MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
-        MAIL_USE_TLS=(os.environ.get("MAIL_USE_TLS") or "true").lower()
-        in ("true", "1", "t"),
-        MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower()
-        in ("true", "1", "t"),
-        MAIL_USERNAME=mail_username,
-        MAIL_PASSWORD=mail_password,
-        MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
-        or "noreply@pickaladder.com",
-        UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
-        SESSION_PERMANENT=True,
-        PERMANENT_SESSION_LIFETIME=timedelta(days=31),
-        SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE="Lax",
-        SESSION_COOKIE_SECURE=os.environ.get("FLASK_ENV") != "development",
-    )
-
-    if test_config:
-        app.config.update(test_config)
