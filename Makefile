@@ -16,3 +16,6 @@ reset-db:
 
 migrate:
 	docker compose exec web python migrate.py
+
+run-scorecard:
+	agent-score .
