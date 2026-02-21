@@ -180,36 +180,15 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(tournament_bp.bp)
     app.register_blueprint(error_handlers.error_handlers_bp)
 
+    # make url_for('index') == url_for('auth.login')
+    app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
 
-def _register_context_processors(app: Flask) -> None:
-    """Register all context processors for the application."""
-    app.context_processor(inject_global_context)
-    app.context_processor(inject_incoming_requests_count)
-    app.context_processor(inject_pending_tournament_invites)
-    app.context_processor(inject_firebase_api_key)
+    # Configure ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
 
 
-def create_app(test_config: dict[str, Any] | None = None) -> Flask:
-    """Create and configure an instance of the Flask application."""
-    app = Flask(
-        __name__,
-        instance_relative_config=True,
-        static_folder="static",
-        static_url_path="/static",
-    )
-    app.url_map.converters["uuid"] = UUIDConverter
-
-    # Load configuration
-    _load_app_config(app, test_config)
-
-    _configure_mail_logging(app)
-    _initialize_firebase(app)
-
-    # Ensure the instance folder exists
-    with suppress(OSError):
-        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
-
-    # Initialize extensions
+def _register_extensions(app: Flask) -> None:
+    """Initialize Flask extensions."""
     mail.init_app(app)
     csrf.init_app(app)
     login_manager.init_app(app)
@@ -233,6 +212,14 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         except Exception as e:
             current_app.logger.error(f"Error in user_loader: {e}")
         return None
+
+
+def _register_template_utilities(app: Flask) -> None:
+    """Register all context processors and filters for the application."""
+    app.context_processor(inject_global_context)
+    app.context_processor(inject_incoming_requests_count)
+    app.context_processor(inject_pending_tournament_invites)
+    app.context_processor(inject_firebase_api_key)
 
     # Register filters
     app.template_filter("smart_display_name")(smart_display_name)
@@ -260,20 +247,36 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             return singular
         return plural if plural is not None else f"{singular}s"
 
+
+def create_app(test_config: dict[str, Any] | None = None) -> Flask:
+    """Create and configure an instance of the Flask application."""
+    app = Flask(
+        __name__,
+        instance_relative_config=True,
+        static_folder="static",
+        static_url_path="/static",
+    )
+    # Load configuration
+    _load_config(app, test_config)
+
+    _configure_mail_logging(app)
+    _initialize_firebase(app)
+
+    _register_extensions(app)
     _register_blueprints(app)
-
-    # make url_for('index') == url_for('auth.login')
-    app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
-
-    _register_context_processors(app)
-
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
+    _register_template_utilities(app)
 
     return app
 
 
-def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
+def _load_config(app: Flask, test_config: dict[str, Any] | None) -> None:
     """Load and process application configuration."""
+    app.url_map.converters["uuid"] = UUIDConverter
+
+    # Ensure the instance folder exists
+    with suppress(OSError):
+        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+
     mail_username = os.environ.get("MAIL_USERNAME")
     if mail_username:
         mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
