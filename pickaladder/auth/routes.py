@@ -21,9 +21,8 @@ from werkzeug.exceptions import UnprocessableEntity
 from pickaladder.errors import DuplicateResourceError
 from pickaladder.user import UserService
 from pickaladder.user.helpers import wrap_user
-from pickaladder.utils import EmailError, send_email
 
-from . import bp
+from . import AuthService, bp
 from .forms import ChangePasswordForm, LoginForm, RegisterForm
 
 
@@ -38,100 +37,29 @@ def register() -> Any:
     if form.validate_on_submit():
         referrer_id = session.get("referrer_id")
         db = firestore.client()
-        username = form.username.data
-        email = form.email.data
-        password = form.password.data
-
-        # Check if username is already taken in Firestore
-        users_ref = db.collection("users")
-        taken = (
-            users_ref.where(filter=firestore.FieldFilter("username", "==", username))
-            .limit(1)
-            .get()
-        )
-        if len(list(taken)) > 0:
-            flash("Username already exists. Please choose a different one.", "danger")
-            return redirect(url_for(".register"))
 
         try:
-            # Create user in Firebase Authentication
-            user_record = auth.create_user(
-                email=email, password=password, email_verified=False
-            )
-
-            # Send email verification
-            verification_link = auth.generate_email_verification_link(email)
-            send_email(
-                to=email,
-                subject="Verify Your Email",
-                template="email/verify_email.html",
-                user={"username": username},
-                verification_link=verification_link,
-            )
-
-            # Create user document in Firestore
-            user_doc_ref = db.collection("users").document(user_record.uid)
-            user_data = {
-                "username": username,
-                "email": email,
-                "name": form.name.data,
-                "duprRating": float(form.dupr_rating.data)
+            result = AuthService.register_user(
+                db=db,
+                email=str(form.email.data),
+                password=str(form.password.data),
+                username=str(form.username.data),
+                name=str(form.name.data),
+                dupr_rating=float(form.dupr_rating.data)
                 if form.dupr_rating.data is not None
                 else 0.0,
-                "isAdmin": False,
-                "createdAt": firestore.SERVER_TIMESTAMP,
-            }
+                referrer_id=referrer_id,
+                invite_token=session.get("invite_token"),
+            )
 
             if referrer_id:
-                user_data["referred_by"] = referrer_id
-
-            user_doc_ref.set(user_data)
-
-            if referrer_id:
-                # Increment referral count for the referrer
-                try:
-                    db.collection("users").document(referrer_id).update(
-                        {"referral_count": firestore.Increment(1)}
-                    )
-                except Exception as e:
-                    current_app.logger.error(f"Error incrementing referral count: {e}")
-
                 session.pop("referrer_id", None)
 
-            # Check for ghost user merge
-            if email and UserService.merge_ghost_user(db, user_doc_ref, email):
-                # Check for tournament invites to show welcome toast
-                invites = UserService.get_pending_tournament_invites(
-                    db, user_doc_ref.id
-                )
-                if invites:
-                    session["show_welcome_invites"] = len(invites)
+            if session.get("invite_token"):
+                session.pop("invite_token", None)
 
-            # Handle invite token
-            invite_token = session.pop("invite_token", None)
-            if invite_token:
-                invite_ref = db.collection("invites").document(invite_token)
-                invite = invite_ref.get()
-                if invite.exists and not invite.to_dict().get("used"):
-                    inviter_id = invite.to_dict()["userId"]
-                    # Create friendship
-                    batch = db.batch()
-                    batch.set(
-                        db.collection("users")
-                        .document(user_record.uid)
-                        .collection("friends")
-                        .document(inviter_id),
-                        {"status": "accepted"},
-                    )
-                    batch.set(
-                        db.collection("users")
-                        .document(inviter_id)
-                        .collection("friends")
-                        .document(user_record.uid),
-                        {"status": "accepted"},
-                    )
-                    batch.commit()
-                    invite_ref.update({"used": True})
+            if result.get("pending_invites_count"):
+                session["show_welcome_invites"] = result["pending_invites_count"]
 
             flash(
                 "Registration successful! Please check your email to verify your "
@@ -141,11 +69,10 @@ def register() -> Any:
             # Client-side will handle login and redirect to dashboard
             return redirect(url_for(".login", next=request.args.get("next")))
 
+        except DuplicateResourceError as e:
+            flash(str(e), "danger")
         except auth.EmailAlreadyExistsError:
             flash("Email address is already registered.", "danger")
-        except EmailError as e:
-            current_app.logger.error(f"Email error during registration: {e}")
-            flash(str(e), "danger")
         except Exception as e:
             current_app.logger.error(f"Error during registration: {e}")
             flash("An unexpected error occurred during registration.", "danger")
@@ -243,6 +170,8 @@ def session_login() -> Any:
         user = wrap_user(user_info, uid=uid)
         login_user(user, remember=remember)
 
+        # Set session as permanent if 'remember' is True to persist across restarts
+        session.permanent = remember
         session["user_id"] = uid
         session["is_admin"] = user_info.get("isAdmin", False)
         return jsonify({"status": "success"})

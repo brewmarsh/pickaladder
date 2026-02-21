@@ -351,6 +351,7 @@ class TournamentService:
         tournament_id: str,
         user_uid: str,
         update_data: dict[str, Any],
+        is_admin: bool = False,
         db: Client | None = None,
     ) -> None:
         """Update tournament details with ownership check."""
@@ -368,7 +369,7 @@ class TournamentService:
         if not owner_id and data.get("ownerRef"):
             owner_id = data["ownerRef"].id
 
-        if owner_id != user_uid:
+        if not is_admin and owner_id != user_uid:
             raise PermissionError("Unauthorized.")
 
         # Handle start_date / date compatibility
@@ -389,7 +390,52 @@ class TournamentService:
                 # Don't update matchType if matches exist
                 del update_data["matchType"]
 
+        # If matches exist, block critical field updates
+        matches = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("tournamentId", "==", tournament_id))
+            .limit(1)
+            .stream()
+        )
+        if any(matches):
+            critical_fields = {"matchType", "mode", "format"}
+            for field in critical_fields:
+                if field in update_data:
+                    del update_data[field]
+
         ref.update(update_data)
+
+    @staticmethod
+    def delete_tournament(
+        tournament_id: str,
+        user_uid: str,
+        is_admin: bool = False,
+        db: Client | None = None,
+    ) -> None:
+        """Delete a tournament if owner or admin."""
+        if db is None:
+            db = firestore.client()
+        ref = db.collection("tournaments").document(tournament_id)
+        doc = cast(Any, ref.get())
+        if not doc.exists:
+            raise ValueError("Tournament not found")
+        data = doc.to_dict()
+        if not data:
+            raise ValueError("Empty data")
+
+        owner_id = data.get("organizer_id")
+        if not owner_id and data.get("ownerRef"):
+            owner_id = data["ownerRef"].id
+
+        if not is_admin and owner_id != user_uid:
+            raise PermissionError("Unauthorized")
+
+        # Optional: check if matches exist before deleting
+        # matches = db.collection("matches").where("tournamentId", "==", tournament_id).limit(1).stream()
+        # if any(matches):
+        #     raise ValueError("Cannot delete tournament with matches recorded.")
+
+        ref.delete()
 
     @staticmethod
     def invite_player(
@@ -484,12 +530,15 @@ class TournamentService:
         )
 
         if new_parts:
-            t_ref.update(
+            batch = db.batch()
+            batch.update(
+                t_ref,
                 {
                     "participants": firestore.ArrayUnion(new_parts),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                }
+                },
             )
+            batch.commit()
         return len(new_parts)
 
     @staticmethod
@@ -816,3 +865,45 @@ class TournamentService:
                     }
                 )
         return bracket
+
+
+class TournamentGenerator:
+    """Utility class to generate tournament match pairings."""
+
+    @staticmethod
+    def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
+        """Generate Round Robin pairings using the Circle Method."""
+        min_participants = 2
+        if not participant_ids or len(participant_ids) < min_participants:
+            return []
+
+        # Handle odd number of participants by adding a BYE
+        ids = list(participant_ids)
+        if len(ids) % 2 != 0:
+            ids.append(None)  # type: ignore
+
+        n = len(ids)
+        pairings = []
+        db = firestore.client()
+
+        # Circle Method for Round Robin pairings
+        for _ in range(n - 1):
+            for i in range(n // 2):
+                p1 = ids[i]
+                p2 = ids[n - 1 - i]
+
+                if p1 is not None and p2 is not None:
+                    pairings.append(
+                        {
+                            "player1Ref": db.collection("users").document(p1),
+                            "player2Ref": db.collection("users").document(p2),
+                            "matchType": "singles",
+                            "status": "DRAFT",
+                            "createdAt": firestore.SERVER_TIMESTAMP,
+                            "participants": [p1, p2],
+                        }
+                    )
+            # Rotate ids: keep the first element, rotate the others
+            ids = [ids[0]] + [ids[-1]] + ids[1:-1]
+
+        return pairings

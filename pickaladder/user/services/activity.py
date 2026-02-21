@@ -290,7 +290,9 @@ def get_user_profile_data(
     }
 
 
-def get_community_data(db: Client, user_id: str, search_term: str) -> dict[str, Any]:
+def get_community_data(
+    db: Client, user_id: str, search_term: str, is_admin: bool = False
+) -> dict[str, Any]:
     """Fetch and filter community hub data."""
     from .core import get_all_users
     from .friendship import (
@@ -299,16 +301,16 @@ def get_community_data(db: Client, user_id: str, search_term: str) -> dict[str, 
         get_user_sent_requests,
     )
 
-    friends = get_user_friends(db, user_id)
-    incoming_requests = get_user_pending_requests(db, user_id)
-    outgoing_requests = get_user_sent_requests(db, user_id)
+    friends = get_user_friends(db, user_id, is_admin=is_admin)
+    incoming_requests = get_user_pending_requests(db, user_id, is_admin=is_admin)
+    outgoing_requests = get_user_sent_requests(db, user_id, is_admin=is_admin)
 
     exclude_ids = [user_id]
     exclude_ids.extend([f["id"] for f in friends])
     exclude_ids.extend([r["id"] for r in incoming_requests])
     exclude_ids.extend([r["id"] for r in outgoing_requests])
 
-    all_users = get_all_users(db, exclude_ids, limit=20)
+    all_users = get_all_users(db, exclude_ids, limit=20, is_admin=is_admin)
     public_groups = get_public_groups(db, limit=10)
     pending_tournament_invites = get_pending_tournament_invites(db, user_id)
 
