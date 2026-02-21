@@ -6,14 +6,14 @@ import json
 import os
 import sys
 import uuid
-from datetime import timedelta
 from contextlib import suppress
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
 import firebase_admin
 from firebase_admin import auth, credentials, firestore
-from flask import Flask, current_app, g, session
+from flask import Flask, current_app, g, request, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
 
@@ -264,6 +264,59 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     # make url_for('index') == url_for('auth.login')
     app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
+
+    @app.before_request
+    def load_logged_in_user() -> None:
+        """Reliably populate g.user from session or Authorization header."""
+        uid = session.get("user_id")
+
+        # Fallback to Authorization header if session is missing
+        if not uid:
+            auth_header = request.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                id_token = auth_header[7:].strip()
+                try:
+                    decoded_token = auth.verify_id_token(id_token)
+                    uid = decoded_token["uid"]
+                    # Sync session for subsequent requests
+                    session["user_id"] = uid
+                    session.permanent = True
+                except Exception as e:
+                    app.logger.debug(f"Token verification failed: {e}")
+
+        g.user = None
+        g.is_impersonating = False
+
+        if not uid:
+            return
+
+        # Handle impersonation for admins
+        impersonate_id = session.get("impersonate_id")
+        is_admin = session.get("is_admin", False)
+        id_to_load = uid
+
+        if impersonate_id and is_admin:
+            id_to_load = impersonate_id
+            g.is_impersonating = True
+
+        try:
+            db = firestore.client()
+            user_doc = db.collection("users").document(id_to_load).get()
+            if user_doc.exists:
+                g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
+                # Ensure session is admin-synced
+                if not g.is_impersonating:
+                    session["is_admin"] = g.user.get("isAdmin", False)
+            elif not g.is_impersonating:
+                session.clear()
+            else:
+                # Clear impersonation if user not found
+                session.pop("impersonate_id", None)
+                g.is_impersonating = False
+        except Exception as e:
+            app.logger.error(f"Error loading user {id_to_load}: {e}")
+            if not g.is_impersonating:
+                session.clear()
 
     _register_context_processors(app)
 
