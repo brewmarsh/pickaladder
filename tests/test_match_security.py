@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 from pickaladder.match.models import MatchSubmission
-from pickaladder.match.services import MatchService
+from pickaladder.match.services import MatchCommandService, MatchQueryService
 
 if TYPE_CHECKING:
     from pickaladder.user.models import UserSession
@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 class MatchSecurityTestCase(unittest.TestCase):
     """Test case for match submission security."""
 
-    @patch("pickaladder.match.services.MatchService.get_candidate_player_ids")
-    @patch("pickaladder.match.services.MatchService._record_match_batch")
+    @patch("pickaladder.match.services.MatchQueryService.get_candidate_player_ids")
+    @patch("pickaladder.match.services.MatchCommandService._record_match_batch")
     def test_injected_fields_ignored(
         self, mock_record_batch: MagicMock, mock_get_candidates: MagicMock
     ) -> None:
@@ -52,7 +52,7 @@ class MatchSecurityTestCase(unittest.TestCase):
             match_date=None,
         )
 
-        MatchService.record_match(mock_db, submission, current_user)
+        MatchCommandService.record_match(mock_db, submission, current_user)
 
         # Verify mock_record_batch was called
         self.assertTrue(mock_record_batch.called)

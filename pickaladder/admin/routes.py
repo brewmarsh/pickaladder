@@ -20,7 +20,7 @@ from werkzeug.wrappers import Response
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.match.models import MatchSubmission
-from pickaladder.match.services import MatchService
+from pickaladder.match.services import MatchCommandService
 from pickaladder.user import UserService
 from pickaladder.user.models import UserSession
 
@@ -333,7 +333,7 @@ def generate_matches() -> Response:
                 created_by=p1_id,
             )
             try:
-                MatchService.record_match(db, submission, dummy_user)
+                MatchCommandService.record_match(db, submission, dummy_user)
                 matches_created += 1
             except Exception as e:
                 print(f"Error generating match: {e}")

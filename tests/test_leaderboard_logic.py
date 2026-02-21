@@ -5,14 +5,14 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from pickaladder.match.services import MatchService
+from pickaladder.match.services import MatchQueryService
 
 
 class TestLeaderboardLogic(unittest.TestCase):
     """Test case for the global leaderboard filtering logic."""
 
     @patch("pickaladder.match.services.firestore")
-    @patch("pickaladder.match.services.MatchService.get_player_record")
+    @patch("pickaladder.match.services.MatchQueryService.get_player_record")
     def test_get_leaderboard_data_filters_inactive(
         self, mock_get_player_record: MagicMock, mock_firestore: MagicMock
     ) -> None:
@@ -65,7 +65,7 @@ class TestLeaderboardLogic(unittest.TestCase):
         mock_get_player_record.side_effect = get_record_side_effect
 
         # Running the function
-        players = MatchService.get_leaderboard_data(mock_db)
+        players = MatchQueryService.get_leaderboard_data(mock_db)
 
         # Assertions
         # User 1 and User 2 have > 0 games
