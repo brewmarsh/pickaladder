@@ -142,6 +142,8 @@ def process_profile_update(
         url = upload_profile_picture(user_id, profile_picture_file)
         if url:
             update_data["profilePictureUrl"] = url
+            # Clear thumbnail to ensure new profile picture is shown
+            update_data["profilePictureThumbnailUrl"] = None
 
     # Handle username change
     if new_username != current_user_data.get("username"):
@@ -157,23 +159,36 @@ def process_profile_update(
             db, user_id, new_email, new_username, update_data
         )
         if success:
+            # Refresh current_user_data even on email change
+            if current_user_data is not None and hasattr(current_user_data, "update"):
+                current_user_data.update(update_data)
             return {"success": True, "info": message}
         return {"success": False, "error": message}
 
     update_user_profile(db, user_id, update_data)
+
+    # Refresh current_user_data in current request context (e.g., g.user)
+    if current_user_data is not None and hasattr(current_user_data, "update"):
+        current_user_data.update(update_data)
+
     return {"success": True}
 
 
 def update_settings(
-    db: Client, user_id: str, form_data: Any, profile_picture_file: Any = None
+    db: Client,
+    user_id: str,
+    form_data: Any,
+    current_user_data: dict[str, Any] | None = None,
+    profile_picture_file: Any = None,
 ) -> dict[str, Any]:
     """Update user settings (username, rating, dark mode, and profile picture)."""
     new_username = form_data.username.data
 
     # Check for username conflict
     user_ref = db.collection("users").document(user_id)
-    current_user_doc = cast("DocumentSnapshot", user_ref.get())
-    current_user_data = current_user_doc.to_dict() or {}
+    if current_user_data is None:
+        current_user_doc = cast("DocumentSnapshot", user_ref.get())
+        current_user_data = current_user_doc.to_dict() or {}
 
     if new_username != current_user_data.get("username"):
         if not check_username_availability(db, new_username):
@@ -204,6 +219,8 @@ def update_settings(
         url = upload_profile_picture(user_id, profile_picture_file)
         if url:
             update_data["profilePictureUrl"] = url
+            # Clear thumbnail to ensure new profile picture is shown
+            update_data["profilePictureThumbnailUrl"] = None
 
     # Handle email change if present in form
     if hasattr(form_data, "email") and form_data.email.data:
@@ -213,10 +230,18 @@ def update_settings(
                 db, user_id, new_email, new_username, update_data
             )
             if success:
+                # Refresh current_user_data even on email change
+                if current_user_data is not None and hasattr(current_user_data, "update"):
+                    current_user_data.update(update_data)
                 return {"success": True, "info": message}
             return {"success": False, "error": message}
 
     user_ref.update(update_data)
+
+    # Refresh current_user_data in current request context (e.g., g.user)
+    if current_user_data is not None and hasattr(current_user_data, "update"):
+        current_user_data.update(update_data)
+
     return {"success": True}
 
 
@@ -267,7 +292,11 @@ def create_invite_token(db: Client, user_id: str) -> str:
 
 
 def update_dashboard_profile(
-    db: Client, user_id: str, form_data: Any, profile_picture_file: Any = None
+    db: Client,
+    user_id: str,
+    form_data: Any,
+    current_user_data: dict[str, Any] | None = None,
+    profile_picture_file: Any = None,
 ) -> None:
     """Update user profile from dashboard form, including image upload."""
     update_data: dict[str, Any] = {"dark_mode": bool(form_data.dark_mode.data)}
@@ -278,5 +307,11 @@ def update_dashboard_profile(
         url = upload_profile_picture(user_id, profile_picture_file)
         if url:
             update_data["profilePictureUrl"] = url
+            # Clear thumbnail to ensure new profile picture is shown
+            update_data["profilePictureThumbnailUrl"] = None
 
     update_user_profile(db, user_id, update_data)
+
+    # Refresh current_user_data in current request context (e.g., g.user)
+    if current_user_data is not None and hasattr(current_user_data, "update"):
+        current_user_data.update(update_data)
