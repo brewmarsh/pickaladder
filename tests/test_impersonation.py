@@ -18,7 +18,7 @@ class ImpersonationTestCase(unittest.TestCase):
             {
                 "TESTING": True,
                 "WTF_CSRF_ENABLED": False,
-                "SECRET_KEY": "test",  # nosec B105
+                "SECRET_KEY": "test",
             }
         )
         self.client = self.app.test_client()

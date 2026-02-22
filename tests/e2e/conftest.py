@@ -460,9 +460,9 @@ def app_server(
     pickaladder = importlib.import_module("pickaladder")
 
     os.environ["FIREBASE_PROJECT_ID"] = "test-project"
-    os.environ["SECRET_KEY"] = "dev"  # nosec B105
-    os.environ["MAIL_USERNAME"] = "test"  # nosec
-    os.environ["MAIL_PASSWORD"] = "test"  # nosec
+    os.environ["SECRET_KEY"] = "dev"
+    os.environ["MAIL_USERNAME"] = "test"
+    os.environ["MAIL_PASSWORD"] = "test"
     os.environ["MAIL_SUPPRESS_SEND"] = "True"
     os.environ["FIREBASE_API_KEY"] = "dummy_key"
 

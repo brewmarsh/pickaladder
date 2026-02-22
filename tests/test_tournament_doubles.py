@@ -56,7 +56,7 @@ class TournamentDoublesTestCase(unittest.TestCase):
         self.app = create_app(
             {
                 "TESTING": True,
-                "SECRET_KEY": "test_secret",  # nosec B105
+                "SECRET_KEY": "test_secret",
                 "WTF_CSRF_ENABLED": False,
             }
         )
