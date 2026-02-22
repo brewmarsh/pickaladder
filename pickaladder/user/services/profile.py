@@ -128,5 +128,7 @@ def reset_profile_picture(db: Client, user_id: str) -> bool:
         )
         return True
     except Exception as e:
-        current_app.logger.error(f"Error resetting profile picture for user {user_id}: {e}")
+        current_app.logger.error(
+            f"Error resetting profile picture for user {user_id}: {e}"
+        )
         return False

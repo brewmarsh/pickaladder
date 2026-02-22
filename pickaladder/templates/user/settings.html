@@ -97,6 +97,10 @@
                     </div>
                 </form>
 
+                <form id="reset-avatar-form" action="{{ url_for('user.reset_avatar') }}" method="POST" style="display:none;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                </form>
+
                 <hr class="my-4">
 
                 <div class="security-section">
@@ -109,10 +113,6 @@
     </div>
 </div>
 {% endblock %}
-
-<form id="reset-avatar-form" action="{{ url_for('user.reset_avatar') }}" method="POST" style="display:none;">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-</form>
 
 {% block scripts %}
 <script>
