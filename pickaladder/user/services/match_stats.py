@@ -70,14 +70,10 @@ def _get_match_winner_slot(match_dict: dict[str, Any]) -> str:
     return "team1" if p1_score > p2_score else "team2"
 
 
-def format_matches_for_dashboard(
-    db: Client, matches: list[DocumentSnapshot], user_id: str
-) -> list[dict[str, Any]]:
-    """Format match documents for the dashboard UI."""
-    if not matches:
-        return []
-
-    # Collect all unique user and team references for batch fetching
+def _collect_match_refs(
+    matches: list[DocumentSnapshot],
+) -> tuple[set[Any], set[Any], set[str]]:
+    """Collect all unique user, team, and tournament references from matches."""
     user_refs = set()
     team_refs = set()
     tournament_ids = set()
@@ -103,72 +99,97 @@ def format_matches_for_dashboard(
         if t_id := m_data.get("tournamentId"):
             tournament_ids.add(t_id)
 
-    # Batch fetch everything
+    return user_refs, team_refs, tournament_ids
+
+
+def _fetch_match_entities(
+    db: Client, user_refs: set[Any], team_refs: set[Any], tournament_ids: set[str]
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Batch fetch users, teams, and tournaments from Firestore."""
     users_map = {}
     if user_refs:
         for doc in db.get_all(list(user_refs)):
-            if doc.exists:
-                d = doc.to_dict()
-                if d:
-                    d["id"] = doc.id
-                    users_map[doc.id] = d
+            if doc.exists and (d := doc.to_dict()):
+                d["id"] = doc.id
+                users_map[doc.id] = d
 
     teams_map = {}
     if team_refs:
         for doc in db.get_all(list(team_refs)):
-            if doc.exists:
-                d = doc.to_dict()
-                if d:
-                    d["id"] = doc.id
-                    teams_map[doc.id] = d
+            if doc.exists and (d := doc.to_dict()):
+                d["id"] = doc.id
+                teams_map[doc.id] = d
 
     tournaments_map = {}
     if tournament_ids:
         t_refs = [db.collection("tournaments").document(tid) for tid in tournament_ids]
         for doc in db.get_all(t_refs):
-            if doc.exists:
-                d = doc.to_dict()
-                if d:
-                    d["id"] = doc.id
-                    tournaments_map[doc.id] = d
+            if doc.exists and (d := doc.to_dict()):
+                d["id"] = doc.id
+                tournaments_map[doc.id] = d
+
+    return users_map, teams_map, tournaments_map
+
+
+def _format_match_date(match_date: Any) -> str:
+    """Format match date to string."""
+    if isinstance(match_date, datetime.datetime):
+        return match_date.strftime("%b %d")
+    return str(match_date) if match_date else "N/A"
+
+
+def _get_match_participants_info(
+    match_dict: dict[str, Any], users_map: dict[str, Any]
+) -> tuple[
+    dict[str, Any] | list[dict[str, Any]], dict[str, Any] | list[dict[str, Any]]
+]:
+    """Extract participant info for singles or doubles."""
+    p1_info: dict[str, Any] | list[dict[str, Any]]
+    p2_info: dict[str, Any] | list[dict[str, Any]]
+
+    if match_dict.get("matchType") == "doubles":
+        p1_info = [_get_player_info(r, users_map) for r in match_dict.get("team1", [])]
+        p2_info = [_get_player_info(r, users_map) for r in match_dict.get("team2", [])]
+    elif "player_1_data" in match_dict and "player_2_data" in match_dict:
+        p1_snap = match_dict["player_1_data"]
+        p2_snap = match_dict["player_2_data"]
+        p1_info = {
+            "id": p1_snap.get("uid"),
+            "username": p1_snap.get("display_name"),
+            "thumbnail_url": p1_snap.get("avatar_url"),
+        }
+        p2_info = {
+            "id": p2_snap.get("uid"),
+            "username": p2_snap.get("display_name"),
+            "thumbnail_url": p2_snap.get("avatar_url"),
+        }
+    else:
+        p1_info = _get_player_info(match_dict.get("player1Ref"), users_map)
+        p2_info = _get_player_info(match_dict.get("player2Ref"), users_map)
+    return p1_info, p2_info
+
+
+def format_matches_for_dashboard(
+    db: Client, matches: list[DocumentSnapshot], user_id: str
+) -> list[dict[str, Any]]:
+    """Format match documents for the dashboard UI."""
+    if not matches:
+        return []
+
+    user_refs, team_refs, tournament_ids = _collect_match_refs(matches)
+    users_map, teams_map, tournaments_map = _fetch_match_entities(
+        db, user_refs, team_refs, tournament_ids
+    )
 
     matches_data = []
     for match_doc in matches:
         m_data = match_doc.to_dict()
-        if not m_data:
+        if not m_data or not (match_dict := cast("dict[str, Any]", m_data)):
             continue
 
-        match_dict = cast("dict[str, Any]", m_data)
         winner = _get_match_winner_slot(match_dict)
         user_result = _get_user_match_result(match_dict, user_id, winner)
-
-        p1_info: dict[str, Any] | list[dict[str, Any]]
-        p2_info: dict[str, Any] | list[dict[str, Any]]
-
-        if match_dict.get("matchType") == "doubles":
-            p1_info = [
-                _get_player_info(r, users_map) for r in match_dict.get("team1", [])
-            ]
-            p2_info = [
-                _get_player_info(r, users_map) for r in match_dict.get("team2", [])
-            ]
-        # Use denormalized snapshots if available
-        elif "player_1_data" in match_dict and "player_2_data" in match_dict:
-            p1_snap = match_dict["player_1_data"]
-            p2_snap = match_dict["player_2_data"]
-            p1_info = {
-                "id": p1_snap.get("uid"),
-                "username": p1_snap.get("display_name"),
-                "thumbnail_url": p1_snap.get("avatar_url"),
-            }
-            p2_info = {
-                "id": p2_snap.get("uid"),
-                "username": p2_snap.get("display_name"),
-                "thumbnail_url": p2_snap.get("avatar_url"),
-            }
-        else:
-            p1_info = _get_player_info(match_dict["player1Ref"], users_map)
-            p2_info = _get_player_info(match_dict["player2Ref"], users_map)
+        p1_info, p2_info = _get_match_participants_info(match_dict, users_map)
 
         t1_name = "Team 1"
         t2_name = "Team 2"
@@ -181,13 +202,6 @@ def format_matches_for_dashboard(
         if t_id := match_dict.get("tournamentId"):
             tournament_name = tournaments_map.get(t_id, {}).get("name")
 
-        match_date = m_data.get("matchDate")
-        date_str = "N/A"
-        if isinstance(match_date, datetime.datetime):
-            date_str = match_date.strftime("%b %d")
-        elif match_date:
-            date_str = str(match_date)
-
         matches_data.append(
             {
                 "id": match_doc.id,
@@ -196,7 +210,7 @@ def format_matches_for_dashboard(
                 "player1_score": m_data.get("player1Score", 0),
                 "player2_score": m_data.get("player2Score", 0),
                 "winner": winner,
-                "date": date_str,
+                "date": _format_match_date(m_data.get("matchDate")),
                 "is_group_match": bool(m_data.get("groupId")),
                 "match_type": m_data.get("matchType", "singles"),
                 "user_result": user_result,
@@ -273,17 +287,11 @@ def calculate_current_streak(user_id: str, matches: list[Any]) -> int:
     return streak
 
 
-def get_recent_opponents(
-    db: Client, user_id: str, matches: list[Any], limit: int = 4
-) -> list[User]:
-    """Identify recent unique 1v1 opponents."""
+def _extract_opponent_ids(user_id: str, matches: list[Any], limit: int) -> list[str]:
+    """Extract unique 1v1 opponent IDs from matches."""
     opponent_ids: list[str] = []
     for m in matches:
-        if hasattr(m, "to_dict"):
-            data = m.to_dict()
-        else:
-            data = m
-
+        data = m.to_dict() if hasattr(m, "to_dict") else m
         if not data or data.get("matchType") == "doubles":
             continue
 
@@ -292,17 +300,22 @@ def get_recent_opponents(
 
         opp_id = None
         if p1_ref and p1_ref.id == user_id:
-            if p2_ref:
-                opp_id = p2_ref.id
+            opp_id = p2_ref.id if p2_ref else None
         elif p2_ref and p2_ref.id == user_id:
-            if p1_ref:
-                opp_id = p1_ref.id
+            opp_id = p1_ref.id if p1_ref else None
 
         if opp_id and opp_id not in opponent_ids:
             opponent_ids.append(opp_id)
             if len(opponent_ids) >= limit:
                 break
+    return opponent_ids
 
+
+def get_recent_opponents(
+    db: Client, user_id: str, matches: list[Any], limit: int = 4
+) -> list[User]:
+    """Identify recent unique 1v1 opponents."""
+    opponent_ids = _extract_opponent_ids(user_id, matches, limit)
     if not opponent_ids:
         return []
 
@@ -310,12 +323,10 @@ def get_recent_opponents(
     docs = db.get_all(refs)
     opponents_map = {}
     for doc in docs:
-        if doc.exists:
-            d = doc.to_dict()
-            if d:
-                d["id"] = doc.id
-                d["uid"] = doc.id
-                opponents_map[doc.id] = d
+        if doc.exists and (d := doc.to_dict()):
+            d["id"] = doc.id
+            d["uid"] = doc.id
+            opponents_map[doc.id] = d
 
     return [
         cast("User", opponents_map[oid]) for oid in opponent_ids if oid in opponents_map
@@ -458,16 +469,6 @@ def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] 
     if wins > 0 or losses > 0:
         return {"wins": wins, "losses": losses, "point_diff": points}
     return None
-
-
-def _collect_match_refs(matches: list[DocumentSnapshot]) -> dict[str, Any]:
-    """Stub for missing function."""
-    return {}
-
-
-def _fetch_match_entities(db: Client, refs: dict[str, Any]) -> dict[str, Any]:
-    """Stub for missing function."""
-    return {}
 
 
 def _get_profile_match_alignment(
