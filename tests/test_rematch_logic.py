@@ -1,13 +1,23 @@
 """Tests for the rematch logic in match recording."""
 
+from __future__ import annotations
+
 import unittest
+from typing import Any
 from unittest.mock import MagicMock, patch
+
+from flask import Flask
+from flask.testing import FlaskClient
 
 from pickaladder import create_app
 
 
 class RematchLogicTestCase(unittest.TestCase):
-    def setUp(self):
+    app: Flask
+    client: FlaskClient
+    app_context: Any
+
+    def setUp(self) -> None:
         self.app = create_app(
             {
                 "TESTING": True,
@@ -19,22 +29,22 @@ class RematchLogicTestCase(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.app_context.pop()
 
     @patch("pickaladder.match.routes.firestore.client")
     @patch("pickaladder.match.routes.MatchQueryService.get_candidate_player_ids")
     def test_record_match_prepopulation(
-        self, mock_get_candidates, mock_firestore_client
-    ):
+        self, mock_get_candidates: MagicMock, mock_firestore_client: MagicMock
+    ) -> None:
         # Mocking necessary parts for the record_match route
         mock_get_candidates.return_value = {"user1", "user2", "user3", "user4"}
 
         # Mock firestore client for choices population
-        mock_db = MagicMock()
+        mock_db: MagicMock = MagicMock()
         mock_firestore_client.return_value = mock_db
 
-        def mock_get_all(refs):
+        def mock_get_all(refs: list[Any]) -> list[MagicMock]:
             docs = []
             for ref in refs:
                 doc = MagicMock()
@@ -62,7 +72,7 @@ class RematchLogicTestCase(unittest.TestCase):
             )
 
             self.assertEqual(response.status_code, 200)
-            data = response.data.decode("utf-8")
+            data: str = response.data.decode("utf-8")
 
             # Use more flexible checks
             self.assertTrue('value="doubles"' in data and "selected" in data)
