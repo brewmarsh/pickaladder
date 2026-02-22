@@ -1,0 +1,98 @@
+agent-score score pickaladder/ --verbosity detailed
+╭─────────────────────────╮
+│ Running Agent Scorecard │
+╰─────────────────────────╯
+           Environment Health           
+┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Check                ┃        Status ┃
+┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ AGENTS.md            │          FAIL │
+│ Linter Config        │          FAIL │
+│ Lock File            │          FAIL │
+│ Directory Entropy    │ 4.6 files/dir │
+│ Critical Token Count │  8,983 tokens │
+└──────────────────────┴───────────────┘
+
+                                 File Analysis                                  
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ File                            ┃ Score ┃ Issues                             ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ extensions.py                   │   100 │                                    │
+│ utils.py                        │   100 │                                    │
+│ error_handlers.py               │   100 │                                    │
+│ constants.py                    │   100 │                                    │
+│ context_processors.py           │    95 │ 1 Yellow ACL functions (-5)        │
+│ __init__.py                     │    81 │ Bloated File: 246 lines (-4), 1    │
+│                                 │       │ Red ACL functions (-15)            │
+│ errors.py                       │   100 │                                    │
+│ admin/services.py               │   100 │                                    │
+│ admin/__init__.py               │   100 │                                    │
+│ admin/routes.py                 │    83 │ Bloated File: 322 lines (-12), 1   │
+│                                 │       │ Yellow ACL functions (-5)          │
+│ group/utils.py                  │    58 │ Bloated File: 523 lines (-32), 2   │
+│                                 │       │ Yellow ACL functions (-10)         │
+│ group/forms.py                  │   100 │                                    │
+│ group/__init__.py               │   100 │                                    │
+│ group/models.py                 │   100 │                                    │
+│ group/routes.py                 │    78 │ Bloated File: 373 lines (-17), 1   │
+│                                 │       │ Yellow ACL functions (-5)          │
+│ group/services/group_service.py │    57 │ Bloated File: 586 lines (-38), 1   │
+│                                 │       │ Yellow ACL functions (-5)          │
+│ group/services/stats.py         │    95 │ 1 Yellow ACL functions (-5)        │
+│ group/services/match_parser.py  │    95 │ 1 Yellow ACL functions (-5)        │
+│ group/services/leaderboard.py   │    91 │ Bloated File: 290 lines (-9)       │
+│ group/services/__init__.py      │   100 │                                    │
+│ teams/forms.py                  │   100 │                                    │
+│ teams/services.py               │    92 │ Bloated File: 230 lines (-3), 1    │
+│                                 │       │ Yellow ACL functions (-5)          │
+│ teams/__init__.py               │   100 │                                    │
+│ teams/models.py                 │   100 │                                    │
+│ teams/routes.py                 │   100 │                                    │
+│ auth/forms.py                   │   100 │                                    │
+│ auth/decorators.py              │   100 │                                    │
+│ auth/__init__.py                │   100 │                                    │
+│ auth/routes.py                  │    53 │ Bloated File: 329 lines (-12), 2   │
+│                                 │       │ Red ACL functions (-30), 1 Yellow  │
+│                                 │       │ ACL functions (-5)                 │
+│ core/types.py                   │   100 │                                    │
+│ core/constants.py               │   100 │                                    │
+│ core/__init__.py                │   100 │                                    │
+│ tournament/utils.py             │    95 │ 1 Yellow ACL functions (-5)        │
+│ tournament/forms.py             │   100 │                                    │
+│ tournament/services.py          │    39 │ Bloated File: 712 lines (-51), 2   │
+│                                 │       │ Yellow ACL functions (-10)         │
+│ tournament/__init__.py          │   100 │                                    │
+│ tournament/models.py            │   100 │                                    │
+│ tournament/routes.py            │    63 │ Bloated File: 375 lines (-17), 1   │
+│                                 │       │ Red ACL functions (-15), 1 Yellow  │
+│                                 │       │ ACL functions (-5)                 │
+│ user/forms.py                   │   100 │                                    │
+│ user/helpers.py                 │   100 │                                    │
+│ user/__init__.py                │   100 │                                    │
+│ user/models.py                  │   100 │                                    │
+│ user/routes.py                  │    97 │ Bloated File: 233 lines (-3)       │
+│ user/services/profile.py        │   100 │                                    │
+│ user/services/dashboard.py      │   100 │                                    │
+│ user/services/merging.py        │    90 │ 2 Yellow ACL functions (-10)       │
+│ user/services/activity.py       │    70 │ Bloated File: 303 lines (-10), 4   │
+│                                 │       │ Yellow ACL functions (-20)         │
+│ user/services/core.py           │    89 │ Bloated File: 264 lines (-6), 1    │
+│                                 │       │ Yellow ACL functions (-5)          │
+│ user/services/match_stats.py    │    51 │ Bloated File: 394 lines (-19), 2   │
+│                                 │       │ Red ACL functions (-30)            │
+│ user/services/friendship.py     │   100 │                                    │
+│ user/services/__init__.py       │    99 │ Bloated File: 212 lines (-1)       │
+│ main/__init__.py                │   100 │                                    │
+│ main/routes.py                  │   100 │                                    │
+│ match/forms.py                  │   100 │                                    │
+│ match/services.py               │    40 │ Bloated File: 802 lines (-60)      │
+│ match/__init__.py               │   100 │                                    │
+│ match/models.py                 │   100 │                                    │
+│ match/routes.py                 │    75 │ 1 Red ACL functions (-15), 2       │
+│                                 │       │ Yellow ACL functions (-10)         │
+└─────────────────────────────────┴───────┴────────────────────────────────────┘
+
+Project Issues Detected:
+- Missing Critical Agent Docs: README.md
+
+Final Agent Score: 89.9/100
