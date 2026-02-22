@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 from pickaladder.match.models import MatchSubmission
-from pickaladder.match.services import MatchCommandService
+from pickaladder.match.services import MatchService
 
 if TYPE_CHECKING:
     from pickaladder.user.models import UserSession
@@ -52,7 +52,7 @@ class MatchSecurityTestCase(unittest.TestCase):
             match_date=None,
         )
 
-        MatchCommandService.record_match(mock_db, submission, current_user)
+        MatchService.record_match(mock_db, submission, current_user)
 
         # Verify mock_record_batch was called
         self.assertTrue(mock_record_batch.called)

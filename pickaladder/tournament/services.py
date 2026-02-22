@@ -361,6 +361,55 @@ class TournamentService:
         ref.update(update_data)
 
     @staticmethod
+    def get_tournament_for_edit(
+        tournament_id: str, user_uid: str, db: Client | None = None
+    ) -> dict[str, Any]:
+        """Fetch tournament for editing with existence and ownership checks."""
+        details = TournamentService.get_tournament_details(tournament_id, user_uid, db)
+        if not details:
+            raise ValueError("Tournament not found.")
+        if not details["is_owner"]:
+            raise PermissionError("Unauthorized.")
+        return cast(dict[str, Any], details["tournament"])
+
+    @staticmethod
+    def update_tournament_from_form(
+        tournament_id: str,
+        user_uid: str,
+        form_data: dict[str, Any],
+        banner_file: Any = None,
+        db: Client | None = None,
+    ) -> None:
+        """Update tournament using data from TournamentForm."""
+        import datetime
+
+        date_val = form_data.get("start_date")
+        if not date_val:
+            raise ValueError("Date is required.")
+
+        dt = (
+            datetime.datetime.combine(date_val, datetime.time.min)
+            if isinstance(date_val, datetime.date)
+            and not isinstance(date_val, datetime.datetime)
+            else date_val
+        )
+
+        update_data = {
+            "name": form_data.get("name"),
+            "date": dt,
+            "location": form_data.get("location"),
+            "mode": form_data.get("mode"),
+            "matchType": (form_data.get("mode") or "SINGLES").lower(),
+        }
+
+        if banner_file and getattr(banner_file, "filename", None):
+            banner_url = TournamentService._upload_banner(tournament_id, banner_file)
+            if banner_url:
+                update_data["banner_url"] = banner_url
+
+        TournamentService.update_tournament(tournament_id, user_uid, update_data, db=db)
+
+    @staticmethod
     def delete_tournament(
         tournament_id: str, user_uid: str, db: Client | None = None
     ) -> None:
