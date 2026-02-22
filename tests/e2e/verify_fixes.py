@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import os
 import re
+from typing import Any
 
-from playwright.sync_api import expect
+from playwright.sync_api import Page, expect
 
 
-def test_verify_fixes(app_server, page_with_firebase, mock_db):
+def test_verify_fixes(app_server: str, page_with_firebase: Page, mock_db: Any) -> None:
     page = page_with_firebase
     base_url = app_server
 
@@ -39,7 +42,7 @@ def test_verify_fixes(app_server, page_with_firebase, mock_db):
     page.click("button:has-text('Share')")
     page.wait_for_selector("#shareGroupModal.show", timeout=5000)
 
-    stat_text = page.locator(".social-share-card-stat").text_content()
+    stat_text: str | None = page.locator(".social-share-card-stat").text_content()
     print(f"Stat text: {stat_text}")
     # Since it's a new group, rank is Member or something.
     # In group.html:

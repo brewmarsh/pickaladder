@@ -1,15 +1,19 @@
+from __future__ import annotations
+
+from typing import Any
+
 import pytest
-from playwright.sync_api import expect
+from playwright.sync_api import Page, expect
 
 
 @pytest.fixture
-def seeded_data(mock_db):
+def seeded_data(mock_db: Any) -> str:
     # Clear and seed data
     mock_db._data = {}
 
     # Create a user
-    user_id = "testuser"
-    user_data = {
+    user_id: str = "testuser"
+    user_data: dict[str, Any] = {
         "uid": user_id,
         "username": "testuser",
         "email": "testuser@example.com",
@@ -21,8 +25,8 @@ def seeded_data(mock_db):
     mock_db.collection("users").document(user_id).set(user_data)
 
     # Create a group
-    group_id = "group1"
-    group_data = {
+    group_id: str = "group1"
+    group_data: dict[str, Any] = {
         "name": "Pickleball Pros",
         "description": "A group for pros",
         "ownerRef": mock_db.collection("users").document(user_id),
@@ -43,8 +47,8 @@ def seeded_data(mock_db):
     )
 
     # Create a tournament
-    tournament_id = "tourney1"
-    tournament_data = {
+    tournament_id: str = "tourney1"
+    tournament_data: dict[str, Any] = {
         "name": "Summer Open",
         "date": "2023-07-01",
         "location": "Central Park",
@@ -57,7 +61,9 @@ def seeded_data(mock_db):
     return user_id
 
 
-def test_mobile_layout(page_with_firebase, app_server, seeded_data):
+def test_mobile_layout(
+    page_with_firebase: Page, app_server: str, seeded_data: str
+) -> None:
     page = page_with_firebase
     # 1. Login
     page.goto(f"{app_server}/auth/login")
