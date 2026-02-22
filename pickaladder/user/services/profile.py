@@ -6,7 +6,7 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any
 
-from firebase_admin import auth, storage
+from firebase_admin import auth, firestore, storage
 from flask import current_app
 from werkzeug.utils import secure_filename
 
@@ -97,3 +97,36 @@ def upload_profile_picture(user_id: str, file_storage: FileStorage) -> str | Non
     except Exception as e:
         current_app.logger.error(f"Error uploading profile picture: {e}")
         return None
+
+
+def delete_user_profile_pictures(user_id: str) -> None:
+    """Delete all profile pictures for a user from Firebase Storage."""
+    try:
+        bucket = storage.bucket()
+        blobs = bucket.list_blobs(prefix=f"profile_pictures/{user_id}/")
+        for blob in blobs:
+            blob.delete()
+    except Exception as e:
+        current_app.logger.error(
+            f"Error deleting profile pictures for user {user_id}: {e}"
+        )
+
+
+def reset_profile_picture(db: Client, user_id: str) -> bool:
+    """Reset a user's profile picture to default in Firestore and Storage."""
+    try:
+        # 1. Cleanup Storage (Bonus)
+        delete_user_profile_pictures(user_id)
+
+        # 2. Update Firestore
+        user_ref = db.collection("users").document(user_id)
+        user_ref.update(
+            {
+                "profilePictureUrl": "default",
+                "profilePictureThumbnailUrl": firestore.DELETE_FIELD,
+            }
+        )
+        return True
+    except Exception as e:
+        current_app.logger.error(f"Error resetting profile picture for user {user_id}: {e}")
+        return False

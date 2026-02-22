@@ -233,6 +233,17 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         ) = []
         self.mock_groups_coll.where.return_value.stream.return_value = []
 
+    def test_reset_avatar_success(self) -> None:
+        """Test resetting the avatar."""
+        self._set_session_user()
+        # Mock UserService.reset_profile_picture through the route's dependency
+        with patch("pickaladder.user.routes.UserService.reset_profile_picture") as mock_reset:
+            mock_reset.return_value = True
+            response = self.client.post("/user/settings/reset_avatar", follow_redirects=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b"Profile picture removed.", response.data)
+            mock_reset.assert_called_once()
+
     @patch("pickaladder.user.services.dashboard.get_user_matches")
     def test_api_dashboard_fetches_matches_with_limit(
         self, mock_get_matches: MagicMock
