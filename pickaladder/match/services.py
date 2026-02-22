@@ -142,9 +142,24 @@ class MatchQueryService:
             # Fallback for mockfirestore
             matches = list(db.collection("matches").limit(limit).stream())
 
-        player_refs = MatchQueryService._get_player_refs_from_matches(matches)
+        return [MatchQueryService._process_match_document(m, db) for m in matches]
+
+    @staticmethod
+    def _process_match_document(match_doc: DocumentSnapshot, db: Client) -> Match:
+        """Process a single match document into a formatted dictionary."""
+        match_data = cast("Match", match_doc.to_dict() or {})
+        match_data["id"] = match_doc.id
+        MatchQueryService._apply_common_match_formatting(match_data)
+
+        player_refs = MatchQueryService._get_player_refs_from_matches([match_doc])
         players = MatchQueryService._fetch_player_names(db, player_refs)
-        return MatchQueryService._format_match_documents(matches, players)
+
+        if match_data.get("matchType") == "doubles":
+            MatchQueryService._format_doubles_match_names(match_data, players)
+        else:
+            MatchQueryService._format_singles_match_names(match_data, players)
+
+        return match_data
 
     @staticmethod
     def _get_player_refs_from_matches(
@@ -180,25 +195,6 @@ class MatchQueryService:
                     d_data = d_snap.to_dict() or {}
                     players[d_snap.id] = d_data.get("name", "N/A")
         return players
-
-    @staticmethod
-    def _format_match_documents(
-        matches: list[DocumentSnapshot], players: dict[str, str]
-    ) -> list[Match]:
-        """Process and format match documents for display."""
-        processed_matches: list[Match] = []
-        for match in matches:
-            match_data = cast("Match", match.to_dict() or {})
-            match_data["id"] = match.id
-            MatchQueryService._apply_common_match_formatting(match_data)
-
-            if match_data.get("matchType") == "doubles":
-                MatchQueryService._format_doubles_match_names(match_data, players)
-            else:
-                MatchQueryService._format_singles_match_names(match_data, players)
-
-            processed_matches.append(match_data)
-        return processed_matches
 
     @staticmethod
     def _apply_common_match_formatting(match_data: Match) -> None:
