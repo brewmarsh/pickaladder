@@ -580,6 +580,41 @@ class MatchQueryService:
             (t2.to_dict() or {}).get("name", "Team 2") if t2.exists else "Team 2",
         )
 
+    @staticmethod
+    def get_match_edit_context(match_id: str) -> dict[str, Any] | None:
+        """Fetch data needed for editing a match."""
+        db = firestore.client()
+        match_data = MatchQueryService.get_match_by_id(db, match_id)
+        if match_data is None:
+            return None
+
+        m_dict = cast("dict[str, Any]", match_data)
+        match_type = m_dict.get("matchType", "singles")
+        player1_name = "Player 1"
+        player2_name = "Player 2"
+
+        if match_type == "doubles":
+            t1, t2 = m_dict.get("team1Id"), m_dict.get("team2Id")
+            if t1 and t2:
+                player1_name, player2_name = MatchQueryService.get_team_names(
+                    db, t1, t2
+                )
+        else:
+            p1_ref = m_dict.get("player1Ref")
+            p2_ref = m_dict.get("player2Ref")
+            uids = [ref.id for ref in [p1_ref, p2_ref] if ref]
+            names = MatchQueryService.get_player_names(db, uids)
+            if p1_ref:
+                player1_name = names.get(p1_ref.id, "Player 1")
+            if p2_ref:
+                player2_name = names.get(p2_ref.id, "Player 2")
+
+        return {
+            "match": match_data,
+            "player1_name": player1_name,
+            "player2_name": player2_name,
+        }
+
 
 class MatchCommandService:
     """Service class for match-related write operations."""
@@ -834,9 +869,16 @@ class MatchCommandService:
 
     @staticmethod
     def update_match_score(
-        db: Client, match_id: str, s1: int, s2: int, editor_uid: str
+        match_id: str, s1_raw: Any, s2_raw: Any, editor_uid: str
     ) -> None:
         """Update a match score with permission checks and stats rollback."""
+        db = firestore.client()
+        try:
+            s1 = int(s1_raw or 0)
+            s2 = int(s2_raw or 0)
+        except (ValueError, TypeError):
+            raise ValueError("Scores must be valid integers.")
+
         match_ref = db.collection("matches").document(match_id)
         match_doc = cast("DocumentSnapshot", match_ref.get())
         if not match_doc.exists or not (data := match_doc.to_dict()):
@@ -898,3 +940,10 @@ class MatchCommandService:
                     (p1.id, p2.id) if s1 > s2 else (p2.id, p1.id)
                 )
         return upd
+
+
+# Backward compatibility alias
+class MatchService(MatchQueryService, MatchCommandService):  # type: ignore
+    """Deprecated alias for MatchQueryService and MatchCommandService."""
+
+    pass

@@ -23,62 +23,29 @@ if TYPE_CHECKING:
 @login_required
 def edit_match(match_id: str) -> Any:
     """Edit an existing match's scores."""
-    db = firestore.client()
-    match_data = MatchQueryService.get_match_by_id(db, match_id)
-    if match_data is None:
-        flash("Match not found.", "danger")
-        return redirect(url_for("user.dashboard"))
-
     if request.method == "POST":
         try:
-            new_p1_score = int(request.form.get("player1_score", 0))
-            new_p2_score = int(request.form.get("player2_score", 0))
-
             MatchCommandService.update_match_score(
-                db, match_id, new_p1_score, new_p2_score, g.user["uid"]
+                match_id,
+                request.form.get("player1_score"),
+                request.form.get("player2_score"),
+                g.user["uid"],
             )
             flash("Match updated successfully.", "success")
             return redirect(url_for("match.view_match_summary", match_id=match_id))
-        except PermissionError as e:
-            flash(str(e), "danger")
-        except ValueError as e:
+        except (PermissionError, ValueError) as e:
             flash(str(e), "danger")
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
 
-    # For GET or on error, render the edit page
-    # Fetch player names for the UI
-    m_dict = cast("dict[str, Any]", match_data)
-    match_type = m_dict.get("matchType", "singles")
-    player1_name = "Player 1"
-    player2_name = "Player 2"
-
-    if match_type == "doubles":
-        team1_id = m_dict.get("team1Id")
-        team2_id = m_dict.get("team2Id")
-        if team1_id and team2_id:
-            player1_name, player2_name = MatchQueryService.get_team_names(
-                db, team1_id, team2_id
-            )
-    else:
-        p1_ref = m_dict.get("player1Ref")
-        p2_ref = m_dict.get("player2Ref")
-        uids = []
-        if p1_ref:
-            uids.append(p1_ref.id)
-        if p2_ref:
-            uids.append(p2_ref.id)
-        names = MatchQueryService.get_player_names(db, uids)
-        if p1_ref:
-            player1_name = names.get(p1_ref.id, "Player 1")
-        if p2_ref:
-            player2_name = names.get(p2_ref.id, "Player 2")
+    context = MatchQueryService.get_match_edit_context(match_id)
+    if not context:
+        flash("Match not found.", "danger")
+        return redirect(url_for("user.dashboard"))
 
     return render_template(
         "match/edit_match.html",
-        match=match_data,
-        player1_name=player1_name,
-        player2_name=player2_name,
+        **context,
         is_admin=g.user.get("isAdmin", False),
     )
 
@@ -227,7 +194,11 @@ def get_match_history() -> Any:
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
-    """Display a global leaderboard."""
+    """Display a global leaderboard.
+
+    Note: This is a simplified, non-scalable implementation. A production-ready
+    leaderboard on Firestore would likely require denormalization and Cloud Functions.
+    """
     db = firestore.client()
     try:
         # Exclude players with 0 games and sort by Win Percentage
