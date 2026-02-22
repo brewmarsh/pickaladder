@@ -141,10 +141,7 @@ def _handle_invite_token(db: Any, uid: str, invite_token: str) -> None:
         {"status": "accepted"},
     )
     batch.set(
-        db.collection("users")
-        .document(inviter_id)
-        .collection("friends")
-        .document(uid),
+        db.collection("users").document(inviter_id).collection("friends").document(uid),
         {"status": "accepted"},
     )
     batch.commit()
@@ -163,7 +160,7 @@ def register() -> Any:
         return render_template("register.html", form=form)
 
     db = firestore.client()
-    username = form.username.data
+    username = cast(str, form.username.data)
     email = form.email.data
 
     if _is_username_taken(db, username):

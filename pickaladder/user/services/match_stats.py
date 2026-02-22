@@ -140,8 +140,13 @@ def _format_match_date(match_date: Any) -> str:
 
 def _get_match_participants_info(
     match_dict: dict[str, Any], users_map: dict[str, Any]
-) -> tuple[Any, Any]:
+) -> tuple[
+    dict[str, Any] | list[dict[str, Any]], dict[str, Any] | list[dict[str, Any]]
+]:
     """Extract participant info for singles or doubles."""
+    p1_info: dict[str, Any] | list[dict[str, Any]]
+    p2_info: dict[str, Any] | list[dict[str, Any]]
+
     if match_dict.get("matchType") == "doubles":
         p1_info = [_get_player_info(r, users_map) for r in match_dict.get("team1", [])]
         p2_info = [_get_player_info(r, users_map) for r in match_dict.get("team2", [])]
@@ -466,8 +471,6 @@ def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] 
     return None
 
 
-
-
 def _get_profile_match_alignment(
     match_dict: dict[str, Any], user_id: str
 ) -> dict[str, Any]:
@@ -480,10 +483,3 @@ def format_matches_for_profile(
 ) -> list[dict[str, Any]]:
     """Format matches for profile using dashboard formatter as fallback."""
     return format_matches_for_dashboard(db, matches, user_id)
-
-
-def _get_profile_match_alignment(
-    match_dict: dict[str, Any], user_id: str
-) -> dict[str, Any]:
-    """Stub for missing function."""
-    return {}
