@@ -51,21 +51,15 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 "firebase_admin.firestore.client",
                 return_value=self.mock_db,
             ),
-            "auth_core": patch(
-                "pickaladder.user.services.core.auth", new=self.mock_auth_service
-            ),
             "auth_profile": patch(
                 "pickaladder.user.services.profile.auth", new=self.mock_auth_service
-            ),
-            "storage_core": patch(
-                "pickaladder.user.services.core.storage", new=self.mock_storage_service
             ),
             "storage_profile": patch(
                 "pickaladder.user.services.profile.storage",
                 new=self.mock_storage_service,
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
-            "send_email": patch("pickaladder.user.services.core.send_email"),
+            "send_email_profile": patch("pickaladder.user.services.profile.send_email"),
         }
         for name, p in self.patchers_dict.items():
             p.start()
