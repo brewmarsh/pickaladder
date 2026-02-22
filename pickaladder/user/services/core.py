@@ -1,16 +1,9 @@
 from __future__ import annotations
 
-import os
 import secrets
-import tempfile
 from typing import TYPE_CHECKING, Any, cast
 
-from firebase_admin import auth, firestore, storage
-from flask import current_app
-from werkzeug.utils import secure_filename
-
-from pickaladder.utils import send_email
-
+from firebase_admin import firestore
 
 from ..helpers import smart_display_name as _smart_display_name
 from .profile import (
