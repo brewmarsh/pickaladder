@@ -49,7 +49,9 @@ class BatchProcessor:
 
 
 def initialize_apps() -> tuple[firebase_admin.App, firebase_admin.App]:
-    """Initializes the two Firebase apps for Production (Source) and Beta (Destination)."""
+    """
+    Initializes the two Firebase apps for Production (Source) and Beta (Destination).
+    """
     prod_key_path = os.environ.get("PROD_KEY_PATH")
     beta_key_path = os.environ.get("BETA_KEY_PATH")
 
@@ -73,7 +75,10 @@ def initialize_apps() -> tuple[firebase_admin.App, firebase_admin.App]:
 def delete_collection_recursive(
     coll_ref: CollectionReference, batch_processor: BatchProcessor
 ) -> None:
-    """Recursively adds all documents in a collection and its subcollections to the delete batch."""
+    """
+    Recursively adds all documents in a collection and its subcollections
+    to the delete batch.
+    """
     for doc_ref in coll_ref.list_documents():
         # Recursively handle subcollections
         for sub_coll in doc_ref.collections():
@@ -86,7 +91,10 @@ def copy_collection_recursive(
     dest_coll: CollectionReference,
     batch_processor: BatchProcessor,
 ) -> int:
-    """Recursively copies all documents from one collection to another using batching."""
+    """
+    Recursively copies all documents from one collection to another
+    using batching.
+    """
     count = 0
     for doc_snap in src_coll.stream():
         data = doc_snap.to_dict()
