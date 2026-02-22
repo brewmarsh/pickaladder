@@ -26,10 +26,42 @@
                     </div>
 
                     <div class="form-group mb-3">
+                        {{ form.name.label }}
+                        {{ form.name(class="form-control") }}
+                        {% if form.name.errors %}
+                            {% for error in form.name.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-3">
                         {{ form.username.label }}
                         {{ form.username(class="form-control") }}
                         {% if form.username.errors %}
                             {% for error in form.username.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-3">
+                        {{ form.email.label }}
+                        {{ form.email(class="form-control") }}
+                        {% if form.email.errors %}
+                            {% for error in form.email.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <h4 class="mt-4 mb-3">Pickleball Ratings</h4>
+                    <hr>
+                    <div class="form-group mb-3">
+                        {{ form.dupr_id.label }}
+                        {{ form.dupr_id(class="form-control", placeholder="Found in your DUPR profile URL") }}
+                        {% if form.dupr_id.errors %}
+                            {% for error in form.dupr_id.errors %}
                                 <div class="text-danger small">{{ error }}</div>
                             {% endfor %}
                         {% endif %}
@@ -48,6 +80,11 @@
                     <div class="form-group mb-3 custom-control custom-switch">
                         {{ form.dark_mode(class="custom-control-input", id="dark_mode") }}
                         {{ form.dark_mode.label(class="custom-control-label", for="dark_mode") }}
+                        {% if form.dark_mode.errors %}
+                            {% for error in form.dark_mode.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
 
                     <div class="mt-4">

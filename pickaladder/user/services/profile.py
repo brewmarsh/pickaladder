@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from firebase_admin import auth, storage
 from flask import current_app
@@ -25,7 +25,7 @@ def check_username_availability(db: Client, username: str) -> bool:
 
 
 def update_email_address(
-    user_id: str, new_email: str, new_username: str
+    db: Client, user_id: str, new_email: str, new_username: str, update_data: dict[str, Any]
 ) -> tuple[bool, str]:
     """Update a user's email address and send verification email.
 
@@ -42,7 +42,13 @@ def update_email_address(
             user={"username": new_username},
             verification_link=verification_link,
         )
-        return True, "Email updated. Please check your new email to verification."
+
+        # Update Firestore
+        update_data["email"] = new_email
+        update_data["email_verified"] = False
+        db.collection("users").document(user_id).update(update_data)
+
+        return True, "Your email has been updated. Please check your new email address to verify it."
     except auth.EmailAlreadyExistsError:
         return False, "That email address is already in use."
     except EmailError as e:

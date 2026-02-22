@@ -11,7 +11,13 @@ from werkzeug.utils import secure_filename
 
 from pickaladder.utils import send_email
 
+
 from ..helpers import smart_display_name as _smart_display_name
+from .profile import (
+    check_username_availability,
+    update_email_address,
+    upload_profile_picture,
+)
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
@@ -140,26 +146,13 @@ def process_profile_update(
 
     # Handle profile picture upload
     if profile_picture_file:
-        filename = secure_filename(profile_picture_file.filename or "profile.jpg")
-        bucket = storage.bucket()
-        blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
-
-        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1]) as tmp:
-            profile_picture_file.save(tmp.name)
-            blob.upload_from_filename(tmp.name)
-
-        blob.make_public()
-        update_data["profilePictureUrl"] = blob.public_url
+        url = upload_profile_picture(user_id, profile_picture_file)
+        if url:
+            update_data["profilePictureUrl"] = url
 
     # Handle username change
     if new_username != current_user_data.get("username"):
-        existing_user = (
-            db.collection("users")
-            .where("username", "==", new_username)
-            .limit(1)
-            .stream()
-        )
-        if len(list(existing_user)) > 0:
+        if not check_username_availability(db, new_username):
             return {
                 "success": False,
                 "error": "Username already exists. Please choose a different one.",
@@ -167,32 +160,12 @@ def process_profile_update(
 
     # Handle email change
     if new_email != current_user_data.get("email"):
-        try:
-            auth.update_user(user_id, email=new_email, email_verified=False)
-            verification_link = auth.generate_email_verification_link(new_email)
-            send_email(
-                to=new_email,
-                subject="Verify Your New Email Address",
-                template="email/verify_email.html",
-                user={"username": new_username},
-                verification_link=verification_link,
-            )
-            update_data["email"] = new_email
-            update_data["email_verified"] = False
-            update_user_profile(db, user_id, update_data)
-            return {
-                "success": True,
-                "info": "Your email has been updated. Please check your new email "
-                "address to verify it.",
-            }
-        except auth.EmailAlreadyExistsError:
-            return {"success": False, "error": "That email address is already in use."}
-        except Exception as e:
-            current_app.logger.error(f"Error updating email: {e}")
-            return {
-                "success": False,
-                "error": "An error occurred while updating your email.",
-            }
+        success, message = update_email_address(
+            db, user_id, new_email, new_username, update_data
+        )
+        if success:
+            return {"success": True, "info": message}
+        return {"success": False, "error": message}
 
     update_user_profile(db, user_id, update_data)
     return {"success": True}
@@ -210,13 +183,7 @@ def update_settings(
     current_user_data = current_user_doc.to_dict() or {}
 
     if new_username != current_user_data.get("username"):
-        existing_user = (
-            db.collection("users")
-            .where("username", "==", new_username)
-            .limit(1)
-            .stream()
-        )
-        if len(list(existing_user)) > 0:
+        if not check_username_availability(db, new_username):
             return {
                 "success": False,
                 "error": "Username already exists. Please choose a different one.",
@@ -224,8 +191,10 @@ def update_settings(
 
     update_data: dict[str, Any] = {
         "username": new_username,
-        "dark_mode": bool(form_data.dark_mode.data),
     }
+
+    if hasattr(form_data, "dark_mode"):
+        update_data["dark_mode"] = bool(form_data.dark_mode.data)
 
     if hasattr(form_data, "name") and form_data.name.data:
         update_data["name"] = form_data.name.data
@@ -239,16 +208,9 @@ def update_settings(
         update_data["duprRating"] = rating  # Maintain compatibility
 
     if profile_picture_file:
-        filename = secure_filename(profile_picture_file.filename or "profile.jpg")
-        bucket = storage.bucket()
-        blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
-
-        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1]) as tmp:
-            profile_picture_file.save(tmp.name)
-            blob.upload_from_filename(tmp.name)
-
-        blob.make_public()
-        update_data["profilePictureUrl"] = blob.public_url
+        url = upload_profile_picture(user_id, profile_picture_file)
+        if url:
+            update_data["profilePictureUrl"] = url
 
     user_ref.update(update_data)
     return {"success": True}
@@ -309,13 +271,8 @@ def update_dashboard_profile(
         update_data["duprRating"] = float(form_data.dupr_rating.data)
 
     if profile_picture_file:
-        filename = secure_filename(profile_picture_file.filename or "profile.jpg")
-        bucket = storage.bucket()
-        blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
-        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1]) as tmp:
-            profile_picture_file.save(tmp.name)
-            blob.upload_from_filename(tmp.name)
-        blob.make_public()
-        update_data["profilePictureUrl"] = blob.public_url
+        url = upload_profile_picture(user_id, profile_picture_file)
+        if url:
+            update_data["profilePictureUrl"] = url
 
     update_user_profile(db, user_id, update_data)

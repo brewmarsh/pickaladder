@@ -65,7 +65,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 new=self.mock_storage_service,
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
-            "send_email": patch("pickaladder.user.services.core.send_email"),
+            "send_email_core": patch("pickaladder.user.services.core.send_email"),
+            "send_email_profile": patch("pickaladder.user.services.profile.send_email"),
         }
         for name, p in self.patchers_dict.items():
             p.start()
