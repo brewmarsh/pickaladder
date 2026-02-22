@@ -182,7 +182,7 @@ class TestUserService(unittest.TestCase):
         # Mock username availability check (empty stream means available)
         self.db.collection().where().limit().stream.return_value = []
 
-        mock_form = MagicMock()
+        mock_form = MagicMock(spec=["username", "dark_mode", "dupr_rating"])
         mock_form.username.data = "newuser"
         mock_form.dark_mode.data = True
         mock_form.dupr_rating.data = 4.5

@@ -193,7 +193,7 @@ def update_settings(
         update_data["name"] = form_data.name.data
 
     if hasattr(form_data, "dupr_id") and form_data.dupr_id.data:
-        update_data["dupr_id"] = form_data.dupr_id.data
+        update_data["dupr_id"] = form_data.dupr_id.data.strip()
 
     if form_data.dupr_rating.data is not None:
         rating = float(form_data.dupr_rating.data)
@@ -204,6 +204,17 @@ def update_settings(
         url = upload_profile_picture(user_id, profile_picture_file)
         if url:
             update_data["profilePictureUrl"] = url
+
+    # Handle email change if present in form
+    if hasattr(form_data, "email") and form_data.email.data:
+        new_email = form_data.email.data
+        if new_email != current_user_data.get("email"):
+            success, message = update_email_address(
+                db, user_id, new_email, new_username, update_data
+            )
+            if success:
+                return {"success": True, "info": message}
+            return {"success": False, "error": message}
 
     user_ref.update(update_data)
     return {"success": True}
