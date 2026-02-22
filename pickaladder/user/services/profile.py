@@ -72,6 +72,9 @@ def update_email_address(
 
 def upload_profile_picture(user_id: str, file_storage: FileStorage) -> str | None:
     """Upload a profile picture to Firebase Storage and return the public URL."""
+    if not file_storage or not getattr(file_storage, "filename", None):
+        return None
+
     try:
         filename = secure_filename(file_storage.filename or "profile.jpg")
         bucket = storage.bucket()
