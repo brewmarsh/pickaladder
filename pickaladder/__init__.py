@@ -7,13 +7,12 @@ import os
 import sys
 import uuid
 from contextlib import suppress
-from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
 import firebase_admin
 from firebase_admin import credentials, firestore
-from flask import Flask, current_app, session
+from flask import Flask, current_app, g, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
 
@@ -180,15 +179,36 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(tournament_bp.bp)
     app.register_blueprint(error_handlers.error_handlers_bp)
 
-    # make url_for('index') == url_for('auth.login')
-    app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
 
-    # Configure ProxyFix
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
+def _register_context_processors(app: Flask) -> None:
+    """Register all context processors for the application."""
+    app.context_processor(inject_global_context)
+    app.context_processor(inject_incoming_requests_count)
+    app.context_processor(inject_pending_tournament_invites)
+    app.context_processor(inject_firebase_api_key)
 
 
-def _register_extensions(app: Flask) -> None:
-    """Initialize Flask extensions."""
+def create_app(test_config: dict[str, Any] | None = None) -> Flask:
+    """Create and configure an instance of the Flask application."""
+    app = Flask(
+        __name__,
+        instance_relative_config=True,
+        static_folder="static",
+        static_url_path="/static",
+    )
+    app.url_map.converters["uuid"] = UUIDConverter
+
+    # Load configuration
+    _load_app_config(app, test_config)
+
+    _configure_mail_logging(app)
+    _initialize_firebase(app)
+
+    # Ensure the instance folder exists
+    with suppress(OSError):
+        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+
+    # Initialize extensions
     mail.init_app(app)
     csrf.init_app(app)
     login_manager.init_app(app)
@@ -212,14 +232,6 @@ def _register_extensions(app: Flask) -> None:
         except Exception as e:
             current_app.logger.error(f"Error in user_loader: {e}")
         return None
-
-
-def _register_template_utilities(app: Flask) -> None:
-    """Register all context processors and filters for the application."""
-    app.context_processor(inject_global_context)
-    app.context_processor(inject_incoming_requests_count)
-    app.context_processor(inject_pending_tournament_invites)
-    app.context_processor(inject_firebase_api_key)
 
     # Register filters
     app.template_filter("smart_display_name")(smart_display_name)
@@ -247,36 +259,57 @@ def _register_template_utilities(app: Flask) -> None:
             return singular
         return plural if plural is not None else f"{singular}s"
 
-
-def create_app(test_config: dict[str, Any] | None = None) -> Flask:
-    """Create and configure an instance of the Flask application."""
-    app = Flask(
-        __name__,
-        instance_relative_config=True,
-        static_folder="static",
-        static_url_path="/static",
-    )
-    # Load configuration
-    _load_config(app, test_config)
-
-    _configure_mail_logging(app)
-    _initialize_firebase(app)
-
-    _register_extensions(app)
     _register_blueprints(app)
-    _register_template_utilities(app)
+
+    # make url_for('index') == url_for('auth.login')
+    app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
+
+    @app.before_request
+    def load_logged_in_user() -> None:
+        """Load user from session."""
+        real_user_id = session.get("user_id")
+        impersonate_id = session.get("impersonate_id")
+        is_admin = session.get("is_admin", False)
+
+        g.user = None
+        g.is_impersonating = False
+
+        if real_user_id is None:
+            return
+
+        id_to_load = real_user_id
+        if impersonate_id and is_admin:
+            id_to_load = impersonate_id
+            g.is_impersonating = True
+
+        try:
+            db = firestore.client()
+            user_doc = db.collection("users").document(id_to_load).get()
+            if user_doc.exists:
+                g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
+            elif not g.is_impersonating:
+                session.clear()
+                current_app.logger.warning(
+                    f"User {id_to_load} in session but not found in Firestore."
+                )
+            else:
+                # Clear impersonation if user not found
+                session.pop("impersonate_id", None)
+                g.is_impersonating = False
+        except Exception as e:
+            current_app.logger.error(f"Error loading user from session: {e}")
+            if not g.is_impersonating:
+                session.clear()
+
+    _register_context_processors(app)
+
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
 
     return app
 
 
-def _load_config(app: Flask, test_config: dict[str, Any] | None) -> None:
+def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
     """Load and process application configuration."""
-    app.url_map.converters["uuid"] = UUIDConverter
-
-    # Ensure the instance folder exists
-    with suppress(OSError):
-        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
-
     mail_username = os.environ.get("MAIL_USERNAME")
     if mail_username:
         mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
@@ -300,11 +333,6 @@ def _load_config(app: Flask, test_config: dict[str, Any] | None) -> None:
         MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
         or "noreply@pickaladder.com",
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
-        SESSION_PERMANENT=True,
-        PERMANENT_SESSION_LIFETIME=timedelta(days=31),
-        SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE="Lax",
-        SESSION_COOKIE_SECURE=os.environ.get("FLASK_ENV") != "development",
     )
 
     if test_config:

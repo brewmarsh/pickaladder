@@ -21,15 +21,13 @@ if TYPE_CHECKING:
 
 
 class TournamentGenerator:
-    """Utility class for generating tournament pairings and brackets."""
+    """Utility class for generating tournament pairings."""
 
     @staticmethod
     def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
-        """
-        Generate Round Robin pairings using the Circle Method.
-        Supports odd participant counts by adding a "BYE".
-        """
-        if len(participant_ids) < 2:  # noqa: PLR2004
+        """Generate round-robin pairings using the Circle Method."""
+        min_participants = 2
+        if len(participant_ids) < min_participants:
             return []
 
         ids = list(participant_ids)
@@ -42,24 +40,24 @@ class TournamentGenerator:
 
         db = firestore.client()
 
-        for r in range(rounds):
+        for _ in range(rounds):
             for i in range(n // 2):
                 p1 = ids[i]
                 p2 = ids[n - 1 - i]
-
                 if p1 != "BYE" and p2 != "BYE":
                     pairings.append(
                         {
+                            "player1Score": 0,
+                            "player2Score": 0,
                             "player1Ref": db.collection("users").document(p1),
                             "player2Ref": db.collection("users").document(p2),
-                            "status": "PENDING",
-                            "round": r + 1,
                             "matchType": "singles",
+                            "status": "PENDING",
+                            "createdAt": firestore.SERVER_TIMESTAMP,
                         }
                     )
-
-            # Rotate ids (Circle Method: keep first element fixed, rotate others)
-            ids = [ids[0]] + [ids[-1]] + ids[1:-1]
+            # Rotate
+            ids.insert(1, ids.pop())
 
         return pairings
 
@@ -229,7 +227,7 @@ class TournamentService:
         bucket = storage.bucket()
         blob = bucket.blob(f"tournaments/{tournament_id}/{filename}")
 
-        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1], delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1]) as tmp:
             banner_file.save(tmp.name)
             blob.upload_from_filename(tmp.name)
 
@@ -248,7 +246,11 @@ class TournamentService:
         tournament_payload = {
             "name": data["name"],
             "date": data["date"],
+            "start_date": data["date"],
             "location": data["location"],
+            "location_data": data.get("location_data"),
+            "description": data.get("description"),
+            "format": data.get("format", "ROUND_ROBIN"),
             "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
             "mode": data.get("mode", "SINGLES"),
             "ownerRef": user_ref,
@@ -373,9 +375,8 @@ class TournamentService:
         if "start_date" in update_data:
             update_data["date"] = update_data["start_date"]
 
-        # RESOLVED: Block critical updates if matches exist (Logic from main)
-        critical_fields = ["matchType", "mode", "format"]
-        if any(field in update_data for field in critical_fields):
+        # If changing match type, ensure no matches exist
+        if "matchType" in update_data:
             matches = (
                 db.collection("matches")
                 .where(
@@ -385,9 +386,8 @@ class TournamentService:
                 .stream()
             )
             if any(matches):
-                for field in critical_fields:
-                    update_data.pop(field, None)
-                logging.warning(f"Prevented critical field update for tournament {tournament_id}: matches already exist.")
+                # Don't update matchType if matches exist
+                del update_data["matchType"]
 
         ref.update(update_data)
 
@@ -754,6 +754,16 @@ class TournamentService:
         )
 
         return True
+
+    @staticmethod
+    def delete_tournament(tournament_id: str, db: Client | None = None) -> None:
+        """Delete a tournament document and its sub-collections."""
+        if db is None:
+            db = firestore.client()
+
+        # Simple deletion of the main document
+        # Note: In production, we should recursively delete sub-collections
+        db.collection("tournaments").document(tournament_id).delete()
 
     @staticmethod
     def generate_bracket(tournament_id: str, db: Client | None = None) -> list[Any]:

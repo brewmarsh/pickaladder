@@ -17,7 +17,7 @@
 {% endif %}
 
 <div class="card hero-stats-card" style="
-    background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url or '' }}');
+    background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url or url_for('static', filename='default_tournament.jpg') }}');
     background-size: cover;
     background-position: center;
     height: 300px;
@@ -31,42 +31,34 @@
     text-align: center;
     position: relative;
 ">
-    {# RESOLVED: Combined ownership check and admin flag with test-id from main #}
-    {% if is_owner and g.user.is_admin %}
-        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" 
-           class="btn-edit-gear" 
-           data-testid="tournament-settings-btn" 
-           style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" 
-           title="Edit Tournament">⚙️</a>
+    {% if g.user.is_admin %}
+        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">⚙️</a>
     {% endif %}
-
     <h1 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h1>
     <p style="font-size: 1.25rem; text-shadow: 0 2px 4px rgba(0,0,0,1);">
         {{ tournament.date_display or tournament.date }} | {{ tournament.matchType|capitalize }}
     </p>
-    <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
-        <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}">
-            {{ tournament.status or 'Active' }}
-        </span>
-        {% if tournament.status != 'Completed' %}
-            <a href="{{ url_for('match.record_match', tournament_id=tournament.id) }}" class="btn btn-primary btn-sm">Record Match</a>
-        {% endif %}
-    </div>
+    <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}" style="margin-top: 10px;">
+        {{ tournament.status or 'Active' }}
+    </span>
 </div>
 
 <div class="dashboard-columns">
+    <!-- Left Column: Tabs and Content -->
     <div class="dashboard-column-left">
+        <!-- Tabs -->
         <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
             <button class="tab-btn active" onclick="openTab(event, 'overview')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid var(--accent-color); font-weight: bold;">Overview</button>
             <button class="tab-btn" onclick="openTab(event, 'bracket')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Bracket</button>
             <button class="tab-btn" onclick="openTab(event, 'players')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Players</button>
         </div>
 
+        <!-- Tab Content -->
         <div id="overview" class="tab-content">
             {% if tournament.description %}
             <div class="card">
                 <h3 class="card-header">About Tournament</h3>
-                <div style="white-space: pre-wrap; padding: 20px;">{{ tournament.description }}</div>
+                <div style="white-space: pre-wrap;">{{ tournament.description }}</div>
             </div>
             {% endif %}
 
@@ -123,32 +115,31 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
                     <h3 style="margin: 0;">Standings</h3>
+                    {% if tournament.status != 'Completed' %}
+                        <a href="{{ url_for('match.record_match', tournament_id=tournament.id) }}" class="btn btn-primary btn-sm">Record Match</a>
+                    {% endif %}
                 </div>
                 <div class="table-container">
                     <table class="table-standard responsive-table">
                         <thead>
                             <tr>
                                 <th>Rank</th>
-                                <th>Player</th>
-                                <th>W</th>
-                                <th>L</th>
-                                <th>Diff</th>
+                                <th>Player/Team</th>
+                                <th>W-L</th>
+                                <th>+/-</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% if standings %}
-                                {% for s in standings %}
-                                    <tr>
-                                        <td data-label="Rank">{{ loop.index }}</td>
-                                        <td data-label="Player">{{ s.name }}</td>
-                                        <td data-label="W">{{ s.wins }}</td>
-                                        <td data-label="L">{{ s.losses }}</td>
-                                        <td data-label="Diff">{{ s.point_diff }}</td>
-                                    </tr>
-                                {% endfor %}
+                            {% for s in standings %}
+                                <tr>
+                                    <td data-label="Rank">{{ loop.index }}</td>
+                                    <td data-label="Name">{{ s.name }}</td>
+                                    <td data-label="W-L">{{ s.wins }}-{{ s.losses }}</td>
+                                    <td data-label="+/-">{{ "%+d"|format(s.point_diff) }}</td>
+                                </tr>
                             {% else %}
-                                <tr><td colspan="5" class="text-center">No participants yet.</td></tr>
-                            {% endif %}
+                                <tr><td colspan="4" class="text-center">No matches recorded yet.</td></tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -182,29 +173,14 @@
                                         </span>
                                     </td>
                                     <td data-label="Action">
-                                        {% if p.user.id == g.user.uid %}
-                                            {% if tournament.mode == 'DOUBLES' %}
-                                                {% if pending_partner_invite %}
-                                                    <form action="{{ url_for('tournament.accept_team', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
-                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                        <button type="submit" class="btn btn-sm btn-success">Accept Team</button>
-                                                    </form>
-                                                {% elif not team_status %}
-                                                    <button type="button" class="btn btn-sm btn-success" onclick="openPartnerModal()">Join (Pick Partner)</button>
-                                                {% endif %}
-                                            {% else %}
-                                                {% if p.status == 'pending' %}
-                                                    <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
-                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                        <button type="submit" class="btn btn-sm btn-success">Join</button>
-                                                    </form>
-                                                {% endif %}
-                                            {% endif %}
+                                        {% if p.user.id == g.user.uid and p.status == 'pending' %}
+                                            <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-success">Join</button>
+                                            </form>
                                         {% endif %}
                                     </td>
                                 </tr>
-                            {% else %}
-                                <tr><td colspan="3" class="text-center">No participants yet.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -213,7 +189,9 @@
         </div>
     </div>
 
+    <!-- Right Column: Sidebar -->
     <div class="dashboard-column-right">
+        <!-- Location Card -->
         <div class="card">
             <h4 class="card-header">📍 Location</h4>
             {% if tournament.location_data %}
@@ -226,10 +204,10 @@
             {% endif %}
         </div>
 
-        {% if is_owner and g.user.is_admin %}
+        {% if is_owner %}
             {% if tournament.status != 'Completed' %}
             <div class="card">
-                <h4 class="card-header">Tournament Management</h4>
+                <h4 class="card-header">Management</h4>
                 <form action="{{ url_for('tournament.complete_tournament', tournament_id=tournament.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to complete this tournament? This will notify all participants of the final results.');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger" style="margin-top: 10px; width: 100%;">Complete Tournament</button>
@@ -267,6 +245,7 @@
     </div>
 </div>
 
+<!-- Select Partner Modal -->
 <div class="modal" id="selectPartnerModal">
     <div class="modal-content">
         <div class="modal-header">
@@ -349,10 +328,12 @@ function openTab(evt, tabName) {
     for (i = 0; i < tablinks.length; i++) {
         tablinks[i].className = tablinks[i].className.replace(" active", "");
         tablinks[i].style.borderBottom = "3px solid transparent";
+        tablinks[i].style.fontWeight = "normal";
     }
     document.getElementById(tabName).style.display = "block";
     evt.currentTarget.className += " active";
     evt.currentTarget.style.borderBottom = "3px solid var(--accent-color)";
+    evt.currentTarget.style.fontWeight = "bold";
 }
 
 function openPartnerModal() {
@@ -387,7 +368,7 @@ if (partnerSearch) {
                     users.forEach(u => {
                         const div = document.createElement('div');
                         div.className = 'search-item';
-                        div.innerHTML = `<img src="${u.avatar}" onerror="this.onerror=null;this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
+                        div.innerHTML = `<img src="${u.avatar}" onerror="this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
                         div.onclick = () => {
                             selectedPartnerId.value = u.id;
                             selectedPartnerName.innerText = u.name;
@@ -401,13 +382,13 @@ if (partnerSearch) {
                 searchResults.style.display = 'block';
             });
     });
-
-    document.addEventListener('click', function(e) {
-        if (!partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
-            searchResults.style.display = 'none';
-        }
-    });
 }
+
+document.addEventListener('click', function(e) {
+    if (partnerSearch && !partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.style.display = 'none';
+    }
+});
 
 function generateInviteLink() {
     const teamNameInput = document.querySelector('input[name="team_name"]');

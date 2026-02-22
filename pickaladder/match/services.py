@@ -50,8 +50,8 @@ class MatchService:
         p1_snapshot = snapshots_map.get(p1_ref.id)
         p2_snapshot = snapshots_map.get(p2_ref.id)
 
-        p1_data = (p1_snapshot.to_dict() if p1_snapshot else None) or {}
-        p2_data = (p2_snapshot.to_dict() if p2_snapshot else None) or {}
+        p1_data = (p1_snapshot.to_dict() if p1_snapshot else {}) or {}
+        p2_data = (p2_snapshot.to_dict() if p2_snapshot else {}) or {}
 
         # 1.5 Denormalize Player Data (Snapshots)
         if match_type == "singles":
@@ -152,12 +152,35 @@ class MatchService:
     @staticmethod
     def record_match(
         db: Client,
-        submission: MatchSubmission,
+        submission: MatchSubmission | dict[str, Any],
         current_user: UserSession,
     ) -> MatchResult:
         """Process and record a match submission."""
         user_id = current_user["uid"]
         user_ref = db.collection("users").document(user_id)
+
+        # Convert dict to MatchSubmission if necessary
+        if isinstance(submission, dict):
+            submission = MatchSubmission(
+                match_type=submission.get("match_type", "singles"),
+                player_1_id=submission.get("player1")
+                or submission.get("player_1_id", ""),
+                player_2_id=submission.get("player2")
+                or submission.get("player_2_id", ""),
+                score_p1=int(
+                    submission.get("player1_score") or submission.get("score_p1") or 0
+                ),
+                score_p2=int(
+                    submission.get("player2_score") or submission.get("score_p2") or 0
+                ),
+                match_date=submission.get("match_date"),
+                partner_id=submission.get("partner") or submission.get("partner_id"),
+                opponent_2_id=submission.get("opponent2")
+                or submission.get("opponent_2_id"),
+                group_id=submission.get("group_id"),
+                tournament_id=submission.get("tournament_id"),
+                created_by=submission.get("created_by") or user_id,
+            )
 
         match_type = submission.match_type
         p1_id = submission.player_1_id
@@ -809,10 +832,10 @@ class MatchService:
             return names
         u_refs = [db.collection("users").document(uid) for uid in uids]
         for doc in db.get_all(u_refs):
-            doc_snap = cast("DocumentSnapshot", doc)
-            if doc_snap.exists:
-                d = doc_snap.to_dict() or {}
-                names[doc_snap.id] = d.get("name", doc_snap.id)
+            d_snap = cast("DocumentSnapshot", doc)
+            if d_snap.exists:
+                d = d_snap.to_dict() or {}
+                names[d_snap.id] = d.get("name", d_snap.id)
         return names
 
     @staticmethod
@@ -835,8 +858,12 @@ class MatchService:
     @staticmethod
     def get_team_names(db: Client, team1_id: str, team2_id: str) -> tuple[str, str]:
         """Fetch names for two teams."""
-        t1_doc = cast("DocumentSnapshot", db.collection("teams").document(team1_id).get())
-        t2_doc = cast("DocumentSnapshot", db.collection("teams").document(team2_id).get())
+        t1_doc = cast(
+            "DocumentSnapshot", db.collection("teams").document(team1_id).get()
+        )
+        t2_doc = cast(
+            "DocumentSnapshot", db.collection("teams").document(team2_id).get()
+        )
 
         name1 = (
             (t1_doc.to_dict() or {}).get("name", "Team 1")
@@ -868,19 +895,19 @@ class MatchService:
             team1_data = []
             if team1_refs:
                 for doc in db.get_all(team1_refs):
-                    doc_snap = cast("DocumentSnapshot", doc)
-                    if doc_snap.exists:
-                        p_data = doc_snap.to_dict() or {}
-                        p_data["id"] = doc_snap.id
+                    d_snap = cast("DocumentSnapshot", doc)
+                    if d_snap.exists:
+                        p_data = d_snap.to_dict() or {}
+                        p_data["id"] = d_snap.id
                         team1_data.append(p_data)
 
             team2_data = []
             if team2_refs:
                 for doc in db.get_all(team2_refs):
-                    doc_snap = cast("DocumentSnapshot", doc)
-                    if doc_snap.exists:
-                        p_data = doc_snap.to_dict() or {}
-                        p_data["id"] = doc_snap.id
+                    d_snap = cast("DocumentSnapshot", doc)
+                    if d_snap.exists:
+                        p_data = d_snap.to_dict() or {}
+                        p_data["id"] = d_snap.id
                         team2_data.append(p_data)
 
             context["team1"] = team1_data
@@ -897,14 +924,16 @@ class MatchService:
             if player1_ref:
                 p1_doc = cast("DocumentSnapshot", player1_ref.get())
                 if p1_doc.exists:
-                    player1_data = p1_doc.to_dict() or {}
+                    p1_dict = p1_doc.to_dict() or {}
+                    player1_data = dict(p1_dict)
                     player1_data["id"] = p1_doc.id
                     player1_record = MatchService.get_player_record(db, player1_ref)
 
             if player2_ref:
                 p2_doc = cast("DocumentSnapshot", player2_ref.get())
                 if p2_doc.exists:
-                    player2_data = p2_doc.to_dict() or {}
+                    p2_dict = p2_doc.to_dict() or {}
+                    player2_data = dict(p2_dict)
                     player2_data["id"] = p2_doc.id
                     player2_record = MatchService.get_player_record(db, player2_ref)
 

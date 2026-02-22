@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     pass
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
 @login_required
 def edit_match(match_id: str) -> Any:
@@ -110,11 +109,11 @@ def _populate_match_form_choices(
             if doc.exists:
                 all_names[doc.id] = doc.to_dict().get("name", doc.id)
 
-    form.player1.choices = cast(Any, [(u, str(all_names.get(u, u))) for u in p1_cands])
+    form.player1.choices = [(u, str(all_names.get(u, u))) for u in p1_cands]  # type: ignore
     others = [(u, str(all_names.get(u, u))) for u in other_cands]
-    form.player2.choices = form.partner.choices = form.opponent2.choices = cast(
-        Any, others
-    )
+    form.player2.choices = others  # type: ignore
+    form.partner.choices = others  # type: ignore
+    form.opponent2.choices = others  # type: ignore
 
 
 def _handle_record_match_get(
@@ -140,7 +139,9 @@ def _handle_record_match_get(
     if not form.match_type.data:
         u_doc = db.collection("users").document(user_id).get()
         if u_doc.exists:
-            form.match_type.data = u_doc.to_dict().get("lastMatchRecordedType", "singles")
+            form.match_type.data = u_doc.to_dict().get(
+                "lastMatchRecordedType", "singles"
+            )
 
 
 @bp.route("/record", methods=["GET", "POST"])
@@ -165,7 +166,9 @@ def record_match() -> Any:
                 return jsonify({"status": "success", "match_id": m_id}), 200
             flash("Match recorded successfully.", "success")
             if tid := data.get("tournament_id"):
-                return redirect(url_for("tournament.view_tournament", tournament_id=tid))
+                return redirect(
+                    url_for("tournament.view_tournament", tournament_id=tid)
+                )
             if gid := data.get("group_id"):
                 return redirect(url_for("group.view_group", group_id=gid))
             return redirect(url_for("match.view_match_summary", match_id=m_id))
@@ -179,11 +182,15 @@ def record_match() -> Any:
         t_doc = db.collection("tournaments").document(t_id).get()
         t_name = t_doc.to_dict().get("name") if t_doc.exists else None
 
-    return render_template("record_match.html", form=form, group_id=group_id,
-                           tournament_id=t_id, tournament_name=t_name)
+    return render_template(
+        "record_match.html",
+        form=form,
+        group_id=group_id,
+        tournament_id=t_id,
+        tournament_name=t_name,
+    )
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/history")
 @login_required
 def get_match_history() -> Any:
@@ -201,14 +208,9 @@ def get_match_history() -> Any:
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
-    """Display a global leaderboard.
-
-    Note: This is a simplified, non-scalable implementation. A production-ready
-    leaderboard on Firestore would likely require denormalization and Cloud Functions.
-    """
+    """Display a global leaderboard."""
     db = firestore.client()
     try:
-        # Exclude players with 0 games and sort by Win Percentage
         players = MatchService.get_leaderboard_data(db, min_games=1)
     except Exception as e:
         players = []
