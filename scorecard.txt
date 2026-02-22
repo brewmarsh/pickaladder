@@ -10,7 +10,7 @@ agent-score score pickaladder/ --verbosity detailed
 │ Linter Config        │          FAIL │
 │ Lock File            │          FAIL │
 │ Directory Entropy    │ 4.6 files/dir │
-│ Critical Token Count │  8,983 tokens │
+│ Critical Token Count │  9,138 tokens │
 └──────────────────────┴───────────────┘
 
                                  File Analysis                                  
