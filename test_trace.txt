@@ -1,0 +1,1174 @@
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.12`.
+============================= test session starts ==============================
+platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0 -- /app/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /app
+configfile: pyproject.toml
+plugins: base-url-2.1.0, flask-1.3.0, mock-3.15.1, Faker-40.4.0, playwright-0.7.2, anyio-4.12.1
+collecting ... collected 1 item
+
+tests/e2e/test_tournament.py::test_tournament_flow[chromium] FAILED      [100%]
+
+=================================== FAILURES ===================================
+________________________ test_tournament_flow[chromium] ________________________
+
+cls = <class '_pytest.runner.CallInfo'>
+func = <function call_and_report.<locals>.<lambda> at 0x7f2fe19237e0>
+when = 'call'
+reraise = (<class '_pytest.outcomes.Exit'>, <class 'KeyboardInterrupt'>)
+
+    @classmethod
+    def from_call(
+        cls,
+        func: Callable[[], TResult],
+        when: Literal["collect", "setup", "call", "teardown"],
+        reraise: type[BaseException] | tuple[type[BaseException], ...] | None = None,
+    ) -> CallInfo[TResult]:
+        """Call func, wrapping the result in a CallInfo.
+
+        :param func:
+            The function to call. Called without arguments.
+        :type func: Callable[[], _pytest.runner.TResult]
+        :param when:
+            The phase in which the function is called.
+        :param reraise:
+            Exception or exceptions that shall propagate if raised by the
+            function, instead of being wrapped in the CallInfo.
+        """
+        excinfo = None
+        instant = timing.Instant()
+        try:
+>           result: TResult | None = func()
+                                     ^^^^^^
+
+.venv/lib/python3.12/site-packages/_pytest/runner.py:353:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+>       lambda: runtest_hook(item=item, **kwds),
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        when=when,
+        reraise=get_reraise_exceptions(item.config),
+    )
+
+.venv/lib/python3.12/site-packages/_pytest/runner.py:245:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <HookCaller 'pytest_runtest_call'>
+kwargs = {'item': <Function test_tournament_flow[chromium]>}
+firstresult = False
+
+    def __call__(self, **kwargs: object) -> Any:
+        """Call the hook.
+
+        Only accepts keyword arguments, which should match the hook
+        specification.
+
+        Returns the result(s) of calling all registered plugins, see
+        :ref:`calling`.
+        """
+        assert not self.is_historic(), (
+            "Cannot directly call a historic hook - use call_historic instead."
+        )
+        self._verify_all_args_are_provided(kwargs)
+        firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
+        # Copy because plugins may register other plugins during iteration (#438).
+>       return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_pytest.config.PytestPluginManager object at 0x7f2fe73dadb0>
+hook_name = 'pytest_runtest_call'
+methods = [<HookImpl plugin_name='threadexception', plugin=<module '_pytest.threadexception' from '/app/.venv/lib/python3.12/sit...xture=None>>, <HookImpl plugin_name='logging-plugin', plugin=<_pytest.logging.LoggingPlugin object at 0x7f2fe1ef76e0>>]
+kwargs = {'item': <Function test_tournament_flow[chromium]>}
+firstresult = False
+
+    def _hookexec(
+        self,
+        hook_name: str,
+        methods: Sequence[HookImpl],
+        kwargs: Mapping[str, object],
+        firstresult: bool,
+    ) -> object | list[object]:
+        # called from all hookcaller instances.
+        # enable_tracing will set its own wrapping function at self._inner_hookexec
+>       return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+hook_name = 'pytest_runtest_call'
+hook_impls = [<HookImpl plugin_name='threadexception', plugin=<module '_pytest.threadexception' from '/app/.venv/lib/python3.12/sit...xture=None>>, <HookImpl plugin_name='logging-plugin', plugin=<_pytest.logging.LoggingPlugin object at 0x7f2fe1ef76e0>>]
+caller_kwargs = {'item': <Function test_tournament_flow[chromium]>}
+firstresult = False
+
+    def _multicall(
+        hook_name: str,
+        hook_impls: Sequence[HookImpl],
+        caller_kwargs: Mapping[str, object],
+        firstresult: bool,
+    ) -> object | list[object]:
+        """Execute a call into multiple python functions/methods and return the
+        result(s).
+
+        ``caller_kwargs`` comes from HookCaller.__call__().
+        """
+        __tracebackhide__ = True
+        results: list[object] = []
+        exception = None
+        try:  # run impl and wrapper setup functions in a loop
+            teardowns: list[Teardown] = []
+            try:
+                for hook_impl in reversed(hook_impls):
+                    try:
+                        args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                    except KeyError as e:
+                        # coverage bug - this is tested
+                        for argname in hook_impl.argnames:  # pragma: no cover
+                            if argname not in caller_kwargs:
+                                raise HookCallError(
+                                    f"hook call must provide argument {argname!r}"
+                                ) from e
+
+                    if hook_impl.hookwrapper:
+                        function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
+
+                        next(function_gen)  # first yield
+                        teardowns.append(function_gen)
+
+                    elif hook_impl.wrapper:
+                        try:
+                            # If this cast is not valid, a type error is raised below,
+                            # which is the desired response.
+                            res = hook_impl.function(*args)
+                            function_gen = cast(Generator[None, object, object], res)
+                            next(function_gen)  # first yield
+                            teardowns.append(function_gen)
+                        except StopIteration:
+                            _raise_wrapfail(function_gen, "did not yield")
+                    else:
+                        res = hook_impl.function(*args)
+                        if res is not None:
+                            results.append(res)
+                            if firstresult:  # halt further impl calls
+                                break
+            except BaseException as exc:
+                exception = exc
+        finally:
+            if firstresult:  # first result hooks return a single value
+                result = results[0] if results else None
+            else:
+                result = results
+
+            # run all wrapper post-yield blocks
+            for teardown in reversed(teardowns):
+                try:
+                    if exception is not None:
+                        try:
+                            teardown.throw(exception)
+                        except RuntimeError as re:
+                            # StopIteration from generator causes RuntimeError
+                            # even for coroutine usage - see #544
+                            if (
+                                isinstance(exception, StopIteration)
+                                and re.__cause__ is exception
+                            ):
+                                teardown.close()
+                                continue
+                            else:
+                                raise
+                    else:
+                        teardown.send(result)
+                    # Following is unreachable for a well behaved hook wrapper.
+                    # Try to force finalizers otherwise postponed till GC action.
+                    # Note: close() may raise if generator handles GeneratorExit.
+                    teardown.close()
+                except StopIteration as si:
+                    result = si.value
+                    exception = None
+                    continue
+                except BaseException as e:
+                    exception = e
+                    continue
+                _raise_wrapfail(teardown, "has second yield")
+
+        if exception is not None:
+>           raise exception
+
+.venv/lib/python3.12/site-packages/pluggy/_callers.py:167:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+hook_name = 'pytest_runtest_call'
+hook_impls = [<HookImpl plugin_name='threadexception', plugin=<module '_pytest.threadexception' from '/app/.venv/lib/python3.12/sit...xture=None>>, <HookImpl plugin_name='logging-plugin', plugin=<_pytest.logging.LoggingPlugin object at 0x7f2fe1ef76e0>>]
+caller_kwargs = {'item': <Function test_tournament_flow[chromium]>}
+firstresult = False
+
+    def _multicall(
+        hook_name: str,
+        hook_impls: Sequence[HookImpl],
+        caller_kwargs: Mapping[str, object],
+        firstresult: bool,
+    ) -> object | list[object]:
+        """Execute a call into multiple python functions/methods and return the
+        result(s).
+
+        ``caller_kwargs`` comes from HookCaller.__call__().
+        """
+        __tracebackhide__ = True
+        results: list[object] = []
+        exception = None
+        try:  # run impl and wrapper setup functions in a loop
+            teardowns: list[Teardown] = []
+            try:
+                for hook_impl in reversed(hook_impls):
+                    try:
+                        args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                    except KeyError as e:
+                        # coverage bug - this is tested
+                        for argname in hook_impl.argnames:  # pragma: no cover
+                            if argname not in caller_kwargs:
+                                raise HookCallError(
+                                    f"hook call must provide argument {argname!r}"
+                                ) from e
+
+                    if hook_impl.hookwrapper:
+                        function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
+
+                        next(function_gen)  # first yield
+                        teardowns.append(function_gen)
+
+                    elif hook_impl.wrapper:
+                        try:
+                            # If this cast is not valid, a type error is raised below,
+                            # which is the desired response.
+                            res = hook_impl.function(*args)
+                            function_gen = cast(Generator[None, object, object], res)
+                            next(function_gen)  # first yield
+                            teardowns.append(function_gen)
+                        except StopIteration:
+                            _raise_wrapfail(function_gen, "did not yield")
+                    else:
+                        res = hook_impl.function(*args)
+                        if res is not None:
+                            results.append(res)
+                            if firstresult:  # halt further impl calls
+                                break
+            except BaseException as exc:
+                exception = exc
+        finally:
+            if firstresult:  # first result hooks return a single value
+                result = results[0] if results else None
+            else:
+                result = results
+
+            # run all wrapper post-yield blocks
+            for teardown in reversed(teardowns):
+                try:
+                    if exception is not None:
+                        try:
+>                           teardown.throw(exception)
+
+.venv/lib/python3.12/site-packages/pluggy/_callers.py:139:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_pytest.logging.LoggingPlugin object at 0x7f2fe1ef76e0>
+item = <Function test_tournament_flow[chromium]>
+
+    @hookimpl(wrapper=True)
+    def pytest_runtest_call(self, item: nodes.Item) -> Generator[None]:
+        self.log_cli_handler.set_when("call")
+
+        with self._runtest_for(item, "call"):
+>           yield
+
+.venv/lib/python3.12/site-packages/_pytest/logging.py:850:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+hook_name = 'pytest_runtest_call'
+hook_impls = [<HookImpl plugin_name='threadexception', plugin=<module '_pytest.threadexception' from '/app/.venv/lib/python3.12/sit...xture=None>>, <HookImpl plugin_name='logging-plugin', plugin=<_pytest.logging.LoggingPlugin object at 0x7f2fe1ef76e0>>]
+caller_kwargs = {'item': <Function test_tournament_flow[chromium]>}
+firstresult = False
+
+    def _multicall(
+        hook_name: str,
+        hook_impls: Sequence[HookImpl],
+        caller_kwargs: Mapping[str, object],
+        firstresult: bool,
+    ) -> object | list[object]:
+        """Execute a call into multiple python functions/methods and return the
+        result(s).
+
+        ``caller_kwargs`` comes from HookCaller.__call__().
+        """
+        __tracebackhide__ = True
+        results: list[object] = []
+        exception = None
+        try:  # run impl and wrapper setup functions in a loop
+            teardowns: list[Teardown] = []
+            try:
+                for hook_impl in reversed(hook_impls):
+                    try:
+                        args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                    except KeyError as e:
+                        # coverage bug - this is tested
+                        for argname in hook_impl.argnames:  # pragma: no cover
+                            if argname not in caller_kwargs:
+                                raise HookCallError(
+                                    f"hook call must provide argument {argname!r}"
+                                ) from e
+
+                    if hook_impl.hookwrapper:
+                        function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
+
+                        next(function_gen)  # first yield
+                        teardowns.append(function_gen)
+
+                    elif hook_impl.wrapper:
+                        try:
+                            # If this cast is not valid, a type error is raised below,
+                            # which is the desired response.
+                            res = hook_impl.function(*args)
+                            function_gen = cast(Generator[None, object, object], res)
+                            next(function_gen)  # first yield
+                            teardowns.append(function_gen)
+                        except StopIteration:
+                            _raise_wrapfail(function_gen, "did not yield")
+                    else:
+                        res = hook_impl.function(*args)
+                        if res is not None:
+                            results.append(res)
+                            if firstresult:  # halt further impl calls
+                                break
+            except BaseException as exc:
+                exception = exc
+        finally:
+            if firstresult:  # first result hooks return a single value
+                result = results[0] if results else None
+            else:
+                result = results
+
+            # run all wrapper post-yield blocks
+            for teardown in reversed(teardowns):
+                try:
+                    if exception is not None:
+                        try:
+>                           teardown.throw(exception)
+
+.venv/lib/python3.12/site-packages/pluggy/_callers.py:139:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <CaptureManager _method='fd' _global_capturing=<MultiCapture out=<FDCapture 1 oldfd=5 _state='suspended' tmpfile=<_io....xtIOWrapper name='/dev/null' mode='r' encoding='utf-8'>> _state='suspended' _in_suspended=False> _capture_fixture=None>
+item = <Function test_tournament_flow[chromium]>
+
+    @hookimpl(wrapper=True)
+    def pytest_runtest_call(self, item: Item) -> Generator[None]:
+        with self.item_capture("call", item):
+>           return (yield)
+                    ^^^^^
+
+.venv/lib/python3.12/site-packages/_pytest/capture.py:900:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+hook_name = 'pytest_runtest_call'
+hook_impls = [<HookImpl plugin_name='threadexception', plugin=<module '_pytest.threadexception' from '/app/.venv/lib/python3.12/sit...xture=None>>, <HookImpl plugin_name='logging-plugin', plugin=<_pytest.logging.LoggingPlugin object at 0x7f2fe1ef76e0>>]
+caller_kwargs = {'item': <Function test_tournament_flow[chromium]>}
+firstresult = False
+
+    def _multicall(
+        hook_name: str,
+        hook_impls: Sequence[HookImpl],
+        caller_kwargs: Mapping[str, object],
+        firstresult: bool,
+    ) -> object | list[object]:
+        """Execute a call into multiple python functions/methods and return the
+        result(s).
+
+        ``caller_kwargs`` comes from HookCaller.__call__().
+        """
+        __tracebackhide__ = True
+        results: list[object] = []
+        exception = None
+        try:  # run impl and wrapper setup functions in a loop
+            teardowns: list[Teardown] = []
+            try:
+                for hook_impl in reversed(hook_impls):
+                    try:
+                        args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                    except KeyError as e:
+                        # coverage bug - this is tested
+                        for argname in hook_impl.argnames:  # pragma: no cover
+                            if argname not in caller_kwargs:
+                                raise HookCallError(
+                                    f"hook call must provide argument {argname!r}"
+                                ) from e
+
+                    if hook_impl.hookwrapper:
+                        function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
+
+                        next(function_gen)  # first yield
+                        teardowns.append(function_gen)
+
+                    elif hook_impl.wrapper:
+                        try:
+                            # If this cast is not valid, a type error is raised below,
+                            # which is the desired response.
+                            res = hook_impl.function(*args)
+                            function_gen = cast(Generator[None, object, object], res)
+                            next(function_gen)  # first yield
+                            teardowns.append(function_gen)
+                        except StopIteration:
+                            _raise_wrapfail(function_gen, "did not yield")
+                    else:
+                        res = hook_impl.function(*args)
+                        if res is not None:
+                            results.append(res)
+                            if firstresult:  # halt further impl calls
+                                break
+            except BaseException as exc:
+                exception = exc
+        finally:
+            if firstresult:  # first result hooks return a single value
+                result = results[0] if results else None
+            else:
+                result = results
+
+            # run all wrapper post-yield blocks
+            for teardown in reversed(teardowns):
+                try:
+                    if exception is not None:
+                        try:
+>                           teardown.throw(exception)
+
+.venv/lib/python3.12/site-packages/pluggy/_callers.py:139:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+item = <Function test_tournament_flow[chromium]>
+
+    @hookimpl(wrapper=True)
+    def pytest_runtest_call(item: Item) -> Generator[None]:
+        xfailed = item.stash.get(xfailed_key, None)
+        if xfailed is None:
+            item.stash[xfailed_key] = xfailed = evaluate_xfail_marks(item)
+
+        if xfailed and not item.config.option.runxfail and not xfailed.run:
+            xfail("[NOTRUN] " + xfailed.reason)
+
+        try:
+>           return (yield)
+                    ^^^^^
+
+.venv/lib/python3.12/site-packages/_pytest/skipping.py:268:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+hook_name = 'pytest_runtest_call'
+hook_impls = [<HookImpl plugin_name='threadexception', plugin=<module '_pytest.threadexception' from '/app/.venv/lib/python3.12/sit...xture=None>>, <HookImpl plugin_name='logging-plugin', plugin=<_pytest.logging.LoggingPlugin object at 0x7f2fe1ef76e0>>]
+caller_kwargs = {'item': <Function test_tournament_flow[chromium]>}
+firstresult = False
+
+    def _multicall(
+        hook_name: str,
+        hook_impls: Sequence[HookImpl],
+        caller_kwargs: Mapping[str, object],
+        firstresult: bool,
+    ) -> object | list[object]:
+        """Execute a call into multiple python functions/methods and return the
+        result(s).
+
+        ``caller_kwargs`` comes from HookCaller.__call__().
+        """
+        __tracebackhide__ = True
+        results: list[object] = []
+        exception = None
+        try:  # run impl and wrapper setup functions in a loop
+            teardowns: list[Teardown] = []
+            try:
+                for hook_impl in reversed(hook_impls):
+                    try:
+                        args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                    except KeyError as e:
+                        # coverage bug - this is tested
+                        for argname in hook_impl.argnames:  # pragma: no cover
+                            if argname not in caller_kwargs:
+                                raise HookCallError(
+                                    f"hook call must provide argument {argname!r}"
+                                ) from e
+
+                    if hook_impl.hookwrapper:
+                        function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
+
+                        next(function_gen)  # first yield
+                        teardowns.append(function_gen)
+
+                    elif hook_impl.wrapper:
+                        try:
+                            # If this cast is not valid, a type error is raised below,
+                            # which is the desired response.
+                            res = hook_impl.function(*args)
+                            function_gen = cast(Generator[None, object, object], res)
+                            next(function_gen)  # first yield
+                            teardowns.append(function_gen)
+                        except StopIteration:
+                            _raise_wrapfail(function_gen, "did not yield")
+                    else:
+>                       res = hook_impl.function(*args)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/pluggy/_callers.py:121:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+item = <Function test_tournament_flow[chromium]>
+
+    def pytest_runtest_call(item: Item) -> None:
+        _update_current_test_var(item, "call")
+        try:
+            del sys.last_type
+            del sys.last_value
+            del sys.last_traceback
+            if sys.version_info >= (3, 12, 0):
+                del sys.last_exc  # type:ignore[attr-defined]
+        except AttributeError:
+            pass
+        try:
+>           item.runtest()
+
+.venv/lib/python3.12/site-packages/_pytest/runner.py:179:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Function test_tournament_flow[chromium]>
+
+    def runtest(self) -> None:
+        """Execute the underlying test function."""
+>       self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+
+.venv/lib/python3.12/site-packages/_pytest/python.py:1720:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <HookCaller 'pytest_pyfunc_call'>
+kwargs = {'pyfuncitem': <Function test_tournament_flow[chromium]>}
+firstresult = True
+
+    def __call__(self, **kwargs: object) -> Any:
+        """Call the hook.
+
+        Only accepts keyword arguments, which should match the hook
+        specification.
+
+        Returns the result(s) of calling all registered plugins, see
+        :ref:`calling`.
+        """
+        assert not self.is_historic(), (
+            "Cannot directly call a historic hook - use call_historic instead."
+        )
+        self._verify_all_args_are_provided(kwargs)
+        firstresult = self.spec.opts.get("firstresult", False) if self.spec else False
+        # Copy because plugins may register other plugins during iteration (#438).
+>       return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_pytest.config.PytestPluginManager object at 0x7f2fe73dadb0>
+hook_name = 'pytest_pyfunc_call'
+methods = [<HookImpl plugin_name='python', plugin=<module '_pytest.python' from '/app/.venv/lib/python3.12/site-packages/_pytest...='anyio', plugin=<module 'anyio.pytest_plugin' from '/app/.venv/lib/python3.12/site-packages/anyio/pytest_plugin.py'>>]
+kwargs = {'pyfuncitem': <Function test_tournament_flow[chromium]>}
+firstresult = True
+
+    def _hookexec(
+        self,
+        hook_name: str,
+        methods: Sequence[HookImpl],
+        kwargs: Mapping[str, object],
+        firstresult: bool,
+    ) -> object | list[object]:
+        # called from all hookcaller instances.
+        # enable_tracing will set its own wrapping function at self._inner_hookexec
+>       return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+hook_name = 'pytest_pyfunc_call'
+hook_impls = [<HookImpl plugin_name='python', plugin=<module '_pytest.python' from '/app/.venv/lib/python3.12/site-packages/_pytest...='anyio', plugin=<module 'anyio.pytest_plugin' from '/app/.venv/lib/python3.12/site-packages/anyio/pytest_plugin.py'>>]
+caller_kwargs = {'pyfuncitem': <Function test_tournament_flow[chromium]>}
+firstresult = True
+
+    def _multicall(
+        hook_name: str,
+        hook_impls: Sequence[HookImpl],
+        caller_kwargs: Mapping[str, object],
+        firstresult: bool,
+    ) -> object | list[object]:
+        """Execute a call into multiple python functions/methods and return the
+        result(s).
+
+        ``caller_kwargs`` comes from HookCaller.__call__().
+        """
+        __tracebackhide__ = True
+        results: list[object] = []
+        exception = None
+        try:  # run impl and wrapper setup functions in a loop
+            teardowns: list[Teardown] = []
+            try:
+                for hook_impl in reversed(hook_impls):
+                    try:
+                        args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                    except KeyError as e:
+                        # coverage bug - this is tested
+                        for argname in hook_impl.argnames:  # pragma: no cover
+                            if argname not in caller_kwargs:
+                                raise HookCallError(
+                                    f"hook call must provide argument {argname!r}"
+                                ) from e
+
+                    if hook_impl.hookwrapper:
+                        function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
+
+                        next(function_gen)  # first yield
+                        teardowns.append(function_gen)
+
+                    elif hook_impl.wrapper:
+                        try:
+                            # If this cast is not valid, a type error is raised below,
+                            # which is the desired response.
+                            res = hook_impl.function(*args)
+                            function_gen = cast(Generator[None, object, object], res)
+                            next(function_gen)  # first yield
+                            teardowns.append(function_gen)
+                        except StopIteration:
+                            _raise_wrapfail(function_gen, "did not yield")
+                    else:
+                        res = hook_impl.function(*args)
+                        if res is not None:
+                            results.append(res)
+                            if firstresult:  # halt further impl calls
+                                break
+            except BaseException as exc:
+                exception = exc
+        finally:
+            if firstresult:  # first result hooks return a single value
+                result = results[0] if results else None
+            else:
+                result = results
+
+            # run all wrapper post-yield blocks
+            for teardown in reversed(teardowns):
+                try:
+                    if exception is not None:
+                        try:
+                            teardown.throw(exception)
+                        except RuntimeError as re:
+                            # StopIteration from generator causes RuntimeError
+                            # even for coroutine usage - see #544
+                            if (
+                                isinstance(exception, StopIteration)
+                                and re.__cause__ is exception
+                            ):
+                                teardown.close()
+                                continue
+                            else:
+                                raise
+                    else:
+                        teardown.send(result)
+                    # Following is unreachable for a well behaved hook wrapper.
+                    # Try to force finalizers otherwise postponed till GC action.
+                    # Note: close() may raise if generator handles GeneratorExit.
+                    teardown.close()
+                except StopIteration as si:
+                    result = si.value
+                    exception = None
+                    continue
+                except BaseException as e:
+                    exception = e
+                    continue
+                _raise_wrapfail(teardown, "has second yield")
+
+        if exception is not None:
+>           raise exception
+
+.venv/lib/python3.12/site-packages/pluggy/_callers.py:167:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+hook_name = 'pytest_pyfunc_call'
+hook_impls = [<HookImpl plugin_name='python', plugin=<module '_pytest.python' from '/app/.venv/lib/python3.12/site-packages/_pytest...='anyio', plugin=<module 'anyio.pytest_plugin' from '/app/.venv/lib/python3.12/site-packages/anyio/pytest_plugin.py'>>]
+caller_kwargs = {'pyfuncitem': <Function test_tournament_flow[chromium]>}
+firstresult = True
+
+    def _multicall(
+        hook_name: str,
+        hook_impls: Sequence[HookImpl],
+        caller_kwargs: Mapping[str, object],
+        firstresult: bool,
+    ) -> object | list[object]:
+        """Execute a call into multiple python functions/methods and return the
+        result(s).
+
+        ``caller_kwargs`` comes from HookCaller.__call__().
+        """
+        __tracebackhide__ = True
+        results: list[object] = []
+        exception = None
+        try:  # run impl and wrapper setup functions in a loop
+            teardowns: list[Teardown] = []
+            try:
+                for hook_impl in reversed(hook_impls):
+                    try:
+                        args = [caller_kwargs[argname] for argname in hook_impl.argnames]
+                    except KeyError as e:
+                        # coverage bug - this is tested
+                        for argname in hook_impl.argnames:  # pragma: no cover
+                            if argname not in caller_kwargs:
+                                raise HookCallError(
+                                    f"hook call must provide argument {argname!r}"
+                                ) from e
+
+                    if hook_impl.hookwrapper:
+                        function_gen = run_old_style_hookwrapper(hook_impl, hook_name, args)
+
+                        next(function_gen)  # first yield
+                        teardowns.append(function_gen)
+
+                    elif hook_impl.wrapper:
+                        try:
+                            # If this cast is not valid, a type error is raised below,
+                            # which is the desired response.
+                            res = hook_impl.function(*args)
+                            function_gen = cast(Generator[None, object, object], res)
+                            next(function_gen)  # first yield
+                            teardowns.append(function_gen)
+                        except StopIteration:
+                            _raise_wrapfail(function_gen, "did not yield")
+                    else:
+>                       res = hook_impl.function(*args)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/pluggy/_callers.py:121:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+pyfuncitem = <Function test_tournament_flow[chromium]>
+
+    @hookimpl(trylast=True)
+    def pytest_pyfunc_call(pyfuncitem: Function) -> object | None:
+        testfunction = pyfuncitem.obj
+        if is_async_function(testfunction):
+            async_fail(pyfuncitem.nodeid)
+        funcargs = pyfuncitem.funcargs
+        testargs = {arg: funcargs[arg] for arg in pyfuncitem._fixtureinfo.argnames}
+>       result = testfunction(**testargs)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/_pytest/python.py:166:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+app_server = 'http://localhost:5002'
+page_with_firebase = <Page url='http://localhost:5002/tournaments/qzcDT6RG7pHFvRNiZiAR'>
+mock_db = <conftest.EnhancedMockFirestore object at 0x7f2fe1d59790>
+
+    def test_tournament_flow(
+        app_server: str, page_with_firebase: Page, mock_db: Any
+    ) -> None:
+        """Test the complete tournament flow: creation and completion."""
+        page = page_with_firebase
+        base_url = app_server
+        page.on("dialog", lambda dialog: dialog.accept())
+
+        # 1. Login as Admin
+        page.goto(f"{base_url}/auth/login")
+        if "/auth/install" in page.url:
+            page.fill("input[name='username']", "admin")
+            page.fill("input[name='email']", "admin@example.com")
+            page.fill("input[name='password']", "password")
+            page.fill("input[name='name']", "Admin User")
+            with page.expect_navigation():
+                page.click("button:has-text('Create Admin')")
+            page.wait_for_url("**/auth/login")
+
+        page.wait_for_selector("input[name='email']")
+        page.fill("input[name='email']", "admin@example.com")
+        page.fill("input[name='password']", "password")
+        with page.expect_navigation():
+            page.click(".btn:has-text('Login')")
+
+        # 2. Create a Tournament
+        with page.expect_navigation():
+            page.click("text=Tournaments")
+        with page.expect_navigation():
+            page.click("text=Create Tournament")
+        page.fill("input[name='name']", "Winter Open")
+        page.fill("input[name='date']", "2026-12-01")
+        page.fill("input[name='location']", "Central Park")
+        page.check("input[name='mode'][value='SINGLES']")
+        with page.expect_navigation():
+            page.click("button:has-text('Create Tournament')")
+
+        expect(page.locator("h2")).to_contain_text("Winter Open")
+        expect(page.locator(".badge-warning", has_text="Active")).to_be_visible()
+
+        # Create a friend to verify the Invite dropdown
+        friend_id = "friend_user"
+        mock_db.collection("users").document(friend_id).set(
+            {
+                "username": "friend_user",
+                "email": "friend@example.com",
+                "name": "Friend User",
+                "createdAt": "2023-01-01T00:00:00",
+            }
+        )
+        mock_db.collection("users").document("admin").collection("friends").document(
+            friend_id
+        ).set({"status": "accepted"})
+
+        page.reload()
+        # Create the directory safely in the current workspace
+        verify_dir = "verification"
+        os.makedirs(verify_dir, exist_ok=True)
+
+        # Save with a relative path
+        page.screenshot(path=os.path.join(verify_dir, "tournament_invite.png"))
+>       expect(page.locator("select[name='user_id']")).to_contain_text("Friend User")
+
+tests/e2e/test_tournament.py:72:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <playwright._impl._assertions.LocatorAssertions object at 0x7f2fe0e049e0>
+expected = 'Friend User'
+
+    def to_contain_text(
+        self,
+        expected: typing.Union[
+            typing.Sequence[str],
+            typing.Sequence[typing.Pattern[str]],
+            typing.Sequence[typing.Union[typing.Pattern[str], str]],
+            typing.Pattern[str],
+            str,
+        ],
+        *,
+        use_inner_text: typing.Optional[bool] = None,
+        timeout: typing.Optional[float] = None,
+        ignore_case: typing.Optional[bool] = None,
+    ) -> None:
+        """LocatorAssertions.to_contain_text
+
+        Ensures the `Locator` points to an element that contains the given text. All nested elements will be considered
+        when computing the text content of the element. You can use regular expressions for the value as well.
+
+        **Details**
+
+        When `expected` parameter is a string, Playwright will normalize whitespaces and line breaks both in the actual
+        text and in the expected string before matching. When regular expression is used, the actual text is matched as is.
+
+        **Usage**
+
+        ```py
+        import re
+        from playwright.sync_api import expect
+
+        locator = page.locator('.title')
+        expect(locator).to_contain_text(\"substring\")
+        expect(locator).to_contain_text(re.compile(r\"\\d messages\"))
+        ```
+
+        If you pass an array as an expected value, the expectations are:
+        1. Locator resolves to a list of elements.
+        1. Elements from a **subset** of this list contain text from the expected array, respectively.
+        1. The matching subset of elements has the same order as the expected array.
+        1. Each text value from the expected array is matched by some element from the list.
+
+        For example, consider the following list:
+
+        ```html
+        <ul>
+          <li>Item Text 1</li>
+          <li>Item Text 2</li>
+          <li>Item Text 3</li>
+        </ul>
+        ```
+
+        Let's see how we can use the assertion:
+
+        ```py
+        from playwright.sync_api import expect
+
+        # ✓ Contains the right items in the right order
+        expect(page.locator(\"ul > li\")).to_contain_text([\"Text 1\", \"Text 3\"])
+
+        # ✖ Wrong order
+        expect(page.locator(\"ul > li\")).to_contain_text([\"Text 3\", \"Text 2\"])
+
+        # ✖ No item contains this text
+        expect(page.locator(\"ul > li\")).to_contain_text([\"Some 33\"])
+
+        # ✖ Locator points to the outer list element, not to the list items
+        expect(page.locator(\"ul\")).to_contain_text([\"Text 3\"])
+        ```
+
+        Parameters
+        ----------
+        expected : Union[Pattern[str], Sequence[Pattern[str]], Sequence[Union[Pattern[str], str]], Sequence[str], str]
+            Expected substring or RegExp or a list of those.
+        use_inner_text : Union[bool, None]
+            Whether to use `element.innerText` instead of `element.textContent` when retrieving DOM node text.
+        timeout : Union[float, None]
+            Time to retry the assertion for in milliseconds. Defaults to `5000`.
+        ignore_case : Union[bool, None]
+            Whether to perform case-insensitive match. `ignoreCase` option takes precedence over the corresponding regular
+            expression flag if specified.
+        """
+        __tracebackhide__ = True
+
+        return mapping.from_maybe_impl(
+>           self._sync(
+                self._impl_obj.to_contain_text(
+                    expected=mapping.to_impl(expected),
+                    useInnerText=use_inner_text,
+                    timeout=timeout,
+                    ignoreCase=ignore_case,
+                )
+            )
+        )
+
+.venv/lib/python3.12/site-packages/playwright/sync_api/_generated.py:19313:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <playwright._impl._assertions.LocatorAssertions object at 0x7f2fe0e049e0>
+coro = <coroutine object LocatorAssertions.to_contain_text at 0x7f2fe1cb3ac0>
+
+    def _sync(
+        self,
+        coro: Union[Coroutine[Any, Any, Any], Generator[Any, Any, Any]],
+    ) -> Any:
+        __tracebackhide__ = True
+        if self._loop.is_closed():
+            coro.close()
+            raise Error("Event loop is closed! Is Playwright already stopped?")
+
+        g_self = greenlet.getcurrent()
+        task: asyncio.tasks.Task[Any] = self._loop.create_task(coro)
+        setattr(task, "__pw_stack__", inspect.stack(0))
+        setattr(task, "__pw_stack_trace__", traceback.extract_stack(limit=10))
+
+        task.add_done_callback(lambda _: g_self.switch())
+        while not task.done():
+            self._dispatcher_fiber.switch()
+        asyncio._set_running_loop(self._loop)
+>       return task.result()
+               ^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/playwright/_impl/_sync_base.py:115:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <playwright._impl._assertions.LocatorAssertions object at 0x7f2fe0e049e0>
+expected = 'Friend User', useInnerText = None, timeout = None, ignoreCase = None
+
+    async def to_contain_text(
+        self,
+        expected: Union[
+            Sequence[str],
+            Sequence[Pattern[str]],
+            Sequence[Union[Pattern[str], str]],
+            Pattern[str],
+            str,
+        ],
+        useInnerText: bool = None,
+        timeout: float = None,
+        ignoreCase: bool = None,
+    ) -> None:
+        __tracebackhide__ = True
+        if isinstance(expected, collections.abc.Sequence) and not isinstance(
+            expected, str
+        ):
+            expected_text = to_expected_text_values(
+                expected,
+                match_substring=True,
+                normalize_white_space=True,
+                ignoreCase=ignoreCase,
+            )
+            await self._expect_impl(
+                "to.contain.text.array",
+                FrameExpectOptions(
+                    expectedText=expected_text,
+                    useInnerText=useInnerText,
+                    timeout=timeout,
+                ),
+                expected,
+                "Locator expected to contain text",
+                'Expect "to_contain_text"',
+            )
+        else:
+            expected_text = to_expected_text_values(
+                [expected],
+                match_substring=True,
+                normalize_white_space=True,
+                ignoreCase=ignoreCase,
+            )
+>           await self._expect_impl(
+                "to.have.text",
+                FrameExpectOptions(
+                    expectedText=expected_text,
+                    useInnerText=useInnerText,
+                    timeout=timeout,
+                ),
+                expected,
+                "Locator expected to contain text",
+                'Expect "to_contain_text"',
+            )
+
+.venv/lib/python3.12/site-packages/playwright/_impl/_assertions.py:229:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <playwright._impl._assertions.LocatorAssertions object at 0x7f2fe0e049e0>
+expression = 'to.have.text'
+expect_options = {'expectedText': [{'matchSubstring': True, 'normalizeWhiteSpace': True, 'string': 'Friend User'}], 'isNot': False, 'timeout': 5000}
+expected = 'Friend User', message = 'Locator expected to contain text'
+title = 'Expect "to_contain_text"'
+
+    async def _expect_impl(
+        self,
+        expression: str,
+        expect_options: FrameExpectOptions,
+        expected: Any,
+        message: str,
+        title: str = None,
+    ) -> None:
+        __tracebackhide__ = True
+        expect_options["isNot"] = self._is_not
+        if expect_options.get("timeout") is None:
+            expect_options["timeout"] = self._timeout or 5_000
+        if expect_options["isNot"]:
+            message = message.replace("expected to", "expected not to")
+        if "useInnerText" in expect_options and expect_options["useInnerText"] is None:
+            del expect_options["useInnerText"]
+        result = await self._call_expect(expression, expect_options, title)
+        if result["matches"] == self._is_not:
+            actual = result.get("received")
+            if self._custom_message:
+                out_message = self._custom_message
+                if expected is not None:
+                    out_message += f"\nExpected value: '{expected or '<None>'}'"
+            else:
+                out_message = (
+                    f"{message} '{expected}'" if expected is not None else f"{message}"
+                )
+            error_message = result.get("errorMessage")
+            error_message = f"\n{error_message}" if error_message else ""
+>           raise AssertionError(
+                f"{out_message}\nActual value: {actual}{error_message} {format_call_log(result.get('log'))}"
+            )
+E           AssertionError: Locator expected to contain text 'Friend User'
+E           Actual value: friend_user
+E           Call log:
+E             - Expect "to_contain_text" with timeout 5000ms
+E             - waiting for locator("select[name='user_id']")
+E               9 × locator resolved to <select required="" id="user_id" name="user_id" class="form-input">…</select>
+E                 - unexpected value "friend_user"
+
+.venv/lib/python3.12/site-packages/playwright/_impl/_assertions.py:85: AssertionError
+------------------------------ Captured log call -------------------------------
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "[32mGET /auth/login HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /auth/install HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:28] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "[32mPOST /auth/install HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /auth/login HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "POST /auth/session_login HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /user/dashboard HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /tournaments/ HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:29] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /tournaments/create HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "[32mPOST /tournaments/create HTTP/1.1[0m" 302 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /tournaments/qzcDT6RG7pHFvRNiZiAR HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /tournaments/qzcDT6RG7pHFvRNiZiAR HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/variables.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/buttons.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/avatars.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/cards.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/css/layout.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/style.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/dark.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/mobile.css HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/js/main.js HTTP/1.1" 200 -
+INFO     werkzeug:_internal.py:97 127.0.0.1 - - [12/Feb/2026 23:51:30] "GET /static/js/navbar.js HTTP/1.1" 200 -
+=========================== short test summary info ============================
+FAILED tests/e2e/test_tournament.py::test_tournament_flow[chromium] - Asserti...
+============================== 1 failed in 9.09s ===============================

@@ -60,21 +60,12 @@ def create_tournament() -> Any:
             if date_val is None:
                 raise ValueError("Date is required")
 
-            location_data = {
-                "name": form.venue_name.data,
-                "address": form.address.data,
-                "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
-            }
-
             data = {
                 "name": form.name.data,
                 "date": datetime.datetime.combine(date_val, datetime.time.min),
                 "location": form.location.data,
-                "location_data": location_data,
-                "description": form.description.data,
-                "mode": form.match_type.data,
-                "matchType": form.match_type.data.lower(),
-                "format": form.format.data,
+                "mode": form.mode.data,
+                "matchType": form.mode.data.lower(),
             }
             tournament_id = TournamentService.create_tournament(data, g.user["uid"])
 
@@ -175,21 +166,12 @@ def edit_tournament(tournament_id: str) -> Any:
                 action="Edit",
             )
 
-        location_data = {
-            "name": form.venue_name.data,
-            "address": form.address.data,
-            "google_map_link": f"https://www.google.com/maps/search/?api=1&query={form.address.data}",
-        }
-
         update_data = {
             "name": form.name.data,
             "date": datetime.datetime.combine(date_val, datetime.time.min),
             "location": form.location.data,
-            "location_data": location_data,
-            "description": form.description.data,
-            "mode": form.match_type.data,
-            "matchType": form.match_type.data.lower(),
-            "format": form.format.data,
+            "mode": form.mode.data,
+            "matchType": form.mode.data.lower(),
         }
 
         # Handle banner upload
@@ -215,7 +197,7 @@ def edit_tournament(tournament_id: str) -> Any:
     elif request.method == "GET":
         form.name.data = tournament_data.get("name")
         form.location.data = tournament_data.get("location")
-        form.match_type.data = (
+        form.mode.data = (
             tournament_data.get("mode")
             or tournament_data.get("matchType", "SINGLES").upper()
         )
@@ -230,6 +212,23 @@ def edit_tournament(tournament_id: str) -> Any:
         tournament=tournament_data,
         action="Edit",
     )
+
+
+@bp.route("/<string:tournament_id>/delete", methods=["POST"])
+@admin_required
+def delete_tournament(tournament_id: str) -> Any:
+    """Delete a tournament."""
+    try:
+        TournamentService.delete_tournament(tournament_id, g.user["uid"])
+        flash("Tournament deleted successfully.", "success")
+    except ValueError as e:
+        flash(str(e), "danger")
+    except PermissionError:
+        flash("Unauthorized.", "danger")
+    except Exception as e:
+        flash(f"An unexpected error occurred: {e}", "danger")
+
+    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/invite", methods=["POST"])
@@ -385,19 +384,6 @@ def generate_bracket(tournament_id: str) -> Any:
 def join_tournament(tournament_id: str) -> Any:
     """Accept tournament invitation (legacy alias)."""
     return accept_invite(tournament_id)
-
-
-@bp.route("/<string:tournament_id>/delete", methods=["POST"])
-@admin_required
-def delete_tournament(tournament_id: str) -> Any:
-    """Delete a tournament."""
-    try:
-        TournamentService.delete_tournament(tournament_id)
-        flash("Tournament deleted successfully.", "success")
-    except Exception as e:
-        flash(f"Error deleting tournament: {e}", "danger")
-
-    return redirect(url_for(".list_tournaments"))
 
 
 @bp.route("/<string:tournament_id>/register_team", methods=["POST"])

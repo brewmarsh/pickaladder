@@ -53,7 +53,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_client": patch("firebase_admin.firestore.client"),
+            "firestore_client": patch(
+                "firebase_admin.firestore.client", return_value=self.mock_db
+            ),
             "firestore_services": patch(
                 "pickaladder.tournament.services.firestore",
                 new=self.mock_firestore_module,
@@ -107,7 +109,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Summer Open",
                 "start_date": "2024-06-01",
                 "location": "Courtside",
-                "match_type": "SINGLES",
+                "match_type": "singles",
+                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -132,9 +135,10 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
             data={
                 "name": "Summer Open",
-                "date": "2024-06-01",
+                "start_date": "2024-06-01",
                 "location": "Courtside",
                 "match_type": "singles",
+                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -168,7 +172,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Updated Name",
                 "start_date": "2024-07-01",
                 "location": "Updated Location",
-                "match_type": "DOUBLES",
+                "match_type": "doubles",
+                "mode": "DOUBLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -245,7 +250,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "location": "Updated Location",
                 "venue_name": "Updated Venue",
                 "address": "456 Updated St",
-                "match_type": "DOUBLES",
+                "match_type": "doubles",
+                "mode": "DOUBLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -307,7 +313,6 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             {
                 "name": "Test Tournament",
                 "ownerRef": user_ref,
-                "organizer_id": MOCK_USER_ID,
                 "participants": [],
                 "participant_ids": [],
                 "date": datetime.datetime(2024, 6, 1),
@@ -322,8 +327,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'title="Edit Tournament"', response.data)
-        self.assertIn(b"Management", response.data)
+        self.assertIn(b"Edit Tournament", response.data)
+        self.assertIn(b"Tournament Management", response.data)
 
     def test_view_tournament_non_admin_no_edit_gear(self) -> None:
         """Test that a non-admin (even if owner) does not see the edit gear."""
@@ -483,6 +488,10 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Success! Invited 1 members.", response.data)
 
+        # Verify batch was used
+        self.mock_db.batch.assert_called()
+        self.mock_batch_instance.commit.assert_called()
+
         # Verify DB update
         data = (
             self.mock_db.collection("tournaments")
@@ -549,8 +558,13 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user(is_admin=True)
 
         tournament_id = "test_tournament_id"
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "To be deleted"}
+            {
+                "name": "To be deleted",
+                "ownerRef": user_ref,
+                "organizer_id": MOCK_USER_ID,
+            }
         )
 
         response = self.client.post(

@@ -20,7 +20,7 @@ from werkzeug.wrappers import Response
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.match.models import MatchSubmission
-from pickaladder.match.services import MatchService
+from pickaladder.match.services import MatchCommandService
 from pickaladder.user import UserService
 from pickaladder.user.models import UserSession
 
@@ -52,7 +52,7 @@ def admin() -> Union[str, Response]:
     email_verification_setting = setting_ref.get()
 
     # Fetch Users for Management Table
-    users = UserService.get_all_users(db, limit=50)
+    users = UserService.get_all_users(db, limit=50, public_only=False)
 
     return render_template(
         "admin/admin.html",
@@ -333,7 +333,7 @@ def generate_matches() -> Response:
                 created_by=p1_id,
             )
             try:
-                MatchService.record_match(db, submission, dummy_user)
+                MatchCommandService.record_match(db, submission, dummy_user)
                 matches_created += 1
             except Exception as e:
                 print(f"Error generating match: {e}")
@@ -349,7 +349,9 @@ def generate_matches() -> Response:
 @login_required(admin_required=True)
 def merge_players() -> Union[str, Response]:
     """Merge two player accounts (Source -> Target). Source is deleted."""
-    users = UserService.get_all_users(firestore.client(), exclude_ids=[])
+    users = UserService.get_all_users(
+        firestore.client(), exclude_ids=[], public_only=False
+    )
 
     # Sort users for the dropdown (Real users first, then Ghosts)
     sorted_users = sorted(

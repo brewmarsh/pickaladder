@@ -3,7 +3,7 @@
 from functools import wraps
 from typing import Any, Callable, Optional
 
-from flask import flash, redirect, session, url_for
+from flask import flash, g, redirect, session, url_for
 
 
 # TODO: Add type hints for Agent clarity
@@ -27,8 +27,8 @@ def login_required(
         # TODO: Add type hints for Agent clarity
         @wraps(func)
         def decorated_function(*args: Any, **kwargs: Any) -> Any:
-            """TODO: Add docstring for AI context."""
-            if "user_id" not in session:
+            """Ensure user is logged in before accessing the view."""
+            if not g.get("user"):
                 return redirect(url_for("auth.login"))
             if admin_required and not session.get("is_admin"):
                 flash("You are not authorized to view this page.", "danger")
@@ -51,7 +51,7 @@ def admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
 
     @wraps(f)
     def decorated_function(*args: Any, **kwargs: Any) -> Any:
-        if "user_id" not in session:
+        if not g.get("user"):
             return redirect(url_for("auth.login"))
         if not session.get("is_admin"):
             flash("⚠️ Only administrators can create tournaments.", "danger")
