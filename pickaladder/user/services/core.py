@@ -231,7 +231,9 @@ def update_settings(
             )
             if success:
                 # Refresh current_user_data even on email change
-                if current_user_data is not None and hasattr(current_user_data, "update"):
+                if current_user_data is not None and hasattr(
+                    current_user_data, "update"
+                ):
                     current_user_data.update(update_data)
                 return {"success": True, "info": message}
             return {"success": False, "error": message}

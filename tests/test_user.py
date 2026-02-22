@@ -174,7 +174,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn(b"Settings updated!", response.data)
         self.mock_storage_service.bucket.assert_called()
         mock_bucket.blob.assert_called_with(f"profile_pictures/{MOCK_USER_ID}/test.png")
-        mock_blob.upload_from_filename.assert_called()
+        mock_blob.upload_from_file.assert_called()
         mock_blob.make_public.assert_called()
 
     def test_update_dupr_and_dark_mode(self) -> None:
