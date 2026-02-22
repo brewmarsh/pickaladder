@@ -20,13 +20,15 @@ class BetaSafeguardsTestCase(unittest.TestCase):
         """Test that X-Robots-Tag is present when ENV is beta."""
         env_vars = {
             "FLASK_ENV": "beta",
-            "SECRET_KEY": "dev",
+            "SECRET_KEY": "dev",  # nosec B105
         }
         with patch.dict(os.environ, env_vars):
             app = create_app({"TESTING": True, "WTF_CSRF_ENABLED": False})
             with app.test_client() as client:
                 response = client.get("/")
-                self.assertEqual(response.headers.get("X-Robots-Tag"), "noindex, nofollow")
+                self.assertEqual(
+                    response.headers.get("X-Robots-Tag"), "noindex, nofollow"
+                )
 
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
@@ -36,7 +38,7 @@ class BetaSafeguardsTestCase(unittest.TestCase):
         """Test that X-Robots-Tag is not present when ENV is development."""
         env_vars = {
             "FLASK_ENV": "development",
-            "SECRET_KEY": "dev",
+            "SECRET_KEY": "dev",  # nosec B105
         }
         with patch.dict(os.environ, env_vars):
             app = create_app({"TESTING": True, "WTF_CSRF_ENABLED": False})
@@ -52,7 +54,7 @@ class BetaSafeguardsTestCase(unittest.TestCase):
         """Test that X-Robots-Tag is not present when ENV is production."""
         env_vars = {
             "FLASK_ENV": "production",
-            "SECRET_KEY": "dev",
+            "SECRET_KEY": "dev",  # nosec B105
         }
         with patch.dict(os.environ, env_vars):
             app = create_app({"TESTING": True, "WTF_CSRF_ENABLED": False})
