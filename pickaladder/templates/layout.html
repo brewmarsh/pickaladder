@@ -59,8 +59,8 @@
             <div class="toast-header">
                 <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" class="rounded mr-2" alt="Logo"
                     style="width: 20px; height: 20px;">
-                <strong class="mr-auto">pickaladder</strong>
-                <button type="button" class="ml-2 mb-1 close" aria-label="Close">
+                <strong>pickaladder</strong>
+                <button type="button" class="close" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -129,11 +129,11 @@
             }
 
             const toastHTML = `
-                <div class="toast show" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast show alert-${category}" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
                     <div class="toast-header">
                         <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" class="rounded mr-2" alt="Logo" style="width: 20px; height: 20px;">
-                        <strong class="mr-auto">pickaladder</strong>
-                        <button type="button" class="ml-2 mb-1 close" aria-label="Close">
+                        <strong>pickaladder</strong>
+                        <button type="button" class="close" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>

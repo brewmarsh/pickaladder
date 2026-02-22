@@ -84,22 +84,30 @@
 /* Toasts */
 .toast-container {
     position: fixed;
-    top: 60px;
+    top: 70px;
     right: 20px;
     z-index: 2000;
-    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
 }
 .toast {
     background-color: var(--card-bg);
     color: var(--text-primary);
-    box-shadow: var(--shadow-lg);
-    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: var(--radius-lg);
     border: none;
     overflow: hidden;
-    margin-bottom: 10px;
     position: relative;
     max-width: 350px;
-    width: 100%;
+    width: fit-content;
+    min-width: 280px;
+    padding: 16px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 .toast::before {
     content: '';
@@ -107,17 +115,49 @@
     left: 0;
     top: 0;
     bottom: 0;
-    width: 6px;
+    width: 5px;
     background-color: var(--primary-color);
     z-index: 1;
 }
+
+/* Category-specific indicators */
+.toast.alert-success::before { background-color: var(--success-color); }
+.toast.alert-danger::before { background-color: var(--danger-color); }
+.toast.alert-warning::before { background-color: var(--warning-color); }
+.toast.alert-info::before { background-color: var(--primary-color); }
+
 .toast-header {
     background: transparent;
     border-bottom: none;
-    padding: 12px 16px 0 20px;
+    padding: 0 16px 4px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
 }
+.toast-header .close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+.toast-header .close:hover { opacity: 1; }
+
 .toast-body {
-    padding: 8px 20px 16px 20px;
+    padding: 8px 20px;
+    text-align: center;
+    font-weight: var(--fw-medium);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
 }
 
 /* Social Share Card */
