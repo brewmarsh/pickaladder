@@ -62,7 +62,7 @@
                 {% if g.user %}
                 <div class="dropdown">
                     <button class="dropbtn">
-                        <img src="{{ g.user.avatar_url }}" alt="Profile Picture" class="avatar avatar-sm"
+                        <img src="{{ g.user | avatar_url }}" alt="Profile Picture" class="avatar avatar-sm"
                             onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                     </button>
                     <div class="dropdown-content">

@@ -13,7 +13,7 @@
                     {{ form.hidden_tag() }}
 
                     <div class="text-center mb-4">
-                        <img src="{{ current_user.avatar_url }}" alt="Profile Picture" class="avatar avatar-xl mb-2" id="avatar-preview">
+                        <img src="{{ current_user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl mb-2" id="avatar-preview">
                         <div class="form-group mt-2">
                             {{ form.profile_picture.label }}
                             {{ form.profile_picture(class="form-control-file") }}

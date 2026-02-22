@@ -240,13 +240,18 @@ def _register_template_utilities(app: Flask) -> None:
     app.template_filter("display_name")(smart_display_name)
 
     @app.template_filter("avatar_url")
-    def avatar_url_filter(user: dict[str, Any]) -> str:
+    def avatar_url_filter(user: Any) -> str:
         """Return the avatar URL for a user."""
         if not user:
             return ""
+
+        # Handle AnonymousUserMixin or other non-dict objects
+        if hasattr(user, "is_anonymous") and user.is_anonymous:
+            return "https://api.dicebear.com/9.x/avataaars/svg?seed=Guest"
+
         wrapped = wrap_user(user)
         url = wrapped.avatar_url if wrapped else ""
-        if url == "default":
+        if not url or url == "default":
             # Fallback to DiceBear Avatars (avataaars style)
             seed = user.get("username") or user.get("email") or "User"
             return f"https://api.dicebear.com/9.x/avataaars/svg?seed={seed}"
