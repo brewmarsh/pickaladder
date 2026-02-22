@@ -56,12 +56,18 @@ def update_email_address(
             current_app.logger.error(f"Email error updating email: {e}")
             return (
                 True,
-                "Your email has been updated in our records, but we couldn't send a verification email. Please contact support.",
+                (
+                    "Your email has been updated in our records, but we couldn't "
+                    "send a verification email. Please contact support."
+                ),
             )
 
         return (
             True,
-            "Your email has been updated. Please check your new email address to verify it.",
+            (
+                "Your email has been updated. Please check your new email "
+                "address to verify it."
+            ),
         )
     except auth.EmailAlreadyExistsError:
         return False, "That email address is already in use."

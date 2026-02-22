@@ -432,7 +432,12 @@ class TournamentService:
             raise PermissionError("Unauthorized")
 
         # Optional: check if matches exist before deleting
-        # matches = db.collection("matches").where("tournamentId", "==", tournament_id).limit(1).stream()
+        # matches = (
+        #     db.collection("matches")
+        #     .where("tournamentId", "==", tournament_id)
+        #     .limit(1)
+        #     .stream()
+        # )
         # if any(matches):
         #     raise ValueError("Cannot delete tournament with matches recorded.")
 
