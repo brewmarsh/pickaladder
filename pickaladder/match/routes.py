@@ -12,24 +12,31 @@ from pickaladder.auth.decorators import login_required
 from . import bp
 from .forms import MatchForm
 from .models import MatchSubmission
-from .services import MatchCommandService, MatchService
+from .services import MatchCommandService, MatchQueryService
 
 if TYPE_CHECKING:
     pass
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
 @login_required
 def edit_match(match_id: str) -> Any:
-    """Edit an existing match's scores."""
+    """Edit an existing match's scores with permission validation."""
+    db = firestore.client()
+    match_data = MatchQueryService.get_match_by_id(db, match_id)
+    
+    if match_data is None:
+        flash("Match not found.", "danger")
+        return redirect(url_for("user.dashboard"))
+
     if request.method == "POST":
         try:
+            # Defensive integer casting from ACL refactor branch
+            new_p1_score = int(request.form.get("player1_score", 0))
+            new_p2_score = int(request.form.get("player2_score", 0))
+
             MatchCommandService.update_match_score(
-                match_id,
-                request.form.get("player1_score"),
-                request.form.get("player2_score"),
-                g.user["uid"],
+                db, match_id, new_p1_score, new_p2_score, g.user["uid"]
             )
             flash("Match updated successfully.", "success")
             return redirect(url_for("match.view_match_summary", match_id=match_id))
@@ -38,14 +45,27 @@ def edit_match(match_id: str) -> Any:
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
 
-    context = MatchService.get_match_edit_context(match_id)
-    if not context:
-        flash("Match not found.", "danger")
-        return redirect(url_for("user.dashboard"))
+    # Fetch context using Query Service for GET requests
+    m_dict = cast("dict[str, Any]", match_data)
+    match_type = m_dict.get("matchType", "singles")
+    player1_name, player2_name = "Player 1", "Player 2"
+
+    if match_type == "doubles":
+        team1_id, team2_id = m_dict.get("team1Id"), m_dict.get("team2Id")
+        if team1_id and team2_id:
+            player1_name, player2_name = MatchQueryService.get_team_names(db, team1_id, team2_id)
+    else:
+        p1_ref, p2_ref = m_dict.get("player1Ref"), m_dict.get("player2Ref")
+        uids = [ref.id for ref in [p1_ref, p2_ref] if ref]
+        names = MatchQueryService.get_player_names(db, uids)
+        if p1_ref: player1_name = names.get(p1_ref.id, "Player 1")
+        if p2_ref: player2_name = names.get(p2_ref.id, "Player 2")
 
     return render_template(
         "match/edit_match.html",
-        **context,
+        match=match_data,
+        player1_name=player1_name,
+        player2_name=player2_name,
         is_admin=g.user.get("isAdmin", False),
     )
 
@@ -56,7 +76,7 @@ def edit_match(match_id: str) -> Any:
 def view_match_summary(match_id: str) -> Any:
     """Display the summary of a single match."""
     db = firestore.client()
-    context = MatchService.get_match_summary_context(db, match_id)
+    context = MatchQueryService.get_match_summary_context(db, match_id)
     if not context:
         flash("Match not found.", "danger")
         return redirect(url_for("user.dashboard"))
@@ -68,8 +88,8 @@ def _populate_match_form_choices(
     db: Any, form: MatchForm, user_id: str, group_id: str | None, t_id: str | None
 ) -> None:
     """Populate player choices for the match form."""
-    p1_cands = MatchService.get_candidate_player_ids(db, user_id, group_id, t_id, True)
-    other_cands = MatchService.get_candidate_player_ids(db, user_id, group_id, t_id)
+    p1_cands = MatchQueryService.get_candidate_player_ids(db, user_id, group_id, t_id, True)
+    other_cands = MatchQueryService.get_candidate_player_ids(db, user_id, group_id, t_id)
     all_uids = p1_cands | other_cands
     all_names = {}
     if all_uids:
@@ -80,9 +100,7 @@ def _populate_match_form_choices(
 
     form.player1.choices = cast(Any, [(u, str(all_names.get(u, u))) for u in p1_cands])
     others = [(u, str(all_names.get(u, u))) for u in other_cands]
-    form.player2.choices = form.partner.choices = form.opponent2.choices = cast(
-        Any, others
-    )
+    form.player2.choices = form.partner.choices = form.opponent2.choices = cast(Any, others)
 
 
 def _handle_record_match_get(
@@ -102,15 +120,15 @@ def _handle_record_match_get(
         form.player2.data = p3
     if p4 := request.args.get("player4"):
         form.opponent2.data = p4
+        
     opp_id = request.args.get("opponent") or request.args.get("opponent_id")
     if opp_id and not request.args.get("player3"):
         form.player2.data = opp_id
+        
     if not form.match_type.data:
         u_doc = db.collection("users").document(user_id).get()
         if u_doc.exists:
-            form.match_type.data = u_doc.to_dict().get(
-                "lastMatchRecordedType", "singles"
-            )
+            form.match_type.data = u_doc.to_dict().get("lastMatchRecordedType", "singles")
 
 
 @bp.route("/record", methods=["GET", "POST"])
@@ -140,14 +158,13 @@ def record_match() -> Any:
             tournament_id=data.get("tournament_id") or t_id,
         )
         try:
-            result = MatchService.record_match(db, submission, g.user)
+            result = MatchCommandService.record_match(db, submission, g.user)
             if request.is_json:
                 return jsonify({"status": "success", "match_id": result.id}), 200
+            
             flash("Match recorded successfully.", "success")
             if tid := submission.tournament_id:
-                return redirect(
-                    url_for("tournament.view_tournament", tournament_id=tid)
-                )
+                return redirect(url_for("tournament.view_tournament", tournament_id=tid))
             if gid := submission.group_id:
                 return redirect(url_for("group.view_group", group_id=gid))
             return redirect(url_for("match.view_match_summary", match_id=result.id))
@@ -161,51 +178,31 @@ def record_match() -> Any:
         t_doc = db.collection("tournaments").document(t_id).get()
         t_name = t_doc.to_dict().get("name") if t_doc.exists else None
 
-    return render_template(
-        "record_match.html",
-        form=form,
-        group_id=group_id,
-        tournament_id=t_id,
-        tournament_name=t_name,
-    )
+    return render_template("record_match.html", form=form, group_id=group_id,
+                           tournament_id=t_id, tournament_name=t_name)
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/history")
 @login_required
 def get_match_history() -> Any:
     """Fetch paginated match history for the current user."""
     db = firestore.client()
-    cursor = request.args.get("cursor")
-    limit = request.args.get("limit", 20, type=int)
-    uid = g.user["uid"]
-
-    matches, next_cursor = MatchService.get_matches_for_user(db, uid, limit, cursor)
-
+    cursor, limit = request.args.get("cursor"), request.args.get("limit", 20, type=int)
+    matches, next_cursor = MatchQueryService.get_matches_for_user(db, g.user["uid"], limit, cursor)
     return jsonify({"matches": matches, "next_cursor": next_cursor})
 
 
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
-    """Display a global leaderboard.
-
-    Note: This is a simplified, non-scalable implementation. A production-ready
-    leaderboard on Firestore would likely require denormalization and Cloud Functions.
-    """
+    """Display a global leaderboard."""
     db = firestore.client()
     try:
-        # Exclude players with 0 games and sort by Win Percentage
-        players = MatchService.get_leaderboard_data(db, min_games=1)
+        players = MatchQueryService.get_leaderboard_data(db, min_games=1)
     except Exception as e:
         players = []
-        flash(f"An error occurred while fetching the leaderboard: {e}", "danger")
+        flash(f"An error occurred: {e}", "danger")
 
-    latest_matches = MatchService.get_latest_matches(db)
-
-    return render_template(
-        "leaderboard.html",
-        players=players,
-        latest_matches=latest_matches,
-        current_user_id=g.user["uid"],
-    )
+    latest_matches = MatchQueryService.get_latest_matches(db)
+    return render_template("leaderboard.html", players=players, 
+                           latest_matches=latest_matches, current_user_id=g.user["uid"])

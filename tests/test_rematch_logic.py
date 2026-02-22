@@ -23,7 +23,7 @@ class RematchLogicTestCase(unittest.TestCase):
         self.app_context.pop()
 
     @patch("pickaladder.match.routes.firestore.client")
-    @patch("pickaladder.match.routes.MatchService.get_candidate_player_ids")
+    @patch("pickaladder.match.routes.MatchQueryService.get_candidate_player_ids")
     def test_record_match_prepopulation(
         self, mock_get_candidates, mock_firestore_client
     ):

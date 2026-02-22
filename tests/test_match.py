@@ -113,8 +113,8 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
-    @patch("pickaladder.match.routes.MatchService.get_match_by_id")
-    @patch("pickaladder.match.services.MatchService.get_candidate_player_ids")
+    @patch("pickaladder.match.routes.MatchQueryService.get_match_by_id")
+    @patch("pickaladder.match.services.MatchQueryService.get_candidate_player_ids")
     def test_record_match(
         self, mock_get_candidate_player_ids: MagicMock, mock_get_match: MagicMock
     ) -> None:
@@ -178,7 +178,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             or mock_matches_collection.document.called
         )
 
-    @patch("pickaladder.match.routes.MatchService.get_match_by_id")
+    @patch("pickaladder.match.routes.MatchQueryService.get_match_by_id")
     def test_view_match_summary(self, mock_get_match: MagicMock) -> None:
         """Test viewing the match summary page."""
         self._set_session_user()
@@ -212,7 +212,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         user_name = cast(str, MOCK_USER_DATA["name"])
         self.assertIn(user_name.encode(), response.data)
 
-    @patch("pickaladder.match.routes.MatchService.get_match_by_id")
+    @patch("pickaladder.match.routes.MatchQueryService.get_match_by_id")
     def test_view_match_summary_doubles(self, mock_get_match: MagicMock) -> None:
         """Test viewing the match summary page for a doubles match."""
         self._set_session_user()
@@ -266,7 +266,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         # Mock get_candidate_player_ids
         with patch(
-            "pickaladder.match.routes.MatchService.get_candidate_player_ids"
+            "pickaladder.match.routes.MatchQueryService.get_candidate_player_ids"
         ) as mock_get_candidates:
             mock_get_candidates.return_value = {MOCK_OPPONENT_ID}
             # Mock get_all for choices

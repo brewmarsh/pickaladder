@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 from firebase_admin import firestore
 
 from pickaladder import create_app
-from pickaladder.match import MatchService
+from pickaladder.match import MatchQueryService
 from pickaladder.user import UserService
 
 # Mock data
@@ -75,7 +75,7 @@ class TournamentMatchIntegrationTestCase(unittest.TestCase):
         mock_tourney_snapshot.to_dict.return_value = MOCK_TOURNAMENT_DATA
         mock_tourney_doc.get.return_value = mock_tourney_snapshot
 
-        candidates = MatchService.get_candidate_player_ids(
+        candidates = MatchQueryService.get_candidate_player_ids(
             mock_db, MOCK_USER_ID, tournament_id=MOCK_TOURNAMENT_ID
         )
 
