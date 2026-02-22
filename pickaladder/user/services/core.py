@@ -174,32 +174,16 @@ def process_profile_update(
     return {"success": True}
 
 
-def update_settings(
-    db: Client,
-    user_id: str,
-    form_data: Any,
-    current_user_data: dict[str, Any] | None = None,
-    profile_picture_file: Any = None,
-) -> dict[str, Any]:
-    """Update user settings (username, rating, dark mode, and profile picture)."""
-    new_username = form_data.username.data
-
-    # Check for username conflict
+def _get_current_user_data(db: Client, user_id: str) -> dict[str, Any]:
+    """Fetch current user data from Firestore."""
     user_ref = db.collection("users").document(user_id)
-    if current_user_data is None:
-        current_user_doc = cast("DocumentSnapshot", user_ref.get())
-        current_user_data = current_user_doc.to_dict() or {}
+    doc = cast("DocumentSnapshot", user_ref.get())
+    return doc.to_dict() or {}
 
-    if new_username != current_user_data.get("username"):
-        if not check_username_availability(db, new_username):
-            return {
-                "success": False,
-                "error": "Username already exists. Please choose a different one.",
-            }
 
-    update_data: dict[str, Any] = {
-        "username": new_username,
-    }
+def _map_settings_update_data(form_data: Any) -> dict[str, Any]:
+    """Map form data to Firestore update dictionary."""
+    update_data: dict[str, Any] = {"username": form_data.username.data}
 
     if hasattr(form_data, "dark_mode"):
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
@@ -215,12 +199,44 @@ def update_settings(
         update_data["dupr_rating"] = rating
         update_data["duprRating"] = rating  # Maintain compatibility
 
-    if profile_picture_file:
-        url = upload_profile_picture(user_id, profile_picture_file)
-        if url:
-            update_data["profilePictureUrl"] = url
-            # Clear thumbnail to ensure new profile picture is shown
-            update_data["profilePictureThumbnailUrl"] = None
+    return update_data
+
+
+def _handle_settings_profile_picture(
+    user_id: str, update_data: dict[str, Any], profile_picture_file: Any
+) -> None:
+    """Upload profile picture and update the update_data dictionary."""
+    if not profile_picture_file:
+        return
+
+    url = upload_profile_picture(user_id, profile_picture_file)
+    if url:
+        update_data["profilePictureUrl"] = url
+        # Clear thumbnail to ensure new profile picture is shown
+        update_data["profilePictureThumbnailUrl"] = None
+
+
+def update_settings(
+    db: Client,
+    user_id: str,
+    form_data: Any,
+    current_user_data: dict[str, Any] | None = None,
+    profile_picture_file: Any = None,
+) -> dict[str, Any]:
+    """Update user settings (username, rating, dark mode, and profile picture)."""
+    if current_user_data is None:
+        current_user_data = _get_current_user_data(db, user_id)
+
+    new_username = form_data.username.data
+    if new_username != current_user_data.get("username"):
+        if not check_username_availability(db, new_username):
+            return {
+                "success": False,
+                "error": "Username already exists. Please choose a different one.",
+            }
+
+    update_data = _map_settings_update_data(form_data)
+    _handle_settings_profile_picture(user_id, update_data, profile_picture_file)
 
     # Handle email change if present in form
     if hasattr(form_data, "email") and form_data.email.data:
@@ -230,19 +246,12 @@ def update_settings(
                 db, user_id, new_email, new_username, update_data
             )
             if success:
-                # Refresh current_user_data even on email change
-                if current_user_data is not None and hasattr(
-                    current_user_data, "update"
-                ):
-                    current_user_data.update(update_data)
+                current_user_data.update(update_data)
                 return {"success": True, "info": message}
             return {"success": False, "error": message}
 
-    user_ref.update(update_data)
-
-    # Refresh current_user_data in current request context (e.g., g.user)
-    if current_user_data is not None and hasattr(current_user_data, "update"):
-        current_user_data.update(update_data)
+    db.collection("users").document(user_id).update(update_data)
+    current_user_data.update(update_data)
 
     return {"success": True}
 
