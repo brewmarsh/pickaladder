@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 from pickaladder.match.models import MatchSubmission
-from pickaladder.match.services import MatchCommandService, MatchQueryService
+from pickaladder.match.services import MatchCommandService
 
 if TYPE_CHECKING:
     from pickaladder.user.models import UserSession
@@ -29,7 +29,7 @@ class MatchSecurityTestCase(unittest.TestCase):
 
         mock_get_candidates.return_value = {"player1", "player2"}
 
-        # Simulate form data with injected fields (over-posting attack simulation)
+        # Simulate form data with injected fields
         form_data = {
             "player1": "player1",
             "player2": "player2",
@@ -37,13 +37,12 @@ class MatchSecurityTestCase(unittest.TestCase):
             "player2_score": 5,
             "match_type": "singles",
             "is_winner": "player2",  # Injected
-            "is_upset": True,        # Injected
-            "rating": 5.0,           # Injected
+            "is_upset": True,  # Injected
+            "rating": 5.0,  # Injected
         }
 
         current_user = cast("UserSession", {"uid": "player1"})
 
-        # RESOLVED: Using MatchSubmission dataclass to enforce schema and filter injected fields
         submission = MatchSubmission(
             match_type=cast(str, form_data["match_type"]),
             player_1_id=cast(str, form_data["player1"]),
@@ -59,16 +58,13 @@ class MatchSecurityTestCase(unittest.TestCase):
         self.assertTrue(mock_record_batch.called)
 
         # Check match_data passed to record_batch
-        # _record_match_batch(db, batch, match_ref, p1_ref, p2_ref, user_ref, match_data, match_type)
-        # The match_data dict is at index 6
+        # _record_match_batch(db, batch, match_ref, p1_ref, p2_ref, ...)
+        # index of match_data is 6
         match_data = mock_record_batch.call_args[0][6]
 
-        # Security Assertions: Ensure injected fields were stripped/ignored
         self.assertNotIn("is_winner", match_data)
         self.assertNotIn("is_upset", match_data)
         self.assertNotIn("rating", match_data)
-        
-        # Data Integrity Assertions
         self.assertEqual(match_data["player1Score"], 11)
         self.assertEqual(match_data["player2Score"], 5)
 

@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return result.user.getIdToken();
             })
             .then((idToken) => {
+                localStorage.setItem('firebaseIdToken', idToken);
                 return fetch("{{ url_for('auth.session_login') }}", {
                     method: "POST",
                     headers: {
@@ -125,6 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return userCredential.user.getIdToken();
             })
             .then((idToken) => {
+                localStorage.setItem('firebaseIdToken', idToken);
                 return fetch("{{ url_for('auth.session_login') }}", {
                     method: "POST",
                     headers: {

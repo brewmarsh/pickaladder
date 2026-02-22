@@ -14,7 +14,6 @@ from tests.mock_utils import (
     MockArrayRemove,
     MockArrayUnion,
     MockBatch,
-    patch_mockfirestore,
 )
 
 # Mock user payloads
@@ -28,7 +27,6 @@ class TournamentBlastTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
-        patch_mockfirestore()
         self.mock_db = MockFirestore()
 
         self.mock_batch_instance = MockBatch(self.mock_db)
@@ -133,6 +131,10 @@ class TournamentBlastTestCase(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 302)
+
+        # Verify batch updates via our MockBatch
+        self.mock_db.batch.assert_called()
+        self.mock_batch_instance.commit.assert_called()
 
         # Verify DB update
         t_data = (
