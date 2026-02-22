@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from pickaladder.match.services import MatchQueryService
+from pickaladder.match.services import MatchService
 
 
 class TestLeaderboardLogic(unittest.TestCase):
@@ -65,7 +65,7 @@ class TestLeaderboardLogic(unittest.TestCase):
         mock_get_player_record.side_effect = get_record_side_effect
 
         # Running the function
-        players = MatchQueryService.get_leaderboard_data(mock_db)
+        players = MatchService.get_leaderboard_data(mock_db)
 
         # Assertions
         # User 1 and User 2 have > 0 games

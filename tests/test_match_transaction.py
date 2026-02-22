@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock
 
-from pickaladder.match.services import MatchCommandService
+from pickaladder.match.services import MatchService
 
 
 class MatchTransactionTestCase(unittest.TestCase):
@@ -44,7 +44,7 @@ class MatchTransactionTestCase(unittest.TestCase):
             "player2Score": 5,
         }
 
-        MatchCommandService._record_match_batch(
+        MatchService._record_match_batch(
             db, batch, match_ref, p1_ref, p2_ref, user_ref, match_data, "singles"
         )
 
@@ -111,7 +111,7 @@ class MatchTransactionTestCase(unittest.TestCase):
             "player2Score": 11,
         }
 
-        MatchCommandService._record_match_batch(
+        MatchService._record_match_batch(
             db, batch, match_ref, t1_ref, t2_ref, user_ref, match_data, "doubles"
         )
 

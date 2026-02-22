@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import logging
 from typing import Any
 
 from firebase_admin import firestore  # noqa: F401
@@ -161,7 +160,10 @@ def edit_tournament(tournament_id: str) -> Any:
                 form.start_date.data = tournament["date"].to_datetime().date()
 
         return render_template(
-            "tournaments/create_edit.html", form=form, tournament=tournament, action="Edit"
+            "tournaments/create_edit.html",
+            form=form,
+            tournament=tournament,
+            action="Edit",
         )
     except (ValueError, PermissionError) as e:
         flash(str(e), "danger")
