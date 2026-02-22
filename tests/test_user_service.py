@@ -195,6 +195,23 @@ class TestUserService(unittest.TestCase):
         self.assertEqual(update_data["dupr_rating"], 4.5)
         self.assertEqual(update_data["duprRating"], 4.5)
 
+    @patch("pickaladder.user.services.profile.storage")
+    def test_reset_profile_picture(self, mock_storage: MagicMock) -> None:
+        mock_bucket = mock_storage.bucket.return_value
+        mock_blob = MagicMock()
+        mock_bucket.list_blobs.return_value = [mock_blob]
+
+        result = UserService.reset_profile_picture(self.db, self.user_id)
+
+        self.assertTrue(result)
+        mock_bucket.list_blobs.assert_called_with(
+            prefix=f"profile_pictures/{self.user_id}/"
+        )
+        mock_blob.delete.assert_called_once()
+        self.db.collection().document().update.assert_called_once()
+        update_data = self.db.collection().document().update.call_args[0][0]
+        self.assertEqual(update_data["profilePictureUrl"], "default")
+
 
 if __name__ == "__main__":
     unittest.main()

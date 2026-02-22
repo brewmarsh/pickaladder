@@ -151,6 +151,9 @@ from .profile import (
     check_username_availability as _check_username_availability,
 )
 from .profile import (
+    reset_profile_picture as _reset_profile_picture,
+)
+from .profile import (
     update_email_address as _update_email_address,
 )
 from .profile import (
@@ -205,6 +208,7 @@ class UserService:
     check_username_availability = staticmethod(_check_username_availability)
     update_email_address = staticmethod(_update_email_address)
     upload_profile_picture = staticmethod(_upload_profile_picture)
+    reset_profile_picture = staticmethod(_reset_profile_picture)
     process_profile_update = staticmethod(_process_profile_update)
     get_dashboard_data = staticmethod(_get_dashboard_data)
     get_user_profile_data = staticmethod(_get_user_profile_data)

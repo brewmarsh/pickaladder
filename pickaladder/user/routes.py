@@ -67,6 +67,19 @@ def settings() -> Any:
     return render_template("user/settings.html", form=form, user=g.user)
 
 
+@bp.route("/settings/reset_avatar", methods=["POST"])
+@login_required
+def reset_avatar() -> Any:
+    """Reset the user's avatar to default."""
+    db = firestore.client()
+    user_id = g.user["uid"]
+    if UserService.reset_profile_picture(db, user_id):
+        flash("Profile picture removed.", "success")
+    else:
+        flash("An error occurred while removing your profile picture.", "danger")
+    return redirect(url_for(".settings"))
+
+
 @bp.route("/edit_profile", methods=["GET", "POST"])
 @login_required
 def edit_profile() -> Any:
