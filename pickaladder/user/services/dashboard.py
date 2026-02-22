@@ -69,7 +69,9 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     }
 
 
-def _fetch_vanity_stats(db: Client, user_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+def _fetch_vanity_stats(
+    db: Client, user_id: str
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Fetch user document and calculate vanity metrics."""
     from pickaladder.user.helpers import calculate_vanity_metrics
 
