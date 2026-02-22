@@ -84,19 +84,22 @@
 /* Toasts */
 .toast-container {
     position: fixed;
-    top: 20px;
+    top: 60px;
     right: 20px;
-    z-index: 1050;
+    z-index: 2000;
     min-width: 300px;
 }
 .toast {
     background-color: var(--card-bg);
     color: var(--text-primary);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-md);
+    border: none;
     overflow: hidden;
     margin-bottom: 10px;
     position: relative;
+    max-width: 350px;
+    width: 100%;
 }
 .toast::before {
     content: '';
@@ -106,8 +109,16 @@
     bottom: 0;
     width: 6px;
     background-color: var(--primary-color);
+    z-index: 1;
 }
-.toast-body { padding: 15px 20px; }
+.toast-header {
+    background: transparent;
+    border-bottom: none;
+    padding: 12px 16px 0 20px;
+}
+.toast-body {
+    padding: 8px 20px 16px 20px;
+}
 
 /* Social Share Card */
 .social-share-card {
