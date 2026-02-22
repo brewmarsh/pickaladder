@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     pass
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
 @login_required
 def edit_match(match_id: str) -> Any:
@@ -46,7 +45,6 @@ def edit_match(match_id: str) -> Any:
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
 
-    # For GET or on error, render the edit page
     # Fetch player names for the UI
     m_dict = cast("dict[str, Any]", match_data)
     match_type = m_dict.get("matchType", "singles")
@@ -100,7 +98,7 @@ def view_match_summary(match_id: str) -> Any:
 def _populate_match_form_choices(
     db: Any, form: MatchForm, user_id: str, group_id: str | None, t_id: str | None
 ) -> None:
-    """Populate player choices for the match form."""
+    """Populate player choices for the match form using the Query Service."""
     p1_cands = MatchQueryService.get_candidate_player_ids(db, user_id, group_id, t_id, True)
     other_cands = MatchQueryService.get_candidate_player_ids(db, user_id, group_id, t_id)
     all_uids = p1_cands | other_cands
@@ -111,11 +109,11 @@ def _populate_match_form_choices(
             if doc.exists:
                 all_names[doc.id] = doc.to_dict().get("name", doc.id)
 
-    form.player1.choices = cast(Any, [(u, str(all_names.get(u, u))) for u in p1_cands])
+    form.player1.choices = [(u, str(all_names.get(u, u))) for u in p1_cands]  # type: ignore
     others = [(u, str(all_names.get(u, u))) for u in other_cands]
-    form.player2.choices = form.partner.choices = form.opponent2.choices = cast(
-        Any, others
-    )
+    form.player2.choices = others  # type: ignore
+    form.partner.choices = others  # type: ignore
+    form.opponent2.choices = others  # type: ignore
 
 
 def _handle_record_match_get(
@@ -149,7 +147,7 @@ def _handle_record_match_get(
 @bp.route("/record", methods=["GET", "POST"])
 @login_required
 def record_match() -> Any:
-    """Handle match recording for both web form and optimistic JSON submission."""
+    """Handle match recording using Command Service."""
     db, user_id = firestore.client(), g.user["uid"]
     group_id, t_id = request.args.get("group_id"), request.args.get("tournament_id")
     form = MatchForm(data=request.get_json() if request.is_json else None)
@@ -160,30 +158,23 @@ def record_match() -> Any:
 
     if form.validate_on_submit():
         data = form.data
-        submission = MatchSubmission(
-            match_type=data["match_type"],
-            player_1_id=data["player1"],
-            player_2_id=data["player2"],
-            score_p1=data["player1_score"],
-            score_p2=data["player2_score"],
-            match_date=data["match_date"],
-            partner_id=data.get("partner"),
-            opponent_2_id=data.get("opponent2"),
-            group_id=data.get("group_id") or group_id,
-            tournament_id=data.get("tournament_id") or t_id,
-        )
+        data["group_id"] = data.get("group_id") or group_id
+        data["tournament_id"] = data.get("tournament_id") or t_id
         try:
-            result = MatchCommandService.record_match(db, submission, g.user)
+            # We pass form.data directly; MatchCommandService handles the conversion
+            result = MatchCommandService.record_match(db, data, g.user)
+            m_id = result.id
+            
             if request.is_json:
-                return jsonify({"status": "success", "match_id": result.id}), 200
+                return jsonify({"status": "success", "match_id": m_id}), 200
+            
             flash("Match recorded successfully.", "success")
-            if tid := submission.tournament_id:
-                return redirect(
-                    url_for("tournament.view_tournament", tournament_id=tid)
-                )
-            if gid := submission.group_id:
+            if tid := data.get("tournament_id"):
+                return redirect(url_for("tournament.view_tournament", tournament_id=tid))
+            if gid := data.get("group_id"):
                 return redirect(url_for("group.view_group", group_id=gid))
-            return redirect(url_for("match.view_match_summary", match_id=result.id))
+            
+            return redirect(url_for("match.view_match_summary", match_id=m_id))
         except Exception as e:
             if request.is_json:
                 return jsonify({"status": "error", "message": str(e)}), 400
@@ -203,7 +194,6 @@ def record_match() -> Any:
     )
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/history")
 @login_required
 def get_match_history() -> Any:
@@ -221,11 +211,7 @@ def get_match_history() -> Any:
 @bp.route("/leaderboard")
 @login_required
 def leaderboard() -> Any:
-    """Display a global leaderboard.
-
-    Note: This is a simplified, non-scalable implementation. A production-ready
-    leaderboard on Firestore would likely require denormalization and Cloud Functions.
-    """
+    """Display a global leaderboard."""
     db = firestore.client()
     try:
         # Exclude players with 0 games and sort by Win Percentage

@@ -1,0 +1,39 @@
+name: Nightly DB Sync
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # 3 AM EST
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync Production to Beta
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: uv pip install firebase-admin --system
+
+      - name: Run sync script
+        env:
+          PROD_KEY_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+          BETA_KEY_JSON: ${{ secrets.FIREBASE_CREDENTIALS_BETA }}
+        run: |
+          echo "$PROD_KEY_JSON" > prod_key.json
+          echo "$BETA_KEY_JSON" > beta_key.json
+          export PROD_KEY_PATH=prod_key.json
+          export BETA_KEY_PATH=beta_key.json
+          python scripts/sync_db.py
+          rm prod_key.json beta_key.json

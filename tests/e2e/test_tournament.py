@@ -41,14 +41,11 @@ def test_tournament_flow(
     page.fill("input[name='name']", "Winter Open")
     page.fill("input[name='start_date']", "2026-12-01")
     page.fill("input[name='location']", "Central Park")
-    page.select_option("select[name='match_type']", "singles")
-    page.select_option("select[name='format']", "ROUND_ROBIN")
-    # Mode is custom radio buttons in the template now
-    page.click("text=Singles (1v1)")
+    page.select_option("select[name='match_type']", value="SINGLES")
     with page.expect_navigation():
         page.click("button:has-text('Create Tournament')")
 
-    expect(page.locator("h1")).to_contain_text("Winter Open")
+    expect(page.locator("h2")).to_contain_text("Winter Open")
     expect(page.locator(".badge-warning", has_text="Active")).to_be_visible()
 
     # Create a friend to verify the Invite dropdown
@@ -83,8 +80,6 @@ def test_tournament_flow(
     )
     page.reload()
 
-    # Click Bracket tab to see Record Match button
-    page.click("text=Bracket")
     with page.expect_navigation():
         page.click("text=Record Match")
 

@@ -11,17 +11,12 @@ if TYPE_CHECKING:
 
 def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending tournament invitations for a user."""
-    if not user_id:
-        return []
     user_ref = db.collection("users").document(user_id)
-    try:
-        tournaments_query = (
-            db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
-            .stream()
-        )
-    except Exception:
-        return []
+    tournaments_query = (
+        db.collection("tournaments")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
+    )
     pending_invites = []
     for doc in tournaments_query:
         data = doc.to_dict()
@@ -132,8 +127,6 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     """Fetch a list of public groups, enriched with owner data."""
     from firebase_admin import firestore
 
-    from .core import _sanitize_user_data
-
     # Query for public groups
     public_groups_query = (
         db.collection("groups")
@@ -154,11 +147,7 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     owners_data = {}
     if unique_owner_refs:
         owner_docs = db.get_all(unique_owner_refs)
-        for doc in owner_docs:
-            if doc.exists:
-                data = doc.to_dict() or {}
-                data["id"] = doc.id
-                owners_data[doc.id] = _sanitize_user_data(data)
+        owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
 
     guest_user = {"username": "Guest", "id": "unknown"}
 

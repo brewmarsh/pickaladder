@@ -88,10 +88,7 @@ def sort_and_format_standings(
         users_map = {doc.id: doc.to_dict() for doc in user_docs if doc.exists}
         for s in standings_list:
             user_data = users_map.get(s["id"], {})
-            user_data["id"] = s["id"]
-            s["user"] = user_data
             s["name"] = smart_display_name(user_data) or "Unknown Player"
-            s["display_name"] = s["name"]
 
     # Sort by wins (desc), losses (asc), then point_diff (desc)
     standings_list.sort(

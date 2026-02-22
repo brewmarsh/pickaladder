@@ -17,7 +17,7 @@
 {% endif %}
 
 <div class="card hero-stats-card" style="
-    background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url }}');
+    background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url or url_for('static', filename='default_tournament.jpg') }}');
     background-size: cover;
     background-position: center;
     height: 300px;
@@ -31,21 +31,16 @@
     text-align: center;
     position: relative;
 ">
-    {% if is_owner and g.user.is_admin %}
-        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" data-testid="tournament-settings-btn" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">⚙️</a>
+    {% if g.user.is_admin %}
+        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">⚙️</a>
     {% endif %}
     <h1 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h1>
     <p style="font-size: 1.25rem; text-shadow: 0 2px 4px rgba(0,0,0,1);">
         {{ tournament.date_display or tournament.date }} | {{ tournament.matchType|capitalize }}
     </p>
-    <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
-        <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}">
-            {{ tournament.status or 'Active' }}
-        </span>
-        {% if tournament.status != 'Completed' %}
-            <a href="{{ url_for('match.record_match', tournament_id=tournament.id) }}" class="btn btn-primary btn-sm">Record Match</a>
-        {% endif %}
-    </div>
+    <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}" style="margin-top: 10px;">
+        {{ tournament.status or 'Active' }}
+    </span>
 </div>
 
 <div class="dashboard-columns">
@@ -120,54 +115,30 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
                     <h3 style="margin: 0;">Standings</h3>
+                    {% if tournament.status != 'Completed' %}
+                        <a href="{{ url_for('match.record_match', tournament_id=tournament.id) }}" class="btn btn-primary btn-sm">Record Match</a>
+                    {% endif %}
                 </div>
                 <div class="table-container">
                     <table class="table-standard responsive-table">
                         <thead>
                             <tr>
-                                <th>Player</th>
-                                <th>Status</th>
-                                <th>Action</th>
+                                <th>Rank</th>
+                                <th>Player/Team</th>
+                                <th>W-L</th>
+                                <th>+/-</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for p in standings %}
-                            <tr>
-                                <td data-label="Player">
-                                    <div style="display: flex; align-items: center; gap: 10px;">
-                                        <img src="{{ p.user | avatar_url }}" alt="Avatar" class="friend-avatar" style="width: 32px; height: 32px;" onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                                        <span>{{ p.display_name }}</span>
-                                    </div>
-                                </td>
-                                <td data-label="Status">
-                                    <span class="badge {{ 'badge-success' if p.status == 'accepted' else 'badge-warning' if p.status == 'pending' else 'badge-info' }}">
-                                        {{ 'Confirmed' if p.status == 'accepted' else 'Pending' if p.status == 'pending' else 'Invited (Email)' }}
-                                    </span>
-                                </td>
-                                <td data-label="Action">
-                                    {% if p.user.id == g.user.uid %}
-                                        {% if tournament.mode == 'DOUBLES' %}
-                                            {% if pending_partner_invite %}
-                                                <form action="{{ url_for('tournament.accept_team', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
-                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button type="submit" class="btn btn-sm btn-success">Accept Team</button>
-                                                </form>
-                                            {% elif not team_status %}
-                                                <button type="button" class="btn btn-sm btn-success" onclick="openPartnerModal()">Join (Pick Partner)</button>
-                                            {% endif %}
-                                        {% else %}
-                                            {% if p.status == 'pending' %}
-                                                <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
-                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button type="submit" class="btn btn-sm btn-success">Join</button>
-                                                </form>
-                                            {% endif %}
-                                        {% endif %}
-                                    {% endif %}
-                                </td>
-                            </tr>
+                            {% for s in standings %}
+                                <tr>
+                                    <td data-label="Rank">{{ loop.index }}</td>
+                                    <td data-label="Name">{{ s.name }}</td>
+                                    <td data-label="W-L">{{ s.wins }}-{{ s.losses }}</td>
+                                    <td data-label="+/-">{{ "%+d"|format(s.point_diff) }}</td>
+                                </tr>
                             {% else %}
-                            <tr><td colspan="3" class="text-center">No participants yet.</td></tr>
+                                <tr><td colspan="4" class="text-center">No matches recorded yet.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -233,10 +204,10 @@
             {% endif %}
         </div>
 
-        {% if is_owner and g.user.is_admin %}
+        {% if is_owner %}
             {% if tournament.status != 'Completed' %}
             <div class="card">
-                <h4 class="card-header">Tournament Management</h4>
+                <h4 class="card-header">Management</h4>
                 <form action="{{ url_for('tournament.complete_tournament', tournament_id=tournament.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to complete this tournament? This will notify all participants of the final results.');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger" style="margin-top: 10px; width: 100%;">Complete Tournament</button>
@@ -347,6 +318,24 @@
 
 {% block scripts %}
 <script>
+function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tab-btn");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+        tablinks[i].style.borderBottom = "3px solid transparent";
+        tablinks[i].style.fontWeight = "normal";
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+    evt.currentTarget.style.borderBottom = "3px solid var(--accent-color)";
+    evt.currentTarget.style.fontWeight = "bold";
+}
+
 function openPartnerModal() {
     document.getElementById('selectPartnerModal').classList.add('show');
 }
@@ -361,40 +350,42 @@ const selectedPartnerId = document.getElementById('selectedPartnerId');
 const selectedPartnerDisplay = document.getElementById('selectedPartnerDisplay');
 const selectedPartnerName = document.getElementById('selectedPartnerName');
 
-partnerSearch.addEventListener('input', function() {
-    const q = this.value;
-    if (q.length < 2) {
-        searchResults.style.display = 'none';
-        return;
-    }
+if (partnerSearch) {
+    partnerSearch.addEventListener('input', function() {
+        const q = this.value;
+        if (q.length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
 
-    fetch(`/user/api/search?q=${encodeURIComponent(q)}`)
-        .then(r => r.json())
-        .then(users => {
-            searchResults.innerHTML = '';
-            if (users.length === 0) {
-                searchResults.innerHTML = '<div class="search-item">No users found</div>';
-            } else {
-                users.forEach(u => {
-                    const div = document.createElement('div');
-                    div.className = 'search-item';
-                    div.innerHTML = `<img src="${u.avatar}" onerror="this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
-                    div.onclick = () => {
-                        selectedPartnerId.value = u.id;
-                        selectedPartnerName.innerText = u.name;
-                        selectedPartnerDisplay.style.display = 'block';
-                        searchResults.style.display = 'none';
-                        partnerSearch.value = '';
-                    };
-                    searchResults.appendChild(div);
-                });
-            }
-            searchResults.style.display = 'block';
-        });
-});
+        fetch(`/user/api/search?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(users => {
+                searchResults.innerHTML = '';
+                if (users.length === 0) {
+                    searchResults.innerHTML = '<div class="search-item">No users found</div>';
+                } else {
+                    users.forEach(u => {
+                        const div = document.createElement('div');
+                        div.className = 'search-item';
+                        div.innerHTML = `<img src="${u.avatar}" onerror="this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
+                        div.onclick = () => {
+                            selectedPartnerId.value = u.id;
+                            selectedPartnerName.innerText = u.name;
+                            selectedPartnerDisplay.style.display = 'block';
+                            searchResults.style.display = 'none';
+                            partnerSearch.value = '';
+                        };
+                        searchResults.appendChild(div);
+                    });
+                }
+                searchResults.style.display = 'block';
+            });
+    });
+}
 
 document.addEventListener('click', function(e) {
-    if (!partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
+    if (partnerSearch && !partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
         searchResults.style.display = 'none';
     }
 });
