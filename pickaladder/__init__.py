@@ -102,14 +102,8 @@ def _configure_mail_logging(app: Flask) -> None:
             print("DEBUG: Mail Config - No Password set!", file=sys.stderr)
 
 
-def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
-    """Load Firebase credentials from environment, file, or defaults."""
-    cred = None
-    project_id = None
-
-    flask_env = os.environ.get("FLASK_ENV")
-
-    # First, try to load from environment variable (for production/beta)
+def _load_cred_from_env(flask_env: str | None) -> tuple[Any, str | None]:
+    """Load Firebase credentials from environment variables."""
     if flask_env == "beta":
         cred_json = os.environ.get("FIREBASE_CREDENTIALS_BETA")
     else:
@@ -118,22 +112,35 @@ def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
     if cred_json:
         with suppress(json.JSONDecodeError, ValueError):
             cred_info = json.loads(cred_json)
-            project_id = cred_info.get("project_id")
-            cred = credentials.Certificate(cred_info)
+            return credentials.Certificate(cred_info), cred_info.get("project_id")
+    return None, None
+
+
+def _load_cred_from_file(flask_env: str | None) -> tuple[Any, str | None]:
+    """Load Firebase credentials from a JSON file."""
+    if flask_env == "beta":
+        cred_path = Path(__file__).parent.parent / "firebase_credentials_beta.json"
+    else:
+        cred_path = Path(__file__).parent.parent / "firebase_credentials.json"
+
+    if cred_path.exists():
+        with suppress(json.JSONDecodeError, ValueError):
+            with cred_path.open() as f:
+                cred_info = json.load(f)
+            return credentials.Certificate(str(cred_path)), cred_info.get("project_id")
+    return None, None
+
+
+def _get_firebase_credentials(app: Flask) -> tuple[Any, str | None]:
+    """Load Firebase credentials from environment, file, or defaults."""
+    flask_env = os.environ.get("FLASK_ENV")
+
+    # First, try to load from environment variable (for production/beta)
+    cred, project_id = _load_cred_from_env(flask_env)
 
     # If env var fails or is not present, try loading from file (for local dev)
     if not cred:
-        if flask_env == "beta":
-            cred_path = Path(__file__).parent.parent / "firebase_credentials_beta.json"
-        else:
-            cred_path = Path(__file__).parent.parent / "firebase_credentials.json"
-
-        if cred_path.exists():
-            with suppress(json.JSONDecodeError, ValueError):
-                with cred_path.open() as f:
-                    cred_info = json.load(f)
-                project_id = cred_info.get("project_id")
-                cred = credentials.Certificate(str(cred_path))
+        cred, project_id = _load_cred_from_file(flask_env)
 
     # If both methods fail, fallback to default credentials
     if not cred:
@@ -169,7 +176,7 @@ def _initialize_firebase(app: Flask) -> None:
 
 
 def _register_blueprints(app: Flask) -> None:
-    """Register all blueprints for the application."""
+    """Register blueprints, routes, and middleware."""
     app.register_blueprint(main_bp.bp)
     app.register_blueprint(auth_bp.bp)
     app.register_blueprint(admin_bp.bp)
@@ -180,36 +187,21 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(tournament_bp.bp)
     app.register_blueprint(error_handlers.error_handlers_bp)
 
+    # make url_for('index') == url_for('auth.login')
+    app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
 
-def _register_context_processors(app: Flask) -> None:
-    """Register all context processors for the application."""
-    app.context_processor(inject_global_context)
-    app.context_processor(inject_incoming_requests_count)
-    app.context_processor(inject_pending_tournament_invites)
-    app.context_processor(inject_firebase_api_key)
+    @app.after_request
+    def add_beta_headers(response: Any) -> Any:
+        """Add SEO safeguards if in beta environment."""
+        if app.config.get("ENV") == "beta":
+            response.headers["X-Robots-Tag"] = "noindex, nofollow"
+        return response
+
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
 
 
-def create_app(test_config: dict[str, Any] | None = None) -> Flask:
-    """Create and configure an instance of the Flask application."""
-    app = Flask(
-        __name__,
-        instance_relative_config=True,
-        static_folder="static",
-        static_url_path="/static",
-    )
-    app.url_map.converters["uuid"] = UUIDConverter
-
-    # Load configuration
-    _load_app_config(app, test_config)
-
-    _configure_mail_logging(app)
-    _initialize_firebase(app)
-
-    # Ensure the instance folder exists
-    with suppress(OSError):
-        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
-
-    # Initialize extensions
+def _register_extensions(app: Flask) -> None:
+    """Initialize Flask extensions."""
     mail.init_app(app)
     csrf.init_app(app)
     login_manager.init_app(app)
@@ -234,7 +226,16 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             current_app.logger.error(f"Error in user_loader: {e}")
         return None
 
-    # Register filters
+
+def _register_template_utilities(app: Flask) -> None:
+    """Register template filters and context processors."""
+    # Context Processors
+    app.context_processor(inject_global_context)
+    app.context_processor(inject_incoming_requests_count)
+    app.context_processor(inject_pending_tournament_invites)
+    app.context_processor(inject_firebase_api_key)
+
+    # Filters
     app.template_filter("smart_display_name")(smart_display_name)
     app.template_filter("display_name")(smart_display_name)
 
@@ -260,27 +261,30 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
             return singular
         return plural if plural is not None else f"{singular}s"
 
+
+def create_app(test_config: dict[str, Any] | None = None) -> Flask:
+    """Create and configure an instance of the Flask application."""
+    app = Flask(
+        __name__,
+        instance_relative_config=True,
+        static_folder="static",
+        static_url_path="/static",
+    )
+
+    _load_config(app, test_config)
+    _configure_mail_logging(app)
+    _initialize_firebase(app)
+    _register_extensions(app)
     _register_blueprints(app)
-
-    # make url_for('index') == url_for('auth.login')
-    app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
-
-    _register_context_processors(app)
-
-    @app.after_request
-    def add_beta_headers(response: Any) -> Any:
-        """Add SEO safeguards if in beta environment."""
-        if app.config.get("ENV") == "beta":
-            response.headers["X-Robots-Tag"] = "noindex, nofollow"
-        return response
-
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
+    _register_template_utilities(app)
 
     return app
 
 
-def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
+def _load_config(app: Flask, test_config: dict[str, Any] | None) -> None:
     """Load and process application configuration."""
+    app.url_map.converters["uuid"] = UUIDConverter
+
     mail_username = os.environ.get("MAIL_USERNAME")
     if mail_username:
         mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
@@ -315,3 +319,7 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
 
     if test_config:
         app.config.update(test_config)
+
+    # Ensure the instance folder exists
+    with suppress(OSError):
+        Path(app.instance_path).mkdir(parents=True, exist_ok=True)
