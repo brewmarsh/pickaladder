@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-import tempfile
 from typing import TYPE_CHECKING, Any
 
 from firebase_admin import auth, storage
@@ -86,11 +84,12 @@ def upload_profile_picture(user_id: str, file_storage: FileStorage) -> str | Non
         bucket = storage.bucket()
         blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
 
-        with tempfile.NamedTemporaryFile(
-            suffix=os.path.splitext(filename)[1]
-        ) as temp_file:
-            file_storage.save(temp_file.name)
-            blob.upload_from_filename(temp_file.name)
+        # Reset stream position and upload directly from file storage
+        file_storage.stream.seek(0)
+        blob.upload_from_file(
+            file_storage.stream,
+            content_type=file_storage.content_type,
+        )
 
         blob.make_public()
         return blob.public_url
