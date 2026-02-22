@@ -267,6 +267,13 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
 
     _register_context_processors(app)
 
+    @app.after_request
+    def add_beta_headers(response: Any) -> Any:
+        """Add SEO safeguards if in beta environment."""
+        if app.config.get("ENV") == "beta":
+            response.headers["X-Robots-Tag"] = "noindex, nofollow"
+        return response
+
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
 
     return app
@@ -284,6 +291,7 @@ def _load_app_config(app: Flask, test_config: dict[str, Any] | None) -> None:
 
     app.config.from_mapping(
         SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
+        ENV=os.environ.get("FLASK_ENV", "development"),
         FLASK_ENV=os.environ.get("FLASK_ENV", "development"),
         FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
         GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
