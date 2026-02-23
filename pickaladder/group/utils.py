@@ -126,6 +126,8 @@ def _sort_leaderboard(stats: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
             "name": smart_display_name(user_data),
             "username": user_data.get("username"),
             "email": user_data.get("email"),
+            "profilePictureUrl": user_data.get("profilePictureUrl"),
+            "profilePictureThumbnailUrl": user_data.get("profilePictureThumbnailUrl"),
             "is_ghost": is_ghost,
             "wins": s["wins"],
             "losses": s["losses"],

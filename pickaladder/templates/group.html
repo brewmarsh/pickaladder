@@ -108,7 +108,12 @@
                                             {% if player.id == g.user['uid'] %}
                                             <button class="btn btn-volt small share-stats-btn"
                                                 style="width: auto; margin-left: 10px; padding: 4px 8px; font-size: 0.7rem;"
-                                                onclick="openBragCard('{{ player.id }}', '{{ player | display_name }}', '{{ player | avatar_url }}', '{{ loop.index }}', '{{ player.streak }}')">
+                                                data-user-id="{{ player.id }}"
+                                                data-username="{{ player | display_name }}"
+                                                data-avatar="{{ player | avatar_url }}"
+                                                data-rank="{{ loop.index }}"
+                                                data-streak="{{ player.streak }}"
+                                                onclick="openBragCard(this)">
                                                 Share Stats
                                             </button>
                                             {% endif %}
@@ -568,7 +573,13 @@
 
     let bragCardChart = null;
 
-    function openBragCard(userId, username, avatar, rank, streak) {
+    function openBragCard(btn) {
+        const userId = btn.getAttribute('data-user-id');
+        const username = btn.getAttribute('data-username');
+        const avatar = btn.getAttribute('data-avatar');
+        const rank = btn.getAttribute('data-rank');
+        const streak = btn.getAttribute('data-streak');
+
         document.getElementById('bragCardUsername').innerText = username;
         document.getElementById('bragCardAvatar').src = avatar;
 
