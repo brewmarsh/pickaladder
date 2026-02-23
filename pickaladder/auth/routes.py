@@ -16,7 +16,6 @@ from flask import (
     url_for,
 )
 from flask_login import login_user, logout_user
-from werkzeug.exceptions import UnprocessableEntity
 
 from pickaladder.errors import DuplicateResourceError
 from pickaladder.user import UserService
@@ -122,7 +121,9 @@ def _process_user_doc(user_doc: Any, id_to_load: str, is_impersonating: bool) ->
     _populate_g_user(user_doc, id_to_load, is_impersonating)
 
 
-def _handle_load_user_error(id_to_load: str, is_impersonating: bool, e: Exception) -> None:
+def _handle_load_user_error(
+    id_to_load: str, is_impersonating: bool, e: Exception
+) -> None:
     """Handle errors during user document loading."""
     current_app.logger.error(f"Error loading user {id_to_load}: {e}")
     if not is_impersonating:
@@ -431,8 +432,7 @@ def _create_admin_account(
     email: str,
     password: str,
     username: str,
-    name: str,
-    dupr_rating: str | None,
+    profile_data: dict[str, Any],
 ) -> str:
     """Create admin user in Firebase Auth and Firestore, and set initial settings."""
     admin_user_record = auth.create_user(
@@ -444,8 +444,8 @@ def _create_admin_account(
         {
             "username": username,
             "email": email,
-            "name": name,
-            "duprRating": float(dupr_rating or 0),
+            "name": profile_data.get("name", ""),
+            "duprRating": float(profile_data.get("dupr_rating") or 0),
             "isAdmin": True,
             "createdAt": firestore.SERVER_TIMESTAMP,
         }
@@ -518,13 +518,16 @@ def _handle_install_post(db: Any) -> Any:
         return redirect(url_for(".install"))
 
     try:
+        profile_data = {
+            "name": request.form.get("name", ""),
+            "dupr_rating": request.form.get("dupr_rating"),
+        }
         _create_admin_account(
             db,
             cast(str, email),
             cast(str, password),
             cast(str, username),
-            request.form.get("name", ""),
-            request.form.get("dupr_rating"),
+            profile_data,
         )
         flash("Admin user created successfully. You can now log in.", "success")
         return redirect(url_for("auth.login"))
