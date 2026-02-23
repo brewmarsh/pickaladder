@@ -283,9 +283,7 @@ class GroupService:
 
         # Permissions
         is_member = user_id in member_ids
-        is_owner = (
-            (ref := group_data.get("ownerRef")) is not None and ref.id == user_id
-        )
+        is_owner = (ref := group_data.get("ownerRef")) is not None and ref.id == user_id
         is_admin = GroupService.is_group_admin(group_data, user_id)
 
         # Get eligible friends for invitation
@@ -306,13 +304,22 @@ class GroupService:
             pending_members = GroupService._get_pending_invites(db, group_id)
 
         return {
-            "group": group_data, "group_id": group.id, "members": members,
-            "owner": owner, "current_user_id": user_id, "leaderboard": leaderboard,
-            "pending_members": pending_members, "is_member": is_member,
-            "is_owner": is_owner, "is_admin": is_admin,
-            "recent_matches": recent_matches, "best_buds": best_buds,
-            "team_leaderboard": team_leaderboard, "rivalry_stats": rivalry_stats,
-            "playerA_id": player_a_id, "playerB_id": player_b_id,
+            "group": group_data,
+            "group_id": group.id,
+            "members": members,
+            "owner": owner,
+            "current_user_id": user_id,
+            "leaderboard": leaderboard,
+            "pending_members": pending_members,
+            "is_member": is_member,
+            "is_owner": is_owner,
+            "is_admin": is_admin,
+            "recent_matches": recent_matches,
+            "best_buds": best_buds,
+            "team_leaderboard": team_leaderboard,
+            "rivalry_stats": rivalry_stats,
+            "playerA_id": player_a_id,
+            "playerB_id": player_b_id,
             "eligible_friends": eligible_friends,
         }
 
@@ -376,8 +383,16 @@ class GroupService:
     ) -> None:
         """Extract team and player references from a single match data dictionary."""
         player_keys = [
-            "player1Ref", "player2Ref", "partnerRef", "opponent1Ref", "opponent2Ref",
-            "player1", "player2", "partner", "opponent1", "opponent2",
+            "player1Ref",
+            "player2Ref",
+            "partnerRef",
+            "opponent1Ref",
+            "opponent2Ref",
+            "player1",
+            "player2",
+            "partner",
+            "opponent1",
+            "opponent2",
         ]
         for field in ["team1Ref", "team2Ref"]:
             if (ref := data.get(field)) and isinstance(
@@ -386,9 +401,7 @@ class GroupService:
                 team_refs.append(ref)
 
         for key in player_keys:
-            if (ref := data.get(key)) and isinstance(
-                ref, firestore.DocumentReference
-            ):
+            if (ref := data.get(key)) and isinstance(ref, firestore.DocumentReference):
                 player_refs.append(ref)
 
     @staticmethod
@@ -396,8 +409,8 @@ class GroupService:
         matches_docs: list[Any],
     ) -> tuple[list[Any], list[Any]]:
         """Extract team and player references from match documents."""
-        team_refs = []
-        player_refs = []
+        team_refs: list[Any] = []
+        player_refs: list[Any] = []
 
         for doc in matches_docs:
             GroupService._extract_single_match_refs(
@@ -525,7 +538,9 @@ class GroupService:
         return team_leaderboard, best_buds
 
     @staticmethod
-    def _process_team_match_outcome(data: dict[str, Any], stats: dict[str, Any]) -> None:
+    def _process_team_match_outcome(
+        data: dict[str, Any], stats: dict[str, Any]
+    ) -> None:
         """Update wins/losses for teams based on a single match outcome."""
         t1_id, t2_id = _resolve_team_document_ids(data)
         if not t1_id or not t2_id:
@@ -549,7 +564,7 @@ class GroupService:
     @staticmethod
     def _calculate_team_stats(recent_matches_docs: list[Any]) -> dict[str, Any]:
         """Aggregate wins/losses per team from match history."""
-        stats = {}
+        stats: dict[str, Any] = {}
         for doc in recent_matches_docs:
             data = doc.to_dict()
             if data.get("matchType") == "doubles":

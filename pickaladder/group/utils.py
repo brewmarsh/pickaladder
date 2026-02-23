@@ -298,7 +298,7 @@ def _collect_match_player_refs(data: dict[str, Any], all_player_refs: set) -> No
 
 def _get_involved_player_data(db: Any, matches: list[Any]) -> dict[str, dict[str, Any]]:
     """Get profile data for all players involved in matches."""
-    all_player_refs = set()
+    all_player_refs: set[Any] = set()
     for match in matches:
         _collect_match_player_refs(match.to_dict(), all_player_refs)
 
@@ -437,7 +437,9 @@ def get_partnership_stats(
         data = match_doc.to_dict()
         if data.get("matchType") != "doubles":
             continue
-        wins, losses = _check_partnership_win(data, playerA_id, playerB_id, wins, losses)
+        wins, losses = _check_partnership_win(
+            data, playerA_id, playerB_id, wins, losses
+        )
 
     return {"wins": wins, "losses": losses}
 
@@ -614,9 +616,7 @@ def send_invite_email_background(
 
 def _add_friend_pair(batch: Any, member_ref: Any, new_member_ref: Any) -> int:
     """Add a bidirectional friendship between two members in a Firestore batch."""
-    new_member_friend_ref = new_member_ref.collection("friends").document(
-        member_ref.id
-    )
+    new_member_friend_ref = new_member_ref.collection("friends").document(member_ref.id)
     existing_member_friend_ref = member_ref.collection("friends").document(
         new_member_ref.id
     )

@@ -264,7 +264,7 @@ def _collect_match_player_refs(data: dict[str, Any], all_player_refs: set) -> No
 
 def _get_involved_player_data(db: Any, matches: list[Any]) -> dict[str, dict[str, Any]]:
     """Get profile data for all players involved in matches."""
-    all_player_refs = set()
+    all_player_refs: set[Any] = set()
     for match in matches:
         _collect_match_player_refs(match.to_dict(), all_player_refs)
 

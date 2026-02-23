@@ -41,7 +41,9 @@ def get_partnership_stats(
         data = match_doc.to_dict()
         if data.get("matchType") != "doubles":
             continue
-        wins, losses = _check_partnership_win(data, playerA_id, playerB_id, wins, losses)
+        wins, losses = _check_partnership_win(
+            data, playerA_id, playerB_id, wins, losses
+        )
 
     return {"wins": wins, "losses": losses}
 
