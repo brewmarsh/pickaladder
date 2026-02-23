@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+from firebase_admin import firestore
 from flask import current_app
 
 from .core import _sanitize_user_data
@@ -16,7 +17,9 @@ def get_user_friends(
 ) -> list[dict[str, Any]]:
     """Fetch a user's friends."""
     user_ref = db.collection("users").document(user_id)
-    query = user_ref.collection("friends").where("status", "==", "accepted")
+    query = user_ref.collection("friends").where(
+        filter=firestore.FieldFilter("status", "==", "accepted")
+    )
     if limit:
         query = query.limit(limit)
 
@@ -66,8 +69,8 @@ def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")
-        .where("status", "==", "pending")
-        .where("initiator", "==", False)
+        .where(filter=firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=firestore.FieldFilter("initiator", "==", False))
         .stream()
     )
     request_ids = [doc.id for doc in requests_query]
@@ -91,8 +94,8 @@ def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
     user_ref = db.collection("users").document(user_id)
     requests_query = (
         user_ref.collection("friends")
-        .where("status", "==", "pending")
-        .where("initiator", "==", True)
+        .where(filter=firestore.FieldFilter("status", "==", "pending"))
+        .where(filter=firestore.FieldFilter("initiator", "==", True))
         .stream()
     )
     request_ids = [doc.id for doc in requests_query]
@@ -220,22 +223,29 @@ def get_friends_page_data(db: Client, user_id: str) -> dict[str, Any]:
 
     # Fetch accepted friends
     accepted_ids = [
-        doc.id for doc in friends_ref.where("status", "==", "accepted").stream()
+        doc.id
+        for doc in friends_ref.where(
+            filter=firestore.FieldFilter("status", "==", "accepted")
+        ).stream()
     ]
 
     # Fetch pending requests (incoming)
     request_ids = [
         doc.id
-        for doc in friends_ref.where("status", "==", "pending")
-        .where("initiator", "==", False)
+        for doc in friends_ref.where(
+            filter=firestore.FieldFilter("status", "==", "pending")
+        )
+        .where(filter=firestore.FieldFilter("initiator", "==", False))
         .stream()
     ]
 
     # Fetch sent requests (outgoing)
     sent_ids = [
         doc.id
-        for doc in friends_ref.where("status", "==", "pending")
-        .where("initiator", "==", True)
+        for doc in friends_ref.where(
+            filter=firestore.FieldFilter("status", "==", "pending")
+        )
+        .where(filter=firestore.FieldFilter("initiator", "==", True))
         .stream()
     ]
 
