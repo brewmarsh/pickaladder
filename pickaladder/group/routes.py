@@ -54,14 +54,60 @@ def view_groups() -> Any:
     )
 
 
+def _handle_referrer() -> None:
+    """Capture referrer ID from request arguments into session."""
+    if "ref" in request.args:
+        session["referrer_id"] = request.args.get("ref")
+
+
+def _handle_invite_friend_form(
+    db: Any, group_id: str, context: dict[str, Any]
+) -> tuple[InviteFriendForm, Any | None]:
+    """Process InviteFriendForm submission."""
+    form = InviteFriendForm()
+    form.friend.choices = [
+        (friend.id, friend.to_dict().get("name", friend.id))
+        for friend in context["eligible_friends"]
+    ]
+
+    if form.validate_on_submit() and "friend" in request.form:
+        try:
+            GroupService.invite_friend(db, group_id, form.friend.data)
+            flash("Friend invited successfully.", "success")
+            return form, redirect(url_for(".view_group", group_id=group_id))
+        except Exception as e:
+            flash(f"An unexpected error occurred: {e}", "danger")
+    return form, None
+
+
+def _handle_invite_email_form(
+    db: Any, group_id: str, group_name: str
+) -> tuple[InviteByEmailForm, Any | None]:
+    """Process InviteByEmailForm submission."""
+    invite_email_form = InviteByEmailForm()
+    if invite_email_form.validate_on_submit() and "email" in request.form:
+        try:
+            name = invite_email_form.name.data or "Friend"
+            email = invite_email_form.email.data
+            if email:
+                GroupService.invite_by_email(
+                    db, group_id, group_name, email, name, g.user["uid"]
+                )
+                flash(f"Invitation is being sent to {email.lower()}.", "success")
+                return invite_email_form, redirect(
+                    url_for(".view_group", group_id=group_id)
+                )
+        except Exception as e:
+            flash(f"An error occurred creating the invitation: {e}", "danger")
+    return invite_email_form, None
+
+
 # TODO: Add type hints for Agent clarity
 @bp.route("/<string:group_id>", methods=["GET", "POST"])
 @login_required
 def view_group(group_id: str) -> Any:
     """Display a single group's page."""
-    # Capture Referrer
-    if "ref" in request.args:
-        session["referrer_id"] = request.args.get("ref")
+    _handle_referrer()
 
     db = firestore.client()
     player_a_id = request.args.get("playerA")
@@ -78,40 +124,18 @@ def view_group(group_id: str) -> Any:
         flash("You do not have permission to access this group.", "danger")
         return redirect(url_for(".view_groups"))
 
-    # Handle Forms
-    form = InviteFriendForm()
-    form.friend.choices = [
-        (friend.id, friend.to_dict().get("name", friend.id))
-        for friend in context["eligible_friends"]
-    ]
+    form, resp = _handle_invite_friend_form(db, group_id, context)
+    if resp:
+        return resp
 
-    if form.validate_on_submit() and "friend" in request.form:
-        try:
-            GroupService.invite_friend(db, group_id, form.friend.data)
-            flash("Friend invited successfully.", "success")
-            return redirect(url_for(".view_group", group_id=group_id))
-        except Exception as e:
-            flash(f"An unexpected error occurred: {e}", "danger")
-
-    invite_email_form = InviteByEmailForm()
-    if invite_email_form.validate_on_submit() and "email" in request.form:
-        try:
-            name = invite_email_form.name.data or "Friend"
-            email = invite_email_form.email.data
-            if email:
-                GroupService.invite_by_email(
-                    db, group_id, context["group"]["name"], email, name, g.user["uid"]
-                )
-                flash(f"Invitation is being sent to {email.lower()}.", "success")
-                return redirect(url_for(".view_group", group_id=group_id))
-        except Exception as e:
-            flash(f"An error occurred creating the invitation: {e}", "danger")
+    invite_email_form, resp = _handle_invite_email_form(
+        db, group_id, context["group"]["name"]
+    )
+    if resp:
+        return resp
 
     return render_template(
-        "group.html",
-        form=form,
-        invite_email_form=invite_email_form,
-        **context,
+        "group.html", form=form, invite_email_form=invite_email_form, **context
     )
 
 
@@ -134,25 +158,26 @@ def create_group() -> Any:
     return render_template("create_group.html", form=form)
 
 
-# TODO: Add type hints for Agent clarity
-@bp.route("/<string:group_id>/edit", methods=["GET", "POST"])
-@login_required
-def edit_group(group_id: str) -> Any:
-    """Edit a group."""
-    db = firestore.client()
+def _get_group_for_edit(db: Any, group_id: str) -> dict[str, Any]:
+    """Fetch group and verify admin permissions."""
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
     if not group.exists:
-        flash("Group not found.", "danger")
-        return redirect(url_for(".view_groups"))
+        raise GroupNotFound("Group not found.")
 
     group_data = group.to_dict()
     group_data["id"] = group.id
 
     if not GroupService.is_group_admin(group_data, g.user["uid"]):
-        flash("You do not have permission to edit this group.", "danger")
-        return redirect(url_for(".view_group", group_id=group_id))
+        raise AccessDenied("You do not have permission to edit this group.")
 
+    return group_data
+
+
+def _handle_edit_group_form(
+    db: Any, group_id: str, group_data: dict[str, Any]
+) -> tuple[GroupForm, Any | None]:
+    """Process GroupForm submission for editing."""
     form = GroupForm(data=group_data)
     if form.validate_on_submit():
         try:
@@ -160,15 +185,36 @@ def edit_group(group_id: str) -> Any:
                 db, group_id, g.user["uid"], form.data, form.profile_picture.data
             )
             flash("Group updated successfully.", "success")
-            return redirect(url_for(".view_group", group_id=group.id))
+            return form, redirect(url_for(".view_group", group_id=group_id))
         except AccessDenied:
             flash("You do not have permission to edit this group.", "danger")
-            return redirect(url_for(".view_group", group_id=group.id))
+            return form, redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
+    return form, None
+
+
+# TODO: Add type hints for Agent clarity
+@bp.route("/<string:group_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_group(group_id: str) -> Any:
+    """Edit a group."""
+    db = firestore.client()
+    try:
+        group_data = _get_group_for_edit(db, group_id)
+    except GroupNotFound:
+        flash("Group not found.", "danger")
+        return redirect(url_for(".view_groups"))
+    except AccessDenied as e:
+        flash(str(e), "danger")
+        return redirect(url_for(".view_group", group_id=group_id))
+
+    form, resp = _handle_edit_group_form(db, group_id, group_data)
+    if resp:
+        return resp
 
     return render_template(
-        "edit_group.html", form=form, group=group_data, group_id=group.id
+        "edit_group.html", form=form, group=group_data, group_id=group_id
     )
 
 
@@ -475,6 +521,3 @@ def get_user_group_trend(group_id: str, user_id: str) -> Any:
         "labels": trend_data["labels"],
         "dataset": user_dataset,
     }
-
-
-# Force change
