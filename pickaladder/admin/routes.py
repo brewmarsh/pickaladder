@@ -84,11 +84,14 @@ def announcement() -> Response:
     """Update the global system announcement."""
     db = firestore.client()
     try:
-        db.collection("system").document("settings").set({
-            "announcement_text": request.form.get("announcement_text"),
-            "is_active": request.form.get("is_active") == "on",
-            "level": request.form.get("level", "info"),
-        }, merge=True)
+        db.collection("system").document("settings").set(
+            {
+                "announcement_text": request.form.get("announcement_text"),
+                "is_active": request.form.get("is_active") == "on",
+                "level": request.form.get("level", "info"),
+            },
+            merge=True,
+        )
         flash("Global announcement updated successfully.", "success")
     except Exception as e:
         flash(f"An error occurred while updating the announcement: {e}", "danger")
@@ -102,7 +105,10 @@ def toggle_email_verification() -> Response:
     db = firestore.client()
     try:
         new_val = AdminService.toggle_setting(db, "enforceEmailVerification")
-        flash(f"Email verification requirement has been {'enabled' if new_val else 'disabled'}.", "success")
+        flash(
+            f"Email verification requirement has been {'enabled' if new_val else 'disabled'}.",
+            "success",
+        )
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for(".admin"))
@@ -114,7 +120,12 @@ def admin_matches() -> str:
     """Display a list of all matches."""
     db = firestore.client()
     try:
-        matches = db.collection("matches").order_by("createdAt", direction=firestore.Query.DESCENDING).limit(50).stream()
+        matches = (
+            db.collection("matches")
+            .order_by("createdAt", direction=firestore.Query.DESCENDING)
+            .limit(50)
+            .stream()
+        )
     except KeyError:
         matches = db.collection("matches").limit(50).stream()
     return render_template("admin/matches.html", matches=matches)
@@ -143,13 +154,20 @@ def friend_graph_data() -> Union[Response, tuple[Response, int]]:
         return jsonify({"error": str(e)}), 500
 
 
-def _lookup_user_by_identifier(db: firestore.client, identifier: str) -> tuple[str | None, str | None]:
+def _lookup_user_by_identifier(
+    db: firestore.client, identifier: str
+) -> tuple[str | None, str | None]:
     """Look up a user UID and email by their identifier (ID or Email)."""
     user_doc = db.collection("users").document(identifier).get()
     if user_doc.exists:
         return user_doc.id, user_doc.to_dict().get("email")
 
-    users = list(db.collection("users").where(filter=firestore.FieldFilter("email", "==", identifier)).limit(1).stream())
+    users = list(
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("email", "==", identifier))
+        .limit(1)
+        .stream()
+    )
     if users:
         return users[0].id, users[0].to_dict().get("email")
     return None, None
@@ -219,9 +237,25 @@ def generate_users() -> str:
     db, fake, new_users = firestore.client(), Faker(), []
     try:
         for _ in range(10):
-            email, password = fake.email(), fake.password(length=12, special_chars=True, digits=True, upper_case=True, lower_case=True)
+            email, password = (
+                fake.email(),
+                fake.password(
+                    length=12,
+                    special_chars=True,
+                    digits=True,
+                    upper_case=True,
+                    lower_case=True,
+                ),
+            )
             user_record = auth.create_user(email=email, password=password)
-            user_doc = {"username": fake.user_name(), "email": email, "name": fake.name(), "duprRating": round(random.uniform(2.5, 7.0), 2), "isAdmin": False, "createdAt": firestore.SERVER_TIMESTAMP}
+            user_doc = {
+                "username": fake.user_name(),
+                "email": email,
+                "name": fake.name(),
+                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec B311
+                "isAdmin": False,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
             db.collection("users").document(user_record.uid).set(user_doc)
             new_users.append({"uid": user_record.uid, **user_doc})
         flash(f"{len(new_users)} users generated successfully.", "success")
@@ -232,14 +266,19 @@ def generate_users() -> str:
 
 def _generate_single_random_match(db: firestore.client, users: list[Any]) -> bool:
     """Generate a single random match between users."""
-    p1, p2 = random.sample(users, 2)
-    s1, s2 = 11, random.randint(0, 9)
-    if random.choice([True, False]):
+    p1, p2 = random.sample(users, 2)  # nosec B311
+    s1, s2 = 11, random.randint(0, 9)  # nosec B311
+    if random.choice([True, False]):  # nosec B311
         s1, s2 = s2, s1
 
     submission = MatchSubmission(
-        player_1_id=p1.id, player_2_id=p2.id, score_p1=s1, score_p2=s2,
-        match_type="singles", match_date=datetime.datetime.now(datetime.timezone.utc), created_by=p1.id
+        player_1_id=p1.id,
+        player_2_id=p2.id,
+        score_p1=s1,
+        score_p2=s2,
+        match_type="singles",
+        match_date=datetime.datetime.now(datetime.timezone.utc),
+        created_by=p1.id,
     )
     try:
         MatchService.record_match(db, submission, UserSession({"uid": p1.id}))
@@ -283,7 +322,10 @@ def merge_players() -> Union[str, Response]:
                 flash(f"Error merging players: {e}", "error")
         return redirect(url_for(".merge_players"))
 
-    users = sorted(UserService.get_all_users(db, public_only=False), key=lambda u: (u.get("is_ghost", False), u.get("name", "").lower()))
+    users = sorted(
+        UserService.get_all_users(db, public_only=False),
+        key=lambda u: (u.get("is_ghost", False), u.get("name", "").lower()),
+    )
     return render_template("admin/merge_players.html", users=users)
 
 

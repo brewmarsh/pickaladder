@@ -124,7 +124,11 @@ def _map_dupr_data(form_data: Any) -> tuple[str | None, float | None]:
         dupr_id = form_data.dupr_id.data.strip()
 
     rating = None
-    if hasattr(form_data, "dupr_rating") and form_data.dupr_rating and form_data.dupr_rating.data is not None:
+    if (
+        hasattr(form_data, "dupr_rating")
+        and form_data.dupr_rating
+        and form_data.dupr_rating.data is not None
+    ):
         rating = float(form_data.dupr_rating.data)
     return dupr_id, rating
 
@@ -157,15 +161,14 @@ def _validate_username_change(
 
 def _handle_email_change(
     db: Client,
-    user_id: str,
     new_email: str,
-    current_email: str | None,
     username: str,
     update_data: dict[str, Any],
-    current_user_data: Any,
+    current_user_data: dict[str, Any],
 ) -> dict[str, Any] | None:
     """Handle email change logic and verification."""
-    if new_email != current_email:
+    if new_email != current_user_data.get("email"):
+        user_id = cast(str, current_user_data.get("id") or current_user_data.get("uid"))
         success, message = update_email_address(
             db, user_id, new_email, username, update_data
         )
@@ -190,7 +193,7 @@ def process_profile_update(
         "name": form_data.name.data,
         "username": new_username,
     }
-    if hasattr(form_data, "dark_mode"):
+    if hasattr(form_data, "dark_mode") and form_data.dark_mode:
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
 
     dupr_id, rating = _map_dupr_data(form_data)
@@ -200,12 +203,13 @@ def process_profile_update(
 
     _handle_profile_picture(user_id, update_data, profile_picture_file)
 
-    if err := _validate_username_change(db, new_username, current_user_data.get("username")):
+    if err := _validate_username_change(
+        db, new_username, current_user_data.get("username")
+    ):
         return err
 
     email_res = _handle_email_change(
-        db, user_id, form_data.email.data, current_user_data.get("email"),
-        new_username, update_data, current_user_data
+        db, form_data.email.data, new_username, update_data, current_user_data
     )
     if email_res:
         return email_res
@@ -252,7 +256,9 @@ def update_settings(
     if current_user_data is None:
         current_user_data = _get_current_user_data(db, user_id)
 
-    if err := _validate_username_change(db, form_data.username.data, current_user_data.get("username")):
+    if err := _validate_username_change(
+        db, form_data.username.data, current_user_data.get("username")
+    ):
         return err
 
     update_data = _map_settings_update_data(form_data)
@@ -260,8 +266,11 @@ def update_settings(
 
     if hasattr(form_data, "email") and form_data.email.data:
         email_res = _handle_email_change(
-            db, user_id, form_data.email.data, current_user_data.get("email"),
-            form_data.username.data, update_data, current_user_data
+            db,
+            form_data.email.data,
+            form_data.username.data,
+            update_data,
+            current_user_data,
         )
         if email_res:
             return email_res

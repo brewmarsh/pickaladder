@@ -48,11 +48,16 @@ def get_friendship_info(
     if current_user_id == target_user_id:
         return False, False
 
-    friend_ref = db.collection("users").document(current_user_id).collection("friends").document(target_user_id)
+    friend_ref = (
+        db.collection("users")
+        .document(current_user_id)
+        .collection("friends")
+        .document(target_user_id)
+    )
     if (doc := friend_ref.get()).exists and (data := doc.to_dict()):
         status = data.get("status")
-        is_friend = (status == "accepted")
-        friend_request_sent = (status == "pending")
+        is_friend = status == "accepted"
+        friend_request_sent = status == "pending"
 
     return is_friend, friend_request_sent
 
@@ -86,7 +91,12 @@ def accept_friend_request(db: Client, user_id: str, requester_id: str) -> bool:
     try:
         batch = db.batch()
         for uid, friend_id in [(user_id, requester_id), (requester_id, user_id)]:
-            ref = db.collection("users").document(uid).collection("friends").document(friend_id)
+            ref = (
+                db.collection("users")
+                .document(uid)
+                .collection("friends")
+                .document(friend_id)
+            )
             batch.update(ref, {"status": "accepted"})
         batch.commit()
         return True
@@ -100,7 +110,9 @@ def cancel_friend_request(db: Client, user_id: str, target_user_id: str) -> bool
     try:
         batch = db.batch()
         for uid, tid in [(user_id, target_user_id), (target_user_id, user_id)]:
-            ref = db.collection("users").document(uid).collection("friends").document(tid)
+            ref = (
+                db.collection("users").document(uid).collection("friends").document(tid)
+            )
             batch.delete(ref)
         batch.commit()
         return True
@@ -114,10 +126,20 @@ def send_friend_request(db: Client, user_id: str, friend_id: str) -> bool:
     try:
         batch = db.batch()
         # My record
-        my_ref = db.collection("users").document(user_id).collection("friends").document(friend_id)
+        my_ref = (
+            db.collection("users")
+            .document(user_id)
+            .collection("friends")
+            .document(friend_id)
+        )
         batch.set(my_ref, {"status": "pending", "initiator": True})
         # Their record
-        their_ref = db.collection("users").document(friend_id).collection("friends").document(user_id)
+        their_ref = (
+            db.collection("users")
+            .document(friend_id)
+            .collection("friends")
+            .document(user_id)
+        )
         batch.set(their_ref, {"status": "pending", "initiator": False})
         batch.commit()
         return True

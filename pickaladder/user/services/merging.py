@@ -23,7 +23,9 @@ def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> bool:
             return False
 
         ghost_doc = ghost_docs[0]
-        current_app.logger.info(f"Merging ghost user {ghost_doc.id} to {real_user_ref.id}")
+        current_app.logger.info(
+            f"Merging ghost user {ghost_doc.id} to {real_user_ref.id}"
+        )
         merge_users(db, ghost_doc.id, real_user_ref.id)
         return True
     except Exception as e:
@@ -34,6 +36,7 @@ def merge_ghost_user(db: Client, real_user_ref: Any, email: str) -> bool:
 def merge_users(db: Client, source_id: str, target_id: str) -> None:
     """Perform a deep merge of two user accounts. Source is deleted."""
     from pickaladder.teams.services import TeamService  # noqa: PLC0415
+
     source_ref = db.collection("users").document(source_id)
     target_ref = db.collection("users").document(target_id)
     batch = db.batch()
@@ -69,10 +72,12 @@ def _migrate_singles_matches(
 
 
 def _update_doubles_match_team(
-    db: Client, match: Any, field: str, ghost_ref: Any, real_user_ref: Any, updates: dict[str, Any]
+    db: Client, match: Any, field: str, refs: tuple[Any, Any], updates: dict[str, Any]
 ) -> None:
     """Update team data for a doubles match if it contains the ghost user."""
     from pickaladder.teams.services import TeamService  # noqa: PLC0415
+
+    ghost_ref, real_user_ref = refs
     m_data = match.to_dict()
     if not m_data or field not in m_data:
         return
@@ -83,8 +88,12 @@ def _update_doubles_match_team(
 
     partner_ref = next((r for r in current_team if r != ghost_ref), None)
     if partner_ref:
-        new_team_id = TeamService.get_or_create_team(db, real_user_ref.id, partner_ref.id)
-        id_f, ref_f = ("team1Id", "team1Ref") if field == "team1" else ("team2Id", "team2Ref")
+        new_team_id = TeamService.get_or_create_team(
+            db, real_user_ref.id, partner_ref.id
+        )
+        id_f, ref_f = (
+            ("team1Id", "team1Ref") if field == "team1" else ("team2Id", "team2Ref")
+        )
         updates[id_f] = new_team_id
         updates[ref_f] = db.collection("teams").document(new_team_id)
 
@@ -94,11 +103,16 @@ def _migrate_doubles_matches(
 ) -> None:
     """Update doubles matches where the user is in a team array."""
     match_updates: dict[str, dict[str, Any]] = {}
+    refs = (ghost_ref, real_user_ref)
     for field in ["team1", "team2"]:
-        for match in db.collection("matches").where(field, "array_contains", ghost_ref).stream():
+        for match in (
+            db.collection("matches").where(field, "array_contains", ghost_ref).stream()
+        ):
             if match.id not in match_updates:
                 match_updates[match.id] = {"ref": match.reference, "updates": {}}
-            _update_doubles_match_team(db, match, field, ghost_ref, real_user_ref, match_updates[match.id]["updates"])
+            _update_doubles_match_team(
+                db, match, field, refs, match_updates[match.id]["updates"]
+            )
 
     for update in match_updates.values():
         if update["updates"]:
@@ -109,13 +123,20 @@ def _migrate_groups(
     db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update group memberships."""
-    for group in db.collection("groups").where("members", "array_contains", ghost_ref).stream():
+    for group in (
+        db.collection("groups").where("members", "array_contains", ghost_ref).stream()
+    ):
         if g_data := group.to_dict():
-            new_members = [real_user_ref if m == ghost_ref else m for m in g_data.get("members", [])]
+            new_members = [
+                real_user_ref if m == ghost_ref else m
+                for m in g_data.get("members", [])
+            ]
             batch.update(group.reference, {"members": new_members})
 
 
-def _update_tournament_participant(p: dict[str, Any], ghost_ref_id: str, real_user_ref: Any) -> bool:
+def _update_tournament_participant(
+    p: dict[str, Any], ghost_ref_id: str, real_user_ref: Any
+) -> bool:
     """Update a single tournament participant entry."""
     if not p:
         return False
@@ -131,7 +152,9 @@ def _update_tournament_participant(p: dict[str, Any], ghost_ref_id: str, real_us
     return False
 
 
-def _rebuild_participant_ids(p_ids: list[str], ghost_ref_id: str, real_user_ref_id: str) -> list[str]:
+def _rebuild_participant_ids(
+    p_ids: list[str], ghost_ref_id: str, real_user_ref_id: str
+) -> list[str]:
     """Rebuild the simple participant ID list."""
     return [real_user_ref_id if pid == ghost_ref_id else pid for pid in p_ids]
 
@@ -140,11 +163,21 @@ def _migrate_tournaments(
     db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update tournament participant lists and IDs."""
-    query = db.collection("tournaments").where("participant_ids", "array_contains", ghost_ref.id)
+    query = db.collection("tournaments").where(
+        "participant_ids", "array_contains", ghost_ref.id
+    )
     for tournament in query.stream():
         if data := tournament.to_dict():
             participants = data.get("participants", [])
-            updated = any(_update_tournament_participant(p, ghost_ref.id, real_user_ref) for p in participants)
+            updated = any(
+                _update_tournament_participant(p, ghost_ref.id, real_user_ref)
+                for p in participants
+            )
             if updated:
-                new_p_ids = _rebuild_participant_ids(data.get("participant_ids", []), ghost_ref.id, real_user_ref.id)
-                batch.update(tournament.reference, {"participants": participants, "participant_ids": new_p_ids})
+                new_p_ids = _rebuild_participant_ids(
+                    data.get("participant_ids", []), ghost_ref.id, real_user_ref.id
+                )
+                batch.update(
+                    tournament.reference,
+                    {"participants": participants, "participant_ids": new_p_ids},
+                )
