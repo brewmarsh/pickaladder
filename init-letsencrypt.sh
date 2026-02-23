@@ -96,7 +96,7 @@ docker rm -f picka-server_nginx_1 picka-server_web_1 picka-server_certbot_1 \
 # This script is designed to be run by the CI/CD pipeline on the production server.
 # It handles the initial Let's Encrypt certificate generation automatically.
 
-DOMAIN="pickaladder.io"
+DOMAIN="app.pickaladder.com"
 EMAIL="pickaladder@gmail.com"
 DATA_PATH="./certbot"
 CERT_DIR="$DATA_PATH/conf/live/$DOMAIN"
