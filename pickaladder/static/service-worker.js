@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pickaladder-cache-v1';
+const CACHE_NAME = 'pickaladder-cache-v0.10.0';
 const ASSETS_TO_CACHE = [
   '/static/css/variables.css',
   '/static/css/layout.css',
