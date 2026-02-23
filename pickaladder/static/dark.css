@@ -109,6 +109,8 @@ body {
     padding: 10px 0;
     margin-bottom: 20px;
     transition: background-color 0.3s ease;
+    position: relative;
+    z-index: 1000;
 }
 
 .navbar {
@@ -340,7 +342,7 @@ select:focus {
     background-color: var(--card-bg);
     min-width: 220px;
     box-shadow: var(--box-shadow);
-    z-index: 1;
+    z-index: 1000;
     border-radius: var(--border-radius);
     padding: 8px 0;
 }
