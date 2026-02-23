@@ -319,54 +319,6 @@ select:focus {
     font-size: 14px;
 }
 
-/* Dropdown */
-.dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.dropbtn {
-    background-color: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    border-radius: 50%;
-}
-
-.dropdown-content {
-    display: none;
-    position: absolute;
-    right: 0;
-    background-color: var(--card-bg);
-    min-width: 220px;
-    box-shadow: var(--box-shadow);
-    z-index: 1;
-    border-radius: var(--border-radius);
-    padding: 8px 0;
-}
-
-.dropdown-content a {
-    color: var(--text-primary);
-    padding: 10px 20px;
-    text-decoration: none;
-    display: block;
-    font-size: 14px;
-}
-
-.dropdown-content a:hover {
-    background-color: var(--bg-color);
-}
-
-.dropdown-divider {
-    height: 1px;
-    margin: 8px 0;
-    overflow: hidden;
-    background-color: var(--border-color);
-}
-
-.dropdown:hover .dropdown-content {
-    display: block;
-}
 
 /* Cards & Layouts */
 .card {
@@ -756,10 +708,6 @@ select:focus {
     /* Lighter lime for better contrast on dark backgrounds */
 }
 
-/* Fixes for dark mode visibility issues */
-[data-theme="dark"] .dropdown-content a:hover {
-    background-color: var(--bg-color);
-}
 
 [data-theme="dark"] .alert-danger {
     color: #f8d7da;
