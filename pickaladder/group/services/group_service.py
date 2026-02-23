@@ -223,7 +223,10 @@ class GroupService:
         """Upload a group profile picture and return its public URL."""
         try:
             filename = secure_filename(file.filename or "group_profile.jpg")
-            bucket = storage.bucket()
+            bucket_name = current_app.config.get(
+                "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+            )
+            bucket = storage.bucket(bucket_name)
             blob = bucket.blob(f"group_pictures/{group_id}/{filename}")
             blob.upload_from_file(file)
             blob.make_public()

@@ -81,7 +81,11 @@ def upload_profile_picture(user_id: str, file_storage: FileStorage) -> str | Non
 
     try:
         filename = secure_filename(file_storage.filename or "profile.jpg")
-        bucket = storage.bucket()
+        bucket = storage.bucket(
+            current_app.config.get(
+                "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+            )
+        )
         blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
 
         # Reset stream position and upload directly from file storage
@@ -101,7 +105,11 @@ def upload_profile_picture(user_id: str, file_storage: FileStorage) -> str | Non
 def delete_user_profile_pictures(user_id: str) -> None:
     """Delete all profile pictures for a user from Firebase Storage."""
     try:
-        bucket = storage.bucket()
+        bucket = storage.bucket(
+            current_app.config.get(
+                "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+            )
+        )
         blobs = bucket.list_blobs(prefix=f"profile_pictures/{user_id}/")
         for blob in blobs:
             blob.delete()
