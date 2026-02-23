@@ -30,7 +30,7 @@ jobs:
           enable-cache: true
 
       - name: Setup Python
-        uses: actions/setup-python@v5  # Fixed: v5 is the current version
+        uses: actions/setup-python@v6  # Fixed: v5 is the current version
         with:
           python-version: '3.11'
 
