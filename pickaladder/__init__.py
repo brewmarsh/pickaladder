@@ -161,17 +161,11 @@ def _initialize_firebase(app: Flask) -> None:
     # Initialize the app if credentials were found
     if cred and not firebase_admin._apps:
         try:
-            # Prioritize app config, then env, then project_id fallback
-            storage_bucket = app.config.get(
-                "FIREBASE_STORAGE_BUCKET"
-            ) or os.environ.get("FIREBASE_STORAGE_BUCKET")
-
-            if not storage_bucket and project_id:
-                storage_bucket = f"{project_id}.firebasestorage.app"
-
             firebase_options = {
                 "projectId": project_id or app.config.get("FIREBASE_PROJECT_ID"),
-                "storageBucket": storage_bucket,
+                "storageBucket": app.config.get(
+                    "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+                ),
             }
 
             firebase_admin.initialize_app(cred, firebase_options)
@@ -309,7 +303,8 @@ def _load_config(app: Flask, test_config: dict[str, Any] | None) -> None:
         FLASK_ENV=os.environ.get("FLASK_ENV", "development"),
         FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
         FIREBASE_PROJECT_ID=os.environ.get("FIREBASE_PROJECT_ID"),
-        FIREBASE_STORAGE_BUCKET=os.environ.get("FIREBASE_STORAGE_BUCKET"),
+        FIREBASE_STORAGE_BUCKET=os.environ.get("FIREBASE_STORAGE_BUCKET")
+        or "pickaladder.firebasestorage.app",
         GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
         MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
         MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
