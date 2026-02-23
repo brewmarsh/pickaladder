@@ -16,17 +16,14 @@ def _check_partnership_win(
     """Determine if a partnership won or lost a specific match."""
     team1_ids, team2_ids = _extract_team_ids(data)
     p1_score, p2_score = _get_match_scores(data)
+    partners = {playerA_id, playerB_id}
 
-    if {playerA_id, playerB_id}.issubset(team1_ids):
-        if p1_score > p2_score:
-            wins += 1
-        elif p2_score > p1_score:
-            losses += 1
-    elif {playerA_id, playerB_id}.issubset(team2_ids):
-        if p2_score > p1_score:
-            wins += 1
-        elif p1_score > p2_score:
-            losses += 1
+    if partners.issubset(team1_ids):
+        wins += 1 if p1_score > p2_score else 0
+        losses += 1 if p2_score > p1_score else 0
+    elif partners.issubset(team2_ids):
+        wins += 1 if p2_score > p1_score else 0
+        losses += 1 if p1_score > p2_score else 0
     return wins, losses
 
 
