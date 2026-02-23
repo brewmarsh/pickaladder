@@ -72,33 +72,33 @@ Query.where = query_where  # type: ignore[assignment]
 original_compare_func = Query._compare_func  # type: ignore[attr-defined]
 
 
+def _get_id_if_exists(obj: Any) -> Any:
+    """Return obj.id if it exists, otherwise obj."""
+    if hasattr(obj, "id"):
+        return obj.id
+    return obj
+
+
+def _in_op(x: Any, y: list[Any]) -> bool:
+    """Handle 'in' operator mock."""
+    normalized_y = [_get_id_if_exists(item) for item in y]
+    x_val = _get_id_if_exists(x)
+    return x_val in normalized_y
+
+
+def _array_contains_op(x: list[Any] | None, y: Any) -> bool:
+    """Handle 'array_contains' operator mock."""
+    if x is None:
+        return False
+    return y in x
+
+
 def query_compare_func(self: Query, op: str) -> Any:
     """Handle document ID comparisons and array_contains."""
     if op == "in":
-
-        def in_op(x: Any, y: list[Any]) -> bool:
-            """Handle 'in' operator mock."""
-            normalized_y = []
-            for item in y:
-                if hasattr(item, "id"):
-                    normalized_y.append(item.id)
-                else:
-                    normalized_y.append(item)
-            x_val = x
-            if hasattr(x, "id"):
-                x_val = x.id
-            return x_val in normalized_y
-
-        return in_op
+        return _in_op
     elif op == "array_contains":
-
-        def array_contains_op(x: list[Any] | None, y: Any) -> bool:
-            """Handle 'array_contains' operator mock."""
-            if x is None:
-                return False
-            return y in x
-
-        return array_contains_op
+        return _array_contains_op
     return original_compare_func(self, op)
 
 
@@ -173,6 +173,44 @@ def mock_array_remove(values: list[Any]) -> MockSentinel:
 original_update = DocumentReference.update
 
 
+def _apply_e2e_union(current_list: list[Any], values: list[Any]) -> list[Any]:
+    """Apply union operation for e2e tests."""
+    result = list(current_list)
+    for item in values:
+        if item not in result:
+            result.append(item)
+    return result
+
+
+def _apply_e2e_remove(current_list: list[Any], values: list[Any]) -> list[Any]:
+    """Apply remove operation for e2e tests."""
+    return [item for item in current_list if item not in values]
+
+
+def _apply_e2e_array_op(current_list: list[Any], sentinel: MockSentinel) -> list[Any]:
+    """Apply UNION or REMOVE operation to a list in e2e tests."""
+    if sentinel.op == "UNION":
+        return _apply_e2e_union(current_list, sentinel.values)
+    if sentinel.op == "REMOVE":
+        return _apply_e2e_remove(current_list, sentinel.values)
+    return current_list
+
+
+def _handle_e2e_sentinels(
+    doc_ref: DocumentReference, sentinels: dict[str, MockSentinel]
+) -> dict[str, Any]:
+    """Handle sentinel updates for e2e tests."""
+    doc_snapshot = doc_ref.get()
+    doc_data = doc_snapshot.to_dict() if doc_snapshot.exists else {}
+
+    for key, value in sentinels.items():
+        current_list = doc_data.get(key, [])
+        if not isinstance(current_list, list):
+            current_list = []
+        doc_data[key] = _apply_e2e_array_op(current_list, value)
+    return doc_data
+
+
 def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
     """Update document handling sentinels and nested fields."""
     sentinels = {k: v for k, v in data.items() if isinstance(v, MockSentinel)}
@@ -185,26 +223,26 @@ def doc_ref_update(self: DocumentReference, data: dict[str, Any]) -> None:
         original_update(self, others)
 
     if sentinels:
-        doc_snapshot = self.get()
-        doc_data = doc_snapshot.to_dict() if doc_snapshot.exists else {}
-
-        for key, value in sentinels.items():
-            current_list = doc_data.get(key, [])
-            if not isinstance(current_list, list):
-                current_list = []
-            if value.op == "UNION":
-                for item in value.values:
-                    if item not in current_list:
-                        current_list.append(item)
-            elif value.op == "REMOVE":
-                for item in value.values:
-                    if item in current_list:
-                        current_list.remove(item)
-            doc_data[key] = current_list
-        self.set(doc_data)
+        new_doc_data = _handle_e2e_sentinels(self, sentinels)
+        self.set(new_doc_data)
 
 
 DocumentReference.update = doc_ref_update  # type: ignore[method-assign]
+
+
+def _execute_batch_op(op: tuple[Any, ...]) -> None:
+    """Execute a single batch operation."""
+    op_type = op[0]
+    if op_type == "set":
+        op[1].set(op[2], merge=op[3])
+        return
+    if op_type == "update":
+        op[1].update(op[2])
+        return
+    if op_type == "delete":
+        op[1].delete()
+        return
+
 
 # --- Mock Classes ---
 
@@ -244,12 +282,7 @@ class MockBatch:
     def commit(self) -> None:
         """Mock commit."""
         for op in self.ops:
-            if op[0] == "set":
-                op[1].set(op[2], merge=op[3])
-            elif op[0] == "update":
-                op[1].update(op[2])
-            elif op[0] == "delete":
-                op[1].delete()
+            _execute_batch_op(op)
         self.ops = []
 
 
