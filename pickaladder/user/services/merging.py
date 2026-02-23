@@ -113,12 +113,10 @@ def _apply_doubles_migration_batch(
     batch: _firestore.WriteBatch,
     docs: list[DocumentSnapshot],
     field: str,
-    ghost_ref: Any,
-    real_user_ref: Any,
+    refs: tuple[Any, Any],
 ) -> None:
     """Prepare and apply batch updates for doubles matches."""
     match_updates: dict[str, dict[str, Any]] = {}
-    refs = (ghost_ref, real_user_ref)
     for match in docs:
         if match.id not in match_updates:
             match_updates[match.id] = {"ref": match.reference, "updates": {}}
@@ -135,11 +133,10 @@ def _migrate_doubles_matches(
     db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update doubles matches where the user is in a team array."""
+    refs = (ghost_ref, real_user_ref)
     for field in ["team1", "team2"]:
         matches = _fetch_doubles_matches_to_migrate(db, field, ghost_ref)
-        _apply_doubles_migration_batch(
-            db, batch, matches, field, ghost_ref, real_user_ref
-        )
+        _apply_doubles_migration_batch(db, batch, matches, field, refs)
 
 
 def _migrate_groups(
@@ -182,9 +179,7 @@ def _rebuild_participant_ids(
     return [real_user_ref_id if pid == ghost_ref_id else pid for pid in p_ids]
 
 
-def _fetch_tournaments_to_migrate(
-    db: Client, ghost_id: str
-) -> list[DocumentSnapshot]:
+def _fetch_tournaments_to_migrate(db: Client, ghost_id: str) -> list[DocumentSnapshot]:
     """Fetch tournaments where the ghost user is a participant."""
     query = db.collection("tournaments").where(
         "participant_ids", "array_contains", ghost_id

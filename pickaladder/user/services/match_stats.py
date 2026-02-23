@@ -267,7 +267,9 @@ def _prepare_entity_maps(
 
 
 def _build_dashboard_match_list(
-    matches: list[DocumentSnapshot], user_id: str, entity_maps: dict[str, dict[str, Any]]
+    matches: list[DocumentSnapshot],
+    user_id: str,
+    entity_maps: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """Build a list of dashboard match data items."""
     matches_data = []
@@ -344,7 +346,8 @@ def _get_processed_streak_items(
 def _sort_streak_items(items: list[dict[str, Any]]) -> None:
     """Sort processed streak items by date descending."""
     items.sort(
-        key=lambda x: x["date"] if x.get("date") else datetime.datetime.min, reverse=True
+        key=lambda x: x["date"] if x.get("date") else datetime.datetime.min,
+        reverse=True,
     )
 
 
@@ -498,7 +501,7 @@ def _get_team_ids_from_match(data: dict[str, Any]) -> tuple[set[str], set[str]]:
 
 
 def _get_h2h_match_data(
-    data: dict[str, Any]
+    data: dict[str, Any],
 ) -> tuple[tuple[int, int], tuple[set[str], set[str]]]:
     """Extract scores and team IDs from match data."""
     scores = (int(data.get("player1Score", 0)), int(data.get("player2Score", 0)))
