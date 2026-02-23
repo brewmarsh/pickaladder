@@ -232,7 +232,9 @@ def get_friends_page_data(db: Client, user_id: str) -> dict[str, Any]:
     # Fetch pending requests (incoming)
     request_ids = [
         doc.id
-        for doc in friends_ref.where(filter=firestore.FieldFilter("status", "==", "pending"))
+        for doc in friends_ref.where(
+            filter=firestore.FieldFilter("status", "==", "pending")
+        )
         .where(filter=firestore.FieldFilter("initiator", "==", False))
         .stream()
     ]
@@ -240,7 +242,9 @@ def get_friends_page_data(db: Client, user_id: str) -> dict[str, Any]:
     # Fetch sent requests (outgoing)
     sent_ids = [
         doc.id
-        for doc in friends_ref.where(filter=firestore.FieldFilter("status", "==", "pending"))
+        for doc in friends_ref.where(
+            filter=firestore.FieldFilter("status", "==", "pending")
+        )
         .where(filter=firestore.FieldFilter("initiator", "==", True))
         .stream()
     ]
