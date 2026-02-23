@@ -481,23 +481,27 @@ class GroupService:
         return match_data
 
     @staticmethod
+    def _is_valid_upset(winner_rating: float, loser_rating: float) -> bool:
+        """Evaluate if the rating gap constitutes an upset."""
+        if winner_rating <= 0 or loser_rating <= 0:
+            return False
+        return (loser_rating - winner_rating) >= UPSET_THRESHOLD
+
+    @staticmethod
     def _check_upset_condition(match_data: dict[str, Any]) -> None:
         """Identify if a single match is a 'giant slayer' upset."""
-        winner_player = None
-        loser_player = None
-        if match_data.get("winner") == "team1":
-            winner_player = match_data.get("player1")
-            loser_player = match_data.get("player2")
-        elif match_data.get("winner") == "team2":
-            winner_player = match_data.get("player2")
-            loser_player = match_data.get("player1")
+        winner = match_data.get("winner")
+        if winner not in ["team1", "team2"]:
+            return
+
+        winner_player = match_data.get("player1" if winner == "team1" else "player2")
+        loser_player = match_data.get("player2" if winner == "team1" else "player1")
 
         if winner_player and loser_player:
-            winner_rating = float(winner_player.get("dupr_rating") or 0.0)
-            loser_rating = float(loser_player.get("dupr_rating") or 0.0)
-            if loser_rating > 0 and winner_rating > 0:
-                if (loser_rating - winner_rating) >= UPSET_THRESHOLD:
-                    match_data["is_upset"] = True
+            w_rating = float(winner_player.get("dupr_rating") or 0.0)
+            l_rating = float(loser_player.get("dupr_rating") or 0.0)
+            if GroupService._is_valid_upset(w_rating, l_rating):
+                match_data["is_upset"] = True
 
     @staticmethod
     def _calculate_giant_slayer_upsets(recent_matches: list[dict[str, Any]]) -> None:
@@ -606,6 +610,20 @@ class GroupService:
             invite["profilePictureUrl"] = user_data.get("profilePictureUrl")
 
     @staticmethod
+    def _fetch_user_docs_by_email(db: Any, emails: list[str]) -> dict[str, dict[str, Any]]:
+        """Batch fetch user documents by email."""
+        user_docs = {}
+        for i in range(0, len(emails), 30):
+            chunk = emails[i : i + 30]
+            query = db.collection("users").where(
+                filter=firestore.FieldFilter("email", "in", chunk)
+            )
+            for doc in query.stream():
+                data = doc.to_dict()
+                user_docs[data["email"]] = data
+        return user_docs
+
+    @staticmethod
     def _get_pending_invites(db: Any, group_id: str) -> list[dict[str, Any]]:
         """Fetch pending invites for a group."""
         invites_ref = db.collection("group_invites")
@@ -613,28 +631,20 @@ class GroupService:
             filter=firestore.FieldFilter("group_id", "==", group_id)
         ).where(filter=firestore.FieldFilter("used", "==", False))
 
-        pending_members = []
+        pending = []
         for doc in query.stream():
             data = doc.to_dict()
             data["token"] = doc.id
-            pending_members.append(data)
+            pending.append(data)
 
-        invite_emails = [i.get("email") for i in pending_members if i.get("email")]
-        if invite_emails:
-            user_docs = {}
-            for i in range(0, len(invite_emails), 30):
-                chunk = invite_emails[i : i + 30]
-                user_query = db.collection("users").where(
-                    filter=firestore.FieldFilter("email", "in", chunk)
-                )
-                for doc in user_query.stream():
-                    user_docs[doc.to_dict()["email"]] = doc.to_dict()
-
-            for invite in pending_members:
+        emails = [i.get("email") for i in pending if i.get("email")]
+        if emails:
+            user_docs = GroupService._fetch_user_docs_by_email(db, emails)
+            for invite in pending:
                 GroupService._enrich_invite_with_user_data(invite, user_docs)
 
-        pending_members.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
-        return pending_members
+        pending.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
+        return pending
 
     @staticmethod
     def get_random_joke() -> str:

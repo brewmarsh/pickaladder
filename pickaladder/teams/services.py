@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
@@ -167,81 +168,67 @@ class TeamService:
         return members
 
     @staticmethod
+    def _get_opponent_team_ids(matches: list[Any], team_id: str) -> set[str]:
+        """Extract unique opponent team IDs from a list of matches."""
+        opponent_ids = set()
+        for match in matches:
+            data = match.to_dict() or {}
+            t1_id, t2_id = data.get("team1Id"), data.get("team2Id")
+            opponent_ids.add(t2_id if t1_id == team_id else t1_id)
+        opponent_ids.discard(None)
+        return opponent_ids
+
+    @staticmethod
+    def _fetch_opponent_teams_map(db: Client, opponent_ids: set[str]) -> dict[str, Any]:
+        """Fetch opponent teams from Firestore and return a map."""
+        teams_map = {}
+        id_list = list(opponent_ids)
+        for i in range(0, len(id_list), 30):
+            chunk = id_list[i : i + 30]
+            query = db.collection("teams").where(
+                filter=firestore.FieldFilter(FieldPath.document_id(), "in", chunk)
+            )
+            for doc in query.stream():
+                teams_map[doc.id] = doc.to_dict()
+        return teams_map
+
+    @staticmethod
+    def _enrich_team_match_data(
+        match_doc: Any, team_id: str, teams_map: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Attach opponent details to a single match data dictionary."""
+        data = match_doc.to_dict() or {}
+        data["id"] = match_doc.id
+
+        opp_id = data.get("team2Id") if data.get("team1Id") == team_id else data.get("team1Id")
+        opp_raw = teams_map.get(cast(str, opp_id)) or {"name": "Unknown Team"}
+
+        opponent = dict(opp_raw)
+        opponent["id"] = opp_id
+        data["opponent"] = opponent
+        return data
+
+    @staticmethod
     def _fetch_team_matches(db: Client, team_id: str) -> list[dict[str, Any]]:
         """Fetch recent matches and opponent details for a team."""
         matches_ref = db.collection("matches")
-        query1 = (
-            matches_ref.where(filter=firestore.FieldFilter("team1Id", "==", team_id))
-            .order_by("matchDate", direction=firestore.Query.DESCENDING)
-            .limit(20)
-        )
-        query2 = (
-            matches_ref.where(filter=firestore.FieldFilter("team2Id", "==", team_id))
-            .order_by("matchDate", direction=firestore.Query.DESCENDING)
-            .limit(20)
-        )
+        q1 = matches_ref.where(filter=firestore.FieldFilter("team1Id", "==", team_id))
+        q2 = matches_ref.where(filter=firestore.FieldFilter("team2Id", "==", team_id))
 
-        docs1 = list(query1.stream())
-        docs2 = list(query2.stream())
-
-        # Combine, remove duplicates, sort, and limit
-        all_docs = {doc.id: doc for doc in docs1 + docs2}
+        all_docs = {d.id: d for d in list(q1.stream()) + list(q2.stream())}
         sorted_docs = sorted(
             all_docs.values(),
-            key=lambda doc: (doc.to_dict() or {}).get(
-                "matchDate", firestore.SERVER_TIMESTAMP
-            ),
+            key=lambda d: (d.to_dict() or {}).get("matchDate", datetime.min),
             reverse=True,
-        )
-        recent_matches_docs = sorted_docs[:20]
+        )[:20]
 
-        # Batch fetch details for all opponent teams
-        opponent_team_ids = set()
-        for match_doc in recent_matches_docs:
-            match_data = match_doc.to_dict() or {}
-            if match_data.get("team1Id") == team_id:
-                opponent_team_ids.add(match_data.get("team2Id"))
-            else:
-                opponent_team_ids.add(match_data.get("team1Id"))
-        opponent_team_ids.discard(None)
+        opp_ids = TeamService._get_opponent_team_ids(sorted_docs, team_id)
+        teams_map = TeamService._fetch_opponent_teams_map(db, opp_ids)
 
-        teams_map = {}
-        if opponent_team_ids:
-            id_list = list(opponent_team_ids)
-            for i in range(0, len(id_list), 30):
-                chunk = id_list[i : i + 30]
-                team_docs = (
-                    db.collection("teams")
-                    .where(
-                        filter=firestore.FieldFilter(
-                            FieldPath.document_id(), "in", chunk
-                        )
-                    )
-                    .stream()
-                )
-                for doc in team_docs:
-                    teams_map[doc.id] = doc.to_dict()
-
-        # Process matches for display
-        recent_matches = []
-        for match_doc in recent_matches_docs:
-            match_data = match_doc.to_dict() or {}
-            match_data["id"] = match_doc.id
-
-            opponent_id = cast(
-                str,
-                match_data.get("team2Id")
-                if match_data.get("team1Id") == team_id
-                else match_data.get("team1Id"),
-            )
-            opponent_team_raw = teams_map.get(opponent_id) or {"name": "Unknown Team"}
-            opponent_team = dict(opponent_team_raw)
-            opponent_team["id"] = opponent_id
-            match_data["opponent"] = opponent_team
-
-            recent_matches.append(match_data)
-
-        return recent_matches
+        return [
+            TeamService._enrich_team_match_data(doc, team_id, teams_map)
+            for doc in sorted_docs
+        ]
 
     @staticmethod
     def _calculate_team_stats(
