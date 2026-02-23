@@ -758,10 +758,6 @@ select:focus {
     /* Lighter lime for better contrast on dark backgrounds */
 }
 
-/* Fixes for dark mode visibility issues */
-[data-theme="dark"] .dropdown-content a:hover {
-    background-color: var(--bg-color);
-}
 
 [data-theme="dark"] .alert-danger {
     color: #f8d7da;
