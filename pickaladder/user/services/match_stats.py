@@ -396,36 +396,48 @@ def _process_h2h_match(
 ) -> tuple[int, int, int]:
     """Process a single match for H2H stats and return (wins, losses, points)."""
     wins = losses = points = 0
-    match_type = data.get("matchType", "singles")
 
-    if match_type == "singles":
-        is_p1 = data.get("player1Id") == user_id_1
-        winner_id = data.get("winnerId")
-        if winner_id == user_id_1:
-            wins += 1
-        elif winner_id == user_id_2:
-            losses += 1
+    p1_score = int(data.get("player1Score", 0))
+    p2_score = int(data.get("player2Score", 0))
 
-        p1_score = data.get("player1Score", 0)
-        p2_score = data.get("player2Score", 0)
-        points += (p1_score - p2_score) if is_p1 else (p2_score - p1_score)
+    if p1_score == p2_score:
+        return 0, 0, 0
+
+    # Determine teams using IDs
+    if data.get("matchType") == "doubles":
+
+        def get_ids(team_key):
+            team = data.get(team_key, [])
+            return {(r.id if hasattr(r, "id") else str(r)) for r in team if r}
+
+        team1_ids = get_ids("team1")
+        team2_ids = get_ids("team2")
     else:
-        team1_ids = data.get("team1Id", [])
-        team2_ids = data.get("team2Id", [])
-        winner_id = data.get("winnerId")
+        # Singles: handle both refs and denormalized data
+        p1_ref = data.get("player1Ref")
+        p2_ref = data.get("player2Ref")
+        p1_data = data.get("player_1_data", {})
+        p2_data = data.get("player_2_data", {})
 
-        if user_id_1 in team1_ids and user_id_2 in team2_ids:
-            if winner_id == "team1":
-                wins += 1
-            else:
-                losses += 1
-            points += data.get("player1Score", 0) - data.get("player2Score", 0)
-        elif user_id_1 in team2_ids and user_id_2 in team1_ids:
-            if winner_id == "team2":
-                wins += 1
-            else:
-                losses += 1
-            points += data.get("player2Score", 0) - data.get("player1Score", 0)
+        team1_ids = {
+            (p1_ref.id if hasattr(p1_ref, "id") else "") or p1_data.get("uid") or data.get("player1Id")
+        }
+        team2_ids = {
+            (p2_ref.id if hasattr(p2_ref, "id") else "") or p2_data.get("uid") or data.get("player2Id")
+        }
+
+    if user_id_1 in team1_ids and user_id_2 in team2_ids:
+        if p1_score > p2_score:
+            wins += 1
+        else:
+            losses += 1
+        points += p1_score - p2_score
+    elif user_id_1 in team2_ids and user_id_2 in team1_ids:
+        if p2_score > p1_score:
+            wins += 1
+        else:
+            losses += 1
+        points += p2_score - p1_score
 
     return wins, losses, points
 
@@ -436,35 +448,25 @@ def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] 
 
     wins = losses = points = 0
 
-    # Build queries
-    matches_ref = db.collection("matches")
-
-    q1 = (
-        matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_1))
-        .where(filter=firestore.FieldFilter("player2Id", "==", user_id_2))
-        .where(filter=firestore.FieldFilter("status", "==", "completed"))
-    )
-    q2 = (
-        matches_ref.where(filter=firestore.FieldFilter("player1Id", "==", user_id_2))
-        .where(filter=firestore.FieldFilter("player2Id", "==", user_id_1))
-        .where(filter=firestore.FieldFilter("status", "==", "completed"))
-    )
-    q3 = (
-        matches_ref.where(
-            filter=firestore.FieldFilter("participants", "array_contains", user_id_1)
-        )
-        .where(filter=firestore.FieldFilter("matchType", "==", "doubles"))
-        .where(filter=firestore.FieldFilter("status", "==", "completed"))
+    # Fetch all matches for user_id_1 and filter for user_id_2 in memory
+    # This ensures we catch singles, doubles, group and casual matches.
+    query = db.collection("matches").where(
+        filter=firestore.FieldFilter("participants", "array_contains", user_id_1)
     )
 
-    for q_obj in [q1, q2, q3]:
-        for match in q_obj.stream():
-            data = match.to_dict()
-            if data:
-                w, l_count, p_diff = _process_h2h_match(data, user_id_1, user_id_2)
-                wins += w
-                losses += l_count
-                points += p_diff
+    for match in query.stream():
+        data = match.to_dict()
+        if not data:
+            continue
+
+        participants = data.get("participants", [])
+        if user_id_2 not in participants:
+            continue
+
+        w, l_count, p_diff = _process_h2h_match(data, user_id_1, user_id_2)
+        wins += w
+        losses += l_count
+        points += p_diff
 
     if wins > 0 or losses > 0:
         return {"wins": wins, "losses": losses, "point_diff": points}
