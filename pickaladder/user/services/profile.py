@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from firebase_admin import auth, firestore, storage
@@ -13,6 +14,8 @@ from pickaladder.utils import EmailError, send_email
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
     from werkzeug.datastructures import FileStorage
+
+logger = logging.getLogger(__name__)
 
 
 def check_username_availability(db: Client, username: str) -> bool:
@@ -51,7 +54,7 @@ def update_email_address(
                 verification_link=verification_link,
             )
         except EmailError as e:
-            current_app.logger.error(f"Email error updating email: {e}")
+            logger.error(f"Email error updating email: {e}")
             return (
                 True,
                 (
@@ -70,8 +73,18 @@ def update_email_address(
     except auth.EmailAlreadyExistsError:
         return False, "That email address is already in use."
     except Exception as e:
-        current_app.logger.error(f"Error updating email: {e}")
+        logger.error(f"Error updating email: {e}")
         return False, "An error occurred while updating your email."
+
+
+def _get_storage_bucket() -> str:
+    """Safely get the Firebase Storage bucket name."""
+    try:
+        return current_app.config.get(
+            "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+        )
+    except RuntimeError:
+        return "pickaladder.firebasestorage.app"
 
 
 def upload_profile_picture(user_id: str, file_storage: FileStorage) -> str | None:
@@ -81,7 +94,7 @@ def upload_profile_picture(user_id: str, file_storage: FileStorage) -> str | Non
 
     try:
         filename = secure_filename(file_storage.filename or "profile.jpg")
-        bucket = storage.bucket()
+        bucket = storage.bucket(_get_storage_bucket())
         blob = bucket.blob(f"profile_pictures/{user_id}/{filename}")
 
         # Reset stream position and upload directly from file storage
@@ -94,21 +107,19 @@ def upload_profile_picture(user_id: str, file_storage: FileStorage) -> str | Non
         blob.make_public()
         return blob.public_url
     except Exception as e:
-        current_app.logger.error(f"Error uploading profile picture: {e}")
+        logger.error(f"Error uploading profile picture: {e}")
         return None
 
 
 def delete_user_profile_pictures(user_id: str) -> None:
     """Delete all profile pictures for a user from Firebase Storage."""
     try:
-        bucket = storage.bucket()
+        bucket = storage.bucket(_get_storage_bucket())
         blobs = bucket.list_blobs(prefix=f"profile_pictures/{user_id}/")
         for blob in blobs:
             blob.delete()
     except Exception as e:
-        current_app.logger.error(
-            f"Error deleting profile pictures for user {user_id}: {e}"
-        )
+        logger.error(f"Error deleting profile pictures for user {user_id}: {e}")
 
 
 def reset_profile_picture(db: Client, user_id: str) -> bool:
@@ -127,7 +138,5 @@ def reset_profile_picture(db: Client, user_id: str) -> bool:
         )
         return True
     except Exception as e:
-        current_app.logger.error(
-            f"Error resetting profile picture for user {user_id}: {e}"
-        )
+        logger.error(f"Error resetting profile picture for user {user_id}: {e}")
         return False
