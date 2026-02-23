@@ -122,8 +122,84 @@
     </div>
     {% endif %}
 
-    <div class="text-center mt-3">
+    <div class="text-center mt-3 d-flex justify-content-center gap-2">
+        <button type="button" class="btn btn-volt w-auto px-5" data-toggle="modal" data-target="#shareMatchModal">
+            <i class="fas fa-share-alt"></i> Share Match
+        </button>
         <a href="{{ url_for('user.dashboard') }}" class="btn btn-outline-secondary w-auto px-5">Back to Dashboard</a>
+    </div>
+</div>
+
+<!-- Share Match Modal -->
+<div class="modal fade" id="shareMatchModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 400px;">
+        <div class="modal-content" style="background: transparent; border: none; box-shadow: none;">
+            <div class="modal-body p-0">
+                <div id="matchShareCardContainer" class="share-card-container">
+                    <div class="share-card-header">match result</div>
+
+                    {% if match_type == 'doubles' %}
+                        {% if match.player1Score > match.player2Score %}
+                            {% set m_winners = team1 %}
+                            {% set m_losers = team2 %}
+                            {% set m_winner_score = match.player1Score %}
+                            {% set m_loser_score = match.player2Score %}
+                        {% else %}
+                            {% set m_winners = team2 %}
+                            {% set m_losers = team1 %}
+                            {% set m_winner_score = match.player2Score %}
+                            {% set m_loser_score = match.player1Score %}
+                        {% endif %}
+                        <div class="d-flex justify-content-center mb-3">
+                            {% for player in m_winners %}
+                                <img src="{{ player | avatar_url }}" class="share-card-avatar mx-1" style="width: 60px; height: 60px;">
+                            {% endfor %}
+                        </div>
+                        <h2 class="share-card-title" style="font-size: 1.5rem;">
+                            {{ m_winners[0].name }} & {{ m_winners[1].name }}
+                            <div style="font-size: 0.8rem; opacity: 0.8; margin: 5px 0;">vs</div>
+                            {{ m_losers[0].name }} & {{ m_losers[1].name }}
+                        </h2>
+                    {% else %}
+                        {% if match.player1Score > match.player2Score %}
+                            {% set m_winner = player1 %}
+                            {% set m_loser = player2 %}
+                            {% set m_winner_score = match.player1Score %}
+                            {% set m_loser_score = match.player2Score %}
+                        {% else %}
+                            {% set m_winner = player2 %}
+                            {% set m_loser = player1 %}
+                            {% set m_winner_score = match.player2Score %}
+                            {% set m_loser_score = match.player1Score %}
+                        {% endif %}
+                        <img src="{{ m_winner | avatar_url }}" class="share-card-avatar" style="width: 80px; height: 80px;">
+                        <h2 class="share-card-title" style="font-size: 1.5rem;">
+                            {{ m_winner.name }}
+                            <div style="font-size: 0.8rem; opacity: 0.8; margin: 5px 0;">vs</div>
+                            {{ m_loser.name }}
+                        </h2>
+                    {% endif %}
+
+                    <div class="share-card-stat">
+                        {{ m_winner_score }} - {{ m_loser_score }}
+                    </div>
+                    <div class="share-card-footer">
+                        Pickaladder - {{ match.matchDate.strftime('%b %d, %Y') }}
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <div class="d-flex justify-content-center gap-2 mb-3">
+                        <button type="button" class="btn btn-outline-secondary btn-action" onclick="copyCard('matchShareCardContainer', this)">
+                            <i class="fas fa-clipboard"></i> Copy Image
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-action" onclick="downloadCard('matchShareCardContainer', 'match-card.png')">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-volt" data-dismiss="modal" style="width: auto;">Done</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -136,4 +212,34 @@
         .score-display { font-size: 2.5rem; }
     }
 </style>
+
+<script>
+    function copyCard(containerId, buttonEl) {
+        const element = document.getElementById(containerId);
+        if (!element) return;
+
+        html2canvas(element, {
+            backgroundColor: null,
+            scale: 2,
+            logging: false,
+            useCORS: true
+        }).then(canvas => {
+            copyCanvasToClipboard(canvas, buttonEl);
+        });
+    }
+
+    function downloadCard(containerId, filename) {
+        const element = document.getElementById(containerId);
+        if (!element) return;
+
+        html2canvas(element, {
+            backgroundColor: null,
+            scale: 2,
+            logging: false,
+            useCORS: true
+        }).then(canvas => {
+            downloadCanvas(canvas, filename);
+        });
+    }
+</script>
 {% endblock %}
