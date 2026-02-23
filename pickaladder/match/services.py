@@ -171,9 +171,7 @@ class MatchQueryService:
         for match in matches:
             m_data = match.to_dict()
             if m_data:
-                player_refs.update(
-                    MatchQueryService._extract_refs_from_match(m_data)
-                )
+                player_refs.update(MatchQueryService._extract_refs_from_match(m_data))
         return player_refs
 
     @staticmethod
