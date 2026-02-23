@@ -610,7 +610,9 @@ class GroupService:
             invite["profilePictureUrl"] = user_data.get("profilePictureUrl")
 
     @staticmethod
-    def _fetch_user_docs_by_email(db: Any, emails: list[str]) -> dict[str, dict[str, Any]]:
+    def _fetch_user_docs_by_email(
+        db: Any, emails: list[str]
+    ) -> dict[str, dict[str, Any]]:
         """Batch fetch user documents by email."""
         user_docs = {}
         for i in range(0, len(emails), 30):

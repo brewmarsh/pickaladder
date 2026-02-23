@@ -170,13 +170,12 @@ class TeamService:
     @staticmethod
     def _get_opponent_team_ids(matches: list[Any], team_id: str) -> set[str]:
         """Extract unique opponent team IDs from a list of matches."""
-        opponent_ids = set()
+        opp_ids = set()
         for match in matches:
             data = match.to_dict() or {}
             t1_id, t2_id = data.get("team1Id"), data.get("team2Id")
-            opponent_ids.add(t2_id if t1_id == team_id else t1_id)
-        opponent_ids.discard(None)
-        return opponent_ids
+            opp_ids.add(t2_id if t1_id == team_id else t1_id)
+        return {str(oid) for oid in opp_ids if oid is not None}
 
     @staticmethod
     def _fetch_opponent_teams_map(db: Client, opponent_ids: set[str]) -> dict[str, Any]:
@@ -200,7 +199,11 @@ class TeamService:
         data = match_doc.to_dict() or {}
         data["id"] = match_doc.id
 
-        opp_id = data.get("team2Id") if data.get("team1Id") == team_id else data.get("team1Id")
+        opp_id = (
+            data.get("team2Id")
+            if data.get("team1Id") == team_id
+            else data.get("team1Id")
+        )
         opp_raw = teams_map.get(cast(str, opp_id)) or {"name": "Unknown Team"}
 
         opponent = dict(opp_raw)
