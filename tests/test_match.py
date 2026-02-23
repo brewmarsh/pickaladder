@@ -331,7 +331,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             calls.append(query1.where.call_args)
 
         found = any(self._is_inviter_id_filter(call) for call in calls)
-        self.assertTrue(found, "Did not find query filtering by 'inviter_id' == user_id")
+        self.assertTrue(
+            found, "Did not find query filtering by 'inviter_id' == user_id"
+        )
 
     def _is_inviter_id_filter(self, call: Any) -> bool:
         """Check if a mock call contains the inviter_id filter."""

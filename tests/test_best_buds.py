@@ -186,8 +186,9 @@ class BestBudsTestCase(unittest.TestCase):
             "matchDate": datetime.now(),
         }
         (
-            mock_db.collection("matches")
-            .where.return_value.order_by.return_value.limit.return_value.stream.return_value
+            mock_db.collection(
+                "matches"
+            ).where.return_value.order_by.return_value.limit.return_value.stream.return_value
         ) = [match_doc] * 10
 
     def _setup_friends(self, mock_db: MagicMock, user_id: str) -> None:
