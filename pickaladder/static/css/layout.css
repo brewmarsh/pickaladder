@@ -21,6 +21,8 @@ body {
     border-bottom: 1px solid var(--primary-hover);
     padding: 10px 0;
     margin-bottom: 20px;
+    position: relative;
+    z-index: 1000;
 }
 
 .navbar {
