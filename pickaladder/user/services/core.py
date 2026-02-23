@@ -88,6 +88,19 @@ def _process_user_doc(
     return None
 
 
+def _get_users_base_query(db: Client, exclude_ids: list[str], limit: int) -> Any:
+    """Construct the base query for fetching users with ordering and limit."""
+    try:
+        return (
+            db.collection("users")
+            .order_by("createdAt", direction=firestore.Query.DESCENDING)
+            .limit(limit + len(exclude_ids))
+            .stream()
+        )
+    except KeyError:
+        return db.collection("users").stream()
+
+
 def get_all_users(
     db: Client,
     exclude_ids: list[str] | None = None,
@@ -95,18 +108,8 @@ def get_all_users(
     public_only: bool = True,
 ) -> list[dict[str, Any]]:
     """Fetch a list of users, excluding given IDs, sorted by date."""
-    if exclude_ids is None:
-        exclude_ids = []
-
-    try:
-        users_query = (
-            db.collection("users")
-            .order_by("createdAt", direction=firestore.Query.DESCENDING)
-            .limit(limit + len(exclude_ids))
-            .stream()
-        )
-    except KeyError:
-        users_query = db.collection("users").stream()
+    exclude_ids = exclude_ids or []
+    users_query = _get_users_base_query(db, exclude_ids, limit)
 
     users = []
     for doc in users_query:
@@ -180,18 +183,11 @@ def _handle_email_change(
     return None
 
 
-def process_profile_update(
-    db: Client,
-    user_id: str,
-    form_data: Any,
-    current_user_data: dict[str, Any],
-    profile_picture_file: Any = None,
-) -> dict[str, Any]:
-    """Handle complex profile updates, including email change and verification."""
-    new_username = form_data.username.data
+def _extract_profile_update_data(form_data: Any) -> dict[str, Any]:
+    """Extract and map profile form data into a Firestore-ready dictionary."""
     update_data: dict[str, Any] = {
         "name": form_data.name.data,
-        "username": new_username,
+        "username": form_data.username.data,
     }
     if hasattr(form_data, "dark_mode") and form_data.dark_mode:
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
@@ -200,6 +196,31 @@ def process_profile_update(
     update_data.update(
         {"dupr_id": dupr_id, "dupr_rating": rating, "duprRating": rating}
     )
+    return update_data
+
+
+def _commit_user_updates(
+    db: Client,
+    user_id: str,
+    update_data: dict[str, Any],
+    current_user_data: dict[str, Any] | None,
+) -> None:
+    """Commit updates to Firestore and sync in-memory user data."""
+    update_user_profile(db, user_id, update_data)
+    if current_user_data is not None and hasattr(current_user_data, "update"):
+        current_user_data.update(update_data)
+
+
+def process_profile_update(
+    db: Client,
+    user_id: str,
+    form_data: Any,
+    current_user_data: dict[str, Any],
+    profile_picture_file: Any = None,
+) -> dict[str, Any]:
+    """Handle complex profile updates, including email change and verification."""
+    update_data = _extract_profile_update_data(form_data)
+    new_username = cast(str, update_data["username"])
 
     _handle_profile_picture(user_id, update_data, profile_picture_file)
 
@@ -214,10 +235,7 @@ def process_profile_update(
     if email_res:
         return email_res
 
-    update_user_profile(db, user_id, update_data)
-    if current_user_data is not None and hasattr(current_user_data, "update"):
-        current_user_data.update(update_data)
-
+    _commit_user_updates(db, user_id, update_data, current_user_data)
     return {"success": True}
 
 
@@ -275,10 +293,7 @@ def update_settings(
         if email_res:
             return email_res
 
-    db.collection("users").document(user_id).update(update_data)
-    if current_user_data is not None and hasattr(current_user_data, "update"):
-        current_user_data.update(update_data)
-
+    _commit_user_updates(db, user_id, update_data, current_user_data)
     return {"success": True}
 
 
@@ -343,6 +358,4 @@ def update_dashboard_profile(
 
     _handle_profile_picture(user_id, update_data, profile_picture_file)
 
-    update_user_profile(db, user_id, update_data)
-    if current_user_data is not None and hasattr(current_user_data, "update"):
-        current_user_data.update(update_data)
+    _commit_user_updates(db, user_id, update_data, current_user_data)
