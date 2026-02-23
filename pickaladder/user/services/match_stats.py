@@ -408,7 +408,11 @@ def _process_h2h_match(
 
         def get_ids(team_key):
             team = data.get(team_key, [])
-            return {(r.id if hasattr(r, "id") else str(r)) for r in team if r}
+            return {
+                (r.id if r is not None and hasattr(r, "id") else str(r))
+                for r in team
+                if r
+            }
 
         team1_ids = get_ids("team1")
         team2_ids = get_ids("team2")
@@ -420,10 +424,14 @@ def _process_h2h_match(
         p2_data = data.get("player_2_data", {})
 
         team1_ids = {
-            (p1_ref.id if hasattr(p1_ref, "id") else "") or p1_data.get("uid") or data.get("player1Id")
+            (p1_ref.id if p1_ref is not None and hasattr(p1_ref, "id") else "")
+            or p1_data.get("uid")
+            or data.get("player1Id")
         }
         team2_ids = {
-            (p2_ref.id if hasattr(p2_ref, "id") else "") or p2_data.get("uid") or data.get("player2Id")
+            (p2_ref.id if p2_ref is not None and hasattr(p2_ref, "id") else "")
+            or p2_data.get("uid")
+            or data.get("player2Id")
         }
 
     if user_id_1 in team1_ids and user_id_2 in team2_ids:

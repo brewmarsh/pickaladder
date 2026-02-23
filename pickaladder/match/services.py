@@ -384,7 +384,11 @@ class MatchQueryService:
     def get_player_record(db: Client, player_ref: Any) -> dict[str, int]:
         """Calculate win/loss record for a player by doc reference."""
         wins, losses = 0, 0
-        uid = player_ref.id if hasattr(player_ref, "id") else str(player_ref)
+        uid = (
+            player_ref.id
+            if player_ref is not None and hasattr(player_ref, "id")
+            else str(player_ref)
+        )
 
         query = db.collection("matches").where(
             filter=firestore.FieldFilter("participants", "array_contains", uid)
@@ -403,10 +407,15 @@ class MatchQueryService:
             is_team1 = False
             if data.get("matchType") == "doubles":
                 team1_refs = data.get("team1", [])
-                is_team1 = any((r.id if hasattr(r, "id") else "") == uid for r in team1_refs)
+                is_team1 = any(
+                    (r.id if r is not None and hasattr(r, "id") else "") == uid
+                    for r in team1_refs
+                )
             else:
                 p1_ref = data.get("player1Ref")
-                is_team1 = (p1_ref.id if hasattr(p1_ref, "id") else "") == uid
+                is_team1 = (
+                    p1_ref.id if p1_ref is not None and hasattr(p1_ref, "id") else ""
+                ) == uid
 
             if (is_team1 and s1 > s2) or (not is_team1 and s2 > s1):
                 wins += 1
