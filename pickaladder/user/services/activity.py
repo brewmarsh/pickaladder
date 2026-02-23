@@ -45,28 +45,39 @@ def _get_tournament_winner(db: Client, tournament_id: str, match_type: str) -> s
     return standings[0]["name"] if standings else "TBD"
 
 
-def _fetch_owners_data(
-    db: Client, public_group_docs: list[Any]
-) -> dict[str, dict[str, Any]]:
-    """Fetch sanitized data for all unique owners in a list of group documents."""
-    from .core import _sanitize_user_data
-
+def _extract_unique_owner_refs(public_group_docs: list[Any]) -> list[Any]:
+    """Gather unique owner references from a list of group documents."""
     owner_refs = []
     for doc in public_group_docs:
         data = doc.to_dict()
         if data and (ref := data.get("ownerRef")):
             owner_refs.append(ref)
-    unique_owner_refs = list({ref for ref in owner_refs if ref})
+    return list({ref for ref in owner_refs if ref})
+
+
+def _map_owner_docs_to_data(owner_docs: list[Any]) -> dict[str, dict[str, Any]]:
+    """Map owner document snapshots to sanitized data dictionaries."""
+    from .core import _sanitize_user_data
 
     owners_data = {}
-    if unique_owner_refs:
-        owner_docs = db.get_all(unique_owner_refs)
-        for doc in owner_docs:
-            if doc.exists:
-                data = doc.to_dict() or {}
-                data["id"] = doc.id
-                owners_data[doc.id] = _sanitize_user_data(data)
+    for doc in owner_docs:
+        if doc.exists:
+            data = doc.to_dict() or {}
+            data["id"] = doc.id
+            owners_data[doc.id] = _sanitize_user_data(data)
     return owners_data
+
+
+def _fetch_owners_data(
+    db: Client, public_group_docs: list[Any]
+) -> dict[str, dict[str, Any]]:
+    """Fetch sanitized data for all unique owners in a list of group documents."""
+    unique_owner_refs = _extract_unique_owner_refs(public_group_docs)
+    if not unique_owner_refs:
+        return {}
+
+    owner_docs = db.get_all(unique_owner_refs)
+    return _map_owner_docs_to_data(owner_docs)
 
 
 def _enrich_group_with_owner(

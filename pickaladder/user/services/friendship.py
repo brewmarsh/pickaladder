@@ -25,41 +25,57 @@ def _fetch_users_by_ids(db: Client, user_ids: list[str]) -> list[dict[str, Any]]
     return results
 
 
-def get_user_friends(
-    db: Client, user_id: str, limit: int | None = None
-) -> list[dict[str, Any]]:
-    """Fetch a user's friends."""
-    user_ref = db.collection("users").document(user_id)
+def _get_accepted_friends_query(user_ref: Any, limit: int | None = None) -> Any:
+    """Construct a query for accepted friends."""
     query = user_ref.collection("friends").where(
         filter=firestore.FieldFilter("status", "==", "accepted")
     )
     if limit:
         query = query.limit(limit)
+    return query
 
+
+def get_user_friends(
+    db: Client, user_id: str, limit: int | None = None
+) -> list[dict[str, Any]]:
+    """Fetch a user's friends."""
+    user_ref = db.collection("users").document(user_id)
+    query = _get_accepted_friends_query(user_ref, limit)
     friend_ids = [f.id for f in query.stream()]
     return _fetch_users_by_ids(db, friend_ids)
+
+
+def _get_friendship_ref(db: Client, user_id: str, target_id: str) -> Any:
+    """Get the Firestore reference for a friendship document."""
+    return (
+        db.collection("users")
+        .document(user_id)
+        .collection("friends")
+        .document(target_id)
+    )
+
+
+def _parse_friendship_status(doc_data: dict[str, Any] | None) -> tuple[bool, bool]:
+    """Parse friendship status into is_friend and request_sent booleans."""
+    if not doc_data:
+        return False, False
+    status = doc_data.get("status")
+    return status == "accepted", status == "pending"
 
 
 def get_friendship_info(
     db: Client, current_user_id: str, target_user_id: str
 ) -> tuple[bool, bool]:
     """Check friendship status between two users."""
-    is_friend = friend_request_sent = False
     if current_user_id == target_user_id:
         return False, False
 
-    friend_ref = (
-        db.collection("users")
-        .document(current_user_id)
-        .collection("friends")
-        .document(target_user_id)
-    )
-    if (doc := friend_ref.get()).exists and (data := doc.to_dict()):
-        status = data.get("status")
-        is_friend = status == "accepted"
-        friend_request_sent = status == "pending"
+    friend_ref = _get_friendship_ref(db, current_user_id, target_user_id)
+    doc = cast("DocumentSnapshot", friend_ref.get())
+    if not doc.exists:
+        return False, False
 
-    return is_friend, friend_request_sent
+    return _parse_friendship_status(doc.to_dict())
 
 
 def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
