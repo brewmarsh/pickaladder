@@ -75,6 +75,19 @@ def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
     return data
 
 
+def _process_user_doc(
+    doc: DocumentSnapshot, exclude_ids: list[str], public_only: bool
+) -> dict[str, Any] | None:
+    """Process a user document snapshot into sanitized data."""
+    if doc.id in exclude_ids:
+        return None
+    data = doc.to_dict()
+    if data is not None and "username" in data:
+        data["id"] = doc.id
+        return _sanitize_user_data(data, public_only=public_only)
+    return None
+
+
 def get_all_users(
     db: Client,
     exclude_ids: list[str] | None = None,
@@ -89,24 +102,79 @@ def get_all_users(
         users_query = (
             db.collection("users")
             .order_by("createdAt", direction=firestore.Query.DESCENDING)
-            .limit(limit + len(exclude_ids))  # Fetch extra in case we exclude users
+            .limit(limit + len(exclude_ids))
             .stream()
         )
     except KeyError:
-        # Fallback for mockfirestore if createdAt is missing in some docs
         users_query = db.collection("users").stream()
 
     users = []
     for doc in users_query:
-        if exclude_ids and doc.id in exclude_ids:
-            continue
-        data = doc.to_dict()
-        if data is not None and "username" in data:
-            data["id"] = doc.id
-            users.append(_sanitize_user_data(data, public_only=public_only))
+        if processed := _process_user_doc(doc, exclude_ids, public_only):
+            users.append(processed)
         if len(users) >= limit:
             break
     return users
+
+
+def _map_dupr_data(form_data: Any) -> tuple[str | None, float | None]:
+    """Extract DUPR ID and rating from form data."""
+    dupr_id = None
+    if hasattr(form_data, "dupr_id") and form_data.dupr_id and form_data.dupr_id.data:
+        dupr_id = form_data.dupr_id.data.strip()
+
+    rating = None
+    if hasattr(form_data, "dupr_rating") and form_data.dupr_rating and form_data.dupr_rating.data is not None:
+        rating = float(form_data.dupr_rating.data)
+    return dupr_id, rating
+
+
+def _handle_profile_picture(
+    user_id: str, update_data: dict[str, Any], profile_picture_file: Any
+) -> None:
+    """Handle profile picture upload and update the update_data dictionary."""
+    if not profile_picture_file:
+        return
+
+    url = upload_profile_picture(user_id, profile_picture_file)
+    if url:
+        update_data["profilePictureUrl"] = url
+        update_data["profilePictureThumbnailUrl"] = None
+
+
+def _validate_username_change(
+    db: Client, new_username: str, current_username: str | None
+) -> dict[str, Any] | None:
+    """Check if the new username is available if it has changed."""
+    if new_username != current_username:
+        if not check_username_availability(db, new_username):
+            return {
+                "success": False,
+                "error": "Username already exists. Please choose a different one.",
+            }
+    return None
+
+
+def _handle_email_change(
+    db: Client,
+    user_id: str,
+    new_email: str,
+    current_email: str | None,
+    username: str,
+    update_data: dict[str, Any],
+    current_user_data: Any,
+) -> dict[str, Any] | None:
+    """Handle email change logic and verification."""
+    if new_email != current_email:
+        success, message = update_email_address(
+            db, user_id, new_email, username, update_data
+        )
+        if success:
+            if current_user_data is not None and hasattr(current_user_data, "update"):
+                current_user_data.update(update_data)
+            return {"success": True, "info": message}
+        return {"success": False, "error": message}
+    return None
 
 
 def process_profile_update(
@@ -117,57 +185,32 @@ def process_profile_update(
     profile_picture_file: Any = None,
 ) -> dict[str, Any]:
     """Handle complex profile updates, including email change and verification."""
-    new_email = form_data.email.data
     new_username = form_data.username.data
     update_data: dict[str, Any] = {
         "name": form_data.name.data,
         "username": new_username,
     }
-
     if hasattr(form_data, "dark_mode"):
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
 
-    dupr_id = form_data.dupr_id.data.strip() if form_data.dupr_id.data else None
-    update_data["dupr_id"] = dupr_id
-    rating = (
-        float(form_data.dupr_rating.data)
-        if form_data.dupr_rating.data is not None
-        else None
+    dupr_id, rating = _map_dupr_data(form_data)
+    update_data.update(
+        {"dupr_id": dupr_id, "dupr_rating": rating, "duprRating": rating}
     )
-    update_data["dupr_rating"] = rating
-    update_data["duprRating"] = rating  # Maintain compatibility
 
-    # Handle profile picture upload
-    if profile_picture_file:
-        url = upload_profile_picture(user_id, profile_picture_file)
-        if url:
-            update_data["profilePictureUrl"] = url
-            # Clear thumbnail to ensure new profile picture is shown
-            update_data["profilePictureThumbnailUrl"] = None
+    _handle_profile_picture(user_id, update_data, profile_picture_file)
 
-    # Handle username change
-    if new_username != current_user_data.get("username"):
-        if not check_username_availability(db, new_username):
-            return {
-                "success": False,
-                "error": "Username already exists. Please choose a different one.",
-            }
+    if err := _validate_username_change(db, new_username, current_user_data.get("username")):
+        return err
 
-    # Handle email change
-    if new_email != current_user_data.get("email"):
-        success, message = update_email_address(
-            db, user_id, new_email, new_username, update_data
-        )
-        if success:
-            # Refresh current_user_data even on email change
-            if current_user_data is not None and hasattr(current_user_data, "update"):
-                current_user_data.update(update_data)
-            return {"success": True, "info": message}
-        return {"success": False, "error": message}
+    email_res = _handle_email_change(
+        db, user_id, form_data.email.data, current_user_data.get("email"),
+        new_username, update_data, current_user_data
+    )
+    if email_res:
+        return email_res
 
     update_user_profile(db, user_id, update_data)
-
-    # Refresh current_user_data in current request context (e.g., g.user)
     if current_user_data is not None and hasattr(current_user_data, "update"):
         current_user_data.update(update_data)
 
@@ -184,36 +227,18 @@ def _get_current_user_data(db: Client, user_id: str) -> dict[str, Any]:
 def _map_settings_update_data(form_data: Any) -> dict[str, Any]:
     """Map form data to Firestore update dictionary."""
     update_data: dict[str, Any] = {"username": form_data.username.data}
-
-    if hasattr(form_data, "dark_mode"):
+    if hasattr(form_data, "dark_mode") and form_data.dark_mode:
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
-
-    if hasattr(form_data, "name") and form_data.name.data:
+    if hasattr(form_data, "name") and form_data.name and form_data.name.data:
         update_data["name"] = form_data.name.data
 
-    if hasattr(form_data, "dupr_id") and form_data.dupr_id.data:
-        update_data["dupr_id"] = form_data.dupr_id.data.strip()
-
-    if form_data.dupr_rating.data is not None:
-        rating = float(form_data.dupr_rating.data)
-        update_data["dupr_rating"] = rating
-        update_data["duprRating"] = rating  # Maintain compatibility
+    dupr_id, rating = _map_dupr_data(form_data)
+    if dupr_id:
+        update_data["dupr_id"] = dupr_id
+    if rating is not None:
+        update_data.update({"dupr_rating": rating, "duprRating": rating})
 
     return update_data
-
-
-def _handle_settings_profile_picture(
-    user_id: str, update_data: dict[str, Any], profile_picture_file: Any
-) -> None:
-    """Upload profile picture and update the update_data dictionary."""
-    if not profile_picture_file:
-        return
-
-    url = upload_profile_picture(user_id, profile_picture_file)
-    if url:
-        update_data["profilePictureUrl"] = url
-        # Clear thumbnail to ensure new profile picture is shown
-        update_data["profilePictureThumbnailUrl"] = None
 
 
 def update_settings(
@@ -227,31 +252,23 @@ def update_settings(
     if current_user_data is None:
         current_user_data = _get_current_user_data(db, user_id)
 
-    new_username = form_data.username.data
-    if new_username != current_user_data.get("username"):
-        if not check_username_availability(db, new_username):
-            return {
-                "success": False,
-                "error": "Username already exists. Please choose a different one.",
-            }
+    if err := _validate_username_change(db, form_data.username.data, current_user_data.get("username")):
+        return err
 
     update_data = _map_settings_update_data(form_data)
-    _handle_settings_profile_picture(user_id, update_data, profile_picture_file)
+    _handle_profile_picture(user_id, update_data, profile_picture_file)
 
-    # Handle email change if present in form
     if hasattr(form_data, "email") and form_data.email.data:
-        new_email = form_data.email.data
-        if new_email != current_user_data.get("email"):
-            success, message = update_email_address(
-                db, user_id, new_email, new_username, update_data
-            )
-            if success:
-                current_user_data.update(update_data)
-                return {"success": True, "info": message}
-            return {"success": False, "error": message}
+        email_res = _handle_email_change(
+            db, user_id, form_data.email.data, current_user_data.get("email"),
+            form_data.username.data, update_data, current_user_data
+        )
+        if email_res:
+            return email_res
 
     db.collection("users").document(user_id).update(update_data)
-    current_user_data.update(update_data)
+    if current_user_data is not None and hasattr(current_user_data, "update"):
+        current_user_data.update(update_data)
 
     return {"success": True}
 
@@ -312,17 +329,11 @@ def update_dashboard_profile(
     """Update user profile from dashboard form, including image upload."""
     update_data: dict[str, Any] = {"dark_mode": bool(form_data.dark_mode.data)}
     if form_data.dupr_rating.data is not None:
-        update_data["duprRating"] = float(form_data.dupr_rating.data)
+        rating = float(form_data.dupr_rating.data)
+        update_data.update({"duprRating": rating, "dupr_rating": rating})
 
-    if profile_picture_file:
-        url = upload_profile_picture(user_id, profile_picture_file)
-        if url:
-            update_data["profilePictureUrl"] = url
-            # Clear thumbnail to ensure new profile picture is shown
-            update_data["profilePictureThumbnailUrl"] = None
+    _handle_profile_picture(user_id, update_data, profile_picture_file)
 
     update_user_profile(db, user_id, update_data)
-
-    # Refresh current_user_data in current request context (e.g., g.user)
     if current_user_data is not None and hasattr(current_user_data, "update"):
         current_user_data.update(update_data)
