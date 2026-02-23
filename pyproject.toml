@@ -1,6 +1,6 @@
 [project]
 name = "pickaladder"
-version = "0.9.0"
+version = "0.10.0"
 description = "A pickleball ladder application"
 dependencies = [
     "Flask==3.1.3",
