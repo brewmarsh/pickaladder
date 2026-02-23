@@ -3,7 +3,7 @@ name = "pickaladder"
 version = "0.9.0"
 description = "A pickleball ladder application"
 dependencies = [
-    "Flask==3.1.2",
+    "Flask==3.1.3",
     "gunicorn==25.0.3",
     "Flask-Mail==0.10.0",
     "Pillow==12.1.1",
