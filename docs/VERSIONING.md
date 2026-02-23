@@ -5,7 +5,7 @@ This document explains how version tags in GitHub are synchronized with the vers
 ## Overview
 
 The Pick-A-Ladder application uses a synchronized versioning system where:
-- **GitHub release tags** (e.g., `v0.9.0`) trigger deployments
+- **GitHub release tags** (e.g., `v0.10.0`) trigger deployments
 - **VERSION file** in the repository root stores the current version
 - **App footer** displays the version from the VERSION file or environment variable
 
@@ -32,11 +32,11 @@ To create a new release and synchronize the version:
 
 #### Step 1: Create and Push a Tag
 ```bash
-# Create a new version tag (e.g., v0.9.0)
-git tag v0.9.0
+# Create a new version tag (e.g., v0.10.0)
+git tag v0.10.0
 
 # Push the tag to GitHub
-git push origin v0.9.0
+git push origin v0.10.0
 ```
 
 #### Step 2: Automatic Synchronization
@@ -56,19 +56,19 @@ When you push a tag matching the pattern `v[0-9]+.[0-9]+.[0-9]+`, two workflows 
 
 The system supports two tag formats:
 
-- **Production releases**: `v0.9.0`, `v1.0.0`, `v1.2.3`
+- **Production releases**: `v0.10.0`, `v1.0.0`, `v1.2.3`
   - Pattern: `v[MAJOR].[MINOR].[PATCH]`
 
-- **Beta releases**: `v0.9.0-beta.1`, `v1.0.0-beta.2`
+- **Beta releases**: `v0.10.0-beta.1`, `v1.0.0-beta.2`
   - Pattern: `v[MAJOR].[MINOR].[PATCH]-beta.[INCREMENT]`
 
 ### 4. Current Version
 
-The current version is: **0.9.0**
+The current version is: **0.10.0**
 
 This is stored in:
 - `VERSION` file in the repository root
-- Displayed in the app footer as `v0.9.0`
+- Displayed in the app footer as `v0.10.0`
 
 ## Workflows
 
@@ -95,16 +95,16 @@ This is stored in:
 
 ## Examples
 
-### Creating Version 0.9.0
+### Creating Version 0.10.0
 ```bash
-git tag v0.9.0
-git push origin v0.9.0
+git tag v0.10.0
+git push origin v0.10.0
 ```
 
 Result:
-- VERSION file updated to `0.9.0`
-- App footer displays `v0.9.0`
-- Production deployment with version `v0.9.0`
+- VERSION file updated to `0.10.0`
+- App footer displays `v0.10.0`
+- Production deployment with version `v0.10.0`
 
 ### Creating Version 1.0.0-beta.1
 ```bash
