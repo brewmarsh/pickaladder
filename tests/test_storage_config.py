@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import unittest
 from unittest.mock import MagicMock, patch
-import os
 
 from pickaladder import create_app
+
 
 class TestStorageConfig(unittest.TestCase):
     """Test case for storage configuration."""
@@ -30,15 +31,21 @@ class TestStorageConfig(unittest.TestCase):
         if "FIREBASE_STORAGE_BUCKET" in os.environ:
             del os.environ["FIREBASE_STORAGE_BUCKET"]
 
-        app = create_app({"TESTING": False}) # TESTING=False to trigger _initialize_firebase
+        app = create_app(
+            {"TESTING": False}
+        )  # TESTING=False to trigger _initialize_firebase
 
         # Verify initialize_app was called with the expected storage bucket
         self.mock_initialize_app.assert_called_once()
         args, kwargs = self.mock_initialize_app.call_args
         options = args[1] if len(args) > 1 else kwargs.get("options", {})
 
-        self.assertEqual(options.get("storageBucket"), "pickaladder.firebasestorage.app")
-        self.assertEqual(app.config.get("FIREBASE_STORAGE_BUCKET"), "pickaladder.firebasestorage.app")
+        self.assertEqual(
+            options.get("storageBucket"), "pickaladder.firebasestorage.app"
+        )
+        self.assertEqual(
+            app.config.get("FIREBASE_STORAGE_BUCKET"), "pickaladder.firebasestorage.app"
+        )
 
     def test_override_storage_bucket_via_env(self) -> None:
         """Test that the storage bucket can be overridden via environment variable."""
@@ -51,7 +58,10 @@ class TestStorageConfig(unittest.TestCase):
         options = args[1] if len(args) > 1 else kwargs.get("options", {})
 
         self.assertEqual(options.get("storageBucket"), "custom-bucket.appspot.com")
-        self.assertEqual(app.config.get("FIREBASE_STORAGE_BUCKET"), "custom-bucket.appspot.com")
+        self.assertEqual(
+            app.config.get("FIREBASE_STORAGE_BUCKET"), "custom-bucket.appspot.com"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

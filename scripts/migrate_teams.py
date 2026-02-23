@@ -60,7 +60,8 @@ def initialize_firebase() -> bool:
     if not firebase_admin._apps:
         # Use the standard storage bucket for consistency
         storage_bucket = (
-            os.environ.get("FIREBASE_STORAGE_BUCKET") or "pickaladder.firebasestorage.app"
+            os.environ.get("FIREBASE_STORAGE_BUCKET")
+            or "pickaladder.firebasestorage.app"
         )
         firebase_admin.initialize_app(cred, {"storageBucket": storage_bucket})
     return True
