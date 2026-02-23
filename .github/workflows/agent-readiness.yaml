@@ -52,7 +52,7 @@ jobs:
           uv run --no-project agent-score score --report readiness_report.md .
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4  # Fixed: v4 is the current version
+        uses: actions/upload-artifact@v6  # Fixed: v4 is the current version
         with:
           name: agent-readiness-report
           path: readiness_report.md
