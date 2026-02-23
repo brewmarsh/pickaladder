@@ -60,8 +60,33 @@ class BestBudsTestCase(unittest.TestCase):
     def test_best_buds_identification(
         self, mock_leaderboard_service: MagicMock
     ) -> None:
-        # 1. Setup the mocks to prevent the "Default Firebase App" crash
-        mock_data = [
+        # Arrange
+        group_id = "group1"
+        self._setup_best_buds_data(mock_leaderboard_service, group_id)
+
+        # Act
+        response = self.client.get(f"/group/{group_id}")
+
+        # Assert
+        self._verify_best_buds_response(response)
+
+    def _setup_best_buds_data(
+        self, mock_leaderboard_service: MagicMock, group_id: str
+    ) -> None:
+        self._mock_leaderboard(mock_leaderboard_service)
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = "user1"
+
+        mock_db = self.mock_firestore_service.client.return_value
+        user_docs = self._setup_users(mock_db)
+        self._setup_group(mock_db, group_id, user_docs)
+        team_docs = self._setup_teams(mock_db, user_docs)
+        self._setup_get_all(mock_db, user_docs, team_docs)
+        self._setup_matches(mock_db, group_id)
+        self._setup_friends(mock_db, "user1")
+
+    def _mock_leaderboard(self, mock_service: MagicMock) -> None:
+        mock_service.return_value = [
             {
                 "id": "user1",
                 "name": "Alice",
@@ -79,36 +104,27 @@ class BestBudsTestCase(unittest.TestCase):
                 "form": ["W", "L", "W", "W", "L"],
             },
         ]
-        mock_leaderboard_service.return_value = mock_data
 
-        # 2. Proceed with the logic test from 'main'
-        # Set session
-        with self.client.session_transaction() as sess:
-            sess["user_id"] = "user1"
+    def _setup_users(self, mock_db: MagicMock) -> dict[str, MagicMock]:
+        user_doc1 = MagicMock(exists=True, id="user1")
+        user_doc1.to_dict.return_value = {"username": "User1", "name": "User 1"}
+        mock_db.collection("users").document("user1").get.return_value = user_doc1
 
-        mock_db = self.mock_firestore_service.client.return_value
+        user_doc2 = MagicMock(exists=True, id="user2")
+        user_doc2.to_dict.return_value = {"username": "User2", "name": "User 2"}
 
-        # Mock g.user load
-        user1_data = {"username": "User1", "name": "User 1"}
-        mock_user1_doc = MagicMock()
-        mock_user1_doc.exists = True
-        mock_user1_doc.to_dict.return_value = user1_data
-        mock_db.collection("users").document("user1").get.return_value = mock_user1_doc
+        return {"user1": user_doc1, "user2": user_doc2}
 
-        group_id = "group1"
-
-        # Mock group
+    def _setup_group(
+        self, mock_db: MagicMock, group_id: str, user_docs: dict[str, MagicMock]
+    ) -> None:
         mock_group_ref = mock_db.collection("groups").document(group_id)
-        mock_group_doc = MagicMock()
-        mock_group_doc.exists = True
+        mock_group_doc = MagicMock(exists=True)
 
-        user_ref1 = MagicMock()
-        user_ref1.id = "user1"
-        user_ref1.path = "users/user1"
-
-        user_ref2 = MagicMock()
-        user_ref2.id = "user2"
-        user_ref2.path = "users/user2"
+        user_ref1 = MagicMock(id="user1", path="users/user1")
+        user_ref1.get.return_value = user_docs["user1"]
+        user_ref2 = MagicMock(id="user2", path="users/user2")
+        user_ref2.get.return_value = user_docs["user2"]
 
         mock_group_doc.to_dict.return_value = {
             "name": "Test Group",
@@ -117,26 +133,14 @@ class BestBudsTestCase(unittest.TestCase):
         }
         mock_group_ref.get.return_value = mock_group_doc
 
-        # Mock members
-        user_doc1 = MagicMock()
-        user_doc1.exists = True
-        user_doc1.id = "user1"
-        user_doc1.to_dict.return_value = {"username": "User1", "name": "User 1"}
-        user_ref1.get.return_value = user_doc1
+    def _setup_teams(
+        self, mock_db: MagicMock, user_docs: dict[str, MagicMock]
+    ) -> dict[str, MagicMock]:
+        user_ref1 = MagicMock(id="user1")
+        user_ref2 = MagicMock(id="user2")
+        other_ref = MockDocumentReference("other")
 
-        user_doc2 = MagicMock()
-        user_doc2.exists = True
-        user_doc2.id = "user2"
-        user_doc2.to_dict.return_value = {"username": "User2", "name": "User 2"}
-        user_ref2.get.return_value = user_doc2
-
-        # Mock teams query
-        mock_teams_collection = mock_db.collection("teams")
-        mock_query = mock_teams_collection.where.return_value
-
-        team1_doc = MagicMock()
-        team1_doc.id = "team1"
-        team1_doc.exists = True
+        team1_doc = MagicMock(id="team1", exists=True)
         team1_doc.to_dict.return_value = {
             "member_ids": ["user1", "user2"],
             "members": [user_ref1, user_ref2],
@@ -144,72 +148,62 @@ class BestBudsTestCase(unittest.TestCase):
             "name": "User 1 & User 2",
         }
 
-        team2_doc = MagicMock()
-        team2_doc.id = "team2"
-        team2_doc.exists = True
+        team2_doc = MagicMock(id="team2", exists=True)
         team2_doc.to_dict.return_value = {
             "member_ids": ["user1", "other"],
-            "members": [user_ref1, MockDocumentReference("other")],
+            "members": [user_ref1, other_ref],
             "stats": {"wins": 20, "losses": 1},
             "name": "User 1 & Other",
         }
 
-        mock_query.stream.return_value = [team1_doc, team2_doc]
+        mock_db.collection("teams").where.return_value.stream.return_value = [
+            team1_doc,
+            team2_doc,
+        ]
+        return {"team1": team1_doc, "team2": team2_doc}
 
-        # Mock get_all for both teams and team members enrichment
+    def _setup_get_all(
+        self,
+        mock_db: MagicMock,
+        user_docs: dict[str, MagicMock],
+        team_docs: dict[str, MagicMock],
+    ) -> None:
         def mock_get_all(refs: list[Any]) -> list[Any]:
-            results = []
-            for ref in refs:
-                if ref.id == "team1":
-                    results.append(team1_doc)
-                elif ref.id == "team2":
-                    results.append(team2_doc)
-                elif ref.id == "user1":
-                    results.append(user_doc1)
-                elif ref.id == "user2":
-                    results.append(user_doc2)
-            return results
+            all_docs = {**user_docs, **team_docs}
+            return [all_docs.get(ref.id) for ref in refs if ref.id in all_docs]
 
         mock_db.get_all.side_effect = mock_get_all
 
-        # Mock matches query - Now required for best buds calculation
+    def _setup_matches(self, mock_db: MagicMock, group_id: str) -> None:
         match_doc = MagicMock()
-        # Mocking the team references
-        team1_ref = MockDocumentReference("team1")
-        team2_ref = MockDocumentReference("team2")
-
         match_doc.to_dict.return_value = {
             "matchType": "doubles",
-            "team1Ref": team1_ref,
-            "team2Ref": team2_ref,
+            "team1Ref": MockDocumentReference("team1"),
+            "team2Ref": MockDocumentReference("team2"),
             "player1Score": 11,
             "player2Score": 5,
             "groupId": group_id,
             "matchDate": datetime.now(),
         }
         (
-            mock_db.collection(
-                "matches"
-            ).where.return_value.order_by.return_value.limit.return_value.stream.return_value
+            mock_db.collection("matches")
+            .where.return_value.order_by.return_value.limit.return_value.stream.return_value
         ) = [match_doc] * 10
 
-        # Mock friends query for the invite form
+    def _setup_friends(self, mock_db: MagicMock, user_id: str) -> None:
         (
             mock_db.collection("users")
-            .document("user1")
+            .document(user_id)
             .collection("friends")
             .where.return_value.stream.return_value
         ) = []
 
-        response = self.client.get(f"/group/{group_id}")
-
+    def _verify_best_buds_response(self, response: Any) -> None:
         self.assertEqual(response.status_code, 200)
-        # team1 should be best buds because team2 has a member not in group
         self.assertIn(b"Best Buds", response.data)
         self.assertIn(b"User 1", response.data)
         self.assertIn(b"User 2", response.data)
         self.assertIn(b"10 Wins Together!", response.data)
-        # Team 2 should NOT be best buds even though it has more wins (20)
         self.assertNotIn(b"20 Wins Together!", response.data)
 
 
