@@ -298,9 +298,7 @@ def _extract_uid_from_participant(participant: dict[str, Any]) -> str | None:
 def _get_accepted_uids(data: dict[str, Any]) -> list[str]:
     """Extract list of UIDs for accepted participants."""
     parts = cast(list[dict[str, Any]], data.get("participants", []))
-    uids = [
-        uid for p in parts if (uid := _extract_uid_from_participant(p)) is not None
-    ]
+    uids = [uid for p in parts if (uid := _extract_uid_from_participant(p)) is not None]
     return uids
 
 

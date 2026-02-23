@@ -292,9 +292,7 @@ def _generate_single_random_match(db: Any, users: list[Any]) -> bool:
         return False
 
 
-def _batch_generate_random_matches(
-    db: Any, users: list[Any], count: int = 10
-) -> int:
+def _batch_generate_random_matches(db: Any, users: list[Any], count: int = 10) -> int:
     """Generate multiple random matches and return success count."""
     return sum(1 for _ in range(count) if _generate_single_random_match(db, users))
 
