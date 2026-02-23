@@ -156,21 +156,34 @@ class TournamentBlastTestCase(unittest.TestCase):
 
     def test_migrate_ghost_references_tournaments(self) -> None:
         """Test that _migrate_ghost_references correctly updates tournaments."""
+        # Arrange
+        mocks = self._setup_migration_mocks()
+        mock_db, mock_batch, ghost_ref, real_user_ref, mock_tournament_doc = mocks
+
+        # Act
+        UserService._migrate_ghost_references(
+            mock_db, mock_batch, ghost_ref, real_user_ref
+        )
+
+        # Assert
+        self._verify_tournament_migration_success(
+            mock_batch, mock_tournament_doc, real_user_ref
+        )
+
+    def _setup_migration_mocks(
+        self,
+    ) -> tuple[MagicMock, MagicMock, MagicMock, MagicMock, MagicMock]:
         mock_db = MagicMock()
         mock_batch = MagicMock()
-        ghost_ref = MagicMock()
-        ghost_ref.id = "ghost_id"
-        real_user_ref = MagicMock()
-        real_user_ref.id = "real_id"
+        ghost_ref = MagicMock(id="ghost_id")
+        real_user_ref = MagicMock(id="real_id")
 
         # Mock matches query (singles)
         mock_db.collection.return_value.where.return_value.stream.return_value = []
 
         # Mock tournament query
         tournament_id = "tourney_123"
-        mock_tournament_doc = MagicMock()
-        mock_tournament_doc.id = tournament_id
-        mock_tournament_doc.reference = MagicMock()
+        mock_tournament_doc = MagicMock(id=tournament_id, reference=MagicMock())
         mock_tournament_doc.to_dict.return_value = {
             "participant_ids": ["ghost_id", "other_id"],
             "participants": [
@@ -179,9 +192,6 @@ class TournamentBlastTestCase(unittest.TestCase):
             ],
         }
 
-        # Set up the query chain for tournaments
-        # _migrate_ghost_references calls
-        # db.collection("tournaments").where(...).stream()
         def collection_side_effect(name: str) -> Any:
             mock_coll = MagicMock()
             if name == "tournaments":
@@ -191,19 +201,24 @@ class TournamentBlastTestCase(unittest.TestCase):
             return mock_coll
 
         mock_db.collection.side_effect = collection_side_effect
+        return mock_db, mock_batch, ghost_ref, real_user_ref, mock_tournament_doc
 
-        UserService._migrate_ghost_references(
-            mock_db, mock_batch, ghost_ref, real_user_ref
-        )
-
-        # Verify batch.update was called for the tournament
+    def _verify_tournament_migration_success(
+        self,
+        mock_batch: MagicMock,
+        mock_tournament_doc: MagicMock,
+        real_user_ref: MagicMock,
+    ) -> None:
         mock_batch.update.assert_called()
         # Find the call for the tournament
-        tourney_update_call = None
-        for call in mock_batch.update.call_args_list:
-            if call[0][0] == mock_tournament_doc.reference:
-                tourney_update_call = call
-                break
+        tourney_update_call = next(
+            (
+                call
+                for call in mock_batch.update.call_args_list
+                if call[0][0] == mock_tournament_doc.reference
+            ),
+            None,
+        )
 
         self.assertIsNotNone(tourney_update_call)
         update_data = cast(Any, tourney_update_call)[0][1]
@@ -216,11 +231,10 @@ class TournamentBlastTestCase(unittest.TestCase):
         new_participants = update_data["participants"]
         self.assertEqual(len(new_participants), 2)
         # One should be the real user now
-        found_real = False
-        for p in new_participants:
-            if p.get("userRef") == real_user_ref:
-                found_real = True
-                self.assertEqual(p.get("user_id"), "real_id")
+        found_real = any(
+            p.get("userRef") == real_user_ref and p.get("user_id") == "real_id"
+            for p in new_participants
+        )
         self.assertTrue(found_real)
 
 
