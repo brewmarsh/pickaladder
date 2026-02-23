@@ -98,7 +98,9 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
         self.assertEqual(leaderboard[1]["avg_score"], 11.0)
 
     @patch("pickaladder.group.utils.firestore")
-    def test_leaderboard_includes_avatar_fields(self, mock_firestore: MagicMock) -> None:
+    def test_leaderboard_includes_avatar_fields(
+        self, mock_firestore: MagicMock
+    ) -> None:
         """Test the leaderboard entries include profilePictureUrl and profilePictureThumbnailUrl."""
         mock_db = mock_firestore.client.return_value
 
@@ -120,13 +122,13 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
         mock_group_doc = MagicMock()
         mock_group_doc.exists = True
         mock_group_doc.to_dict.return_value = {"members": [u1_ref]}
-        mock_db.collection("groups").document("group1").get.return_value = mock_group_doc
+        mock_db.collection("groups").document(
+            "group1"
+        ).get.return_value = mock_group_doc
 
         # Mock empty matches and invites
         mock_db.collection.return_value.where.return_value.stream.return_value = []
-        mock_db.collection.return_value.where.return_value.where.return_value.stream.return_value = (
-            []
-        )
+        mock_db.collection.return_value.where.return_value.where.return_value.stream.return_value = []
 
         leaderboard = get_group_leaderboard("group1")
 
