@@ -93,18 +93,8 @@ class MatchStatsCalculator:
         p2_data: dict[str, Any] | None,
     ) -> bool:
         """Check if the match result is an upset based on DUPR ratings."""
-
-        def get_rating(d: Any) -> float:
-            if not d:
-                return 0.0
-            val = d.get("dupr_rating") or d.get("duprRating")
-            try:
-                return float(val) if val is not None else 0.0
-            except (ValueError, TypeError):
-                return 0.0
-
-        p1_rating = get_rating(p1_data)
-        p2_rating = get_rating(p2_data)
+        p1_rating = MatchStatsCalculator._extract_rating(p1_data)
+        p2_rating = MatchStatsCalculator._extract_rating(p2_data)
 
         if p1_rating > 0 and p2_rating > 0:
             if winner == "team1" and (p2_rating - p1_rating) >= UPSET_THRESHOLD:
@@ -112,6 +102,17 @@ class MatchStatsCalculator:
             if winner == "team2" and (p1_rating - p2_rating) >= UPSET_THRESHOLD:
                 return True
         return False
+
+    @staticmethod
+    def _extract_rating(data: dict[str, Any] | None) -> float:
+        """Extract DUPR rating from user data."""
+        if not data:
+            return 0.0
+        val = data.get("dupr_rating") or data.get("duprRating")
+        try:
+            return float(val) if val is not None else 0.0
+        except (ValueError, TypeError):
+            return 0.0
 
 
 class MatchQueryService:
@@ -169,17 +170,25 @@ class MatchQueryService:
         player_refs: set[DocumentReference] = set()
         for match in matches:
             m_data = match.to_dict()
-            if not m_data:
-                continue
-            if m_data.get("matchType") == "doubles":
-                player_refs.update(m_data.get("team1", []))
-                player_refs.update(m_data.get("team2", []))
-            elif "player_1_data" not in m_data or "player_2_data" not in m_data:
-                if p1_ref := m_data.get("player1Ref"):
-                    player_refs.add(p1_ref)
-                if p2_ref := m_data.get("player2Ref"):
-                    player_refs.add(p2_ref)
+            if m_data:
+                player_refs.update(
+                    MatchQueryService._extract_refs_from_match(m_data)
+                )
         return player_refs
+
+    @staticmethod
+    def _extract_refs_from_match(m_data: dict[str, Any]) -> set[DocumentReference]:
+        """Extract player references from a single match data dictionary."""
+        refs: set[DocumentReference] = set()
+        if m_data.get("matchType") == "doubles":
+            refs.update(m_data.get("team1", []))
+            refs.update(m_data.get("team2", []))
+        elif "player_1_data" not in m_data or "player_2_data" not in m_data:
+            if p1_ref := m_data.get("player1Ref"):
+                refs.add(p1_ref)
+            if p2_ref := m_data.get("player2Ref"):
+                refs.add(p2_ref)
+        return refs
 
     @staticmethod
     def _fetch_player_names(
@@ -401,28 +410,29 @@ class MatchQueryService:
 
             s1, s2 = data.get("player1Score", 0), data.get("player2Score", 0)
             if s1 == s2:
-                continue  # Skip draws for pure W/L record
+                continue
 
-            # Determine if user is on team1 side
-            is_team1 = False
-            if data.get("matchType") == "doubles":
-                team1_refs = data.get("team1", [])
-                is_team1 = any(
-                    (r.id if r is not None and hasattr(r, "id") else "") == uid
-                    for r in team1_refs
-                )
-            else:
-                p1_ref = data.get("player1Ref")
-                is_team1 = (
-                    p1_ref.id if p1_ref is not None and hasattr(p1_ref, "id") else ""
-                ) == uid
-
+            is_team1 = MatchQueryService._is_user_on_team1(data, uid)
             if (is_team1 and s1 > s2) or (not is_team1 and s2 > s1):
                 wins += 1
             else:
                 losses += 1
 
         return {"wins": wins, "losses": losses}
+
+    @staticmethod
+    def _is_user_on_team1(data: dict[str, Any], uid: str) -> bool:
+        """Determine if a user is on the Team 1 side of a match."""
+        if data.get("matchType") == "doubles":
+            team1_refs = data.get("team1", [])
+            return any(
+                (r.id if r is not None and hasattr(r, "id") else "") == uid
+                for r in team1_refs
+            )
+        p1_ref = data.get("player1Ref")
+        return (
+            p1_ref.id if p1_ref is not None and hasattr(p1_ref, "id") else ""
+        ) == uid
 
     @staticmethod
     def get_match_summary_context(db: Client, match_id: str) -> dict[str, Any]:

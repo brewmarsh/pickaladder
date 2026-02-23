@@ -83,34 +83,53 @@ class MatchForm(FlaskForm):
             return False
 
         if self.match_type.data == "doubles":
-            has_error = False
-            if not self.partner.data:
-                cast(list[str], self.partner.errors).append(
-                    "Partner is required for doubles."
-                )
-                has_error = True
-            if not self.opponent2.data:
-                cast(list[str], self.opponent2.errors).append(
-                    "Opponent 2 is required for doubles."
-                )
-                has_error = True
+            return self._validate_doubles()
 
-            if has_error:
-                return False
+        return self._validate_singles()
 
-            # Check for duplicate players
-            players = [
-                self.player1.data,
-                self.partner.data,
-                self.player2.data,
-                self.opponent2.data,
-            ]
-            if len(players) != len(set(players)):
-                error_msg = "All players in a doubles match must be unique."
-                cast(list[str], self.player1.errors).append(error_msg)
-                cast(list[str], self.partner.errors).append(error_msg)
-                cast(list[str], self.player2.errors).append(error_msg)
-                cast(list[str], self.opponent2.errors).append(error_msg)
-                return False
+    def _validate_singles(self) -> bool:
+        """Additional validation for singles matches."""
+        # Check for duplicate players in singles
+        if self.player1.data == self.player2.data:
+            error_msg = "You cannot play a match against yourself."
+            cast(list[str], self.player1.errors).append(error_msg)
+            cast(list[str], self.player2.errors).append(error_msg)
+            return False
+        return True
 
+    def _validate_doubles(self) -> bool:
+        """Additional validation for doubles matches."""
+        if not self._check_doubles_fields_present():
+            return False
+
+        return self._check_doubles_players_unique()
+
+    def _check_doubles_fields_present(self) -> bool:
+        """Check that partner and second opponent are provided."""
+        has_error = False
+        if not self.partner.data:
+            cast(list[str], self.partner.errors).append(
+                "Partner is required for doubles."
+            )
+            has_error = True
+        if not self.opponent2.data:
+            cast(list[str], self.opponent2.errors).append(
+                "Opponent 2 is required for doubles."
+            )
+            has_error = True
+        return not has_error
+
+    def _check_doubles_players_unique(self) -> bool:
+        """Ensure all players in a doubles match are distinct."""
+        players = [
+            self.player1.data,
+            self.partner.data,
+            self.player2.data,
+            self.opponent2.data,
+        ]
+        if len(players) != len(set(players)):
+            error_msg = "All players in a doubles match must be unique."
+            for field in [self.player1, self.partner, self.player2, self.opponent2]:
+                cast(list[str], field.errors).append(error_msg)
+            return False
         return True
