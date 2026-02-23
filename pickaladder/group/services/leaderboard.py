@@ -32,6 +32,26 @@ def _initialize_stats(players: list[Any]) -> dict[str, dict[str, Any]]:
     }
 
 
+def _update_player_stats(
+    stats: dict[str, dict[str, Any]],
+    player_id: str,
+    score: int,
+    won: bool,
+    is_draw: bool,
+) -> None:
+    """Update individual player statistics in the stats dictionary."""
+    if player_id not in stats:
+        return
+    s = stats[player_id]
+    s["games"] += 1
+    s["total_score"] += score
+    if won:
+        s["wins"] += 1
+    elif not is_draw:
+        s["losses"] += 1
+    s["match_results"].append("win" if won else "loss")
+
+
 def _process_single_match(stats: dict[str, dict[str, Any]], match: Any) -> None:
     """Update raw stats and records match outcomes for players in a single match."""
     data = match.to_dict()
@@ -41,22 +61,11 @@ def _process_single_match(stats: dict[str, dict[str, Any]], match: Any) -> None:
     p2_wins = p2_score > p1_score
     is_draw = p1_score == p2_score
 
-    def update_player(player_id: str, score: int, won: bool) -> None:
-        if player_id in stats:
-            s = stats[player_id]
-            s["games"] += 1
-            s["total_score"] += score
-            if won:
-                s["wins"] += 1
-            elif not is_draw:
-                s["losses"] += 1
-            s["match_results"].append("win" if won else "loss")
-
     team1_ids, team2_ids = _extract_team_ids(data)
     for uid in team1_ids:
-        update_player(uid, p1_score, p1_wins)
+        _update_player_stats(stats, uid, p1_score, p1_wins, is_draw)
     for uid in team2_ids:
-        update_player(uid, p2_score, p2_wins)
+        _update_player_stats(stats, uid, p2_score, p2_wins, is_draw)
 
 
 def _calculate_derived_stats(stats: dict[str, dict[str, Any]]) -> None:
@@ -157,6 +166,17 @@ def _map_matches_to_users(
     return user_matches_map
 
 
+def _is_match_won(user_id: str, data: dict[str, Any]) -> bool:
+    """Determine if a player won a specific match."""
+    p1_score, p2_score = _get_match_scores(data)
+    team1_ids, team2_ids = _extract_team_ids(data)
+    if user_id in team1_ids:
+        return p1_score > p2_score
+    if user_id in team2_ids:
+        return p2_score > p1_score
+    return False
+
+
 def _calculate_player_winning_streak(
     user_id: str, matches_data: list[dict[str, Any]]
 ) -> int:
@@ -167,14 +187,7 @@ def _calculate_player_winning_streak(
         if p1_score == p2_score:
             break
 
-        team1_ids, team2_ids = _extract_team_ids(data)
-        won = False
-        if user_id in team1_ids:
-            won = p1_score > p2_score
-        elif user_id in team2_ids:
-            won = p2_score > p1_score
-
-        if won:
+        if _is_match_won(user_id, data):
             streak += 1
         else:
             break
@@ -237,19 +250,23 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
     return current_leaderboard
 
 
+def _collect_match_player_refs(data: dict[str, Any], all_player_refs: set) -> None:
+    """Collect player references from a single match data dictionary."""
+    if data.get("matchType", "singles") == "doubles":
+        all_player_refs.update(data.get("team1", []))
+        all_player_refs.update(data.get("team2", []))
+    else:
+        if data.get("player1Ref"):
+            all_player_refs.add(data.get("player1Ref"))
+        if data.get("player2Ref"):
+            all_player_refs.add(data.get("player2Ref"))
+
+
 def _get_involved_player_data(db: Any, matches: list[Any]) -> dict[str, dict[str, Any]]:
     """Get profile data for all players involved in matches."""
-    all_player_refs = set()
+    all_player_refs: set[Any] = set()
     for match in matches:
-        data = match.to_dict()
-        if data.get("matchType", "singles") == "doubles":
-            all_player_refs.update(data.get("team1", []))
-            all_player_refs.update(data.get("team2", []))
-        else:
-            if data.get("player1Ref"):
-                all_player_refs.add(data.get("player1Ref"))
-            if data.get("player2Ref"):
-                all_player_refs.add(data.get("player2Ref"))
+        _collect_match_player_refs(match.to_dict(), all_player_refs)
 
     player_docs = db.get_all(list(all_player_refs))
     players_data = {}
@@ -261,6 +278,15 @@ def _get_involved_player_data(db: Any, matches: list[Any]) -> dict[str, dict[str
                 "profilePictureUrl": data.get("profilePictureUrl"),
             }
     return players_data
+
+
+def _record_trend_averages(
+    player_stats: dict[str, Any], datasets: dict[str, Any]
+) -> None:
+    """Calculate and record current average scores for all players in trend datasets."""
+    for pid, stats in player_stats.items():
+        avg = stats["total_score"] / stats["games"] if stats["games"] > 0 else None
+        datasets[pid]["data"].append(avg)
 
 
 def _calculate_trend_points(
@@ -285,29 +311,20 @@ def _calculate_trend_points(
         match_date = data.get("matchDate").strftime("%Y-%m-%d")
 
         while date_idx < len(unique_dates) and unique_dates[date_idx] < match_date:
-            for pid in player_stats:
-                avg = (
-                    player_stats[pid]["total_score"] / player_stats[pid]["games"]
-                    if player_stats[pid]["games"] > 0
-                    else None
-                )
-                datasets[pid]["data"].append(avg)
+            _record_trend_averages(player_stats, datasets)
             date_idx += 1
 
         _update_trend_player_stats(player_stats, data)
 
-        if (
-            i == len(matches) - 1
-            or matches[i + 1].to_dict().get("matchDate").strftime("%Y-%m-%d")
+        is_last_match = i == len(matches) - 1
+        is_date_change = (
+            not is_last_match
+            and matches[i + 1].to_dict().get("matchDate").strftime("%Y-%m-%d")
             != match_date
-        ):
-            for pid in player_stats:
-                avg = (
-                    player_stats[pid]["total_score"] / player_stats[pid]["games"]
-                    if player_stats[pid]["games"] > 0
-                    else None
-                )
-                datasets[pid]["data"].append(avg)
+        )
+
+        if is_last_match or is_date_change:
+            _record_trend_averages(player_stats, datasets)
             date_idx += 1
 
     return datasets

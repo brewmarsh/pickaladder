@@ -10,6 +10,26 @@ from google.cloud.firestore import FieldFilter
 from pickaladder.group.services.match_parser import _extract_team_ids, _get_match_scores
 
 
+def _check_partnership_win(
+    data: dict[str, Any], playerA_id: str, playerB_id: str, wins: int, losses: int
+) -> tuple[int, int]:
+    """Determine if a partnership won or lost a specific match."""
+    team1_ids, team2_ids = _extract_team_ids(data)
+    p1_score, p2_score = _get_match_scores(data)
+
+    if {playerA_id, playerB_id}.issubset(team1_ids):
+        if p1_score > p2_score:
+            wins += 1
+        elif p2_score > p1_score:
+            losses += 1
+    elif {playerA_id, playerB_id}.issubset(team2_ids):
+        if p2_score > p1_score:
+            wins += 1
+        elif p1_score > p2_score:
+            losses += 1
+    return wins, losses
+
+
 def get_partnership_stats(
     playerA_id: str, playerB_id: str, all_matches_in_group: list[Any]
 ) -> dict[str, int]:
@@ -21,20 +41,9 @@ def get_partnership_stats(
         data = match_doc.to_dict()
         if data.get("matchType") != "doubles":
             continue
-
-        team1_ids, team2_ids = _extract_team_ids(data)
-        p1_score, p2_score = _get_match_scores(data)
-
-        if {playerA_id, playerB_id}.issubset(team1_ids):
-            if p1_score > p2_score:
-                wins += 1
-            elif p2_score > p1_score:
-                losses += 1
-        elif {playerA_id, playerB_id}.issubset(team2_ids):
-            if p2_score > p1_score:
-                wins += 1
-            elif p1_score > p2_score:
-                losses += 1
+        wins, losses = _check_partnership_win(
+            data, playerA_id, playerB_id, wins, losses
+        )
 
     return {"wins": wins, "losses": losses}
 
@@ -116,6 +125,32 @@ def get_head_to_head_stats(
     }
 
 
+def _update_all_time_streak(
+    data: dict[str, Any], user_id: str, current: int, longest: int
+) -> tuple[int, int]:
+    """Update current and longest winning streaks based on a single match."""
+    p1_score, p2_score = _get_match_scores(data)
+    team1_ids, team2_ids = _extract_team_ids(data)
+
+    user_participated = False
+    user_won = False
+
+    if user_id in team1_ids:
+        user_participated = True
+        user_won = p1_score > p2_score
+    elif user_id in team2_ids:
+        user_participated = True
+        user_won = p2_score > p1_score
+
+    if user_participated:
+        if user_won:
+            current += 1
+        else:
+            longest = max(longest, current)
+            current = 0
+    return current, longest
+
+
 def _calculate_all_time_streaks(matches: list[Any], user_ref: Any) -> tuple[int, int]:
     """Calculate current and longest winning streaks for a user."""
     from datetime import datetime
@@ -125,25 +160,7 @@ def _calculate_all_time_streaks(matches: list[Any], user_ref: Any) -> tuple[int,
 
     for match in matches:
         data = match.to_dict()
-        p1_score, p2_score = _get_match_scores(data)
-        team1_ids, team2_ids = _extract_team_ids(data)
-
-        user_participated = False
-        user_won = False
-
-        if user_ref.id in team1_ids:
-            user_participated = True
-            user_won = p1_score > p2_score
-        elif user_ref.id in team2_ids:
-            user_participated = True
-            user_won = p2_score > p1_score
-
-        if user_participated:
-            if user_won:
-                current += 1
-            else:
-                longest = max(longest, current)
-                current = 0
+        current, longest = _update_all_time_streak(data, user_ref.id, current, longest)
 
     return current, max(longest, current)
 

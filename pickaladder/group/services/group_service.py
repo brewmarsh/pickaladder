@@ -233,6 +233,26 @@ class GroupService:
             return None
 
     @staticmethod
+    def _fetch_group_members_data(member_refs: list[Any]) -> list[dict[str, Any]]:
+        """Fetch profile data for a list of member references."""
+        members_snapshots = [ref.get() for ref in member_refs]
+        members = []
+        for snapshot in members_snapshots:
+            if snapshot.exists:
+                data = snapshot.to_dict()
+                data["id"] = snapshot.id
+                members.append(data)
+        return members
+
+    @staticmethod
+    def _fetch_group_owner_data(owner_ref: Any | None) -> dict[str, Any] | None:
+        """Fetch profile data for the group owner."""
+        if not owner_ref:
+            return None
+        owner_doc = owner_ref.get()
+        return owner_doc.to_dict() if owner_doc.exists else None
+
+    @staticmethod
     def get_group_details(
         db: Any,
         group_id: str,
@@ -255,27 +275,15 @@ class GroupService:
         if player_a_id and player_b_id:
             rivalry_stats = get_h2h_stats(group_id, player_a_id, player_b_id)
 
-        # Fetch members' data
+        # Fetch members and owner data
         member_refs = group_data.get("members", [])
         member_ids = {ref.id for ref in member_refs}
-        members_snapshots = [ref.get() for ref in member_refs]
-        members = []
-        for snapshot in members_snapshots:
-            if snapshot.exists:
-                data = snapshot.to_dict()
-                data["id"] = snapshot.id
-                members.append(data)
+        members = GroupService._fetch_group_members_data(member_refs)
+        owner = GroupService._fetch_group_owner_data(group_data.get("ownerRef"))
 
-        # Fetch owner's data
-        owner = None
-        owner_ref = group_data.get("ownerRef")
-        if owner_ref:
-            owner_doc = owner_ref.get()
-            if owner_doc.exists:
-                owner = owner_doc.to_dict()
-
+        # Permissions
         is_member = user_id in member_ids
-        is_owner = owner_ref and owner_ref.id == user_id
+        is_owner = (ref := group_data.get("ownerRef")) is not None and ref.id == user_id
         is_admin = GroupService.is_group_admin(group_data, user_id)
 
         # Get eligible friends for invitation
@@ -370,12 +378,10 @@ class GroupService:
         return recent_matches_docs, recent_matches
 
     @staticmethod
-    def _collect_refs_from_matches(
-        matches_docs: list[Any],
-    ) -> tuple[list[Any], list[Any]]:
-        """Extract team and player references from match documents."""
-        team_refs = []
-        player_refs = []
+    def _extract_single_match_refs(
+        data: dict[str, Any], team_refs: list[Any], player_refs: list[Any]
+    ) -> None:
+        """Extract team and player references from a single match data dictionary."""
         player_keys = [
             "player1Ref",
             "player2Ref",
@@ -388,20 +394,28 @@ class GroupService:
             "opponent1",
             "opponent2",
         ]
+        for field in ["team1Ref", "team2Ref"]:
+            if (ref := data.get(field)) and isinstance(
+                ref, firestore.DocumentReference
+            ):
+                team_refs.append(ref)
+
+        for key in player_keys:
+            if (ref := data.get(key)) and isinstance(ref, firestore.DocumentReference):
+                player_refs.append(ref)
+
+    @staticmethod
+    def _collect_refs_from_matches(
+        matches_docs: list[Any],
+    ) -> tuple[list[Any], list[Any]]:
+        """Extract team and player references from match documents."""
+        team_refs: list[Any] = []
+        player_refs: list[Any] = []
 
         for doc in matches_docs:
-            data = doc.to_dict()
-            for field in ["team1Ref", "team2Ref"]:
-                if (ref := data.get(field)) and isinstance(
-                    ref, firestore.DocumentReference
-                ):
-                    team_refs.append(ref)
-
-            for key in player_keys:
-                if (ref := data.get(key)) and isinstance(
-                    ref, firestore.DocumentReference
-                ):
-                    player_refs.append(ref)
+            GroupService._extract_single_match_refs(
+                doc.to_dict(), team_refs, player_refs
+            )
 
         return team_refs, player_refs
 
@@ -457,24 +471,29 @@ class GroupService:
         return match_data
 
     @staticmethod
+    def _check_upset_condition(match_data: dict[str, Any]) -> None:
+        """Identify if a single match is a 'giant slayer' upset."""
+        winner_player = None
+        loser_player = None
+        if match_data.get("winner") == "team1":
+            winner_player = match_data.get("player1")
+            loser_player = match_data.get("player2")
+        elif match_data.get("winner") == "team2":
+            winner_player = match_data.get("player2")
+            loser_player = match_data.get("player1")
+
+        if winner_player and loser_player:
+            winner_rating = float(winner_player.get("dupr_rating") or 0.0)
+            loser_rating = float(loser_player.get("dupr_rating") or 0.0)
+            if loser_rating > 0 and winner_rating > 0:
+                if (loser_rating - winner_rating) >= UPSET_THRESHOLD:
+                    match_data["is_upset"] = True
+
+    @staticmethod
     def _calculate_giant_slayer_upsets(recent_matches: list[dict[str, Any]]) -> None:
         """Identify 'giant slayer' upsets based on DUPR rating gaps."""
         for match_data in recent_matches:
-            winner_player = None
-            loser_player = None
-            if match_data.get("winner") == "team1":
-                winner_player = match_data.get("player1")
-                loser_player = match_data.get("player2")
-            elif match_data.get("winner") == "team2":
-                winner_player = match_data.get("player2")
-                loser_player = match_data.get("player1")
-
-            if winner_player and loser_player:
-                winner_rating = float(winner_player.get("dupr_rating") or 0.0)
-                loser_rating = float(loser_player.get("dupr_rating") or 0.0)
-                if loser_rating > 0 and winner_rating > 0:
-                    if (loser_rating - winner_rating) >= UPSET_THRESHOLD:
-                        match_data["is_upset"] = True
+            GroupService._check_upset_condition(match_data)
 
     @staticmethod
     def _fetch_group_teams(
@@ -519,33 +538,37 @@ class GroupService:
         return team_leaderboard, best_buds
 
     @staticmethod
+    def _process_team_match_outcome(
+        data: dict[str, Any], stats: dict[str, Any]
+    ) -> None:
+        """Update wins/losses for teams based on a single match outcome."""
+        t1_id, t2_id = _resolve_team_document_ids(data)
+        if not t1_id or not t2_id:
+            return
+
+        for tid in [t1_id, t2_id]:
+            if tid not in stats:
+                stats[tid] = {"wins": 0, "losses": 0, "games": 0}
+
+        p1_score, p2_score = _get_match_scores(data)
+        stats[t1_id]["games"] += 1
+        stats[t2_id]["games"] += 1
+
+        if p1_score > p2_score:
+            stats[t1_id]["wins"] += 1
+            stats[t2_id]["losses"] += 1
+        elif p2_score > p1_score:
+            stats[t2_id]["wins"] += 1
+            stats[t1_id]["losses"] += 1
+
+    @staticmethod
     def _calculate_team_stats(recent_matches_docs: list[Any]) -> dict[str, Any]:
         """Aggregate wins/losses per team from match history."""
-        stats = {}
+        stats: dict[str, Any] = {}
         for doc in recent_matches_docs:
             data = doc.to_dict()
-            if data.get("matchType") != "doubles":
-                continue
-
-            t1_id, t2_id = _resolve_team_document_ids(data)
-            if not t1_id or not t2_id:
-                continue
-
-            for tid in [t1_id, t2_id]:
-                if tid not in stats:
-                    stats[tid] = {"wins": 0, "losses": 0, "games": 0}
-
-            p1_score, p2_score = _get_match_scores(data)
-
-            stats[t1_id]["games"] += 1
-            stats[t2_id]["games"] += 1
-
-            if p1_score > p2_score:
-                stats[t1_id]["wins"] += 1
-                stats[t2_id]["losses"] += 1
-            elif p2_score > p1_score:
-                stats[t2_id]["wins"] += 1
-                stats[t1_id]["losses"] += 1
+            if data.get("matchType") == "doubles":
+                GroupService._process_team_match_outcome(data, stats)
         return stats
 
     @staticmethod
@@ -563,39 +586,42 @@ class GroupService:
         return None
 
     @staticmethod
+    def _enrich_invite_with_user_data(
+        invite: dict[str, Any], user_docs: dict[str, Any]
+    ) -> None:
+        """Enrich a single invite dictionary with user profile information."""
+        user_data = user_docs.get(invite.get("email", ""))
+        if user_data:
+            invite["username"] = user_data.get("username", invite.get("name"))
+            invite["profilePictureUrl"] = user_data.get("profilePictureUrl")
+
+    @staticmethod
     def _get_pending_invites(db: Any, group_id: str) -> list[dict[str, Any]]:
         """Fetch pending invites for a group."""
-        pending_members = []
         invites_ref = db.collection("group_invites")
         query = invites_ref.where(
             filter=firestore.FieldFilter("group_id", "==", group_id)
         ).where(filter=firestore.FieldFilter("used", "==", False))
 
-        pending_invites_docs = list(query.stream())
-        for doc in pending_invites_docs:
+        pending_members = []
+        for doc in query.stream():
             data = doc.to_dict()
             data["token"] = doc.id
             pending_members.append(data)
 
-        invite_emails = [
-            invite.get("email") for invite in pending_members if invite.get("email")
-        ]
+        invite_emails = [i.get("email") for i in pending_members if i.get("email")]
         if invite_emails:
             user_docs = {}
             for i in range(0, len(invite_emails), 30):
                 chunk = invite_emails[i : i + 30]
-                users_ref = db.collection("users")
-                user_query = users_ref.where(
+                user_query = db.collection("users").where(
                     filter=firestore.FieldFilter("email", "in", chunk)
                 )
                 for doc in user_query.stream():
                     user_docs[doc.to_dict()["email"]] = doc.to_dict()
 
             for invite in pending_members:
-                user_data = user_docs.get(invite.get("email"))
-                if user_data:
-                    invite["username"] = user_data.get("username", invite.get("name"))
-                    invite["profilePictureUrl"] = user_data.get("profilePictureUrl")
+                GroupService._enrich_invite_with_user_data(invite, user_docs)
 
         pending_members.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
         return pending_members
