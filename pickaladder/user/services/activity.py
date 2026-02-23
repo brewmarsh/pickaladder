@@ -9,6 +9,110 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
 
+def _is_user_participant_with_status(
+    participants: list[dict[str, Any]], user_id: str, status: str
+) -> bool:
+    """Check if a user is in the participants list with a specific status."""
+    for p in participants:
+        if not p:
+            continue
+        p_uid = p.get("userRef").id if p.get("userRef") else p.get("user_id")
+        if p_uid == user_id and p.get("status") == status:
+            return True
+    return False
+
+
+def _format_date_display(data: dict[str, Any]) -> None:
+    """Format date or start_date for display in a dictionary."""
+    raw_date = data.get("start_date") or data.get("date")
+    if raw_date is not None:
+        if hasattr(raw_date, "to_datetime"):
+            data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
+        elif isinstance(raw_date, datetime.datetime):
+            data["date_display"] = raw_date.strftime("%b %d, %Y")
+
+
+def _get_tournament_winner(db: Client, tournament_id: str, match_type: str) -> str:
+    """Fetch the winner name for a tournament."""
+    from pickaladder.tournament.utils import get_tournament_standings
+
+    standings = get_tournament_standings(db, tournament_id, match_type)
+    return standings[0]["name"] if standings else "TBD"
+
+
+def _fetch_owners_data(
+    db: Client, public_group_docs: list[Any]
+) -> dict[str, dict[str, Any]]:
+    """Fetch sanitized data for all unique owners in a list of group documents."""
+    from .core import _sanitize_user_data
+
+    owner_refs = []
+    for doc in public_group_docs:
+        data = doc.to_dict()
+        if data and (ref := data.get("ownerRef")):
+            owner_refs.append(ref)
+    unique_owner_refs = list({ref for ref in owner_refs if ref})
+
+    owners_data = {}
+    if unique_owner_refs:
+        owner_docs = db.get_all(unique_owner_refs)
+        for doc in owner_docs:
+            if doc.exists:
+                data = doc.to_dict() or {}
+                data["id"] = doc.id
+                owners_data[doc.id] = _sanitize_user_data(data)
+    return owners_data
+
+
+def _enrich_group_with_owner(
+    data: dict[str, Any], doc_id: str, owners_data: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
+    """Enrich group data with owner information."""
+    guest_user = {"username": "Guest", "id": "unknown"}
+    data["id"] = doc_id
+    owner_ref = data.get("ownerRef")
+    if owner_ref and owner_ref.id in owners_data:
+        data["owner"] = owners_data[owner_ref.id]
+    else:
+        data["owner"] = guest_user
+    return data
+
+
+def _calculate_user_ranking(
+    user_id: str,
+    leaderboard: list[dict[str, Any]],
+    group_id: str,
+    group_data: dict[str, Any],
+) -> dict[str, Any]:
+    """Calculate user ranking details from a leaderboard."""
+    for i, player in enumerate(leaderboard):
+        if player["id"] == user_id:
+            rank = i + 1
+            user_ranking_data = {
+                "group_id": group_id,
+                "group_name": group_data.get("name", "N/A"),
+                "group_image": group_data.get("profilePictureUrl"),
+                "rank": rank,
+                "points": player.get("avg_score", 0),
+                "form": player.get("form", []),
+            }
+            if i > 0:
+                player_above = leaderboard[i - 1]
+                user_ranking_data["player_above"] = player_above.get("name")
+                user_ranking_data["points_to_overtake"] = player_above.get(
+                    "avg_score", 0
+                ) - player.get("avg_score", 0)
+            return user_ranking_data
+
+    return {
+        "group_id": group_id,
+        "group_name": group_data.get("name", "N/A"),
+        "rank": "N/A",
+        "points": 0,
+        "form": [],
+    }
+
+
 def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending tournament invitations for a user."""
     if not user_id:
@@ -25,16 +129,11 @@ def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, A
     pending_invites = []
     for doc in tournaments_query:
         data = doc.to_dict()
-        if data:
-            participants = data.get("participants") or []
-            for p in participants:
-                if not p:
-                    continue
-                p_uid = p.get("userRef").id if p.get("userRef") else p.get("user_id")
-                if p_uid == user_id and p.get("status") == "pending":
-                    data["id"] = doc.id
-                    pending_invites.append(data)
-                    break
+        if data and _is_user_participant_with_status(
+            data.get("participants") or [], user_id, "pending"
+        ):
+            data["id"] = doc.id
+            pending_invites.append(data)
     return pending_invites
 
 
@@ -51,24 +150,13 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     for doc in tournaments_query:
         data = doc.to_dict()
         if data and data.get("status") != "Completed":
-            participants = data.get("participants") or []
-            for p in participants:
-                if not p:
-                    continue
-                p_uid = p.get("userRef").id if p.get("userRef") else p.get("user_id")
-                if p_uid == user_id and p.get("status") == "accepted":
-                    data["id"] = doc.id
-                    # Format date for display
-                    raw_date = data.get("start_date") or data.get("date")
-                    if raw_date is not None:
-                        if hasattr(raw_date, "to_datetime"):
-                            data["date_display"] = raw_date.to_datetime().strftime(
-                                "%b %d, %Y"
-                            )
-                        elif isinstance(raw_date, datetime.datetime):
-                            data["date_display"] = raw_date.strftime("%b %d, %Y")
-                    active_tournaments.append(data)
-                    break
+            if _is_user_participant_with_status(
+                data.get("participants") or [], user_id, "accepted"
+            ):
+                data["id"] = doc.id
+                _format_date_display(data)
+                active_tournaments.append(data)
+
     # Sort by date ascending (soonest first)
     active_tournaments.sort(
         key=lambda x: x.get("start_date") or x.get("date") or datetime.datetime.max
@@ -78,8 +166,6 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch past (completed) tournaments for a user."""
-    from pickaladder.tournament.utils import get_tournament_standings
-
     tournaments_query = (
         db.collection("tournaments")
         .where(
@@ -91,33 +177,14 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     for doc in tournaments_query:
         data = doc.to_dict()
         if data and data.get("status") == "Completed":
-            # Ensure the user actually participated (accepted the invite)
-            participants = data.get("participants") or []
-            participated = False
-            for p in participants:
-                if not p:
-                    continue
-                p_uid = p.get("userRef").id if p.get("userRef") else p.get("user_id")
-                if p_uid == user_id and p.get("status") == "accepted":
-                    participated = True
-                    break
-
-            if participated:
+            if _is_user_participant_with_status(
+                data.get("participants") or [], user_id, "accepted"
+            ):
                 data["id"] = doc.id
-                # Find winner
-                match_type = data.get("matchType", "singles")
-                standings = get_tournament_standings(db, doc.id, match_type)
-                data["winner_name"] = standings[0]["name"] if standings else "TBD"
-
-                raw_date = data.get("start_date") or data.get("date")
-                if raw_date is not None:
-                    if hasattr(raw_date, "to_datetime"):
-                        data["date_display"] = raw_date.to_datetime().strftime(
-                            "%b %d, %Y"
-                        )
-                    elif isinstance(raw_date, datetime.datetime):
-                        data["date_display"] = raw_date.strftime("%b %d, %Y")
-
+                data["winner_name"] = _get_tournament_winner(
+                    db, doc.id, data.get("matchType", "singles")
+                )
+                _format_date_display(data)
                 past_tournaments.append(data)
 
     # Sort by date descending
@@ -130,10 +197,6 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     """Fetch a list of public groups, enriched with owner data."""
-    from firebase_admin import firestore
-
-    from .core import _sanitize_user_data
-
     # Query for public groups
     public_groups_query = (
         db.collection("groups")
@@ -142,38 +205,13 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
         .limit(limit)
     )
     public_group_docs = list(public_groups_query.stream())
-
-    # Enrich groups with owner data
-    owner_refs = []
-    for doc in public_group_docs:
-        data = doc.to_dict()
-        if data and (ref := data.get("ownerRef")):
-            owner_refs.append(ref)
-    unique_owner_refs = list({ref for ref in owner_refs if ref})
-
-    owners_data = {}
-    if unique_owner_refs:
-        owner_docs = db.get_all(unique_owner_refs)
-        for doc in owner_docs:
-            if doc.exists:
-                data = doc.to_dict() or {}
-                data["id"] = doc.id
-                owners_data[doc.id] = _sanitize_user_data(data)
-
-    guest_user = {"username": "Guest", "id": "unknown"}
+    owners_data = _fetch_owners_data(db, public_group_docs)
 
     enriched_groups = []
     for doc in public_group_docs:
         data = doc.to_dict()
-        if data is None:
-            continue
-        data["id"] = doc.id
-        owner_ref = data.get("ownerRef")
-        if owner_ref and owner_ref.id in owners_data:
-            data["owner"] = owners_data[owner_ref.id]
-        else:
-            data["owner"] = guest_user
-        enriched_groups.append(data)
+        if data is not None:
+            enriched_groups.append(_enrich_group_with_owner(data, doc.id, owners_data))
 
     return enriched_groups
 
@@ -197,9 +235,7 @@ def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
 
 def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch group rankings for a user."""
-    from pickaladder.group.utils import (  # noqa: PLC0415
-        get_group_leaderboard,
-    )
+    from pickaladder.group.utils import get_group_leaderboard
 
     user_ref = db.collection("users").document(user_id)
     group_rankings = []
@@ -213,38 +249,9 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
         if group_data is None:
             continue
         leaderboard = get_group_leaderboard(group_doc.id)
-        user_ranking_data = None
-        for i, player in enumerate(leaderboard):
-            if player["id"] == user_id:
-                rank = i + 1
-                user_ranking_data = {
-                    "group_id": group_doc.id,
-                    "group_name": group_data.get("name", "N/A"),
-                    "group_image": group_data.get("profilePictureUrl"),
-                    "rank": rank,
-                    "points": player.get("avg_score", 0),
-                    "form": player.get("form", []),
-                }
-                if i > 0:
-                    player_above = leaderboard[i - 1]
-                    user_ranking_data["player_above"] = player_above.get("name")
-                    user_ranking_data["points_to_overtake"] = player_above.get(
-                        "avg_score", 0
-                    ) - player.get("avg_score", 0)
-                break
-
-        if user_ranking_data:
-            group_rankings.append(user_ranking_data)
-        else:
-            group_rankings.append(
-                {
-                    "group_id": group_doc.id,
-                    "group_name": group_data.get("name", "N/A"),
-                    "rank": "N/A",
-                    "points": 0,
-                    "form": [],
-                }
-            )
+        group_rankings.append(
+            _calculate_user_ranking(user_id, leaderboard, group_doc.id, group_data)
+        )
     return group_rankings
 
 
