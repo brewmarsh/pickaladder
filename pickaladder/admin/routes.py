@@ -155,7 +155,7 @@ def friend_graph_data() -> Union[Response, tuple[Response, int]]:
 
 
 def _lookup_user_by_identifier(
-    db: firestore.client, identifier: str
+    db: Any, identifier: str
 ) -> tuple[str | None, str | None]:
     """Look up a user UID and email by their identifier (ID or Email)."""
     user_doc = db.collection("users").document(identifier).get()
@@ -173,6 +173,15 @@ def _lookup_user_by_identifier(
     return None, None
 
 
+def _perform_user_deletion(db: Any, uid: str, email: str | None) -> None:
+    """Orchestrate the deletion of a user and flash results."""
+    try:
+        AdminService.delete_user(db, uid)
+        flash(f"User {email or uid} deleted.", "success")
+    except Exception as e:
+        flash(f"An error occurred: {e}", "danger")
+
+
 @bp.route("/delete_user", methods=["POST"])
 @login_required(admin_required=True)
 def admin_delete_user() -> Response:
@@ -185,11 +194,7 @@ def admin_delete_user() -> Response:
     db = firestore.client()
     uid, email = _lookup_user_by_identifier(db, user_identifier)
     if uid:
-        try:
-            AdminService.delete_user(db, uid)
-            flash(f"User {email or uid} deleted.", "success")
-        except Exception as e:
-            flash(f"An error occurred: {e}", "danger")
+        _perform_user_deletion(db, uid, email)
     else:
         flash(f"User {user_identifier} not found.", "danger")
     return redirect(url_for(".admin"))
@@ -264,7 +269,7 @@ def generate_users() -> str:
     return render_template("generated_users.html", users=new_users)
 
 
-def _generate_single_random_match(db: firestore.client, users: list[Any]) -> bool:
+def _generate_single_random_match(db: Any, users: list[Any]) -> bool:
     """Generate a single random match between users."""
     p1, p2 = random.sample(users, 2)  # nosec B311
     s1, s2 = 11, random.randint(0, 9)  # nosec B311
@@ -287,6 +292,11 @@ def _generate_single_random_match(db: firestore.client, users: list[Any]) -> boo
         return False
 
 
+def _batch_generate_random_matches(db: Any, users: list[Any], count: int = 10) -> int:
+    """Generate multiple random matches and return success count."""
+    return sum(1 for _ in range(count) if _generate_single_random_match(db, users))
+
+
 @bp.route("/generate_matches", methods=["POST"])
 @login_required(admin_required=True)
 def generate_matches() -> Response:
@@ -296,10 +306,9 @@ def generate_matches() -> Response:
         users = list(db.collection("users").limit(20).stream())
         if len(users) < MIN_USERS_FOR_MATCH_GENERATION:
             flash("Not enough users to generate matches.", "warning")
-            return redirect(url_for(".admin"))
-
-        count = sum(1 for _ in range(10) if _generate_single_random_match(db, users))
-        flash(f"{count} random matches generated.", "success")
+        else:
+            count = _batch_generate_random_matches(db, users)
+            flash(f"{count} random matches generated.", "success")
     except Exception as e:
         flash(f"An error occurred: {e}", "danger")
     return redirect(url_for(".admin"))

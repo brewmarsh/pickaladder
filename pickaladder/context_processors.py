@@ -16,8 +16,8 @@ VERSION_THRESHOLD = 10
 VERSION_SHORT_LENGTH = 7
 
 
-def inject_global_context() -> dict[str, Any]:
-    """Injects global context variables into templates."""
+def _get_app_version() -> str:
+    """Detect version from environment variables or file."""
     # Detect version from environment variables with the following priority:
     # 1. APP_VERSION (explicitly set)
     # 2. GITHUB_SHA or GITHUB_RUN_NUMBER (GitHub Actions build)
@@ -46,15 +46,24 @@ def inject_global_context() -> dict[str, Any]:
     if len(version) > VERSION_THRESHOLD and version != "dev":
         version = version[:VERSION_SHORT_LENGTH]
 
-    global_announcement = None
+    return version
+
+
+def _get_global_announcement() -> dict[str, Any] | None:
+    """Fetch global announcement from Firestore."""
     try:
         db = firestore.client()
         announcement_doc = db.collection("system").document("settings").get()
-        global_announcement = (
-            announcement_doc.to_dict() if announcement_doc.exists else None
-        )
+        return announcement_doc.to_dict() if announcement_doc.exists else None
     except Exception as e:
         current_app.logger.error(f"Error fetching global announcement: {e}")
+        return None
+
+
+def inject_global_context() -> dict[str, Any]:
+    """Injects global context variables into templates."""
+    version = _get_app_version()
+    global_announcement = _get_global_announcement()
 
     return {
         "current_year": datetime.now().year,
