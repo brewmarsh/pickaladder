@@ -22,6 +22,8 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
 
+MIN_PARTICIPANTS = 2
+
 
 class TournamentService:
     """Handles business logic and data access for tournaments."""
@@ -74,12 +76,14 @@ class TournamentService:
             for doc in u_docs
             if doc.exists
         }
-        return [
-            p
-            for obj in participant_objs
-            if obj
-            and (p := TournamentService._resolve_single_participant(obj, u_map))
-        ]
+        participants = []
+        for obj in participant_objs:
+            if not obj:
+                continue
+            p = TournamentService._resolve_single_participant(obj, u_map)
+            if p:
+                participants.append(p)
+        return participants
 
     @staticmethod
     def _get_invitable_ids(db: Client, user_uid: str) -> set[str]:
@@ -93,7 +97,7 @@ class TournamentService:
             .stream()
         )
         for doc in groups:
-            members = (doc.to_dict() or {}).get("members")
+            members = cast(dict[str, Any], doc.to_dict() or {}).get("members")
             if members:
                 for m_ref in members:
                     g_ids.add(m_ref.id)
@@ -108,7 +112,8 @@ class TournamentService:
         invitable = []
         if final_ids:
             u_refs = [db.collection("users").document(uid) for uid in final_ids]
-            for doc in db.get_all(u_refs):
+            u_docs = cast(list[Any], db.get_all(u_refs))
+            for doc in u_docs:
                 if doc.exists and (data := doc.to_dict()):
                     data["id"] = doc.id
                     invitable.append(data)
@@ -118,7 +123,7 @@ class TournamentService:
     @staticmethod
     def _enrich_tournament(doc: Any) -> dict[str, Any]:
         """Format tournament data for display."""
-        data = doc.to_dict() or {}
+        data = cast(dict[str, Any], doc.to_dict() or {})
         data["id"] = doc.id
         raw_date = data.get("start_date") or data.get("date")
         if raw_date and hasattr(raw_date, "to_datetime"):
@@ -195,14 +200,12 @@ class TournamentService:
         db: Client, t_id: str, user_uid: str
     ) -> tuple[str | None, bool]:
         """Fetch team status and pending flag for a user."""
-        teams = (
-            db.collection("tournaments").document(t_id).collection("teams").stream()
-        )
+        teams = db.collection("tournaments").document(t_id).collection("teams").stream()
         for doc in teams:
-            t = doc.to_dict()
+            t = cast(dict[str, Any], doc.to_dict())
             if t["p1_uid"] == user_uid or t["p2_uid"] == user_uid:
                 is_pending = t["p2_uid"] == user_uid and t["status"] == "PENDING"
-                return t["status"], is_pending
+                return cast(str, t["status"]), is_pending
         return None, False
 
     @staticmethod
@@ -225,7 +228,7 @@ class TournamentService:
         """Fetch comprehensive details for the tournament view."""
         if db is None:
             db = firestore.client()
-        doc = db.collection("tournaments").document(t_id).get()
+        doc = cast(Any, db.collection("tournaments").document(t_id).get())
         if not doc.exists:
             return None
         data = cast(dict[str, Any], doc.to_dict())
@@ -236,7 +239,11 @@ class TournamentService:
         stnd = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
         parts = data.get("participants", [])
         c_ids = {
-            str(p.get("userRef").id if p.get("userRef") else p.get("user_id"))
+            str(
+                getattr(p.get("userRef"), "id", p.get("user_id"))
+                if p.get("userRef")
+                else p.get("user_id")
+            )
             for p in parts
             if p
         }
@@ -263,7 +270,7 @@ class TournamentService:
         """Resolve organizer/owner ID from tournament data."""
         o_id = data.get("organizer_id")
         if o_id:
-            return o_id
+            return cast(str, o_id)
         return data["ownerRef"].id if data.get("ownerRef") else None
 
     @staticmethod
@@ -285,7 +292,7 @@ class TournamentService:
         if db is None:
             db = firestore.client()
         ref = db.collection("tournaments").document(t_id)
-        doc = ref.get()
+        doc = cast(Any, ref.get())
         if not doc.exists:
             raise ValueError("Tournament not found.")
         data = cast(dict[str, Any], doc.to_dict())
@@ -347,10 +354,11 @@ class TournamentService:
         if db is None:
             db = firestore.client()
         ref = db.collection("tournaments").document(t_id)
-        doc = ref.get()
-        if not doc.exists:
-            raise ValueError("Tournament not found")
-        if TournamentService._get_tournament_owner_id(doc.to_dict() or {}) != uid:
+        doc = cast(Any, ref.get())
+        if (
+            not doc.exists
+            or TournamentService._get_tournament_owner_id(doc.to_dict() or {}) != uid
+        ):
             raise PermissionError("Unauthorized")
         ref.delete()
 
@@ -361,12 +369,13 @@ class TournamentService:
         """Invite a single player."""
         if db is None:
             db = firestore.client()
+        invited_ref = db.collection("users").document(invited_uid)
         db.collection("tournaments").document(t_id).update(
             {
                 "participants": firestore.ArrayUnion(
                     [
                         {
-                            "userRef": db.collection("users").document(invited_uid),
+                            "userRef": invited_ref,
                             "status": "pending",
                             "team_name": None,
                         }
@@ -383,13 +392,15 @@ class TournamentService:
         """Validate permissions and return group member references."""
         if TournamentService._get_tournament_owner_id(t_data) != uid:
             raise PermissionError("Unauthorized.")
-        doc = db.collection("groups").document(g_id).get()
+        doc = cast(Any, db.collection("groups").document(g_id).get())
         if not doc.exists:
             raise ValueError("Group not found")
         refs = (doc.to_dict() or {}).get("members", [])
         if not any(m.id == uid for m in refs):
-            raise PermissionError("You can only invite members from groups you belong to.")
-        return refs
+            raise PermissionError(
+                "You can only invite members from groups you belong to."
+            )
+        return cast(list[Any], refs)
 
     @staticmethod
     def _prepare_group_invites(
@@ -414,7 +425,7 @@ class TournamentService:
         if db is None:
             db = firestore.client()
         ref = db.collection("tournaments").document(t_id)
-        doc = ref.get()
+        doc = cast(Any, ref.get())
         if not doc.exists:
             raise ValueError("Tournament not found")
         t_data = cast(dict[str, Any], doc.to_dict())
@@ -442,8 +453,11 @@ class TournamentService:
             if not p:
                 continue
             r = p.get("userRef")
-            u_id = r.id if r else p.get("user_id")
-            if u_id == uid and p.get("status") == "pending":
+            if r is not None and hasattr(r, "id"):
+                p_uid = getattr(r, "id", p.get("user_id"))
+            else:
+                p_uid = p.get("user_id")
+            if p_uid == uid and p.get("status") == "pending":
                 p["status"] = status
                 return True
         return False
@@ -457,7 +471,7 @@ class TournamentService:
 
         @firestore.transactional
         def _tx(tx: Transaction, t_ref: DocumentReference) -> bool:
-            snap = t_ref.get(transaction=tx)
+            snap = cast(Any, t_ref.get(transaction=tx))
             if not snap.exists:
                 return False
             parts = snap.get("participants")
@@ -478,7 +492,12 @@ class TournamentService:
             for p in participants
             if p
             and not (
-                (p.get("userRef").id if p.get("userRef") else p.get("user_id")) == uid
+                (
+                    getattr(p.get("userRef"), "id", p.get("user_id"))
+                    if p.get("userRef")
+                    else p.get("user_id")
+                )
+                == uid
                 and p.get("status") == "pending"
             )
         ]
@@ -492,7 +511,7 @@ class TournamentService:
 
         @firestore.transactional
         def _tx(tx: Transaction, t_ref: DocumentReference) -> bool:
-            snap = t_ref.get(transaction=tx)
+            snap = cast(Any, t_ref.get(transaction=tx))
             if not snap.exists:
                 return False
             parts, ids = snap.get("participants"), snap.get("participant_ids")
@@ -513,7 +532,8 @@ class TournamentService:
         if not p or p.get("status") != "accepted":
             return
         try:
-            doc = p.get("userRef").get() if "userRef" in p else None
+            u_ref = p.get("userRef")
+            doc = cast(Any, u_ref.get() if u_ref else None)
             if doc and doc.exists and (d := doc.to_dict()) and d.get("email"):
                 send_email(
                     to=d["email"],
@@ -541,7 +561,7 @@ class TournamentService:
         if db is None:
             db = firestore.client()
         ref = db.collection("tournaments").document(t_id)
-        doc = ref.get()
+        doc = cast(Any, ref.get())
         if not doc.exists:
             raise ValueError("Tournament not found")
         data = cast(dict[str, Any], doc.to_dict())
@@ -568,12 +588,7 @@ class TournamentService:
         }
         if p2:
             d["team_id"] = TeamService.get_or_create_team(db, p1, p2)
-        ref = (
-            db.collection("tournaments")
-            .document(t_id)
-            .collection("teams")
-            .document()
-        )
+        ref = db.collection("tournaments").document(t_id).collection("teams").document()
         ref.set(d)
         return str(ref.id)
 
@@ -607,7 +622,8 @@ class TournamentService:
     ) -> None:
         """Ensure both team members are in the tournament participants."""
         ref = db.collection("tournaments").document(t_id)
-        ids = (ref.get().to_dict() or {}).get("participant_ids", [])
+        snap = cast(Any, ref.get())
+        ids = (snap.to_dict() or {}).get("participant_ids", [])
         new_ids, new_ps = [], []
         for u in [p1, p2]:
             if u not in ids:
@@ -640,12 +656,18 @@ class TournamentService:
             .collection("teams")
             .document(team_id)
         )
-        snap = ref.get()
-        if not snap.exists or (d := snap.to_dict()).get("p2_uid") or d.get("p1_uid") == uid:
+        snap = cast(Any, ref.get())
+        if (
+            not snap.exists
+            or (d := snap.to_dict()).get("p2_uid")
+            or d.get("p1_uid") == uid
+        ):
             return False
         team_id_global = TeamService.get_or_create_team(db, d["p1_uid"], uid)
         ref.update({"p2_uid": uid, "status": "CONFIRMED", "team_id": team_id_global})
-        TournamentService._sync_team_participants(db, t_id, d["p1_uid"], uid, d.get("team_name"))
+        TournamentService._sync_team_participants(
+            db, t_id, d["p1_uid"], uid, d.get("team_name")
+        )
         return True
 
     @staticmethod
@@ -665,17 +687,22 @@ class TournamentService:
         """Generate a tournament bracket based on participants or teams."""
         if db is None:
             db = firestore.client()
-        t_data = db.collection("tournaments").document(t_id).get().to_dict() or {}
+        doc = cast(Any, db.collection("tournaments").document(t_id).get())
+        t_data = doc.to_dict() or {}
         if t_data.get("mode", "SINGLES") == "SINGLES":
             accepted = [
-                p for p in t_data.get("participants", []) if p.get("status") == "accepted"
+                p
+                for p in t_data.get("participants", [])
+                if p.get("status") == "accepted"
             ]
             return [
                 {
-                    "id": p.get("userRef").id,
-                    "name": smart_display_name(p.get("userRef").get().to_dict()),
+                    "id": getattr(p.get("userRef"), "id", p.get("user_id")),
+                    "name": smart_display_name(
+                        cast(Any, p.get("userRef").get()).to_dict()
+                    ),
                     "type": "player",
-                    "members": [p.get("userRef").id],
+                    "members": [getattr(p.get("userRef"), "id", p.get("user_id"))],
                 }
                 for p in accepted
             ]
@@ -703,9 +730,11 @@ class TournamentGenerator:
     """Utility class to generate tournament match pairings."""
 
     @staticmethod
-    def _get_RR_pair_ids(ids: list[str]) -> list[tuple[str | None, str | None]]:
+    def _get_RR_pair_ids(
+        ids: list[str],
+    ) -> list[tuple[str | None, str | None]]:
         """Compute Round Robin pairing IDs using the Circle Method (Pure Math)."""
-        temp_ids = list(ids)
+        temp_ids: list[str | None] = list(ids)
         if len(temp_ids) % 2 != 0:
             temp_ids.append(None)
         n, pairs = len(temp_ids), []
@@ -718,7 +747,7 @@ class TournamentGenerator:
     @staticmethod
     def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
         """Generate Round Robin pairings."""
-        if not participant_ids or len(participant_ids) < 2:
+        if not participant_ids or len(participant_ids) < MIN_PARTICIPANTS:
             return []
         db, pairings = firestore.client(), []
         for p1, p2 in TournamentGenerator._get_RR_pair_ids(list(participant_ids)):

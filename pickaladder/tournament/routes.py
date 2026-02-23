@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any
+from typing import Any, cast
 
 from firebase_admin import firestore
 from flask import (
@@ -39,10 +39,11 @@ def _get_group_admin_error(group_id: str | None, user_uid: str) -> str | None:
     if not group_id:
         return None
     db = firestore.client()
-    doc = db.collection("groups").document(group_id).get()
+    doc = cast(Any, db.collection("groups").document(group_id).get())
     if doc.exists:
         from pickaladder.group.services.group_service import GroupService
-        if not GroupService.is_group_admin(doc.to_dict(), user_uid):
+
+        if not GroupService.is_group_admin(doc.to_dict() or {}, user_uid):
             return "You do not have permission to create a tournament for this group."
     return None
 
@@ -57,7 +58,7 @@ def _handle_creation_payload(form: TournamentForm, user_uid: str) -> str:
         "date": datetime.datetime.combine(date_val, datetime.time.min),
         "location": form.location.data,
         "mode": form.mode.data,
-        "matchType": form.mode.data.lower(),
+        "matchType": (form.mode.data or "singles").lower(),
     }
     t_id = TournamentService.create_tournament(data, user_uid)
     banner = request.files.get("banner")
@@ -89,26 +90,35 @@ def create_tournament() -> Any:
     return render_template("tournaments/create_edit.html", form=form, action="Create")
 
 
-def _resolve_claim_data(t_id: str, c_id: str | None) -> dict | None:
+def _resolve_claim_data(t_id: str, c_id: str | None) -> dict[str, Any] | None:
     """Fetch details for a team partnership claim."""
     if not c_id:
         return None
     db = firestore.client()
-    doc = db.collection("tournaments").document(t_id).collection("teams").document(c_id).get()
+    ref = db.collection("tournaments").document(t_id).collection("teams").document(c_id)
+    doc = cast(Any, ref.get())
     if not doc.exists:
         return None
-    d = doc.to_dict() or {}
+    d = cast(dict[str, Any], doc.to_dict() or {})
     d["id"] = doc.id
-    p1 = db.collection("users").document(d["p1_uid"]).get()
-    d["p1_name"] = smart_display_name(p1.to_dict() or {}) if p1.exists else "Someone"
+    p1_uid = d.get("p1_uid")
+    if p1_uid:
+        p1 = cast(Any, db.collection("users").document(p1_uid).get())
+        d["p1_name"] = (
+            smart_display_name(p1.to_dict() or {}) if p1.exists else "Someone"
+        )
+    else:
+        d["p1_name"] = "Someone"
     return d
 
 
 def _handle_view_invite(tournament_id: str, form: InvitePlayerForm) -> bool:
     """Handle invitation form submission from view page."""
     if form.validate_on_submit() and "user_id" in request.form:
-        TournamentService.invite_player(tournament_id, g.user["uid"], form.user_id.data)
-        return True
+        uid = cast(str, form.user_id.data)
+        if uid:
+            TournamentService.invite_player(tournament_id, g.user["uid"], uid)
+            return True
     return False
 
 
@@ -121,7 +131,9 @@ def view_tournament(tournament_id: str) -> Any:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
 
-    details["claim_team_data"] = _resolve_claim_data(tournament_id, request.args.get("claim_team"))
+    details["claim_team_data"] = _resolve_claim_data(
+        tournament_id, request.args.get("claim_team")
+    )
     form = InvitePlayerForm()
     invitables = details.get("invitable_users", [])
     form.user_id.choices = [(u["id"], smart_display_name(u)) for u in invitables]
@@ -153,8 +165,10 @@ def edit_tournament(tournament_id: str) -> Any:
         if request.method == "GET":
             form.process(data=t)
             if hasattr(t.get("date"), "to_datetime"):
-                form.start_date.data = t["date"].to_datetime().date()
-        return render_template("tournaments/create_edit.html", form=form, tournament=t, action="Edit")
+                form.start_date.data = cast(Any, t["date"]).to_datetime().date()
+        return render_template(
+            "tournaments/create_edit.html", form=form, tournament=t, action="Edit"
+        )
     except (ValueError, PermissionError) as e:
         flash(str(e), "danger")
     except Exception as e:
@@ -186,7 +200,8 @@ def invite_player(tournament_id: str) -> Any:
         form.user_id.choices = [(uid, "")]
     if form.validate_on_submit():
         try:
-            TournamentService.invite_player(tournament_id, g.user["uid"], uid)
+            invited_uid = cast(str, form.user_id.data)
+            TournamentService.invite_player(tournament_id, g.user["uid"], invited_uid)
             flash("Player invited successfully.", "success")
         except Exception as e:
             flash(f"An unexpected error occurred: {e}", "danger")
@@ -255,12 +270,18 @@ def complete_tournament(tournament_id: str) -> Any:
 
 def _get_accepted_uids(data: dict[str, Any]) -> list[str]:
     """Extract list of UIDs for accepted participants."""
-    parts = data.get("participants", [])
-    return [
-        str(p.get("userRef").id if p.get("userRef") else p.get("user_id"))
-        for p in parts
-        if p.get("status") == "accepted"
-    ]
+    parts = cast(list[dict[str, Any]], data.get("participants", []))
+    uids: list[str] = []
+    for p in parts:
+        if p.get("status") == "accepted":
+            u_ref = p.get("userRef")
+            if u_ref:
+                uids.append(str(u_ref.id))
+            else:
+                uid = p.get("user_id")
+                if uid:
+                    uids.append(str(uid))
+    return uids
 
 
 @bp.route("/<string:tournament_id>/generate", methods=["POST"])
@@ -272,12 +293,12 @@ def generate_bracket(tournament_id: str) -> Any:
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
     db = firestore.client()
-    doc = db.collection("tournaments").document(tournament_id).get()
+    doc = cast(Any, db.collection("tournaments").document(tournament_id).get())
     if not doc.exists:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
 
-    d = doc.to_dict() or {}
+    d = cast(dict[str, Any], doc.to_dict() or {})
     if d.get("format") != "ROUND_ROBIN":
         flash(f"Generation for {d.get('format')} is not implemented.", "warning")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
@@ -305,7 +326,9 @@ def _handle_registration(t_id: str, p_id: str | None, name: str, is_json: bool) 
     """Perform team registration and return response."""
     tid = TournamentService.register_team(t_id, g.user["uid"], p_id, name)
     if is_json:
-        url = url_for(".view_tournament", tournament_id=t_id, claim_team=tid, _external=True)
+        url = url_for(
+            ".view_tournament", tournament_id=t_id, claim_team=tid, _external=True
+        )
         return jsonify({"success": True, "team_id": tid, "link": url})
 
     if not p_id:
@@ -320,10 +343,13 @@ def _handle_registration(t_id: str, p_id: str | None, name: str, is_json: bool) 
 def register_team(tournament_id: str) -> Any:
     """Register a doubles team for the tournament."""
     is_json = request.is_json
-    data = request.get_json() if is_json else request.form
+    data = cast(dict[str, Any], request.get_json() if is_json else request.form)
     try:
-        p_id, t_name = data.get("partner_id"), data.get("team_name")
-        return _handle_registration(tournament_id, p_id, t_name, is_json)
+        p_id = data.get("partner_id")
+        t_name = cast(str, data.get("team_name") or "")
+        return _handle_registration(
+            tournament_id, cast(str, p_id) if p_id else None, t_name, is_json
+        )
     except Exception as e:
         if is_json:
             return jsonify({"success": False, "error": str(e)}), 400
@@ -336,7 +362,9 @@ def register_team(tournament_id: str) -> Any:
 def claim_team(tournament_id: str, team_id: str) -> Any:
     """Claim a placeholder team partnership."""
     try:
-        if TournamentService.claim_team_partnership(tournament_id, team_id, g.user["uid"]):
+        if TournamentService.claim_team_partnership(
+            tournament_id, team_id, g.user["uid"]
+        ):
             flash("You have joined the team!", "success")
         else:
             flash("Unable to join team. Full or already in it.", "danger")

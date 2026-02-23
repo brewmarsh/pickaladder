@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from firebase_admin import firestore
 
@@ -18,7 +18,9 @@ def fetch_tournament_matches(db: Any, tournament_id: str) -> Any:
     )
 
 
-def _get_match_participant_ids(data: dict[str, Any], match_type: str) -> tuple[str | None, str | None]:
+def _get_match_participant_ids(
+    data: dict[str, Any], match_type: str
+) -> tuple[str | None, str | None]:
     """Resolve player/team IDs from match data."""
     if match_type == "doubles":
         return data.get("team1Id"), data.get("team2Id")
@@ -50,7 +52,7 @@ def aggregate_match_data(matches: Any, match_type: str) -> dict[str, dict[str, A
     """Iterate once through matches to build raw map of wins, losses, and point_diff."""
     standings: dict[str, dict[str, Any]] = {}
     for match in matches:
-        data = match.to_dict()
+        data = cast(dict[str, Any], match.to_dict())
         if not data:
             continue
         id1, id2 = _get_match_participant_ids(data, match_type)
@@ -63,7 +65,7 @@ def aggregate_match_data(matches: Any, match_type: str) -> dict[str, dict[str, A
 def _enrich_doubles_names(db: Any, standings: list[dict[str, Any]]) -> None:
     """Fetch and set team names for doubles standings."""
     for s in standings:
-        doc = db.collection("teams").document(s["id"]).get()
+        doc = cast(Any, db.collection("teams").document(s["id"]).get())
         name = "Unknown Team"
         if doc.exists and (d := doc.to_dict()):
             name = d.get("name", "Unknown Team")
@@ -73,7 +75,7 @@ def _enrich_doubles_names(db: Any, standings: list[dict[str, Any]]) -> None:
 def _enrich_singles_names(db: Any, standings: list[dict[str, Any]]) -> None:
     """Fetch and set user names for singles standings."""
     u_refs = [db.collection("users").document(s["id"]) for s in standings]
-    u_docs = db.get_all(u_refs)
+    u_docs = cast(list[Any], db.get_all(u_refs))
     u_map = {doc.id: doc.to_dict() for doc in u_docs if doc.exists}
     for s in standings:
         u_data = u_map.get(s["id"], {})
@@ -94,7 +96,9 @@ def sort_and_format_standings(
         _enrich_doubles_names(db, standings_list)
     else:
         _enrich_singles_names(db, standings_list)
-    standings_list.sort(key=lambda x: (x["wins"], -x["losses"], x.get("point_diff", 0)), reverse=True)
+    standings_list.sort(
+        key=lambda x: (x["wins"], -x["losses"], x.get("point_diff", 0)), reverse=True
+    )
     return standings_list
 
 
