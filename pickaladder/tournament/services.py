@@ -165,9 +165,13 @@ class TournamentService:
         if not banner or not getattr(banner, "filename", None):
             return None
         fname = secure_filename(banner.filename or f"banner_{t_id}.jpg")
-        bucket_name = current_app.config.get(
-            "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
-        )
+        try:
+            bucket_name = current_app.config.get(
+                "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+            )
+        except RuntimeError:
+            bucket_name = "pickaladder.firebasestorage.app"
+
         blob = storage.bucket(bucket_name).blob(f"tournaments/{t_id}/{fname}")
         with tempfile.NamedTemporaryFile(suffix=os.path.splitext(fname)[1]) as tmp:
             banner.save(tmp.name)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import secrets
 from typing import Any
 
@@ -18,6 +19,8 @@ from pickaladder.group.services.match_parser import (
 from pickaladder.group.services.stats import (
     get_head_to_head_stats as get_h2h_stats,
 )
+
+logger = logging.getLogger(__name__)
 
 UPSET_THRESHOLD = 0.25
 GUEST_USER = {"username": "Guest", "id": "unknown"}
@@ -223,16 +226,20 @@ class GroupService:
         """Upload a group profile picture and return its public URL."""
         try:
             filename = secure_filename(file.filename or "group_profile.jpg")
-            bucket_name = current_app.config.get(
-                "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
-            )
+            try:
+                bucket_name = current_app.config.get(
+                    "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+                )
+            except RuntimeError:
+                bucket_name = "pickaladder.firebasestorage.app"
+
             bucket = storage.bucket(bucket_name)
             blob = bucket.blob(f"group_pictures/{group_id}/{filename}")
             blob.upload_from_file(file)
             blob.make_public()
             return blob.public_url
         except Exception as e:
-            current_app.logger.error(f"Error uploading group image: {e}")
+            logger.error(f"Error uploading group image: {e}")
             return None
 
     @staticmethod
