@@ -76,7 +76,7 @@ def _fetch_owners_data(
     if not unique_owner_refs:
         return {}
 
-    owner_docs = db.get_all(unique_owner_refs)
+    owner_docs = list(db.get_all(unique_owner_refs))
     return _map_owner_docs_to_data(owner_docs)
 
 
