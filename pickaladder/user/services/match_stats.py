@@ -90,6 +90,17 @@ def _extract_refs_from_match(
         tournament_ids.add(t_id)
 
 
+def _process_match_doc_refs(
+    doc: DocumentSnapshot,
+    user_refs: set[Any],
+    team_refs: set[Any],
+    tournament_ids: set[str],
+) -> None:
+    """Process a single match document for references."""
+    if m_data := doc.to_dict():
+        _extract_refs_from_match(m_data, user_refs, team_refs, tournament_ids)
+
+
 def _collect_match_refs(
     matches: list[DocumentSnapshot],
 ) -> tuple[set[Any], set[Any], set[str]]:
@@ -99,58 +110,57 @@ def _collect_match_refs(
     tournament_ids: set[str] = set()
 
     for match_doc in matches:
-        if m_data := match_doc.to_dict():
-            _extract_refs_from_match(m_data, user_refs, team_refs, tournament_ids)
+        _process_match_doc_refs(match_doc, user_refs, team_refs, tournament_ids)
 
     return user_refs, team_refs, tournament_ids
 
 
-def _fetch_users(db: Client, user_refs: set[Any], users_map: dict[str, Any]) -> None:
-    """Batch fetch users from Firestore."""
+def _get_users_map(db: Client, user_refs: set[Any]) -> dict[str, Any]:
+    """Batch fetch users and return a map."""
+    users_map: dict[str, Any] = {}
     if not user_refs:
-        return
+        return users_map
     for doc in db.get_all(list(user_refs)):
         if doc.exists and (d := doc.to_dict()):
             d["id"] = doc.id
             users_map[doc.id] = d
+    return users_map
 
 
-def _fetch_teams(db: Client, team_refs: set[Any], teams_map: dict[str, Any]) -> None:
-    """Batch fetch teams from Firestore."""
+def _get_teams_map(db: Client, team_refs: set[Any]) -> dict[str, Any]:
+    """Batch fetch teams and return a map."""
+    teams_map: dict[str, Any] = {}
     if not team_refs:
-        return
+        return teams_map
     for doc in db.get_all(list(team_refs)):
         if doc.exists and (d := doc.to_dict()):
             d["id"] = doc.id
             teams_map[doc.id] = d
+    return teams_map
 
 
-def _fetch_tournaments(
-    db: Client, tournament_ids: set[str], tournaments_map: dict[str, Any]
-) -> None:
-    """Batch fetch tournaments from Firestore."""
+def _get_tournaments_map(db: Client, tournament_ids: set[str]) -> dict[str, Any]:
+    """Batch fetch tournaments and return a map."""
+    tournaments_map: dict[str, Any] = {}
     if not tournament_ids:
-        return
+        return tournaments_map
     t_refs = [db.collection("tournaments").document(tid) for tid in tournament_ids]
     for doc in db.get_all(t_refs):
         if doc.exists and (d := doc.to_dict()):
             d["id"] = doc.id
             tournaments_map[doc.id] = d
+    return tournaments_map
 
 
 def _fetch_match_entities(
     db: Client, user_refs: set[Any], team_refs: set[Any], tournament_ids: set[str]
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Batch fetch users, teams, and tournaments from Firestore."""
-    users_map: dict[str, Any] = {}
-    teams_map: dict[str, Any] = {}
-    tournaments_map: dict[str, Any] = {}
-
-    _fetch_users(db, user_refs, users_map)
-    _fetch_teams(db, team_refs, teams_map)
-    _fetch_tournaments(db, tournament_ids, tournaments_map)
-
-    return users_map, teams_map, tournaments_map
+    return (
+        _get_users_map(db, user_refs),
+        _get_teams_map(db, team_refs),
+        _get_tournaments_map(db, tournament_ids),
+    )
 
 
 def _format_match_date(match_date: Any) -> str:
@@ -241,23 +251,27 @@ def _build_match_dashboard_item(
     }
 
 
-def format_matches_for_dashboard(
-    db: Client, matches: list[DocumentSnapshot], user_id: str
-) -> list[dict[str, Any]]:
-    """Format match documents for the dashboard UI."""
-    if not matches:
-        return []
-
+def _prepare_entity_maps(
+    db: Client, matches: list[DocumentSnapshot]
+) -> dict[str, dict[str, Any]]:
+    """Prepare entity maps for users, teams, and tournaments from matches."""
     user_refs, team_refs, tournament_ids = _collect_match_refs(matches)
     users_map, teams_map, tournaments_map = _fetch_match_entities(
         db, user_refs, team_refs, tournament_ids
     )
-
-    entity_maps = {
+    return {
         "users": users_map,
         "teams": teams_map,
         "tournaments": tournaments_map,
     }
+
+
+def _build_dashboard_match_list(
+    matches: list[DocumentSnapshot],
+    user_id: str,
+    entity_maps: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Build a list of dashboard match data items."""
     matches_data = []
     for match_doc in matches:
         if m_data := match_doc.to_dict():
@@ -265,6 +279,17 @@ def format_matches_for_dashboard(
                 _build_match_dashboard_item(match_doc, m_data, user_id, entity_maps)
             )
     return matches_data
+
+
+def format_matches_for_dashboard(
+    db: Client, matches: list[DocumentSnapshot], user_id: str
+) -> list[dict[str, Any]]:
+    """Format match documents for the dashboard UI."""
+    if not matches:
+        return []
+
+    entity_maps = _prepare_entity_maps(db, matches)
+    return _build_dashboard_match_list(matches, user_id, entity_maps)
 
 
 def _get_user_match_won_lost(
@@ -307,24 +332,41 @@ def _process_match_for_streak(m: Any, user_id: str) -> dict[str, Any] | None:
     return {"won": won, "lost": lost, "date": date}
 
 
-def calculate_current_streak(user_id: str, matches: list[Any]) -> int:
-    """Calculate current win streak for a user."""
+def _get_processed_streak_items(
+    matches: list[Any], user_id: str
+) -> list[dict[str, Any]]:
+    """Process matches for streak calculation."""
     processed = []
     for m in matches:
         if item := _process_match_for_streak(m, user_id):
             processed.append(item)
+    return processed
 
-    processed.sort(
-        key=lambda x: x["date"] if x["date"] else datetime.datetime.min, reverse=True
+
+def _sort_streak_items(items: list[dict[str, Any]]) -> None:
+    """Sort processed streak items by date descending."""
+    items.sort(
+        key=lambda x: x["date"] if x.get("date") else datetime.datetime.min,
+        reverse=True,
     )
 
+
+def _calculate_win_streak_count(items: list[dict[str, Any]]) -> int:
+    """Count consecutive wins in sorted streak items."""
     streak = 0
-    for m in processed:
-        if m["won"]:
+    for m in items:
+        if m.get("won"):
             streak += 1
-        elif m["lost"]:
+        elif m.get("lost"):
             break
     return streak
+
+
+def calculate_current_streak(user_id: str, matches: list[Any]) -> int:
+    """Calculate current win streak for a user."""
+    processed = _get_processed_streak_items(matches, user_id)
+    _sort_streak_items(processed)
+    return _calculate_win_streak_count(processed)
 
 
 def _get_opponent_id_from_match(data: dict[str, Any], user_id: str) -> str | None:
@@ -340,16 +382,23 @@ def _get_opponent_id_from_match(data: dict[str, Any], user_id: str) -> str | Non
     return None
 
 
+def _add_unique_opponent_id(
+    opponent_ids: list[str], opp_id: str | None, limit: int
+) -> bool:
+    """Add unique opponent ID to the list if it's not already there and within limit."""
+    if opp_id and opp_id not in opponent_ids:
+        opponent_ids.append(opp_id)
+    return len(opponent_ids) >= limit
+
+
 def _extract_opponent_ids(user_id: str, matches: list[Any], limit: int) -> list[str]:
     """Extract unique 1v1 opponent IDs from matches."""
     opponent_ids: list[str] = []
     for m in matches:
         data = m.to_dict() if hasattr(m, "to_dict") else m
-        if opp_id := _get_opponent_id_from_match(data, user_id):
-            if opp_id not in opponent_ids:
-                opponent_ids.append(opp_id)
-                if len(opponent_ids) >= limit:
-                    break
+        opp_id = _get_opponent_id_from_match(data, user_id)
+        if _add_unique_opponent_id(opponent_ids, opp_id, limit):
+            break
     return opponent_ids
 
 
@@ -451,18 +500,25 @@ def _get_team_ids_from_match(data: dict[str, Any]) -> tuple[set[str], set[str]]:
     return {id1}, {id2}
 
 
-def _process_h2h_match(
-    data: dict[str, Any], user_id_1: str, user_id_2: str
-) -> tuple[int, int, int]:
-    """Process a single match for H2H stats and return (wins, losses, points)."""
-    p1_score, p2_score = (
-        int(data.get("player1Score", 0)),
-        int(data.get("player2Score", 0)),
-    )
-    if p1_score == p2_score:
-        return 0, 0, 0
+def _get_h2h_match_data(
+    data: dict[str, Any],
+) -> tuple[tuple[int, int], tuple[set[str], set[str]]]:
+    """Extract scores and team IDs from match data."""
+    scores = (int(data.get("player1Score", 0)), int(data.get("player2Score", 0)))
+    team_ids = _get_team_ids_from_match(data)
+    return scores, team_ids
 
-    t1_ids, t2_ids = _get_team_ids_from_match(data)
+
+def _calculate_h2h_match_delta(
+    user_id_1: str,
+    user_id_2: str,
+    team_ids: tuple[set[str], set[str]],
+    scores: tuple[int, int],
+) -> tuple[int, int, int]:
+    """Calculate wins, losses, and point difference for user 1 against user 2."""
+    p1_score, p2_score = scores
+    t1_ids, t2_ids = team_ids
+
     if user_id_1 in t1_ids and user_id_2 in t2_ids:
         return (
             (1 if p1_score > p2_score else 0),
@@ -476,6 +532,17 @@ def _process_h2h_match(
             (p2_score - p1_score),
         )
     return 0, 0, 0
+
+
+def _process_h2h_match(
+    data: dict[str, Any], user_id_1: str, user_id_2: str
+) -> tuple[int, int, int]:
+    """Process a single match for H2H stats and return (wins, losses, points)."""
+    scores, team_ids = _get_h2h_match_data(data)
+    if scores[0] == scores[1]:
+        return 0, 0, 0
+
+    return _calculate_h2h_match_delta(user_id_1, user_id_2, team_ids, scores)
 
 
 def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] | None:

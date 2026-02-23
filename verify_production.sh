@@ -22,10 +22,10 @@ fi
 echo -e "\n>>> 2. Checking Let's Encrypt Certificates..."
 # Check if Nginx container is running before exec
 if docker ps --format '{{.Names}}' | grep -q "^${NGINX_CONTAINER}$"; then
-    if docker exec "$NGINX_CONTAINER" test -f /etc/letsencrypt/live/pickaladder.io/fullchain.pem; then
+    if docker exec "$NGINX_CONTAINER" test -f /etc/letsencrypt/live/app.pickaladder.com/fullchain.pem; then
         echo " [OK] Certificate file found."
         echo "      Details:"
-        docker exec "$NGINX_CONTAINER" openssl x509 -in /etc/letsencrypt/live/pickaladder.io/fullchain.pem -text -noout | grep "Issuer\|Subject:\|Not After" || echo " (openssl not found in container - try redeploying to get updated image)"
+        docker exec "$NGINX_CONTAINER" openssl x509 -in /etc/letsencrypt/live/app.pickaladder.com/fullchain.pem -text -noout | grep "Issuer\|Subject:\|Not After" || echo " (openssl not found in container - try redeploying to get updated image)"
     else
         echo " [FAIL] Certificate file NOT found in the Nginx container."
     fi
