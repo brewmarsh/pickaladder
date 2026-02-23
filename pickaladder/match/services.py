@@ -384,38 +384,44 @@ class MatchQueryService:
     def get_player_record(db: Client, player_ref: Any) -> dict[str, int]:
         """Calculate win/loss record for a player by doc reference."""
         wins, losses = 0, 0
-        queries = [
-            db.collection("matches").where(
-                filter=firestore.FieldFilter("player1Ref", "==", player_ref)
-            ),
-            db.collection("matches").where(
-                filter=firestore.FieldFilter("player2Ref", "==", player_ref)
-            ),
-            db.collection("matches").where(
-                filter=firestore.FieldFilter("team1", "array_contains", player_ref)
-            ),
-            db.collection("matches").where(
-                filter=firestore.FieldFilter("team2", "array_contains", player_ref)
-            ),
-        ]
+        uid = (
+            player_ref.id
+            if player_ref is not None and hasattr(player_ref, "id")
+            else str(player_ref)
+        )
 
-        singles_threshold = 2
-        for idx, query in enumerate(queries):
-            for match in query.stream():
-                data = match.to_dict()
-                if not data:
-                    continue
-                is_doubles = data.get("matchType") == "doubles"
-                if (idx < singles_threshold and is_doubles) or (
-                    idx >= singles_threshold and not is_doubles
-                ):
-                    continue
+        query = db.collection("matches").where(
+            filter=firestore.FieldFilter("participants", "array_contains", uid)
+        )
 
-                s1, s2 = data.get("player1Score", 0), data.get("player2Score", 0)
-                if (idx % 2 == 0 and s1 > s2) or (idx % 2 == 1 and s2 > s1):
-                    wins += 1
-                else:
-                    losses += 1
+        for match in query.stream():
+            data = match.to_dict()
+            if not data:
+                continue
+
+            s1, s2 = data.get("player1Score", 0), data.get("player2Score", 0)
+            if s1 == s2:
+                continue  # Skip draws for pure W/L record
+
+            # Determine if user is on team1 side
+            is_team1 = False
+            if data.get("matchType") == "doubles":
+                team1_refs = data.get("team1", [])
+                is_team1 = any(
+                    (r.id if r is not None and hasattr(r, "id") else "") == uid
+                    for r in team1_refs
+                )
+            else:
+                p1_ref = data.get("player1Ref")
+                is_team1 = (
+                    p1_ref.id if p1_ref is not None and hasattr(p1_ref, "id") else ""
+                ) == uid
+
+            if (is_team1 and s1 > s2) or (not is_team1 and s2 > s1):
+                wins += 1
+            else:
+                losses += 1
+
         return {"wins": wins, "losses": losses}
 
     @staticmethod
