@@ -31,30 +31,35 @@ sys.path.insert(0, str(project_root))
 TEAM_SIZE = 2
 
 
-def initialize_firebase() -> bool:
-    """Initializes the Firebase Admin SDK."""
-    cred = None
+def _load_credentials() -> credentials.Certificate | None:
+    """Load Firebase credentials from file or environment variable."""
     # Try loading from file (for local dev)
     cred_path = project_root / "firebase_credentials.json"
     if cred_path.exists():
         try:
-            cred = credentials.Certificate(str(cred_path))
+            return credentials.Certificate(str(cred_path))
         except Exception as e:
             print(f"Error loading credentials from file: {e}")
-            return False
-    else:
-        # Fallback to environment variable (for production/CI)
-        cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
-        if cred_json:
-            try:
-                cred_info = json.loads(cred_json)
-                cred = credentials.Certificate(cred_info)
-            except (json.JSONDecodeError, ValueError) as e:
-                print(f"Error parsing FIREBASE_CREDENTIALS_JSON: {e}")
-                return False
+            return None
 
+    # Fallback to environment variable (for production/CI)
+    cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+    if cred_json:
+        try:
+            cred_info = json.loads(cred_json)
+            return credentials.Certificate(cred_info)
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"Error parsing FIREBASE_CREDENTIALS_JSON: {e}")
+            return None
+
+    print("Could not find Firebase credentials in file or environment variable.")
+    return None
+
+
+def initialize_firebase() -> bool:
+    """Initializes the Firebase Admin SDK."""
+    cred = _load_credentials()
     if not cred:
-        print("Could not find Firebase credentials in file or environment variable.")
         return False
 
     if not firebase_admin._apps:
@@ -91,38 +96,71 @@ def get_or_create_team(db: Any, team_members: list[Any] | None) -> Any:
         return create_team_document(db, team_members)
 
 
+def _setup_mock_db() -> MockFirestore:
+    """Initialize a mock database with test data."""
+    db = MockFirestore()
+    # Populate with some test data
+    user1_ref = db.collection("users").document("user1")
+    user1_ref.set({"name": "Player A"})
+    user2_ref = db.collection("users").document("user2")
+    user2_ref.set({"name": "Player B"})
+    user3_ref = db.collection("users").document("user3")
+    user3_ref.set({"name": "Player C"})
+    user4_ref = db.collection("users").document("user4")
+    user4_ref.set({"name": "Player D"})
+
+    matches_ref = db.collection("matches")
+    matches_ref.add(
+        {
+            "matchType": "doubles",
+            "team1": [user1_ref, user2_ref],
+            "team2": [user3_ref, user4_ref],
+            "player1Score": 11,
+            "player2Score": 8,
+        }
+    )
+    matches_ref.add(
+        {
+            "matchType": "singles",  # Should be ignored
+            "player1Ref": user1_ref,
+            "player2Ref": user3_ref,
+        }
+    )
+    return db
+
+
+def _process_matches_migration(db: Any, matches: list[Any]) -> str | None:
+    """Iterate through doubles matches and update them with team references."""
+    migrated_match_id = None
+    for match in matches:
+        match_data = match.to_dict()
+        match_id = match.id
+
+        # Skip if already migrated
+        if "team1Ref" in match_data and "team2Ref" in match_data:
+            continue
+
+        print(f"Processing match {match_id}...")
+        team1_members = match_data.get("team1")
+        team2_members = match_data.get("team2")
+
+        team1_ref = get_or_create_team(db, team1_members)
+        team2_ref = get_or_create_team(db, team2_members)
+
+        if team1_ref and team2_ref:
+            match.reference.update({"team1Ref": team1_ref, "team2Ref": team2_ref})
+            print(f"Successfully updated match {match_id}.")
+            if not migrated_match_id:
+                migrated_match_id = match_id
+        else:
+            print(f"Skipping match {match_id} due to missing team data.")
+    return migrated_match_id
+
+
 def migrate_matches_to_teams() -> None:
     """Main migration logic."""
     if os.environ.get("MOCK_DB"):
-        db = MockFirestore()
-        # Populate with some test data
-        user1_ref = db.collection("users").document("user1")
-        user1_ref.set({"name": "Player A"})
-        user2_ref = db.collection("users").document("user2")
-        user2_ref.set({"name": "Player B"})
-        user3_ref = db.collection("users").document("user3")
-        user3_ref.set({"name": "Player C"})
-        user4_ref = db.collection("users").document("user4")
-        user4_ref.set({"name": "Player D"})
-
-        matches_ref = db.collection("matches")
-        matches_ref.add(
-            {
-                "matchType": "doubles",
-                "team1": [user1_ref, user2_ref],
-                "team2": [user3_ref, user4_ref],
-                "player1Score": 11,
-                "player2Score": 8,
-            }
-        )
-        matches_ref.add(
-            {
-                "matchType": "singles",  # Should be ignored
-                "player1Ref": user1_ref,
-                "player2Ref": user3_ref,
-            }
-        )
-
+        db = _setup_mock_db()
     else:
         if not initialize_firebase():
             return
@@ -137,31 +175,7 @@ def migrate_matches_to_teams() -> None:
         return
 
     print(f"Found {len(doubles_matches)} doubles matches to process.")
-    migrated_match_id = None
-
-    for match in doubles_matches:
-        match_data = match.to_dict()
-        match_id = match.id
-
-        # Skip if already migrated
-        if "team1Ref" in match_data and "team2Ref" in match_data:
-            continue
-
-        print(f"Processing match {match_id}...")
-
-        team1_members = match_data.get("team1")
-        team2_members = match_data.get("team2")
-
-        team1_ref = get_or_create_team(db, team1_members)
-        team2_ref = get_or_create_team(db, team2_members)
-
-        if team1_ref and team2_ref:
-            match.reference.update({"team1Ref": team1_ref, "team2Ref": team2_ref})
-            print(f"Successfully updated match {match_id}.")
-            if not migrated_match_id:
-                migrated_match_id = match_id
-        else:
-            print(f"Skipping match {match_id} due to missing team data.")
+    migrated_match_id = _process_matches_migration(db, doubles_matches)
 
     print("\nMigration complete.")
 

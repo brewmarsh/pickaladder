@@ -148,6 +148,24 @@ def view_tournament(tournament_id: str) -> Any:
     return render_template("tournament/view.html", invite_form=form, **details)
 
 
+def _handle_tournament_update(tournament_id: str, form: TournamentForm) -> bool:
+    """Process tournament update from form."""
+    if form.validate_on_submit():
+        TournamentService.update_tournament_from_form(
+            tournament_id, g.user["uid"], form.data, request.files.get("banner")
+        )
+        return True
+    return False
+
+
+def _populate_edit_form(form: TournamentForm, tournament_data: dict[str, Any]) -> None:
+    """Populate the edit form with existing tournament data."""
+    form.process(data=tournament_data)
+    t_date = tournament_data.get("date")
+    if hasattr(t_date, "to_datetime"):
+        form.start_date.data = cast(Any, t_date).to_datetime().date()
+
+
 @bp.route("/<string:tournament_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_tournament(tournament_id: str) -> Any:
@@ -155,17 +173,13 @@ def edit_tournament(tournament_id: str) -> Any:
     form = TournamentForm()
     try:
         t = TournamentService.get_tournament_for_edit(tournament_id, g.user["uid"])
-        if form.validate_on_submit():
-            TournamentService.update_tournament_from_form(
-                tournament_id, g.user["uid"], form.data, request.files.get("banner")
-            )
+        if _handle_tournament_update(tournament_id, form):
             flash("Tournament updated successfully.", "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
         if request.method == "GET":
-            form.process(data=t)
-            if hasattr(t.get("date"), "to_datetime"):
-                form.start_date.data = cast(Any, t["date"]).to_datetime().date()
+            _populate_edit_form(form, t)
+
         return render_template(
             "tournaments/create_edit.html", form=form, tournament=t, action="Edit"
         )
@@ -268,19 +282,25 @@ def complete_tournament(tournament_id: str) -> Any:
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
+def _extract_uid_from_participant(participant: dict[str, Any]) -> str | None:
+    """Extract UID from a participant record."""
+    if participant.get("status") != "accepted":
+        return None
+
+    u_ref = participant.get("userRef")
+    if u_ref:
+        return str(u_ref.id)
+
+    uid = participant.get("user_id")
+    return str(uid) if uid else None
+
+
 def _get_accepted_uids(data: dict[str, Any]) -> list[str]:
     """Extract list of UIDs for accepted participants."""
     parts = cast(list[dict[str, Any]], data.get("participants", []))
-    uids: list[str] = []
-    for p in parts:
-        if p.get("status") == "accepted":
-            u_ref = p.get("userRef")
-            if u_ref:
-                uids.append(str(u_ref.id))
-            else:
-                uid = p.get("user_id")
-                if uid:
-                    uids.append(str(uid))
+    uids = [
+        uid for p in parts if (uid := _extract_uid_from_participant(p)) is not None
+    ]
     return uids
 
 
