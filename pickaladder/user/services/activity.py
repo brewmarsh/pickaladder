@@ -16,7 +16,12 @@ def _is_user_participant_with_status(
     for p in participants:
         if not p:
             continue
-        p_uid = p.get("userRef").id if p.get("userRef") else p.get("user_id")
+        user_ref = p.get("userRef")
+        p_uid = (
+            user_ref.id
+            if user_ref is not None and hasattr(user_ref, "id")
+            else p.get("user_id")
+        )
         if p_uid == user_id and p.get("status") == status:
             return True
     return False
@@ -71,7 +76,11 @@ def _enrich_group_with_owner(
     guest_user = {"username": "Guest", "id": "unknown"}
     data["id"] = doc_id
     owner_ref = data.get("ownerRef")
-    if owner_ref and owner_ref.id in owners_data:
+    if (
+        owner_ref is not None
+        and hasattr(owner_ref, "id")
+        and owner_ref.id in owners_data
+    ):
         data["owner"] = owners_data[owner_ref.id]
     else:
         data["owner"] = guest_user
