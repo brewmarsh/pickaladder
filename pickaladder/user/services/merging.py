@@ -6,6 +6,7 @@ from flask import current_app
 
 if TYPE_CHECKING:
     from firebase_admin import firestore as _firestore
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
 
@@ -98,25 +99,44 @@ def _update_doubles_match_team(
         updates[ref_f] = db.collection("teams").document(new_team_id)
 
 
-def _migrate_doubles_matches(
-    db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+def _fetch_doubles_matches_to_migrate(
+    db: Client, field: str, ghost_ref: Any
+) -> list[DocumentSnapshot]:
+    """Fetch doubles matches for a specific team field containing the ghost user."""
+    return list(
+        db.collection("matches").where(field, "array_contains", ghost_ref).stream()
+    )
+
+
+def _apply_doubles_migration_batch(
+    db: Client,
+    batch: _firestore.WriteBatch,
+    docs: list[DocumentSnapshot],
+    field: str,
+    refs: tuple[Any, Any],
 ) -> None:
-    """Update doubles matches where the user is in a team array."""
+    """Prepare and apply batch updates for doubles matches."""
     match_updates: dict[str, dict[str, Any]] = {}
-    refs = (ghost_ref, real_user_ref)
-    for field in ["team1", "team2"]:
-        for match in (
-            db.collection("matches").where(field, "array_contains", ghost_ref).stream()
-        ):
-            if match.id not in match_updates:
-                match_updates[match.id] = {"ref": match.reference, "updates": {}}
-            _update_doubles_match_team(
-                db, match, field, refs, match_updates[match.id]["updates"]
-            )
+    for match in docs:
+        if match.id not in match_updates:
+            match_updates[match.id] = {"ref": match.reference, "updates": {}}
+        _update_doubles_match_team(
+            db, match, field, refs, match_updates[match.id]["updates"]
+        )
 
     for update in match_updates.values():
         if update["updates"]:
             batch.update(update["ref"], update["updates"])
+
+
+def _migrate_doubles_matches(
+    db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
+) -> None:
+    """Update doubles matches where the user is in a team array."""
+    refs = (ghost_ref, real_user_ref)
+    for field in ["team1", "team2"]:
+        matches = _fetch_doubles_matches_to_migrate(db, field, ghost_ref)
+        _apply_doubles_migration_batch(db, batch, matches, field, refs)
 
 
 def _migrate_groups(
@@ -159,25 +179,44 @@ def _rebuild_participant_ids(
     return [real_user_ref_id if pid == ghost_ref_id else pid for pid in p_ids]
 
 
+def _fetch_tournaments_to_migrate(db: Client, ghost_id: str) -> list[DocumentSnapshot]:
+    """Fetch tournaments where the ghost user is a participant."""
+    query = db.collection("tournaments").where(
+        "participant_ids", "array_contains", ghost_id
+    )
+    return list(query.stream())
+
+
+def _migrate_single_tournament(
+    batch: _firestore.WriteBatch,
+    tournament_doc: DocumentSnapshot,
+    ghost_ref: Any,
+    real_user_ref: Any,
+) -> None:
+    """Migrate a single tournament record from ghost user to real user."""
+    data = tournament_doc.to_dict()
+    if not data:
+        return
+
+    participants = data.get("participants", [])
+    updated = any(
+        _update_tournament_participant(p, ghost_ref.id, real_user_ref)
+        for p in participants
+    )
+    if updated:
+        new_p_ids = _rebuild_participant_ids(
+            data.get("participant_ids", []), ghost_ref.id, real_user_ref.id
+        )
+        batch.update(
+            tournament_doc.reference,
+            {"participants": participants, "participant_ids": new_p_ids},
+        )
+
+
 def _migrate_tournaments(
     db: Client, batch: _firestore.WriteBatch, ghost_ref: Any, real_user_ref: Any
 ) -> None:
     """Update tournament participant lists and IDs."""
-    query = db.collection("tournaments").where(
-        "participant_ids", "array_contains", ghost_ref.id
-    )
-    for tournament in query.stream():
-        if data := tournament.to_dict():
-            participants = data.get("participants", [])
-            updated = any(
-                _update_tournament_participant(p, ghost_ref.id, real_user_ref)
-                for p in participants
-            )
-            if updated:
-                new_p_ids = _rebuild_participant_ids(
-                    data.get("participant_ids", []), ghost_ref.id, real_user_ref.id
-                )
-                batch.update(
-                    tournament.reference,
-                    {"participants": participants, "participant_ids": new_p_ids},
-                )
+    tournaments = _fetch_tournaments_to_migrate(db, ghost_ref.id)
+    for tournament in tournaments:
+        _migrate_single_tournament(batch, tournament, ghost_ref, real_user_ref)
