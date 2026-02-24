@@ -27,7 +27,7 @@ class MatchValidationService:
     @staticmethod
     def _check_duplicate_players(sub: MatchSubmission) -> None:
         """Ensure no duplicate players are selected."""
-        players = [sub.player_1_id, sub.player_2_id]
+        players: list[str | None] = [sub.player_1_id, sub.player_2_id]
         if sub.match_type == "doubles":
             players.extend([sub.partner_id, sub.opponent_2_id])
 

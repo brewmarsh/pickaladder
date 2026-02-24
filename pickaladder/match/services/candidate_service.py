@@ -80,11 +80,12 @@ class MatchCandidateService:
             .where(filter=firestore.FieldFilter("used", "==", False))
             .stream()
         )
-        return [
-            (doc.to_dict() or {}).get("email")
-            for doc in invites
-            if (doc.to_dict() or {}).get("email")
-        ]
+        emails: list[str] = []
+        for doc in invites:
+            data = doc.to_dict()
+            if data and (email := data.get("email")):
+                emails.append(str(email))
+        return emails
 
     @staticmethod
     def _resolve_user_ids_by_emails(db: Client, emails: list[str]) -> set[str]:
