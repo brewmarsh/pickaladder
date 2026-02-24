@@ -16,14 +16,9 @@ VERSION_THRESHOLD = 10
 VERSION_SHORT_LENGTH = 7
 
 
-def _get_app_version() -> str:
-    """Detect version from environment variables or file."""
-    # Detect version from environment variables with the following priority:
-    # 1. APP_VERSION (explicitly set)
-    # 2. GITHUB_SHA or GITHUB_RUN_NUMBER (GitHub Actions build)
-    # 3. RENDER_GIT_COMMIT or HEROKU_SLUG_COMMIT (Git Hash from Render/Heroku)
-    # 4. Fallback to "dev"
-    version = (
+def _get_version_from_env() -> str | None:
+    """Fetch version from environment variables."""
+    return (
         os.environ.get("APP_VERSION")
         or os.environ.get("GITHUB_SHA")
         or os.environ.get("GITHUB_RUN_NUMBER")
@@ -31,16 +26,31 @@ def _get_app_version() -> str:
         or os.environ.get("HEROKU_SLUG_COMMIT")
     )
 
-    if not version:
-        try:
-            version_file = Path(current_app.root_path).parent / "VERSION"
-            if version_file.exists():
-                version = version_file.read_text().strip()
-        except Exception:  # nosec B110
-            pass
 
-    if not version:
-        version = "dev"
+def _read_version_file_content(version_file: Path) -> str | None:
+    """Read version content if file exists."""
+    try:
+        return version_file.read_text().strip()
+    except Exception:  # nosec B110
+        return None
+
+
+def _read_version_file(version_file: Path) -> str | None:
+    """Read version string from a file."""
+    if not version_file.exists():
+        return None
+    return _read_version_file_content(version_file)
+
+
+def _get_version_from_file() -> str | None:
+    """Fetch version from the VERSION file."""
+    version_file = Path(current_app.root_path).parent / "VERSION"
+    return _read_version_file(version_file)
+
+
+def _get_app_version() -> str:
+    """Detect version from environment variables or file."""
+    version = _get_version_from_env() or _get_version_from_file() or "dev"
 
     # If it's a long git hash, shorten it
     if len(version) > VERSION_THRESHOLD and version != "dev":
@@ -74,39 +84,67 @@ def inject_global_context() -> dict[str, Any]:
     }
 
 
+def _get_user_uid() -> str | None:
+    """Get the current user's UID from g."""
+    user = getattr(g, "user", None)
+    return user.get("uid") if user else None
+
+
+def _fetch_pending_requests(user_id: str) -> dict[str, Any]:
+    """Fetch pending friend requests for a user."""
+    db = firestore.client()
+    pending_requests = UserService.get_user_pending_requests(db, user_id)
+    return dict(
+        incoming_requests_count=len(pending_requests),
+        pending_friend_requests=pending_requests,
+    )
+
+
+def _log_context_error(domain: str, e: Exception) -> None:
+    """Log error if not a RuntimeError."""
+    if not isinstance(e, RuntimeError):
+        current_app.logger.error(f"Error fetching {domain}: {e}")
+
+
+def _try_fetch_requests(uid: str) -> dict[str, Any]:
+    """Internal helper for requests fetching."""
+    try:
+        return _fetch_pending_requests(uid)
+    except Exception as e:
+        _log_context_error("friend requests", e)
+        return dict(incoming_requests_count=0, pending_friend_requests=[])
+
+
 def inject_incoming_requests_count() -> dict[str, Any]:
     """Injects incoming friend requests count into the template context."""
+    uid = _get_user_uid()
+    if not uid:
+        return dict(incoming_requests_count=0, pending_friend_requests=[])
+    return _try_fetch_requests(uid)
+
+
+def _fetch_pending_invites(user_id: str) -> dict[str, Any]:
+    """Fetch pending tournament invites for a user."""
+    db = firestore.client()
+    pending_invites = UserService.get_pending_tournament_invites(db, user_id)
+    return dict(pending_tournament_invites=pending_invites)
+
+
+def _try_fetch_invites(uid: str) -> dict[str, Any]:
+    """Internal helper for invites fetching."""
     try:
-        user = getattr(g, "user", None)
-        if user:
-            db = firestore.client()
-            pending_requests = UserService.get_user_pending_requests(db, user["uid"])
-            return dict(
-                incoming_requests_count=len(pending_requests),
-                pending_friend_requests=pending_requests,
-            )
-    except (Exception, RuntimeError) as e:
-        # Avoid logging RuntimeError as it often means we're outside a request context
-        if not isinstance(e, RuntimeError):
-            current_app.logger.error(f"Error fetching friend requests: {e}")
-    return dict(incoming_requests_count=0, pending_friend_requests=[])
+        return _fetch_pending_invites(uid)
+    except Exception as e:
+        _log_context_error("tournament invites", e)
+        return dict(pending_tournament_invites=[])
 
 
 def inject_pending_tournament_invites() -> dict[str, Any]:
     """Injects pending tournament invites into the template context."""
-    try:
-        user = getattr(g, "user", None)
-        if user:
-            db = firestore.client()
-            pending_invites = UserService.get_pending_tournament_invites(
-                db, user["uid"]
-            )
-            return dict(pending_tournament_invites=pending_invites)
-    except (Exception, RuntimeError) as e:
-        # Avoid logging RuntimeError as it often means we're outside a request context
-        if not isinstance(e, RuntimeError):
-            current_app.logger.error(f"Error fetching tournament invites: {e}")
-    return dict(pending_tournament_invites=[])
+    uid = _get_user_uid()
+    if not uid:
+        return dict(pending_tournament_invites=[])
+    return _try_fetch_invites(uid)
 
 
 def inject_firebase_api_key() -> dict[str, Any]:

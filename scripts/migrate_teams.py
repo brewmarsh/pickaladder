@@ -31,29 +31,53 @@ sys.path.insert(0, str(project_root))
 TEAM_SIZE = 2
 
 
+def _get_credentials_path() -> Path:
+    """Get the path to the Firebase credentials file."""
+    return project_root / "firebase_credentials.json"
+
+
+def _load_certificate(path_or_dict: Any) -> credentials.Certificate | None:
+    """Helper to load a certificate with error handling."""
+    try:
+        return credentials.Certificate(path_or_dict)
+    except Exception as e:
+        print(f"Error loading credentials: {e}")
+        return None
+
+
+def _load_credentials_from_file(cred_path: Path) -> credentials.Certificate | None:
+    """Load Firebase credentials from a JSON file."""
+    if not cred_path.exists():
+        return None
+    return _load_certificate(str(cred_path))
+
+
+def _parse_cred_json(cred_json: str) -> credentials.Certificate | None:
+    """Parse JSON string and load certificate."""
+    try:
+        return _load_certificate(json.loads(cred_json))
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"Error parsing FIREBASE_CREDENTIALS_JSON: {e}")
+        return None
+
+
+def _load_credentials_from_env() -> credentials.Certificate | None:
+    """Load Firebase credentials from an environment variable."""
+    cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+    if not cred_json:
+        return None
+    return _parse_cred_json(cred_json)
+
+
 def _load_credentials() -> credentials.Certificate | None:
     """Load Firebase credentials from file or environment variable."""
-    # Try loading from file (for local dev)
-    cred_path = project_root / "firebase_credentials.json"
-    if cred_path.exists():
-        try:
-            return credentials.Certificate(str(cred_path))
-        except Exception as e:
-            print(f"Error loading credentials from file: {e}")
-            return None
-
-    # Fallback to environment variable (for production/CI)
-    cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
-    if cred_json:
-        try:
-            cred_info = json.loads(cred_json)
-            return credentials.Certificate(cred_info)
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"Error parsing FIREBASE_CREDENTIALS_JSON: {e}")
-            return None
-
-    print("Could not find Firebase credentials in file or environment variable.")
-    return None
+    cred = (
+        _load_credentials_from_file(_get_credentials_path())
+        or _load_credentials_from_env()
+    )
+    if not cred:
+        print("Could not find Firebase credentials in file or environment variable.")
+    return cred
 
 
 def initialize_firebase() -> bool:
@@ -63,12 +87,11 @@ def initialize_firebase() -> bool:
         return False
 
     if not firebase_admin._apps:
-        # Use the standard storage bucket for consistency
-        storage_bucket = (
+        bucket = (
             os.environ.get("FIREBASE_STORAGE_BUCKET")
             or "pickaladder.firebasestorage.app"
         )
-        firebase_admin.initialize_app(cred, {"storageBucket": storage_bucket})
+        firebase_admin.initialize_app(cred, {"storageBucket": bucket})
     return True
 
 
@@ -82,24 +105,18 @@ def get_or_create_team(db: Any, team_members: list[Any] | None) -> Any:
 
     sorted_member_ids = sorted([ref.id for ref in team_members])
 
-    # Query for an existing team with the same members
     teams_ref = db.collection("teams")
-    query = teams_ref.where("member_ids", "==", sorted_member_ids)
-    docs = list(query.stream())
+    docs = list(teams_ref.where("member_ids", "==", sorted_member_ids).stream())
 
     if docs:
-        # Team already exists
         return docs[0].reference
-    else:
-        # Team does not exist, create it
-        print(f"Creating new team for members: {sorted_member_ids}")
-        return create_team_document(db, team_members)
+    print(f"Creating new team for members: {sorted_member_ids}")
+    return create_team_document(db, team_members)
 
 
 def _setup_mock_db() -> MockFirestore:
     """Initialize a mock database with test data."""
     db = MockFirestore()
-    # Populate with some test data
     user1_ref = db.collection("users").document("user1")
     user1_ref.set({"name": "Player A"})
     user2_ref = db.collection("users").document("user2")
@@ -121,7 +138,7 @@ def _setup_mock_db() -> MockFirestore:
     )
     matches_ref.add(
         {
-            "matchType": "singles",  # Should be ignored
+            "matchType": "singles",
             "player1Ref": user1_ref,
             "player2Ref": user3_ref,
         }
@@ -129,93 +146,88 @@ def _setup_mock_db() -> MockFirestore:
     return db
 
 
+def _migrate_match(match: Any, db: Any) -> bool:
+    """Migrate a single match and return True if successful."""
+    data = match.to_dict()
+    if "team1Ref" in data and "team2Ref" in data:
+        return False
+
+    print(f"Processing match {match.id}...")
+    t1_ref = get_or_create_team(db, data.get("team1"))
+    t2_ref = get_or_create_team(db, data.get("team2"))
+
+    if t1_ref and t2_ref:
+        match.reference.update({"team1Ref": t1_ref, "team2Ref": t2_ref})
+        print(f"Successfully updated match {match.id}.")
+        return True
+
+    print(f"Skipping match {match.id} due to missing team data.")
+    return False
+
+
 def _process_matches_migration(db: Any, matches: list[Any]) -> str | None:
     """Iterate through doubles matches and update them with team references."""
     migrated_match_id = None
     for match in matches:
-        match_data = match.to_dict()
-        match_id = match.id
-
-        # Skip if already migrated
-        if "team1Ref" in match_data and "team2Ref" in match_data:
-            continue
-
-        print(f"Processing match {match_id}...")
-        team1_members = match_data.get("team1")
-        team2_members = match_data.get("team2")
-
-        team1_ref = get_or_create_team(db, team1_members)
-        team2_ref = get_or_create_team(db, team2_members)
-
-        if team1_ref and team2_ref:
-            match.reference.update({"team1Ref": team1_ref, "team2Ref": team2_ref})
-            print(f"Successfully updated match {match_id}.")
-            if not migrated_match_id:
-                migrated_match_id = match_id
-        else:
-            print(f"Skipping match {match_id} due to missing team data.")
+        if _migrate_match(match, db) and not migrated_match_id:
+            migrated_match_id = match.id
     return migrated_match_id
+
+
+def _get_db() -> Any | None:
+    """Setup and return Firestore client or Mock Firestore."""
+    if os.environ.get("MOCK_DB"):
+        return _setup_mock_db()
+    if initialize_firebase():
+        return firestore.client()
+    return None
+
+
+def _perform_verification(db: Any, migrated_id: str | None) -> None:
+    """Helper to trigger verification if migration occurred."""
+    if migrated_id:
+        print("\n--- Verifying Migration ---")
+        verify_migration(db, migrated_id)
 
 
 def migrate_matches_to_teams() -> None:
     """Main migration logic."""
-    if os.environ.get("MOCK_DB"):
-        db = _setup_mock_db()
-    else:
-        if not initialize_firebase():
-            return
-        db = firestore.client()
+    db = _get_db()
+    if db is None:
+        return
 
-    matches_ref = db.collection("matches")
-    doubles_matches_query = matches_ref.where("matchType", "==", "doubles")
-    doubles_matches = list(doubles_matches_query.stream())
+    stream = db.collection("matches").where("matchType", "==", "doubles").stream()
+    doubles_matches = list(stream)
 
     if not doubles_matches:
         print("No doubles matches found to migrate.")
         return
 
     print(f"Found {len(doubles_matches)} doubles matches to process.")
-    migrated_match_id = _process_matches_migration(db, doubles_matches)
+    migrated_id = _process_matches_migration(db, doubles_matches)
 
     print("\nMigration complete.")
-
-    # --- Verification Step ---
-    if migrated_match_id:
-        print("\n--- Verifying Migration ---")
-        verify_migration(db, migrated_match_id)
-    else:
-        print("\n--- No new matches were migrated, skipping verification ---")
+    _perform_verification(db, migrated_id)
 
 
 def verify_migration(db: Any, match_id: str) -> None:
     """Fetches one migrated match and its team to verify the changes."""
     print(f"Verifying match with ID: {match_id}")
-    match_ref = db.collection("matches").document(match_id)
-    match_doc = match_ref.get()
+    match_doc = db.collection("matches").document(match_id).get()
 
     if not match_doc.exists:
         print("Verification failed: Migrated match not found.")
         return
 
     match_data = match_doc.to_dict()
-    print("\n--- Migrated Match Data ---")
-    print(match_data)
+    print("\n--- Migrated Match Data ---\n", match_data)
 
     team1_ref = match_data.get("team1Ref")
-    if not team1_ref:
-        print("\nVerification failed: 'team1Ref' is missing.")
+    if not team1_ref or not team1_ref.get().exists:
+        print("\nVerification failed: 'team1Ref' missing or invalid.")
         return
 
-    team_doc = team1_ref.get()
-    if not team_doc.exists:
-        print(
-            "\nVerification failed: Team document pointed to by 'team1Ref' not found."
-        )
-        return
-
-    team_data = team_doc.to_dict()
-    print("\n--- Corresponding Team Data ---")
-    print(team_data)
+    print("\n--- Corresponding Team Data ---\n", team1_ref.get().to_dict())
     print("\n--- Verification Successful ---")
 
 

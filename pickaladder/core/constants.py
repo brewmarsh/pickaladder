@@ -55,3 +55,16 @@ GLOBAL_LEADERBOARD_MIN_GAMES = 1
 
 # Email-related constants
 SMTP_AUTH_ERROR_CODE = 534
+
+JOKES = [
+    "Why did the pickleball player get arrested? Because he was caught smashing!",
+    "What do you call a girl standing in the middle of a tennis court? Annette.",
+    "Why are fish never good at tennis? Because they don't like getting close to the net.",
+    "What is a tennis player's favorite city? Volley-wood.",
+    "Why do tennis players never get married? Because love means nothing to them.",
+    "What time does a tennis player go to bed? Ten-ish.",
+    "Why did the pickleball hit the net? It wanted to see what was on the other side.",
+    "How is a pickleball game like a waiter? They both serve.",
+    "Why should you never fall in love with a tennis player? To them, 'Love' means nothing.",
+    "What do you serve but not eat? A tennis ball.",
+]
