@@ -1,19 +1,10 @@
 from firebase_admin import firestore
 
 from .activity import (
-    get_active_tournaments as _get_active_tournaments,
-)
-from .activity import (
     get_community_data as _get_community_data,
 )
 from .activity import (
     get_group_rankings as _get_group_rankings,
-)
-from .activity import (
-    get_past_tournaments as _get_past_tournaments,
-)
-from .activity import (
-    get_pending_tournament_invites as _get_pending_tournament_invites,
 )
 from .activity import (
     get_public_groups as _get_public_groups,
@@ -78,20 +69,26 @@ from .friendship import (
 from .friendship import (
     send_friend_request as _send_friend_request,
 )
+from .match_entity_service import (
+    fetch_match_entities as _fetch_match_entities,
+)
+from .match_formatting import (
+    _collect_match_refs as _collect_match_refs,
+)
+from .match_formatting import (
+    format_matches_for_dashboard as _format_matches_for_dashboard,
+)
+from .match_formatting import (
+    format_matches_for_profile as _format_matches_for_profile,
+)
+from .match_participant_service import (
+    get_player_info as _get_player_info,
+)
 from .match_stats import (
     _calculate_streak as _calculate_streak,
 )
 from .match_stats import (
-    _collect_match_refs as _collect_match_refs,
-)
-from .match_stats import (
-    _fetch_match_entities as _fetch_match_entities,
-)
-from .match_stats import (
     _get_match_winner_slot as _get_match_winner_slot,
-)
-from .match_stats import (
-    _get_player_info as _get_player_info,
 )
 from .match_stats import (
     _get_profile_match_alignment as _get_profile_match_alignment,
@@ -103,19 +100,10 @@ from .match_stats import (
     _get_user_match_won_lost as _get_user_match_won_lost,
 )
 from .match_stats import (
-    _process_h2h_match as _process_h2h_match,
-)
-from .match_stats import (
     calculate_current_streak as _calculate_current_streak,
 )
 from .match_stats import (
     calculate_stats as _calculate_stats,
-)
-from .match_stats import (
-    format_matches_for_dashboard as _format_matches_for_dashboard,
-)
-from .match_stats import (
-    format_matches_for_profile as _format_matches_for_profile,
 )
 from .match_stats import (
     get_h2h_stats as _get_h2h_stats,
@@ -159,6 +147,15 @@ from .profile import (
 from .profile import (
     upload_profile_picture as _upload_profile_picture,
 )
+from .user_tournament_service import (
+    get_active_tournaments as _get_active_tournaments,
+)
+from .user_tournament_service import (
+    get_past_tournaments as _get_past_tournaments,
+)
+from .user_tournament_service import (
+    get_pending_tournament_invites as _get_pending_tournament_invites,
+)
 
 __all__ = ["UserService", "firestore"]
 
@@ -199,7 +196,6 @@ class UserService:
     _calculate_streak = staticmethod(_calculate_streak)
     calculate_current_streak = staticmethod(_calculate_current_streak)
     calculate_stats = staticmethod(_calculate_stats)
-    _process_h2h_match = staticmethod(_process_h2h_match)
     get_h2h_stats = staticmethod(_get_h2h_stats)
     get_recent_opponents = staticmethod(_get_recent_opponents)
     accept_friend_request = staticmethod(_accept_friend_request)

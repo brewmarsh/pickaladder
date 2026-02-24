@@ -5,21 +5,25 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from pickaladder.user.services.activity import (
-    get_active_tournaments,
     get_group_rankings,
-    get_past_tournaments,
-    get_pending_tournament_invites,
 )
 from pickaladder.user.services.core import get_user_by_id
 from pickaladder.user.services.friendship import (
     get_user_friends,
     get_user_pending_requests,
 )
+from pickaladder.user.services.match_formatting import (
+    format_matches_for_dashboard,
+)
 from pickaladder.user.services.match_stats import (
     _calculate_streak,
-    format_matches_for_dashboard,
     get_recent_opponents,
     get_user_matches,
+)
+from pickaladder.user.services.user_tournament_service import (
+    get_active_tournaments,
+    get_past_tournaments,
+    get_pending_tournament_invites,
 )
 
 if TYPE_CHECKING:

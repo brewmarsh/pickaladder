@@ -12,7 +12,9 @@ class TestLeaderboardLogic(unittest.TestCase):
     """Test case for the global leaderboard filtering logic."""
 
     @patch("pickaladder.match.services.firestore")
-    @patch("pickaladder.match.services.MatchQueryService.get_player_record")
+    @patch(
+        "pickaladder.match.services.record_service.MatchRecordService.get_player_record"
+    )
     def test_get_leaderboard_data_filters_inactive(
         self, mock_get_player_record: MagicMock, mock_firestore: MagicMock
     ) -> None:

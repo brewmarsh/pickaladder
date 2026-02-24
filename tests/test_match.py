@@ -178,7 +178,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             or mock_matches_collection.document.called
         )
 
-    @patch("pickaladder.match.routes.MatchQueryService.get_match_by_id")
+    @patch(
+        "pickaladder.match.services.base_query.MatchBaseQueryService.get_match_by_id"
+    )
     def test_view_match_summary(self, mock_get_match: MagicMock) -> None:
         """Test viewing the match summary page."""
         self._set_session_user()
@@ -212,7 +214,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         user_name = cast(str, MOCK_USER_DATA["name"])
         self.assertIn(user_name.encode(), response.data)
 
-    @patch("pickaladder.match.routes.MatchQueryService.get_match_by_id")
+    @patch(
+        "pickaladder.match.services.base_query.MatchBaseQueryService.get_match_by_id"
+    )
     def test_view_match_summary_doubles(self, mock_get_match: MagicMock) -> None:
         """Test viewing the match summary page for a doubles match."""
         self._set_session_user()
