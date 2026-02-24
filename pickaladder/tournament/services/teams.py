@@ -16,9 +16,7 @@ class TournamentTeams(TournamentBase):
         t_id: str, p1: str, p2: str | None, name: str, db: Client | None = None
     ) -> str:
         """Register a team in the tournament teams sub-collection."""
-        from firebase_admin import firestore
-
-        from pickaladder.teams.services import TeamService
+        from pickaladder.tournament.services import TeamService, firestore
 
         if db is None:
             db = firestore.client()
@@ -38,9 +36,7 @@ class TournamentTeams(TournamentBase):
     @staticmethod
     def accept_team_partnership(t_id: str, uid: str, db: Client | None = None) -> bool:
         """Accept a team partnership invitation."""
-        from firebase_admin import firestore
-
-        from pickaladder.teams.services import TeamService
+        from pickaladder.tournament.services import TeamService, firestore
 
         if db is None:
             db = firestore.client()
@@ -68,7 +64,7 @@ class TournamentTeams(TournamentBase):
         db: Client, t_id: str, p1: str, p2: str, name: str | None
     ) -> None:
         """Ensure both team members are in the tournament participants."""
-        from firebase_admin import firestore
+        from pickaladder.tournament.services import firestore
 
         ref = db.collection("tournaments").document(t_id)
         snap = cast(Any, ref.get())
@@ -97,9 +93,7 @@ class TournamentTeams(TournamentBase):
         t_id: str, team_id: str, uid: str, db: Client | None = None
     ) -> bool:
         """Join a placeholder team via an invite link."""
-        from firebase_admin import firestore
-
-        from pickaladder.teams.services import TeamService
+        from pickaladder.tournament.services import TeamService, firestore
 
         if db is None:
             db = firestore.client()

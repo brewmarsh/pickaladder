@@ -19,7 +19,7 @@ class TournamentInvites(TournamentBase):
     @staticmethod
     def _get_invitable_ids(db: Client, user_uid: str) -> set[str]:
         """Fetch all friend and group member IDs for a user."""
-        from firebase_admin import firestore
+        from pickaladder.tournament.services import firestore
 
         user_ref = db.collection("users").document(user_uid)
         f_ids = {doc.id for doc in user_ref.collection("friends").stream()}
@@ -58,7 +58,7 @@ class TournamentInvites(TournamentBase):
         t_id: str, uid: str, invited_uid: str, db: Client | None = None
     ) -> None:
         """Invite a single player."""
-        from firebase_admin import firestore
+        from pickaladder.tournament.services import firestore
 
         if db is None:
             db = firestore.client()
@@ -115,7 +115,7 @@ class TournamentInvites(TournamentBase):
     @staticmethod
     def invite_group(t_id: str, g_id: str, uid: str, db: Client | None = None) -> int:
         """Invite all members of a group. Returns count of new invites."""
-        from firebase_admin import firestore
+        from pickaladder.tournament.services import firestore
 
         if db is None:
             db = firestore.client()
@@ -149,10 +149,10 @@ class TournamentInvites(TournamentBase):
                 continue
             r = p.get("userRef")
             if r is not None and hasattr(r, "id"):
-                p_uid = getattr(r, "id", p.get("user_id"))
+                p_uid = str(r.id)
             else:
-                p_uid = p.get("user_id")
-            if p_uid == uid and p.get("status") == "pending":
+                p_uid = str(p.get("user_id"))
+            if p_uid == str(uid) and p.get("status") == "pending":
                 p["status"] = status
                 return True
         return False
@@ -160,7 +160,7 @@ class TournamentInvites(TournamentBase):
     @staticmethod
     def accept_invite(t_id: str, uid: str, db: Client | None = None) -> bool:
         """Accept invite via transaction."""
-        from firebase_admin import firestore
+        from pickaladder.tournament.services import firestore
 
         if db is None:
             db = firestore.client()
@@ -182,7 +182,7 @@ class TournamentInvites(TournamentBase):
     @staticmethod
     def decline_invite(t_id: str, uid: str, db: Client | None = None) -> bool:
         """Decline invite via transaction."""
-        from firebase_admin import firestore
+        from pickaladder.tournament.services import firestore
 
         if db is None:
             db = firestore.client()

@@ -7,14 +7,15 @@ if TYPE_CHECKING:
     from pickaladder.match.models import Match
 
 
+CLOSE_CALL_THRESHOLD = 2
+
+
 class MatchFormatter:
     """Utility class for match data formatting."""
 
     @staticmethod
     def apply_common_match_formatting(match_data: Match) -> None:
         """Apply formatting common to all match types."""
-        from .query import CLOSE_CALL_THRESHOLD
-
         match_date = match_data.get("matchDate")
         if isinstance(match_date, datetime.datetime):
             match_data["date"] = match_date.strftime("%b %d")

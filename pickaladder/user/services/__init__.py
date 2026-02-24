@@ -1,19 +1,10 @@
 from firebase_admin import firestore
 
 from .activity import (
-    get_active_tournaments as _get_active_tournaments,
-)
-from .activity import (
     get_community_data as _get_community_data,
 )
 from .activity import (
     get_group_rankings as _get_group_rankings,
-)
-from .activity import (
-    get_past_tournaments as _get_past_tournaments,
-)
-from .activity import (
-    get_pending_tournament_invites as _get_pending_tournament_invites,
 )
 from .activity import (
     get_public_groups as _get_public_groups,
@@ -54,6 +45,15 @@ from .core import (
 from .dashboard import (
     get_dashboard_data as _get_dashboard_data,
 )
+from .user_tournament_service import (
+    get_active_tournaments as _get_active_tournaments,
+)
+from .user_tournament_service import (
+    get_past_tournaments as _get_past_tournaments,
+)
+from .user_tournament_service import (
+    get_pending_tournament_invites as _get_pending_tournament_invites,
+)
 from .friendship import (
     accept_friend_request as _accept_friend_request,
 )
@@ -81,11 +81,11 @@ from .friendship import (
 from .match_formatting import (
     _collect_match_refs as _collect_match_refs,
 )
-from .match_formatting import (
-    _fetch_match_entities as _fetch_match_entities,
+from .match_entity_service import (
+    fetch_match_entities as _fetch_match_entities,
 )
-from .match_formatting import (
-    _get_player_info as _get_player_info,
+from .match_participant_service import (
+    get_player_info as _get_player_info,
 )
 from .match_formatting import (
     format_matches_for_dashboard as _format_matches_for_dashboard,

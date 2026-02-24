@@ -8,6 +8,8 @@ from pickaladder.teams.services import TeamService
 from pickaladder.user.services.core import get_avatar_url, smart_display_name
 
 from .calculator import MatchStatsCalculator
+from .match_stats_updater import MatchStatsUpdater
+from .match_validation import MatchValidationService
 from .query import MatchQueryService
 
 if TYPE_CHECKING:
@@ -29,7 +31,7 @@ class MatchCommandService:
         """Process and record a match submission."""
         user_id = current_user["uid"]
         sub = data if isinstance(data, MatchSubmission) else MatchSubmission(**data)
-        MatchCommandService._validate_submission(db, sub, user_id)
+        MatchValidationService.validate_submission(db, sub, user_id)
 
         match_date = MatchCommandService._parse_match_date(sub.match_date)
         match_doc_data = MatchCommandService._prepare_match_doc_base(
@@ -55,26 +57,6 @@ class MatchCommandService:
         batch.commit()
 
         return MatchCommandService._build_match_result(new_match_ref.id, match_doc_data)
-
-    @staticmethod
-    def _validate_submission(db: Client, sub: MatchSubmission, user_id: str) -> None:
-        """Validate that all players are valid candidates."""
-        cands = MatchQueryService.get_candidate_player_ids(
-            db, user_id, sub.group_id, sub.tournament_id
-        )
-        p1_cands = MatchQueryService.get_candidate_player_ids(
-            db, user_id, sub.group_id, sub.tournament_id, True
-        )
-
-        if sub.player_1_id not in p1_cands:
-            raise ValueError("Invalid Team 1 Player 1 selected.")
-        if sub.player_2_id not in cands:
-            raise ValueError("Invalid Opponent 1 selected.")
-        if sub.match_type == "doubles":
-            if sub.partner_id not in cands:
-                raise ValueError("Invalid Partner selected.")
-            if sub.opponent_2_id not in cands:
-                raise ValueError("Invalid Opponent 2 selected.")
 
     @staticmethod
     def _parse_match_date(date_input: Any) -> datetime.datetime:
@@ -154,23 +136,6 @@ class MatchCommandService:
         )
 
     @staticmethod
-    def _update_user_stats_batch(
-        batch: WriteBatch,
-        team1_refs: list[DocumentReference],
-        team2_refs: list[DocumentReference],
-        winner: str,
-    ) -> None:
-        """Update individual user stats in a batch for doubles matches."""
-        from firebase_admin import firestore
-
-        for ref in team1_refs:
-            field = "stats.wins" if winner == "team1" else "stats.losses"
-            batch.update(ref, {field: firestore.Increment(1)})
-        for ref in team2_refs:
-            field = "stats.wins" if winner == "team2" else "stats.losses"
-            batch.update(ref, {field: firestore.Increment(1)})
-
-    @staticmethod
     def _record_match_batch(  # noqa: PLR0913
         db: Client,
         batch: WriteBatch,
@@ -214,7 +179,7 @@ class MatchCommandService:
         batch.update(p2_ref, p2_upd)
 
         if match_type == "doubles":
-            MatchCommandService._update_user_stats_batch(
+            MatchStatsUpdater.update_user_stats_batch(
                 batch,
                 match_data.get("team1", []),
                 match_data.get("team2", []),
@@ -341,42 +306,9 @@ class MatchCommandService:
         """Orchestrate the rollback and application of stats."""
         o1, o2 = data.get("player1Score", 0), data.get("player2Score", 0)
         if o1 != o2:
-            MatchCommandService._apply_stats_delta(data, o1 > o2, -1)
+            MatchStatsUpdater.apply_stats_delta(data, o1 > o2, -1)
         if s1 != s2:
-            MatchCommandService._apply_stats_delta(data, s1 > s2, 1)
-
-    @staticmethod
-    def _apply_stats_delta(data: dict[str, Any], s1_won: bool, delta: int) -> None:
-        """Apply a win/loss delta to all relevant participants."""
-        match_type = data.get("matchType", "singles")
-        if match_type == "doubles":
-            r1, r2 = data.get("team1Ref"), data.get("team2Ref")
-            u1, u2 = data.get("team1", []), data.get("team2", [])
-            MatchCommandService._increment_stats(r1, r2, s1_won, delta)
-            for ref in u1:
-                MatchCommandService._increment_stats(ref, None, s1_won, delta)
-            for ref in u2:
-                MatchCommandService._increment_stats(None, ref, s1_won, delta)
-        else:
-            r1, r2 = data.get("player1Ref"), data.get("player2Ref")
-            MatchCommandService._increment_stats(r1, r2, s1_won, delta)
-
-    @staticmethod
-    def _increment_stats(
-        r1: DocumentReference | None,
-        r2: DocumentReference | None,
-        s1_won: bool,
-        delta: int,
-    ) -> None:
-        """Helper to increment/decrement wins and losses on two references."""
-        from firebase_admin import firestore
-
-        if r1:
-            field = "stats.wins" if s1_won else "stats.losses"
-            r1.update({field: firestore.Increment(delta)})
-        if r2:
-            field = "stats.wins" if not s1_won else "stats.losses"
-            r2.update({field: firestore.Increment(delta)})
+            MatchStatsUpdater.apply_stats_delta(data, s1 > s2, 1)
 
     @staticmethod
     def _get_match_updates(data: dict[str, Any], s1: int, s2: int) -> dict[str, Any]:

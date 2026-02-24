@@ -35,21 +35,22 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         return data
 
     @staticmethod
-    def list_tournaments(
-        user_uid: str, db: Client | None = None
-    ) -> list[dict[str, Any]]:
-        """Fetch all tournaments for a user."""
+    def _fetch_owned_tournaments(db: Client, user_ref: Any) -> list[Any]:
+        """Query tournaments owned by the user."""
         from firebase_admin import firestore
 
-        if db is None:
-            db = firestore.client()
-        user_ref = db.collection("users").document(user_uid)
-        owned = (
+        return list(
             db.collection("tournaments")
             .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
             .stream()
         )
-        parts = (
+
+    @staticmethod
+    def _fetch_participating_tournaments(db: Client, user_uid: str) -> list[Any]:
+        """Query tournaments where the user is a participant."""
+        from firebase_admin import firestore
+
+        return list(
             db.collection("tournaments")
             .where(
                 filter=firestore.FieldFilter(
@@ -58,10 +59,23 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             )
             .stream()
         )
-        results = {doc.id: TournamentService._enrich_tournament(doc) for doc in owned}
-        for doc in parts:
-            if doc.id not in results:
-                results[doc.id] = TournamentService._enrich_tournament(doc)
+
+    @staticmethod
+    def list_tournaments(
+        user_uid: str, db: Client | None = None
+    ) -> list[dict[str, Any]]:
+        """Fetch all tournaments for a user."""
+        from firebase_admin import firestore
+
+        db = db or firestore.client()
+        u_ref = db.collection("users").document(user_uid)
+        owned = TournamentService._fetch_owned_tournaments(db, u_ref)
+        parts = TournamentService._fetch_participating_tournaments(db, user_uid)
+
+        results = {d.id: TournamentService._enrich_tournament(d) for d in owned}
+        for d in parts:
+            if d.id not in results:
+                results[d.id] = TournamentService._enrich_tournament(d)
         return list(results.values())
 
     @staticmethod
@@ -120,9 +134,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         teams = db.collection("tournaments").document(t_id).collection("teams").stream()
         for doc in teams:
             t = cast(dict[str, Any], doc.to_dict())
-            if t["p1_uid"] == user_uid or t["p2_uid"] == user_uid:
-                is_pending = t["p2_uid"] == user_uid and t["status"] == "PENDING"
-                return cast(str, t["status"]), is_pending
+            if t.get("p1_uid") == user_uid or t.get("p2_uid") == user_uid:
+                is_pending = t.get("p2_uid") == user_uid and t.get("status") == "PENDING"
+                return cast(str, t.get("status")), is_pending
         return None, False
 
     @staticmethod
@@ -137,41 +151,36 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         return {"date_display": date_display, "is_owner": owner_id == user_uid}
 
     @staticmethod
-    def get_tournament_details(
-        t_id: str, user_uid: str, db: Client | None = None
-    ) -> dict[str, Any] | None:
-        """Fetch comprehensive details for the tournament view."""
-        from firebase_admin import firestore
-
-        from pickaladder.tournament.utils import get_tournament_standings
-
-        if db is None:
-            db = firestore.client()
-        doc = cast(Any, db.collection("tournaments").document(t_id).get())
-        if not doc.exists:
-            return None
-        data = cast(dict[str, Any], doc.to_dict())
-        data["id"] = doc.id
-        meta = TournamentService._get_tournament_metadata(data, user_uid)
-        from pickaladder.user import UserService  # noqa: PLC0415
-
-        stnd = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
-        parts = data.get("participants", [])
-        c_ids = {
+    def _extract_participant_ids(participants: list[dict[str, Any]]) -> set[str]:
+        """Extract user IDs from participants list."""
+        return {
             str(
                 getattr(p.get("userRef"), "id", p.get("user_id"))
                 if p.get("userRef")
                 else p.get("user_id")
             )
-            for p in parts
+            for p in participants
             if p
         }
-        team_status, pending_p = TournamentService._get_team_status_for_user(
-            db, t_id, user_uid
-        )
+
+    @staticmethod
+    def _build_tournament_details_context(
+        db: Client, data: dict[str, Any], user_uid: str, meta: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Assemble the context dictionary for tournament details."""
+        from pickaladder.tournament.utils import get_tournament_standings
+        from pickaladder.user import UserService  # noqa: PLC0415
+
+        t_id = data["id"]
+        stnd = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
+        c_ids = TournamentService._extract_participant_ids(data.get("participants", []))
+        t_stat, pend = TournamentService._get_team_status_for_user(db, t_id, user_uid)
+
         return {
             "tournament": data,
-            "participants": TournamentService._resolve_participants(db, parts),
+            "participants": TournamentService._resolve_participants(
+                db, data.get("participants", [])
+            ),
             "standings": stnd,
             "podium": stnd[:3] if data.get("status") == "Completed" else [],
             "invitable_users": TournamentService._get_invitable_players(
@@ -179,10 +188,26 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             ),
             "user_groups": UserService.get_user_groups(db, user_uid),
             "is_owner": meta["is_owner"],
-            "team_status": team_status,
-            "pending_partner_invite": pending_p,
+            "team_status": t_stat,
+            "pending_partner_invite": pend,
             "date_display": meta["date_display"],
         }
+
+    @staticmethod
+    def get_tournament_details(
+        t_id: str, user_uid: str, db: Client | None = None
+    ) -> dict[str, Any] | None:
+        """Fetch comprehensive details for the tournament view."""
+        from firebase_admin import firestore
+
+        db = db or firestore.client()
+        doc = cast(Any, db.collection("tournaments").document(t_id).get())
+        if not doc or not doc.exists:
+            return None
+        data = cast(dict[str, Any], doc.to_dict())
+        data["id"] = doc.id
+        m = TournamentService._get_tournament_metadata(data, user_uid)
+        return TournamentService._build_tournament_details_context(db, data, user_uid, m)
 
     @staticmethod
     def _has_matches(db: Client, t_id: str) -> bool:
@@ -280,17 +305,40 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         ref.delete()
 
     @staticmethod
+    def _notify_tournament_participant(
+        p_data: dict[str, Any],
+        t_data: dict[str, Any],
+        winner: str,
+        stands: list[dict[str, Any]],
+    ) -> None:
+        """Send result email to a single participant."""
+        try:
+            u_ref = p_data.get("userRef")
+            doc = cast(Any, u_ref.get() if u_ref else None)
+            if doc and doc.exists and (d := doc.to_dict()) and d.get("email"):
+                send_email(
+                    to=d["email"],
+                    subject=f"Results: {t_data['name']}",
+                    template="email/tournament_results.html",
+                    user=d,
+                    tournament=t_data,
+                    winner_name=winner,
+                    standings=stands[:3],
+                )
+        except Exception:
+            logging.error("Email failed")
+
+    @staticmethod
     def complete_tournament(t_id: str, uid: str, db: Client | None = None) -> None:
         """Finalize tournament and send emails."""
         from firebase_admin import firestore
 
         from pickaladder.tournament.utils import get_tournament_standings
 
-        if db is None:
-            db = firestore.client()
+        db = db or firestore.client()
         ref = db.collection("tournaments").document(t_id)
         doc = cast(Any, ref.get())
-        if not doc.exists:
+        if not doc or not doc.exists:
             raise ValueError("Tournament not found")
         data = cast(dict[str, Any], doc.to_dict())
         if TournamentService._get_tournament_owner_id(data) != uid:
@@ -299,23 +347,8 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         stands = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
         winner = stands[0]["name"] if stands else "No one"
         for p in data.get("participants", []):
-            if not p or p.get("status") != "accepted":
-                continue
-            try:
-                u_ref = p.get("userRef")
-                doc = cast(Any, u_ref.get() if u_ref else None)
-                if doc and doc.exists and (d := doc.to_dict()) and d.get("email"):
-                    send_email(
-                        to=d["email"],
-                        subject=f"Results: {data['name']}",
-                        template="email/tournament_results.html",
-                        user=d,
-                        tournament=data,
-                        winner_name=winner,
-                        standings=stands[:3],
-                    )
-            except Exception:
-                logging.error("Email failed")
+            if p and p.get("status") == "accepted":
+                TournamentService._notify_tournament_participant(p, data, winner, stands)
 
     @staticmethod
     def save_pairings(t_id: str, pairings: list[dict[str, Any]]) -> int:
@@ -339,31 +372,31 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         return len(pairings)
 
     @staticmethod
-    def generate_bracket(t_id: str, db: Client | None = None) -> list[Any]:
-        """Generate a tournament bracket based on participants or teams."""
+    def _gen_singles_bracket(t_data: dict[str, Any]) -> list[dict[str, Any]]:
+        """Generate bracket data for singles tournament."""
+        accepted = [
+            p for p in t_data.get("participants", []) if p.get("status") == "accepted"
+        ]
+        bracket = []
+        for p in accepted:
+            u_ref = p.get("userRef")
+            u_id = getattr(u_ref, "id", p.get("user_id"))
+            u_snap = cast(Any, u_ref.get() if u_ref else None)
+            bracket.append(
+                {
+                    "id": u_id,
+                    "name": smart_display_name(u_snap.to_dict() if u_snap else {}),
+                    "type": "player",
+                    "members": [u_id],
+                }
+            )
+        return bracket
+
+    @staticmethod
+    def _gen_doubles_bracket(db: Client, t_id: str) -> list[dict[str, Any]]:
+        """Generate bracket data for doubles tournament."""
         from firebase_admin import firestore
 
-        if db is None:
-            db = firestore.client()
-        doc = cast(Any, db.collection("tournaments").document(t_id).get())
-        t_data = doc.to_dict() or {}
-        if t_data.get("mode", "SINGLES") == "SINGLES":
-            accepted = [
-                p
-                for p in t_data.get("participants", [])
-                if p.get("status") == "accepted"
-            ]
-            return [
-                {
-                    "id": getattr(p.get("userRef"), "id", p.get("user_id")),
-                    "name": smart_display_name(
-                        cast(Any, p.get("userRef").get()).to_dict()
-                    ),
-                    "type": "player",
-                    "members": [getattr(p.get("userRef"), "id", p.get("user_id"))],
-                }
-                for p in accepted
-            ]
         teams = (
             db.collection("tournaments")
             .document(t_id)
@@ -382,3 +415,17 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             for doc in teams
             if (d := doc.to_dict())
         ]
+
+    @staticmethod
+    def generate_bracket(t_id: str, db: Client | None = None) -> list[Any]:
+        """Generate a tournament bracket based on participants or teams."""
+        from firebase_admin import firestore
+
+        db = db or firestore.client()
+        doc = cast(Any, db.collection("tournaments").document(t_id).get())
+        if not doc or not doc.exists:
+            return []
+        t_data = doc.to_dict() or {}
+        if t_data.get("mode", "SINGLES") == "SINGLES":
+            return TournamentService._gen_singles_bracket(t_data)
+        return TournamentService._gen_doubles_bracket(db, t_id)

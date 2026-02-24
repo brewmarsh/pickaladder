@@ -5,8 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from pickaladder.user.services.activity import (
-    get_active_tournaments,
     get_group_rankings,
+)
+from pickaladder.user.services.user_tournament_service import (
+    get_active_tournaments,
     get_past_tournaments,
     get_pending_tournament_invites,
 )
