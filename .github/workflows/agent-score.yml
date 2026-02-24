@@ -8,17 +8,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11' # tool requires 3.10+
 
@@ -32,8 +32,9 @@ jobs:
           # Ensure we have the base branch reference locally for comparison
           git fetch origin ${{ github.base_ref || 'main' }}
 
-          # Run with --diff to analyze only changed files and avoid crashes in unrelated JS files
-          SCORE=$(uv run --no-project agent-score score --diff . | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
+          # Run with --diff to analyze only changed Python files and avoid crashes in unrelated files
+          # We include the specific directory to further narrow the scope
+          SCORE=$(uv run --no-project agent-score score --diff . --limit-to .py | tee /dev/tty | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
 
           if [ -z "$SCORE" ]; then
             echo "Could not determine agent score"

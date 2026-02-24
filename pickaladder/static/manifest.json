@@ -1,6 +1,7 @@
 {
   "name": "pickaladder",
   "short_name": "pickaladder",
+  "version": "0.10.0",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

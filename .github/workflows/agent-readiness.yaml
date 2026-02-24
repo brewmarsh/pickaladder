@@ -20,17 +20,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6  # Fixed: v4 is the current version (v6 does not exist)
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7  # Fixed: v5 is the current version
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
 
       - name: Setup Python
-        uses: actions/setup-python@v6  # Fixed: v5 is the current version
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11' # tool requires 3.10+
 
@@ -48,17 +48,17 @@ jobs:
           TARGET_BRANCH="origin/${{ github.base_ref || 'main' }}"
           echo "Running Agent Scorecard against $TARGET_BRANCH..."
           
-          # Use --diff for PRs to focus on changes and avoid known analyzer bugs in unrelated files
+          # Use --diff for PRs to focus on changes and limit to Python files to avoid analyzer bugs
           DIFF_ARG=""
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
+          if [ "${{ github.event_name }}" == pull_request ]; then
             DIFF_ARG="--diff"
           fi
 
-          # Standardized command syntax
-          uv run --no-project agent-score score $DIFF_ARG --report readiness_report.md .
+          # Standardized command syntax targeting only Python files
+          uv run --no-project agent-score score $DIFF_ARG --report readiness_report.md . --limit-to .py
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v6  # Fixed: v4 is the current version
+        uses: actions/upload-artifact@v4
         with:
           name: agent-readiness-report
           path: readiness_report.md

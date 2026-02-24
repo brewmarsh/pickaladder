@@ -3,20 +3,20 @@
 ## ✅ What Was Implemented
 
 ### 1. Updated VERSION File
-- Changed from `0.1.0` to `0.9.0`
+- Changed from `0.1.0` to `0.10.0`
 - Located at: `/VERSION`
 
 ### 2. Created Auto-Update Workflow
 - File: `.github/workflows/update-version.yml`
 - **Purpose**: Automatically updates the VERSION file when you push a new release tag
-- **Triggers**: When you push tags like `v0.9.0`, `v1.0.0`, `v1.0.0-beta.1`, etc.
+- **Triggers**: When you push tags like `v0.10.0`, `v1.0.0`, `v1.0.0-beta.1`, etc.
 
 ### 3. Created Documentation
 - File: `docs/VERSIONING.md`
 - Comprehensive guide on how the versioning system works
 
 ### 4. Created Initial Tag
-- Tag `v0.9.0` has been created and pushed to GitHub
+- Tag `v0.10.0` has been created and pushed to GitHub
 - This will trigger both:
   - The release workflow (deployment)
   - The update-version workflow (VERSION file sync)
@@ -39,26 +39,26 @@ git push origin v1.0.0-beta.1
 
 ## 🔄 What Happens Automatically
 
-When you push a tag (e.g., `v0.9.0`):
+When you push a tag (e.g., `v0.10.0`):
 
 1. **Update Version Workflow** runs:
-   - Extracts version from tag → `0.9.0`
+   - Extracts version from tag → `0.10.0`
    - Updates VERSION file
-   - Commits to main branch with message: `chore: update VERSION to 0.9.0 [skip ci]`
+   - Commits to main branch with message: `chore: update VERSION to 0.10.0 [skip ci]`
 
 2. **Release Workflow** runs:
    - Builds Docker image
    - Deploys to production
-   - Sets `APP_VERSION=v0.9.0` environment variable
+   - Sets `APP_VERSION=v0.10.0` environment variable
 
 3. **App Footer** displays:
-   - `v0.9.0` (from VERSION file or APP_VERSION env var)
+   - `v0.10.0` (from VERSION file or APP_VERSION env var)
 
 ## 📍 Where Version is Displayed
 
 The version appears in the footer of every page:
 ```
-© 2026 Pick-A-Ladder | v0.9.0
+© 2026 Pick-A-Ladder | v0.10.0
 ```
 
 Template: `pickaladder/templates/footer.html`
@@ -83,7 +83,7 @@ The app checks for version in this order:
 
 1. Monitor the GitHub Actions to ensure workflows complete successfully
 2. Verify the VERSION file was updated on the main branch
-3. Check the deployed app footer shows `v0.9.0`
+3. Check the deployed app footer shows `v0.10.0`
 4. For future releases, just create and push tags following the pattern above
 
 ## 🛠️ Troubleshooting
