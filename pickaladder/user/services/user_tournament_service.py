@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 import datetime
 from typing import TYPE_CHECKING, Any
+
 from firebase_admin import firestore
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
+
 
 def _is_user_participant_with_status(
     participants: list[dict[str, Any]], user_id: str, status: str
@@ -23,6 +26,7 @@ def _is_user_participant_with_status(
             return True
     return False
 
+
 def _format_date_display(data: dict[str, Any]) -> None:
     """Format date or start_date for display in a dictionary."""
     raw_date = data.get("start_date") or data.get("date")
@@ -32,11 +36,14 @@ def _format_date_display(data: dict[str, Any]) -> None:
         elif isinstance(raw_date, datetime.datetime):
             data["date_display"] = raw_date.strftime("%b %d, %Y")
 
+
 def _get_tournament_winner(db: Client, tournament_id: str, match_type: str) -> str:
     """Fetch the winner name for a tournament."""
     from pickaladder.tournament.utils import get_tournament_standings
+
     standings = get_tournament_standings(db, tournament_id, match_type)
     return standings[0]["name"] if standings else "TBD"
+
 
 def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch pending tournament invitations for a user."""
@@ -60,6 +67,7 @@ def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, A
             data["id"] = doc.id
             pending_invites.append(data)
     return pending_invites
+
 
 def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch active tournaments where the user is a participant."""
@@ -85,6 +93,7 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
         key=lambda x: x.get("start_date") or x.get("date") or datetime.datetime.max
     )
     return active_tournaments
+
 
 def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch past (completed) tournaments for a user."""

@@ -1,9 +1,13 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, cast
+
+from typing import TYPE_CHECKING
+
 from firebase_admin import firestore
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
+
 
 class MatchCandidateService:
     @staticmethod
@@ -21,9 +25,13 @@ class MatchCandidateService:
                 MatchCandidateService._get_tournament_participants(db, tournament_id)
             )
         elif group_id:
-            candidate_ids.update(MatchCandidateService._get_group_candidates(db, group_id))
+            candidate_ids.update(
+                MatchCandidateService._get_group_candidates(db, group_id)
+            )
         else:
-            candidate_ids.update(MatchCandidateService._get_default_candidates(db, user_id))
+            candidate_ids.update(
+                MatchCandidateService._get_default_candidates(db, user_id)
+            )
 
         if not include_user:
             candidate_ids.discard(user_id)
@@ -32,14 +40,23 @@ class MatchCandidateService:
     @staticmethod
     def _get_tournament_participants(db: Client, tournament_id: str) -> list[str]:
         """Fetch participant IDs for a tournament."""
-        doc = db.collection("tournaments").document(tournament_id).get()
+        from typing import cast
+
+        doc = cast(
+            "DocumentSnapshot",
+            db.collection("tournaments").document(tournament_id).get(),
+        )
         return (doc.to_dict() or {}).get("participant_ids", []) if doc.exists else []
 
     @staticmethod
     def _get_group_candidates(db: Client, group_id: str) -> set[str]:
         """Fetch group members and invited users for a group."""
+        from typing import cast
+
         candidates: set[str] = set()
-        group_doc = db.collection("groups").document(group_id).get()
+        group_doc = cast(
+            "DocumentSnapshot", db.collection("groups").document(group_id).get()
+        )
         if group_doc.exists:
             for ref in (group_doc.to_dict() or {}).get("members", []):
                 candidates.add(ref.id)

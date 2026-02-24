@@ -45,15 +45,6 @@ from .core import (
 from .dashboard import (
     get_dashboard_data as _get_dashboard_data,
 )
-from .user_tournament_service import (
-    get_active_tournaments as _get_active_tournaments,
-)
-from .user_tournament_service import (
-    get_past_tournaments as _get_past_tournaments,
-)
-from .user_tournament_service import (
-    get_pending_tournament_invites as _get_pending_tournament_invites,
-)
 from .friendship import (
     accept_friend_request as _accept_friend_request,
 )
@@ -78,20 +69,20 @@ from .friendship import (
 from .friendship import (
     send_friend_request as _send_friend_request,
 )
-from .match_formatting import (
-    _collect_match_refs as _collect_match_refs,
-)
 from .match_entity_service import (
     fetch_match_entities as _fetch_match_entities,
 )
-from .match_participant_service import (
-    get_player_info as _get_player_info,
+from .match_formatting import (
+    _collect_match_refs as _collect_match_refs,
 )
 from .match_formatting import (
     format_matches_for_dashboard as _format_matches_for_dashboard,
 )
 from .match_formatting import (
     format_matches_for_profile as _format_matches_for_profile,
+)
+from .match_participant_service import (
+    get_player_info as _get_player_info,
 )
 from .match_stats import (
     _calculate_streak as _calculate_streak,
@@ -155,6 +146,15 @@ from .profile import (
 )
 from .profile import (
     upload_profile_picture as _upload_profile_picture,
+)
+from .user_tournament_service import (
+    get_active_tournaments as _get_active_tournaments,
+)
+from .user_tournament_service import (
+    get_past_tournaments as _get_past_tournaments,
+)
+from .user_tournament_service import (
+    get_pending_tournament_invites as _get_pending_tournament_invites,
 )
 
 __all__ = ["UserService", "firestore"]

@@ -1,17 +1,22 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, cast
+
 from .record_service import MatchRecordService
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
+
     from pickaladder.match.models import Match
+
 
 class MatchSummaryService:
     @staticmethod
     def get_match_summary_context(db: Client, match_id: str) -> dict[str, Any]:
         """Fetch all data needed for the match summary view."""
         from .base_query import MatchBaseQueryService
+
         match_data = MatchBaseQueryService.get_match_by_id(db, match_id)
         if not match_data:
             return {}
@@ -32,6 +37,7 @@ class MatchSummaryService:
     @staticmethod
     def _get_doubles_summary_context(db: Client, match_data: Match) -> dict[str, Any]:
         """Fetch doubles-specific context for match summary."""
+
         def fetch_team(refs):
             team_data = []
             if refs:

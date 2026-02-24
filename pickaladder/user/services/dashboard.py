@@ -7,11 +7,6 @@ from typing import TYPE_CHECKING, Any
 from pickaladder.user.services.activity import (
     get_group_rankings,
 )
-from pickaladder.user.services.user_tournament_service import (
-    get_active_tournaments,
-    get_past_tournaments,
-    get_pending_tournament_invites,
-)
 from pickaladder.user.services.core import get_user_by_id
 from pickaladder.user.services.friendship import (
     get_user_friends,
@@ -24,6 +19,11 @@ from pickaladder.user.services.match_stats import (
     _calculate_streak,
     get_recent_opponents,
     get_user_matches,
+)
+from pickaladder.user.services.user_tournament_service import (
+    get_active_tournaments,
+    get_past_tournaments,
+    get_pending_tournament_invites,
 )
 
 if TYPE_CHECKING:

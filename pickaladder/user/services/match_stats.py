@@ -256,9 +256,11 @@ def _get_h2h_match_data(
 
 
 def _calculate_h2h_delta(
-    u1: str, u2: str, t1: set[str], t2: set[str], s1: int, s2: int
+    u1: str, u2: str, teams: tuple[set[str], set[str]], scores: tuple[int, int]
 ) -> tuple[int, int, int]:
     """Calculate win, loss, and point delta for user 1 in a specific matchup."""
+    t1, t2 = teams
+    s1, s2 = scores
     if u1 in t1 and u2 in t2:
         return (1 if s1 > s2 else 0), (1 if s1 < s2 else 0), (s1 - s2)
     if u1 in t2 and u2 in t1:
@@ -282,7 +284,7 @@ def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] 
             if scores[0] == scores[1]:
                 continue
             w, l_count, p_diff = _calculate_h2h_delta(
-                user_id_1, user_id_2, team_ids[0], team_ids[1], scores[0], scores[1]
+                user_id_1, user_id_2, team_ids, scores
             )
             wins, losses, points = wins + w, losses + l_count, points + p_diff
 

@@ -1,10 +1,14 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any
+
+from typing import TYPE_CHECKING
+
 from .query import MatchQueryService
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
+
     from pickaladder.match.models import MatchSubmission
+
 
 class MatchValidationService:
     @staticmethod

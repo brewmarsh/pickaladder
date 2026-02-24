@@ -1,11 +1,16 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, cast
+
 from firebase_admin import firestore
+
 from pickaladder.core.constants import GLOBAL_LEADERBOARD_MIN_GAMES
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
+
     from pickaladder.user.models import User
+
 
 class MatchRecordService:
     @staticmethod

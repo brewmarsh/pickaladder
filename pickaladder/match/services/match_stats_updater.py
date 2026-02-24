@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
+
 from firebase_admin import firestore
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.batch import WriteBatch
     from google.cloud.firestore_v1.document import DocumentReference
+
 
 class MatchStatsUpdater:
     @staticmethod
@@ -17,10 +20,10 @@ class MatchStatsUpdater:
         """Update individual user stats in a batch for doubles matches."""
         for ref in team1_refs:
             field = "stats.wins" if winner == "team1" else "stats.losses"
-            batch.update(ref, {"stats.wins" if winner == "team1" else "stats.losses": firestore.Increment(1)})
+            batch.update(ref, {field: firestore.Increment(1)})
         for ref in team2_refs:
             field = "stats.wins" if winner == "team2" else "stats.losses"
-            batch.update(ref, {"stats.wins" if winner == "team2" else "stats.losses": firestore.Increment(1)})
+            batch.update(ref, {field: firestore.Increment(1)})
 
     @staticmethod
     def apply_stats_delta(data: dict[str, Any], s1_won: bool, delta: int) -> None:

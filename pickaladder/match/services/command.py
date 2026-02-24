@@ -10,7 +10,6 @@ from pickaladder.user.services.core import get_avatar_url, smart_display_name
 from .calculator import MatchStatsCalculator
 from .match_stats_updater import MatchStatsUpdater
 from .match_validation import MatchValidationService
-from .query import MatchQueryService
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot

@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
 
-    from pickaladder.user.models import User
 
 
 class MatchQueryService(
@@ -102,7 +101,6 @@ class MatchQueryService(
                     d_data = d_snap.to_dict() or {}
                     players[d_snap.id] = d_data.get("name", "N/A")
         return players
-
 
     @staticmethod
     def get_matches_for_user(

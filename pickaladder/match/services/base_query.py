@@ -1,8 +1,13 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, cast
+
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
+
     from pickaladder.match.models import Match
+
 
 class MatchBaseQueryService:
     @staticmethod

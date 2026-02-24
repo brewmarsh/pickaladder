@@ -135,7 +135,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         for doc in teams:
             t = cast(dict[str, Any], doc.to_dict())
             if t.get("p1_uid") == user_uid or t.get("p2_uid") == user_uid:
-                is_pending = t.get("p2_uid") == user_uid and t.get("status") == "PENDING"
+                is_pending = (
+                    t.get("p2_uid") == user_uid and t.get("status") == "PENDING"
+                )
                 return cast(str, t.get("status")), is_pending
         return None, False
 
@@ -207,7 +209,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         data = cast(dict[str, Any], doc.to_dict())
         data["id"] = doc.id
         m = TournamentService._get_tournament_metadata(data, user_uid)
-        return TournamentService._build_tournament_details_context(db, data, user_uid, m)
+        return TournamentService._build_tournament_details_context(
+            db, data, user_uid, m
+        )
 
     @staticmethod
     def _has_matches(db: Client, t_id: str) -> bool:
@@ -348,7 +352,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         winner = stands[0]["name"] if stands else "No one"
         for p in data.get("participants", []):
             if p and p.get("status") == "accepted":
-                TournamentService._notify_tournament_participant(p, data, winner, stands)
+                TournamentService._notify_tournament_participant(
+                    p, data, winner, stands
+                )
 
     @staticmethod
     def save_pairings(t_id: str, pairings: list[dict[str, Any]]) -> int:

@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import datetime
 from typing import TYPE_CHECKING, Any
 
 from firebase_admin import firestore
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
-
-
 
 
 def _extract_unique_owner_refs(public_group_docs: list[Any]) -> list[Any]:
@@ -97,8 +94,6 @@ def _calculate_user_ranking(
         "points": 0,
         "form": [],
     }
-
-
 
 
 def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
@@ -219,7 +214,9 @@ def get_user_profile_data(
     }
 
 
-def _matches_community_search(item: dict[str, Any], term: str, fields: list[str]) -> bool:
+def _matches_community_search(
+    item: dict[str, Any], term: str, fields: list[str]
+) -> bool:
     """Helper to check if any of the specified fields match the search term."""
     return any(term in str(item.get(f, "")).lower() for f in fields)
 
@@ -241,6 +238,7 @@ def get_community_data(db: Client, user_id: str, search_term: str) -> dict[str, 
         get_user_pending_requests,
         get_user_sent_requests,
     )
+    from .user_tournament_service import get_pending_tournament_invites
 
     friends = get_user_friends(db, user_id)
     inc = get_user_pending_requests(db, user_id)
