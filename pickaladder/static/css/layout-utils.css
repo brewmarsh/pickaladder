@@ -29,6 +29,18 @@
     width: auto;
 }
 
+/* --- 6b. Search Form Specific (Flexbox Alignment) --- */
+.search-form .input-group {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.search-form .input-group .form-control,
+.search-form .input-group .btn {
+    border-radius: var(--radius-md, 8px) !important;
+}
+
 /* Progress Bar */
 .progress {
     display: flex;

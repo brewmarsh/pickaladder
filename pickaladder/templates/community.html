@@ -61,9 +61,9 @@
     <form method="get" action="{{ url_for('user.view_community') }}" class="search-form">
         <div class="input-group">
             <input type="text" name="search" class="form-control" placeholder="Search by username, name, or email" value="{{ search_term }}">
-            <button type="submit" class="btn btn-primary" {% if search_term %}style="border-radius: 0;"{% endif %}>Search</button>
+            <button type="submit" class="btn btn-primary">Search</button>
             {% if search_term %}
-            <a href="{{ url_for('user.view_community') }}" class="btn btn-secondary" style="border-radius: 0 4px 4px 0;">Clear</a>
+            <a href="{{ url_for('user.view_community') }}" class="btn btn-secondary">Clear</a>
             {% endif %}
         </div>
     </form>
