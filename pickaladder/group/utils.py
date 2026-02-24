@@ -631,17 +631,19 @@ def _add_friend_pair(batch: Any, member_ref: Any, new_member_ref: Any) -> int:
     return 2
 
 
-def friend_group_members(db: Any, group_id: str, new_member_ref: Any) -> None:
-    """Automatically create friend relationships between group members."""
+def _get_group_member_refs(db: Any, group_id: str) -> list[Any]:
+    """Retrieve member references for a group."""
     group_ref = db.collection("groups").document(group_id)
     group_doc = group_ref.get()
     if not group_doc.exists:
-        return
+        return []
+    return group_doc.to_dict().get("members", [])
 
-    member_refs = group_doc.to_dict().get("members", [])
-    if not member_refs:
-        return
 
+def _process_friendship_batch(
+    db: Any, member_refs: list[Any], new_member_ref: Any
+) -> None:
+    """Process friendship additions in batches."""
     batch, operation_count = db.batch(), 0
     for member_ref in member_refs:
         if member_ref.id == new_member_ref.id:
@@ -655,3 +657,12 @@ def friend_group_members(db: Any, group_id: str, new_member_ref: Any) -> None:
 
     if operation_count > 0:
         batch.commit()
+
+
+def friend_group_members(db: Any, group_id: str, new_member_ref: Any) -> None:
+    """Automatically create friend relationships between group members."""
+    member_refs = _get_group_member_refs(db, group_id)
+    if not member_refs:
+        return
+
+    _process_friendship_batch(db, member_refs, new_member_ref)

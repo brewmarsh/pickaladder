@@ -31,29 +31,44 @@ sys.path.insert(0, str(project_root))
 TEAM_SIZE = 2
 
 
+def _get_credentials_path() -> Path:
+    """Get the path to the Firebase credentials file."""
+    return project_root / "firebase_credentials.json"
+
+
+def _load_credentials_from_file(cred_path: Path) -> credentials.Certificate | None:
+    """Load Firebase credentials from a JSON file."""
+    if not cred_path.exists():
+        return None
+    try:
+        return credentials.Certificate(str(cred_path))
+    except Exception as e:
+        print(f"Error loading credentials from file: {e}")
+        return None
+
+
+def _load_credentials_from_env() -> credentials.Certificate | None:
+    """Load Firebase credentials from an environment variable."""
+    cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
+    if not cred_json:
+        return None
+    try:
+        cred_info = json.loads(cred_json)
+        return credentials.Certificate(cred_info)
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"Error parsing FIREBASE_CREDENTIALS_JSON: {e}")
+        return None
+
+
 def _load_credentials() -> credentials.Certificate | None:
     """Load Firebase credentials from file or environment variable."""
-    # Try loading from file (for local dev)
-    cred_path = project_root / "firebase_credentials.json"
-    if cred_path.exists():
-        try:
-            return credentials.Certificate(str(cred_path))
-        except Exception as e:
-            print(f"Error loading credentials from file: {e}")
-            return None
+    cred_path = _get_credentials_path()
+    cred = _load_credentials_from_file(cred_path) or _load_credentials_from_env()
 
-    # Fallback to environment variable (for production/CI)
-    cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
-    if cred_json:
-        try:
-            cred_info = json.loads(cred_json)
-            return credentials.Certificate(cred_info)
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"Error parsing FIREBASE_CREDENTIALS_JSON: {e}")
-            return None
+    if not cred:
+        print("Could not find Firebase credentials in file or environment variable.")
 
-    print("Could not find Firebase credentials in file or environment variable.")
-    return None
+    return cred
 
 
 def initialize_firebase() -> bool:

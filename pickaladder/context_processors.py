@@ -16,14 +16,9 @@ VERSION_THRESHOLD = 10
 VERSION_SHORT_LENGTH = 7
 
 
-def _get_app_version() -> str:
-    """Detect version from environment variables or file."""
-    # Detect version from environment variables with the following priority:
-    # 1. APP_VERSION (explicitly set)
-    # 2. GITHUB_SHA or GITHUB_RUN_NUMBER (GitHub Actions build)
-    # 3. RENDER_GIT_COMMIT or HEROKU_SLUG_COMMIT (Git Hash from Render/Heroku)
-    # 4. Fallback to "dev"
-    version = (
+def _get_version_from_env() -> str | None:
+    """Fetch version from environment variables."""
+    return (
         os.environ.get("APP_VERSION")
         or os.environ.get("GITHUB_SHA")
         or os.environ.get("GITHUB_RUN_NUMBER")
@@ -31,16 +26,21 @@ def _get_app_version() -> str:
         or os.environ.get("HEROKU_SLUG_COMMIT")
     )
 
-    if not version:
-        try:
-            version_file = Path(current_app.root_path).parent / "VERSION"
-            if version_file.exists():
-                version = version_file.read_text().strip()
-        except Exception:  # nosec B110
-            pass
 
-    if not version:
-        version = "dev"
+def _get_version_from_file() -> str | None:
+    """Fetch version from the VERSION file."""
+    try:
+        version_file = Path(current_app.root_path).parent / "VERSION"
+        if version_file.exists():
+            return version_file.read_text().strip()
+    except Exception:  # nosec B110
+        pass
+    return None
+
+
+def _get_app_version() -> str:
+    """Detect version from environment variables or file."""
+    version = _get_version_from_env() or _get_version_from_file() or "dev"
 
     # If it's a long git hash, shorten it
     if len(version) > VERSION_THRESHOLD and version != "dev":
