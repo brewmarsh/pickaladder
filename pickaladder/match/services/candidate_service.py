@@ -51,37 +51,52 @@ class MatchCandidateService:
     @staticmethod
     def _get_group_candidates(db: Client, group_id: str) -> set[str]:
         """Fetch group members and invited users for a group."""
+        candidates: set[str] = MatchCandidateService._get_group_member_ids(db, group_id)
+        emails = MatchCandidateService._get_pending_invite_emails(db, group_id)
+        if emails:
+            candidates.update(
+                MatchCandidateService._resolve_user_ids_by_emails(db, emails)
+            )
+        return candidates
+
+    @staticmethod
+    def _get_group_member_ids(db: Client, group_id: str) -> set[str]:
+        """Extract member IDs from a group document."""
         from typing import cast
 
-        candidates: set[str] = set()
         group_doc = cast(
             "DocumentSnapshot", db.collection("groups").document(group_id).get()
         )
-        if group_doc.exists:
-            for ref in (group_doc.to_dict() or {}).get("members", []):
-                candidates.add(ref.id)
+        if not group_doc.exists:
+            return set()
+        return {ref.id for ref in (group_doc.to_dict() or {}).get("members", [])}
 
+    @staticmethod
+    def _get_pending_invite_emails(db: Client, group_id: str) -> list[str]:
+        """Fetch pending invite emails for a group."""
         invites = (
             db.collection("group_invites")
             .where(filter=firestore.FieldFilter("group_id", "==", group_id))
             .where(filter=firestore.FieldFilter("used", "==", False))
             .stream()
         )
-        emails = [
+        return [
             (doc.to_dict() or {}).get("email")
             for doc in invites
             if (doc.to_dict() or {}).get("email")
         ]
-        if emails:
-            for i in range(0, len(emails), 30):
-                users = (
-                    db.collection("users")
-                    .where(
-                        filter=firestore.FieldFilter("email", "in", emails[i : i + 30])
-                    )
-                    .stream()
-                )
-                candidates.update(u.id for u in users)
+
+    @staticmethod
+    def _resolve_user_ids_by_emails(db: Client, emails: list[str]) -> set[str]:
+        """Resolve a list of emails to user IDs in batches."""
+        candidates: set[str] = set()
+        for i in range(0, len(emails), 30):
+            users = (
+                db.collection("users")
+                .where(filter=firestore.FieldFilter("email", "in", emails[i : i + 30]))
+                .stream()
+            )
+            candidates.update(u.id for u in users)
         return candidates
 
     @staticmethod
