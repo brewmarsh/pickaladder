@@ -35,27 +35,63 @@ def _get_player_info(player_ref: Any, users_map: dict[str, Any]) -> dict[str, An
     return {"username": "Unknown", "id": "unknown"}
 
 
+def _get_team_ids_from_match(data: dict[str, Any]) -> tuple[set[str], set[str]]:
+    """Extract team 1 and team 2 member IDs from a match."""
+    if data.get("matchType") == "doubles":
+
+        def get_ids(k: str) -> set[str]:
+            return {str(r.id if hasattr(r, "id") else r) for r in data.get(k, []) if r}
+
+        return get_ids("team1"), get_ids("team2")
+
+    p1_ref, p2_ref = data.get("player1Ref"), data.get("player2Ref")
+    p1_data, p2_data = data.get("player_1_data", {}), data.get("player_2_data", {})
+
+    id1 = str(
+        (p1_ref.id if p1_ref is not None and hasattr(p1_ref, "id") else "")
+        or p1_data.get("uid")
+        or data.get("player1Id")
+        or ""
+    )
+    id2 = str(
+        (p2_ref.id if p2_ref is not None and hasattr(p2_ref, "id") else "")
+        or p2_data.get("uid")
+        or data.get("player2Id")
+        or ""
+    )
+
+    return {id1}, {id2}
+
+
+def _get_user_match_won_lost(
+    match_data: dict[str, Any], user_id: str
+) -> tuple[bool, bool]:
+    """Determine if the user won or lost the match, including handling of draws."""
+    p1_score = int(match_data.get("player1Score", 0))
+    p2_score = int(match_data.get("player2Score", 0))
+
+    if p1_score == p2_score:
+        return False, False
+
+    t1_ids, t2_ids = _get_team_ids_from_match(match_data)
+    if user_id in t1_ids:
+        return (p1_score > p2_score), (p1_score < p2_score)
+    if user_id in t2_ids:
+        return (p2_score > p1_score), (p2_score < p1_score)
+
+    return False, False
+
+
 def _get_user_match_result(
     match_dict: dict[str, Any], user_id: str, winner_slot: str
 ) -> str:
     """Determine if the user won or lost the match."""
-    match_type = match_dict.get("matchType", "singles")
-    if match_type == "doubles":
-        team1_refs = match_dict.get("team1", [])
-        is_in_team1 = any(ref.id == user_id for ref in team1_refs)
-        if (is_in_team1 and winner_slot == "team1") or (
-            not is_in_team1 and winner_slot == "team2"
-        ):
-            return "win"
+    won, lost = _get_user_match_won_lost(match_dict, user_id)
+    if won:
+        return "win"
+    if lost:
         return "loss"
-    else:
-        p1_ref = match_dict.get("player1Ref")
-        is_player1 = p1_ref and p1_ref.id == user_id
-        if (is_player1 and winner_slot == "team1") or (
-            not is_player1 and winner_slot == "team2"
-        ):
-            return "win"
-        return "loss"
+    return "draw"
 
 
 def _get_match_winner_slot(match_dict: dict[str, Any]) -> str:
@@ -292,28 +328,6 @@ def format_matches_for_dashboard(
     return _build_dashboard_match_list(matches, user_id, entity_maps)
 
 
-def _get_user_match_won_lost(
-    match_data: dict[str, Any], user_id: str
-) -> tuple[bool, bool]:
-    """Determine if the user won or lost the match, including handling of draws."""
-    match_type = match_data.get("matchType", "singles")
-    p1_score = match_data.get("player1Score", 0)
-    p2_score = match_data.get("player2Score", 0)
-
-    if match_type == "doubles":
-        team1_refs = match_data.get("team1", [])
-        in_team1 = any(ref.id == user_id for ref in team1_refs)
-        if in_team1:
-            return (p1_score > p2_score), (p1_score <= p2_score)
-        return (p2_score > p1_score), (p2_score <= p1_score)
-    else:
-        p1_ref = match_data.get("player1Ref")
-        is_player1 = p1_ref and p1_ref.id == user_id
-        if is_player1:
-            return (p1_score > p2_score), (p1_score <= p2_score)
-        return (p2_score > p1_score), (p2_score <= p1_score)
-
-
 def _process_match_for_streak(m: Any, user_id: str) -> dict[str, Any] | None:
     """Extract result and date information from a match object."""
     if hasattr(m, "to_dict"):
@@ -470,34 +484,6 @@ def calculate_stats(matches: list[DocumentSnapshot], user_id: str) -> dict[str, 
         "streak_type": s_type,
         "processed_matches": processed,
     }
-
-
-def _get_team_ids_from_match(data: dict[str, Any]) -> tuple[set[str], set[str]]:
-    """Extract team 1 and team 2 member IDs from a match."""
-    if data.get("matchType") == "doubles":
-
-        def get_ids(k: str) -> set[str]:
-            return {str(r.id if hasattr(r, "id") else r) for r in data.get(k, []) if r}
-
-        return get_ids("team1"), get_ids("team2")
-
-    p1_ref, p2_ref = data.get("player1Ref"), data.get("player2Ref")
-    p1_data, p2_data = data.get("player_1_data", {}), data.get("player_2_data", {})
-
-    id1 = str(
-        (p1_ref.id if p1_ref is not None and hasattr(p1_ref, "id") else "")
-        or p1_data.get("uid")
-        or data.get("player1Id")
-        or ""
-    )
-    id2 = str(
-        (p2_ref.id if p2_ref is not None and hasattr(p2_ref, "id") else "")
-        or p2_data.get("uid")
-        or data.get("player2Id")
-        or ""
-    )
-
-    return {id1}, {id2}
 
 
 def _get_h2h_match_data(

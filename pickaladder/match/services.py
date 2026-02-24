@@ -759,6 +759,21 @@ class MatchCommandService:
         )
 
     @staticmethod
+    def _update_user_stats_batch(
+        batch: WriteBatch,
+        team1_refs: list[DocumentReference],
+        team2_refs: list[DocumentReference],
+        winner: str,
+    ) -> None:
+        """Update individual user stats in a batch for doubles matches."""
+        for ref in team1_refs:
+            field = "stats.wins" if winner == "team1" else "stats.losses"
+            batch.update(ref, {field: firestore.Increment(1)})
+        for ref in team2_refs:
+            field = "stats.wins" if winner == "team2" else "stats.losses"
+            batch.update(ref, {field: firestore.Increment(1)})
+
+    @staticmethod
     def _record_match_batch(  # noqa: PLR0913
         db: Client,
         batch: WriteBatch,
@@ -798,6 +813,15 @@ class MatchCommandService:
         batch.set(match_ref, match_data)
         batch.update(p1_ref, p1_upd)
         batch.update(p2_ref, p2_upd)
+
+        if match_type == "doubles":
+            MatchCommandService._update_user_stats_batch(
+                batch,
+                match_data.get("team1", []),
+                match_data.get("team2", []),
+                outcome["winner"],
+            )
+
         batch.update(user_ref, {"lastMatchRecordedType": match_type})
 
         if gid := match_data.get("groupId"):
@@ -884,8 +908,7 @@ class MatchCommandService:
         """Update a match score with permission checks and stats rollback."""
         db = firestore.client()
         try:
-            s1 = int(s1_raw or 0)
-            s2 = int(s2_raw or 0)
+            s1, s2 = int(s1_raw or 0), int(s2_raw or 0)
         except (ValueError, TypeError):
             raise ValueError("Scores must be valid integers.")
 
@@ -895,7 +918,7 @@ class MatchCommandService:
             raise ValueError("Match not found.")
 
         MatchCommandService._check_match_edit_permissions(data, editor_uid, db)
-        MatchCommandService._update_doubles_stats(data, s1, s2)
+        MatchCommandService._perform_stats_update(data, s1, s2)
         match_ref.update(MatchCommandService._get_match_updates(data, s1, s2))
 
     @staticmethod
@@ -911,35 +934,55 @@ class MatchCommandService:
             raise PermissionError("You do not have permission to edit this match.")
 
     @staticmethod
-    def _update_doubles_stats(data: dict[str, Any], s1: int, s2: int) -> None:
-        """Rollback old stats and apply new stats for doubles matches."""
-        if (
-            data.get("matchType") != "doubles"
-            or not (r1 := data.get("team1Ref"))
-            or not (r2 := data.get("team2Ref"))
-        ):
-            return
+    def _perform_stats_update(data: dict[str, Any], s1: int, s2: int) -> None:
+        """Orchestrate the rollback and application of stats."""
         o1, o2 = data.get("player1Score", 0), data.get("player2Score", 0)
+        if o1 != o2:
+            MatchCommandService._apply_stats_delta(data, o1 > o2, -1)
+        if s1 != s2:
+            MatchCommandService._apply_stats_delta(data, s1 > s2, 1)
 
-        if o1 > o2:
-            r1.update({"stats.wins": firestore.Increment(-1)})
-            r2.update({"stats.losses": firestore.Increment(-1)})
-        elif o2 > o1:
-            r2.update({"stats.wins": firestore.Increment(-1)})
-            r1.update({"stats.losses": firestore.Increment(-1)})
+    @staticmethod
+    def _apply_stats_delta(data: dict[str, Any], s1_won: bool, delta: int) -> None:
+        """Apply a win/loss delta to all relevant participants."""
+        match_type = data.get("matchType", "singles")
+        if match_type == "doubles":
+            r1, r2 = data.get("team1Ref"), data.get("team2Ref")
+            u1, u2 = data.get("team1", []), data.get("team2", [])
+            MatchCommandService._increment_stats(r1, r2, s1_won, delta)
+            for ref in u1:
+                MatchCommandService._increment_stats(ref, None, s1_won, delta)
+            for ref in u2:
+                MatchCommandService._increment_stats(None, ref, s1_won, delta)
+        else:
+            r1, r2 = data.get("player1Ref"), data.get("player2Ref")
+            MatchCommandService._increment_stats(r1, r2, s1_won, delta)
 
-        if s1 > s2:
-            r1.update({"stats.wins": firestore.Increment(1)})
-            r2.update({"stats.losses": firestore.Increment(1)})
-        elif s2 > s1:
-            r2.update({"stats.wins": firestore.Increment(1)})
-            r1.update({"stats.losses": firestore.Increment(1)})
+    @staticmethod
+    def _increment_stats(
+        r1: DocumentReference | None,
+        r2: DocumentReference | None,
+        s1_won: bool,
+        delta: int,
+    ) -> None:
+        """Helper to increment/decrement wins and losses on two references."""
+        if r1:
+            field = "stats.wins" if s1_won else "stats.losses"
+            r1.update({field: firestore.Increment(delta)})
+        if r2:
+            field = "stats.wins" if not s1_won else "stats.losses"
+            r2.update({field: firestore.Increment(delta)})
 
     @staticmethod
     def _get_match_updates(data: dict[str, Any], s1: int, s2: int) -> dict[str, Any]:
         """Calculate the updates for the match document."""
         win_slot = "team1" if s1 > s2 else "team2"
-        upd = {"player1Score": s1, "player2Score": s2, "winner": win_slot}
+        upd = {
+            "player1Score": s1,
+            "player2Score": s2,
+            "winner": win_slot,
+            "status": "COMPLETED",
+        }
         if data.get("matchType") == "doubles":
             upd["winnerId"] = data.get("team1Id" if s1 > s2 else "team2Id")
             upd["loserId"] = data.get("team2Id" if s1 > s2 else "team1Id")

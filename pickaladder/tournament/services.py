@@ -680,12 +680,19 @@ class TournamentService:
 
     @staticmethod
     def save_pairings(t_id: str, pairings: list[dict[str, Any]]) -> int:
-        """Save generated match pairings to the tournament's matches collection."""
+        """Save generated match pairings to the global matches collection."""
         db = firestore.client()
         t_ref = db.collection("tournaments").document(t_id)
+        t_snap = cast(Any, t_ref.get())
+        t_data = t_snap.to_dict() or {}
+        t_date = t_data.get("date") or firestore.SERVER_TIMESTAMP
+
         batch = db.batch()
         for m in pairings:
-            batch.set(t_ref.collection("matches").document(), m)
+            m["tournamentId"] = t_id
+            m["matchDate"] = m.get("matchDate") or t_date
+            batch.set(db.collection("matches").document(), m)
+
         batch.update(t_ref, {"status": "PUBLISHED"})
         batch.commit()
         return len(pairings)
