@@ -116,7 +116,7 @@
 }
 
 .table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.02);
+    background-color: var(--bg-primary);
 }
 
 .table td[data-label="Result"] {

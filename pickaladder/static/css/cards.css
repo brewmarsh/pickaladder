@@ -11,7 +11,7 @@
 }
 .card:hover { box-shadow: var(--shadow-md); }
 .card-notification {
-    background-color: #eff6ff;
+    background-color: rgba(37, 99, 235, 0.1);
     border: 1px solid var(--primary-color);
 }
 .card-compact { padding: 16px; }

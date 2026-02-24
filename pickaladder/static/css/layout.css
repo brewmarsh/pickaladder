@@ -17,8 +17,8 @@ body {
 
 /* Navbar & Header */
 .header {
-    background-color: var(--primary-color);
-    border-bottom: 1px solid var(--primary-hover);
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
     padding: 10px 0;
     margin-bottom: 20px;
     position: relative;
@@ -32,7 +32,7 @@ body {
 }
 
 .navbar-brand, .navbar-menu a {
-    color: var(--text-on-primary);
+    color: var(--text-primary);
     text-decoration: none;
 }
 
@@ -213,7 +213,7 @@ body {
 }
 
 .onboarding-list .completed {
-    background-color: #f9fafb;
+    background-color: var(--bg-primary);
     opacity: 0.8;
 }
 
@@ -233,7 +233,7 @@ body {
 .feature-hero-side {
     flex: 1;
     padding: 40px;
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--border-color) 100%);
     border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
@@ -263,7 +263,7 @@ body {
 }
 
 .hero-image-placeholder {
-    background-color: white;
+    background-color: var(--bg-secondary);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
     padding: 10px;
