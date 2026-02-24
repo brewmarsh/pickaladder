@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from firebase_admin import firestore
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
 
@@ -45,28 +46,40 @@ def _get_tournament_winner(db: Client, tournament_id: str, match_type: str) -> s
     return standings[0]["name"] if standings else "TBD"
 
 
-def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
-    """Fetch pending tournament invitations for a user."""
-    if not user_id:
-        return []
+def _fetch_member_tournaments(db: Client, user_id: str) -> list[DocumentSnapshot]:
+    """Fetch tournament snapshots where the user is a member."""
     user_ref = db.collection("users").document(user_id)
     try:
-        tournaments_query = (
+        return list(
             db.collection("tournaments")
             .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
             .stream()
         )
     except Exception:
         return []
-    pending_invites = []
-    for doc in tournaments_query:
+
+
+def _filter_pending_invites(
+    tournaments: list[DocumentSnapshot], user_id: str
+) -> list[dict[str, Any]]:
+    """Filter tournament documents for pending invites for the user."""
+    pending = []
+    for doc in tournaments:
         data = doc.to_dict()
         if data and _is_user_participant_with_status(
             data.get("participants") or [], user_id, "pending"
         ):
             data["id"] = doc.id
-            pending_invites.append(data)
-    return pending_invites
+            pending.append(data)
+    return pending
+
+
+def get_pending_tournament_invites(db: Client, user_id: str) -> list[dict[str, Any]]:
+    """Fetch pending tournament invitations for a user."""
+    if not user_id:
+        return []
+    tournaments = _fetch_member_tournaments(db, user_id)
+    return _filter_pending_invites(tournaments, user_id)
 
 
 def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:

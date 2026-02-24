@@ -88,16 +88,7 @@ from .match_stats import (
     _calculate_streak as _calculate_streak,
 )
 from .match_stats import (
-    _get_match_winner_slot as _get_match_winner_slot,
-)
-from .match_stats import (
     _get_profile_match_alignment as _get_profile_match_alignment,
-)
-from .match_stats import (
-    _get_user_match_result as _get_user_match_result,
-)
-from .match_stats import (
-    _get_user_match_won_lost as _get_user_match_won_lost,
 )
 from .match_stats import (
     calculate_current_streak as _calculate_current_streak,
@@ -146,6 +137,15 @@ from .profile import (
 )
 from .profile import (
     upload_profile_picture as _upload_profile_picture,
+)
+from .stats_utils import (
+    _get_match_winner_slot as _get_match_winner_slot,
+)
+from .stats_utils import (
+    _get_user_match_result as _get_user_match_result,
+)
+from .stats_utils import (
+    _get_user_match_won_lost as _get_user_match_won_lost,
 )
 from .user_tournament_service import (
     get_active_tournaments as _get_active_tournaments,

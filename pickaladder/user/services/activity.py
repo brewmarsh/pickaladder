@@ -61,6 +61,33 @@ def _enrich_group_with_owner(
     return data
 
 
+def _build_ranking_data(
+    group_id: str,
+    group_data: dict[str, Any],
+    player: dict[str, Any],
+    rank: int | str,
+) -> dict[str, Any]:
+    """Build the base ranking data dictionary."""
+    return {
+        "group_id": group_id,
+        "group_name": group_data.get("name", "N/A"),
+        "group_image": group_data.get("profilePictureUrl"),
+        "rank": rank,
+        "points": player.get("avg_score", 0),
+        "form": player.get("form", []),
+    }
+
+
+def _enrich_with_player_above(
+    ranking_data: dict[str, Any], player: dict[str, Any], player_above: dict[str, Any]
+) -> None:
+    """Add details about the player ranked immediately above."""
+    ranking_data["player_above"] = player_above.get("name")
+    ranking_data["points_to_overtake"] = player_above.get("avg_score", 0) - player.get(
+        "avg_score", 0
+    )
+
+
 def _calculate_user_ranking(
     user_id: str,
     leaderboard: list[dict[str, Any]],
@@ -70,22 +97,10 @@ def _calculate_user_ranking(
     """Calculate user ranking details from a leaderboard."""
     for i, player in enumerate(leaderboard):
         if player["id"] == user_id:
-            rank = i + 1
-            user_ranking_data = {
-                "group_id": group_id,
-                "group_name": group_data.get("name", "N/A"),
-                "group_image": group_data.get("profilePictureUrl"),
-                "rank": rank,
-                "points": player.get("avg_score", 0),
-                "form": player.get("form", []),
-            }
+            ranking_data = _build_ranking_data(group_id, group_data, player, i + 1)
             if i > 0:
-                player_above = leaderboard[i - 1]
-                user_ranking_data["player_above"] = player_above.get("name")
-                user_ranking_data["points_to_overtake"] = player_above.get(
-                    "avg_score", 0
-                ) - player.get("avg_score", 0)
-            return user_ranking_data
+                _enrich_with_player_above(ranking_data, player, leaderboard[i - 1])
+            return ranking_data
 
     return {
         "group_id": group_id,
