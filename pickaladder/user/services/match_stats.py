@@ -3,6 +3,13 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any, cast
 
+from .stats_utils import (
+    _get_match_winner_slot,
+    _get_team_ids_from_match,
+    _get_user_match_result,
+    _get_user_match_won_lost,
+)
+
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
@@ -25,82 +32,6 @@ def get_user_matches(
         query = query.limit(limit)
 
     return list(query.stream())
-
-
-def _get_ids_from_refs(refs: list[Any]) -> set[str]:
-    """Helper to extract string IDs from a list of references or strings."""
-    return {str(r.id if hasattr(r, "id") else r) for r in refs if r}
-
-
-def _extract_id_from_match_slot(
-    slot_ref: Any, slot_data: dict[str, Any], slot_id: Any
-) -> str:
-    """Extract ID from reference, dictionary data, or direct ID string."""
-    return str(
-        (slot_ref.id if slot_ref and hasattr(slot_ref, "id") else "")
-        or slot_data.get("uid")
-        or slot_id
-        or ""
-    )
-
-
-def _get_singles_ids(data: dict[str, Any]) -> tuple[set[str], set[str]]:
-    """Extract member IDs from a singles match."""
-    id1 = _extract_id_from_match_slot(
-        data.get("player1Ref"), data.get("player_1_data", {}), data.get("player1Id")
-    )
-    id2 = _extract_id_from_match_slot(
-        data.get("player2Ref"), data.get("player_2_data", {}), data.get("player2Id")
-    )
-    return {id1}, {id2}
-
-
-def _get_team_ids_from_match(data: dict[str, Any]) -> tuple[set[str], set[str]]:
-    """Extract team 1 and team 2 member IDs from a match."""
-    if data.get("matchType") == "doubles":
-        return _get_ids_from_refs(data.get("team1", [])), _get_ids_from_refs(
-            data.get("team2", [])
-        )
-
-    return _get_singles_ids(data)
-
-
-def _get_user_match_won_lost(
-    match_data: dict[str, Any], user_id: str
-) -> tuple[bool, bool]:
-    """Determine if the user won or lost the match, including handling of draws."""
-    p1_score = int(match_data.get("player1Score", 0))
-    p2_score = int(match_data.get("player2Score", 0))
-
-    if p1_score == p2_score:
-        return False, False
-
-    t1_ids, t2_ids = _get_team_ids_from_match(match_data)
-    if user_id in t1_ids:
-        return (p1_score > p2_score), (p1_score < p2_score)
-    if user_id in t2_ids:
-        return (p2_score > p1_score), (p2_score < p1_score)
-
-    return False, False
-
-
-def _get_user_match_result(
-    match_dict: dict[str, Any], user_id: str, winner_slot: str
-) -> str:
-    """Determine if the user won or lost the match."""
-    won, lost = _get_user_match_won_lost(match_dict, user_id)
-    if won:
-        return "win"
-    if lost:
-        return "loss"
-    return "draw"
-
-
-def _get_match_winner_slot(match_dict: dict[str, Any]) -> str:
-    """Determine the winner slot ('team1' or 'team2')."""
-    p1_score = match_dict.get("player1Score", 0)
-    p2_score = match_dict.get("player2Score", 0)
-    return "team1" if p1_score > p2_score else "team2"
 
 
 def _process_match_for_streak(m: Any, user_id: str) -> dict[str, Any] | None:
@@ -240,8 +171,10 @@ def _process_match_stats_item(match_doc: DocumentSnapshot, user_id: str) -> dict
     }
 
 
-def calculate_stats(matches: list[DocumentSnapshot], user_id: str) -> dict[str, Any]:
-    """Calculate aggregate performance statistics from a list of matches."""
+def _process_stats_batch(
+    matches: list[DocumentSnapshot], user_id: str
+) -> tuple[int, int, list[dict[str, Any]]]:
+    """Process a list of match documents and count wins/losses."""
     wins = losses = 0
     processed = []
     for doc in matches:
@@ -256,7 +189,13 @@ def calculate_stats(matches: list[DocumentSnapshot], user_id: str) -> dict[str, 
                     "date": item["date"],
                 }
             )
+    return wins, losses, processed
 
+
+def _format_stats_response(
+    wins: int, losses: int, processed: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Format the final statistics dictionary."""
     total = wins + losses
     processed.sort(key=lambda x: x["date"] or datetime.datetime.min, reverse=True)
     streak, s_type = _calculate_streak(processed)
@@ -270,6 +209,12 @@ def calculate_stats(matches: list[DocumentSnapshot], user_id: str) -> dict[str, 
         "streak_type": s_type,
         "processed_matches": processed,
     }
+
+
+def calculate_stats(matches: list[DocumentSnapshot], user_id: str) -> dict[str, Any]:
+    """Calculate aggregate performance statistics from a list of matches."""
+    wins, losses, processed = _process_stats_batch(matches, user_id)
+    return _format_stats_response(wins, losses, processed)
 
 
 def _get_h2h_match_data(
@@ -294,6 +239,20 @@ def _calculate_h2h_delta(
     return 0, 0, 0
 
 
+def _process_h2h_match(
+    data: dict[str, Any], user_id_1: str, user_id_2: str
+) -> tuple[int, int, int]:
+    """Process a single match for H2H stats."""
+    if not data or user_id_2 not in data.get("participants", []):
+        return 0, 0, 0
+
+    scores, team_ids = _get_h2h_match_data(data)
+    if scores[0] == scores[1]:
+        return 0, 0, 0
+
+    return _calculate_h2h_delta(user_id_1, user_id_2, team_ids, scores)
+
+
 def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] | None:
     """Fetch head-to-head statistics between two users."""
     from firebase_admin import firestore
@@ -304,15 +263,8 @@ def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] 
     )
 
     for match in query.stream():
-        data = match.to_dict()
-        if data and user_id_2 in data.get("participants", []):
-            scores, team_ids = _get_h2h_match_data(data)
-            if scores[0] == scores[1]:
-                continue
-            w, l_count, p_diff = _calculate_h2h_delta(
-                user_id_1, user_id_2, team_ids, scores
-            )
-            wins, losses, points = wins + w, losses + l_count, points + p_diff
+        w, l_count, p_diff = _process_h2h_match(match.to_dict(), user_id_1, user_id_2)
+        wins, losses, points = wins + w, losses + l_count, points + p_diff
 
     return (
         {"wins": wins, "losses": losses, "point_diff": points}
