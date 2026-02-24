@@ -11,16 +11,12 @@ from werkzeug.utils import secure_filename
 from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
-from ..utils import get_tournament_standings
 from .base import TournamentBase
-from .generator import TournamentGenerator
 from .invites import TournamentInvites
 from .teams import TournamentTeams
 
 if TYPE_CHECKING:
-    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
-    from google.cloud.firestore_v1.document import DocumentReference
 
 MIN_PARTICIPANTS = 2
 
@@ -43,20 +39,20 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         user_uid: str, db: Client | None = None
     ) -> list[dict[str, Any]]:
         """Fetch all tournaments for a user."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
         owned = (
             db.collection("tournaments")
-            .where(filter=ts.firestore.FieldFilter("ownerRef", "==", user_ref))
+            .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
             .stream()
         )
         parts = (
             db.collection("tournaments")
             .where(
-                filter=ts.firestore.FieldFilter(
+                filter=firestore.FieldFilter(
                     "participant_ids", "array_contains", user_uid
                 )
             )
@@ -71,7 +67,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     @staticmethod
     def _upload_banner(t_id: str, banner: Any) -> str | None:
         """Upload tournament banner to Cloud Storage."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import storage
 
         if not banner or not getattr(banner, "filename", None):
             return None
@@ -83,7 +79,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         except RuntimeError:
             bucket_name = "pickaladder.firebasestorage.app"
 
-        blob = ts.storage.bucket(bucket_name).blob(f"tournaments/{t_id}/{fname}")
+        blob = storage.bucket(bucket_name).blob(f"tournaments/{t_id}/{fname}")
         with tempfile.NamedTemporaryFile(suffix=os.path.splitext(fname)[1]) as tmp:
             banner.save(tmp.name)
             blob.upload_from_filename(tmp.name)
@@ -95,10 +91,10 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         data: dict[str, Any], user_uid: str, db: Client | None = None
     ) -> str:
         """Create a tournament and return its ID."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
         payload = {
             "name": data["name"],
@@ -111,7 +107,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             "status": "Active",
             "participants": [{"userRef": user_ref, "status": "accepted"}],
             "participant_ids": [user_uid],
-            "createdAt": ts.firestore.SERVER_TIMESTAMP,
+            "createdAt": firestore.SERVER_TIMESTAMP,
         }
         _, ref = db.collection("tournaments").add(payload)
         return str(ref.id)
@@ -145,10 +141,12 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         t_id: str, user_uid: str, db: Client | None = None
     ) -> dict[str, Any] | None:
         """Fetch comprehensive details for the tournament view."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
+
+        from pickaladder.tournament.utils import get_tournament_standings
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         doc = cast(Any, db.collection("tournaments").document(t_id).get())
         if not doc.exists:
             return None
@@ -157,7 +155,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         meta = TournamentService._get_tournament_metadata(data, user_uid)
         from pickaladder.user import UserService  # noqa: PLC0415
 
-        stnd = ts.get_tournament_standings(db, t_id, data.get("matchType", "singles"))
+        stnd = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
         parts = data.get("participants", [])
         c_ids = {
             str(
@@ -189,11 +187,11 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     @staticmethod
     def _has_matches(db: Client, t_id: str) -> bool:
         """Check if any matches exist for a tournament."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         query = (
             db.collection("matches")
-            .where(filter=ts.firestore.FieldFilter("tournamentId", "==", t_id))
+            .where(filter=firestore.FieldFilter("tournamentId", "==", t_id))
             .limit(1)
             .stream()
         )
@@ -204,10 +202,10 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         t_id: str, uid: str, update: dict[str, Any], db: Client | None = None
     ) -> None:
         """Update tournament details with ownership check."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         ref = db.collection("tournaments").document(t_id)
         doc = cast(Any, ref.get())
         if not doc.exists:
@@ -268,10 +266,10 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     @staticmethod
     def delete_tournament(t_id: str, uid: str, db: Client | None = None) -> None:
         """Delete a tournament if owner."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         ref = db.collection("tournaments").document(t_id)
         doc = cast(Any, ref.get())
         if (
@@ -284,10 +282,12 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     @staticmethod
     def complete_tournament(t_id: str, uid: str, db: Client | None = None) -> None:
         """Finalize tournament and send emails."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
+
+        from pickaladder.tournament.utils import get_tournament_standings
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         ref = db.collection("tournaments").document(t_id)
         doc = cast(Any, ref.get())
         if not doc.exists:
@@ -296,7 +296,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         if TournamentService._get_tournament_owner_id(data) != uid:
             raise PermissionError("Only organizer can complete.")
         ref.update({"status": "Completed"})
-        stands = ts.get_tournament_standings(db, t_id, data.get("matchType", "singles"))
+        stands = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
         winner = stands[0]["name"] if stands else "No one"
         for p in data.get("participants", []):
             if not p or p.get("status") != "accepted":
@@ -320,13 +320,13 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     @staticmethod
     def save_pairings(t_id: str, pairings: list[dict[str, Any]]) -> int:
         """Save generated match pairings to the global matches collection."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
-        db = ts.firestore.client()
+        db = firestore.client()
         t_ref = db.collection("tournaments").document(t_id)
         t_snap = cast(Any, t_ref.get())
         t_data = t_snap.to_dict() or {}
-        t_date = t_data.get("date") or ts.firestore.SERVER_TIMESTAMP
+        t_date = t_data.get("date") or firestore.SERVER_TIMESTAMP
 
         batch = db.batch()
         for m in pairings:
@@ -341,10 +341,10 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     @staticmethod
     def generate_bracket(t_id: str, db: Client | None = None) -> list[Any]:
         """Generate a tournament bracket based on participants or teams."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         doc = cast(Any, db.collection("tournaments").document(t_id).get())
         t_data = doc.to_dict() or {}
         if t_data.get("mode", "SINGLES") == "SINGLES":
@@ -368,7 +368,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             db.collection("tournaments")
             .document(t_id)
             .collection("teams")
-            .where(filter=ts.firestore.FieldFilter("status", "==", "CONFIRMED"))
+            .where(filter=firestore.FieldFilter("status", "==", "CONFIRMED"))
             .stream()
         )
         return [

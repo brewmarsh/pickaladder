@@ -281,9 +281,9 @@ def get_user_profile_data(
     """Fetch all data for a user's public profile."""
     from .core import get_user_by_id
     from .friendship import get_friendship_info, get_user_friends
+    from .match_formatting import format_matches_for_dashboard
     from .match_stats import (
         calculate_stats,
-        format_matches_for_dashboard,
         get_h2h_stats,
         get_user_matches,
     )

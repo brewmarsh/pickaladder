@@ -3,11 +3,11 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any, cast
 
+from pickaladder.match.models import MatchResult, MatchSubmission
 from pickaladder.teams.services import TeamService
 from pickaladder.user.services.core import get_avatar_url, smart_display_name
 
 from .calculator import MatchStatsCalculator
-from pickaladder.match.models import MatchResult, MatchSubmission
 from .query import MatchQueryService
 
 if TYPE_CHECKING:
@@ -98,13 +98,13 @@ class MatchCommandService:
         sub: MatchSubmission, user_id: str, date: datetime.datetime
     ) -> dict[str, Any]:
         """Prepare the base data dictionary for the match document."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
 
         data = {
             "player1Score": sub.score_p1,
             "player2Score": sub.score_p2,
             "matchDate": date,
-            "createdAt": ms.firestore.SERVER_TIMESTAMP,
+            "createdAt": firestore.SERVER_TIMESTAMP,
             "matchType": sub.match_type,
             "createdBy": user_id,
         }
@@ -161,14 +161,14 @@ class MatchCommandService:
         winner: str,
     ) -> None:
         """Update individual user stats in a batch for doubles matches."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
 
         for ref in team1_refs:
             field = "stats.wins" if winner == "team1" else "stats.losses"
-            batch.update(ref, {field: ms.firestore.Increment(1)})
+            batch.update(ref, {field: firestore.Increment(1)})
         for ref in team2_refs:
             field = "stats.wins" if winner == "team2" else "stats.losses"
-            batch.update(ref, {field: ms.firestore.Increment(1)})
+            batch.update(ref, {field: firestore.Increment(1)})
 
     @staticmethod
     def _record_match_batch(  # noqa: PLR0913
@@ -182,7 +182,7 @@ class MatchCommandService:
         match_type: str,
     ) -> None:
         """Record a match and update stats using batched writes."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
 
         snaps_list = db.get_all([p1_ref, p2_ref])
         snaps = {s.id: s for s in snaps_list if s.exists}
@@ -226,7 +226,7 @@ class MatchCommandService:
         if gid := match_data.get("groupId"):
             batch.update(
                 db.collection("groups").document(gid),
-                {"updatedAt": ms.firestore.SERVER_TIMESTAMP},
+                {"updatedAt": firestore.SERVER_TIMESTAMP},
             )
 
     @staticmethod
@@ -254,7 +254,7 @@ class MatchCommandService:
     @staticmethod
     def _build_match_result(match_id: str, data: dict[str, Any]) -> MatchResult:
         """Construct a MatchResult from the match data."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
 
         return MatchResult(
             id=match_id,
@@ -262,7 +262,7 @@ class MatchCommandService:
             player1Score=data.get("player1Score", 0),
             player2Score=data.get("player2Score", 0),
             matchDate=data.get("matchDate"),
-            createdAt=data.get("createdAt", ms.firestore.SERVER_TIMESTAMP),
+            createdAt=data.get("createdAt", firestore.SERVER_TIMESTAMP),
             createdBy=data.get("createdBy", ""),
             winner=data.get("winner", ""),
             winnerId=data.get("winnerId", ""),
@@ -307,9 +307,9 @@ class MatchCommandService:
         match_id: str, s1_raw: Any, s2_raw: Any, editor_uid: str
     ) -> None:
         """Update a match score with permission checks and stats rollback."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
 
-        db = ms.firestore.client()
+        db = firestore.client()
         try:
             s1, s2 = int(s1_raw or 0), int(s2_raw or 0)
         except (ValueError, TypeError):
@@ -369,14 +369,14 @@ class MatchCommandService:
         delta: int,
     ) -> None:
         """Helper to increment/decrement wins and losses on two references."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
 
         if r1:
             field = "stats.wins" if s1_won else "stats.losses"
-            r1.update({field: ms.firestore.Increment(delta)})
+            r1.update({field: firestore.Increment(delta)})
         if r2:
             field = "stats.wins" if not s1_won else "stats.losses"
-            r2.update({field: ms.firestore.Increment(delta)})
+            r2.update({field: firestore.Increment(delta)})
 
     @staticmethod
     def _get_match_updates(data: dict[str, Any], s1: int, s2: int) -> dict[str, Any]:

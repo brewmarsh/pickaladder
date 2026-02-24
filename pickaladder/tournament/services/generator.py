@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from google.cloud.firestore_v1.client import Client
+from typing import Any
 
 MIN_PARTICIPANTS = 2
 
@@ -29,11 +26,11 @@ class TournamentGenerator:
     @staticmethod
     def generate_round_robin(participant_ids: list[str]) -> list[dict[str, Any]]:
         """Generate Round Robin pairings."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         if not participant_ids or len(participant_ids) < MIN_PARTICIPANTS:
             return []
-        db, pairings = ts.firestore.client(), []
+        db, pairings = firestore.client(), []
         for p1, p2 in TournamentGenerator._get_RR_pair_ids(list(participant_ids)):
             if p1 and p2:
                 pairings.append(
@@ -42,7 +39,7 @@ class TournamentGenerator:
                         "player2Ref": db.collection("users").document(p2),
                         "matchType": "singles",
                         "status": "DRAFT",
-                        "createdAt": ts.firestore.SERVER_TIMESTAMP,
+                        "createdAt": firestore.SERVER_TIMESTAMP,
                         "participants": [p1, p2],
                     }
                 )

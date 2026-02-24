@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Any, cast
 
 from pickaladder.user.helpers import smart_display_name
-from pickaladder.utils import send_email
 
 from .base import TournamentBase
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
     from google.cloud.firestore_v1.transaction import Transaction
-    from google.cloud.firestore_v1.base_document import DocumentSnapshot
 
 
 class TournamentInvites(TournamentBase):
@@ -21,16 +19,14 @@ class TournamentInvites(TournamentBase):
     @staticmethod
     def _get_invitable_ids(db: Client, user_uid: str) -> set[str]:
         """Fetch all friend and group member IDs for a user."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         user_ref = db.collection("users").document(user_uid)
         f_ids = {doc.id for doc in user_ref.collection("friends").stream()}
         g_ids = set()
         groups = (
             db.collection("groups")
-            .where(
-                filter=ts.firestore.FieldFilter("members", "array_contains", user_ref)
-            )
+            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
             .stream()
         )
         for doc in groups:
@@ -62,14 +58,14 @@ class TournamentInvites(TournamentBase):
         t_id: str, uid: str, invited_uid: str, db: Client | None = None
     ) -> None:
         """Invite a single player."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         invited_ref = db.collection("users").document(invited_uid)
         db.collection("tournaments").document(t_id).update(
             {
-                "participants": ts.firestore.ArrayUnion(
+                "participants": firestore.ArrayUnion(
                     [
                         {
                             "userRef": invited_ref,
@@ -78,7 +74,7 @@ class TournamentInvites(TournamentBase):
                         }
                     ]
                 ),
-                "participant_ids": ts.firestore.ArrayUnion([invited_uid]),
+                "participant_ids": firestore.ArrayUnion([invited_uid]),
             }
         )
 
@@ -119,10 +115,10 @@ class TournamentInvites(TournamentBase):
     @staticmethod
     def invite_group(t_id: str, g_id: str, uid: str, db: Client | None = None) -> int:
         """Invite all members of a group. Returns count of new invites."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         ref = db.collection("tournaments").document(t_id)
         doc = cast(Any, ref.get())
         if not doc.exists:
@@ -138,8 +134,8 @@ class TournamentInvites(TournamentBase):
             batch.update(
                 ref,
                 {
-                    "participants": ts.firestore.ArrayUnion(new_p),
-                    "participant_ids": ts.firestore.ArrayUnion(n_ids),
+                    "participants": firestore.ArrayUnion(new_p),
+                    "participant_ids": firestore.ArrayUnion(n_ids),
                 },
             )
             batch.commit()
@@ -164,13 +160,13 @@ class TournamentInvites(TournamentBase):
     @staticmethod
     def accept_invite(t_id: str, uid: str, db: Client | None = None) -> bool:
         """Accept invite via transaction."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         ref = db.collection("tournaments").document(t_id)
 
-        @ts.firestore.transactional
+        @firestore.transactional
         def _tx(tx: Transaction, t_ref: DocumentReference) -> bool:
             snap = cast(Any, t_ref.get(transaction=tx))
             if not snap.exists:
@@ -186,13 +182,13 @@ class TournamentInvites(TournamentBase):
     @staticmethod
     def decline_invite(t_id: str, uid: str, db: Client | None = None) -> bool:
         """Decline invite via transaction."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         ref = db.collection("tournaments").document(t_id)
 
-        @ts.firestore.transactional
+        @firestore.transactional
         def _tx(tx: Transaction, t_ref: DocumentReference) -> bool:
             snap = cast(Any, t_ref.get(transaction=tx))
             if not snap.exists:

@@ -16,19 +16,21 @@ class TournamentTeams(TournamentBase):
         t_id: str, p1: str, p2: str | None, name: str, db: Client | None = None
     ) -> str:
         """Register a team in the tournament teams sub-collection."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
+
+        from pickaladder.teams.services import TeamService
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         d = {
             "p1_uid": p1,
             "p2_uid": p2,
             "team_name": name,
             "status": "PENDING",
-            "createdAt": ts.firestore.SERVER_TIMESTAMP,
+            "createdAt": firestore.SERVER_TIMESTAMP,
         }
         if p2:
-            d["team_id"] = ts.TeamService.get_or_create_team(db, p1, p2)
+            d["team_id"] = TeamService.get_or_create_team(db, p1, p2)
         ref = db.collection("tournaments").document(t_id).collection("teams").document()
         ref.set(d)
         return str(ref.id)
@@ -36,22 +38,24 @@ class TournamentTeams(TournamentBase):
     @staticmethod
     def accept_team_partnership(t_id: str, uid: str, db: Client | None = None) -> bool:
         """Accept a team partnership invitation."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
+
+        from pickaladder.teams.services import TeamService
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         query = (
             db.collection("tournaments")
             .document(t_id)
             .collection("teams")
-            .where(filter=ts.firestore.FieldFilter("p2_uid", "==", uid))
-            .where(filter=ts.firestore.FieldFilter("status", "==", "PENDING"))
+            .where(filter=firestore.FieldFilter("p2_uid", "==", uid))
+            .where(filter=firestore.FieldFilter("status", "==", "PENDING"))
             .stream()
         )
         updated = False
         for doc in query:
             d = doc.to_dict()
-            team_id = ts.TeamService.get_or_create_team(db, d["p1_uid"], uid)
+            team_id = TeamService.get_or_create_team(db, d["p1_uid"], uid)
             doc.reference.update({"status": "CONFIRMED", "team_id": team_id})
             TournamentTeams._sync_team_participants(
                 db, t_id, d["p1_uid"], uid, d.get("team_name")
@@ -64,7 +68,7 @@ class TournamentTeams(TournamentBase):
         db: Client, t_id: str, p1: str, p2: str, name: str | None
     ) -> None:
         """Ensure both team members are in the tournament participants."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
 
         ref = db.collection("tournaments").document(t_id)
         snap = cast(Any, ref.get())
@@ -83,8 +87,8 @@ class TournamentTeams(TournamentBase):
         if new_ps:
             ref.update(
                 {
-                    "participants": ts.firestore.ArrayUnion(new_ps),
-                    "participant_ids": ts.firestore.ArrayUnion(new_ids),
+                    "participants": firestore.ArrayUnion(new_ps),
+                    "participant_ids": firestore.ArrayUnion(new_ids),
                 }
             )
 
@@ -93,10 +97,12 @@ class TournamentTeams(TournamentBase):
         t_id: str, team_id: str, uid: str, db: Client | None = None
     ) -> bool:
         """Join a placeholder team via an invite link."""
-        from pickaladder.tournament import services as ts
+        from firebase_admin import firestore
+
+        from pickaladder.teams.services import TeamService
 
         if db is None:
-            db = ts.firestore.client()
+            db = firestore.client()
         ref = (
             db.collection("tournaments")
             .document(t_id)
@@ -110,7 +116,7 @@ class TournamentTeams(TournamentBase):
             or d.get("p1_uid") == uid
         ):
             return False
-        team_id_global = ts.TeamService.get_or_create_team(db, d["p1_uid"], uid)
+        team_id_global = TeamService.get_or_create_team(db, d["p1_uid"], uid)
         ref.update({"p2_uid": uid, "status": "CONFIRMED", "team_id": team_id_global})
         TournamentTeams._sync_team_participants(
             db, t_id, d["p1_uid"], uid, d.get("team_name")

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
 
@@ -13,6 +12,8 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
+
+    from pickaladder.user.models import User
 
 CLOSE_CALL_THRESHOLD = 2
 
@@ -34,12 +35,12 @@ class MatchQueryService:
     @staticmethod
     def get_latest_matches(db: Client, limit: int = 10) -> list[Match]:
         """Fetch and process the latest matches."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
 
         try:
             matches_query = (
                 db.collection("matches")
-                .order_by("createdAt", direction=ms.firestore.Query.DESCENDING)
+                .order_by("createdAt", direction=firestore.Query.DESCENDING)
                 .limit(limit)
             )
             matches = list(matches_query.stream())
@@ -142,7 +143,7 @@ class MatchQueryService:
     @staticmethod
     def _get_group_candidates(db: Client, group_id: str) -> set[str]:
         """Fetch group members and invited users for a group."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
 
         candidates: set[str] = set()
         group_doc = cast(
@@ -154,8 +155,8 @@ class MatchQueryService:
 
         invites = (
             db.collection("group_invites")
-            .where(filter=ms.firestore.FieldFilter("group_id", "==", group_id))
-            .where(filter=ms.firestore.FieldFilter("used", "==", False))
+            .where(filter=firestore.FieldFilter("group_id", "==", group_id))
+            .where(filter=firestore.FieldFilter("used", "==", False))
             .stream()
         )
         emails = [
@@ -168,7 +169,7 @@ class MatchQueryService:
                 users = (
                     db.collection("users")
                     .where(
-                        filter=ms.firestore.FieldFilter("email", "in", emails[i : i + 30])
+                        filter=firestore.FieldFilter("email", "in", emails[i : i + 30])
                     )
                     .stream()
                 )
@@ -178,7 +179,7 @@ class MatchQueryService:
     @staticmethod
     def _get_default_candidates(db: Client, user_id: str) -> set[str]:
         """Fetch friends and personal invitees for a user."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
 
         candidates: set[str] = set()
         friends = (
@@ -192,7 +193,7 @@ class MatchQueryService:
 
         invites = (
             db.collection("group_invites")
-            .where(filter=ms.firestore.FieldFilter("inviter_id", "==", user_id))
+            .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
             .stream()
         )
         emails = list(
@@ -207,7 +208,7 @@ class MatchQueryService:
                 users = (
                     db.collection("users")
                     .where(
-                        filter=ms.firestore.FieldFilter("email", "in", emails[i : i + 10])
+                        filter=firestore.FieldFilter("email", "in", emails[i : i + 10])
                     )
                     .stream()
                 )
@@ -217,7 +218,7 @@ class MatchQueryService:
     @staticmethod
     def get_player_record(db: Client, player_ref: Any) -> dict[str, int]:
         """Calculate win/loss record for a player by doc reference."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
 
         wins, losses = 0, 0
         uid = (
@@ -227,7 +228,7 @@ class MatchQueryService:
         )
 
         query = db.collection("matches").where(
-            filter=ms.firestore.FieldFilter("participants", "array_contains", uid)
+            filter=firestore.FieldFilter("participants", "array_contains", uid)
         )
 
         for match in query.stream():
@@ -356,15 +357,16 @@ class MatchQueryService:
         db: Client, uid: str, limit: int = 20, start_after: str | None = None
     ) -> tuple[list[dict[str, Any]], str | None]:
         """Fetch matches for a user with cursor-based pagination."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
+
         from pickaladder.user.services.match_formatting import (
             format_matches_for_dashboard,
         )
 
         query = (
             db.collection("matches")
-            .where(filter=ms.firestore.FieldFilter("participants", "array_contains", uid))
-            .order_by("matchDate", direction=ms.firestore.Query.DESCENDING)
+            .where(filter=firestore.FieldFilter("participants", "array_contains", uid))
+            .order_by("matchDate", direction=firestore.Query.DESCENDING)
             .limit(limit)
         )
         if start_after:
@@ -425,9 +427,9 @@ class MatchQueryService:
     @staticmethod
     def get_match_edit_context(match_id: str) -> dict[str, Any] | None:
         """Fetch data needed for editing a match."""
-        from pickaladder.match import services as ms
+        from firebase_admin import firestore
 
-        db = ms.firestore.client()
+        db = firestore.client()
         match_data = MatchQueryService.get_match_by_id(db, match_id)
         if match_data is None:
             return None
