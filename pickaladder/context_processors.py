@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, Optional
 
 from firebase_admin import firestore
 from flask import current_app, g
@@ -16,7 +16,7 @@ VERSION_THRESHOLD = 10
 VERSION_SHORT_LENGTH = 7
 
 
-def _get_version_from_env() -> str | None:
+def _get_version_from_env() -> Optional[str]:
     """Fetch version from environment variables."""
     return (
         os.environ.get("APP_VERSION")
@@ -27,7 +27,7 @@ def _get_version_from_env() -> str | None:
     )
 
 
-def _get_version_from_file() -> str | None:
+def _get_version_from_file() -> Optional[str]:
     """Fetch version from the VERSION file."""
     try:
         version_file = Path(current_app.root_path).parent / "VERSION"
@@ -49,7 +49,7 @@ def _get_app_version() -> str:
     return version
 
 
-def _get_global_announcement() -> dict[str, Any] | None:
+def _get_global_announcement() -> Optional[Dict[str, Any]]:
     """Fetch global announcement from Firestore."""
     try:
         db = firestore.client()
@@ -60,7 +60,7 @@ def _get_global_announcement() -> dict[str, Any] | None:
         return None
 
 
-def inject_global_context() -> dict[str, Any]:
+def inject_global_context() -> Dict[str, Any]:
     """Injects global context variables into templates."""
     version = _get_app_version()
     global_announcement = _get_global_announcement()
@@ -74,7 +74,7 @@ def inject_global_context() -> dict[str, Any]:
     }
 
 
-def inject_incoming_requests_count() -> dict[str, Any]:
+def inject_incoming_requests_count() -> Dict[str, Any]:
     """Injects incoming friend requests count into the template context."""
     try:
         user = getattr(g, "user", None)
@@ -92,7 +92,7 @@ def inject_incoming_requests_count() -> dict[str, Any]:
     return dict(incoming_requests_count=0, pending_friend_requests=[])
 
 
-def inject_pending_tournament_invites() -> dict[str, Any]:
+def inject_pending_tournament_invites() -> Dict[str, Any]:
     """Injects pending tournament invites into the template context."""
     try:
         user = getattr(g, "user", None)
@@ -109,7 +109,7 @@ def inject_pending_tournament_invites() -> dict[str, Any]:
     return dict(pending_tournament_invites=[])
 
 
-def inject_firebase_api_key() -> dict[str, Any]:
+def inject_firebase_api_key() -> Dict[str, Any]:
     """Injects the Firebase API key into the template context."""
     firebase_api_key = current_app.config.get(
         "FIREBASE_API_KEY"

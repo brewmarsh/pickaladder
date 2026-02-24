@@ -15,7 +15,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, List, Optional
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -36,7 +36,7 @@ def _get_credentials_path() -> Path:
     return project_root / "firebase_credentials.json"
 
 
-def _load_credentials_from_file(cred_path: Path) -> credentials.Certificate | None:
+def _load_credentials_from_file(cred_path: Path) -> Optional[credentials.Certificate]:
     """Load Firebase credentials from a JSON file."""
     if not cred_path.exists():
         return None
@@ -47,7 +47,7 @@ def _load_credentials_from_file(cred_path: Path) -> credentials.Certificate | No
         return None
 
 
-def _load_credentials_from_env() -> credentials.Certificate | None:
+def _load_credentials_from_env() -> Optional[credentials.Certificate]:
     """Load Firebase credentials from an environment variable."""
     cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
     if not cred_json:
@@ -60,7 +60,7 @@ def _load_credentials_from_env() -> credentials.Certificate | None:
         return None
 
 
-def _load_credentials() -> credentials.Certificate | None:
+def _load_credentials() -> Optional[credentials.Certificate]:
     """Load Firebase credentials from file or environment variable."""
     cred_path = _get_credentials_path()
     cred = _load_credentials_from_file(cred_path) or _load_credentials_from_env()
@@ -87,7 +87,7 @@ def initialize_firebase() -> bool:
     return True
 
 
-def get_or_create_team(db: Any, team_members: list[Any] | None) -> Any:
+def get_or_create_team(db: Any, team_members: Optional[List[Any]]) -> Any:
     """
     Retrieves a team if it exists, otherwise creates it.
     A team is uniquely identified by its members.
@@ -144,7 +144,7 @@ def _setup_mock_db() -> MockFirestore:
     return db
 
 
-def _process_matches_migration(db: Any, matches: list[Any]) -> str | None:
+def _process_matches_migration(db: Any, matches: List[Any]) -> Optional[str]:
     """Iterate through doubles matches and update them with team references."""
     migrated_match_id = None
     for match in matches:

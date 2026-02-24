@@ -32,7 +32,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6  # Fixed: v5 is the current version
         with:
-          python-version: '3.11'
+          python-version: '3.11' # tool requires 3.10+
 
       - name: Install Tool
         run: uv pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
@@ -48,8 +48,14 @@ jobs:
           TARGET_BRANCH="origin/${{ github.base_ref || 'main' }}"
           echo "Running Agent Scorecard against $TARGET_BRANCH..."
           
+          # Use --diff for PRs to focus on changes and avoid known analyzer bugs in unrelated files
+          DIFF_ARG=""
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            DIFF_ARG="--diff"
+          fi
+
           # Standardized command syntax
-          uv run --no-project agent-score score --report readiness_report.md .
+          uv run --no-project agent-score score $DIFF_ARG --report readiness_report.md .
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v6  # Fixed: v4 is the current version
