@@ -57,14 +57,24 @@ jobs:
           # Standardized command syntax targeting only Python files
           uv run --no-project agent-score score $DIFF_ARG --report readiness_report.md . --limit-to .py
 
+      - name: Check for Report existence
+        id: check_report
+        run: |
+          if [ -f readiness_report.md ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Upload Artifact
+        if: steps.check_report.outputs.exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: agent-readiness-report
           path: readiness_report.md
 
       - name: Comment on PR
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.check_report.outputs.exists == 'true'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: agent-readiness-report
