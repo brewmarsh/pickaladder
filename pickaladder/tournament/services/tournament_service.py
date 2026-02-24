@@ -1,14 +1,8 @@
 from __future__ import annotations
 
 import logging
-import os
-import tempfile
 from typing import TYPE_CHECKING, Any, cast
 
-from flask import current_app
-from werkzeug.utils import secure_filename
-
-from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
 from .base import TournamentBase
@@ -25,92 +19,13 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     """Handles business logic and data access for tournaments."""
 
     @staticmethod
-    def _enrich_tournament(doc: Any) -> dict[str, Any]:
-        """Format tournament data for display."""
-        data = cast(dict[str, Any], doc.to_dict() or {})
-        data["id"] = doc.id
-        raw_date = data.get("start_date") or data.get("date")
-        if raw_date and hasattr(raw_date, "to_datetime"):
-            data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
-        return data
-
-    @staticmethod
-    def _fetch_owned_tournaments(db: Client, user_ref: Any) -> list[Any]:
-        """Query tournaments owned by the user."""
+    def _build_create_payload(
+        data: dict[str, Any], user_uid: str, user_ref: Any
+    ) -> dict[str, Any]:
+        """Construct the initial tournament payload."""
         from firebase_admin import firestore
 
-        return list(
-            db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
-            .stream()
-        )
-
-    @staticmethod
-    def _fetch_participating_tournaments(db: Client, user_uid: str) -> list[Any]:
-        """Query tournaments where the user is a participant."""
-        from firebase_admin import firestore
-
-        return list(
-            db.collection("tournaments")
-            .where(
-                filter=firestore.FieldFilter(
-                    "participant_ids", "array_contains", user_uid
-                )
-            )
-            .stream()
-        )
-
-    @staticmethod
-    def list_tournaments(
-        user_uid: str, db: Client | None = None
-    ) -> list[dict[str, Any]]:
-        """Fetch all tournaments for a user."""
-        from firebase_admin import firestore
-
-        db = db or firestore.client()
-        u_ref = db.collection("users").document(user_uid)
-        owned = TournamentService._fetch_owned_tournaments(db, u_ref)
-        parts = TournamentService._fetch_participating_tournaments(db, user_uid)
-
-        results = {d.id: TournamentService._enrich_tournament(d) for d in owned}
-        for d in parts:
-            if d.id not in results:
-                results[d.id] = TournamentService._enrich_tournament(d)
-        return list(results.values())
-
-    @staticmethod
-    def _upload_banner(t_id: str, banner: Any) -> str | None:
-        """Upload tournament banner to Cloud Storage."""
-        from firebase_admin import storage
-
-        if not banner or not getattr(banner, "filename", None):
-            return None
-        fname = secure_filename(banner.filename or f"banner_{t_id}.jpg")
-        try:
-            bucket_name = current_app.config.get(
-                "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
-            )
-        except RuntimeError:
-            bucket_name = "pickaladder.firebasestorage.app"
-
-        blob = storage.bucket(bucket_name).blob(f"tournaments/{t_id}/{fname}")
-        with tempfile.NamedTemporaryFile(suffix=os.path.splitext(fname)[1]) as tmp:
-            banner.save(tmp.name)
-            blob.upload_from_filename(tmp.name)
-        blob.make_public()
-        return str(blob.public_url)
-
-    @staticmethod
-    def create_tournament(
-        data: dict[str, Any], user_uid: str, db: Client | None = None
-    ) -> str:
-        """Create a tournament and return its ID."""
-        from firebase_admin import firestore
-
-        if db is None:
-            db = firestore.client()
-        user_ref = db.collection("users").document(user_uid)
-        payload = {
+        return {
             "name": data["name"],
             "date": data["date"],
             "location": data["location"],
@@ -123,8 +38,32 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             "participant_ids": [user_uid],
             "createdAt": firestore.SERVER_TIMESTAMP,
         }
+
+    @staticmethod
+    def create_tournament(
+        data: dict[str, Any], user_uid: str, db: Client | None = None
+    ) -> str:
+        """Create a tournament and return its ID."""
+        from firebase_admin import firestore
+
+        db = db or firestore.client()
+        user_ref = db.collection("users").document(user_uid)
+        payload = TournamentService._build_create_payload(data, user_uid, user_ref)
         _, ref = db.collection("tournaments").add(payload)
         return str(ref.id)
+
+    @staticmethod
+    def _check_user_in_team(
+        user_uid: str, team_data: dict[str, Any]
+    ) -> tuple[str | None, bool] | None:
+        """Check if user is in team and return status/pending flag."""
+        if team_data.get("p1_uid") == user_uid or team_data.get("p2_uid") == user_uid:
+            is_pending = (
+                team_data.get("p2_uid") == user_uid
+                and team_data.get("status") == "PENDING"
+            )
+            return cast(str, team_data.get("status")), is_pending
+        return None
 
     @staticmethod
     def _get_team_status_for_user(
@@ -133,37 +72,12 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         """Fetch team status and pending flag for a user."""
         teams = db.collection("tournaments").document(t_id).collection("teams").stream()
         for doc in teams:
-            t = cast(dict[str, Any], doc.to_dict())
-            if t.get("p1_uid") == user_uid or t.get("p2_uid") == user_uid:
-                is_pending = (
-                    t.get("p2_uid") == user_uid and t.get("status") == "PENDING"
-                )
-                return cast(str, t.get("status")), is_pending
-        return None, False
-
-    @staticmethod
-    def _get_tournament_metadata(data: dict[str, Any], user_uid: str) -> dict[str, Any]:
-        """Extract metadata like date display and ownership for details view."""
-        raw_date = data.get("date")
-        date_display = None
-        if raw_date and hasattr(raw_date, "to_datetime"):
-            date_display = raw_date.to_datetime().strftime("%b %d, %Y")
-
-        owner_id = TournamentService._get_tournament_owner_id(data)
-        return {"date_display": date_display, "is_owner": owner_id == user_uid}
-
-    @staticmethod
-    def _extract_participant_ids(participants: list[dict[str, Any]]) -> set[str]:
-        """Extract user IDs from participants list."""
-        return {
-            str(
-                getattr(p.get("userRef"), "id", p.get("user_id"))
-                if p.get("userRef")
-                else p.get("user_id")
+            res = TournamentService._check_user_in_team(
+                user_uid, cast(dict[str, Any], doc.to_dict())
             )
-            for p in participants
-            if p
-        }
+            if res:
+                return res
+        return None, False
 
     @staticmethod
     def _build_tournament_details_context(
@@ -173,8 +87,8 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         from pickaladder.tournament.utils import get_tournament_standings
         from pickaladder.user import UserService  # noqa: PLC0415
 
-        t_id = data["id"]
-        stnd = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
+        t_id, m_type = data["id"], data.get("matchType", "singles")
+        stnd = get_tournament_standings(db, t_id, m_type)
         c_ids = TournamentService._extract_participant_ids(data.get("participants", []))
         t_stat, pend = TournamentService._get_team_status_for_user(db, t_id, user_uid)
 
@@ -227,27 +141,42 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         return any(query)
 
     @staticmethod
+    def _validate_tournament_ownership(data: dict[str, Any], uid: str) -> None:
+        """Verify the user is the owner of the tournament."""
+        if not data or TournamentService._get_tournament_owner_id(data) != uid:
+            raise PermissionError("Unauthorized.")
+
+    @staticmethod
+    def _prepare_update_payload(
+        db: Client, t_id: str, update: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Process and sanitize the update payload."""
+        if "start_date" in update:
+            update["date"] = update["start_date"]
+
+        if TournamentService._has_matches(db, t_id):
+            for f in ["matchType", "mode", "format"]:
+                update.pop(f, None)
+        return update
+
+    @staticmethod
     def update_tournament(
         t_id: str, uid: str, update: dict[str, Any], db: Client | None = None
     ) -> None:
         """Update tournament details with ownership check."""
         from firebase_admin import firestore
 
-        if db is None:
-            db = firestore.client()
+        db = db or firestore.client()
         ref = db.collection("tournaments").document(t_id)
         doc = cast(Any, ref.get())
         if not doc.exists:
             raise ValueError("Tournament not found.")
+
         data = cast(dict[str, Any], doc.to_dict())
-        if not data or TournamentService._get_tournament_owner_id(data) != uid:
-            raise PermissionError("Unauthorized.")
-        if "start_date" in update:
-            update["date"] = update["start_date"]
-        if TournamentService._has_matches(db, t_id):
-            for f in ["matchType", "mode", "format"]:
-                update.pop(f, None)
-        ref.update(update)
+        TournamentService._validate_tournament_ownership(data, uid)
+
+        payload = TournamentService._prepare_update_payload(db, t_id, update)
+        ref.update(payload)
 
     @staticmethod
     def get_tournament_for_edit(
@@ -262,6 +191,29 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         return cast(dict[str, Any], details["tournament"])
 
     @staticmethod
+    def _parse_form_date(val: Any) -> Any:
+        """Convert date/datetime from form into appropriate format."""
+        import datetime
+
+        if not val:
+            raise ValueError("Date is required.")
+        if isinstance(val, datetime.date) and not isinstance(val, datetime.datetime):
+            return datetime.datetime.combine(val, datetime.time.min)
+        return val
+
+    @staticmethod
+    def _build_form_update_payload(fd: dict[str, Any]) -> dict[str, Any]:
+        """Construct update dictionary from form data."""
+        dt = TournamentService._parse_form_date(fd.get("start_date"))
+        return {
+            "name": fd.get("name"),
+            "date": dt,
+            "location": fd.get("location"),
+            "mode": fd.get("mode"),
+            "matchType": (fd.get("mode") or "SINGLES").lower(),
+        }
+
+    @staticmethod
     def update_tournament_from_form(
         t_id: str,
         uid: str,
@@ -270,22 +222,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         db: Client | None = None,
     ) -> None:
         """Update tournament using data from TournamentForm."""
-        import datetime
-
-        val = fd.get("start_date")
-        if not val:
-            raise ValueError("Date is required.")
-        if isinstance(val, datetime.date) and not isinstance(val, datetime.datetime):
-            dt = datetime.datetime.combine(val, datetime.time.min)
-        else:
-            dt = val
-        upd = {
-            "name": fd.get("name"),
-            "date": dt,
-            "location": fd.get("location"),
-            "mode": fd.get("mode"),
-            "matchType": (fd.get("mode") or "SINGLES").lower(),
-        }
+        upd = TournamentService._build_form_update_payload(fd)
         if banner and getattr(banner, "filename", None):
             url = TournamentService._upload_banner(t_id, banner)
             if url:
@@ -309,6 +246,26 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         ref.delete()
 
     @staticmethod
+    def _send_participant_email(
+        user: dict[str, Any],
+        t_data: dict[str, Any],
+        winner: str,
+        stands: list[dict[str, Any]],
+    ) -> None:
+        """Internal helper to send email if user has one."""
+        if not user.get("email"):
+            return
+        send_email(
+            to=user["email"],
+            subject=f"Results: {t_data['name']}",
+            template="email/tournament_results.html",
+            user=user,
+            tournament=t_data,
+            winner_name=winner,
+            standings=stands[:3],
+        )
+
+    @staticmethod
     def _notify_tournament_participant(
         p_data: dict[str, Any],
         t_data: dict[str, Any],
@@ -319,18 +276,21 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         try:
             u_ref = p_data.get("userRef")
             doc = cast(Any, u_ref.get() if u_ref else None)
-            if doc and doc.exists and (d := doc.to_dict()) and d.get("email"):
-                send_email(
-                    to=d["email"],
-                    subject=f"Results: {t_data['name']}",
-                    template="email/tournament_results.html",
-                    user=d,
-                    tournament=t_data,
-                    winner_name=winner,
-                    standings=stands[:3],
-                )
+            if doc and doc.exists and (d := doc.to_dict()):
+                TournamentService._send_participant_email(d, t_data, winner, stands)
         except Exception:
             logging.error("Email failed")
+
+    @staticmethod
+    def _notify_all_participants(
+        data: dict[str, Any], winner: str, stands: list[dict[str, Any]]
+    ) -> None:
+        """Loop through participants and send result emails."""
+        for p in data.get("participants", []):
+            if p and p.get("status") == "accepted":
+                TournamentService._notify_tournament_participant(
+                    p, data, winner, stands
+                )
 
     @staticmethod
     def complete_tournament(t_id: str, uid: str, db: Client | None = None) -> None:
@@ -344,17 +304,23 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         doc = cast(Any, ref.get())
         if not doc or not doc.exists:
             raise ValueError("Tournament not found")
+
         data = cast(dict[str, Any], doc.to_dict())
-        if TournamentService._get_tournament_owner_id(data) != uid:
-            raise PermissionError("Only organizer can complete.")
+        TournamentService._validate_tournament_ownership(data, uid)
+
         ref.update({"status": "Completed"})
         stands = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
         winner = stands[0]["name"] if stands else "No one"
-        for p in data.get("participants", []):
-            if p and p.get("status") == "accepted":
-                TournamentService._notify_tournament_participant(
-                    p, data, winner, stands
-                )
+        TournamentService._notify_all_participants(data, winner, stands)
+
+    @staticmethod
+    def _prepare_match_pairing(
+        m: dict[str, Any], t_id: str, t_date: Any
+    ) -> dict[str, Any]:
+        """Enrich a match pairing with tournament metadata."""
+        m["tournamentId"] = t_id
+        m["matchDate"] = m.get("matchDate") or t_date
+        return m
 
     @staticmethod
     def save_pairings(t_id: str, pairings: list[dict[str, Any]]) -> int:
@@ -369,34 +335,45 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
 
         batch = db.batch()
         for m in pairings:
-            m["tournamentId"] = t_id
-            m["matchDate"] = m.get("matchDate") or t_date
-            batch.set(db.collection("matches").document(), m)
+            match_doc = TournamentService._prepare_match_pairing(m, t_id, t_date)
+            batch.set(db.collection("matches").document(), match_doc)
 
         batch.update(t_ref, {"status": "PUBLISHED"})
         batch.commit()
         return len(pairings)
 
     @staticmethod
-    def _gen_singles_bracket(t_data: dict[str, Any]) -> list[dict[str, Any]]:
+    def _gen_singles_bracket(
+        db: Client, t_data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Generate bracket data for singles tournament."""
-        accepted = [
-            p for p in t_data.get("participants", []) if p.get("status") == "accepted"
+        participants = TournamentService._resolve_participants(
+            db, t_data.get("participants", [])
+        )
+        return [
+            {
+                "id": p["user"]["id"],
+                "name": p["display_name"],
+                "type": "player",
+                "members": [p["user"]["id"]],
+            }
+            for p in participants
+            if p["status"] == "accepted"
         ]
-        bracket = []
-        for p in accepted:
-            u_ref = p.get("userRef")
-            u_id = getattr(u_ref, "id", p.get("user_id"))
-            u_snap = cast(Any, u_ref.get() if u_ref else None)
-            bracket.append(
-                {
-                    "id": u_id,
-                    "name": smart_display_name(u_snap.to_dict() if u_snap else {}),
-                    "type": "player",
-                    "members": [u_id],
-                }
-            )
-        return bracket
+
+    @staticmethod
+    def _map_team_to_bracket_item(doc: Any) -> dict[str, Any] | None:
+        """Map a team document to a bracket item."""
+        d = doc.to_dict()
+        if not d:
+            return None
+        return {
+            "id": d.get("team_id"),
+            "name": d.get("team_name"),
+            "type": "team",
+            "members": [d.get("p1_uid"), d.get("p2_uid")],
+            "tournament_team_id": doc.id,
+        }
 
     @staticmethod
     def _gen_doubles_bracket(db: Client, t_id: str) -> list[dict[str, Any]]:
@@ -411,15 +388,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             .stream()
         )
         return [
-            {
-                "id": d.get("team_id"),
-                "name": d.get("team_name"),
-                "type": "team",
-                "members": [d.get("p1_uid"), d.get("p2_uid")],
-                "tournament_team_id": doc.id,
-            }
+            item
             for doc in teams
-            if (d := doc.to_dict())
+            if (item := TournamentService._map_team_to_bracket_item(doc))
         ]
 
     @staticmethod
@@ -433,5 +404,5 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             return []
         t_data = doc.to_dict() or {}
         if t_data.get("mode", "SINGLES") == "SINGLES":
-            return TournamentService._gen_singles_bracket(t_data)
+            return TournamentService._gen_singles_bracket(db, t_data)
         return TournamentService._gen_doubles_bracket(db, t_id)
