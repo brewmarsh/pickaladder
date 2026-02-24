@@ -78,7 +78,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## 🤖 Agent Readiness
 
-This repository is compliant with AI-readiness standards, as enforced by the `agent-readiness-scorecard`.
+This repository is compliant with AI-readiness standards, as enforced by the `agent-readiness-scorecard`. For detailed information on our Agent Cognitive Load (ACL) and type safety requirements, see the [Code Quality & Agent Readiness](CONTRIBUTING.md#8-code-quality--agent-readiness) section in our contributing guide.
 
 ### Installation
 

@@ -140,7 +140,73 @@ This section documents common bugs and their required solutions.
     * **Cause:** This version of Jinja2 does not support `**kwargs` syntax in a macro's signature.
     * **Solution:** Define the macro to accept a dictionary of parameters (e.g., `query_params={}`) and unpack it at the call site within the macro (e.g., `{{ url_for('my.endpoint', **query_params) }}`).
 
-## 6. Documentation
+## 7. Documentation
 * **Iterative Improvement:** If you find a bug or confusing pattern, fix all other instances you find.
 * **Update Docs:** As you make changes, ensure `REQUIREMENTS.md` and `DESIGN.md` (if applicable) are also updated.
 * **Update This File:** If you discover a new development technique or common pitfall, please update this `CONTRIBUTING.md` file.
+
+## 8. Code Quality & Agent Readiness
+
+With the release of v0.10.0, the `pickaladder` codebase adheres to strict "Agent Readiness" standards. These standards are designed to optimize for both human developer experience and AI-assisted development by minimizing complexity and maximizing predictability.
+
+### Agent Cognitive Load (ACL)
+Complex, deeply nested code is difficult for both humans and AI agents to reason about. We use ACL as a metric to quantify this complexity.
+- **Hard Limit:** Every function must maintain an Agent Cognitive Load (ACL) score of **<= 10**.
+- **Metrics:** ACL is derived from cyclomatic complexity, nesting depth, and the number of local variables being tracked.
+
+### Function & File Constraints
+To maintain modularity and readability, we enforce the following constraints:
+- **Maximum Function Length:** No single function should exceed **50 lines of code**.
+- **Nesting Depth:** Code nesting (e.g., if/else blocks, loops) must not exceed **2 levels**.
+- **Modularization:** If a function exceeds these limits, logic must be extracted into private helper methods (prefixed with `_`).
+- **File Bloat:** Files should be kept under **300 lines** where possible. Group logic by domain and utilize `utils.py` or separate service files for heavy processing.
+
+### Type Safety
+We require a high degree of static type safety to prevent bugs and improve tool-assisted development.
+- **Type Index:** The repository must maintain a strict **>90%** type safety index.
+- **Mandatory Typing:** All new functions must have explicit Python type hints for all arguments and return values.
+- **Enforcement:** Type safety is verified via `mypy`.
+
+### CI/CD Enforcement
+Every Pull Request is automatically scanned by the **Agent Readiness Scorecard** workflow.
+- PRs will fail if the ACL exceeds thresholds or if type safety drops below the 90% requirement.
+- These automated checks ensure the codebase remains maintainable and "AI-friendly" as it grows.
+
+### Good vs. Bad Example
+
+#### ❌ Bad: Bloated, Nested, and Untyped
+```python
+def process_match_results(match_data):
+    if match_data:
+        if 'scores' in match_data:
+            for score in match_data['scores']:
+                if score['points'] > 0:
+                    # ... 30 lines of complex logic ...
+                    if score['winner']:
+                        print("Winner found")
+                        # ... more logic ...
+    return True
+```
+
+#### ✅ Good: Modular, Typed, and Low ACL
+```python
+from typing import Any
+
+def process_match_results(match_data: dict[str, Any]) -> bool:
+    """Main entry point for processing match results."""
+    scores = match_data.get('scores', [])
+    if not scores:
+        return False
+
+    for score in scores:
+        _process_single_score(score)
+    return True
+
+def _process_single_score(score: dict[str, Any]) -> None:
+    """Private helper to process an individual score with minimal nesting."""
+    if score.get('points', 0) <= 0:
+        return
+
+    if score.get('winner'):
+        _handle_winner(score)
+```
