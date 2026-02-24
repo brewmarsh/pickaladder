@@ -37,22 +37,24 @@ class MatchSummaryService:
     @staticmethod
     def _get_doubles_summary_context(db: Client, match_data: Match) -> dict[str, Any]:
         """Fetch doubles-specific context for match summary."""
-
-        def fetch_team(refs: list[Any]) -> list[dict[str, Any]]:
-            team_data = []
-            if refs:
-                for doc in db.get_all(refs):
-                    d_snap = cast("DocumentSnapshot", doc)
-                    if d_snap.exists:
-                        d = d_snap.to_dict() or {}
-                        d["id"] = d_snap.id
-                        team_data.append(d)
-            return team_data
-
+        m_dict = cast(dict[str, Any], match_data)
         return {
-            "team1": fetch_team(cast(dict[str, Any], match_data).get("team1", [])),
-            "team2": fetch_team(cast(dict[str, Any], match_data).get("team2", [])),
+            "team1": MatchSummaryService._fetch_team_data(db, m_dict.get("team1", [])),
+            "team2": MatchSummaryService._fetch_team_data(db, m_dict.get("team2", [])),
         }
+
+    @staticmethod
+    def _fetch_team_data(db: Client, refs: list[Any]) -> list[dict[str, Any]]:
+        """Fetch data for a list of player references."""
+        team_data = []
+        if refs:
+            for doc in db.get_all(refs):
+                d_snap = cast("DocumentSnapshot", doc)
+                if d_snap.exists:
+                    d = d_snap.to_dict() or {}
+                    d["id"] = d_snap.id
+                    team_data.append(d)
+        return team_data
 
     @staticmethod
     def _get_singles_summary_context(db: Client, match_data: Match) -> dict[str, Any]:

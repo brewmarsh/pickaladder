@@ -75,11 +75,23 @@ class MatchQueryService(
     @staticmethod
     def _extract_refs_from_match(m_data: dict[str, Any]) -> set[DocumentReference]:
         """Extract player references from a single match data dictionary."""
-        refs: set[DocumentReference] = set()
         if m_data.get("matchType") == "doubles":
-            refs.update(m_data.get("team1", []))
-            refs.update(m_data.get("team2", []))
-        elif "player_1_data" not in m_data or "player_2_data" not in m_data:
+            return MatchQueryService._extract_doubles_refs(m_data)
+        return MatchQueryService._extract_singles_refs(m_data)
+
+    @staticmethod
+    def _extract_doubles_refs(m_data: dict[str, Any]) -> set[DocumentReference]:
+        """Extract player references from a doubles match."""
+        refs: set[DocumentReference] = set()
+        refs.update(m_data.get("team1", []))
+        refs.update(m_data.get("team2", []))
+        return refs
+
+    @staticmethod
+    def _extract_singles_refs(m_data: dict[str, Any]) -> set[DocumentReference]:
+        """Extract player references from a singles match."""
+        refs: set[DocumentReference] = set()
+        if "player_1_data" not in m_data or "player_2_data" not in m_data:
             if p1_ref := m_data.get("player1Ref"):
                 refs.add(p1_ref)
             if p2_ref := m_data.get("player2Ref"):
@@ -185,27 +197,34 @@ class MatchQueryService(
 
         m_dict = cast("dict[str, Any]", match_data)
         match_type = m_dict.get("matchType", "singles")
-        player1_name = "Player 1"
-        player2_name = "Player 2"
 
         if match_type == "doubles":
-            t1, t2 = m_dict.get("team1Id"), m_dict.get("team2Id")
-            if t1 and t2:
-                player1_name, player2_name = MatchQueryService.get_team_names(
-                    db, t1, t2
-                )
+            p1_name, p2_name = MatchQueryService._get_doubles_edit_names(db, m_dict)
         else:
-            p1_ref = m_dict.get("player1Ref")
-            p2_ref = m_dict.get("player2Ref")
-            uids = [ref.id for ref in [p1_ref, p2_ref] if ref]
-            names = MatchQueryService.get_player_names(db, uids)
-            if p1_ref:
-                player1_name = names.get(p1_ref.id, "Player 1")
-            if p2_ref:
-                player2_name = names.get(p2_ref.id, "Player 2")
+            p1_name, p2_name = MatchQueryService._get_singles_edit_names(db, m_dict)
 
         return {
             "match": match_data,
-            "player1_name": player1_name,
-            "player2_name": player2_name,
+            "player1_name": p1_name,
+            "player2_name": p2_name,
         }
+
+    @staticmethod
+    def _get_doubles_edit_names(db: Client, m_dict: dict[str, Any]) -> tuple[str, str]:
+        """Get player names for doubles match edit."""
+        t1, t2 = m_dict.get("team1Id"), m_dict.get("team2Id")
+        if t1 and t2:
+            return MatchQueryService.get_team_names(db, t1, t2)
+        return "Player 1", "Player 2"
+
+    @staticmethod
+    def _get_singles_edit_names(db: Client, m_dict: dict[str, Any]) -> tuple[str, str]:
+        """Get player names for singles match edit."""
+        p1_ref = m_dict.get("player1Ref")
+        p2_ref = m_dict.get("player2Ref")
+        uids = [ref.id for ref in [p1_ref, p2_ref] if ref]
+        names = MatchQueryService.get_player_names(db, uids)
+
+        p1_name = names.get(p1_ref.id, "Player 1") if p1_ref else "Player 1"
+        p2_name = names.get(p2_ref.id, "Player 2") if p2_ref else "Player 2"
+        return p1_name, p2_name
