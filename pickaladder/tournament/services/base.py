@@ -157,7 +157,10 @@ class TournamentBase:
         if obj.get("userRef"):
             return cast("DocumentReference", obj["userRef"])
         if obj.get("user_id"):
-            return db.collection("users").document(cast(str, obj["user_id"]))
+            return cast(
+                "DocumentReference",
+                db.collection("users").document(cast(str, obj["user_id"])),
+            )
         return None
 
     @staticmethod

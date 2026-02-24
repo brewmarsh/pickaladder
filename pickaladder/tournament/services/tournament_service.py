@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
-from pickaladder.user.helpers import smart_display_name
 from pickaladder.utils import send_email
 
 from .base import TournamentBase
@@ -18,7 +17,6 @@ MIN_PARTICIPANTS = 2
 
 class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     """Handles business logic and data access for tournaments."""
-
 
     @staticmethod
     def _build_create_payload(
@@ -81,32 +79,6 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
                 return res
         return None, False
 
-
-    @staticmethod
-    def _prepare_details_context(
-        data: dict[str, Any],
-        resolved_p: list[dict[str, Any]],
-        standings: list[dict[str, Any]],
-        invitable: list[dict[str, Any]],
-        groups: list[dict[str, Any]],
-        meta: dict[str, Any],
-        team_info: tuple[str | None, bool],
-    ) -> dict[str, Any]:
-        """Build the final context dictionary."""
-        t_stat, pend = team_info
-        return {
-            "tournament": data,
-            "participants": resolved_p,
-            "standings": standings,
-            "podium": standings[:3] if data.get("status") == "Completed" else [],
-            "invitable_users": invitable,
-            "user_groups": groups,
-            "is_owner": meta["is_owner"],
-            "team_status": t_stat,
-            "pending_partner_invite": pend,
-            "date_display": meta["date_display"],
-        }
-
     @staticmethod
     def _build_tournament_details_context(
         db: Client, data: dict[str, Any], user_uid: str, meta: dict[str, Any]
@@ -115,22 +87,27 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         from pickaladder.tournament.utils import get_tournament_standings
         from pickaladder.user import UserService  # noqa: PLC0415
 
-        t_id = data["id"]
-        stnd = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
+        t_id, m_type = data["id"], data.get("matchType", "singles")
+        stnd = get_tournament_standings(db, t_id, m_type)
         c_ids = TournamentService._extract_participant_ids(data.get("participants", []))
-        team_info = TournamentService._get_team_status_for_user(db, t_id, user_uid)
+        t_stat, pend = TournamentService._get_team_status_for_user(db, t_id, user_uid)
 
-        return TournamentService._prepare_details_context(
-            data=data,
-            resolved_p=TournamentService._resolve_participants(
+        return {
+            "tournament": data,
+            "participants": TournamentService._resolve_participants(
                 db, data.get("participants", [])
             ),
-            standings=stnd,
-            invitable=TournamentService._get_invitable_players(db, user_uid, c_ids),
-            groups=UserService.get_user_groups(db, user_uid),
-            meta=meta,
-            team_info=team_info,
-        )
+            "standings": stnd,
+            "podium": stnd[:3] if data.get("status") == "Completed" else [],
+            "invitable_users": TournamentService._get_invitable_players(
+                db, user_uid, c_ids
+            ),
+            "user_groups": UserService.get_user_groups(db, user_uid),
+            "is_owner": meta["is_owner"],
+            "team_status": t_stat,
+            "pending_partner_invite": pend,
+            "date_display": meta["date_display"],
+        }
 
     @staticmethod
     def get_tournament_details(
@@ -366,7 +343,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         return len(pairings)
 
     @staticmethod
-    def _gen_singles_bracket(db: Client, t_data: dict[str, Any]) -> list[dict[str, Any]]:
+    def _gen_singles_bracket(
+        db: Client, t_data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Generate bracket data for singles tournament."""
         participants = TournamentService._resolve_participants(
             db, t_data.get("participants", [])
