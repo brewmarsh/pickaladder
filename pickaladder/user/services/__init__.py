@@ -78,20 +78,26 @@ from .friendship import (
 from .friendship import (
     send_friend_request as _send_friend_request,
 )
+from .match_formatting import (
+    _collect_match_refs as _collect_match_refs,
+)
+from .match_formatting import (
+    _fetch_match_entities as _fetch_match_entities,
+)
+from .match_formatting import (
+    _get_player_info as _get_player_info,
+)
+from .match_formatting import (
+    format_matches_for_dashboard as _format_matches_for_dashboard,
+)
+from .match_formatting import (
+    format_matches_for_profile as _format_matches_for_profile,
+)
 from .match_stats import (
     _calculate_streak as _calculate_streak,
 )
 from .match_stats import (
-    _collect_match_refs as _collect_match_refs,
-)
-from .match_stats import (
-    _fetch_match_entities as _fetch_match_entities,
-)
-from .match_stats import (
     _get_match_winner_slot as _get_match_winner_slot,
-)
-from .match_stats import (
-    _get_player_info as _get_player_info,
 )
 from .match_stats import (
     _get_profile_match_alignment as _get_profile_match_alignment,
@@ -103,19 +109,10 @@ from .match_stats import (
     _get_user_match_won_lost as _get_user_match_won_lost,
 )
 from .match_stats import (
-    _process_h2h_match as _process_h2h_match,
-)
-from .match_stats import (
     calculate_current_streak as _calculate_current_streak,
 )
 from .match_stats import (
     calculate_stats as _calculate_stats,
-)
-from .match_stats import (
-    format_matches_for_dashboard as _format_matches_for_dashboard,
-)
-from .match_stats import (
-    format_matches_for_profile as _format_matches_for_profile,
 )
 from .match_stats import (
     get_h2h_stats as _get_h2h_stats,
@@ -199,7 +196,6 @@ class UserService:
     _calculate_streak = staticmethod(_calculate_streak)
     calculate_current_streak = staticmethod(_calculate_current_streak)
     calculate_stats = staticmethod(_calculate_stats)
-    _process_h2h_match = staticmethod(_process_h2h_match)
     get_h2h_stats = staticmethod(_get_h2h_stats)
     get_recent_opponents = staticmethod(_get_recent_opponents)
     accept_friend_request = staticmethod(_accept_friend_request)

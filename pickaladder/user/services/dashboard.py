@@ -15,9 +15,11 @@ from pickaladder.user.services.friendship import (
     get_user_friends,
     get_user_pending_requests,
 )
+from pickaladder.user.services.match_formatting import (
+    format_matches_for_dashboard,
+)
 from pickaladder.user.services.match_stats import (
     _calculate_streak,
-    format_matches_for_dashboard,
     get_recent_opponents,
     get_user_matches,
 )
