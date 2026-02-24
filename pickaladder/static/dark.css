@@ -671,10 +671,13 @@ body.dark-mode,
     --bg-color: var(--bg-primary);
     --card-bg: var(--bg-secondary);
 
-    /* Adjust Primary for Dark Mode (Slightly lighter to pop) */
-    --primary-color: #3B82F6;
-    /* Blue 500 */
-    --primary-hover: #60A5FA;
+    /* Adjust Primary for Dark Mode (Lighter to pop, requiring dark text) */
+    --primary-color: #60A5FA;
+    /* Blue 400 */
+    --primary-hover: #93C5FD;
+    /* Blue 300 */
+    --text-on-primary: #0F172A;
+    /* Dark Navy for contrast */
 }
 
 [data-theme="dark"] input[type="text"],
