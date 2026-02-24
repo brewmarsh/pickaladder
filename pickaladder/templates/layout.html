@@ -36,7 +36,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
-<body {% if g.user and g.user.dark_mode %}data-theme="dark" {% endif %}
+<body class="{% if g.user and g.user.dark_mode %}dark-mode{% endif %}"
+    {% if g.user and g.user.dark_mode %}data-theme="dark" {% endif %}
     {% if is_testing %}data-is-testing="true" {% endif %}>
     {% if config['FLASK_ENV'] == 'beta' %}
     <div class="alert alert-primary text-center m-0"

@@ -1,44 +1,7 @@
 /* Import Fonts: Inter (UI) and Oswald (Scores) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Oswald:wght@500;700&display=swap');
 
-/* Basic styling & Variables */
-:root {
-    /* Brand Colors (Court & Volt) */
-    --primary-color: #2563EB;
-    /* Royal Blue (Primary Buttons/Nav) */
-    --primary-hover: #1D4ED8;
-    --accent-color: #84CC16;
-    /* Electric Lime (Badges/Call-to-Action) */
-    --accent-hover: #65A30D;
-
-    /* Functional Colors */
-    --success-color: #10B981;
-    /* Emerald (Wins) */
-    --danger-color: #EF4444;
-    /* Red (Losses/Delete) */
-    --warning-color: #F59E0B;
-    /* Amber (Pending) */
-
-    /* Light Mode Basics */
-    --bg-color: #F3F4F6;
-    /* Cool Gray 100 */
-    --card-bg: #FFFFFF;
-    --text-primary: #111827;
-    /* Gray 900 */
-    --text-secondary: #6B7280;
-    /* Gray 500 */
-    --border-color: #E5E7EB;
-    /* Gray 200 */
-    --text-on-primary: #FFFFFF;
-
-    /* Typography */
-    --font-family: 'Inter', sans-serif;
-    --font-score: 'Oswald', sans-serif;
-
-    /* Structure */
-    --box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.302), 0 1px 3px 1px rgba(60, 64, 67, 0.149);
-    --border-radius: 8px;
-}
+/* Basic styling & Variables inherited from variables.css */
 
 body {
     font-family: var(--font-family);
@@ -104,8 +67,8 @@ body {
 
 /* Header and Navbar */
 .header {
-    background-color: var(--primary-color);
-    border-bottom: 1px solid var(--primary-hover);
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
     padding: 10px 0;
     margin-bottom: 20px;
     transition: background-color 0.3s ease;
@@ -122,7 +85,7 @@ body {
 .navbar-brand {
     font-size: 1.5em;
     font-weight: 500;
-    color: var(--text-on-primary);
+    color: var(--text-primary);
     text-decoration: none;
 }
 
@@ -134,7 +97,7 @@ body {
 
 .navbar-menu a {
     text-decoration: none;
-    color: var(--text-on-primary);
+    color: var(--text-primary);
     position: relative;
     padding-bottom: 4px;
     transition: all 0.3s ease;
@@ -264,8 +227,7 @@ select:focus {
 /* The "Volt" Button (High Value Actions) */
 .btn-volt {
     background-color: var(--accent-color);
-    color: #111827 !important;
-    /* Dark Navy for contrast */
+    color: var(--text-on-accent) !important;
     font-weight: 700;
     border: none;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -285,7 +247,7 @@ select:focus {
 
 .btn-warning {
     background-color: var(--warning-color);
-    color: #111827;
+    color: var(--text-on-accent);
 }
 
 .btn-secondary {
@@ -442,8 +404,7 @@ select:focus {
 /* The "Volt" Badge (High Visibility) */
 .badge-volt {
     background-color: var(--accent-color);
-    color: #111827;
-    /* Dark Navy */
+    color: var(--text-on-accent);
     font-weight: 700;
 }
 
@@ -697,18 +658,18 @@ select:focus {
 }
 
 /* DARK MODE OVERRIDES */
+body.dark-mode,
 [data-theme="dark"] {
-    /* Dark Mode Basics */
-    --bg-color: #0F172A;
-    /* Slate 900 */
-    --card-bg: #1E293B;
-    /* Slate 800 */
-    --text-primary: #F3F4F6;
-    /* Gray 100 */
+    /* Semantic Dark Tokens */
+    --bg-primary: #121212;
+    --bg-secondary: #1E1E1E;
+    --border-color: #333333;
+    --text-primary: #F9FAFB;
     --text-secondary: #94A3B8;
-    /* Slate 400 */
-    --border-color: #334155;
-    /* Slate 700 */
+
+    /* Semantic Tokens Bridge */
+    --bg-color: var(--bg-primary);
+    --card-bg: var(--bg-secondary);
 
     /* Adjust Primary for Dark Mode (Slightly lighter to pop) */
     --primary-color: #3B82F6;
@@ -734,7 +695,7 @@ select:focus {
 }
 
 [data-theme="dark"] .table th {
-    background-color: #0F172A;
+    background-color: var(--bg-primary);
     /* Darker header for tables */
 }
 
@@ -777,6 +738,5 @@ select:focus {
 }
 
 [data-theme="dark"] a {
-    color: #60A5FA;
-    /* Matching primary blue variant */
+    color: var(--primary-hover);
 }

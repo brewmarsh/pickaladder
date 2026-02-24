@@ -32,9 +32,15 @@ jobs:
           # Ensure we have the base branch reference locally for comparison
           git fetch origin ${{ github.base_ref || 'main' }}
 
+          # Check if any Python files changed
+          if ! git diff --name-only origin/${{ github.base_ref || 'main' }} | grep -q '\.py$'; then
+            echo "No Python files changed, skipping agent score check."
+            exit 0
+          fi
+
           # Run with --diff to analyze only changed Python files and avoid crashes in unrelated files
           # We include the specific directory to further narrow the scope
-          SCORE=$(uv run --no-project agent-score score --diff . --limit-to .py | tee /dev/tty | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
+          SCORE=$(uv run --no-project agent-score score --diff . --limit-to .py | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
 
           if [ -z "$SCORE" ]; then
             echo "Could not determine agent score"
