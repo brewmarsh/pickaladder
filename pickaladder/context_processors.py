@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from firebase_admin import firestore
 from flask import current_app, g
@@ -16,7 +16,7 @@ VERSION_THRESHOLD = 10
 VERSION_SHORT_LENGTH = 7
 
 
-def _get_version_from_env() -> Optional[str]:
+def _get_version_from_env() -> str | None:
     """Fetch version from environment variables."""
     return (
         os.environ.get("APP_VERSION")
@@ -27,15 +27,25 @@ def _get_version_from_env() -> Optional[str]:
     )
 
 
-def _get_version_from_file() -> Optional[str]:
-    """Fetch version from the VERSION file."""
+def _read_version_file_content(version_file: Path) -> str | None:
+    """Read version content if file exists."""
     try:
-        version_file = Path(current_app.root_path).parent / "VERSION"
-        if version_file.exists():
-            return version_file.read_text().strip()
+        return version_file.read_text().strip()
     except Exception:  # nosec B110
-        pass
-    return None
+        return None
+
+
+def _read_version_file(version_file: Path) -> str | None:
+    """Read version string from a file."""
+    if not version_file.exists():
+        return None
+    return _read_version_file_content(version_file)
+
+
+def _get_version_from_file() -> str | None:
+    """Fetch version from the VERSION file."""
+    version_file = Path(current_app.root_path).parent / "VERSION"
+    return _read_version_file(version_file)
 
 
 def _get_app_version() -> str:
@@ -49,7 +59,7 @@ def _get_app_version() -> str:
     return version
 
 
-def _get_global_announcement() -> Optional[Dict[str, Any]]:
+def _get_global_announcement() -> dict[str, Any] | None:
     """Fetch global announcement from Firestore."""
     try:
         db = firestore.client()
@@ -60,7 +70,7 @@ def _get_global_announcement() -> Optional[Dict[str, Any]]:
         return None
 
 
-def inject_global_context() -> Dict[str, Any]:
+def inject_global_context() -> dict[str, Any]:
     """Injects global context variables into templates."""
     version = _get_app_version()
     global_announcement = _get_global_announcement()
@@ -74,42 +84,70 @@ def inject_global_context() -> Dict[str, Any]:
     }
 
 
-def inject_incoming_requests_count() -> Dict[str, Any]:
+def _get_user_uid() -> str | None:
+    """Get the current user's UID from g."""
+    user = getattr(g, "user", None)
+    return user.get("uid") if user else None
+
+
+def _fetch_pending_requests(user_id: str) -> dict[str, Any]:
+    """Fetch pending friend requests for a user."""
+    db = firestore.client()
+    pending_requests = UserService.get_user_pending_requests(db, user_id)
+    return dict(
+        incoming_requests_count=len(pending_requests),
+        pending_friend_requests=pending_requests,
+    )
+
+
+def _log_context_error(domain: str, e: Exception) -> None:
+    """Log error if not a RuntimeError."""
+    if not isinstance(e, RuntimeError):
+        current_app.logger.error(f"Error fetching {domain}: {e}")
+
+
+def _try_fetch_requests(uid: str) -> dict[str, Any]:
+    """Internal helper for requests fetching."""
+    try:
+        return _fetch_pending_requests(uid)
+    except Exception as e:
+        _log_context_error("friend requests", e)
+        return dict(incoming_requests_count=0, pending_friend_requests=[])
+
+
+def inject_incoming_requests_count() -> dict[str, Any]:
     """Injects incoming friend requests count into the template context."""
+    uid = _get_user_uid()
+    if not uid:
+        return dict(incoming_requests_count=0, pending_friend_requests=[])
+    return _try_fetch_requests(uid)
+
+
+def _fetch_pending_invites(user_id: str) -> dict[str, Any]:
+    """Fetch pending tournament invites for a user."""
+    db = firestore.client()
+    pending_invites = UserService.get_pending_tournament_invites(db, user_id)
+    return dict(pending_tournament_invites=pending_invites)
+
+
+def _try_fetch_invites(uid: str) -> dict[str, Any]:
+    """Internal helper for invites fetching."""
     try:
-        user = getattr(g, "user", None)
-        if user:
-            db = firestore.client()
-            pending_requests = UserService.get_user_pending_requests(db, user["uid"])
-            return dict(
-                incoming_requests_count=len(pending_requests),
-                pending_friend_requests=pending_requests,
-            )
-    except (Exception, RuntimeError) as e:
-        # Avoid logging RuntimeError as it often means we're outside a request context
-        if not isinstance(e, RuntimeError):
-            current_app.logger.error(f"Error fetching friend requests: {e}")
-    return dict(incoming_requests_count=0, pending_friend_requests=[])
+        return _fetch_pending_invites(uid)
+    except Exception as e:
+        _log_context_error("tournament invites", e)
+        return dict(pending_tournament_invites=[])
 
 
-def inject_pending_tournament_invites() -> Dict[str, Any]:
+def inject_pending_tournament_invites() -> dict[str, Any]:
     """Injects pending tournament invites into the template context."""
-    try:
-        user = getattr(g, "user", None)
-        if user:
-            db = firestore.client()
-            pending_invites = UserService.get_pending_tournament_invites(
-                db, user["uid"]
-            )
-            return dict(pending_tournament_invites=pending_invites)
-    except (Exception, RuntimeError) as e:
-        # Avoid logging RuntimeError as it often means we're outside a request context
-        if not isinstance(e, RuntimeError):
-            current_app.logger.error(f"Error fetching tournament invites: {e}")
-    return dict(pending_tournament_invites=[])
+    uid = _get_user_uid()
+    if not uid:
+        return dict(pending_tournament_invites=[])
+    return _try_fetch_invites(uid)
 
 
-def inject_firebase_api_key() -> Dict[str, Any]:
+def inject_firebase_api_key() -> dict[str, Any]:
     """Injects the Firebase API key into the template context."""
     firebase_api_key = current_app.config.get(
         "FIREBASE_API_KEY"

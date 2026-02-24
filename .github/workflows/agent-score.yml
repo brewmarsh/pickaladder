@@ -33,7 +33,7 @@ jobs:
           git fetch origin ${{ github.base_ref || 'main' }}
 
           # Run with --diff to analyze only changed files and avoid crashes in unrelated JS files
-          SCORE=$(uv run --no-project agent-score score --diff . | tee /dev/tty | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
+          SCORE=$(uv run --no-project agent-score score --diff . | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
 
           if [ -z "$SCORE" ]; then
             echo "Could not determine agent score"
