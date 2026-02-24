@@ -4,9 +4,7 @@ import datetime
 from typing import TYPE_CHECKING, Any, cast
 
 from .stats_utils import (
-    _get_match_winner_slot,
     _get_team_ids_from_match,
-    _get_user_match_result,
     _get_user_match_won_lost,
 )
 
@@ -240,7 +238,7 @@ def _calculate_h2h_delta(
 
 
 def _process_h2h_match(
-    data: dict[str, Any], user_id_1: str, user_id_2: str
+    data: dict[str, Any] | None, user_id_1: str, user_id_2: str
 ) -> tuple[int, int, int]:
     """Process a single match for H2H stats."""
     if not data or user_id_2 not in data.get("participants", []):

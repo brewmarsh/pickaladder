@@ -83,9 +83,9 @@ def _enrich_with_player_above(
 ) -> None:
     """Add details about the player ranked immediately above."""
     ranking_data["player_above"] = player_above.get("name")
-    ranking_data["points_to_overtake"] = player_above.get(
+    ranking_data["points_to_overtake"] = player_above.get("avg_score", 0) - player.get(
         "avg_score", 0
-    ) - player.get("avg_score", 0)
+    )
 
 
 def _calculate_user_ranking(

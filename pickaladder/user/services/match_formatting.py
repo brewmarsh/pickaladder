@@ -45,7 +45,7 @@ def _build_match_dashboard_item(
 ) -> dict[str, Any]:
     """Build a single match data item for the dashboard."""
     from .match_participant_service import get_match_participants_info
-    from .match_stats import _get_match_winner_slot, _get_user_match_result
+    from .stats_utils import _get_match_winner_slot, _get_user_match_result
 
     win_slot = _get_match_winner_slot(m_data)
     p1, p2 = get_match_participants_info(m_data, entity_maps["users"])
