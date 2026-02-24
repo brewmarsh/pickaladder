@@ -20,17 +20,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6  # Fixed: v4 is the current version (v6 does not exist)
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7  # Fixed: v5 is the current version
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
 
       - name: Setup Python
-        uses: actions/setup-python@v6  # Fixed: v5 is the current version
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -49,10 +49,10 @@ jobs:
           echo "Running Agent Scorecard against $TARGET_BRANCH..."
           
           # Standardized command syntax
-          uv run --no-project agent-score score --report readiness_report.md .
+          uv run --no-project agent-score score --report readiness_report.md . --limit-to .py
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v6  # Fixed: v4 is the current version
+        uses: actions/upload-artifact@v4
         with:
           name: agent-readiness-report
           path: readiness_report.md

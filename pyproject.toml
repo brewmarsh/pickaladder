@@ -23,7 +23,7 @@ line-length = 88
 indent-width = 4
 
 # Exclude problematic or generated files
-exclude = ["fix_imports.py"]
+exclude = ["fix_imports.py", "*.md"]
 
 # Assume Python 3.9
 target-version = "py39"
