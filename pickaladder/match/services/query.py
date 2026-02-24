@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.document import DocumentReference
 
 
-
 class MatchQueryService(
     MatchBaseQueryService,
     MatchCandidateService,

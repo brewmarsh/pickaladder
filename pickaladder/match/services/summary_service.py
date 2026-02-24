@@ -38,7 +38,7 @@ class MatchSummaryService:
     def _get_doubles_summary_context(db: Client, match_data: Match) -> dict[str, Any]:
         """Fetch doubles-specific context for match summary."""
 
-        def fetch_team(refs):
+        def fetch_team(refs: list[Any]) -> list[dict[str, Any]]:
             team_data = []
             if refs:
                 for doc in db.get_all(refs):

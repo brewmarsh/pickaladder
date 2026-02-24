@@ -121,18 +121,28 @@ def _process_match_for_streak(m: Any, user_id: str) -> dict[str, Any] | None:
     return {"won": won, "lost": lost, "date": date}
 
 
-def calculate_current_streak(user_id: str, matches: list[Any]) -> int:
-    """Calculate current win streak for a user."""
+def _get_processed_streak_items(
+    user_id: str, matches: list[Any]
+) -> list[dict[str, Any]]:
+    """Helper to process matches for streak calculation."""
     processed = []
     for m in matches:
         if item := _process_match_for_streak(m, user_id):
             processed.append(item)
+    return processed
 
-    processed.sort(
+
+def _sort_streak_items(processed: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Sort processed match items by date descending."""
+    return sorted(
+        processed,
         key=lambda x: x["date"] if x.get("date") else datetime.datetime.min,
         reverse=True,
     )
 
+
+def _calculate_win_streak_count(processed: list[dict[str, Any]]) -> int:
+    """Iterate through matches and count consecutive wins."""
     streak = 0
     for m in processed:
         if m.get("won"):
@@ -140,6 +150,13 @@ def calculate_current_streak(user_id: str, matches: list[Any]) -> int:
         elif m.get("lost"):
             break
     return streak
+
+
+def calculate_current_streak(user_id: str, matches: list[Any]) -> int:
+    """Calculate current win streak for a user."""
+    processed = _get_processed_streak_items(user_id, matches)
+    sorted_items = _sort_streak_items(processed)
+    return _calculate_win_streak_count(sorted_items)
 
 
 def _get_opponent_id_from_match(data: dict[str, Any], user_id: str) -> str | None:
@@ -155,10 +172,8 @@ def _get_opponent_id_from_match(data: dict[str, Any], user_id: str) -> str | Non
     return None
 
 
-def get_recent_opponents(
-    db: Client, user_id: str, matches: list[Any], limit: int = 4
-) -> list[User]:
-    """Identify recent unique 1v1 opponents."""
+def _get_opponent_ids(matches: list[Any], user_id: str, limit: int) -> list[str]:
+    """Helper to collect unique opponent IDs from matches."""
     opponent_ids: list[str] = []
     for m in matches:
         data = m.to_dict() if hasattr(m, "to_dict") else m
@@ -167,20 +182,31 @@ def get_recent_opponents(
             opponent_ids.append(opp_id)
         if len(opponent_ids) >= limit:
             break
+    return opponent_ids
 
+
+def _fetch_opponents_map(
+    db: Client, opponent_ids: list[str]
+) -> dict[str, dict[str, Any]]:
+    """Fetch user data for multiple opponent IDs."""
     if not opponent_ids:
-        return []
-
+        return {}
     refs = [db.collection("users").document(oid) for oid in opponent_ids]
     opponents_map = {}
     for doc in db.get_all(refs):
         if doc.exists and (d := doc.to_dict()):
             d["id"] = d["uid"] = doc.id
             opponents_map[doc.id] = d
+    return opponents_map
 
-    return [
-        cast("User", opponents_map[oid]) for oid in opponent_ids if oid in opponents_map
-    ]
+
+def get_recent_opponents(
+    db: Client, user_id: str, matches: list[Any], limit: int = 4
+) -> list[User]:
+    """Identify recent unique 1v1 opponents."""
+    opponent_ids = _get_opponent_ids(matches, user_id, limit)
+    opp_map = _fetch_opponents_map(db, opponent_ids)
+    return [cast("User", opp_map[oid]) for oid in opponent_ids if oid in opp_map]
 
 
 def _calculate_streak(processed: list[dict[str, Any]]) -> tuple[int, str]:
