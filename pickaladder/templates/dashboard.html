@@ -34,7 +34,7 @@
                 <label for="profile_picture">Profile Picture:</label>
                 <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif"
                     onchange="previewImage(event)">
-                <img id="preview" src="#" alt="your image" width="100" style="display:none;" />
+                <img id="preview" src="#" alt="your image" width="100" class="d-none" />
                 <label for="dupr_rating">DUPR Rating:</label>
                 <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user.dupr_rating }}">
                 <button type="submit">Update Profile</button>
@@ -56,14 +56,14 @@
                             <td data-label="Username">{{ request[1] }}</td>
                             <td data-label="Actions">
                                 <form action="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}"
-                                    method="post" style="display: inline;">
+                                    method="post" class="d-inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="button">Accept</button>
                                 </form>
                             </td>
                             <td>
                                 <form action="{{ url_for('user.decline_friend_request', friend_id=request[0]) }}"
-                                    method="post" style="display: inline;">
+                                    method="post" class="d-inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="button">Decline</button>
                                 </form>
@@ -147,6 +147,7 @@
                 reader.onload = function () {
                     var output = document.getElementById('preview');
                     output.src = reader.result;
+                    output.classList.remove('d-none');
                     output.style.display = 'block';
                 };
                 reader.readAsDataURL(event.target.files[0]);
