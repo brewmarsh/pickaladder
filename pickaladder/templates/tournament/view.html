@@ -223,6 +223,7 @@
         <!-- Location Card -->
         <div class="card">
             <h4 class="card-header">📍 Location</h4>
+<<<<<<< HEAD
             {% if tournament.location_data %}
                 <p><strong>{{ tournament.location_data.name }}</strong></p>
                 <p class="text-muted" style="font-size: 0.9rem;">{{ tournament.location_data.address }}</p>
@@ -230,6 +231,12 @@
             {% else %}
                 <p>{{ tournament.location }}</p>
                 <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.location|urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm w-auto" style="margin-top: 10px; width: 100% !important; display: block; text-align: center;">Get Directions</a>
+=======
+            <p><strong>{{ tournament.venue_name }}</strong></p>
+            {% if tournament.address %}
+                <p class="text-muted" style="font-size: 0.9rem;">{{ tournament.address }}</p>
+                <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.address|urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm w-auto" style="margin-top: 10px; width: 100% !important; display: block; text-align: center;">Get Directions</a>
+>>>>>>> remotes/origin/tournament-form-consolidation-11584979557641281977
             {% endif %}
         </div>
 

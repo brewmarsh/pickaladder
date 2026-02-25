@@ -40,10 +40,17 @@ def test_tournament_flow(
         page.click("a.btn-action:has-text('Create Tournament')")
     page.fill("input[name='name']", "Winter Open")
     page.fill("input[name='start_date']", "2026-12-01")
+<<<<<<< HEAD
     page.fill("input[name='location']", "Central Park")
     page.select_option("select[name='match_type']", "singles")
     page.select_option("select[name='format']", "ROUND_ROBIN")
     # Mode is custom radio buttons in the template now
+=======
+    page.fill("input[name='venue_name']", "Central Park")
+    page.fill("input[name='address']", "123 Park Lane, NYC")
+    page.select_option("select[name='format']", "ROUND_ROBIN")
+    # Match type is custom radio buttons in the template now
+>>>>>>> remotes/origin/tournament-form-consolidation-11584979557641281977
     page.click("text=Singles (1v1)")
     with page.expect_navigation():
         page.click("button:has-text('Create Tournament')")
@@ -72,7 +79,12 @@ def test_tournament_flow(
     directions_btn = page.locator("text=Directions")
     expect(directions_btn).to_be_visible()
     expect(directions_btn).to_have_attribute(
+<<<<<<< HEAD
         "href", "https://www.google.com/maps/search/?api=1&query=Central%20Park"
+=======
+        "href",
+        "https://www.google.com/maps/search/?api=1&query=123%20Park%20Lane%2C%20NYC",
+>>>>>>> remotes/origin/tournament-form-consolidation-11584979557641281977
     )
 
     # 4. Record a Match (Verify Summary Redirect)
