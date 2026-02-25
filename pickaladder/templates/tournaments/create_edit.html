@@ -3,17 +3,16 @@
 {% block title %}{{ action }} Tournament{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 800px; margin: 0 auto;">
-    <div class="card-header">
-        <h2>{{ action }} Tournament</h2>
-    </div>
-    <div class="card-body">
+<div class="container-small">
+    <div class="card p-4">
+        <h1 class="mb-4">{{ action }} Tournament</h1>
+
         <form method="POST" enctype="multipart/form-data">
             {{ form.csrf_token }}
 
             <div class="form-group">
                 {{ form.name.label(class="form-label") }}
-                {{ form.name(class="form-input", placeholder="Summer Smash 2024") }}
+                {{ form.name(class="form-input", placeholder="e.g. Summer Smash 2024") }}
                 {% if form.name.errors %}
                     {% for error in form.name.errors %}
                         <span class="text-danger">{{ error }}</span>
@@ -23,13 +22,13 @@
 
             <div class="form-group">
                 {{ form.banner.label(class="form-label") }}
+                {{ form.banner(class="form-input") }}
+                <p class="text-muted small">Upload a banner image for the tournament (optional)</p>
                 {% if tournament and tournament.banner_url %}
-                    <div class="mb-2">
-                        <img src="{{ tournament.banner_url }}" alt="Current Banner" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px;">
+                    <div class="mt-2">
+                        <img src="{{ tournament.banner_url }}" alt="Current Banner" style="height: 60px; border-radius: 4px;">
                     </div>
                 {% endif %}
-                {{ form.banner(class="form-input") }}
-                <small class="text-muted">Recommended: 16:9 aspect ratio.</small>
                 {% if form.banner.errors %}
                     {% for error in form.banner.errors %}
                         <span class="text-danger">{{ error }}</span>
@@ -48,82 +47,19 @@
                     {% endif %}
                 </div>
                 <div class="form-group">
-<<<<<<< HEAD
-                    {{ form.location.label(class="form-label") }}
-                    {{ form.location(class="form-input", placeholder="e.g. Central Park, NYC") }}
-                    {% if form.location.errors %}
-                        {% for error in form.location.errors %}
+                    {{ form.venue_name.label(class="form-label") }}
+                    {{ form.venue_name(class="form-input", placeholder="e.g. Central Park") }}
+                    {% if form.venue_name.errors %}
+                        {% for error in form.venue_name.errors %}
                             <span class="text-danger">{{ error }}</span>
                         {% endfor %}
                     {% endif %}
                 </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="form-group">
-                    {{ form.match_type.label(class="form-label") }}
-                    {{ form.match_type(class="form-input") }}
-                    {% if form.match_type.errors %}
-                        {% for error in form.match_type.errors %}
-                            <span class="text-danger">{{ error }}</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                <div class="form-group">
-=======
->>>>>>> remotes/origin/tournament-form-consolidation-11584979557641281977
-                    {{ form.format.label(class="form-label") }}
-                    {{ form.format(class="form-input") }}
-                    {% if form.format.errors %}
-                        {% for error in form.format.errors %}
-                            <span class="text-danger">{{ error }}</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="form-group">
-<<<<<<< HEAD
-                {{ form.mode.label(class="form-label") }}
-                <div class="mode-options" style="display: flex; gap: 20px; margin-top: 10px;">
-                    {% for subfield in form.mode %}
-=======
-                {{ form.match_type.label(class="form-label") }}
-                <div class="mode-options" style="display: flex; gap: 20px; margin-top: 10px;">
-                    {% for subfield in form.match_type %}
->>>>>>> remotes/origin/tournament-form-consolidation-11584979557641281977
-                        <label class="mode-option" style="cursor: pointer; flex: 1; border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; text-align: center;">
-                            {{ subfield(style="display: none;") }}
-                            <div class="mode-label">{{ subfield.label.text }}</div>
-                        </label>
-                    {% endfor %}
-                </div>
-<<<<<<< HEAD
-                {% if form.mode.errors %}
-                    {% for error in form.mode.errors %}
-=======
-                {% if form.match_type.errors %}
-                    {% for error in form.match_type.errors %}
->>>>>>> remotes/origin/tournament-form-consolidation-11584979557641281977
-                        <span class="text-danger">{{ error }}</span>
-                    {% endfor %}
-                {% endif %}
-            </div>
-
-            <div class="form-group">
-                {{ form.venue_name.label(class="form-label") }}
-                {{ form.venue_name(class="form-input", placeholder="Central Park Courts") }}
-                {% if form.venue_name.errors %}
-                    {% for error in form.venue_name.errors %}
-                        <span class="text-danger">{{ error }}</span>
-                    {% endfor %}
-                {% endif %}
             </div>
 
             <div class="form-group">
                 {{ form.address.label(class="form-label") }}
-                {{ form.address(class="form-input", placeholder="123 Park Lane, New York, NY") }}
-                <small class="text-muted">This will generate a 'Get Directions' link for players.</small>
+                {{ form.address(class="form-input", placeholder="e.g. 123 Pickleball Lane, NYC") }}
                 {% if form.address.errors %}
                     {% for error in form.address.errors %}
                         <span class="text-danger">{{ error }}</span>
@@ -132,8 +68,35 @@
             </div>
 
             <div class="form-group">
+                {{ form.match_type.label(class="form-label") }}
+                <div class="mode-options" style="display: flex; gap: 20px; margin-top: 10px;">
+                    {% for subfield in form.match_type %}
+                        <label class="mode-option" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                            {{ subfield }}
+                            <span>{{ subfield.label.text }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                {% if form.match_type.errors %}
+                    {% for error in form.match_type.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.format.label(class="form-label") }}
+                {{ form.format(class="form-input") }}
+                {% if form.format.errors %}
+                    {% for error in form.format.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="form-group">
                 {{ form.description.label(class="form-label") }}
-                {{ form.description(class="form-input", rows="5", placeholder="Rules, schedule, and other details...") }}
+                {{ form.description(class="form-input", rows="4", placeholder="Tell players about your tournament...") }}
                 {% if form.description.errors %}
                     {% for error in form.description.errors %}
                         <span class="text-danger">{{ error }}</span>
@@ -141,23 +104,13 @@
                 {% endif %}
             </div>
 
-            <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">{{ action }} Tournament</button>
-                {% if action == 'Edit' %}
-                    <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="btn btn-secondary" style="flex: 1; text-align: center; line-height: 2.5;">Cancel</a>
-                {% else %}
-                    <a href="{{ url_for('tournament.list_tournaments') }}" class="btn btn-secondary" style="flex: 1; text-align: center; line-height: 2.5;">Cancel</a>
-                {% endif %}
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-block flex-grow-1">
+                    {{ action }} Tournament
+                </button>
+                <a href="{{ url_for('.list_tournaments') }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </form>
     </div>
 </div>
-
-<style>
-@media screen and (max-width: 600px) {
-    div[style*="grid-template-columns: 1fr 1fr"] {
-        grid-template-columns: 1fr !important;
-    }
-}
-</style>
 {% endblock %}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import Any, cast
 
 from firebase_admin import firestore
@@ -25,6 +26,7 @@ from .services import TournamentGenerator, TournamentService
 
 MIN_PARTICIPANTS_FOR_GENERATION = 2
 
+logger = logging.getLogger(__name__)
 
 @bp.route("/", methods=["GET"])
 @login_required
@@ -115,29 +117,42 @@ def _resolve_claim_data(t_id: str, c_id: str | None) -> dict[str, Any] | None:
     }
 
 
+def _handle_view_invite(t_id: str, form: InvitePlayerForm) -> bool:
+    """Handle invite submission from view page."""
+    if form.validate_on_submit():
+        invited_uid = cast(str, form.user_id.data)
+        TournamentService.invite_player(t_id, g.user["uid"], invited_uid)
+        return True
+    return False
+
+
 @bp.route("/<string:tournament_id>")
 @login_required
 def view_tournament(tournament_id: str) -> Any:
     """View tournament details."""
-    try:
-        details = TournamentService.get_tournament_details(tournament_id, g.user["uid"])
-        if not details:
-            flash("Tournament not found.", "danger")
-            return redirect(url_for(".list_tournaments"))
-
-        claim_id = request.args.get("claim_team")
-        details["claim_team_data"] = _resolve_claim_data(tournament_id, claim_id)
-        details["invite_form"] = InvitePlayerForm()
-
-        return render_template("tournament/view.html", **details)
-    except Exception as e:
-        flash(f"Error loading tournament: {e}", "danger")
+    details = TournamentService.get_tournament_details(tournament_id, g.user["uid"])
+    if not details:
+        flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
 
+    claim_id = request.args.get("claim_team")
+    details["claim_team_data"] = _resolve_claim_data(tournament_id, claim_id)
 
-def _handle_tournament_update(
-    tournament_id: str, form: TournamentForm
-) -> bool:
+    form = InvitePlayerForm()
+    invitables = details.get("invitable_users", [])
+    form.user_id.choices = [(u["id"], smart_display_name(u)) for u in invitables]
+
+    try:
+        if _handle_view_invite(tournament_id, form):
+            flash("Player invited successfully.", "success")
+            return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    except Exception as e:
+        flash(f"Error sending invite: {e}", "danger")
+
+    return render_template("tournament/view.html", invite_form=form, **details)
+
+
+def _handle_tournament_update(tournament_id: str, form: TournamentForm) -> bool:
     """Process tournament update from form."""
     if form.validate_on_submit():
         TournamentService.update_tournament_from_form(
