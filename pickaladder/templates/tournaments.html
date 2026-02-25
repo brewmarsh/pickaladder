@@ -2,10 +2,12 @@
 
 {% block title %}Tournaments{% endblock %}
 
+{% from "components/_tournament_card.html" import tournament_card %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 page-header-actions">
     <h1>Tournaments</h1>
-    {% if g.user.is_admin %}
+    {% if g.user.isAdmin %}
     <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary btn-action">
         <i class="fas fa-trophy"></i> Create Tournament
     </a>
