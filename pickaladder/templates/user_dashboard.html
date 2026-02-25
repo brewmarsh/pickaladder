@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% from "components/_tournament_card.html" import tournament_card %}
 {% block title %}Dashboard{% endblock %}
 {% block head %}
 {{ super() }}
@@ -246,22 +247,14 @@
                         <a href="{{ url_for('user.view_community') }}" class="btn btn-volt" style="width: auto;">Find a Group</a>
                     </div>
                     {% else %}
-                    <div class="list-group list-group-flush">
+                    <div class="d-flex flex-column gap-3">
                         {# Section 1: Active Tournaments (Top Priority) #}
                         {% for tournament in active_tournaments %}
-                        <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}"
-                            class="list-group-item list-group-item-action"
-                            style="display: flex; align-items: center; border-left: 4px solid var(--accent-color); padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--border-color);">
-                            <span style="margin-right: 12px; font-size: 1.25rem;">🏆</span>
-                            <div style="flex-grow: 1;">
-                                <div class="fw-bold">{{ tournament.name }}</div>
-                                <div class="text-muted small">{{ tournament.date_display or tournament.date }}</div>
-                            </div>
-                            <span class="badge badge-warning">Round 1 / {{ tournament.status }}</span>
-                        </a>
+                            {{ tournament_card(tournament) }}
                         {% endfor %}
 
                         {# Section 2: Groups (Ongoing) #}
+                        <div class="list-group list-group-flush">
                         {% for ranking in group_rankings %}
                         <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}"
                             class="list-group-item list-group-item-action"
@@ -279,18 +272,13 @@
                             </div>
                         </a>
                         {% endfor %}
+                        </div>
 
                         {# Section 3: Past Tournaments (History) #}
                         {% for tournament in past_tournaments %}
-                        <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}"
-                            class="list-group-item list-group-item-action"
-                            style="display: flex; align-items: center; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--border-color); opacity: 0.75;">
-                            <span style="margin-right: 12px; font-size: 1.25rem;">🏁</span>
-                            <div style="flex-grow: 1;">
-                                <div class="fw-bold">{{ tournament.name }}</div>
-                                <div class="text-muted small">Finished</div>
+                            <div style="opacity: 0.8;">
+                                {{ tournament_card(tournament) }}
                             </div>
-                        </a>
                         {% endfor %}
                     </div>
                     {% endif %}
