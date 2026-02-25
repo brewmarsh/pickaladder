@@ -27,7 +27,7 @@
                         📅 {{ tournament.date_display or tournament.date }}
                     </p>
                     <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 5px;">
-                        📍 {{ tournament.location_data.name if tournament.location_data else tournament.location }}
+                        📍 {{ tournament.venue_name }}
                     </p>
                     <p class="text-volt" style="font-size: 0.8rem; text-transform: uppercase; margin-top: 15px; font-weight: bold; letter-spacing: 0.05em;">
                         {{ tournament.matchType|capitalize }}
