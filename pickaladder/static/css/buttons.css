@@ -105,3 +105,19 @@
 .btn-action i {
     font-size: 0.9em;
 }
+
+/* Button specific extensions */
+.btn-circle-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+}
+.btn-transparent {
+    background: transparent !important;
+    border: none !important;
+    width: auto !important;
+}
