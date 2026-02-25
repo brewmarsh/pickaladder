@@ -6,7 +6,7 @@
         <div class="tournament-card-placeholder">🎾</div>
     {% endif %}
 
-    {% if g.user and (g.user.uid == tournament.organizer_id or g.user.isAdmin) %}
+    {% if tournament.can_edit(g.user) %}
     <div class="dropdown kebab-menu pos-abs-tr-10 zi-10" onclick="event.stopPropagation();">
         <button class="dropbtn btn-circle-sm bg-black-50 text-white border-none cursor-pointer" type="button">
             <i class="fas fa-ellipsis-v"></i>
@@ -34,7 +34,7 @@
             <h3 class="m-0 fs-2xl lh-1-2">{{ tournament.name }}</h3>
             <div class="card-badges d-flex align-items-center gap-2 flex-shrink-0 ml-2">
                 <span class="badge-outline">
-                    {% if tournament.matchType|lower == 'doubles' %}
+                    {% if tournament.is_doubles %}
                         <i class="fas fa-users small"></i>
                     {% else %}
                         <i class="fas fa-user small"></i>
@@ -47,10 +47,10 @@
 
         <div class="mt-auto">
             <p class="text-muted small mb-1 d-flex align-items-center gap-2">
-                <i class="fas fa-calendar-alt w-16 text-center"></i> {{ tournament.date_display or tournament.date }}
+                <i class="fas fa-calendar-alt w-16 text-center"></i> {{ tournament.display_date }}
             </p>
             <p class="text-muted small mb-0 d-flex align-items-center gap-2">
-                <i class="fas fa-map-marker-alt w-16 text-center"></i> {{ tournament.location_data.name if tournament.location_data else tournament.location }}
+                <i class="fas fa-map-marker-alt w-16 text-center"></i> {{ tournament.location_display }}
             </p>
         </div>
     </div>

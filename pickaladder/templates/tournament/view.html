@@ -31,15 +31,15 @@
     text-align: center;
     position: relative;
 ">
-    {% if is_owner and g.user.is_admin %}
+    {% if tournament.can_edit(g.user) %}
         <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" data-testid="tournament-settings-btn" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">⚙️</a>
     {% endif %}
     <h1 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h1>
     <p style="font-size: 1.25rem; text-shadow: 0 2px 4px rgba(0,0,0,1);">
-        {{ tournament.date_display or tournament.date }} | {{ tournament.matchType|capitalize }}
+        {{ tournament.display_date }} | {{ tournament.matchType|capitalize }}
     </p>
     <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
-        <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}">
+        <span class="badge {{ tournament.status_badge_class }}">
             {{ tournament.status or 'Active' }}
         </span>
         {% if tournament.status != 'Completed' %}
@@ -228,12 +228,12 @@
                 <p class="text-muted" style="font-size: 0.9rem;">{{ tournament.location_data.address }}</p>
                 <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.location_data.address|urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm w-auto" style="margin-top: 10px; width: 100% !important; display: block; text-align: center;">Get Directions</a>
             {% else %}
-                <p>{{ tournament.location }}</p>
-                <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.location|urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm w-auto" style="margin-top: 10px; width: 100% !important; display: block; text-align: center;">Get Directions</a>
+                <p>{{ tournament.location_display }}</p>
+                <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.location_display|urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm w-auto" style="margin-top: 10px; width: 100% !important; display: block; text-align: center;">Get Directions</a>
             {% endif %}
         </div>
 
-        {% if is_owner and g.user.is_admin %}
+        {% if tournament.can_edit(g.user) %}
             {% if tournament.status != 'Completed' %}
             <div class="card">
                 <h4 class="card-header">Tournament Management</h4>

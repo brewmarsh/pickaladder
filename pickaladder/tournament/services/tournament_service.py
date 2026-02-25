@@ -116,6 +116,8 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         """Fetch comprehensive details for the tournament view."""
         from firebase_admin import firestore
 
+        from pickaladder.tournament.models import Tournament
+
         db = db or firestore.client()
         doc = cast(Any, db.collection("tournaments").document(t_id).get())
         if not doc or not doc.exists:
@@ -123,8 +125,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         data = cast(dict[str, Any], doc.to_dict())
         data["id"] = doc.id
         m = TournamentService._get_tournament_metadata(data, user_uid)
+        tournament_obj = Tournament(data)
         return TournamentService._build_tournament_details_context(
-            db, data, user_uid, m
+            db, tournament_obj, user_uid, m
         )
 
     @staticmethod

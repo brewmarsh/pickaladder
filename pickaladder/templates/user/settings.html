@@ -22,7 +22,7 @@
                                     <div class="text-danger small">{{ error }}</div>
                                 {% endfor %}
                             {% endif %}
-                            {% if current_user.is_authenticated and current_user.profilePictureUrl and current_user.profilePictureUrl != 'default' %}
+                            {% if current_user.has_custom_avatar %}
                                 <div class="mt-1">
                                     <a href="javascript:void(0)" class="text-danger small" onclick="if(confirm('Are you sure you want to remove your profile picture?')) document.getElementById('reset-avatar-form').submit();">Remove Picture</a>
                                 </div>
