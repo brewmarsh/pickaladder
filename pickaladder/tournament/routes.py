@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import logging
 from typing import Any, cast
 
 from firebase_admin import firestore
@@ -26,7 +25,6 @@ from .services import TournamentGenerator, TournamentService
 
 MIN_PARTICIPANTS_FOR_GENERATION = 2
 
-logger = logging.getLogger(__name__)
 
 @bp.route("/", methods=["GET"])
 @login_required
@@ -98,7 +96,13 @@ def _resolve_claim_data(t_id: str, c_id: str | None) -> dict[str, Any] | None:
     if not c_id:
         return None
     db = firestore.client()
-    team_doc = db.collection("tournaments").document(t_id).collection("teams").document(c_id).get()
+    team_doc = (
+        db.collection("tournaments")
+        .document(t_id)
+        .collection("teams")
+        .document(c_id)
+        .get()
+    )
     if not team_doc.exists:
         return None
 
@@ -326,7 +330,7 @@ def generate_bracket(tournament_id: str) -> Any:
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
     uids = _get_accepted_uids(d)
-    if len(uids) < 2:
+    if len(uids) < MIN_PARTICIPANTS_FOR_GENERATION:
         flash("At least 2 accepted participants are required.", "warning")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 

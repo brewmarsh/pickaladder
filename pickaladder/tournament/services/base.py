@@ -25,6 +25,11 @@ class TournamentBase:
         raw_date = data.get("start_date") or data.get("date")
         if raw_date and hasattr(raw_date, "to_datetime"):
             data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
+
+        # Compatibility for legacy templates using 'location' instead of 'venue_name'
+        if "venue_name" in data and not data.get("location"):
+            data["location"] = data["venue_name"]
+
         return data
 
     @staticmethod
@@ -33,14 +38,7 @@ class TournamentBase:
         o_id = data.get("organizer_id")
         if o_id:
             return cast(str, o_id)
-        owner_ref = data.get("ownerRef")
-        return str(owner_ref.id) if owner_ref else None
-
-    @staticmethod
-    def _validate_tournament_ownership(data: dict[str, Any], uid: str) -> None:
-        """Raise PermissionError if user is not the tournament owner."""
-        if TournamentBase._get_tournament_owner_id(data) != uid:
-            raise PermissionError("Unauthorized.")
+        return data["ownerRef"].id if data.get("ownerRef") else None
 
     @staticmethod
     def _get_tournament_metadata(data: dict[str, Any], user_uid: str) -> dict[str, Any]:
@@ -51,7 +49,7 @@ class TournamentBase:
             date_display = raw_date.to_datetime().strftime("%b %d, %Y")
 
         owner_id = TournamentBase._get_tournament_owner_id(data)
-        return {"date_display": date_display, "is_owner": str(owner_id) == str(user_uid)}
+        return {"date_display": date_display, "is_owner": owner_id == user_uid}
 
     @staticmethod
     def _extract_participant_ids(participants: list[dict[str, Any]]) -> set[str]:
@@ -72,30 +70,22 @@ class TournamentBase:
         from firebase_admin import firestore
 
         return list(
-            db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
-            .stream()
+            db.collection("tournaments").where("ownerRef", "==", user_ref).stream()
         )
 
     @staticmethod
     def _fetch_participating_tournaments(db: Client, user_uid: str) -> list[Any]:
         """Query tournaments where the user is a participant."""
-        from firebase_admin import firestore
-
         return list(
             db.collection("tournaments")
-            .where(
-                filter=firestore.FieldFilter(
-                    "participant_ids", "array_contains", user_uid
-                )
-            )
+            .where("participant_ids", "array_contains", user_uid)
             .stream()
         )
 
     @staticmethod
     def _process_participating_tournaments(
         results: dict[str, dict[str, Any]], participating: list[Any]
-    ) -> dict[dict[str, Any]]:
+    ) -> dict[str, dict[str, Any]]:
         """Add participating tournaments to the results if not already present."""
         for d in participating:
             if d.id not in results:
@@ -228,3 +218,9 @@ class TournamentBase:
             for obj in participant_objs
             if (p := TournamentBase._resolve_single_participant(obj, u_map))
         ]
+
+    @staticmethod
+    def _validate_tournament_ownership(data: dict[str, Any], user_uid: str) -> None:
+        """Raise PermissionError if user is not the tournament owner."""
+        if TournamentBase._get_tournament_owner_id(data) != user_uid:
+            raise PermissionError("Unauthorized access to tournament.")

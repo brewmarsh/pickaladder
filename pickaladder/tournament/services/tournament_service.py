@@ -42,92 +42,16 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         }
 
     @staticmethod
-    def create_tournament(
-        data: dict[str, Any], user_uid: str, db: Client | None = None
-    ) -> str:
-        """Create a tournament and return its ID."""
+    def create_tournament(data: dict[str, Any], user_uid: str) -> str:
+        """Create a new tournament in Firestore."""
         from firebase_admin import firestore
 
-        db = db or firestore.client()
+        db = firestore.client()
         user_ref = db.collection("users").document(user_uid)
         payload = TournamentService._build_create_payload(data, user_uid, user_ref)
-        _, ref = db.collection("tournaments").add(payload)
-        return str(ref.id)
 
-    @staticmethod
-    def _check_user_in_team(
-        user_uid: str, team_data: dict[str, Any]
-    ) -> tuple[str | None, bool] | None:
-        """Check if user is in team and return status/pending flag."""
-        if team_data.get("p1_uid") == user_uid or team_data.get("p2_uid") == user_uid:
-            is_pending = (
-                team_data.get("p2_uid") == user_uid
-                and team_data.get("status") == "PENDING"
-            )
-            return cast(str, team_data.get("status")), is_pending
-        return None
-
-    @staticmethod
-    def _get_team_status_for_user(
-        db: Client, t_id: str, user_uid: str
-    ) -> tuple[str | None, bool]:
-        """Fetch team status and pending flag for a user."""
-        teams = db.collection("tournaments").document(t_id).collection("teams").stream()
-        for doc in teams:
-            res = TournamentService._check_user_in_team(
-                user_uid, cast(dict[str, Any], doc.to_dict())
-            )
-            if res:
-                return res
-        return None, False
-
-    @staticmethod
-    def _build_tournament_details_context(
-        db: Client, data: dict[str, Any], user_uid: str, meta: dict[str, Any]
-    ) -> dict[str, Any]:
-        """Assemble the context dictionary for tournament details."""
-        from pickaladder.tournament.utils import get_tournament_standings
-        from pickaladder.user import UserService  # noqa: PLC0415
-
-        t_id, m_type = data["id"], data.get("matchType", "singles")
-        stnd = get_tournament_standings(db, t_id, m_type)
-        c_ids = TournamentService._extract_participant_ids(data.get("participants", []))
-        t_stat, pend = TournamentService._get_team_status_for_user(db, t_id, user_uid)
-
-        return {
-            "tournament": data,
-            "participants": TournamentService._resolve_participants(
-                db, data.get("participants", [])
-            ),
-            "standings": stnd,
-            "podium": stnd[:3] if data.get("status") == "Completed" else [],
-            "invitable_users": TournamentService._get_invitable_players(
-                db, user_uid, c_ids
-            ),
-            "user_groups": UserService.get_user_groups(db, user_uid),
-            "is_owner": meta["is_owner"],
-            "team_status": t_stat,
-            "pending_partner_invite": pend,
-            "date_display": meta["date_display"],
-        }
-
-    @staticmethod
-    def get_tournament_details(
-        t_id: str, user_uid: str, db: Client | None = None
-    ) -> dict[str, Any] | None:
-        """Fetch comprehensive details for the tournament view."""
-        from firebase_admin import firestore
-
-        db = db or firestore.client()
-        doc = cast(Any, db.collection("tournaments").document(t_id).get())
-        if not doc or not doc.exists:
-            return None
-        data = cast(dict[str, Any], doc.to_dict())
-        data["id"] = doc.id
-        m = TournamentService._get_tournament_metadata(data, user_uid)
-        return TournamentService._build_tournament_details_context(
-            db, data, user_uid, m
-        )
+        _, doc_ref = db.collection("tournaments").add(payload)
+        return str(doc_ref.id)
 
     @staticmethod
     def _has_matches(db: Client, t_id: str) -> bool:
@@ -135,18 +59,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         from firebase_admin import firestore
 
         query = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("tournamentId", "==", t_id))
-            .limit(1)
-            .stream()
+            db.collection("matches").where("tournamentId", "==", t_id).limit(1).stream()
         )
         return any(query)
-
-    @staticmethod
-    def _validate_tournament_ownership(data: dict[str, Any], uid: str) -> None:
-        """Verify the user is the owner of the tournament."""
-        if not data or TournamentService._get_tournament_owner_id(data) != uid:
-            raise PermissionError("Unauthorized.")
 
     @staticmethod
     def _prepare_update_payload(
@@ -388,7 +303,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             db.collection("tournaments")
             .document(t_id)
             .collection("teams")
-            .where(filter=firestore.FieldFilter("status", "==", "CONFIRMED"))
+            .where("status", "==", "CONFIRMED")
             .stream()
         )
         return [
@@ -411,3 +326,67 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         if m_type == "singles":
             return TournamentService._gen_singles_bracket(db, t_data)
         return TournamentService._gen_doubles_bracket(db, t_id)
+
+    @staticmethod
+    def _check_user_in_team(
+        user_uid: str, team_data: dict[str, Any]
+    ) -> tuple[str | None, bool] | None:
+        """Check if user is in team and return status/pending flag."""
+        if team_data.get("p1_uid") == user_uid or team_data.get("p2_uid") == user_uid:
+            is_pending = (
+                team_data.get("p2_uid") == user_uid
+                and team_data.get("status") == "PENDING"
+            )
+            return cast(str, team_data.get("status")), is_pending
+        return None
+
+    @staticmethod
+    def _get_team_status_for_user(
+        db: Client, t_id: str, user_uid: str
+    ) -> tuple[str | None, bool]:
+        """Fetch team status and pending flag for a user."""
+        teams = db.collection("tournaments").document(t_id).collection("teams").stream()
+        for doc in teams:
+            res = TournamentService._check_user_in_team(
+                user_uid, cast(dict[str, Any], doc.to_dict())
+            )
+            if res:
+                return res
+        return None, False
+
+    @staticmethod
+    def get_tournament_details(
+        t_id: str, uid: str, db: Client | None = None
+    ) -> dict[str, Any] | None:
+        """Fetch full tournament details including participants and standings."""
+        from firebase_admin import firestore
+
+        from pickaladder.tournament.utils import get_tournament_standings
+        from pickaladder.user import UserService
+
+        db = db or firestore.client()
+        ref = db.collection("tournaments").document(t_id)
+        doc = cast(Any, ref.get())
+        if not doc or not doc.exists:
+            return None
+
+        data = TournamentService._enrich_tournament(doc)
+        meta = TournamentBase._get_tournament_metadata(data, uid)
+
+        parts = data.get("participants", [])
+        resolved_parts = TournamentService._resolve_participants(db, parts)
+        stands = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
+        c_ids = TournamentService._extract_participant_ids(parts)
+        t_stat, pend = TournamentService._get_team_status_for_user(db, t_id, uid)
+
+        return {
+            "tournament": data,
+            "participants": resolved_parts,
+            "standings": stands,
+            "podium": stands[:3] if data.get("status") == "Completed" else [],
+            "invitable_users": TournamentService._get_invitable_players(db, uid, c_ids),
+            "user_groups": UserService.get_user_groups(db, uid),
+            "team_status": t_stat,
+            "pending_partner_invite": pend,
+            **meta,
+        }
