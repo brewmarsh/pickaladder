@@ -72,7 +72,8 @@ def test_tournament_flow(
     directions_btn = page.locator("text=Directions")
     expect(directions_btn).to_be_visible()
     expect(directions_btn).to_have_attribute(
-        "href", "https://www.google.com/maps/search/?api=1&query=123%20Park%20Lane%2C%20NYC"
+        "href",
+        "https://www.google.com/maps/search/?api=1&query=123%20Park%20Lane%2C%20NYC",
     )
 
     # 4. Record a Match (Verify Summary Redirect)
