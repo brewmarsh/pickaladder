@@ -261,7 +261,9 @@ def api_dashboard() -> Any:
             "user": UserService.get_user_by_id(firestore.client(), user_id),
             "friends": data["friends"],
             "requests": data["requests"],
-            "matches": [dict(m) for m in data["matches"]],
+            "matches": [
+                dict(m) if not isinstance(m, dict) else m for m in data["matches"]
+            ],
             "next_cursor": data.get("next_cursor"),
             "group_rankings": data["group_rankings"],
             "stats": {

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import secrets
-from typing import Any
+from typing import Any, cast
 
 from firebase_admin import firestore, storage
 from flask import current_app, url_for
@@ -63,7 +63,9 @@ class GroupService:
             owner_docs = db.get_all(unique_owner_refs)
             owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
 
-        def enrich_group(group_doc: Any) -> dict[str, Any]:
+        def enrich_group(group_doc: Any) -> Any:
+            from pickaladder.group.models import Group
+
             group_data: dict[str, Any] = group_doc.to_dict()
             group_id = group_doc.id
             group_data["id"] = group_id
@@ -87,7 +89,7 @@ class GroupService:
                 group_data["owner"] = owners_data[owner_ref.id]
             else:
                 group_data["owner"] = GUEST_USER
-            return group_data
+            return Group(group_data)
 
         return [{"group": enrich_group(doc)} for doc in my_group_docs]
 
@@ -260,7 +262,11 @@ class GroupService:
         if not owner_ref:
             return None
         owner_doc = owner_ref.get()
-        return owner_doc.to_dict() if owner_doc.exists else None
+        if owner_doc.exists:
+            data = owner_doc.to_dict()
+            data["id"] = owner_doc.id
+            return data
+        return None
 
     @staticmethod
     def get_group_details(
@@ -276,7 +282,7 @@ class GroupService:
         if not group.exists:
             raise GroupNotFound("Group not found.")
 
-        group_data = group.to_dict()
+        group_data = cast(dict[str, Any], group.to_dict() or {})
         group_data["id"] = group.id
         user_ref = db.collection("users").document(user_id)
 
@@ -313,8 +319,10 @@ class GroupService:
         if is_member:
             pending_members = GroupService._get_pending_invites(db, group_id)
 
+        from pickaladder.group.models import Group
+
         return {
-            "group": group_data,
+            "group": Group(group_data),
             "group_id": group.id,
             "members": members,
             "owner": owner,

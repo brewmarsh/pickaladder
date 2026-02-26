@@ -109,7 +109,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Summer Open",
                 "start_date": "2024-06-01",
                 "venue_name": "Courtside",
-                "match_type": "SINGLES",
+                "address": "123 Court St",
+                "match_type": "singles",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -124,6 +125,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         data = tournaments[0].to_dict()
         self.assertEqual(data["name"], "Summer Open")
         self.assertEqual(data["matchType"], "singles")
+        self.assertEqual(data["venue_name"], "Courtside")
+        self.assertEqual(data["address"], "123 Court St")
 
     def test_create_tournament_non_admin(self) -> None:
         """Test that a non-admin cannot create a tournament."""
@@ -136,7 +139,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Summer Open",
                 "start_date": "2024-06-01",
                 "venue_name": "Courtside",
-                "match_type": "SINGLES",
+                "match_type": "singles",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -156,7 +159,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             {
                 "name": "Original Name",
                 "start_date": datetime.datetime(2024, 6, 1),
-                "location": "Original Location",
+                "venue_name": "Original Venue",
                 "matchType": "singles",
                 "ownerRef": user_ref,
                 "organizer_id": MOCK_USER_ID,
@@ -170,7 +173,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "name": "Updated Name",
                 "start_date": "2024-07-01",
                 "venue_name": "Updated Venue",
-                "match_type": "DOUBLES",
+                "address": "456 Updated St",
+                "match_type": "doubles",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -189,6 +193,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(data["name"], "Updated Name")
         self.assertEqual(data["mode"], "DOUBLES")
         self.assertEqual(data["matchType"], "doubles")
+        self.assertEqual(data["venue_name"], "Updated Venue")
+        self.assertEqual(data["address"], "456 Updated St")
 
     def test_edit_tournament_non_admin(self) -> None:
         """Test that a non-admin cannot edit a tournament."""
@@ -228,7 +234,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             {
                 "name": "Original Name",
                 "start_date": datetime.datetime(2024, 6, 1),
-                "location": "Original Location",
+                "venue_name": "Original Venue",
                 "matchType": "singles",
                 "ownerRef": user_ref,
                 "organizer_id": MOCK_USER_ID,
@@ -246,7 +252,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
                 "start_date": "2024-07-01",
                 "venue_name": "Updated Venue",
                 "address": "456 Updated St",
-                "match_type": "DOUBLES",
+                "match_type": "doubles",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -326,15 +332,15 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn(b"Tournament Controls", response.data)
 
     def test_view_tournament_non_admin_no_edit_gear(self) -> None:
-        """Test that a non-admin who is NOT owner does not see the edit gear."""
+        """Test that a non-admin (even if owner) does not see the edit gear."""
         self._set_session_user(is_admin=False)
         tournament_id = "test_tournament_id"
-        other_user_ref = self.mock_db.collection("users").document("other_user")
+        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
         self.mock_db.collection("tournaments").document(tournament_id).set(
             {
                 "name": "Test Tournament",
-                "ownerRef": other_user_ref,
-                "organizer_id": "other_user",
+                "ownerRef": user_ref,
+                "organizer_id": MOCK_USER_ID,
                 "participants": [],
                 "participant_ids": [],
                 "date": datetime.datetime(2024, 6, 1),
@@ -349,6 +355,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 200)
+        # Non-admins (even owners) should not see these in this project's current design
         self.assertNotIn(b"Edit Tournament", response.data)
         self.assertNotIn(b"Tournament Controls", response.data)
 

@@ -1,0 +1,242 @@
+╭─────────────────────────╮
+│ Running Agent Scorecard │
+╰─────────────────────────╯
+            Environment Health
+┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+┃ Check                ┃           Status ┃
+┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+│ AGENTS.md            │             PASS │
+│ Linter Config        │             PASS │
+│ Lock File            │             PASS │
+│ Directory Entropy    │ Max 58 files/dir │
+│ Critical Token Count │    22,821 tokens │
+└──────────────────────┴──────────────────┘
+
+                                 File Analysis
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ File                             ┃ Score ┃ Issues                            ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ scorecard_final.json             │    80 │ Malformed Configuration File      │
+│                                  │       │ (-20)                             │
+│ mkdocs.yml                       │   100 │                                   │
+│ report_tournament.md             │   100 │                                   │
+│ docker-compose.prod.yml          │   100 │                                   │
+│ TEAMS_FEATURE.md                 │    95 │ 1 Yellow ACL sections detected.   │
+│                                  │       │ Consider breaking down large      │
+│                                  │       │ documentation chunks (-5)         │
+│ report_match_v2.md               │   100 │                                   │
+│ report.md                        │   100 │                                   │
+│ agents.md                        │   100 │                                   │
+│ report_best_buds_v2.md           │   100 │                                   │
+│ report_mt.md                     │   100 │                                   │
+│ firestore.indexes.json           │   100 │                                   │
+│ README.md                        │   100 │                                   │
+│ pyproject.toml                   │   100 │                                   │
+│ report_utils_v4.md               │   100 │                                   │
+│ report_cp2.md                    │   100 │                                   │
+│ test_syntax.py                   │   100 │                                   │
+│ report_utils_v3.md               │   100 │                                   │
+│ CHANGELOG.md                     │   100 │                                   │
+│ docker-compose.yml               │   100 │                                   │
+│ REPOSITORY_TEMPLATE.md           │   100 │                                   │
+│ PIPELINE_BEST_PRACTICES.md       │   100 │                                   │
+│ report_cp.md                     │   100 │                                   │
+│ CONTRIBUTING.md                  │   100 │                                   │
+│ CODEBASE_AUDIT.md                │   100 │                                   │
+│ instructions.md                  │   100 │                                   │
+│ report_utils.md                  │   100 │                                   │
+│ app.py                           │   100 │                                   │
+│ docker-compose.test.yml          │   100 │                                   │
+│ report_utils_final.md            │   100 │                                   │
+│ report_cp4.md                    │   100 │                                   │
+│ report_cp3.md                    │   100 │                                   │
+│ report_best_buds.md              │   100 │                                   │
+│ Dockerfile                       │   100 │                                   │
+│ docker-compose.beta.yml          │   100 │                                   │
+│ verify_css.py                    │   100 │                                   │
+│ fix_imports.py                   │   100 │                                   │
+│ .pre-commit-config.yaml          │    95 │ Yellow ACL detected: 10.6 > 10    │
+│                                  │       │ (-5)                              │
+│ report_match.md                  │   100 │                                   │
+│ nginx/Dockerfile.prod            │   100 │                                   │
+│ nginx/Dockerfile                 │   100 │                                   │
+│ docs/VERSION_SYNC_QUICKSTART.md  │   100 │                                   │
+│ docs/FIREBASE_MIGRATION.md       │   100 │                                   │
+│ docs/index.md                    │   100 │                                   │
+│ docs/REFACTOR.md                 │   100 │                                   │
+│ docs/API.md                      │   100 │                                   │
+│ docs/DESIGN.md                   │   100 │                                   │
+│ docs/VERSIONING.md               │   100 │                                   │
+│ docs/SECURITY.md                 │   100 │                                   │
+│ docs/REQUIREMENTS.md             │   100 │                                   │
+│ docs/CONFIGURATION.md            │   100 │                                   │
+│ site/search/worker.js            │    75 │ 1 Red ACL functions (-15), 2      │
+│                                  │       │ Yellow ACL functions (-10)        │
+│ site/search/lunr.js              │     0 │ Bloated File: 3020 lines (-282),  │
+│                                  │       │ 19 Red ACL functions (-285), 8    │
+│                                  │       │ Yellow ACL functions (-40)        │
+│ site/search/main.js              │    90 │ 2 Yellow ACL functions (-10)      │
+│ site/search/search_index.json    │   100 │                                   │
+│ site/js/darkmode.js              │   100 │                                   │
+│ site/js/bootstrap.bundle.min.js  │     0 │ 23 Red ACL functions (-345), 18   │
+│                                  │       │ Yellow ACL functions (-90)        │
+│ site/js/base.js                  │    80 │ Bloated File: 255 lines (-5), 1   │
+│                                  │       │ Red ACL functions (-15)           │
+│ scripts/migrate_teams.py         │   100 │                                   │
+│ scripts/sync_db.py               │    90 │ 2 Yellow ACL functions (-10)      │
+│ tests/test_dupr_link.py          │    90 │ 2 Yellow ACL functions (-10)      │
+│ tests/test_match.py              │    92 │ Bloated File: 284 lines (-8)      │
+│ tests/test_beta_safeguards.py    │   100 │                                   │
+│ tests/test_tournament_invites.py │   100 │                                   │
+│ tests/test_user_profile_dupr.py  │   100 │                                   │
+│ tests/test_match_security.py     │   100 │                                   │
+│ tests/test_styleguide.py         │   100 │                                   │
+│ tests/test_impersonation.py      │   100 │                                   │
+│ tests/__init__.py                │   100 │                                   │
+│ tests/test_pwa.py                │   100 │                                   │
+│ tests/test_rematch_logic.py      │   100 │                                   │
+│ tests/test_brag_card.py          │   100 │                                   │
+│ tests/test_match_parser.py       │   100 │                                   │
+│ tests/test_user_service.py       │   100 │                                   │
+│ tests/test_user.py               │    84 │ Bloated File: 316 lines (-11), 1  │
+│                                  │       │ Yellow ACL functions (-5)         │
+│ tests/test_tournament_utils.py   │   100 │                                   │
+│ tests/test_match_transaction.py  │   100 │                                   │
+│ tests/test_config_integrity.py   │   100 │                                   │
+│ tests/test_proxy_fix.py          │   100 │                                   │
+│ tests/test_tournament_blast.py   │   100 │                                   │
+│ tests/conftest.py                │   100 │                                   │
+│ tests/test_dashboard_tournament… │   100 │                                   │
+│ tests/test_welcome_toast.py      │   100 │                                   │
+│ tests/test_utils_coverage.py     │    78 │ Bloated File: 428 lines (-22)     │
+│ tests/test_group_utils.py        │   100 │                                   │
+│ tests/test_team_service.py       │   100 │                                   │
+│ tests/test_storage_config.py     │   100 │                                   │
+│ tests/test_referral.py           │   100 │                                   │
+│ tests/test_announcement.py       │   100 │                                   │
+│ tests/test_auth.py               │    92 │ Bloated File: 238 lines (-3), 1   │
+│                                  │       │ Yellow ACL functions (-5)         │
+│ tests/test_engagement_features.… │   100 │                                   │
+│ tests/test_group.py              │    89 │ Bloated File: 317 lines (-11)     │
+│ tests/test_tournament_match_int… │   100 │                                   │
+│ tests/test_group_leaderboard.py  │    95 │ 1 Yellow ACL functions (-5)       │
+│ tests/test_ghost_display.py      │   100 │                                   │
+│ tests/mock_utils.py              │   100 │                                   │
+│ tests/test_admin.py              │   100 │                                   │
+│ tests/test_best_buds.py          │   100 │                                   │
+│ tests/test_tournament.py         │    70 │ Bloated File: 500 lines (-30)     │
+│ tests/test_app.py                │   100 │                                   │
+│ tests/test_leaderboard_logic.py  │    95 │ 1 Yellow ACL functions (-5)       │
+│ tests/test_tournament_doubles.py │   100 │                                   │
+│ tests/e2e/conftest.py            │    79 │ Bloated File: 414 lines (-21)     │
+│ tests/e2e/test_e2e.py            │    95 │ 1 Yellow ACL functions (-5)       │
+│ tests/e2e/verify_rivalry_ui.py   │   100 │                                   │
+│ tests/e2e/test_mobile_design.py  │   100 │                                   │
+│ tests/e2e/test_tournament.py     │   100 │                                   │
+│ tests/e2e/verify_fixes.py        │   100 │                                   │
+│ pickaladder/errors.py            │   100 │                                   │
+│ pickaladder/__init__.py          │    69 │ Bloated File: 266 lines (-6), 5   │
+│                                  │       │ Yellow ACL functions (-25)        │
+│ pickaladder/utils.py             │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/error_handlers.py    │   100 │                                   │
+│ pickaladder/extensions.py        │   100 │                                   │
+│ pickaladder/constants.py         │   100 │                                   │
+│ pickaladder/context_processors.… │   100 │                                   │
+│ pickaladder/static/service-work… │   100 │                                   │
+│ pickaladder/static/manifest.json │   100 │                                   │
+│ pickaladder/static/js/main.js    │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/static/js/navbar.js  │   100 │                                   │
+│ pickaladder/static/js/optimisti… │   100 │                                   │
+│ pickaladder/user/models.py       │   100 │                                   │
+│ pickaladder/user/forms.py        │   100 │                                   │
+│ pickaladder/user/__init__.py     │   100 │                                   │
+│ pickaladder/user/routes.py       │    86 │ Bloated File: 246 lines (-4), 2   │
+│                                  │       │ Yellow ACL functions (-10)        │
+│ pickaladder/user/helpers.py      │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/user/services/mergi… │    75 │ 5 Yellow ACL functions (-25)      │
+│ pickaladder/user/services/user_… │    80 │ 4 Yellow ACL functions (-20)      │
+│ pickaladder/user/services/__ini… │    99 │ Bloated File: 212 lines (-1)      │
+│ pickaladder/user/services/match… │   100 │                                   │
+│ pickaladder/user/services/profi… │    90 │ 2 Yellow ACL functions (-10)      │
+│ pickaladder/user/services/core.… │    71 │ Bloated File: 296 lines (-9), 4   │
+│                                  │       │ Yellow ACL functions (-20)        │
+│ pickaladder/user/services/frien… │    85 │ 3 Yellow ACL functions (-15)      │
+│ pickaladder/user/services/activ… │    93 │ Bloated File: 226 lines (-2), 1   │
+│                                  │       │ Yellow ACL functions (-5)         │
+│ pickaladder/user/services/stats… │   100 │                                   │
+│ pickaladder/user/services/match… │    73 │ Bloated File: 221 lines (-2), 5   │
+│                                  │       │ Yellow ACL functions (-25)        │
+│ pickaladder/user/services/dashb… │   100 │                                   │
+│ pickaladder/user/services/match… │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/user/services/match… │    85 │ 3 Yellow ACL functions (-15)      │
+│ pickaladder/auth/forms.py        │   100 │                                   │
+│ pickaladder/auth/__init__.py     │   100 │                                   │
+│ pickaladder/auth/routes.py       │    72 │ Bloated File: 437 lines (-23), 1  │
+│                                  │       │ Yellow ACL functions (-5)         │
+│ pickaladder/auth/decorators.py   │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/tournament/models.py │   100 │                                   │
+│ pickaladder/tournament/forms.py  │   100 │                                   │
+│ pickaladder/tournament/__init__… │   100 │                                   │
+│ pickaladder/tournament/utils.py  │    90 │ 2 Yellow ACL functions (-10)      │
+│ pickaladder/tournament/routes.py │     6 │ Bloated File: 341 lines (-14),    │
+│                                  │       │ Cumulative Token Budget Exceeded: │
+│                                  │       │ 36,938 > 32,000 (-15), 13 Yellow  │
+│                                  │       │ ACL functions (-65)               │
+│ pickaladder/tournament/services… │    70 │ 6 Yellow ACL functions (-30)      │
+│ pickaladder/tournament/services… │    77 │ Bloated File: 336 lines (-13), 2  │
+│                                  │       │ Yellow ACL functions (-10)        │
+│ pickaladder/tournament/services… │   100 │                                   │
+│ pickaladder/tournament/services… │   100 │                                   │
+│ pickaladder/tournament/services… │    90 │ 2 Yellow ACL functions (-10)      │
+│ pickaladder/tournament/services… │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/teams/services.py    │    83 │ Bloated File: 223 lines (-2), 3   │
+│                                  │       │ Yellow ACL functions (-15)        │
+│ pickaladder/teams/models.py      │   100 │                                   │
+│ pickaladder/teams/forms.py       │   100 │                                   │
+│ pickaladder/teams/__init__.py    │   100 │                                   │
+│ pickaladder/teams/routes.py      │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/match/models.py      │    79 │ Bloated File: 219 lines (-1), 1   │
+│                                  │       │ Red ACL functions (-15), 1 Yellow │
+│                                  │       │ ACL functions (-5)                │
+│ pickaladder/match/forms.py       │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/match/__init__.py    │   100 │                                   │
+│ pickaladder/match/routes.py      │    75 │ 5 Yellow ACL functions (-25)      │
+│ pickaladder/match/services/form… │   100 │                                   │
+│ pickaladder/match/services/quer… │    85 │ 3 Yellow ACL functions (-15)      │
+│ pickaladder/match/services/summ… │    90 │ 2 Yellow ACL functions (-10)      │
+│ pickaladder/match/services/calc… │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/match/services/__in… │   100 │                                   │
+│ pickaladder/match/services/comm… │    86 │ Bloated File: 294 lines (-9), 1   │
+│                                  │       │ Yellow ACL functions (-5)         │
+│ pickaladder/match/services/base… │   100 │                                   │
+│ pickaladder/match/services/matc… │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/match/services/reco… │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/match/services/cand… │    90 │ 2 Yellow ACL functions (-10)      │
+│ pickaladder/match/services/matc… │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/admin/services.py    │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/admin/__init__.py    │   100 │                                   │
+│ pickaladder/admin/routes.py      │    70 │ Bloated File: 309 lines (-10), 4  │
+│                                  │       │ Yellow ACL functions (-20)        │
+│ pickaladder/group/models.py      │   100 │                                   │
+│ pickaladder/group/forms.py       │   100 │                                   │
+│ pickaladder/group/__init__.py    │   100 │                                   │
+│ pickaladder/group/utils.py       │    63 │ Bloated File: 570 lines (-37)     │
+│ pickaladder/group/routes.py      │    29 │ Bloated File: 410 lines (-21),    │
+│                                  │       │ Cumulative Token Budget Exceeded: │
+│                                  │       │ 35,293 > 32,000 (-15), 7 Yellow   │
+│                                  │       │ ACL functions (-35)               │
+│ pickaladder/group/services/__in… │   100 │                                   │
+│ pickaladder/group/services/lead… │    45 │ Bloated File: 302 lines (-10), 9  │
+│                                  │       │ Yellow ACL functions (-45)        │
+│ pickaladder/group/services/stat… │    90 │ 2 Yellow ACL functions (-10)      │
+│ pickaladder/group/services/grou… │     7 │ Bloated File: 633 lines (-43), 10 │
+│                                  │       │ Yellow ACL functions (-50)        │
+│ pickaladder/group/services/matc… │    95 │ 1 Yellow ACL functions (-5)       │
+│ pickaladder/core/__init__.py     │   100 │                                   │
+│ pickaladder/core/types.py        │   100 │                                   │
+│ pickaladder/core/constants.py    │   100 │                                   │
+│ pickaladder/main/__init__.py     │   100 │                                   │
+│ pickaladder/main/routes.py       │   100 │                                   │
+└──────────────────────────────────┴───────┴───────────────────────────────────┘
+
+Final Agent Score: 94.5/100

@@ -19,12 +19,13 @@ class TournamentInvites(TournamentBase):
     @staticmethod
     def _get_invitable_ids(db: Client, user_uid: str) -> set[str]:
         """Fetch all friend and group member IDs for a user."""
+
         user_ref = db.collection("users").document(user_uid)
         f_ids = {doc.id for doc in user_ref.collection("friends").stream()}
         g_ids = set()
         groups = (
             db.collection("groups")
-            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+            .where("members", "array_contains", user_ref)
             .stream()
         )
         for doc in groups:

@@ -28,13 +28,7 @@
                         <img src="{{ tournament.banner_url }}" alt="Current Banner" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px;">
                     </div>
                 {% endif %}
-                <div class="file-upload-wrapper">
-                    <label class="file-upload-button">
-                        <i class="fas fa-cloud-upload-alt"></i> Choose Image...
-                        {{ form.banner(class="file-upload-input", onchange="updateFileName(this)") }}
-                    </label>
-                    <span id="file-name-display" class="file-name-text text-muted">No file chosen</span>
-                </div>
+                {{ form.banner(class="form-input") }}
                 <small class="text-muted">Recommended: 16:9 aspect ratio.</small>
                 {% if form.banner.errors %}
                     {% for error in form.banner.errors %}
@@ -54,14 +48,41 @@
                     {% endif %}
                 </div>
                 <div class="form-group">
-                    {{ form.venue_name.label(class="form-label") }}
-                    {{ form.venue_name(class="form-input", placeholder="Central Park Courts") }}
-                    {% if form.venue_name.errors %}
-                        {% for error in form.venue_name.errors %}
+                    {{ form.format.label(class="form-label") }}
+                    {{ form.format(class="form-input") }}
+                    {% if form.format.errors %}
+                        {% for error in form.format.errors %}
                             <span class="text-danger">{{ error }}</span>
                         {% endfor %}
                     {% endif %}
                 </div>
+            </div>
+
+            <div class="form-group">
+                {{ form.match_type.label(class="form-label") }}
+                <div class="mode-options" style="display: flex; gap: 20px; margin-top: 10px;">
+                    {% for subfield in form.match_type %}
+                        <label class="mode-option" style="cursor: pointer; flex: 1; border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; text-align: center;">
+                            {{ subfield(style="display: none;") }}
+                            <div class="mode-label">{{ subfield.label.text }}</div>
+                        </label>
+                    {% endfor %}
+                </div>
+                {% if form.match_type.errors %}
+                    {% for error in form.match_type.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.venue_name.label(class="form-label") }}
+                {{ form.venue_name(class="form-input", placeholder="Central Park Courts") }}
+                {% if form.venue_name.errors %}
+                    {% for error in form.venue_name.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
             </div>
 
             <div class="form-group">
@@ -73,39 +94,6 @@
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
                 {% endif %}
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="form-group">
-                    {{ form.match_type.label(class="form-label") }}
-                    <div class="segmented-control">
-                        {% for subfield in form.match_type %}
-                            {{ subfield(class="visually-hidden") }}
-                            <label for="{{ subfield.id }}" class="segmented-item">
-                                {% if subfield.data == 'SINGLES' %}
-                                    <i class="fas fa-user small"></i>
-                                {% else %}
-                                    <i class="fas fa-users small"></i>
-                                {% endif %}
-                                {{ subfield.label.text }}
-                            </label>
-                        {% endfor %}
-                    </div>
-                    {% if form.match_type.errors %}
-                        {% for error in form.match_type.errors %}
-                            <span class="text-danger">{{ error }}</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                <div class="form-group">
-                    {{ form.format.label(class="form-label") }}
-                    {{ form.format(class="form-input") }}
-                    {% if form.format.errors %}
-                        {% for error in form.format.errors %}
-                            <span class="text-danger">{{ error }}</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
             </div>
 
             <div class="form-group">
@@ -137,13 +125,4 @@
     }
 }
 </style>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function updateFileName(input) {
-    const fileName = input.files[0] ? input.files[0].name : 'No file chosen';
-    document.getElementById('file-name-display').textContent = fileName;
-}
-</script>
 {% endblock %}

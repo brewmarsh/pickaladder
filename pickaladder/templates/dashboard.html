@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='dark.css') }}">
 </head>
 
-{% from "components/_empty_state.html" import empty_state %}
 <body class="{{ 'dark-mode' if user and user.dark_mode else '' }}">
     {% include 'navbar.html' %}
     <div class="content">
@@ -35,7 +34,7 @@
                 <label for="profile_picture">Profile Picture:</label>
                 <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif"
                     onchange="previewImage(event)">
-                <img id="preview" src="#" alt="your image" width="100" style="display:none;" />
+                <img id="preview" src="#" alt="your image" width="100" class="d-none" />
                 <label for="dupr_rating">DUPR Rating:</label>
                 <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user.dupr_rating }}">
                 <button type="submit">Update Profile</button>
@@ -57,14 +56,14 @@
                             <td data-label="Username">{{ request[1] }}</td>
                             <td data-label="Actions">
                                 <form action="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}"
-                                    method="post" style="display: inline;">
+                                    method="post" class="d-inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="button">Accept</button>
                                 </form>
                             </td>
                             <td>
                                 <form action="{{ url_for('user.decline_friend_request', friend_id=request[0]) }}"
-                                    method="post" style="display: inline;">
+                                    method="post" class="d-inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <button type="submit" class="button">Decline</button>
                                 </form>
@@ -74,11 +73,7 @@
                     </tbody>
                 </table>
                 {% else %}
-                {{ empty_state(
-                    icon="📩",
-                    title="No Friend Requests",
-                    message="You have no pending friend requests at the moment."
-                ) }}
+                <p>You have no friend requests.</p>
                 {% endif %}
             </div>
             <div class="header-with-button">
@@ -103,19 +98,13 @@
                             <td data-label="Opponent">{{ match[7] }}</td>
                             <td data-label="Score">{{ match[3] }} - {{ match[4] }}</td>
                             <td data-label="Link"><a
-                                    href="{{ url_for('match.view_match_summary', match_id=match[0]) }}">View</a></td>
+                                    href="{{ url_for('match.view_match_page', match_id=match[0]) }}">View</a></td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
                 {% else %}
-                {{ empty_state(
-                    icon="🎾",
-                    title="No Matches Yet",
-                    message="You haven't recorded any matches yet. Ready to start your journey?",
-                    action_url=url_for('match.record_match'),
-                    action_text="Record a Match"
-                ) }}
+                <p>You have no matches yet.</p>
                 {% endif %}
             </div>
             <h3>Your Friends</h3>
@@ -147,13 +136,7 @@
                     </tbody>
                 </table>
                 {% else %}
-                {{ empty_state(
-                    icon="🤝",
-                    title="No Friends Yet",
-                    message="You haven't added any friends yet. Connecting with others makes it easier to record matches!",
-                    action_url=url_for('user.users'),
-                    action_text="Find Friends"
-                ) }}
+                <p>You have no friends yet. <a href="/users">Find some!</a></p>
                 {% endif %}
             </div>
         </div>
@@ -164,6 +147,7 @@
                 reader.onload = function () {
                     var output = document.getElementById('preview');
                     output.src = reader.result;
+                    output.classList.remove('d-none');
                     output.style.display = 'block';
                 };
                 reader.readAsDataURL(event.target.files[0]);

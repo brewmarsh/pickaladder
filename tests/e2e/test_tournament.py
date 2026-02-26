@@ -41,8 +41,9 @@ def test_tournament_flow(
     page.fill("input[name='name']", "Winter Open")
     page.fill("input[name='start_date']", "2026-12-01")
     page.fill("input[name='venue_name']", "Central Park")
+    page.fill("input[name='address']", "123 Park Lane, NYC")
     page.select_option("select[name='format']", "ROUND_ROBIN")
-    # Match Type is custom segmented buttons (radio) now
+    # Match type is custom radio buttons in the template now
     page.click("text=Singles (1v1)")
     with page.expect_navigation():
         page.click("button:has-text('Create Tournament')")
@@ -71,7 +72,8 @@ def test_tournament_flow(
     directions_btn = page.locator("text=Directions")
     expect(directions_btn).to_be_visible()
     expect(directions_btn).to_have_attribute(
-        "href", "https://www.google.com/maps/search/?api=1&query=Central%20Park"
+        "href",
+        "https://www.google.com/maps/search/?api=1&query=123%20Park%20Lane%2C%20NYC",
     )
 
     # 4. Record a Match (Verify Summary Redirect)

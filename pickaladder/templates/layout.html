@@ -40,8 +40,7 @@
     {% if g.user and g.user.dark_mode %}data-theme="dark" {% endif %}
     {% if is_testing %}data-is-testing="true" {% endif %}>
     {% if config['FLASK_ENV'] == 'beta' %}
-    <div class="alert alert-primary text-center m-0"
-        style="background-color: var(--primary-color); color: white; border: none; border-radius: 0;">
+    <div class="alert alert-primary text-center m-0 bg-primary text-white border-none rounded-0">
         <strong>BETA MODE:</strong> Data is refreshed daily. Actions taken here will NOT be saved to Production.
     </div>
     {% endif %}
@@ -58,8 +57,7 @@
         {% for category, message in messages %}
         <div class="toast alert-{{ category }} show" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header">
-                <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" class="rounded mr-2" alt="Logo"
-                    style="width: 20px; height: 20px;">
+                <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" class="rounded mr-2 w-20 h-20" alt="Logo">
                 <strong>pickaladder</strong>
                 <button type="button" class="close" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -160,13 +158,13 @@
 
             let progressBar = '';
             if (category === 'info') {
-                progressBar = '<div class="progress"><div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div></div>';
+                progressBar = '<div class="progress"><div class="progress-bar progress-bar-striped progress-bar-animated w-100" role="progressbar"></div></div>';
             }
 
             const toastHTML = `
                 <div class="toast show alert-${category}" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
                     <div class="toast-header">
-                        <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" class="rounded mr-2" alt="Logo" style="width: 20px; height: 20px;">
+                        <img src="{{ url_for('static', filename='pickaladder_logo_64.png') }}" class="rounded mr-2 w-20 h-20" alt="Logo">
                         <strong>pickaladder</strong>
                         <button type="button" class="close" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -257,15 +255,29 @@
             appId: "1:402457219675:web:a346e2dc0dfa732d31e57e",
             measurementId: "G-E28CXCXTSK"
         };
-        // Intercept fetch to add the auth token
+        // Intercept fetch to add the auth token and CSRF token
         const originalFetch = window.fetch;
         window.fetch = function (url, options) {
+            options = options || {};
+            options.headers = options.headers || {};
+
+            // Add Auth Token
             const token = localStorage.getItem('firebaseIdToken');
             if (token) {
-                options = options || {};
-                options.headers = options.headers || {};
                 options.headers['Authorization'] = 'Bearer ' + token;
             }
+
+            // Add CSRF Token for non-GET requests
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : null;
+            const method = (options.method || 'GET').toUpperCase();
+
+            if (csrfToken && !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method)) {
+                if (!options.headers['X-CSRFToken']) {
+                    options.headers['X-CSRFToken'] = csrfToken;
+                }
+            }
+
             return originalFetch(url, options);
         };
 

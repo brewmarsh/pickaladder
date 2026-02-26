@@ -9,12 +9,18 @@
     overflow: hidden;
     transition: box-shadow 0.2s ease;
 }
-.card:hover { box-shadow: var(--shadow-md); }
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
 .card-notification {
     background-color: rgba(37, 99, 235, 0.1);
     border: 1px solid var(--primary-color);
 }
+
 .card-compact { padding: 16px; }
+
 .card-header {
     background-color: transparent;
     border-bottom: 1px solid var(--border-color);
@@ -23,6 +29,10 @@
     font-weight: var(--fw-bold);
     font-size: 1.1rem;
 }
+
+/* Card Extensions from Main */
+.card-accent-border { border-left: 5px solid var(--accent-color) !important; }
+.card-header-no-border { border-bottom: none !important; }
 
 .hero-stats-card {
     display: flex;
@@ -47,7 +57,7 @@
     flex: 2;
 }
 
-/* Modals */
+/* --- 2. Modals & Toasts --- */
 .modal {
     display: none;
     position: fixed;
@@ -81,7 +91,6 @@
 }
 .modal-body { padding: 16px; }
 
-/* Toasts */
 .toast-container {
     position: fixed;
     top: 70px;
@@ -92,6 +101,7 @@
     align-items: flex-end;
     gap: 12px;
 }
+
 .toast {
     background-color: var(--card-bg);
     color: var(--text-primary);
@@ -109,6 +119,7 @@
     align-items: center;
     justify-content: center;
 }
+
 .toast::before {
     content: '';
     position: absolute;
@@ -120,11 +131,9 @@
     z-index: 1;
 }
 
-/* Category-specific indicators */
 .toast.alert-success::before { background-color: var(--success-color); }
 .toast.alert-danger::before { background-color: var(--danger-color); }
 .toast.alert-warning::before { background-color: var(--warning-color); }
-.toast.alert-info::before { background-color: var(--primary-color); }
 
 .toast-header {
     background: transparent;
@@ -135,20 +144,18 @@
     justify-content: center;
     width: 100%;
 }
+
 .toast-header .close {
     position: absolute;
     top: 10px;
     right: 12px;
     background: transparent;
     border: 0;
-    padding: 0;
     font-size: 1.25rem;
-    line-height: 1;
     color: var(--text-secondary);
     opacity: 0.5;
     transition: opacity 0.2s;
 }
-.toast-header .close:hover { opacity: 1; }
 
 .toast-body {
     padding: 8px 20px;
@@ -160,74 +167,93 @@
     width: 100%;
 }
 
-/* Unified Share Card */
-.share-card-container {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
-    border-radius: 20px;
-    padding: 30px;
-    color: white;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.share-card-header {
-    font-size: 0.75rem;
-    text-transform: none;
-    letter-spacing: 0.1em;
-    opacity: 0.8;
-    margin-bottom: 20px;
-}
-
-.share-card-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50% !important;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    margin: 0 auto 15px;
+/* --- 3. Tournament Cards & Badges --- */
+.tournament-card-container {
+    position: relative !important;
+    height: 100%;
     display: block;
+}
+
+.tournament-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0 !important;
+    overflow: hidden;
+    text-decoration: none !important;
+    color: var(--text-primary) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tournament-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    color: inherit !important;
+}
+
+.card-banner, .tournament-card-header-img {
+    width: 100%;
+    height: 160px;
     object-fit: cover;
 }
 
-.share-card-title {
-    font-size: 2rem;
-    margin-bottom: 15px;
-    font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 1.0);
-    color: white;
-}
-
-.share-card-stat {
-    font-size: 1.25rem;
-    font-weight: 700;
-    background: rgba(255, 255, 255, 0.2);
-    display: inline-block;
-    padding: 8px 20px;
-    border-radius: 50px;
-    margin-top: 10px;
-    color: white;
-}
-
-.share-card-visual {
+.card-banner-placeholder, .tournament-card-placeholder {
     width: 100%;
-    max-width: 300px;
-    height: 100px;
-    margin: 20px auto;
-    overflow: hidden;
-}
-
-.share-card-visual canvas {
-    width: 100% !important;
-    height: 100% !important;
-}
-
-.share-card-footer {
-    margin-top: 30px;
-    font-size: 0.85rem;
-    opacity: 0.7;
+    height: 160px;
+    background-color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: white;
+    font-size: 3rem;
 }
 
-/* --- 2. Tournament Cards & Badges --- */
+.tournament-card-body {
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.tournament-card-title {
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 1.2;
+    font-weight: var(--fw-bold);
+    padding-right: 25px;
+}
+
+.tournament-card-footer {
+    margin-top: auto;
+}
+
+.tournament-card-actions {
+    position: absolute !important;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.tournament-card-actions .dropbtn {
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: background 0.2s;
+}
+
+.tournament-card-actions .dropbtn:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* Badges */
 .badge-outline {
     display: inline-flex;
     align-items: center;
@@ -239,7 +265,6 @@
     font-weight: var(--fw-bold);
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
     background: rgba(var(--bg-secondary-rgb, 255, 255, 255), 0.5);
 }
 
@@ -248,34 +273,26 @@
     height: 10px;
     border-radius: 50%;
     display: inline-block;
-    flex-shrink: 0;
 }
 
-.status-Active {
-    background-color: var(--success-color);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
-}
-.status-Completed {
-    background-color: var(--text-secondary);
-}
-.status-PUBLISHED {
-    background-color: var(--accent-color);
-    box-shadow: 0 0 10px rgba(132, 204, 22, 0.4);
-}
+.status-Active { background-color: var(--success-color); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+.status-Completed { background-color: var(--text-secondary); }
+.status-PUBLISHED { background-color: var(--accent-color); box-shadow: 0 0 10px rgba(132, 204, 22, 0.4); }
 
-/* Kebab Menu Overrides */
-.kebab-menu .dropbtn {
-    transition: all 0.2s ease;
-}
-.kebab-menu .dropbtn:hover {
-    background: rgba(0, 0, 0, 0.8) !important;
-    transform: scale(1.1);
-}
+/* --- 4. Utilities --- */
+.icon-fw { width: 1.25em; text-align: center; }
 
-.tournament-card.clickable-row {
+.delete-btn {
+    width: 100%;
+    text-align: left;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    color: var(--danger-color);
     cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
 }
 
-.tournament-card .card-badges {
-    white-space: nowrap;
-}
+.delete-btn:hover { background-color: var(--bg-color); }

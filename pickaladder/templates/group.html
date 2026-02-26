@@ -2,7 +2,7 @@
 {% block title %}{{ group.name }}{% endblock %}
 {% block content %}
 <div class="card hero-stats-card">
-    {% if group.ownerRef.id == g.user['uid'] %}
+    {% if group.is_owner(g.user) %}
     <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="btn-edit-gear"
         data-testid="group-settings-btn">⚙️</a>
     {% endif %}
@@ -18,12 +18,7 @@
         <h1>{{ group.name }}</h1>
         <div class="group-meta-info">
             <p>
-                Owned by:
-                {% if group.get('ownerRef') %}
-                <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username }}</a>
-                {% else %}
-                <span class="text-muted">Unknown</span>
-                {% endif %}
+                Owned by: <a href="{{ url_for('user.view_user', user_id=owner.id) }}">{{ owner.username }}</a>
                 {% if group.location %}
                 • Location: {{ group.location }}
                 {% endif %}
@@ -324,7 +319,7 @@
                 </table>
             </div>
 
-            {% if group.ownerRef.id == g.user['uid'] %}
+            {% if group.is_owner(g.user) %}
             <h3>Invite Friends</h3>
             <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
                 {{ form.hidden_tag() }}
@@ -374,7 +369,7 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Status</th>
-                            {% if group.ownerRef.id == g.user['uid'] %}
+                            {% if group.is_owner(g.user) %}
                             <th>Actions</th>
                             {% endif %}
                         </tr>
@@ -399,7 +394,7 @@
                                 <span class="badge">{{ invite.status or 'Pending' }}</span>
                                 {% endif %}
                             </td>
-                            {% if group.ownerRef.id == g.user['uid'] %}
+                            {% if group.is_owner(g.user) %}
                             <td data-label="Actions">
                                 <div class="pending-invites-actions">
                                     <form method="post"

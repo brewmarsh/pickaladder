@@ -1,5 +1,4 @@
 {% extends "layout.html" %}
-{% from "components/_empty_state.html" import empty_state %}
 {% block title %}Groups{% endblock %}
 {% block content %}
 <div class="container">
@@ -38,13 +37,11 @@
                 </div>
             </a>
         {% else %}
-            {{ empty_state(
-                icon="👥",
-                title="No Groups Found",
-                message="You are not a member of any groups yet. Join a group or create one to start competing with your friends!",
-                action_url=url_for('group.create_group'),
-                action_text="Create Group"
-            ) }}
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-center text-muted">You are not a member of any groups. Create one to get started!</p>
+                </div>
+            </div>
         {% endfor %}
     </div>
 </div>
