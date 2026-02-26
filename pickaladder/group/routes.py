@@ -129,7 +129,8 @@ def view_group(group_id: str) -> Any:
         return resp
 
     invite_email_form, resp = _handle_invite_email_form(
-        db, group_id, context["group"].get("name", "Group")
+        db, group_id, context["group"].get("name", "Unknown Group")
+    )
     )
     if resp:
         return resp

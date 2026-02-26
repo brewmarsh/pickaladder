@@ -19,7 +19,10 @@ class TournamentInvites(TournamentBase):
     @staticmethod
     def _get_invitable_ids(db: Client, user_uid: str) -> set[str]:
         """Fetch all friend and group member IDs for a user."""
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5b6fedc53d3e2c69d264664019f19c0939aa07ca
         user_ref = db.collection("users").document(user_uid)
         f_ids = {doc.id for doc in user_ref.collection("friends").stream()}
         g_ids = set()

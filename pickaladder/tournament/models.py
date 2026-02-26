@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
+from collections import UserDict
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from pickaladder.core.types import FirestoreDocument
 
 if TYPE_CHECKING:
     from pickaladder.user import User
-
-
-from collections import UserDict
 
 
 class Tournament(UserDict):
@@ -20,8 +18,21 @@ class Tournament(UserDict):
         """Return True if the user has permission to edit the tournament."""
         if not user:
             return False
-        # In this project, only admins can edit tournaments via the routes
-        return bool(getattr(user, "isAdmin", user.get("isAdmin", False)))
+        
+        # Normalize UID extraction from various user object types
+        uid = user.get("uid") if hasattr(user, "get") else getattr(user, "uid", None)
+        if not uid:
+            return False
+            
+        owner_id = self.get("organizer_id")
+        owner_ref = self.get("ownerRef")
+        
+        # Fallback to ownerRef id if organizer_id is missing
+        if not owner_id and owner_ref:
+            owner_id = getattr(owner_ref, "id", None)
+            
+        is_admin = getattr(user, "isAdmin", user.get("isAdmin", False))
+        return uid == owner_id or is_admin
 
     @property
     def is_doubles(self) -> bool:
@@ -39,14 +50,15 @@ class Tournament(UserDict):
     @property
     def display_date(self) -> str:
         """Return a formatted date string for display."""
-        return str(self.get("date_display") or self.get("date", ""))
+        return str(self.get("date_display") or self.get("date") or "TBD")
 
     @property
     def location_display(self) -> str:
-        """Return a formatted location string."""
+        """Return a formatted location string prioritizing rich data."""
         if loc_data := self.get("location_data"):
-            return str(loc_data.get("name") or self.get("location", ""))
-        return str(self.get("venue_name") or self.get("location", ""))
+            if isinstance(loc_data, dict):
+                return str(loc_data.get("name") or self.get("location") or "TBD")
+        return str(self.get("venue_name") or self.get("location") or "TBD")
 
 
 class Participant(TypedDict, total=False):
@@ -69,7 +81,10 @@ class TournamentTeam(TypedDict, total=False):
 
 
 class TournamentDict(FirestoreDocument, total=False):
-    """A tournament document in Firestore."""
+    """
+    A tournament document in Firestore.
+    (Retained as a TypedDict for strict typing in backend services)
+    """
 
     name: str
     status: str  # DRAFT, PUBLISHED, IN_PROGRESS, COMPLETED
