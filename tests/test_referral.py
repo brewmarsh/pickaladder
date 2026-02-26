@@ -27,15 +27,19 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
 
     # Mock group details
     with patch("pickaladder.group.routes.GroupService.get_group_details") as mock_get:
+        from pickaladder.group.models import Group
+
         mock_owner_ref = MagicMock()
         mock_owner_ref.id = "admin"
 
         mock_get.return_value = {
-            "group": {
-                "id": "group1",
-                "name": "Group 1",
-                "ownerRef": mock_owner_ref,
-            },
+            "group": Group(
+                {
+                    "id": "group1",
+                    "name": "Group 1",
+                    "ownerRef": mock_owner_ref,
+                }
+            ),
             "owner": {"username": "admin"},
             "eligible_friends": [],
             "leaderboard": [],
