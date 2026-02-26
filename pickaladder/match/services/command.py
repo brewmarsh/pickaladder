@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any, cast
 
+from pickaladder.base.repository import BaseRepository
 from pickaladder.match.models import MatchResult, MatchSubmission
 from pickaladder.teams.services import TeamService
 from pickaladder.user.services.core import get_avatar_url, smart_display_name
@@ -20,30 +21,33 @@ if TYPE_CHECKING:
     from pickaladder.user.models import UserSession
 
 
-class MatchCommandService:
+class MatchCommandService(BaseRepository):
     """Service class for match-related write operations."""
 
-    @staticmethod
+    COLLECTION_NAME = "matches"
+
+    @classmethod
     def record_match(
-        db: Client, data: MatchSubmission | dict[str, Any], current_user: UserSession
+        cls,
+        db: Client,
+        data: MatchSubmission | dict[str, Any],
+        current_user: UserSession,
     ) -> MatchResult:
         """Process and record a match submission."""
         user_id = current_user["uid"]
         sub = data if isinstance(data, MatchSubmission) else MatchSubmission(**data)
         MatchValidationService.validate_submission(db, sub, user_id)
 
-        match_date = MatchCommandService._parse_match_date(sub.match_date)
-        match_doc_data = MatchCommandService._prepare_match_doc_base(
-            sub, user_id, match_date
-        )
+        match_date = cls._parse_match_date(sub.match_date)
+        match_doc_data = cls._prepare_match_doc_base(sub, user_id, match_date)
 
-        side1_ref, side2_ref = MatchCommandService._resolve_match_participants(
-            db, sub, match_doc_data
-        )
+        side1_ref, side2_ref = cls._resolve_match_participants(db, sub, match_doc_data)
 
-        new_match_ref = cast("DocumentReference", db.collection("matches").document())
+        new_match_ref = cast(
+            "DocumentReference", db.collection(cls.COLLECTION_NAME).document()
+        )
         batch = db.batch()
-        MatchCommandService._record_match_batch(
+        cls._record_match_batch(
             db,
             batch,
             new_match_ref,
@@ -55,7 +59,7 @@ class MatchCommandService:
         )
         batch.commit()
 
-        return MatchCommandService._build_match_result(new_match_ref.id, match_doc_data)
+        return cls._build_match_result(new_match_ref.id, match_doc_data)
 
     @staticmethod
     def _parse_match_date(date_input: Any) -> datetime.datetime:
@@ -95,9 +99,9 @@ class MatchCommandService:
             data["tournamentId"] = sub.tournament_id
         return data
 
-    @staticmethod
+    @classmethod
     def _resolve_match_participants(
-        db: Client, sub: MatchSubmission, data: dict[str, Any]
+        cls, db: Client, sub: MatchSubmission, data: dict[str, Any]
     ) -> tuple[DocumentReference, DocumentReference]:
         """Resolve player/team references based on match type."""
         if sub.match_type == "singles":
@@ -116,7 +120,7 @@ class MatchCommandService:
             )
             return p1_ref, p2_ref
 
-        res = MatchCommandService._resolve_teams(
+        res = cls._resolve_teams(
             db,
             sub.player_1_id,
             cast(str, sub.partner_id),
@@ -134,8 +138,9 @@ class MatchCommandService:
             "DocumentReference", res["team2Ref"]
         )
 
-    @staticmethod
+    @classmethod
     def _record_match_batch(  # noqa: PLR0913
+        cls,
         db: Client,
         batch: WriteBatch,
         match_ref: DocumentReference,
@@ -156,7 +161,7 @@ class MatchCommandService:
         p2_data = p2_snap.to_dict() if p2_snap else {}
 
         if match_type == "singles":
-            MatchCommandService._denormalize_singles_players(
+            cls._denormalize_singles_players(
                 match_data, p1_ref, p1_data or {}, p2_ref, p2_data or {}
             )
 
@@ -266,9 +271,9 @@ class MatchCommandService:
             "team2Ref": db.collection("teams").document(id2),
         }
 
-    @staticmethod
+    @classmethod
     def update_match_score(
-        match_id: str, s1_raw: Any, s2_raw: Any, editor_uid: str
+        cls, match_id: str, s1_raw: Any, s2_raw: Any, editor_uid: str
     ) -> None:
         """Update a match score with permission checks and stats rollback."""
         from firebase_admin import firestore
@@ -279,14 +284,13 @@ class MatchCommandService:
         except (ValueError, TypeError):
             raise ValueError("Scores must be valid integers.")
 
-        match_ref = db.collection("matches").document(match_id)
-        match_doc = cast("DocumentSnapshot", match_ref.get())
-        if not match_doc.exists or not (data := match_doc.to_dict()):
+        data = cls.get_by_id(db, match_id)
+        if not data:
             raise ValueError("Match not found.")
 
-        MatchCommandService._check_match_edit_permissions(data, editor_uid, db)
-        MatchCommandService._perform_stats_update(data, s1, s2)
-        match_ref.update(MatchCommandService._get_match_updates(data, s1, s2))
+        cls._check_match_edit_permissions(data, editor_uid, db)
+        cls._perform_stats_update(data, s1, s2)
+        cls.update(db, match_id, cls._get_match_updates(data, s1, s2))
 
     @staticmethod
     def _check_match_edit_permissions(

@@ -18,19 +18,19 @@ class Tournament(UserDict):
         """Return True if the user has permission to edit the tournament."""
         if not user:
             return False
-        
+
         # Normalize UID extraction from various user object types
         uid = user.get("uid") if hasattr(user, "get") else getattr(user, "uid", None)
         if not uid:
             return False
-            
+
         owner_id = self.get("organizer_id")
         owner_ref = self.get("ownerRef")
-        
+
         # Fallback to ownerRef id if organizer_id is missing
         if not owner_id and owner_ref:
             owner_id = getattr(owner_ref, "id", None)
-            
+
         is_admin = getattr(user, "isAdmin", user.get("isAdmin", False))
         return uid == owner_id or is_admin
 
