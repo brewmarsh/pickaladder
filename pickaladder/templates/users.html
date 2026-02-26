@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% from "components/_empty_state.html" import empty_state %}
 {% block title %}Find Players{% endblock %}
 {% block content %}
 <div class="page-header">
@@ -95,11 +96,11 @@
             {% else %}
             <tr>
                 <td colspan="5">
-                    {% if search_term %}
-                    No users found for '{{ search_term }}'.
-                    {% else %}
-                    No users found.
-                    {% endif %}
+                    {{ empty_state(
+                        icon="🎾",
+                        title="No Users Found",
+                        message="We couldn't find any users matching your search." if search_term else "There are no users to display."
+                    ) }}
                 </td>
             </tr>
             {% endfor %}
