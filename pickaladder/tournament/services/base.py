@@ -31,7 +31,8 @@ class TournamentBase:
         if "venue_name" in data and not data.get("location"):
             data["location"] = data["venue_name"]
 
-        return data
+        from pickaladder.tournament.models import Tournament
+        return Tournament(data)
 
     @staticmethod
     def _get_tournament_owner_id(data: dict[str, Any]) -> str | None:
