@@ -257,15 +257,29 @@
             appId: "1:402457219675:web:a346e2dc0dfa732d31e57e",
             measurementId: "G-E28CXCXTSK"
         };
-        // Intercept fetch to add the auth token
+        // Intercept fetch to add the auth token and CSRF token
         const originalFetch = window.fetch;
         window.fetch = function (url, options) {
+            options = options || {};
+            options.headers = options.headers || {};
+
+            // Add Auth Token
             const token = localStorage.getItem('firebaseIdToken');
             if (token) {
-                options = options || {};
-                options.headers = options.headers || {};
                 options.headers['Authorization'] = 'Bearer ' + token;
             }
+
+            // Add CSRF Token for non-GET requests
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : null;
+            const method = (options.method || 'GET').toUpperCase();
+
+            if (csrfToken && !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method)) {
+                if (!options.headers['X-CSRFToken']) {
+                    options.headers['X-CSRFToken'] = csrfToken;
+                }
+            }
+
             return originalFetch(url, options);
         };
 

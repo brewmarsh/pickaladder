@@ -11,6 +11,150 @@ if TYPE_CHECKING:
     from pickaladder.user import User
 
 
+from collections import UserDict
+
+
+class Match(UserDict):
+    """A wrapper class for match data that provides methods for templates."""
+
+    def can_edit(self, user: Any) -> bool:
+        """Return True if the user has permission to edit the match."""
+        if not user:
+            return False
+        uid = user.get("uid") if hasattr(user, "get") else getattr(user, "uid", None)
+        if not uid:
+            return False
+        is_admin = getattr(user, "isAdmin", user.get("isAdmin", False))
+        if is_admin:
+            return True
+        return self.get("created_by") == uid and not self.get("tournament_id")
+
+    @property
+    def display_date(self) -> str:
+        """Return a formatted date string for display."""
+        return str(self.get("date") or self.get("match_date") or "N/A")
+
+    @property
+    def is_doubles(self) -> bool:
+        """Return True if the match is doubles."""
+        return self.get("match_type") == "doubles" or self.get("matchType") == "doubles"
+
+    def get_matchup_info(self, user: Any) -> dict[str, Any]:
+        """Return matchup information relative to the given user."""
+        res = {"user_partner": None, "opponent_name": "Unknown", "is_user_p1": False}
+        uid = (
+            user.get("uid")
+            if user and hasattr(user, "get")
+            else getattr(user, "uid", None)
+        )
+        if not uid:
+            return res
+
+        if self.is_doubles:
+            p1 = self.get("player1", [])
+            p1_ids = [
+                p.get("id") if isinstance(p, dict) else getattr(p, "id", None)
+                for p in p1
+            ]
+            in_team1 = uid in p1_ids
+
+            if in_team1:
+                if len(p1) > 1:
+                    p1_0_id = (
+                        p1[0].get("id")
+                        if isinstance(p1[0], dict)
+                        else getattr(p1[0], "id", None)
+                    )
+                    res["user_partner"] = p1[1] if p1_0_id == uid else p1[0]
+                res["opponent_name"] = self.get("team2_name", "Team 2")
+                res["is_user_p1"] = True
+            else:
+                p2 = self.get("player2", [])
+                p2_ids = [
+                    p.get("id") if isinstance(p, dict) else getattr(p, "id", None)
+                    for p in p2
+                ]
+                if uid in p2_ids:
+                    if len(p2) > 1:
+                        p2_0_id = (
+                            p2[0].get("id")
+                            if isinstance(p2[0], dict)
+                            else getattr(p2[0], "id", None)
+                        )
+                        res["user_partner"] = p2[1] if p2_0_id == uid else p2[0]
+                    res["opponent_name"] = self.get("team1_name", "Team 1")
+        else:
+            p1_data = self.get("player_1_data") or {}
+            p2_data = self.get("player_2_data") or {}
+            p1_uid = p1_data.get("uid") or getattr(self.get("player1", {}), "id", None)
+            p2_uid = p2_data.get("uid") or getattr(self.get("player2", {}), "id", None)
+
+            if uid == p1_uid:
+                res["opponent_name"] = p2_data.get("display_name") or "Opponent"
+                res["is_user_p1"] = True
+            elif uid == p2_uid:
+                res["opponent_name"] = p1_data.get("display_name") or "Opponent"
+                res["is_user_p1"] = True
+
+        return res
+
+    def get_user_result(self, user: Any) -> str | None:
+        """Return the match result for the given user ('win', 'loss', or None)."""
+        uid = (
+            user.get("uid")
+            if user and hasattr(user, "get")
+            else getattr(user, "uid", None)
+        )
+        if not uid:
+            return self.get("user_result")
+
+        s1 = self.get("player1_score", 0)
+        s2 = self.get("player2_score", 0)
+        if s1 == s2:
+            return None
+
+        is_p1 = False
+        if self.is_doubles:
+            p1 = self.get("player1", [])
+            p1_ids = [
+                p.get("id") if isinstance(p, dict) else getattr(p, "id", None)
+                for p in p1
+            ]
+            is_p1 = uid in p1_ids
+        else:
+            p1_data = self.get("player_1_data") or {}
+            p1_uid = p1_data.get("uid") or getattr(self.get("player1", {}), "id", None)
+            is_p1 = uid == p1_uid
+
+        if s1 > s2:
+            return "win" if is_p1 else "loss"
+        return "loss" if is_p1 else "win"
+
+    def get_score_display(self, user: Any) -> tuple[int, int]:
+        """Return (user_score, opponent_score) tuple."""
+        uid = (
+            user.get("uid")
+            if user and hasattr(user, "get")
+            else getattr(user, "uid", None)
+        )
+        s1 = self.get("player1_score", 0)
+        s2 = self.get("player2_score", 0)
+
+        if self.is_doubles:
+            p1 = self.get("player1", [])
+            p1_ids = [
+                p.get("id") if isinstance(p, dict) else getattr(p, "id", None)
+                for p in p1
+            ]
+            in_team1 = uid in p1_ids if uid else False
+            return (s1, s2) if in_team1 else (s2, s1)
+        else:
+            p1_data = self.get("player_1_data") or {}
+            p1_uid = p1_data.get("uid") or getattr(self.get("player1", {}), "id", None)
+            is_p1 = uid == p1_uid
+            return (s1, s2) if is_p1 else (s2, s1)
+
+
 @dataclass
 class MatchSubmission:
     """Represents a match submission."""

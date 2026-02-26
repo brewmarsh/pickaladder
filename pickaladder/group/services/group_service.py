@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import secrets
-from typing import Any
+from typing import Any, cast
 
 from firebase_admin import firestore, storage
 from flask import current_app, url_for
@@ -260,7 +260,11 @@ class GroupService:
         if not owner_ref:
             return None
         owner_doc = owner_ref.get()
-        return owner_doc.to_dict() if owner_doc.exists else None
+        if owner_doc.exists:
+            data = owner_doc.to_dict()
+            data["id"] = owner_doc.id
+            return data
+        return None
 
     @staticmethod
     def get_group_details(
@@ -276,7 +280,7 @@ class GroupService:
         if not group.exists:
             raise GroupNotFound("Group not found.")
 
-        group_data = group.to_dict()
+        group_data = cast(dict[str, Any], group.to_dict() or {})
         group_data["id"] = group.id
         user_ref = db.collection("users").document(user_id)
 
