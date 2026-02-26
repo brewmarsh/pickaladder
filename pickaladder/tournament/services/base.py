@@ -18,20 +18,21 @@ class TournamentBase:
     """Base class with shared helpers for tournament services."""
 
     @staticmethod
-    def _enrich_tournament(doc: Any) -> dict[str, Any]:
+    def _enrich_tournament(doc: Any) -> Any:
         """Format tournament data for display."""
+        from pickaladder.tournament.models import Tournament
+
         data = cast(dict[str, Any], doc.to_dict() or {})
         data["id"] = doc.id
         raw_date = data.get("start_date") or data.get("date")
         if raw_date and hasattr(raw_date, "to_datetime"):
             data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
 
-        if "venue_name" in data:
-            data["location_data"] = {
-                "name": data.get("venue_name"),
-                "address": data.get("address"),
-            }
-        return data
+        # Compatibility for legacy templates using 'location' instead of 'venue_name'
+        if "venue_name" in data and not data.get("location"):
+            data["location"] = data["venue_name"]
+
+        return Tournament(data)
 
     @staticmethod
     def _get_tournament_owner_id(data: dict[str, Any]) -> str | None:
