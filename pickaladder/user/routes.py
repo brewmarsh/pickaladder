@@ -253,7 +253,11 @@ def cancel_request(target_id: str) -> Any:
 def api_dashboard() -> Any:
     """Provide dashboard data as JSON."""
     user_id = g.user["uid"]
-    data = UserService.get_dashboard_data(firestore.client(), user_id)
+    # The JSON API should probably still include everything for backwards compatibility
+    # and because it's usually used by clients that expect a full payload.
+    data = UserService.get_dashboard_data(
+        firestore.client(), user_id, include_activity=True
+    )
     streak = data["stats"]["current_streak"]
     s_type = data["stats"]["streak_type"]
     return jsonify(
