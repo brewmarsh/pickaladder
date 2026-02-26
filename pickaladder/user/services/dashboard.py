@@ -30,15 +30,30 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
 
-def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
+def get_dashboard_data(
+    db: Client, user_id: str, include_activity: bool = False
+) -> dict[str, Any]:
     """Aggregate all data required for the user dashboard."""
     from pickaladder.user.helpers import calculate_onboarding_progress
 
-    # 1. Fetch user and vanity stats
+    # 1. Fetch user and vanity stats (Keep synchronous as they are fast)
     user_data, vanity_metrics = _fetch_vanity_stats(db, user_id)
 
-    # 2. Fetch match activity
-    match_data = _fetch_recent_activity(db, user_id)
+    # 2. Fetch match activity (Fast path: just check if matches exist for onboarding)
+    user_stats = user_data.get("stats") or {}
+    total_matches = user_stats.get("wins", 0) + user_stats.get("losses", 0)
+
+    match_data = (
+        _fetch_recent_activity(db, user_id)
+        if include_activity
+        else {
+            "matches": [],
+            "next_cursor": None,
+            "current_streak": 0,
+            "streak_type": "",
+            "recent_opponents": [],
+        }
+    )
 
     # 3. Fetch social and tournament data
     social_data = _fetch_social_and_tournaments(db, user_id)
@@ -46,7 +61,7 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
     # 4. Calculate Onboarding Progress
     onboarding_progress = calculate_onboarding_progress(
         user_data,
-        len(match_data["matches"]),
+        total_matches,
         len(social_data["group_rankings"]),
         len(social_data["friends"]),
     )
@@ -56,10 +71,12 @@ def get_dashboard_data(db: Client, user_id: str) -> dict[str, Any]:
         **vanity_metrics,
         "current_streak": match_data["current_streak"],
         "streak_type": match_data["streak_type"],
-        "processed_matches": [
-            {"doc": d, "data": d.to_dict()} for d in match_data["recent_docs"]
-        ],
     }
+
+    if include_activity:
+        stats["processed_matches"] = [
+            {"doc": d, "data": d.to_dict()} for d in match_data.get("recent_docs", [])
+        ]
 
     return {
         "user": user_data,

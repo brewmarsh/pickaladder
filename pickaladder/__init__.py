@@ -186,6 +186,9 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(group_bp.bp)
     app.register_blueprint(teams_bp.bp)
     app.register_blueprint(tournament_bp.bp)
+    from .api import stats_routes
+
+    app.register_blueprint(stats_routes.bp)
     app.register_blueprint(error_handlers.error_handlers_bp)
 
     # make url_for('index') == url_for('auth.login')
