@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any, cast
 from flask import current_app
 from werkzeug.utils import secure_filename
 
+from firebase_admin import firestore
+
 from pickaladder.user.helpers import smart_display_name
 
 if TYPE_CHECKING:
@@ -70,23 +72,15 @@ class TournamentBase:
     def _fetch_owned_tournaments(db: Client, user_ref: Any) -> list[Any]:
         """Query tournaments owned by the user."""
         return list(
-            db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
-            .stream()
+            db.collection("tournaments").where("ownerRef", "==", user_ref).stream()
         )
 
     @staticmethod
     def _fetch_participating_tournaments(db: Client, user_uid: str) -> list[Any]:
         """Query tournaments where the user is a participant."""
-        from firebase_admin import firestore
-
         return list(
             db.collection("tournaments")
-            .where(
-                filter=firestore.FieldFilter(
-                    "participant_ids", "array_contains", user_uid
-                )
-            )
+            .where("participant_ids", "array_contains", user_uid)
             .stream()
         )
 

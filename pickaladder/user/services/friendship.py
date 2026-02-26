@@ -83,8 +83,8 @@ def get_user_pending_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
     user_ref = db.collection("users").document(user_id)
     query = (
         user_ref.collection("friends")
-        .where(filter=firestore.FieldFilter("status", "==", "pending"))
-        .where(filter=firestore.FieldFilter("initiator", "==", False))
+        .where("status", "==", "pending")
+        .where("initiator", "==", False)
     )
     request_ids = [doc.id for doc in query.stream()]
     return _fetch_users_by_ids(db, request_ids)
@@ -95,8 +95,8 @@ def get_user_sent_requests(db: Client, user_id: str) -> list[dict[str, Any]]:
     user_ref = db.collection("users").document(user_id)
     query = (
         user_ref.collection("friends")
-        .where(filter=firestore.FieldFilter("status", "==", "pending"))
-        .where(filter=firestore.FieldFilter("initiator", "==", True))
+        .where("status", "==", "pending")
+        .where("initiator", "==", True)
     )
     request_ids = [doc.id for doc in query.stream()]
     return _fetch_users_by_ids(db, request_ids)
@@ -169,9 +169,9 @@ def get_friends_page_data(db: Client, user_id: str) -> dict[str, Any]:
     f_ref = db.collection("users").document(user_id).collection("friends")
 
     def get_ids_by_filter(status: str, initiator: bool | None = None) -> list[str]:
-        q = f_ref.where(filter=firestore.FieldFilter("status", "==", status))
+        q = f_ref.where("status", "==", status)
         if initiator is not None:
-            q = q.where(filter=firestore.FieldFilter("initiator", "==", initiator))
+            q = q.where("initiator", "==", initiator)
         return [doc.id for doc in q.stream()]
 
     return {

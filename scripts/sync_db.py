@@ -1,8 +1,10 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """
 Database synchronization script to mirror Production data to the Beta environment.
 """
 
-from __future__ import annotations
 
 import os
 import sys

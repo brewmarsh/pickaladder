@@ -39,6 +39,12 @@ jobs:
           format: 'table'
           output: 'trivy-results.txt'
           severity: 'HIGH,CRITICAL'
+          db-repository: 'public.ecr.aws/aquasecurity/trivy-db'
+          db-repository: public.ecr.aws/aquasecurity/trivy-db
+          db-repository: 'public.ecr.aws/aquasecurity/trivy-db'
+          db-repository: 'public.ecr.aws/aquasecurity/trivy-db'
+          db-repository: public.ecr.aws/aquasecurity/trivy-db
+          db-repository: 'public.ecr.aws/aquasecurity/trivy-db'
 
       - name: Upload Scan Results
         uses: actions/upload-artifact@v4

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Service layer for group operations and data orchestration."""
 
-from __future__ import annotations
 
 import logging
 import secrets
@@ -339,9 +340,7 @@ class GroupService:
     ) -> list[Any]:
         """Fetch friends of the user who are not already in the group."""
         friends_query = (
-            user_ref.collection("friends")
-            .where(filter=firestore.FieldFilter("status", "==", "accepted"))
-            .stream()
+            user_ref.collection("friends").where("status", "==", "accepted").stream()
         )
         friend_ids = {doc.id for doc in friends_query}
         eligible_friend_ids = list(friend_ids - member_ids)
@@ -362,7 +361,7 @@ class GroupService:
         """Fetch and enrich recent matches for a group."""
         matches_ref = db.collection("matches")
         matches_query = (
-            matches_ref.where(filter=firestore.FieldFilter("groupId", "==", group_id))
+            matches_ref.where("groupId", "==", group_id)
             .order_by("matchDate", direction=firestore.Query.DESCENDING)
             .limit(20)
         )
@@ -631,7 +630,7 @@ class GroupService:
         invites_ref = db.collection("group_invites")
         query = invites_ref.where(
             filter=firestore.FieldFilter("group_id", "==", group_id)
-        ).where(filter=firestore.FieldFilter("used", "==", False))
+        ).where("used", "==", False)
 
         pending = []
         for doc in query.stream():

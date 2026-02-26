@@ -1,6 +1,8 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """Initialize the Flask app and its extensions."""
 
-from __future__ import annotations
 
 __version__ = "0.10.0"
 

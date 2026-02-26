@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
+from firebase_admin import firestore
+
 from pickaladder.utils import send_email
 
 from .base import TournamentBase
@@ -131,10 +133,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     def _has_matches(db: Client, t_id: str) -> bool:
         """Check if any matches exist for a tournament."""
         query = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("tournamentId", "==", t_id))
-            .limit(1)
-            .stream()
+            db.collection("matches").where("tournamentId", "==", t_id).limit(1).stream()
         )
         return any(query)
 
@@ -381,7 +380,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             db.collection("tournaments")
             .document(t_id)
             .collection("teams")
-            .where(filter=firestore.FieldFilter("status", "==", "CONFIRMED"))
+            .where("status", "==", "CONFIRMED")
             .stream()
         )
         return [

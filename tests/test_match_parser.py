@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Tests for the match parser service."""
 
-from __future__ import annotations
 
 import unittest
 

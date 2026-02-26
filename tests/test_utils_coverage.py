@@ -1,4 +1,5 @@
 from __future__ import annotations
+from firebase_admin import firestore
 
 import unittest
 from datetime import datetime, timedelta, timezone

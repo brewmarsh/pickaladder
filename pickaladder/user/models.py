@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Data models for the user blueprint."""
 
-from __future__ import annotations
 
 from collections import UserDict
 from typing import Any, TypedDict

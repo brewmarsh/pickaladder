@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Utility functions for the group blueprint."""
 
-from __future__ import annotations
 
 import operator
 import secrets
@@ -13,7 +14,7 @@ from firebase_admin import firestore
 
 if TYPE_CHECKING:
     from flask import Flask
-from google.cloud.firestore import FieldFilter
+
 
 from pickaladder.core.constants import (
     FIRESTORE_BATCH_LIMIT,
@@ -255,11 +256,7 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
     if not member_refs:
         return []
 
-    stream = (
-        db.collection("matches")
-        .where(filter=FieldFilter("groupId", "==", group_id))
-        .stream()
-    )
+    stream = db.collection("matches").where("groupId", "==", group_id).stream()
     all_matches = list(stream)
     current_leaderboard = _calculate_leaderboard_from_matches(all_matches, member_refs)
 
@@ -405,9 +402,7 @@ def _pad_trend_datasets(datasets_dict: dict[str, Any], unique_dates: list[str]) 
 def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
     """Generate data for a leaderboard trend chart."""
     db = firestore.client()
-    query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
-    )
+    query = db.collection("matches").where("groupId", "==", group_id)
     matches = [m for m in query.stream() if m.to_dict().get("matchDate")]
     matches.sort(key=lambda x: x.to_dict().get("matchDate"))
     if not matches:
@@ -511,9 +506,7 @@ def get_head_to_head_stats(
 ) -> dict[str, Any]:
     """Calculates head-to-head statistics for two players in doubles matches."""
     db = firestore.client()
-    query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
-    )
+    query = db.collection("matches").where("groupId", "==", group_id)
     all_matches_in_group = list(query.stream())
 
     h2h_stats: dict[str, Any] = {
@@ -607,9 +600,7 @@ def get_user_group_stats(group_id: str, user_id: str) -> dict[str, Any]:
         )
 
     db = firestore.client()
-    query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
-    )
+    query = db.collection("matches").where("groupId", "==", group_id)
     all_matches = list(query.stream())
 
     curr, long = _calculate_all_time_streaks(

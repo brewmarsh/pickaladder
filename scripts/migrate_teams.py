@@ -1,3 +1,6 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """
 This script migrates existing doubles matches to use the new Team data model.
 
@@ -9,7 +12,6 @@ This script migrates existing doubles matches to use the new Team data model.
 - Includes a verification step at the end to confirm the migration.
 """
 
-from __future__ import annotations
 
 import json
 import os

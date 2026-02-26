@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Service layer for team-related operations."""
 
-from __future__ import annotations
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
@@ -84,7 +85,7 @@ class TeamService:
             # Check if a team with the new member combination already exists
             existing_team_query = (
                 db.collection("teams")
-                .where(filter=firestore.FieldFilter("member_ids", "==", new_member_ids))
+                .where("member_ids", "==", new_member_ids)
                 .stream()
             )
 
@@ -215,8 +216,8 @@ class TeamService:
     def _fetch_team_matches(db: Client, team_id: str) -> list[dict[str, Any]]:
         """Fetch recent matches and opponent details for a team."""
         matches_ref = db.collection("matches")
-        q1 = matches_ref.where(filter=firestore.FieldFilter("team1Id", "==", team_id))
-        q2 = matches_ref.where(filter=firestore.FieldFilter("team2Id", "==", team_id))
+        q1 = matches_ref.where("team1Id", "==", team_id)
+        q2 = matches_ref.where("team2Id", "==", team_id)
 
         all_docs = {d.id: d for d in list(q1.stream()) + list(q2.stream())}
         sorted_docs = sorted(

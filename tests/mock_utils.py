@@ -1,3 +1,5 @@
+from firebase_admin import firestore
+
 """Mock utilities for Firestore and Auth."""
 
 import unittest.mock

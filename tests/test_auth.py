@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Tests for the auth blueprint."""
 
-from __future__ import annotations
 
 import re
 import unittest

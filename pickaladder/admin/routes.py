@@ -1,3 +1,5 @@
+from firebase_admin import firestore
+
 """Admin routes for the application."""
 
 import datetime
@@ -163,10 +165,7 @@ def _lookup_user_by_identifier(
         return user_doc.id, user_doc.to_dict().get("email")
 
     users = list(
-        db.collection("users")
-        .where(filter=firestore.FieldFilter("email", "==", identifier))
-        .limit(1)
-        .stream()
+        db.collection("users").where("email", "==", identifier).limit(1).stream()
     )
     if users:
         return users[0].id, users[0].to_dict().get("email")

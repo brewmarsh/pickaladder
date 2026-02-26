@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Tests for the Brag Card feature."""
 
-from __future__ import annotations
 
 import unittest
 from unittest.mock import MagicMock, patch

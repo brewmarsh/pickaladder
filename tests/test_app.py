@@ -1,6 +1,8 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """Tests for the app factory."""
 
-from __future__ import annotations
 
 import os
 import unittest

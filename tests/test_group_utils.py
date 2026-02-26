@@ -1,6 +1,8 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """Tests for the group utils."""
 
-from __future__ import annotations
 
 import unittest
 from unittest.mock import MagicMock, patch

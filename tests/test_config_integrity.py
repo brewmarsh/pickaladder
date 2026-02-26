@@ -1,6 +1,8 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """Test to ensure configuration integrity, specifically for Firebase mocking."""
 
-from __future__ import annotations
 
 import unittest
 from typing import Any

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Data models for the group blueprint."""
 
-from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 

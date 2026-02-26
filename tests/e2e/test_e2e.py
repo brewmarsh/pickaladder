@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """End-to-end test scenarios."""
 
-from __future__ import annotations
 
 from typing import Any
 

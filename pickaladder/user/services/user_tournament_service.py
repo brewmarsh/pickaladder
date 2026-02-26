@@ -52,7 +52,7 @@ def _fetch_member_tournaments(db: Client, user_id: str) -> list[DocumentSnapshot
     try:
         return list(
             db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+            .where("members", "array_contains", user_ref)
             .stream()
         )
     except Exception:

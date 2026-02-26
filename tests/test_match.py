@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Tests for the match blueprint."""
 
-from __future__ import annotations
 
 import datetime
 import unittest

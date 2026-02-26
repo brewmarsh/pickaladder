@@ -1,3 +1,5 @@
+from firebase_admin import firestore
+
 """Common utilities for tests."""
 
 import unittest.mock

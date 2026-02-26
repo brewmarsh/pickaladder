@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Data models for the match blueprint."""
 
-from __future__ import annotations
 
 from collections import UserDict
 from dataclasses import dataclass
@@ -73,7 +74,7 @@ class Score(TypedDict, total=False):
 
 class MatchDict(FirestoreDocument, Score, total=False):
     """
-    A match document in Firestore. 
+    A match document in Firestore.
     (Retained as a TypedDict for strict typing in backend services)
     """
 

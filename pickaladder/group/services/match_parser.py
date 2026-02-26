@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Service module for parsing match data."""
 
-from __future__ import annotations
 
 from typing import Any
 

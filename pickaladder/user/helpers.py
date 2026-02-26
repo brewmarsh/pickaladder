@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Helper functions for user-related data."""
 
-from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Tests for Tournament Match Integration."""
 
-from __future__ import annotations
 
 import unittest
 from typing import Any, cast

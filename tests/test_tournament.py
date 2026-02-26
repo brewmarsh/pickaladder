@@ -1,6 +1,8 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """Tests for the tournament blueprint using mockfirestore."""
 
-from __future__ import annotations
 
 import datetime
 import unittest

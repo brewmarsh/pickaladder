@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from firebase_admin import firestore
 from typing import TYPE_CHECKING, Any, cast
 
 from .base import TournamentBase
@@ -44,8 +45,8 @@ class TournamentTeams(TournamentBase):
             db.collection("tournaments")
             .document(t_id)
             .collection("teams")
-            .where(filter=firestore.FieldFilter("p2_uid", "==", uid))
-            .where(filter=firestore.FieldFilter("status", "==", "PENDING"))
+            .where("p2_uid", "==", uid)
+            .where("status", "==", "PENDING")
             .stream()
         )
         updated = False

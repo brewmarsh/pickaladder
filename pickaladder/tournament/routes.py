@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Routes for the tournament blueprint."""
 
-from __future__ import annotations
 
 import datetime
 from typing import Any, cast

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Security tests for match submission."""
 
-from __future__ import annotations
 
 import unittest
 from typing import TYPE_CHECKING, cast

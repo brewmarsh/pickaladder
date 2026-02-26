@@ -116,7 +116,7 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     # Query for public groups
     public_groups_query = (
         db.collection("groups")
-        .where(filter=firestore.FieldFilter("is_public", "==", True))
+        .where("is_public", "==", True)
         .order_by("createdAt", direction=firestore.Query.DESCENDING)
         .limit(limit)
     )
@@ -136,9 +136,7 @@ def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch all groups a user belongs to."""
     user_ref = db.collection("users").document(user_id)
     groups_query = (
-        db.collection("groups")
-        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
-        .stream()
+        db.collection("groups").where("members", "array_contains", user_ref).stream()
     )
     groups = []
     for doc in groups_query:
@@ -156,9 +154,7 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
     user_ref = db.collection("users").document(user_id)
     group_rankings = []
     my_groups_query = (
-        db.collection("groups")
-        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
-        .stream()
+        db.collection("groups").where("members", "array_contains", user_ref).stream()
     )
     for group_doc in my_groups_query:
         group_data = group_doc.to_dict()

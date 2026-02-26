@@ -1,6 +1,8 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """Service for user profile management."""
 
-from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING, Any

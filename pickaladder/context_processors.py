@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Context processors for the Flask application."""
 
-from __future__ import annotations
 
 import os
 from datetime import datetime

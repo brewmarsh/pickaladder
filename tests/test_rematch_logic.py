@@ -1,6 +1,8 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """Tests for the rematch logic in match recording."""
 
-from __future__ import annotations
 
 import unittest
 from typing import Any

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Tests for dashboard tournament fetching."""
 
-from __future__ import annotations
 
 import datetime
 import unittest

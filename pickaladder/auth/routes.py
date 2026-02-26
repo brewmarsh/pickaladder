@@ -1,3 +1,5 @@
+from firebase_admin import firestore
+
 """Routes for authentication."""
 
 import re
@@ -148,12 +150,7 @@ def load_user_from_auth_source() -> None:
 # TODO: Add type hints for Agent clarity
 def _is_username_taken(db: Any, username: str) -> bool:
     """Check if username is already taken in Firestore."""
-    taken = (
-        db.collection("users")
-        .where(filter=firestore.FieldFilter("username", "==", username))
-        .limit(1)
-        .get()
-    )
+    taken = db.collection("users").where("username", "==", username).limit(1).get()
     return len(list(taken)) > 0
 
 
@@ -312,12 +309,7 @@ def login() -> Any:
     current_app.logger.info("Login page loaded")
     db = firestore.client()
     # Check if an admin user exists to determine if we should run install
-    admin_query = (
-        db.collection("users")
-        .where(filter=firestore.FieldFilter("isAdmin", "==", True))
-        .limit(1)
-        .get()
-    )
+    admin_query = db.collection("users").where("isAdmin", "==", True).limit(1).get()
     if not admin_query:
         return redirect(url_for("auth.install"))
 
@@ -331,12 +323,7 @@ def _generate_unique_username(db: Any, base_username: str) -> str:
     """Generate a unique username by appending a number if the base username exists."""
     username = base_username
     i = 1
-    while (
-        db.collection("users")
-        .where(filter=firestore.FieldFilter("username", "==", username))
-        .limit(1)
-        .get()
-    ):
+    while db.collection("users").where("username", "==", username).limit(1).get():
         username = f"{base_username}{i}"
         i += 1
     return username
@@ -485,12 +472,7 @@ def _promote_existing_user_to_admin(db: Any, email: str) -> bool:
 
 def _check_admin_exists(db: Any) -> bool:
     """Check if any admin user exists in Firestore."""
-    admin_query = (
-        db.collection("users")
-        .where(filter=firestore.FieldFilter("isAdmin", "==", True))
-        .limit(1)
-        .get()
-    )
+    admin_query = db.collection("users").where("isAdmin", "==", True).limit(1).get()
     return len(list(admin_query)) > 0
 
 

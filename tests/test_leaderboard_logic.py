@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Tests for the global leaderboard filtering logic."""
 
-from __future__ import annotations
 
 import unittest
 from unittest.mock import MagicMock, patch

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Utility functions for tournament management."""
 
-from __future__ import annotations
 
 from typing import Any, cast
 
@@ -11,11 +12,7 @@ from pickaladder.user.helpers import smart_display_name
 
 def fetch_tournament_matches(db: Any, tournament_id: str) -> Any:
     """Fetch all match documents associated with the tournament_id."""
-    return (
-        db.collection("matches")
-        .where(filter=firestore.FieldFilter("tournamentId", "==", tournament_id))
-        .stream()
-    )
+    return db.collection("matches").where("tournamentId", "==", tournament_id).stream()
 
 
 def _get_match_participant_ids(

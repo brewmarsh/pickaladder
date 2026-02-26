@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Service for user dashboard data aggregation."""
 
-from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Tests for the Design System Styleguide."""
 
-from __future__ import annotations
 
 import unittest
 from typing import Any

@@ -126,7 +126,7 @@ class MatchQueryService(
 
         query = (
             db.collection("matches")
-            .where(filter=firestore.FieldFilter("participants", "array_contains", uid))
+            .where("participants", "array_contains", uid)
             .order_by("matchDate", direction=firestore.Query.DESCENDING)
             .limit(limit)
         )

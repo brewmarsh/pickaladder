@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Test to verify Firebase Storage configuration."""
 
-from __future__ import annotations
 
 import os
 import unittest

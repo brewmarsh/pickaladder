@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Routes for the main blueprint."""
 
-from __future__ import annotations
 
 from typing import TYPE_CHECKING
 

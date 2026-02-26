@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """End-to-end tests for tournament features."""
 
-from __future__ import annotations
 
 import re
 from typing import Any

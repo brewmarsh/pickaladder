@@ -76,8 +76,8 @@ class MatchCandidateService:
         """Fetch pending invite emails for a group."""
         invites = (
             db.collection("group_invites")
-            .where(filter=firestore.FieldFilter("group_id", "==", group_id))
-            .where(filter=firestore.FieldFilter("used", "==", False))
+            .where("group_id", "==", group_id)
+            .where("used", "==", False)
             .stream()
         )
         emails: list[str] = []
@@ -93,9 +93,7 @@ class MatchCandidateService:
         candidates: set[str] = set()
         for i in range(0, len(emails), 30):
             users = (
-                db.collection("users")
-                .where(filter=firestore.FieldFilter("email", "in", emails[i : i + 30]))
-                .stream()
+                db.collection("users").where("email", "in", emails[i : i + 30]).stream()
             )
             candidates.update(u.id for u in users)
         return candidates
@@ -114,9 +112,7 @@ class MatchCandidateService:
         )
 
         invites = (
-            db.collection("group_invites")
-            .where(filter=firestore.FieldFilter("inviter_id", "==", user_id))
-            .stream()
+            db.collection("group_invites").where("inviter_id", "==", user_id).stream()
         )
         emails = list(
             {

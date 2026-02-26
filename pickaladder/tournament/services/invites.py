@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+from firebase_admin import firestore
+
 from pickaladder.user.helpers import smart_display_name
 
 from .base import TournamentBase
@@ -24,7 +26,7 @@ class TournamentInvites(TournamentBase):
         g_ids = set()
         groups = (
             db.collection("groups")
-            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+            .where("members", "array_contains", user_ref)
             .stream()
         )
         for doc in groups:

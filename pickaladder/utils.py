@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Utility functions for the application."""
 
-from __future__ import annotations
 
 import smtplib
 from typing import Any

@@ -1,6 +1,8 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """Tests for PWA integration."""
 
-from __future__ import annotations
 
 import unittest
 from typing import TYPE_CHECKING

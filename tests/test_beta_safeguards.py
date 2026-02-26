@@ -1,6 +1,8 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """Tests for beta environment SEO safeguards."""
 
-from __future__ import annotations
 
 import os
 import unittest

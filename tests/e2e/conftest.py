@@ -1,6 +1,8 @@
+from __future__ import annotations
+from firebase_admin import firestore
+
 """Test configuration and mocks for end-to-end tests."""
 
-from __future__ import annotations
 
 import importlib
 import os

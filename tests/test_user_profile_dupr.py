@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 """Test DUPR rating display on user profile."""
 
-from __future__ import annotations
 
 import unittest
 from unittest.mock import MagicMock, patch
