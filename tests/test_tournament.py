@@ -108,9 +108,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             data={
                 "name": "Summer Open",
                 "start_date": "2024-06-01",
-                "location": "Courtside",
+                "venue_name": "Courtside",
+                "address": "123 Court St",
                 "match_type": "singles",
-                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -125,6 +125,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         data = tournaments[0].to_dict()
         self.assertEqual(data["name"], "Summer Open")
         self.assertEqual(data["matchType"], "singles")
+        self.assertEqual(data["venue_name"], "Courtside")
+        self.assertEqual(data["address"], "123 Court St")
 
     def test_create_tournament_non_admin(self) -> None:
         """Test that a non-admin cannot create a tournament."""
@@ -136,9 +138,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             data={
                 "name": "Summer Open",
                 "start_date": "2024-06-01",
-                "location": "Courtside",
+                "venue_name": "Courtside",
                 "match_type": "singles",
-                "mode": "SINGLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -158,7 +159,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             {
                 "name": "Original Name",
                 "start_date": datetime.datetime(2024, 6, 1),
-                "location": "Original Location",
+                "venue_name": "Original Venue",
                 "matchType": "singles",
                 "ownerRef": user_ref,
                 "organizer_id": MOCK_USER_ID,
@@ -171,9 +172,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             data={
                 "name": "Updated Name",
                 "start_date": "2024-07-01",
-                "location": "Updated Location",
+                "venue_name": "Updated Venue",
+                "address": "456 Updated St",
                 "match_type": "doubles",
-                "mode": "DOUBLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
@@ -192,6 +193,8 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(data["name"], "Updated Name")
         self.assertEqual(data["mode"], "DOUBLES")
         self.assertEqual(data["matchType"], "doubles")
+        self.assertEqual(data["venue_name"], "Updated Venue")
+        self.assertEqual(data["address"], "456 Updated St")
 
     def test_edit_tournament_non_admin(self) -> None:
         """Test that a non-admin cannot edit a tournament."""
@@ -231,7 +234,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             {
                 "name": "Original Name",
                 "start_date": datetime.datetime(2024, 6, 1),
-                "location": "Original Location",
+                "venue_name": "Original Venue",
                 "matchType": "singles",
                 "ownerRef": user_ref,
                 "organizer_id": MOCK_USER_ID,
@@ -247,11 +250,9 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
             data={
                 "name": "Updated Name",
                 "start_date": "2024-07-01",
-                "location": "Updated Location",
                 "venue_name": "Updated Venue",
                 "address": "456 Updated St",
                 "match_type": "doubles",
-                "mode": "DOUBLES",
                 "format": "ROUND_ROBIN",
             },
             follow_redirects=True,
