@@ -28,7 +28,10 @@ class MatchCommandService(BaseRepository):
 
     @classmethod
     def record_match(
-        cls, db: Client, data: MatchSubmission | dict[str, Any], current_user: UserSession
+        cls,
+        db: Client,
+        data: MatchSubmission | dict[str, Any],
+        current_user: UserSession,
     ) -> MatchResult:
         """Process and record a match submission."""
         user_id = current_user["uid"]
@@ -36,15 +39,13 @@ class MatchCommandService(BaseRepository):
         MatchValidationService.validate_submission(db, sub, user_id)
 
         match_date = cls._parse_match_date(sub.match_date)
-        match_doc_data = cls._prepare_match_doc_base(
-            sub, user_id, match_date
-        )
+        match_doc_data = cls._prepare_match_doc_base(sub, user_id, match_date)
 
-        side1_ref, side2_ref = cls._resolve_match_participants(
-            db, sub, match_doc_data
-        )
+        side1_ref, side2_ref = cls._resolve_match_participants(db, sub, match_doc_data)
 
-        new_match_ref = cast("DocumentReference", db.collection(cls.COLLECTION_NAME).document())
+        new_match_ref = cast(
+            "DocumentReference", db.collection(cls.COLLECTION_NAME).document()
+        )
         batch = db.batch()
         cls._record_match_batch(
             db,

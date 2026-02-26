@@ -75,6 +75,8 @@ class TournamentBase:
     @staticmethod
     def _fetch_owned_tournaments(db: Client, user_ref: Any) -> list[Any]:
         """Query tournaments owned by the user."""
+        from firebase_admin import firestore
+
         return list(
             db.collection("tournaments")
             .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))

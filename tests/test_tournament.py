@@ -323,7 +323,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Edit Tournament", response.data)
-        self.assertIn(b"Tournament Controls", response.data)
+        self.assertIn(b"Tournament Management", response.data)
 
     def test_view_tournament_non_admin_no_edit_gear(self) -> None:
         """Test that a non-admin who is NOT owner does not see the edit gear."""
@@ -351,7 +351,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         # Non-admins (even owners) should not see these in this project's current design
         self.assertNotIn(b"Edit Tournament", response.data)
-        self.assertNotIn(b"Tournament Controls", response.data)
+        self.assertNotIn(b"Tournament Management", response.data)
 
     def test_view_tournament_with_invitable_users(self) -> None:
         """Test that only non-participant players are in the invitable list."""

@@ -121,7 +121,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     def _build_form_update_payload(fd: dict[str, Any]) -> dict[str, Any]:
         """Construct update dictionary from form data."""
         dt = TournamentService._parse_form_date(fd.get("start_date"))
-        m_type = fd.get("match_type") or (fd.get("mode") or "singles").lower()
+        m_type = str(fd.get("match_type") or fd.get("mode") or "singles").lower()
         return {
             "name": fd.get("name"),
             "date": dt,
