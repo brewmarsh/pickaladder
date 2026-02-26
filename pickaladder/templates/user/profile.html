@@ -3,8 +3,8 @@
 {% block content %}
 <div class="mt-4">
     <div class="dashboard-columns">
-        <div class="dashboard-column-right flex-1 min-w-300">
-            <div class="card text-center mb-4 border-none shadow-sm">
+        <div class="dashboard-column-right" style="flex: 1; min-width: 300px;">
+            <div class="card text-center mb-4 border-0 shadow-sm">
                 <div class="card-body">
                     <img src="{{ profile_user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl mb-3"
                         onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
@@ -19,10 +19,11 @@
                                 {{ dupr if dupr is not none else 'Unrated' }}
                                 {% if profile_user.dupr_id %}
                                 <a href="{{ dupr_url_base }}{{ profile_user.dupr_id }}" target="_blank"
-                                    class="badge badge-primary ml-1 fs-xxs v-align-middle">View on DUPR</a>
+                                    class="badge badge-primary ml-1"
+                                    style="font-size: 0.7rem; vertical-align: middle;">View on DUPR</a>
                                 {% endif %}
                             </div>
-                            <small class="text-muted text-uppercase fs-xxs ls-1">
+                            <small class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">
                                 DUPR Rating
                                 {% if not profile_user.dupr_id %}
                                 <br><a href="{{ url_for('user.edit_profile') }}" class="small">Add DUPR ID</a>
@@ -30,10 +31,11 @@
                             </small>
                         </div>
                         <div class="text-left">
-                            <span class="badge badge-volt d-block mb-1 fs-xs">Win Rate: {{
+                            <span class="badge badge-volt d-block mb-1" style="font-size: 0.75rem;">Win Rate: {{
                                 "%.0f"|format(win_rate) }}%</span>
                             <span
-                                class="badge {{ 'badge-volt' if streak_type == 'W' else 'badge-danger' if streak_type == 'L' else 'badge-info' }} d-block fs-xs">Streak: {{ current_streak }}{{ streak_type if total_games >
+                                class="badge {{ 'badge-volt' if streak_type == 'W' else 'badge-danger' if streak_type == 'L' else 'badge-info' }} d-block"
+                                style="font-size: 0.75rem;">Streak: {{ current_streak }}{{ streak_type if total_games >
                                 0 else '' }}</span>
                         </div>
                     </div>
@@ -55,7 +57,7 @@
 
                     {% if h2h_stats %}
                     <div class="mt-4 pt-3 border-top">
-                        <h6 class="text-muted text-uppercase mb-2 fs-xs ls-1">Vs
+                        <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">Vs
                             You</h6>
                         <p class="h4 mb-0 font-weight-bold">
                             {{ h2h_stats.wins }}-{{ h2h_stats.losses }}
@@ -70,10 +72,10 @@
             </div>
         </div>
 
-        <div class="dashboard-column-left flex-2-5 min-w-0">
+        <div class="dashboard-column-left" style="flex: 2.5; min-width: 0;">
             <div class="dashboard-columns">
-                <div class="dashboard-column-left flex-2 min-w-0">
-                    <div class="card mb-4 border-none shadow-sm">
+                <div class="dashboard-column-left" style="flex: 2; min-width: 0;">
+                    <div class="card mb-4 border-0 shadow-sm">
                         <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
                             <h4 class="font-weight-bold">Match History</h4>
                         </div>
@@ -86,7 +88,8 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="text-truncate mr-2">
                                             <span
-                                                class="badge {{ 'badge-volt' if match.user_result == 'win' else 'badge-danger' if match.user_result == 'loss' else 'badge-secondary' }} mr-2 text-center badge-circle-stat">
+                                                class="badge {{ 'badge-volt' if match.user_result == 'win' else 'badge-danger' if match.user_result == 'loss' else 'badge-secondary' }} mr-2 text-center"
+                                                style="width: 28px; height: 28px; line-height: 20px; border-radius: 50%;">
                                                 {{ 'W' if match.user_result == 'win' else 'L' if match.user_result ==
                                                 'loss' else 'D' }}
                                             </span>
@@ -129,8 +132,8 @@
                     </div>
                 </div>
 
-                <div class="dashboard-column-right flex-1 min-w-0">
-                    <div class="card mb-4 border-none shadow-sm">
+                <div class="dashboard-column-right" style="flex: 1; min-width: 0;">
+                    <div class="card mb-4 border-0 shadow-sm">
                         <div class="card-header bg-white border-bottom-0 pt-4 pb-2">
                             <h4 class="font-weight-bold">Friends</h4>
                         </div>
@@ -141,7 +144,7 @@
                                 <a href="{{ url_for('user.view_user', user_id=friend.id) }}"
                                     class="list-group-item list-group-item-action border-0 px-4 py-2 d-flex align-items-center">
                                     <img src="{{ friend | avatar_url }}" alt="" class="avatar avatar-md mr-3">
-                                    <div class="text-truncate font-weight-medium fs-sm">{{ friend |
+                                    <div class="text-truncate font-weight-medium" style="font-size: 0.9rem;">{{ friend |
                                         display_name }}</div>
                                 </a>
                                 {% endfor %}

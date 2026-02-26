@@ -46,9 +46,7 @@ class MatchQueryService(
     @staticmethod
     def _process_match_document(match_doc: DocumentSnapshot, db: Client) -> Match:
         """Process a single match document into a formatted dictionary."""
-        from pickaladder.match.models import Match
-
-        match_data = cast(Any, match_doc.to_dict() or {})
+        match_data = cast("Match", match_doc.to_dict() or {})
         match_data["id"] = match_doc.id
         MatchFormatter.apply_common_match_formatting(match_data)
 
@@ -60,7 +58,7 @@ class MatchQueryService(
         else:
             MatchFormatter.format_singles_match_names(match_data, players)
 
-        return Match(match_data)
+        return match_data
 
     @staticmethod
     def _get_player_refs_from_matches(

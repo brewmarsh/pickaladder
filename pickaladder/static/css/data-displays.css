@@ -216,13 +216,3 @@
 .upset-mini-badge {
     font-size: 0.75rem;
 }
-
-.badge-circle-stat {
-    width: 28px;
-    height: 28px;
-    line-height: 20px;
-    border-radius: 50% !important;
-    padding: 4px 0 !important;
-    text-align: center;
-    display: inline-block;
-}

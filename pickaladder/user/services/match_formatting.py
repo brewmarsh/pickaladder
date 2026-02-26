@@ -42,10 +42,8 @@ def _build_match_dashboard_item(
     m_data: dict[str, Any],
     user_id: str,
     entity_maps: dict[str, dict[str, Any]],
-) -> Any:
+) -> dict[str, Any]:
     """Build a single match data item for the dashboard."""
-    from pickaladder.match.models import Match
-
     from .match_participant_service import get_match_participants_info
     from .stats_utils import _get_match_winner_slot, _get_user_match_result
 
@@ -54,27 +52,25 @@ def _build_match_dashboard_item(
     t1_name, t2_name = _resolve_team_names(m_data, entity_maps["teams"])
     tid, t_name = _get_match_tournament_info(m_data, entity_maps)
 
-    return Match(
-        {
-            "id": match_doc.id,
-            "player1": p1,
-            "player2": p2,
-            "player1_score": m_data.get("player1Score", 0),
-            "player2_score": m_data.get("player2Score", 0),
-            "winner": win_slot,
-            "date": _format_match_date(m_data.get("matchDate")),
-            "is_group_match": bool(m_data.get("groupId")),
-            "match_type": m_data.get("matchType", "singles"),
-            "user_result": _get_user_match_result(m_data, user_id, win_slot),
-            "team1_name": t1_name,
-            "team2_name": t2_name,
-            "tournament_name": t_name,
-            "created_by": m_data.get("createdBy"),
-            "tournament_id": tid,
-            "player_1_data": m_data.get("player_1_data"),
-            "player_2_data": m_data.get("player_2_data"),
-        }
-    )
+    return {
+        "id": match_doc.id,
+        "player1": p1,
+        "player2": p2,
+        "player1_score": m_data.get("player1Score", 0),
+        "player2_score": m_data.get("player2Score", 0),
+        "winner": win_slot,
+        "date": _format_match_date(m_data.get("matchDate")),
+        "is_group_match": bool(m_data.get("groupId")),
+        "match_type": m_data.get("matchType", "singles"),
+        "user_result": _get_user_match_result(m_data, user_id, win_slot),
+        "team1_name": t1_name,
+        "team2_name": t2_name,
+        "tournament_name": t_name,
+        "created_by": m_data.get("createdBy"),
+        "tournament_id": tid,
+        "player_1_data": m_data.get("player_1_data"),
+        "player_2_data": m_data.get("player_2_data"),
+    }
 
 
 def _extract_user_refs(m_data: dict[str, Any], user_refs: set[Any]) -> None:

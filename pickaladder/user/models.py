@@ -91,9 +91,3 @@ class UserSession(UserDict, UserMixin):
 
         # Fallback to "default"
         return "default"
-
-    @property
-    def has_custom_avatar(self) -> bool:
-        """Return True if the user has a custom profile picture."""
-        pic = self.get("profilePictureUrl")
-        return bool(pic and pic != "default")

@@ -10,22 +10,23 @@
     {# Section: Tournament Invites (Top Priority Alert Banner) #}
     {% if pending_tournament_invites %}
     {% for tournament in pending_tournament_invites %}
-    <div class="game-card tournament-invite-card mb-3 card-accent-border d-flex align-items-center p-3">
-        <div class="flex-2">
-            <div class="fw-semibold fs-lg text-volt">🏆 You've been invited!</div>
-            <div class="fs-xl fw-bold mt-1">{{ tournament.name }}</div>
+    <div class="game-card tournament-invite-card"
+        style="margin-bottom: 20px; border-left: 5px solid var(--accent-color);">
+        <div style="flex: 2;">
+            <div style="font-weight: 600; font-size: 1.1rem; color: var(--accent-color);">🏆 You've been invited!</div>
+            <div style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">{{ tournament.name }}</div>
             <div class="text-muted small">Starts {{ tournament.date }}</div>
         </div>
-        <div class="flex-1 d-flex justify-content-end align-items-center gap-2">
+        <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
             <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post"
-                class="d-inline">
+                style="display: inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-volt w-auto m-0">Accept</button>
+                <button type="submit" class="btn btn-volt" style="width: auto; margin: 0;">Accept</button>
             </form>
             <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post"
-                class="d-inline">
+                style="display: inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-danger w-auto m-0">Decline</button>
+                <button type="submit" class="btn btn-danger" style="width: auto; margin: 0;">Decline</button>
             </form>
         </div>
     </div>
@@ -34,8 +35,8 @@
 
     {# Rookie Quest (Consolidated Onboarding) #}
     {% if onboarding_progress.percent < 100 or not onboarding_progress.has_match %}
-    <details class="card rookie-quest-card mb-4 card-accent-border" open>
-        <summary class="card-header d-flex justify-content-between align-items-center cursor-pointer list-style-none">
+    <details class="card rookie-quest-card mb-4" style="border-left: 5px solid var(--accent-color);" open>
+        <summary class="card-header d-flex justify-content-between align-items-center" style="cursor: pointer; list-style: none;">
             <h3 class="mb-0">Rookie Quest</h3>
             <i class="fas fa-chevron-down toggle-icon"></i>
         </summary>
@@ -55,8 +56,8 @@
                         {% set is_next = not quest.done and not ns.next_found %}
                         {% if is_next %}{% set ns.next_found = true %}{% endif %}
 
-                        <div class="list-group-item d-flex align-items-center py-3 {{ 'text-muted opacity-60' if quest.done else '' }}">
-                            <div class="quest-icon fs-xl w-30 text-center mr-3">
+                        <div class="list-group-item d-flex align-items-center {{ 'text-muted' if quest.done else '' }}" style="padding: 12px 0; border-color: var(--border-color); {{ 'opacity: 0.6;' if quest.done else '' }}">
+                            <div class="quest-icon" style="font-size: 1.2rem; width: 30px; text-align: center; margin-right: 12px;">
                                 {% if quest.done %}
                                     <i class="fas fa-check-circle text-success"></i>
                                 {% else %}
@@ -64,12 +65,12 @@
                                 {% endif %}
                             </div>
                             <div class="flex-grow-1 {{ 'strikethrough' if quest.done else '' }}">
-                                <div class="fs-md {{ 'fw-bold' if is_next else '' }}">{{ quest.title }}</div>
-                                <div class="text-muted small fs-sm">{{ quest.text }}</div>
+                                <div class="{{ 'fw-bold' if is_next else '' }}" style="font-size: 1rem;">{{ quest.title }}</div>
+                                <div class="text-muted small" style="font-size: 0.8rem;">{{ quest.text }}</div>
                             </div>
-                            <div class="ml-3">
+                            <div style="margin-left: 12px;">
                                 {% if not quest.done %}
-                                    <a href="{{ quest.link }}" class="btn {{ 'btn-volt pulse' if is_next else 'btn-outline-primary btn-sm' }} w-auto text-none m-0 py-1 px-2 fs-sm">
+                                    <a href="{{ quest.link }}" class="btn {{ 'btn-volt pulse' if is_next else 'btn-outline-primary btn-sm' }}" style="width: auto; min-width: 60px; text-transform: none; margin: 0; padding: 4px 8px; font-size: 0.8rem;">
                                         Go
                                     </a>
                                 {% endif %}
@@ -126,7 +127,7 @@
     {% if recent_opponents and onboarding_progress.percent == 100 %}
     <div class="card mb-4">
         <div class="card-body">
-            <h4 class="card-header card-header-no-border mb-0 pl-0">Jump Back In</h4>
+            <h4 class="card-header" style="border-bottom: none; margin-bottom: 0; padding-left: 0;">Jump Back In</h4>
             <div class="text-muted small mb-3">Recent Opponents</div>
             <div class="d-flex gap-3 mt-3">
                 {% for opponent in recent_opponents %}
@@ -205,7 +206,7 @@
                                             {% endif %}
                                             {{ user_score }} - {{ opp_score }}
                                             {% if match.tournament_name %}
-                                            <div class="text-muted small mt-1">🏆 {{ match.tournament_name }}</div>
+                                            <div class="text-muted small" style="margin-top: 4px;">🏆 {{ match.tournament_name }}</div>
                                             {% endif %}
                                         </div>
                                         {% if (match.created_by == user.uid and not match.tournament_id) or user.isAdmin %}
@@ -226,7 +227,7 @@
                     </div>
                     {% endif %}
                     {% else %}
-                    <p class="text-muted p-4 text-center">No recent matches found.</p>
+                    <p class="text-muted" style="padding: 20px; text-align: center;">No recent matches found.</p>
                     {% endif %}
                 </div>
             </div>
@@ -236,14 +237,14 @@
         <div class="dashboard-column-right">
             <div class="competition-stack">
                 {# Competitions Hub #}
-                <div class="card card-compact">
-                    <h3 class="mt-0 mb-3">Competitions</h3>
+                <div class="card card-compact" style="padding: 16px;">
+                    <h3 style="margin-top: 0; margin-bottom: 16px;">Competitions</h3>
                     {% if not active_tournaments and not group_rankings and not past_tournaments %}
                     <div class="text-center p-5">
-                        <div class="fs-giant mb-3">👨‍👩‍👧‍👦</div>
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">👨‍👩‍👧‍👦</div>
                         <h4>Find your squad</h4>
-                        <p class="text-muted mb-4">Join a group or tournament to start competing and climb the ranks!</p>
-                        <a href="{{ url_for('user.view_community') }}" class="btn btn-volt w-auto">Find a Group</a>
+                        <p class="text-muted" style="margin-bottom: 24px;">Join a group or tournament to start competing and climb the ranks!</p>
+                        <a href="{{ url_for('user.view_community') }}" class="btn btn-volt" style="width: auto;">Find a Group</a>
                     </div>
                     {% else %}
                     <div class="d-flex flex-column gap-3">
@@ -256,15 +257,16 @@
                         <div class="list-group list-group-flush">
                         {% for ranking in group_rankings %}
                         <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}"
-                            class="list-group-item list-group-item-action d-flex align-items-center py-2 px-3 border-bottom text-none color-inherit">
+                            class="list-group-item list-group-item-action"
+                            style="display: flex; align-items: center; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--border-color);">
                             {% if ranking.group_image %}
-                            <div class="profile-picture-container avatar-sm mr-3">
+                            <div class="profile-picture-container avatar-sm" style="margin-right: 12px;">
                                 <img src="{{ ranking.group_image }}" alt="{{ ranking.group_name }}" class="profile-picture">
                             </div>
                             {% else %}
-                            <span class="mr-3 fs-2xl">👥</span>
+                            <span style="margin-right: 12px; font-size: 1.25rem;">👥</span>
                             {% endif %}
-                            <div class="flex-grow-1">
+                            <div style="flex-grow: 1;">
                                 <div class="fw-bold">{{ ranking.group_name }}</div>
                                 <div class="text-muted small">Rank #{{ ranking.rank or '?' }}</div>
                             </div>
@@ -274,7 +276,7 @@
 
                         {# Section 3: Past Tournaments (History) #}
                         {% for tournament in past_tournaments %}
-                            <div class="opacity-80">
+                            <div style="opacity: 0.8;">
                                 {{ tournament_card(tournament) }}
                             </div>
                         {% endfor %}
@@ -283,24 +285,26 @@
                 </div>
 
                 {# Social Section #}
-                <div class="card card-compact">
-                    <h3 class="mt-0 mb-3">Social</h3>
+                <div class="card" style="padding: 16px;">
+                    <h3 style="margin-top: 0; margin-bottom: 16px;">Social</h3>
                     {% if requests %}
-                    <h4 class="fs-sm fw-bold mb-2">Friend Requests</h4>
-                    <div class="table-container shadow-none border mb-3 rounded-sm">
-                        <table class="table mt-0">
+                    <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Friend Requests</h4>
+                    <div class="table-container"
+                        style="box-shadow: none; border: 1px solid var(--border-color); margin-bottom: 16px; border-radius: 4px;">
+                        <table class="table" style="margin-top: 0;">
                             <tbody>
                                 {% for request in requests %}
                                 <tr>
-                                    <td class="p-2">
+                                    <td style="padding: 8px;">
                                         <a href="{{ url_for('user.view_user', user_id=request.id) }}"
-                                            class="fs-sm">{{ request.username }}</a>
+                                            style="font-size: 0.85rem;">{{ request.username }}</a>
                                     </td>
-                                    <td class="p-2 text-right">
+                                    <td style="padding: 8px; text-align: right;">
                                         <form action="{{ url_for('user.accept_request', requester_id=request.id) }}"
-                                            method="post" class="d-inline">
+                                            method="post" style="display: inline;">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-volt btn-sm p-1 px-2 fs-xs w-auto text-none">Accept</button>
+                                            <button type="submit" class="btn btn-volt btn-sm"
+                                                style="padding: 4px 8px; font-size: 0.75rem; width: auto; text-transform: none;">Accept</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -310,8 +314,8 @@
                     </div>
                     {% endif %}
 
-                    <h4 class="fs-sm fw-bold mb-2">Your Friends</h4>
-                    <div class="d-flex flex-wrap gap-2">
+                    <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Your Friends</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                         {% for friend in friends[:10] %}
                         <a href="{{ url_for('user.view_user', user_id=friend.id) }}" title="{{ friend.username }}">
                             <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="avatar avatar-md">
@@ -320,7 +324,8 @@
                         <p class="text-muted small">No friends yet.</p>
                         {% endfor %}
                     </div>
-                    <a href="{{ url_for('user.view_community') }}" class="btn btn-sm btn-outline-primary w-100 mt-3 text-none">Community Hub</a>
+                    <a href="{{ url_for('user.view_community') }}" class="btn btn-sm btn-outline-primary"
+                        style="width: 100%; margin-top: 12px; text-transform: none;">Community Hub</a>
                 </div>
             </div>
         </div>
@@ -413,7 +418,7 @@
 
             let tournamentHtml = '';
             if (match.tournament_name) {
-                tournamentHtml = `<div class="text-muted small mt-1">🏆 ${match.tournament_name}</div>`;
+                tournamentHtml = `<div class="text-muted small" style="margin-top: 4px;">🏆 ${match.tournament_name}</div>`;
             }
 
             let editLinkHtml = '';

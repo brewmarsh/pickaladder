@@ -18,10 +18,10 @@ class TournamentForm(FlaskForm):
     venue_name = StringField("Venue Name", validators=[DataRequired()])
     address = StringField("Address", validators=[Optional()])
     match_type = RadioField(
-        "Match Type",
-        choices=[("singles", "👤 Singles (1v1)"), ("doubles", "👥 Doubles (2v2)")],
+        "Competition Mode",
+        choices=[("SINGLES", "Singles (1v1)"), ("DOUBLES", "Doubles (2v2)")],
         validators=[DataRequired()],
-        default="singles",
+        default="SINGLES",
     )
     format = SelectField(
         "Tournament Format",
