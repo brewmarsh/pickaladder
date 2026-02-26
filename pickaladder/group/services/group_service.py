@@ -63,7 +63,9 @@ class GroupService:
             owner_docs = db.get_all(unique_owner_refs)
             owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
 
-        def enrich_group(group_doc: Any) -> dict[str, Any]:
+        def enrich_group(group_doc: Any) -> Any:
+            from pickaladder.group.models import Group
+
             group_data: dict[str, Any] = group_doc.to_dict()
             group_id = group_doc.id
             group_data["id"] = group_id
@@ -87,7 +89,7 @@ class GroupService:
                 group_data["owner"] = owners_data[owner_ref.id]
             else:
                 group_data["owner"] = GUEST_USER
-            return group_data
+            return Group(group_data)
 
         return [{"group": enrich_group(doc)} for doc in my_group_docs]
 
@@ -313,8 +315,10 @@ class GroupService:
         if is_member:
             pending_members = GroupService._get_pending_invites(db, group_id)
 
+        from pickaladder.group.models import Group
+
         return {
-            "group": group_data,
+            "group": Group(group_data),
             "group_id": group.id,
             "members": members,
             "owner": owner,

@@ -13,14 +13,13 @@
                 <h3 class="tournament-card-title">{{ tournament.name }}</h3>
                 <div class="card-badges d-flex align-items-center gap-2">
                     <span class="badge-outline text-volt">
-                        {# Normalizing matchType vs match_type for robustness #}
-                        {% set m_type = (tournament.matchType or tournament.match_type)|lower %}
-                        {% if m_type == 'doubles' %}
+                        {# Using refactored .is_doubles method #}
+                        {% if tournament.is_doubles %}
                             <i class="fas fa-users small"></i>
                         {% else %}
                             <i class="fas fa-user small"></i>
                         {% endif %}
-                        {{ m_type|title }}
+                        {{ (tournament.matchType or tournament.match_type)|title }}
                     </span>
                     <span class="status-dot status-{{ tournament.status }}" title="{{ tournament.status }}"></span>
                 </div>
@@ -29,19 +28,20 @@
             <div class="tournament-card-footer">
                 <p class="text-muted small mb-1 d-flex align-items-center gap-2">
                     <i class="fas fa-calendar-alt icon-fw"></i> 
-                    {{ tournament.date_display or tournament.date }}
+                    {# Using refactored .display_date method #}
+                    {{ tournament.display_date }}
                 </p>
                 <p class="text-muted small mb-0 d-flex align-items-center gap-2">
                     <i class="fas fa-map-marker-alt icon-fw"></i> 
-                    {# Priority: Venue Name -> Location Data -> Generic Location -> TBD #}
-                    {{ tournament.venue_name or (tournament.location_data.name if tournament.location_data else tournament.location) or 'TBD' }}
+                    {# Using refactored .location_display method #}
+                    {{ tournament.location_display }}
                 </p>
             </div>
         </div>
     </a>
 
-    {# Admin Actions: Kebab menu is absolute-positioned over the card link #}
-    {% if g.user and (g.user.uid == tournament.organizer_id or g.user.isAdmin) %}
+    {# Admin Actions: Using refactored .can_edit() permission check #}
+    {% if tournament.can_edit(g.user) %}
     <div class="dropdown kebab-menu tournament-card-actions">
         <button class="dropbtn" type="button" aria-label="Tournament actions">
             <i class="fas fa-ellipsis-v"></i>
