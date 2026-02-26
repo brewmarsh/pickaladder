@@ -15,15 +15,9 @@ class TournamentForm(FlaskForm):
         validators=[Optional(), FileAllowed(["jpg", "png", "jpeg"])],
     )
     start_date = DateField("Date", validators=[DataRequired()])
-    location = StringField("Location", validators=[DataRequired()])
-    venue_name = StringField("Venue Name", validators=[Optional()])
+    venue_name = StringField("Venue Name", validators=[DataRequired()])
     address = StringField("Address", validators=[Optional()])
-    match_type = SelectField(
-        "Match Type",
-        choices=[("singles", "Singles"), ("doubles", "Doubles")],
-        validators=[DataRequired()],
-    )
-    mode = RadioField(
+    match_type = RadioField(
         "Competition Mode",
         choices=[("SINGLES", "👤 Singles (1v1)"), ("DOUBLES", "👥 Doubles (2v2)")],
         validators=[DataRequired()],
