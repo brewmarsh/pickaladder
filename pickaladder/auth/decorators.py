@@ -5,6 +5,8 @@ from typing import Any, Callable, Optional
 
 from flask import flash, g, redirect, session, url_for
 
+from pickaladder.constants.messages import AUTH_MESSAGES
+
 
 # TODO: Add type hints for Agent clarity
 def login_required(
@@ -31,7 +33,7 @@ def login_required(
             if not g.get("user"):
                 return redirect(url_for("auth.login"))
             if admin_required and not session.get("is_admin"):
-                flash("You are not authorized to view this page.", "danger")
+                flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
                 return redirect(url_for("user.dashboard"))
             return func(*args, **kwargs)
 
@@ -54,7 +56,7 @@ def admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
         if not g.get("user"):
             return redirect(url_for("auth.login"))
         if not session.get("is_admin"):
-            flash("⚠️ Only administrators can create tournaments.", "danger")
+            flash(AUTH_MESSAGES["ADMIN_ONLY_TOURNAMENT"], "danger")
             return redirect(url_for("user.dashboard"))
         return f(*args, **kwargs)
 

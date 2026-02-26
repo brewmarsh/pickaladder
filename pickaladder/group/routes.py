@@ -17,6 +17,7 @@ from flask import (
 )
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.constants.messages import COMMON_MESSAGES, GROUP_MESSAGES
 from pickaladder.user import UserService
 
 from . import bp
@@ -73,10 +74,10 @@ def _handle_invite_friend_form(
     if form.validate_on_submit() and "friend" in request.form:
         try:
             GroupService.invite_friend(db, group_id, form.friend.data)
-            flash("Friend invited successfully.", "success")
+            flash(GROUP_MESSAGES["FRIEND_INVITE_SUCCESS"], "success")
             return form, redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
-            flash(f"An unexpected error occurred: {e}", "danger")
+            flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
     return form, None
 
 
@@ -93,12 +94,15 @@ def _handle_invite_email_form(
                 GroupService.invite_by_email(
                     db, group_id, group_name, email, name, g.user["uid"]
                 )
-                flash(f"Invitation is being sent to {email.lower()}.", "success")
+                flash(
+                    GROUP_MESSAGES["INVITATION_SENDING"].format(email=email.lower()),
+                    "success",
+                )
                 return invite_email_form, redirect(
                     url_for(".view_group", group_id=group_id)
                 )
         except Exception as e:
-            flash(f"An error occurred creating the invitation: {e}", "danger")
+            flash(GROUP_MESSAGES["INVITE_CREATE_ERROR"].format(error=e), "danger")
     return invite_email_form, None
 
 
@@ -118,10 +122,10 @@ def view_group(group_id: str) -> Any:
             db, group_id, g.user["uid"], player_a_id, player_b_id
         )
     except GroupNotFound:
-        flash("Group not found.", "danger")
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for(".view_groups"))
     except AccessDenied:
-        flash("You do not have permission to access this group.", "danger")
+        flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
         return redirect(url_for(".view_groups"))
 
     form, resp = _handle_invite_friend_form(db, group_id, context)
@@ -151,10 +155,10 @@ def create_group() -> Any:
             group_id = GroupService.create_group(
                 db, g.user["uid"], form.data, form.profile_picture.data
             )
-            flash("Group created successfully.", "success")
+            flash(GROUP_MESSAGES["CREATE_SUCCESS"], "success")
             return redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
-            flash(f"An unexpected error occurred: {e}", "danger")
+            flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
     return render_template("create_group.html", form=form)
 
 
@@ -184,13 +188,13 @@ def _handle_edit_group_form(
             GroupService.update_group(
                 db, group_id, g.user["uid"], form.data, form.profile_picture.data
             )
-            flash("Group updated successfully.", "success")
+            flash(GROUP_MESSAGES["UPDATE_SUCCESS"], "success")
             return form, redirect(url_for(".view_group", group_id=group_id))
         except AccessDenied:
-            flash("You do not have permission to edit this group.", "danger")
+            flash(GROUP_MESSAGES["EDIT_DENIED"], "danger")
             return form, redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
-            flash(f"An unexpected error occurred: {e}", "danger")
+            flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
     return form, None
 
 
@@ -203,7 +207,7 @@ def edit_group(group_id: str) -> Any:
     try:
         group_data = _get_group_for_edit(db, group_id)
     except GroupNotFound:
-        flash("Group not found.", "danger")
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for(".view_groups"))
     except AccessDenied as e:
         flash(str(e), "danger")
@@ -228,7 +232,7 @@ def resend_invite(token: str) -> Any:
     invite = invite_ref.get()
 
     if not invite.exists:
-        flash("Invite not found", "danger")
+        flash(GROUP_MESSAGES["INVITE_NOT_FOUND"], "danger")
         return redirect(url_for("auth.login"))
 
     data = invite.to_dict()
@@ -238,11 +242,11 @@ def resend_invite(token: str) -> Any:
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
     if not group.exists:
-        flash("Group not found", "danger")
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for("auth.login"))
 
     if not GroupService.is_group_admin(group.to_dict(), g.user["uid"]):
-        flash("Permission denied", "danger")
+        flash(GROUP_MESSAGES["PERMISSION_DENIED"], "danger")
         return redirect(url_for(".view_group", group_id=group_id))
 
     new_email = request.form.get("email")
@@ -268,7 +272,7 @@ def resend_invite(token: str) -> Any:
         token,
         email_data,
     )
-    flash(f"Resending invitation to {data.get('email')}...", "toast")
+    flash(GROUP_MESSAGES["INVITE_RESENDING"].format(email=data.get("email")), "toast")
     return redirect(url_for(".view_group", group_id=group_id))
 
 
@@ -281,7 +285,7 @@ def view_leaderboard_trend(group_id: str) -> Any:
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
     if not group.exists:
-        flash("Group not found.", "danger")
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for(".view_groups"))
 
     group_data = group.to_dict()
@@ -308,7 +312,7 @@ def delete_invite(token: str) -> Any:
     invite = invite_ref.get()
 
     if not invite.exists:
-        flash("Invite not found", "danger")
+        flash(GROUP_MESSAGES["INVITE_NOT_FOUND"], "danger")
         return redirect(url_for("auth.login"))
 
     group_id = invite.to_dict().get("group_id")
@@ -316,15 +320,15 @@ def delete_invite(token: str) -> Any:
     group = group_ref.get()
 
     if not group.exists:
-        flash("Group not found", "danger")
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for("auth.login"))
 
     if not GroupService.is_group_admin(group.to_dict(), g.user["uid"]):
-        flash("Permission denied", "danger")
+        flash(GROUP_MESSAGES["PERMISSION_DENIED"], "danger")
         return redirect(url_for(".view_group", group_id=group_id))
 
     invite_ref.delete()
-    flash("Invitation removed.", "success")
+    flash(GROUP_MESSAGES["INVITE_REMOVED"], "success")
     return redirect(url_for(".view_group", group_id=group_id))
 
 
@@ -338,12 +342,12 @@ def handle_invite(token: str) -> Any:
     invite = invite_ref.get()
 
     if not invite.exists:
-        flash("Invalid invitation link.", "danger")
+        flash(GROUP_MESSAGES["INVALID_LINK"], "danger")
         return redirect(url_for("auth.login"))
 
     invite_data = invite.to_dict()
     if invite_data.get("used"):
-        flash("This invitation has already been used.", "warning")
+        flash(GROUP_MESSAGES["INVITE_ALREADY_USED"], "warning")
         return redirect(url_for("auth.login"))
 
     group_id = invite_data.get("group_id")
@@ -364,10 +368,10 @@ def handle_invite(token: str) -> Any:
         # Friend other group members
         friend_group_members(db, group_id, user_ref)
 
-        flash("Welcome to the team!", "success")
+        flash(GROUP_MESSAGES["WELCOME"], "success")
         return redirect(url_for(".view_group", group_id=group_id))
     except Exception as e:
-        flash(f"An error occurred while joining the group: {e}", "danger")
+        flash(GROUP_MESSAGES["JOIN_ERROR"].format(error=e), "danger")
         return redirect(url_for("auth.login"))
 
 
@@ -380,21 +384,21 @@ def delete_group(group_id: str) -> Any:
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
     if not group.exists:
-        flash("Group not found.", "danger")
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for(".view_groups"))
 
     group_data = group.to_dict()
     owner_ref = group_data.get("ownerRef")
     if not owner_ref or owner_ref.id != g.user["uid"]:
-        flash("You do not have permission to delete this group.", "danger")
+        flash(GROUP_MESSAGES["DELETE_DENIED"], "danger")
         return redirect(url_for(".view_group", group_id=group.id))
 
     try:
         group_ref.delete()
-        flash("Group deleted successfully.", "success")
+        flash(GROUP_MESSAGES["DELETE_SUCCESS"], "success")
         return redirect(url_for(".view_groups"))
     except Exception as e:
-        flash(f"An unexpected error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
         return redirect(url_for(".view_group", group_id=group.id))
 
 
@@ -410,9 +414,9 @@ def join_group(group_id: str) -> Any:
     try:
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
         friend_group_members(db, group_id, user_ref)
-        flash("Successfully joined the group.", "success")
+        flash(GROUP_MESSAGES["JOIN_SUCCESS"], "success")
     except Exception as e:
-        flash(f"An error occurred while trying to join the group: {e}", "danger")
+        flash(GROUP_MESSAGES["JOIN_TRY_ERROR"].format(error=e), "danger")
 
     return redirect(url_for(".view_group", group_id=group_id))
 
@@ -428,9 +432,9 @@ def leave_group(group_id: str) -> Any:
 
     try:
         group_ref.update({"members": firestore.ArrayRemove([user_ref])})
-        flash("You have left the group.", "success")
+        flash(GROUP_MESSAGES["LEAVE_SUCCESS"], "success")
     except Exception as e:
-        flash(f"An error occurred while trying to leave the group: {e}", "danger")
+        flash(GROUP_MESSAGES["LEAVE_ERROR"].format(error=e), "danger")
 
     return redirect(url_for(".view_group", group_id=group_id))
 
@@ -442,11 +446,11 @@ def promote_member(group_id: str, user_id: str) -> Any:
     db = firestore.client()
     try:
         GroupService.promote_member(db, group_id, user_id, g.user["uid"])
-        flash("Member promoted to Captain.", "success")
+        flash(GROUP_MESSAGES["PROMOTED_CAPTAIN"], "success")
     except AccessDenied:
-        flash("Only the group owner can promote members.", "danger")
+        flash(GROUP_MESSAGES["PROMOTE_DENIED"], "danger")
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".view_group", group_id=group_id))
 
 
@@ -457,11 +461,11 @@ def demote_member(group_id: str, user_id: str) -> Any:
     db = firestore.client()
     try:
         GroupService.demote_member(db, group_id, user_id, g.user["uid"])
-        flash("Captain privileges revoked.", "success")
+        flash(GROUP_MESSAGES["REVOKED_CAPTAIN"], "success")
     except AccessDenied:
-        flash("Only the group owner can demote members.", "danger")
+        flash(GROUP_MESSAGES["DEMOTE_DENIED"], "danger")
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".view_group", group_id=group_id))
 
 
@@ -472,11 +476,11 @@ def remove_member(group_id: str, user_id: str) -> Any:
     db = firestore.client()
     try:
         GroupService.remove_member(db, group_id, user_id, g.user["uid"])
-        flash("Member removed from group.", "success")
+        flash(GROUP_MESSAGES["MEMBER_REMOVED"], "success")
     except AccessDenied as e:
         flash(str(e), "danger")
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".view_group", group_id=group_id))
 
 

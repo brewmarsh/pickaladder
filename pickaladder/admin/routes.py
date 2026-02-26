@@ -19,6 +19,11 @@ from flask import (
 from werkzeug.wrappers import Response
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.constants.messages import (
+    ADMIN_MESSAGES,
+    AUTH_MESSAGES,
+    COMMON_MESSAGES,
+)
 from pickaladder.match.models import MatchSubmission
 from pickaladder.match.services import MatchService
 from pickaladder.user import UserService
@@ -35,7 +40,7 @@ MIN_USERS_FOR_MATCH_GENERATION = 2
 def admin() -> Union[str, Response]:
     """Render the main admin dashboard."""
     if not g.user or (not g.user.get("isAdmin") and not g.get("is_impersonating")):
-        flash("You are not authorized to view this page.", "danger")
+        flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
         return redirect(url_for("auth.login"))
 
     db = firestore.client()
@@ -62,18 +67,18 @@ def merge_ghost() -> Response:
     ghost_email = request.form.get("ghost_email")
 
     if not target_user_id or not ghost_email:
-        flash("Target User ID and Ghost Email are required.", "danger")
+        flash(ADMIN_MESSAGES["MERGE_REQUIRED_FIELDS"], "danger")
         return redirect(url_for(".admin"))
 
     db = firestore.client()
     real_user_ref = db.collection("users").document(target_user_id)
     try:
         if UserService.merge_ghost_user(db, real_user_ref, ghost_email):
-            flash("Ghost user merged successfully", "success")
+            flash(ADMIN_MESSAGES["GHOST_MERGE_SUCCESS"], "success")
         else:
-            flash("Merge failed or ghost user not found", "danger")
+            flash(ADMIN_MESSAGES["GHOST_MERGE_FAILED"], "danger")
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
 
     return redirect(url_for(".admin"))
 
@@ -92,9 +97,9 @@ def announcement() -> Response:
             },
             merge=True,
         )
-        flash("Global announcement updated successfully.", "success")
+        flash(ADMIN_MESSAGES["ANNOUNCEMENT_UPDATED"], "success")
     except Exception as e:
-        flash(f"An error occurred while updating the announcement: {e}", "danger")
+        flash(ADMIN_MESSAGES["ANNOUNCEMENT_ERROR"].format(error=e), "danger")
     return redirect(url_for(".admin"))
 
 
@@ -105,12 +110,13 @@ def toggle_email_verification() -> Response:
     db = firestore.client()
     try:
         new_val = AdminService.toggle_setting(db, "enforceEmailVerification")
+        status = "enabled" if new_val else "disabled"
         flash(
-            f"Email verification requirement has been {'enabled' if new_val else 'disabled'}.",
+            ADMIN_MESSAGES["EMAIL_VERIFY_TOGGLED"].format(status=status),
             "success",
         )
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".admin"))
 
 
@@ -138,9 +144,9 @@ def admin_delete_match(match_id: str) -> Response:
     db = firestore.client()
     try:
         db.collection("matches").document(match_id).delete()
-        flash("Match deleted successfully.", "success")
+        flash(ADMIN_MESSAGES["MATCH_DELETE_SUCCESS"], "success")
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".admin_matches"))
 
 
@@ -177,9 +183,12 @@ def _perform_user_deletion(db: Any, uid: str, email: str | None) -> None:
     """Orchestrate the deletion of a user and flash results."""
     try:
         AdminService.delete_user(db, uid)
-        flash(f"User {email or uid} deleted.", "success")
+        flash(
+            ADMIN_MESSAGES["USER_DELETED_COUNT"].format(identifier=email or uid),
+            "success",
+        )
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
 
 
 @bp.route("/delete_user", methods=["POST"])
@@ -188,7 +197,7 @@ def admin_delete_user() -> Response:
     """Delete a user by ID or Email."""
     user_identifier = request.form.get("user_identifier")
     if not user_identifier:
-        flash("User ID or Email is required.", "danger")
+        flash(ADMIN_MESSAGES["USER_ID_EMAIL_REQUIRED"], "danger")
         return redirect(url_for(".admin"))
 
     db = firestore.client()
@@ -196,7 +205,10 @@ def admin_delete_user() -> Response:
     if uid:
         _perform_user_deletion(db, uid, email)
     else:
-        flash(f"User {user_identifier} not found.", "danger")
+        flash(
+            ADMIN_MESSAGES["USER_NOT_FOUND"].format(identifier=user_identifier),
+            "danger",
+        )
     return redirect(url_for(".admin"))
 
 
@@ -206,9 +218,9 @@ def delete_user(user_id: str) -> Response:
     """Delete a user from Firebase Auth and Firestore."""
     try:
         AdminService.delete_user(firestore.client(), user_id)
-        flash("User deleted successfully.", "success")
+        flash(ADMIN_MESSAGES["USER_DELETE_SUCCESS"], "success")
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".admin"))
 
 
@@ -218,9 +230,9 @@ def promote_user(user_id: str) -> Response:
     """Promote a user to admin status in Firestore."""
     try:
         name = AdminService.promote_user(firestore.client(), user_id)
-        flash(f"{name} has been promoted to admin.", "success")
+        flash(ADMIN_MESSAGES["ADMIN_PROMOTION"].format(name=name), "success")
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".admin"))
 
 
@@ -230,9 +242,9 @@ def verify_user(user_id: str) -> Response:
     """Manually verify a user's email."""
     try:
         AdminService.verify_user(firestore.client(), user_id)
-        flash("User email verified successfully.", "success")
+        flash(ADMIN_MESSAGES["EMAIL_VERIFIED_SUCCESS"], "success")
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".admin"))
 
 
@@ -263,9 +275,11 @@ def generate_users() -> str:
             }
             db.collection("users").document(user_record.uid).set(user_doc)
             new_users.append({"uid": user_record.uid, **user_doc})
-        flash(f"{len(new_users)} users generated successfully.", "success")
+        flash(
+            ADMIN_MESSAGES["USERS_GEN_SUCCESS"].format(count=len(new_users)), "success"
+        )
     except Exception as e:
-        flash(f"An error occurred while generating users: {e}", "danger")
+        flash(ADMIN_MESSAGES["USERS_GEN_ERROR"].format(error=e), "danger")
     return render_template("generated_users.html", users=new_users)
 
 
@@ -305,12 +319,12 @@ def generate_matches() -> Response:
     try:
         users = list(db.collection("users").limit(20).stream())
         if len(users) < MIN_USERS_FOR_MATCH_GENERATION:
-            flash("Not enough users to generate matches.", "warning")
+            flash(ADMIN_MESSAGES["NOT_ENOUGH_USERS_MATCHES"], "warning")
         else:
             count = _batch_generate_random_matches(db, users)
-            flash(f"{count} random matches generated.", "success")
+            flash(ADMIN_MESSAGES["RANDOM_MATCHES_GEN"].format(count=count), "success")
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".admin"))
 
 
@@ -322,13 +336,13 @@ def merge_players() -> Union[str, Response]:
     if request.method == "POST":
         sid, tid = request.form.get("source_id"), request.form.get("target_id")
         if not sid or not tid or sid == tid:
-            flash("Invalid Source or Target IDs.", "error")
+            flash(ADMIN_MESSAGES["INVALID_MERGE_IDS"], "error")
         else:
             try:
                 UserService.merge_users(db, sid, tid)
-                flash("Players merged successfully.", "success")
+                flash(ADMIN_MESSAGES["PLAYERS_MERGE_SUCCESS"], "success")
             except Exception as e:
-                flash(f"Error merging players: {e}", "error")
+                flash(ADMIN_MESSAGES["PLAYERS_MERGE_ERROR"].format(error=e), "error")
         return redirect(url_for(".merge_players"))
 
     users = sorted(
@@ -352,7 +366,7 @@ def impersonate(user_id: str) -> Response:
     session["impersonate_id"] = user_id
     doc = firestore.client().collection("users").document(user_id).get()
     name = doc.to_dict().get("name", "User") if doc.exists else "User"
-    flash(f"You are now impersonating {name}.", "success")
+    flash(ADMIN_MESSAGES["IMPERSONATION_START"].format(name=name), "success")
     return redirect(url_for("user.dashboard"))
 
 
@@ -361,5 +375,5 @@ def impersonate(user_id: str) -> Response:
 def stop_impersonating() -> Response:
     """Stop impersonating and return to admin profile."""
     session.pop("impersonate_id", None)
-    flash("Welcome back, Admin.", "success")
+    flash(ADMIN_MESSAGES["ADMIN_WELCOME"], "success")
     return redirect(url_for("admin.admin"))

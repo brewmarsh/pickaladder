@@ -17,6 +17,7 @@ from flask import (
 )
 
 from pickaladder.auth.decorators import admin_required, login_required
+from pickaladder.constants.messages import COMMON_MESSAGES, TOURNAMENT_MESSAGES
 from pickaladder.user.helpers import smart_display_name
 
 from . import bp
@@ -44,7 +45,7 @@ def _get_group_admin_error(group_id: str | None, user_uid: str) -> str | None:
         from pickaladder.group.services.group_service import GroupService
 
         if not GroupService.is_group_admin(doc.to_dict() or {}, user_uid):
-            return "You do not have permission to create a tournament for this group."
+            return TOURNAMENT_MESSAGES["GROUP_ADMIN_REQUIRED"]
     return None
 
 
@@ -84,10 +85,10 @@ def create_tournament() -> Any:
     if form.validate_on_submit():
         try:
             t_id = _handle_creation_payload(form, g.user["uid"])
-            flash("Tournament created successfully.", "success")
+            flash(TOURNAMENT_MESSAGES["CREATE_SUCCESS"], "success")
             return redirect(url_for(".view_tournament", tournament_id=t_id))
         except Exception as e:
-            flash(f"An unexpected error occurred: {e}", "danger")
+            flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
     return render_template("tournaments/create_edit.html", form=form, action="Create")
 
 
@@ -129,7 +130,7 @@ def view_tournament(tournament_id: str) -> Any:
     """View a single tournament lobby."""
     details = TournamentService.get_tournament_details(tournament_id, g.user["uid"])
     if not details:
-        flash("Tournament not found.", "danger")
+        flash(TOURNAMENT_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for(".list_tournaments"))
 
     details["claim_team_data"] = _resolve_claim_data(
@@ -141,10 +142,10 @@ def view_tournament(tournament_id: str) -> Any:
 
     try:
         if _handle_view_invite(tournament_id, form):
-            flash("Player invited successfully.", "success")
+            flash(TOURNAMENT_MESSAGES["PLAYER_INVITE_SUCCESS"], "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
     except Exception as e:
-        flash(f"Error sending invite: {e}", "danger")
+        flash(TOURNAMENT_MESSAGES["INVITE_ERROR"].format(error=e), "danger")
 
     return render_template("tournament/view.html", invite_form=form, **details)
 
@@ -176,7 +177,7 @@ def edit_tournament(tournament_id: str) -> Any:
     try:
         t = TournamentService.get_tournament_for_edit(tournament_id, g.user["uid"])
         if _handle_tournament_update(tournament_id, form):
-            flash("Tournament updated successfully.", "success")
+            flash(TOURNAMENT_MESSAGES["UPDATE_SUCCESS"], "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
         if request.method == "GET":
@@ -188,7 +189,7 @@ def edit_tournament(tournament_id: str) -> Any:
     except (ValueError, PermissionError) as e:
         flash(str(e), "danger")
     except Exception as e:
-        flash(f"An unexpected error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
     return redirect(url_for(".list_tournaments"))
 
 
@@ -198,11 +199,11 @@ def delete_tournament(tournament_id: str) -> Any:
     """Delete a tournament."""
     try:
         TournamentService.delete_tournament(tournament_id, g.user["uid"])
-        flash("Tournament deleted successfully.", "success")
+        flash(TOURNAMENT_MESSAGES["DELETE_SUCCESS"], "success")
     except (ValueError, PermissionError) as e:
         flash(str(e), "danger")
     except Exception as e:
-        flash(f"An unexpected error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
     return redirect(url_for(".list_tournaments"))
 
 
@@ -218,9 +219,9 @@ def invite_player(tournament_id: str) -> Any:
         try:
             invited_uid = cast(str, form.user_id.data)
             TournamentService.invite_player(tournament_id, g.user["uid"], invited_uid)
-            flash("Player invited successfully.", "success")
+            flash(TOURNAMENT_MESSAGES["PLAYER_INVITE_SUCCESS"], "success")
         except Exception as e:
-            flash(f"An unexpected error occurred: {e}", "danger")
+            flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
@@ -230,15 +231,17 @@ def invite_group(tournament_id: str) -> Any:
     """Invite an entire group."""
     gid = request.form.get("group_id")
     if not gid:
-        flash("No group specified.", "warning")
+        flash(TOURNAMENT_MESSAGES["NO_GROUP_SPECIFIED"], "warning")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
     try:
         count = TournamentService.invite_group(tournament_id, gid, g.user["uid"])
-        flash(f"Success! Invited {count} members.", "success")
+        flash(
+            TOURNAMENT_MESSAGES["INVITE_COUNT_SUCCESS"].format(count=count), "success"
+        )
     except (ValueError, PermissionError) as e:
         flash(str(e), "danger")
     except Exception as e:
-        flash(f"Error: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
@@ -248,11 +251,11 @@ def accept_invite(tournament_id: str) -> Any:
     """Accept an invite to a tournament."""
     try:
         if TournamentService.accept_invite(tournament_id, g.user["uid"]):
-            flash("You have accepted the tournament invite!", "success")
+            flash(TOURNAMENT_MESSAGES["INVITE_ACCEPTED"], "success")
         else:
-            flash("Invite not found or already accepted.", "warning")
+            flash(TOURNAMENT_MESSAGES["INVITE_NOT_FOUND_OR_ACCEPTED"], "warning")
     except Exception as e:
-        flash(f"Error: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(request.referrer or url_for("user.dashboard"))
 
 
@@ -262,11 +265,11 @@ def decline_invite(tournament_id: str) -> Any:
     """Decline an invite to a tournament."""
     try:
         if TournamentService.decline_invite(tournament_id, g.user["uid"]):
-            flash("You have declined the tournament invite.", "info")
+            flash(TOURNAMENT_MESSAGES["INVITE_DECLINED"], "info")
         else:
-            flash("Invite not found.", "warning")
+            flash(TOURNAMENT_MESSAGES["INVITE_NOT_FOUND"], "warning")
     except Exception as e:
-        flash(f"Error: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(request.referrer or url_for("user.dashboard"))
 
 
@@ -276,11 +279,11 @@ def complete_tournament(tournament_id: str) -> Any:
     """Close tournament and send results."""
     try:
         TournamentService.complete_tournament(tournament_id, g.user["uid"])
-        flash("Tournament completed and results emailed!", "success")
+        flash(TOURNAMENT_MESSAGES["COMPLETE_SUCCESS"], "success")
     except (ValueError, PermissionError) as e:
         flash(str(e), "danger")
     except Exception as e:
-        flash(f"An error occurred: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
@@ -309,29 +312,32 @@ def _get_accepted_uids(data: dict[str, Any]) -> list[str]:
 def generate_bracket(tournament_id: str) -> Any:
     """Generate the tournament bracket/pairings."""
     if not g.user.get("isAdmin"):
-        flash("Only admins can generate brackets.", "danger")
+        flash(TOURNAMENT_MESSAGES["ADMIN_ONLY_BRACKET"], "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
     db = firestore.client()
     doc = cast(Any, db.collection("tournaments").document(tournament_id).get())
     if not doc.exists:
-        flash("Tournament not found.", "danger")
+        flash(TOURNAMENT_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for(".list_tournaments"))
 
     d = cast(dict[str, Any], doc.to_dict() or {})
     if d.get("format") != "ROUND_ROBIN":
-        flash(f"Generation for {d.get('format')} is not implemented.", "warning")
+        flash(
+            TOURNAMENT_MESSAGES["GEN_NOT_IMPLEMENTED"].format(format=d.get("format")),
+            "warning",
+        )
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
     uids = _get_accepted_uids(d)
     if len(uids) < MIN_PARTICIPANTS_FOR_GENERATION:
-        flash("At least 2 accepted participants are required.", "warning")
+        flash(TOURNAMENT_MESSAGES["MIN_PARTICIPANTS"], "warning")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
     count = TournamentService.save_pairings(
         tournament_id, TournamentGenerator.generate_round_robin(uids)
     )
-    flash(f"Round Robin bracket generated with {count} matches!", "success")
+    flash(TOURNAMENT_MESSAGES["BRACKET_GEN_SUCCESS"].format(count=count), "success")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
@@ -352,9 +358,9 @@ def _handle_registration(t_id: str, p_id: str | None, name: str, is_json: bool) 
         return jsonify({"success": True, "team_id": tid, "link": url})
 
     if not p_id:
-        flash("Invite link generated!", "success")
+        flash(TOURNAMENT_MESSAGES["INVITE_LINK_GEN"], "success")
     else:
-        flash("Team registration pending. Your partner must accept.", "info")
+        flash(TOURNAMENT_MESSAGES["TEAM_REG_PENDING"], "info")
     return redirect(url_for(".view_tournament", tournament_id=t_id))
 
 
@@ -373,7 +379,7 @@ def register_team(tournament_id: str) -> Any:
     except Exception as e:
         if is_json:
             return jsonify({"success": False, "error": str(e)}), 400
-        flash(f"Error registering team: {e}", "danger")
+        flash(TOURNAMENT_MESSAGES["TEAM_REG_ERROR"].format(error=e), "danger")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
@@ -385,11 +391,11 @@ def claim_team(tournament_id: str, team_id: str) -> Any:
         if TournamentService.claim_team_partnership(
             tournament_id, team_id, g.user["uid"]
         ):
-            flash("You have joined the team!", "success")
+            flash(TOURNAMENT_MESSAGES["JOIN_TEAM_SUCCESS"], "success")
         else:
-            flash("Unable to join team. Full or already in it.", "danger")
+            flash(TOURNAMENT_MESSAGES["JOIN_TEAM_FAILED"], "danger")
     except Exception as e:
-        flash(f"Error: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
@@ -399,9 +405,9 @@ def accept_team(tournament_id: str) -> Any:
     """Accept a team partnership invitation."""
     try:
         if TournamentService.accept_team_partnership(tournament_id, g.user["uid"]):
-            flash("You have accepted the team partnership!", "success")
+            flash(TOURNAMENT_MESSAGES["PARTNERSHIP_ACCEPTED"], "success")
         else:
-            flash("No pending partnership found.", "warning")
+            flash(TOURNAMENT_MESSAGES["NO_PENDING_PARTNERSHIP"], "warning")
     except Exception as e:
-        flash(f"Error: {e}", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))

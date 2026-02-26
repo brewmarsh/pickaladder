@@ -8,6 +8,7 @@ from firebase_admin import firestore
 from flask import flash, g, jsonify, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.constants.messages import COMMON_MESSAGES, MATCH_MESSAGES
 
 from . import bp
 from .forms import MatchForm
@@ -31,16 +32,16 @@ def edit_match(match_id: str) -> Any:
                 request.form.get("player2_score"),
                 g.user["uid"],
             )
-            flash("Match updated successfully.", "success")
+            flash(MATCH_MESSAGES["UPDATE_SUCCESS"], "success")
             return redirect(url_for("match.view_match_summary", match_id=match_id))
         except (PermissionError, ValueError) as e:
             flash(str(e), "danger")
         except Exception as e:
-            flash(f"An unexpected error occurred: {e}", "danger")
+            flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
 
     context = MatchQueryService.get_match_edit_context(match_id)
     if not context:
-        flash("Match not found.", "danger")
+        flash(MATCH_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for("user.dashboard"))
 
     return render_template(
@@ -58,7 +59,7 @@ def view_match_summary(match_id: str) -> Any:
     db = firestore.client()
     context = MatchQueryService.get_match_summary_context(db, match_id)
     if not context:
-        flash("Match not found.", "danger")
+        flash(MATCH_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for("user.dashboard"))
 
     return render_template("match/summary.html", **context)
@@ -168,7 +169,7 @@ def _handle_match_submission(
         result = MatchCommandService.record_match(db, submission, g.user)
         if request.is_json:
             return jsonify({"status": "success", "match_id": result.id}), 200
-        flash("Match recorded successfully.", "success")
+        flash(MATCH_MESSAGES["RECORD_SUCCESS"], "success")
         return redirect(_get_record_match_redirect(submission, result.id))
     except Exception as e:
         if request.is_json:
@@ -226,7 +227,7 @@ def leaderboard() -> Any:
         players = MatchQueryService.get_leaderboard_data(db, min_games=1)
     except Exception as e:
         players = []
-        flash(f"An error occurred while fetching the leaderboard: {e}", "danger")
+        flash(MATCH_MESSAGES["LEADERBOARD_ERROR"].format(error=e), "danger")
 
     latest_matches = MatchQueryService.get_latest_matches(db)
 

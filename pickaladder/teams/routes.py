@@ -8,6 +8,7 @@ from firebase_admin import firestore
 from flask import flash, g, redirect, render_template, url_for
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.constants.messages import COMMON_MESSAGES, MATCH_MESSAGES
 
 from . import bp
 from .forms import EditTeamNameForm
@@ -22,7 +23,7 @@ def view_team(team_id: str) -> Any:
     data = TeamService.get_team_dashboard_data(db, team_id)
 
     if not data:
-        flash("Team not found.", "danger")
+        flash(MATCH_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for("group.view_groups"))
 
     return render_template("team/view.html", **data)
@@ -37,7 +38,7 @@ def edit_team(team_id: str) -> Any:
     team = team_ref.get()
 
     if not team.exists:
-        flash("Team not found.", "danger")
+        flash(MATCH_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for("group.view_groups"))
 
     team_data = team.to_dict()
@@ -45,17 +46,17 @@ def edit_team(team_id: str) -> Any:
 
     # Authorization check
     if g.user["uid"] not in team_data.get("member_ids", []):
-        flash("You do not have permission to rename this team.", "danger")
+        flash(MATCH_MESSAGES["RENAME_DENIED"], "danger")
         return redirect(url_for(".view_team", team_id=team_id))
 
     form = EditTeamNameForm()
     if form.validate_on_submit():
         try:
             team_ref.update({"name": form.name.data})
-            flash("Team renamed successfully.", "success")
+            flash(MATCH_MESSAGES["UPDATE_SUCCESS"], "success")
             return redirect(url_for(".view_team", team_id=team_id))
         except Exception as e:
-            flash(f"An unexpected error occurred: {e}", "danger")
+            flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
 
     form.name.data = team_data.get("name")
     return render_template("team/edit.html", form=form, team=team_data)
