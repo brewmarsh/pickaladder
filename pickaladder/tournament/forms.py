@@ -19,7 +19,7 @@ class TournamentForm(FlaskForm):
     address = StringField("Address", validators=[Optional()])
     match_type = RadioField(
         "Competition Mode",
-        choices=[("SINGLES", "👤 Singles (1v1)"), ("DOUBLES", "👥 Doubles (2v2)")],
+        choices=[("SINGLES", "Singles (1v1)"), ("DOUBLES", "Doubles (2v2)")],
         validators=[DataRequired()],
         default="SINGLES",
     )

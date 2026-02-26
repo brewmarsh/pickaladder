@@ -20,19 +20,18 @@ class TournamentBase:
     @staticmethod
     def _enrich_tournament(doc: Any) -> dict[str, Any]:
         """Format tournament data for display."""
-        from pickaladder.tournament.models import Tournament
-
         data = cast(dict[str, Any], doc.to_dict() or {})
         data["id"] = doc.id
         raw_date = data.get("start_date") or data.get("date")
         if raw_date and hasattr(raw_date, "to_datetime"):
             data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
-        # Compatibility for legacy templates using 'location' instead of 'venue_name'
-        if "venue_name" in data and not data.get("location"):
-            data["location"] = data["venue_name"]
 
-        from pickaladder.tournament.models import Tournament
-        return Tournament(data)
+        if "venue_name" in data:
+            data["location_data"] = {
+                "name": data.get("venue_name"),
+                "address": data.get("address"),
+            }
+        return data
 
     @staticmethod
     def _get_tournament_owner_id(data: dict[str, Any]) -> str | None:
@@ -72,15 +71,23 @@ class TournamentBase:
         from firebase_admin import firestore
 
         return list(
-            db.collection("tournaments").where("ownerRef", "==", user_ref).stream()
+            db.collection("tournaments")
+            .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
+            .stream()
         )
 
     @staticmethod
     def _fetch_participating_tournaments(db: Client, user_uid: str) -> list[Any]:
         """Query tournaments where the user is a participant."""
+        from firebase_admin import firestore
+
         return list(
             db.collection("tournaments")
-            .where("participant_ids", "array_contains", user_uid)
+            .where(
+                filter=firestore.FieldFilter(
+                    "participant_ids", "array_contains", user_uid
+                )
+            )
             .stream()
         )
 
@@ -220,9 +227,3 @@ class TournamentBase:
             for obj in participant_objs
             if (p := TournamentBase._resolve_single_participant(obj, u_map))
         ]
-
-    @staticmethod
-    def _validate_tournament_ownership(data: dict[str, Any], user_uid: str) -> None:
-        """Raise PermissionError if user is not the tournament owner."""
-        if TournamentBase._get_tournament_owner_id(data) != user_uid:
-            raise PermissionError("Unauthorized access to tournament.")

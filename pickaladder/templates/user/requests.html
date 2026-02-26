@@ -5,7 +5,7 @@
     <h1>Friend Requests</h1>
 </div>
 
-<div class="card requests-section mb-40">
+<div class="card requests-section" style="margin-bottom: 40px;">
     <h3>Pending Requests</h3>
     {% if requests %}
     <div class="table-container">
@@ -13,14 +13,14 @@
             <thead>
                 <tr>
                     <th>User</th>
-                    <th class="text-right">Actions</th>
+                    <th style="text-align: right;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for request_user in requests %}
                 <tr>
                     <td data-label="User">
-                        <div class="d-flex align-items-center gap-10">
+                        <div style="display: flex; align-items: center; gap: 10px;">
                             <img src="{{ request_user | avatar_url }}" alt="{{ request_user | smart_display_name }}"
                                 class="avatar avatar-md"
                                 onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
@@ -28,14 +28,14 @@
                                     smart_display_name }}</strong></a>
                         </div>
                     </td>
-                    <td data-label="Actions" class="text-right">
+                    <td data-label="Actions" style="text-align: right;">
                         <form action="{{ url_for('user.accept_request', requester_id=request_user.id) }}" method="post"
-                            class="d-inline">
+                            style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-primary">Confirm</button>
                         </form>
                         <form action="{{ url_for('user.cancel_request', target_id=request_user.id) }}" method="post"
-                            class="d-inline">
+                            style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-outline-danger"
                                 onclick="return confirm('Are you sure you want to decline this friend request?');">Decline</button>
@@ -59,14 +59,14 @@
             <thead>
                 <tr>
                     <th>User</th>
-                    <th class="text-right">Actions</th>
+                    <th style="text-align: right;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for request_user in sent_requests %}
                 <tr>
                     <td data-label="User">
-                        <div class="d-flex align-items-center gap-10">
+                        <div style="display: flex; align-items: center; gap: 10px;">
                             <img src="{{ request_user | avatar_url }}" alt="{{ request_user | smart_display_name }}"
                                 class="avatar avatar-md"
                                 onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
@@ -74,9 +74,9 @@
                                     smart_display_name }}</strong></a>
                         </div>
                     </td>
-                    <td data-label="Actions" class="text-right">
+                    <td data-label="Actions" style="text-align: right;">
                         <form action="{{ url_for('user.cancel_request', target_id=request_user.id) }}" method="post"
-                            class="d-inline">
+                            style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-outline-danger"
                                 onclick="return confirm('Are you sure you want to cancel this friend request?');">Cancel</button>
