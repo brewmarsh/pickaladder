@@ -25,12 +25,14 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         """Construct the initial tournament payload."""
         from firebase_admin import firestore
 
+        m_type = data.get("matchType") or (data.get("mode") or "singles").lower()
         return {
             "name": data["name"],
             "date": data["date"],
-            "location": data["location"],
-            "matchType": data.get("matchType") or data.get("mode", "SINGLES").lower(),
-            "mode": data.get("mode", "SINGLES"),
+            "venue_name": data.get("venue_name"),
+            "address": data.get("address"),
+            "matchType": m_type,
+            "mode": m_type.upper(),
             "ownerRef": user_ref,
             "organizer_id": user_uid,
             "status": "Active",
@@ -208,12 +210,14 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     def _build_form_update_payload(fd: dict[str, Any]) -> dict[str, Any]:
         """Construct update dictionary from form data."""
         dt = TournamentService._parse_form_date(fd.get("start_date"))
+        m_type = fd.get("match_type") or (fd.get("mode") or "singles").lower()
         return {
             "name": fd.get("name"),
             "date": dt,
-            "location": fd.get("location"),
-            "mode": fd.get("mode"),
-            "matchType": (fd.get("mode") or "SINGLES").lower(),
+            "venue_name": fd.get("venue_name"),
+            "address": fd.get("address"),
+            "matchType": m_type,
+            "mode": m_type.upper(),
         }
 
     @staticmethod
@@ -406,6 +410,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         if not doc or not doc.exists:
             return []
         t_data = doc.to_dict() or {}
-        if t_data.get("mode", "SINGLES") == "SINGLES":
+        m_type = (t_data.get("matchType") or t_data.get("mode", "singles")).lower()
+        if m_type == "singles":
             return TournamentService._gen_singles_bracket(db, t_data)
         return TournamentService._gen_doubles_bracket(db, t_id)

@@ -56,9 +56,10 @@ def _handle_creation_payload(form: TournamentForm, user_uid: str) -> str:
     data = {
         "name": form.name.data,
         "date": datetime.datetime.combine(date_val, datetime.time.min),
-        "location": form.location.data,
-        "mode": form.mode.data,
-        "matchType": (form.mode.data or "singles").lower(),
+        "venue_name": form.venue_name.data,
+        "address": form.address.data,
+        "matchType": form.match_type.data,
+        "mode": (form.match_type.data or "singles").upper(),
     }
     t_id = TournamentService.create_tournament(data, user_uid)
     banner = request.files.get("banner")

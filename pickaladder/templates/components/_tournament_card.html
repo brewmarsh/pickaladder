@@ -1,58 +1,67 @@
 {% macro tournament_card(tournament) %}
-<div class="card tournament-card clickable-row p-0 overflow-hidden position-relative h-100 d-flex flex-column" data-href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}">
-    {% if tournament.banner_url %}
-        <img src="{{ tournament.banner_url }}" alt="{{ tournament.name }}" class="tournament-card-header-img">
-    {% else %}
-        <div class="tournament-card-placeholder">🎾</div>
-    {% endif %}
+<div class="tournament-card-container">
+    {# Entire card is a link for better UX/SEO #}
+    <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="card tournament-card">
+        {% if tournament.banner_url %}
+            <img src="{{ tournament.banner_url }}" alt="{{ tournament.name }}" class="card-banner">
+        {% else %}
+            <div class="card-banner-placeholder">🎾</div>
+        {% endif %}
 
+        <div class="tournament-card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h3 class="tournament-card-title">{{ tournament.name }}</h3>
+                <div class="card-badges d-flex align-items-center gap-2">
+                    <span class="badge-outline text-volt">
+                        {# Using refactored .is_doubles method #}
+                        {% if tournament.is_doubles %}
+                            <i class="fas fa-users small"></i>
+                        {% else %}
+                            <i class="fas fa-user small"></i>
+                        {% endif %}
+                        {{ (tournament.matchType or tournament.match_type)|title }}
+                    </span>
+                    <span class="status-dot status-{{ tournament.status }}" title="{{ tournament.status }}"></span>
+                </div>
+            </div>
+
+            <div class="tournament-card-footer">
+                <p class="text-muted small mb-1 d-flex align-items-center gap-2">
+                    <i class="fas fa-calendar-alt icon-fw"></i> 
+                    {# Using refactored .display_date method #}
+                    {{ tournament.display_date }}
+                </p>
+                <p class="text-muted small mb-0 d-flex align-items-center gap-2">
+                    <i class="fas fa-map-marker-alt icon-fw"></i> 
+                    {# Using refactored .location_display method #}
+                    {{ tournament.location_display }}
+                </p>
+            </div>
+        </div>
+    </a>
+
+    {# Admin Actions: Using refactored .can_edit() permission check #}
     {% if tournament.can_edit(g.user) %}
-    <div class="dropdown kebab-menu pos-abs-tr-10 zi-10" onclick="event.stopPropagation();">
-        <button class="dropbtn btn-circle-sm bg-black-50 text-white border-none cursor-pointer" type="button">
+    <div class="dropdown kebab-menu tournament-card-actions">
+        <button class="dropbtn" type="button" aria-label="Tournament actions">
             <i class="fas fa-ellipsis-v"></i>
         </button>
         <div class="dropdown-content">
             <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}">
-                <i class="fas fa-edit mr-2"></i> Edit
+                <i class="fas fa-edit icon-fw mr-2"></i> Edit
             </a>
             <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}">
-                <i class="fas fa-tasks mr-2"></i> Manage
+                <i class="fas fa-tasks icon-fw mr-2"></i> Manage
             </a>
             <div class="dropdown-divider"></div>
             <form action="{{ url_for('tournament.delete_tournament', tournament_id=tournament.id) }}" method="POST" class="d-block" onsubmit="return confirm('Are you sure you want to delete this tournament?');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn-transparent text-left p-3 border-none bg-none text-danger cursor-pointer fs-sm d-flex align-items-center w-100">
-                    <i class="fas fa-trash-alt mr-2"></i> Delete
+                <button type="submit" class="delete-btn">
+                    <i class="fas fa-trash-alt icon-fw mr-2"></i> Delete
                 </button>
             </form>
         </div>
     </div>
     {% endif %}
-
-    <div class="p-3 flex-grow-1 d-flex flex-column">
-        <div class="d-flex justify-content-between align-items-start mb-2">
-            <h3 class="m-0 fs-2xl lh-1-2">{{ tournament.name }}</h3>
-            <div class="card-badges d-flex align-items-center gap-2 flex-shrink-0 ml-2">
-                <span class="badge-outline">
-                    {% if tournament.is_doubles %}
-                        <i class="fas fa-users small"></i>
-                    {% else %}
-                        <i class="fas fa-user small"></i>
-                    {% endif %}
-                    {{ tournament.matchType|title }}
-                </span>
-                <span class="status-dot status-{{ tournament.status }}" title="{{ tournament.status }}"></span>
-            </div>
-        </div>
-
-        <div class="mt-auto">
-            <p class="text-muted small mb-1 d-flex align-items-center gap-2">
-                <i class="fas fa-calendar-alt w-16 text-center"></i> {{ tournament.display_date }}
-            </p>
-            <p class="text-muted small mb-0 d-flex align-items-center gap-2">
-                <i class="fas fa-map-marker-alt w-16 text-center"></i> {{ tournament.location_display }}
-            </p>
-        </div>
-    </div>
 </div>
 {% endmacro %}
