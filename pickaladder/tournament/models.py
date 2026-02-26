@@ -18,19 +18,16 @@ class Tournament(UserDict):
         """Return True if the user has permission to edit the tournament."""
         if not user:
             return False
-        uid = user.get("uid") if hasattr(user, "get") else getattr(user, "uid", None)
-        if not uid:
-            return False
-        owner_id = self.get("organizer_id")
-        if not owner_id and self.get("ownerRef"):
-            owner_id = self.get("ownerRef").id
-        is_admin = getattr(user, "isAdmin", user.get("isAdmin", False))
-        return uid == owner_id or is_admin
+        # In this project, only admins can edit tournaments via the routes
+        return bool(getattr(user, "isAdmin", user.get("isAdmin", False)))
 
     @property
     def is_doubles(self) -> bool:
         """Return True if the tournament is doubles."""
-        return str(self.get("matchType", "")).lower() == "doubles" or self.get("mode") == "DOUBLES"
+        return (
+            str(self.get("matchType", "")).lower() == "doubles"
+            or self.get("mode") == "DOUBLES"
+        )
 
     @property
     def status_badge_class(self) -> str:

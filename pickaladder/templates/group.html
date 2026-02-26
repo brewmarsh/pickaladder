@@ -18,7 +18,7 @@
         <h1>{{ group.name }}</h1>
         <div class="group-meta-info">
             <p>
-                Owned by: <a href="{{ url_for('user.view_user', user_id=group['ownerRef'].id) }}">{{ owner.username }}</a>
+                Owned by: <a href="{{ url_for('user.view_user', user_id=owner.id) }}">{{ owner.username }}</a>
                 {% if group.location %}
                 • Location: {{ group.location }}
                 {% endif %}

@@ -56,7 +56,6 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     @staticmethod
     def _has_matches(db: Client, t_id: str) -> bool:
         """Check if any matches exist for a tournament."""
-        from firebase_admin import firestore
 
         query = (
             db.collection("matches").where("tournamentId", "==", t_id).limit(1).stream()
@@ -297,7 +296,6 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     @staticmethod
     def _gen_doubles_bracket(db: Client, t_id: str) -> list[dict[str, Any]]:
         """Generate bracket data for doubles tournament."""
-        from firebase_admin import firestore
 
         teams = (
             db.collection("tournaments")

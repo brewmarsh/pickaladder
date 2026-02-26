@@ -8,6 +8,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from mockfirestore import MockFirestore
 
+from pickaladder.group.models import Group
+
 # Mock user payloads
 REFERRER_ID = "referrer_uid"
 MOCK_PASSWORD = "Password123"  # nosec
@@ -31,11 +33,13 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
         mock_owner_ref.id = "admin"
 
         mock_get.return_value = {
-            "group": {
-                "id": "group1",
-                "name": "Group 1",
-                "ownerRef": mock_owner_ref,
-            },
+            "group": Group(
+                {
+                    "id": "group1",
+                    "name": "Group 1",
+                    "ownerRef": mock_owner_ref,
+                }
+            ),
             "owner": {"username": "admin"},
             "eligible_friends": [],
             "leaderboard": [],

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections import UserDict
 from typing import TYPE_CHECKING, Any, cast
 
 from flask import current_app
@@ -13,12 +14,14 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
 
+    from pickaladder.tournament.models import Tournament
+
 
 class TournamentBase:
     """Base class with shared helpers for tournament services."""
 
     @staticmethod
-    def _enrich_tournament(doc: Any) -> dict[str, Any]:
+    def _enrich_tournament(doc: Any) -> Tournament:
         """Format tournament data for display."""
         from pickaladder.tournament.models import Tournament
 
@@ -31,19 +34,21 @@ class TournamentBase:
         if "venue_name" in data and not data.get("location"):
             data["location"] = data["venue_name"]
 
-        from pickaladder.tournament.models import Tournament
         return Tournament(data)
 
     @staticmethod
-    def _get_tournament_owner_id(data: dict[str, Any]) -> str | None:
+    def _get_tournament_owner_id(data: dict[str, Any] | UserDict) -> str | None:
         """Resolve organizer/owner ID from tournament data."""
         o_id = data.get("organizer_id")
         if o_id:
             return cast(str, o_id)
-        return data["ownerRef"].id if data.get("ownerRef") else None
+        owner_ref = data.get("ownerRef")
+        return getattr(owner_ref, "id", None) if owner_ref else None
 
     @staticmethod
-    def _get_tournament_metadata(data: dict[str, Any], user_uid: str) -> dict[str, Any]:
+    def _get_tournament_metadata(
+        data: dict[str, Any] | UserDict, user_uid: str
+    ) -> dict[str, Any]:
         """Extract metadata like date display and ownership for details view."""
         raw_date = data.get("date")
         date_display = None
@@ -69,8 +74,6 @@ class TournamentBase:
     @staticmethod
     def _fetch_owned_tournaments(db: Client, user_ref: Any) -> list[Any]:
         """Query tournaments owned by the user."""
-        from firebase_admin import firestore
-
         return list(
             db.collection("tournaments").where("ownerRef", "==", user_ref).stream()
         )
@@ -86,8 +89,8 @@ class TournamentBase:
 
     @staticmethod
     def _process_participating_tournaments(
-        results: dict[str, dict[str, Any]], participating: list[Any]
-    ) -> dict[str, dict[str, Any]]:
+        results: dict[str, Tournament], participating: list[Any]
+    ) -> dict[str, Tournament]:
         """Add participating tournaments to the results if not already present."""
         for d in participating:
             if d.id not in results:
@@ -97,22 +100,22 @@ class TournamentBase:
     @staticmethod
     def _merge_tournament_results(
         owned: list[Any], participating: list[Any]
-    ) -> list[dict[str, Any]]:
+    ) -> list[Tournament]:
         """Merge owned and participating tournaments into a single list."""
-        results = {d.id: TournamentBase._enrich_tournament(d) for d in owned}
+        results: dict[str, Tournament] = {
+            d.id: TournamentBase._enrich_tournament(d) for d in owned
+        }
         results = TournamentBase._process_participating_tournaments(
             results, participating
         )
         return list(results.values())
 
     @staticmethod
-    def list_tournaments(
-        user_uid: str, db: Client | None = None
-    ) -> list[dict[str, Any]]:
+    def list_tournaments(user_uid: str, db: Client | None = None) -> list[Tournament]:
         """Fetch all tournaments for a user."""
-        from firebase_admin import firestore
+        from pickaladder.tournament import services as ts
 
-        db = db or firestore.client()
+        db = db or ts.firestore.client()
         u_ref = db.collection("users").document(user_uid)
         owned = TournamentBase._fetch_owned_tournaments(db, u_ref)
         parts = TournamentBase._fetch_participating_tournaments(db, user_uid)
