@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% from "components/_tournament_card.html" import tournament_card %}
+{% from "components/_empty_state.html" import empty_state %}
 {% block title %}Dashboard{% endblock %}
 {% block head %}
 {{ super() }}
@@ -226,7 +227,13 @@
                     </div>
                     {% endif %}
                     {% else %}
-                    <p class="text-muted p-4 text-center">No recent matches found.</p>
+                    {{ empty_state(
+                        icon="🎾",
+                        title="No Recent Matches",
+                        message="You haven't recorded any matches recently. Get out on the court and record your first win!",
+                        action_url=url_for('match.record_match'),
+                        action_text="Record a Match"
+                    ) }}
                     {% endif %}
                 </div>
             </div>
@@ -239,12 +246,13 @@
                 <div class="card card-compact">
                     <h3 class="mt-0 mb-3">Competitions</h3>
                     {% if not active_tournaments and not group_rankings and not past_tournaments %}
-                    <div class="text-center p-5">
-                        <div class="fs-giant mb-3">👨‍👩‍👧‍👦</div>
-                        <h4>Find your squad</h4>
-                        <p class="text-muted mb-4">Join a group or tournament to start competing and climb the ranks!</p>
-                        <a href="{{ url_for('user.view_community') }}" class="btn btn-volt w-auto">Find a Group</a>
-                    </div>
+                    {{ empty_state(
+                        icon="👨‍👩‍👧‍👦",
+                        title="Find your squad",
+                        message="Join a group or tournament to start competing and climb the ranks!",
+                        action_url=url_for('user.view_community'),
+                        action_text="Find a Group"
+                    ) }}
                     {% else %}
                     <div class="d-flex flex-column gap-3">
                         {# Section 1: Active Tournaments (Top Priority) #}
@@ -317,7 +325,11 @@
                             <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="avatar avatar-md">
                         </a>
                         {% else %}
-                        <p class="text-muted small">No friends yet.</p>
+                        {{ empty_state(
+                            icon="🤝",
+                            title="No Friends Yet",
+                            message="Add friends to follow their progress and challenge them to matches!"
+                        ) }}
                         {% endfor %}
                     </div>
                     <a href="{{ url_for('user.view_community') }}" class="btn btn-sm btn-outline-primary w-100 mt-3 text-none">Community Hub</a>

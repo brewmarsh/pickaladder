@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='dark.css') }}">
 </head>
 
+{% from "components/_empty_state.html" import empty_state %}
 <body class="{{ 'dark-mode' if user and user.dark_mode else '' }}">
     {% include 'navbar.html' %}
     <div class="content">
@@ -73,7 +74,11 @@
                     </tbody>
                 </table>
                 {% else %}
-                <p>You have no friend requests.</p>
+                {{ empty_state(
+                    icon="📩",
+                    title="No Friend Requests",
+                    message="You have no pending friend requests at the moment."
+                ) }}
                 {% endif %}
             </div>
             <div class="header-with-button">
@@ -104,7 +109,13 @@
                     </tbody>
                 </table>
                 {% else %}
-                <p>You have no matches yet.</p>
+                {{ empty_state(
+                    icon="🎾",
+                    title="No Matches Yet",
+                    message="You haven't recorded any matches yet. Ready to start your journey?",
+                    action_url=url_for('match.record_match'),
+                    action_text="Record a Match"
+                ) }}
                 {% endif %}
             </div>
             <h3>Your Friends</h3>
@@ -136,7 +147,13 @@
                     </tbody>
                 </table>
                 {% else %}
-                <p>You have no friends yet. <a href="/users">Find some!</a></p>
+                {{ empty_state(
+                    icon="🤝",
+                    title="No Friends Yet",
+                    message="You haven't added any friends yet. Connecting with others makes it easier to record matches!",
+                    action_url=url_for('user.users'),
+                    action_text="Find Friends"
+                ) }}
                 {% endif %}
             </div>
         </div>

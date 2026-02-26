@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% from "components/_empty_state.html" import empty_state %}
 {% block title %}{{ profile_user | display_name }}'s Profile{% endblock %}
 {% block content %}
 <div class="mt-4">
@@ -121,9 +122,13 @@
                                 {% endfor %}
                             </div>
                             {% else %}
-                            <div class="py-5 text-center text-muted">
-                                <p class="mb-0">No matches recorded yet. Get out there and play!</p>
-                            </div>
+                            {{ empty_state(
+                                icon="🎾",
+                                title="No Matches Recorded",
+                                message="No matches recorded yet. Get out there and play!",
+                                action_url=url_for('match.record_match', opponent_id=profile_user.id) if is_friend else None,
+                                action_text="Challenge to Match" if is_friend else None
+                            ) }}
                             {% endif %}
                         </div>
                     </div>
@@ -151,8 +156,12 @@
                                     class="btn btn-sm btn-outline-primary btn-block py-2">View All</a>
                             </div>
                             {% else %}
-                            <div class="p-4 text-center text-muted small">
-                                No friends yet.
+                            <div class="p-4">
+                                {{ empty_state(
+                                    icon="🤝",
+                                    title="No Friends Yet",
+                                    message="This user hasn't added any friends yet."
+                                ) }}
                             </div>
                             {% endif %}
                         </div>
