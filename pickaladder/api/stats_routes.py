@@ -8,7 +8,10 @@ from firebase_admin import firestore
 from flask import Blueprint, g, render_template
 
 from pickaladder.auth.decorators import login_required
-from pickaladder.user.services.dashboard import _fetch_recent_activity, _fetch_vanity_stats
+from pickaladder.user.services.dashboard import (
+    _fetch_recent_activity,
+    _fetch_vanity_stats,
+)
 
 bp = Blueprint("api_stats", __name__, url_prefix="/api/stats")
 

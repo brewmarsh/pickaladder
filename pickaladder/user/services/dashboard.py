@@ -40,8 +40,7 @@ def get_dashboard_data(
     user_data, vanity_metrics = _fetch_vanity_stats(db, user_id)
 
     # 2. Fetch match activity (Fast path: just check if matches exist for onboarding)
-    user_stats = user_data.get("stats") or {}
-    total_matches = user_stats.get("wins", 0) + user_stats.get("losses", 0)
+    total_matches = vanity_metrics.get("total_games", 0)
 
     match_data = (
         _fetch_recent_activity(db, user_id)
