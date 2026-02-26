@@ -44,8 +44,8 @@ class TournamentTeams(TournamentBase):
             db.collection("tournaments")
             .document(t_id)
             .collection("teams")
-            .where("p2_uid", "==", uid)
-            .where("status", "==", "PENDING")
+            .where(filter=firestore.FieldFilter("p2_uid", "==", uid))
+            .where(filter=firestore.FieldFilter("status", "==", "PENDING"))
             .stream()
         )
         updated = False

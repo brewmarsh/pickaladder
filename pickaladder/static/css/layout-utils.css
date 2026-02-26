@@ -1,9 +1,10 @@
 /* --- 0. Layout Utilities --- */
 .w-auto { width: auto !important; }
 .mx-auto { margin-left: auto !important; margin-right: auto !important; }
+.gap-4 { gap: 1.5rem !important; }
+.justify-content-center { justify-content: center !important; }
 .text-center { text-align: center !important; }
 .text-danger { color: var(--danger-color) !important; }
-.text-volt { color: var(--accent-color) !important; }
 .border-danger { border: 1px solid var(--danger-color) !important; }
 
 /* --- 6. Input Groups (Design System) --- */
@@ -167,126 +168,101 @@ body .d-none { display: none !important; }
     }
 }
 
-/* Generic Flex/Layout Utilities */
-.flex-1 { flex: 1 !important; }
-.flex-2 { flex: 2 !important; }
-.flex-2-5 { flex: 2.5 !important; }
-.flex-grow-1 { flex-grow: 1 !important; }
-.flex-shrink-0 { flex-shrink: 0 !important; }
-.d-flex-column { display: flex !important; flex-direction: column !important; }
-.align-items-center { align-items: center !important; }
-.align-items-start { align-items: flex-start !important; }
-.align-items-stretch { align-items: stretch !important; }
-.justify-content-between { justify-content: space-between !important; }
-.justify-content-end { justify-content: flex-end !important; }
-.justify-content-center { justify-content: center !important; }
+/* --- 7. Segmented Controls --- */
+.segmented-control {
+    display: flex;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    gap: 4px;
+}
 
-/* Sizing Utilities */
-.min-w-0 { min-width: 0 !important; }
-.min-w-300 { min-width: 300px !important; }
-.w-100 { width: 100% !important; }
-.w-30 { width: 30px !important; }
-.w-20 { width: 20px !important; }
-.w-16 { width: 16px !important; }
-.h-100 { height: 100% !important; }
-.h-20 { height: 20px !important; }
+.segmented-item {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0;
+}
 
-/* Spacing Utilities */
-.m-0 { margin: 0 !important; }
-.mt-0 { margin-top: 0 !important; }
-.mb-0 { margin-bottom: 0 !important; }
-.ml-0 { margin-left: 0 !important; }
-.mr-0 { margin-right: 0 !important; }
+.segmented-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
 
-.m-1 { margin: 4px !important; }
-.mt-1 { margin-top: 4px !important; }
-.mb-1 { margin-bottom: 4px !important; }
-.ml-1 { margin-left: 4px !important; }
-.mr-1 { margin-right: 4px !important; }
+.visually-hidden:checked + .segmented-item {
+    background-color: var(--bg-secondary);
+    color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+}
 
-.m-2 { margin: 8px !important; }
-.mt-2 { margin-top: 8px !important; }
-.mb-2 { margin-bottom: 8px !important; }
-.ml-2 { margin-left: 8px !important; }
-.mr-2 { margin-right: 8px !important; }
+[data-theme="dark"] .segmented-control {
+    background-color: #000000;
+}
 
-.m-3 { margin: 16px !important; }
-.mt-3 { margin-top: 16px !important; }
-.mb-3 { margin-bottom: 16px !important; }
-.ml-3 { margin-left: 16px !important; }
-.mr-3 { margin-right: 16px !important; }
+[data-theme="dark"] .segmented-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
 
-.m-4 { margin: 24px !important; }
-.mt-4 { margin-top: 24px !important; }
-.mb-4 { margin-bottom: 24px !important; }
-.ml-4 { margin-left: 24px !important; }
-.mr-4 { margin-right: 24px !important; }
+[data-theme="dark"] .visually-hidden:checked + .segmented-item {
+    background-color: var(--card-bg);
+    color: var(--primary-color);
+}
 
-.m-5 { margin: 48px !important; }
-.mt-5 { margin-top: 48px !important; }
-.mb-5 { margin-bottom: 48px !important; }
+/* --- 8. File Upload Styling --- */
+.file-upload-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
 
-.p-0 { padding: 0 !important; }
-.p-1 { padding: 4px !important; }
-.p-2 { padding: 8px !important; }
-.p-3 { padding: 16px !important; }
-.p-4 { padding: 24px !important; }
-.p-5 { padding: 48px !important; }
+.file-upload-button {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
 
-.py-1 { padding-top: 4px !important; padding-bottom: 4px !important; }
-.py-2 { padding-top: 8px !important; padding-bottom: 8px !important; }
-.py-3 { padding-top: 16px !important; padding-bottom: 16px !important; }
-.px-1 { padding-left: 4px !important; padding-right: 4px !important; }
-.px-2 { padding-left: 8px !important; padding-right: 8px !important; }
-.px-3 { padding-left: 16px !important; padding-right: 16px !important; }
+.file-upload-button:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
 
-.pl-0 { padding-left: 0 !important; }
-.pr-0 { padding-right: 0 !important; }
+.file-upload-input {
+    display: none;
+}
 
-.mb-40 { margin-bottom: 40px !important; }
+.file-name-text {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+}
 
-.gap-1 { gap: 4px !important; }
-.gap-2 { gap: 8px !important; }
-.gap-10 { gap: 10px !important; }
-.gap-3 { gap: 16px !important; }
-.gap-4 { gap: 24px !important; }
-.gap-5 { gap: 48px !important; }
-
-/* Typography Utilities */
-.text-right { text-align: right !important; }
-.text-uppercase { text-transform: uppercase !important; }
-.text-none { text-transform: none !important; }
-.ls-1 { letter-spacing: 1px !important; }
-.v-align-middle { vertical-align: middle !important; }
-.text-white { color: white !important; }
-.text-volt, .text-accent { color: var(--accent-color) !important; }
-.fw-semibold { font-weight: 600 !important; }
-.fw-bold { font-weight: 700 !important; }
-.lh-1-2 { line-height: 1.2 !important; }
-.color-inherit { color: inherit !important; }
-
-/* Font Size Utilities */
-.fs-xxs { font-size: 0.7rem !important; }
-.fs-xs { font-size: 0.75rem !important; }
-.fs-sm { font-size: 0.85rem !important; }
-.fs-md { font-size: 1rem !important; }
-.fs-lg { font-size: 1.1rem !important; }
-.fs-xl { font-size: 1.2rem !important; }
-.fs-2xl { font-size: 1.25rem !important; }
-.fs-giant { font-size: 3rem !important; }
-
-/* Border & Other Utilities */
-.border-none { border: none !important; }
-.bg-none { background: none !important; }
-.bg-primary { background-color: var(--primary-color) !important; }
-.bg-black-50 { background: rgba(0,0,0,0.5) !important; }
-.shadow-none { box-shadow: none !important; }
-.cursor-pointer { cursor: pointer !important; }
-.list-style-none { list-style: none !important; }
-.opacity-60 { opacity: 0.6 !important; }
-.opacity-80 { opacity: 0.8 !important; }
-.overflow-hidden { overflow: hidden !important; }
-.position-relative { position: relative !important; }
-.pos-abs-tr-10 { position: absolute !important; top: 10px !important; right: 10px !important; }
-.zi-10 { z-index: 10 !important; }
-.rounded-0 { border-radius: 0 !important; }
+/* --- Accessibility --- */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}

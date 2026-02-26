@@ -24,7 +24,7 @@ class TournamentInvites(TournamentBase):
         g_ids = set()
         groups = (
             db.collection("groups")
-            .where("members", "array_contains", user_ref)
+            .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
             .stream()
         )
         for doc in groups:

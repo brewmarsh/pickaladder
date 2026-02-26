@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% from "components/_empty_state.html" import empty_state %}
 {% block title %}Community Hub{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
@@ -186,7 +187,11 @@
         {% endfor %}
     </div>
     {% else %}
-    <p>No friends found.</p>
+    {{ empty_state(
+        icon="🤝",
+        title="No Friends Found",
+        message="We couldn't find any friends matching your search." if search_term else "You haven't added any friends yet."
+    ) }}
     {% endif %}
 </div>
 
@@ -225,7 +230,11 @@
         {% endfor %}
     </div>
     {% else %}
-    <p>No other players found.</p>
+    {{ empty_state(
+        icon="🎾",
+        title="No Players Found",
+        message="We couldn't find any other players matching your search."
+    ) }}
     {% endif %}
 </div>
 
@@ -275,7 +284,13 @@
         </table>
     </div>
     {% else %}
-    <p>No public groups found.</p>
+    {{ empty_state(
+        icon="👥",
+        title="No Groups Found",
+        message="No public groups found matching your search.",
+        action_url=url_for('group.create_group'),
+        action_text="Create Group"
+    ) }}
     {% endif %}
 </div>
 

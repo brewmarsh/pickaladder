@@ -3,6 +3,7 @@
 {% block title %}Tournaments{% endblock %}
 
 {% from "components/_tournament_card.html" import tournament_card %}
+{% from "components/_empty_state.html" import empty_state %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 page-header-actions">
@@ -39,10 +40,12 @@
         {% endfor %}
     </div>
 {% else %}
-    <div class="card">
-        <div class="card-body">
-            No tournaments found
-        </div>
-    </div>
+    {{ empty_state(
+        icon="🏆",
+        title="No Tournaments Found",
+        message="There are no active tournaments at the moment. Check back later or create one if you're an admin!",
+        action_url=url_for('tournament.create_tournament') if g.user.isAdmin else None,
+        action_text="Create Tournament" if g.user.isAdmin else None
+    ) }}
 {% endif %}
 {% endblock %}
