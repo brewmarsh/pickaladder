@@ -31,7 +31,7 @@ MIN_PARTICIPANTS_FOR_GENERATION = 2
 def list_tournaments() -> Any:
     """List all tournaments."""
     tourneys = TournamentService.list_tournaments(g.user["uid"])
-    return render_template("tournaments.html", tournaments=tourneys)
+    return render_template("tournament/list.html", tournaments=tourneys)
 
 
 def _get_group_admin_error(group_id: str | None, user_uid: str) -> str | None:
@@ -92,49 +92,56 @@ def create_tournament() -> Any:
 
 
 def _resolve_claim_data(t_id: str, c_id: str | None) -> dict[str, Any] | None:
-    """Fetch details for a team partnership claim."""
+    """Resolve team and participant data for partnership claim."""
     if not c_id:
         return None
     db = firestore.client()
-    ref = db.collection("tournaments").document(t_id).collection("teams").document(c_id)
-    doc = cast(Any, ref.get())
-    if not doc.exists:
+    team_doc = (
+        db.collection("tournaments")
+        .document(t_id)
+        .collection("teams")
+        .document(c_id)
+        .get()
+    )
+    if not team_doc.exists:
         return None
-    d = cast(dict[str, Any], doc.to_dict() or {})
-    d["id"] = doc.id
-    p1_uid = d.get("p1_uid")
-    if p1_uid:
-        p1 = cast(Any, db.collection("users").document(p1_uid).get())
-        d["p1_name"] = (
-            smart_display_name(p1.to_dict() or {}) if p1.exists else "Someone"
-        )
-    else:
-        d["p1_name"] = "Someone"
-    return d
+
+    td = cast(dict[str, Any], team_doc.to_dict())
+    if td.get("p2_uid") or td.get("status") == "CONFIRMED":
+        return None
+
+    p1_doc = db.collection("users").document(td["p1_uid"]).get()
+    if not p1_doc.exists:
+        return None
+
+    return {
+        "id": c_id,
+        "team_name": td.get("team_name") or "Unnamed Team",
+        "p1_name": smart_display_name(p1_doc.to_dict() or {}),
+    }
 
 
-def _handle_view_invite(tournament_id: str, form: InvitePlayerForm) -> bool:
-    """Handle invitation form submission from view page."""
-    if form.validate_on_submit() and "user_id" in request.form:
-        uid = cast(str, form.user_id.data)
-        if uid:
-            TournamentService.invite_player(tournament_id, g.user["uid"], uid)
-            return True
+def _handle_view_invite(t_id: str, form: InvitePlayerForm) -> bool:
+    """Handle invite submission from view page."""
+    if form.validate_on_submit():
+        invited_uid = cast(str, form.user_id.data)
+        TournamentService.invite_player(t_id, g.user["uid"], invited_uid)
+        return True
     return False
 
 
-@bp.route("/<string:tournament_id>", methods=["GET", "POST"])
+@bp.route("/<string:tournament_id>")
 @login_required
 def view_tournament(tournament_id: str) -> Any:
-    """View a single tournament lobby."""
+    """View tournament details."""
     details = TournamentService.get_tournament_details(tournament_id, g.user["uid"])
     if not details:
         flash("Tournament not found.", "danger")
         return redirect(url_for(".list_tournaments"))
 
-    details["claim_team_data"] = _resolve_claim_data(
-        tournament_id, request.args.get("claim_team")
-    )
+    claim_id = request.args.get("claim_team")
+    details["claim_team_data"] = _resolve_claim_data(tournament_id, claim_id)
+
     form = InvitePlayerForm()
     invitables = details.get("invitable_users", [])
     form.user_id.choices = [(u["id"], smart_display_name(u)) for u in invitables]

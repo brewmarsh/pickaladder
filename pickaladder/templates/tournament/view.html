@@ -157,22 +157,11 @@
     <div class="dashboard-column-right">
         <div class="card">
             <h4 class="card-header">📍 Location</h4>
-            <div class="location-details">
-                {% if tournament.location_data %}
-                    <p class="mb-1"><strong>{{ tournament.location_data.name }}</strong></p>
-                    <p class="text-muted small">{{ tournament.location_data.address }}</p>
-                    <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.location_data.address|urlencode }}" 
-                       target="_blank" class="btn btn-outline-primary btn-sm w-100 mt-2">Get Directions</a>
-                {% else %}
-                    <p class="mb-1"><strong>{{ tournament.venue_name }}</strong></p>
-                    <p class="text-muted small">{{ tournament.location_display }}</p>
-                    {% set map_query = tournament.address or tournament.location_display %}
-                    {% if map_query %}
-                        <a href="https://www.google.com/maps/search/?api=1&query={{ map_query|urlencode }}" 
-                           target="_blank" class="btn btn-outline-primary btn-sm w-100 mt-2">Get Directions</a>
-                    {% endif %}
-                {% endif %}
-            </div>
+            <p><strong>{{ tournament.venue_name }}</strong></p>
+            {% if tournament.address %}
+                <p class="text-muted" style="font-size: 0.9rem;">{{ tournament.address }}</p>
+                <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.address|urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm w-auto" style="margin-top: 10px; width: 100% !important; display: block; text-align: center;">Get Directions</a>
+            {% endif %}
         </div>
 
         {# Admin Management Cards #}
