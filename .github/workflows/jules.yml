@@ -34,6 +34,8 @@ jobs:
       # Run Trivy (Vulnerability Scan)
       - name: Run Trivy
         uses: aquasecurity/trivy-action@master
+        env:
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db,ghcr.io/aquasecurity/trivy-db
         with:
           scan-type: 'fs'
           format: 'table'
