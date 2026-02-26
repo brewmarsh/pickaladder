@@ -22,15 +22,19 @@ class Tournament(UserDict):
         if not uid:
             return False
         owner_id = self.get("organizer_id")
-        if not owner_id and self.get("ownerRef"):
-            owner_id = self.get("ownerRef").id
+        owner_ref = self.get("ownerRef")
+        if not owner_id and owner_ref:
+            owner_id = getattr(owner_ref, "id", None)
         is_admin = getattr(user, "isAdmin", user.get("isAdmin", False))
         return uid == owner_id or is_admin
 
     @property
     def is_doubles(self) -> bool:
         """Return True if the tournament is doubles."""
-        return str(self.get("matchType", "")).lower() == "doubles" or self.get("mode") == "DOUBLES"
+        return (
+            str(self.get("matchType", "")).lower() == "doubles"
+            or self.get("mode") == "DOUBLES"
+        )
 
     @property
     def status_badge_class(self) -> str:

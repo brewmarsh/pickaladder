@@ -18,7 +18,7 @@ class TournamentBase:
     """Base class with shared helpers for tournament services."""
 
     @staticmethod
-    def _enrich_tournament(doc: Any) -> dict[str, Any]:
+    def _enrich_tournament(doc: Any) -> Any:
         """Format tournament data for display."""
         from pickaladder.tournament.models import Tournament
 
@@ -31,7 +31,6 @@ class TournamentBase:
         if "venue_name" in data and not data.get("location"):
             data["location"] = data["venue_name"]
 
-        from pickaladder.tournament.models import Tournament
         return Tournament(data)
 
     @staticmethod
@@ -69,8 +68,6 @@ class TournamentBase:
     @staticmethod
     def _fetch_owned_tournaments(db: Client, user_ref: Any) -> list[Any]:
         """Query tournaments owned by the user."""
-        from firebase_admin import firestore
-
         return list(
             db.collection("tournaments").where("ownerRef", "==", user_ref).stream()
         )

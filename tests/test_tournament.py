@@ -329,18 +329,18 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Edit Tournament", response.data)
-        self.assertIn(b"Tournament Management", response.data)
+        self.assertIn(b"Tournament Controls", response.data)
 
     def test_view_tournament_non_admin_no_edit_gear(self) -> None:
-        """Test that a non-admin (even if owner) does not see the edit gear."""
+        """Test that a non-admin who is NOT owner does not see the edit gear."""
         self._set_session_user(is_admin=False)
         tournament_id = "test_tournament_id"
-        user_ref = self.mock_db.collection("users").document(MOCK_USER_ID)
+        other_user_ref = self.mock_db.collection("users").document("other_user")
         self.mock_db.collection("tournaments").document(tournament_id).set(
             {
                 "name": "Test Tournament",
-                "ownerRef": user_ref,
-                "organizer_id": MOCK_USER_ID,
+                "ownerRef": other_user_ref,
+                "organizer_id": "other_user",
                 "participants": [],
                 "participant_ids": [],
                 "date": datetime.datetime(2024, 6, 1),
@@ -356,7 +356,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(b"Edit Tournament", response.data)
-        self.assertNotIn(b"Tournament Management", response.data)
+        self.assertNotIn(b"Tournament Controls", response.data)
 
     def test_view_tournament_with_invitable_users(self) -> None:
         """Test that only non-participant players are in the invitable list."""

@@ -40,26 +40,46 @@ class Match(UserDict):
     def get_matchup_info(self, user: Any) -> dict[str, Any]:
         """Return matchup information relative to the given user."""
         res = {"user_partner": None, "opponent_name": "Unknown", "is_user_p1": False}
-        uid = user.get("uid") if user and hasattr(user, "get") else getattr(user, "uid", None)
+        uid = (
+            user.get("uid")
+            if user and hasattr(user, "get")
+            else getattr(user, "uid", None)
+        )
         if not uid:
             return res
 
         if self.is_doubles:
             p1 = self.get("player1", [])
-            p1_ids = [getattr(p, "id", p.get("id")) for p in p1 if isinstance(p, (dict, object))]
+            p1_ids = [
+                p.get("id") if isinstance(p, dict) else getattr(p, "id", None)
+                for p in p1
+            ]
             in_team1 = uid in p1_ids
 
             if in_team1:
                 if len(p1) > 1:
-                    res["user_partner"] = p1[1] if p1[0].get("id") == uid else p1[0]
+                    p1_0_id = (
+                        p1[0].get("id")
+                        if isinstance(p1[0], dict)
+                        else getattr(p1[0], "id", None)
+                    )
+                    res["user_partner"] = p1[1] if p1_0_id == uid else p1[0]
                 res["opponent_name"] = self.get("team2_name", "Team 2")
                 res["is_user_p1"] = True
             else:
                 p2 = self.get("player2", [])
-                p2_ids = [getattr(p, "id", p.get("id")) for p in p2 if isinstance(p, (dict, object))]
+                p2_ids = [
+                    p.get("id") if isinstance(p, dict) else getattr(p, "id", None)
+                    for p in p2
+                ]
                 if uid in p2_ids:
                     if len(p2) > 1:
-                        res["user_partner"] = p2[1] if p2[0].get("id") == uid else p2[0]
+                        p2_0_id = (
+                            p2[0].get("id")
+                            if isinstance(p2[0], dict)
+                            else getattr(p2[0], "id", None)
+                        )
+                        res["user_partner"] = p2[1] if p2_0_id == uid else p2[0]
                     res["opponent_name"] = self.get("team1_name", "Team 1")
         else:
             p1_data = self.get("player_1_data") or {}
@@ -78,7 +98,11 @@ class Match(UserDict):
 
     def get_user_result(self, user: Any) -> str | None:
         """Return the match result for the given user ('win', 'loss', or None)."""
-        uid = user.get("uid") if user and hasattr(user, "get") else getattr(user, "uid", None)
+        uid = (
+            user.get("uid")
+            if user and hasattr(user, "get")
+            else getattr(user, "uid", None)
+        )
         if not uid:
             return self.get("user_result")
 
@@ -90,7 +114,10 @@ class Match(UserDict):
         is_p1 = False
         if self.is_doubles:
             p1 = self.get("player1", [])
-            p1_ids = [getattr(p, "id", p.get("id")) for p in p1 if isinstance(p, (dict, object))]
+            p1_ids = [
+                p.get("id") if isinstance(p, dict) else getattr(p, "id", None)
+                for p in p1
+            ]
             is_p1 = uid in p1_ids
         else:
             p1_data = self.get("player_1_data") or {}
@@ -103,13 +130,20 @@ class Match(UserDict):
 
     def get_score_display(self, user: Any) -> tuple[int, int]:
         """Return (user_score, opponent_score) tuple."""
-        uid = user.get("uid") if user and hasattr(user, "get") else getattr(user, "uid", None)
+        uid = (
+            user.get("uid")
+            if user and hasattr(user, "get")
+            else getattr(user, "uid", None)
+        )
         s1 = self.get("player1_score", 0)
         s2 = self.get("player2_score", 0)
 
         if self.is_doubles:
             p1 = self.get("player1", [])
-            p1_ids = [getattr(p, "id", p.get("id")) for p in p1 if isinstance(p, (dict, object))]
+            p1_ids = [
+                p.get("id") if isinstance(p, dict) else getattr(p, "id", None)
+                for p in p1
+            ]
             in_team1 = uid in p1_ids if uid else False
             return (s1, s2) if in_team1 else (s2, s1)
         else:
