@@ -9,18 +9,26 @@ class MatchStatsCalculator:
     """Utility class for match statistics calculations."""
 
     @staticmethod
-    def calculate_match_outcome(
+    def calculate_match_outcome(  # noqa: PLR0913
         score1: int,
         score2: int,
-        p1_id: str,
-        p2_id: str,
+        side1_ids: list[str],
+        side2_ids: list[str],
+        side1_id: str | None = None,
+        side2_id: str | None = None,
     ) -> dict[str, Any]:
-        """Determine winner and return update dict."""
+        """Determine winner and return update dict with flat winners/losers lists."""
         winner = "team1" if score1 > score2 else "team2"
+        s1_id = side1_id or (side1_ids[0] if side1_ids else "")
+        s2_id = side2_id or (side2_ids[0] if side2_ids else "")
+
         return {
             "winner": winner,
-            "winnerId": p1_id if winner == "team1" else p2_id,
-            "loserId": p2_id if winner == "team1" else p1_id,
+            "winnerId": s1_id if winner == "team1" else s2_id,
+            "loserId": s2_id if winner == "team1" else s1_id,
+            "winners": side1_ids if winner == "team1" else side2_ids,
+            "losers": side2_ids if winner == "team1" else side1_ids,
+            "participants": side1_ids + side2_ids,
         }
 
     @staticmethod

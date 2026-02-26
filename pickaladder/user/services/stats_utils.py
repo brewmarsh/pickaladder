@@ -50,6 +50,12 @@ def _get_user_match_won_lost(
     match_data: dict[str, Any], user_id: str
 ) -> tuple[bool, bool]:
     """Determine if the user won or lost the match, including handling of draws."""
+    winners = match_data.get("winners")
+    losers = match_data.get("losers")
+
+    if winners is not None and losers is not None:
+        return (user_id in winners), (user_id in losers)
+
     p1_score = int(match_data.get("player1Score", 0))
     p2_score = int(match_data.get("player2Score", 0))
 

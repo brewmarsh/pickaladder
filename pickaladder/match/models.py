@@ -192,6 +192,9 @@ class MatchResult:
     winner: str
     winnerId: str
     loserId: str
+    winners: list[str] | None = None
+    losers: list[str] | None = None
+    participants: list[str] | None = None
     is_upset: bool = False
     groupId: str | None = None
     tournamentId: str | None = None
@@ -232,6 +235,8 @@ class MatchDict(FirestoreDocument, Score, total=False):
     tournamentId: str
     status: str
     winnerId: str
+    winners: list[str]
+    losers: list[str]
     participants: list[str]
 
     # UI and calculated fields

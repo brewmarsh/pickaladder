@@ -165,8 +165,14 @@ class MatchCommandService(BaseRepository):
                 match_data, p1_ref, p1_data or {}, p2_ref, p2_data or {}
             )
 
+        side1_ids, side2_ids = cls._get_side_ids(match_data, match_type)
         outcome = MatchStatsCalculator.calculate_match_outcome(
-            match_data["player1Score"], match_data["player2Score"], p1_ref.id, p2_ref.id
+            match_data["player1Score"],
+            match_data["player2Score"],
+            side1_ids,
+            side2_ids,
+            p1_ref.id,
+            p2_ref.id,
         )
         match_data.update(outcome)
 
@@ -236,6 +242,9 @@ class MatchCommandService(BaseRepository):
             winner=data.get("winner", ""),
             winnerId=data.get("winnerId", ""),
             loserId=data.get("loserId", ""),
+            winners=data.get("winners"),
+            losers=data.get("losers"),
+            participants=data.get("participants"),
             groupId=data.get("groupId"),
             tournamentId=data.get("tournamentId"),
             player1Ref=data.get("player1Ref"),
@@ -313,23 +322,47 @@ class MatchCommandService(BaseRepository):
         if s1 != s2:
             MatchStatsUpdater.apply_stats_delta(data, s1 > s2, 1)
 
-    @staticmethod
-    def _get_match_updates(data: dict[str, Any], s1: int, s2: int) -> dict[str, Any]:
+    @classmethod
+    def _get_match_updates(
+        cls, data: dict[str, Any], s1: int, s2: int
+    ) -> dict[str, Any]:
         """Calculate the updates for the match document."""
-        win_slot = "team1" if s1 > s2 else "team2"
+        m_type = data.get("matchType", "singles")
+        side1_ids, side2_ids = cls._get_side_ids(data, m_type)
+
+        s1_id = data.get("team1Id") if m_type == "doubles" else None
+        s2_id = data.get("team2Id") if m_type == "doubles" else None
+
+        if m_type != "doubles":
+            p1_ref, p2_ref = data.get("player1Ref"), data.get("player2Ref")
+            s1_id = p1_ref.id if p1_ref else None
+            s2_id = p2_ref.id if p2_ref else None
+
+        outcome = MatchStatsCalculator.calculate_match_outcome(
+            s1, s2, side1_ids, side2_ids, s1_id, s2_id
+        )
+
         upd = {
             "player1Score": s1,
             "player2Score": s2,
-            "winner": win_slot,
+            "winner": outcome["winner"],
+            "winnerId": outcome["winnerId"],
+            "loserId": outcome["loserId"],
+            "winners": outcome["winners"],
+            "losers": outcome["losers"],
+            "participants": outcome["participants"],
             "status": "COMPLETED",
         }
-        if data.get("matchType") == "doubles":
-            upd["winnerId"] = data.get("team1Id" if s1 > s2 else "team2Id")
-            upd["loserId"] = data.get("team2Id" if s1 > s2 else "team1Id")
-        else:
-            p1, p2 = data.get("player1Ref"), data.get("player2Ref")
-            if p1 and p2:
-                upd["winnerId"], upd["loserId"] = (
-                    (p1.id, p2.id) if s1 > s2 else (p2.id, p1.id)
-                )
         return upd
+
+    @staticmethod
+    def _get_side_ids(data: dict[str, Any], m_type: str) -> tuple[list[str], list[str]]:
+        """Extract user IDs for each side of the match."""
+        if m_type == "doubles":
+            t1 = [r.id for r in data.get("team1", []) if hasattr(r, "id")]
+            t2 = [r.id for r in data.get("team2", []) if hasattr(r, "id")]
+            return t1, t2
+
+        p1_ref = data.get("player1Ref")
+        p2_ref = data.get("player2Ref")
+        return ([p1_ref.id] if p1_ref else []), ([p2_ref.id] if p2_ref else [])
