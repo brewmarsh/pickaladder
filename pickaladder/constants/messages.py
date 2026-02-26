@@ -10,7 +10,7 @@ AUTH_MESSAGES = {
     "INSTALL_ERROR": "An unexpected error occurred during installation.",
     "ADMIN_CREATION_MISSING_FIELDS": "Missing required fields for admin creation.",
     "ADMIN_CREATION_SUCCESS": "Admin user created successfully. You can now log in.",
-    "PASSWORD_UPDATED": "Your password has been updated.",
+    "PASSWORD_UPDATED": "Your password has been updated.",  # nosec B105
     "UNAUTHORIZED": "You are not authorized to view this page.",
     "ADMIN_ONLY_TOURNAMENT": "⚠️ Only administrators can create tournaments.",
 }
