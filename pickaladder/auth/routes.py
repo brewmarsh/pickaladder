@@ -17,6 +17,7 @@ from flask import (
 )
 from flask_login import login_user, logout_user
 
+from pickaladder.constants.messages import AUTH_MESSAGES
 from pickaladder.errors import DuplicateResourceError
 from pickaladder.user import UserService
 from pickaladder.user.helpers import wrap_user
@@ -257,13 +258,13 @@ def _process_registration(form: RegisterForm, username: str, email: str) -> None
 def _handle_registration_error(e: Exception) -> Any:
     """Handle different types of registration errors and flash messages."""
     if isinstance(e, auth.EmailAlreadyExistsError):
-        flash("Email address is already registered.", "danger")
+        flash(AUTH_MESSAGES["EMAIL_REGISTERED"], "danger")
     elif isinstance(e, EmailError):
         current_app.logger.error(f"Email error during registration: {e}")
         flash(str(e), "danger")
     else:
         current_app.logger.error(f"Error during registration: {e}")
-        flash("An unexpected error occurred during registration.", "danger")
+        flash(AUTH_MESSAGES["REGISTRATION_ERROR"], "danger")
     return redirect(url_for(".register"))
 
 
@@ -272,7 +273,7 @@ def _execute_registration(form: RegisterForm, username: str, email: str) -> Any:
     try:
         _process_registration(form, username, email)
         flash(
-            "Registration successful! Please check your email to verify your account.",
+            AUTH_MESSAGES["REGISTRATION_SUCCESS"],
             "success",
         )
         return redirect(url_for(".login", next=request.args.get("next")))
@@ -295,7 +296,7 @@ def register() -> Any:
     email = cast(str, form.email.data)
 
     if _is_username_taken(db, username):
-        flash("Username already exists. Please choose a different one.", "danger")
+        flash(AUTH_MESSAGES["USERNAME_EXISTS"], "danger")
         return redirect(url_for(".register"))
 
     return _execute_registration(form, username, email)
@@ -422,7 +423,7 @@ def logout() -> Any:
     """
     session.clear()
     logout_user()
-    flash("You have been logged out.", "success")
+    flash(AUTH_MESSAGES["LOGOUT_SUCCESS"], "success")
     return redirect(url_for("auth.login"))
 
 
@@ -498,12 +499,12 @@ def _handle_install_error(db: Any, email: str, e: Exception) -> Any:
     """Handle exceptions during installation."""
     if isinstance(e, auth.EmailAlreadyExistsError):
         if _promote_existing_user_to_admin(db, email):
-            flash("An existing user was promoted to admin.", "info")
+            flash(AUTH_MESSAGES["ADMIN_PROMOTED"], "info")
             return redirect(url_for("auth.login"))
         raise DuplicateResourceError("An admin user with this email already exists.")
 
     current_app.logger.error(f"Error during installation: {e}")
-    flash("An unexpected error occurred during installation.", "danger")
+    flash(AUTH_MESSAGES["INSTALL_ERROR"], "danger")
     return redirect(url_for(".install"))
 
 
@@ -514,7 +515,7 @@ def _handle_install_post(db: Any) -> Any:
     username = request.form.get("username")
 
     if not all([email, password, username]):
-        flash("Missing required fields for admin creation.", "danger")
+        flash(AUTH_MESSAGES["ADMIN_CREATION_MISSING_FIELDS"], "danger")
         return redirect(url_for(".install"))
 
     try:
@@ -529,7 +530,7 @@ def _handle_install_post(db: Any) -> Any:
             cast(str, username),
             profile_data,
         )
-        flash("Admin user created successfully. You can now log in.", "success")
+        flash(AUTH_MESSAGES["ADMIN_CREATION_SUCCESS"], "success")
         return redirect(url_for("auth.login"))
     except Exception as e:
         return _handle_install_error(db, cast(str, email), e)
@@ -563,7 +564,7 @@ def change_password() -> Any:
         # The form is for display and validation, but the actual password
         # change is handled by the Firebase client-side SDK.
         # We can flash a message to inform the user.
-        flash("Your password has been updated.", "success")
+        flash(AUTH_MESSAGES["PASSWORD_UPDATED"], "success")
         return redirect(url_for("user.profile"))
 
     return render_template("change_password.html", user=g.user, form=form)

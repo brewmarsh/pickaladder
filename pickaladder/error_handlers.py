@@ -14,6 +14,7 @@ from flask import (
 from flask_wtf.csrf import CSRFError
 from werkzeug.wrappers import Response
 
+from .constants.messages import COMMON_MESSAGES
 from .errors import AppError, DuplicateResourceError, NotFoundError, ValidationError
 
 error_handlers_bp = Blueprint("error_handlers", __name__)
@@ -68,6 +69,6 @@ def handle_csrf_error(e: CSRFError) -> Union[Response, str]:
     submission.
     """
     current_app.logger.warning(f"CSRF Error: {e.description}")
-    flash("Your session may have expired. Please try your action again.", "warning")
+    flash(COMMON_MESSAGES["SESSION_EXPIRED"], "warning")
     # Redirect to the previous page or a default page if the referrer is not available
     return redirect(request.referrer or url_for("user.dashboard"))

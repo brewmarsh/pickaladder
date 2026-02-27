@@ -16,6 +16,7 @@ from flask import (
 )
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.constants.messages import COMMON_MESSAGES, USER_MESSAGES
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
 
 from . import bp
@@ -60,7 +61,7 @@ def settings() -> Any:
         if res["success"]:
             if "info" in res:
                 flash(res["info"], "info")
-            flash("Settings updated!", "success")
+            flash(USER_MESSAGES["SETTINGS_UPDATED"], "success")
             return redirect(url_for(".settings"))
         flash(res["error"], "danger")
 
@@ -74,9 +75,9 @@ def reset_avatar() -> Any:
     db = firestore.client()
     user_id = g.user["uid"]
     if UserService.reset_profile_picture(db, user_id):
-        flash("Profile picture removed.", "success")
+        flash(USER_MESSAGES["PROFILE_PIC_REMOVED"], "success")
     else:
-        flash("An error occurred while removing your profile picture.", "danger")
+        flash(USER_MESSAGES["PROFILE_PIC_REMOVE_ERROR"], "danger")
     return redirect(url_for(".settings"))
 
 
@@ -92,7 +93,7 @@ def edit_profile() -> Any:
         if res["success"]:
             if "info" in res:
                 flash(res["info"], "info")
-            flash("Account updated!", "success")
+            flash(USER_MESSAGES["ACCOUNT_UPDATED"], "success")
             return redirect(url_for(".edit_profile"))
         flash(res["error"], "danger")
     return render_template("user/edit_profile.html", form=form, user=g.user)
@@ -124,7 +125,7 @@ def view_user(user_id: str) -> Any:
     db = firestore.client()
     data = UserService.get_user_profile_data(db, g.user["uid"], user_id)
     if not data:
-        flash("User not found.", "danger")
+        flash(USER_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for(".users"))
     return render_template(
         "user/profile.html",
@@ -189,16 +190,16 @@ def users() -> Any:
 def send_friend_request(friend_id: str) -> Any:
     """Send a friend request."""
     if g.user["uid"] == friend_id:
-        flash("You cannot send a friend request to yourself.", "danger")
+        flash(USER_MESSAGES["FRIEND_REQ_SELF"], "danger")
         return redirect(url_for(".users"))
 
     success = UserService.send_friend_request(
         firestore.client(), g.user["uid"], friend_id
     )
     if success:
-        flash("Friend request sent.", "success")
+        flash(USER_MESSAGES["FRIEND_REQ_SENT"], "success")
     else:
-        flash("An error occurred while sending the friend request.", "danger")
+        flash(USER_MESSAGES["FRIEND_REQ_ERROR"], "danger")
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"success": success})
@@ -229,9 +230,9 @@ def accept_request(requester_id: str) -> Any:
     name = UserService.smart_display_name(requester) if requester else "the user"
 
     if UserService.accept_friend_request(db, g.user["uid"], requester_id):
-        flash(f"You are now friends with {name}!", "success")
+        flash(USER_MESSAGES["FRIENDS_NOW"].format(name=name), "success")
     else:
-        flash("An error occurred.", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR_SIMPLE"], "danger")
 
     return redirect(request.referrer or url_for(".view_community"))
 
@@ -242,9 +243,9 @@ def accept_request(requester_id: str) -> Any:
 def cancel_request(target_id: str) -> Any:
     """Cancel or decline a friend request."""
     if UserService.cancel_friend_request(firestore.client(), g.user["uid"], target_id):
-        flash("Friend request processed.", "success")
+        flash(USER_MESSAGES["FRIEND_REQ_PROCESSED"], "success")
     else:
-        flash("An error occurred.", "danger")
+        flash(COMMON_MESSAGES["GENERIC_ERROR_SIMPLE"], "danger")
     return redirect(request.referrer or url_for(".view_community"))
 
 
