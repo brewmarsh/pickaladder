@@ -127,15 +127,19 @@ def view_user(user_id: str) -> Any:
     if not data:
         flash(USER_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for(".users"))
+
+    stats = data.get("stats", {})
+    total_games = stats.get("total_games", 0)
+
     return render_template(
         "user/profile.html",
         user=g.user,
         dupr_url_base=DUPR_PROFILE_BASE_URL,
-        record={"wins": data["stats"]["wins"], "losses": data["stats"]["losses"]},
-        total_games=data["stats"]["total_games"],
-        win_rate=data["stats"]["win_rate"],
-        current_streak=data["stats"]["current_streak"],
-        streak_type=data["stats"]["streak_type"],
+        record={"wins": stats.get("wins", 0), "losses": stats.get("losses", 0)},
+        total_games=total_games,
+        win_rate=stats.get("win_rate", 0),
+        current_streak=stats.get("current_streak", 0),
+        streak_type=stats.get("streak_type", "N/A"),
         **data,
     )
 

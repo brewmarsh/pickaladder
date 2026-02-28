@@ -68,8 +68,6 @@ def get_dashboard_data(
     # Assemble final stats object
     stats = {
         **vanity_metrics,
-        "current_streak": match_data["current_streak"],
-        "streak_type": match_data["streak_type"],
     }
 
     if include_activity:
@@ -93,14 +91,12 @@ def _fetch_vanity_stats(
     db: Client, user_id: str
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Fetch user document and calculate vanity metrics."""
-    from pickaladder.user.helpers import calculate_vanity_metrics
+    from pickaladder.user.services.match_stats import calculate_stats, get_user_matches
 
     user_data = get_user_by_id(db, user_id) or {}
-    user_stats = user_data.get("stats")
-    if not isinstance(user_stats, dict):
-        user_stats = {}
+    all_matches = get_user_matches(db, user_id)
+    vanity_metrics = calculate_stats(all_matches, user_id)
 
-    vanity_metrics = calculate_vanity_metrics(user_stats)
     return user_data, vanity_metrics
 
 

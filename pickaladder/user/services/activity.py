@@ -177,22 +177,13 @@ def _fetch_profile_stats(
     """Fetch matches and calculate statistics for user profile."""
     from .match_stats import calculate_stats, get_user_matches
 
-    matches = get_user_matches(db, target_user_id, limit=20)
-    stats = calculate_stats(matches, target_user_id)
+    all_matches = get_user_matches(db, target_user_id)
+    stats = calculate_stats(all_matches, target_user_id)
 
-    # Override totals with pre-calculated stats from user document for scalability
-    u_stats = profile_user_data.get("stats", {})
-    wins, losses = int(u_stats.get("wins", 0)), int(u_stats.get("losses", 0))
-    total = wins + losses
-    stats.update(
-        {
-            "total_games": total,
-            "win_rate": (wins / total * 100) if total > 0 else 0,
-            "wins": wins,
-            "losses": losses,
-        }
-    )
-    return stats, matches
+    # Fetch limited matches for recent activity feed
+    recent_matches = get_user_matches(db, target_user_id, limit=20)
+
+    return stats, recent_matches
 
 
 def get_user_profile_data(
