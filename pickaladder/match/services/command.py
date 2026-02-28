@@ -55,8 +55,7 @@ class MatchCommandService(BaseRepository):
         def _execute_match_transaction(
             transaction: Transaction,
             match_ref: DocumentReference,
-            p1_ref: DocumentReference,
-            p2_ref: DocumentReference,
+            side_refs: tuple[DocumentReference, DocumentReference],
             user_ref: DocumentReference,
             match_data: dict[str, Any],
             match_type: str,
@@ -65,8 +64,7 @@ class MatchCommandService(BaseRepository):
                 db,
                 transaction,
                 match_ref,
-                p1_ref,
-                p2_ref,
+                side_refs,
                 user_ref,
                 match_data,
                 match_type,
@@ -75,8 +73,7 @@ class MatchCommandService(BaseRepository):
         _execute_match_transaction(
             transaction,
             new_match_ref,
-            side1_ref,
-            side2_ref,
+            (side1_ref, side2_ref),
             cast("DocumentReference", db.collection("users").document(user_id)),
             match_doc_data,
             sub.match_type,
@@ -167,8 +164,7 @@ class MatchCommandService(BaseRepository):
         db: Client,
         transaction: Transaction | WriteBatch,
         match_ref: DocumentReference,
-        p1_ref: DocumentReference,
-        p2_ref: DocumentReference,
+        side_refs: tuple[DocumentReference, DocumentReference],
         user_ref: DocumentReference,
         match_data: dict[str, Any],
         match_type: str,
@@ -176,6 +172,8 @@ class MatchCommandService(BaseRepository):
         """Record a match and update stats atomically."""
         from firebase_admin import firestore
         from google.cloud.firestore_v1.transaction import Transaction
+
+        p1_ref, p2_ref = side_refs
 
         # Perform all reads first
         read_refs = [p1_ref, p2_ref]
@@ -192,7 +190,11 @@ class MatchCommandService(BaseRepository):
                 )
             read_refs.extend(stats_refs)
 
-        snaps_list = db.get_all(read_refs, transaction=transaction)
+        # get_all only accepts transaction if it's not None
+        actual_transaction = (
+            transaction if isinstance(transaction, Transaction) else None
+        )
+        snaps_list = db.get_all(read_refs, transaction=actual_transaction)
         snaps = {s.reference.path: s for s in snaps_list if s.exists}
 
         p1_snap = cast("DocumentSnapshot", snaps.get(p1_ref.path))

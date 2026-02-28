@@ -181,7 +181,10 @@ def _fetch_profile_stats(
 
     # Fetch cached lifetime stats from subcollection
     stats_ref = (
-        db.collection("users").document(target_user_id).collection("stats").document("lifetime")
+        db.collection("users")
+        .document(target_user_id)
+        .collection("stats")
+        .document("lifetime")
     )
     stats_snap = stats_ref.get()
 
@@ -190,10 +193,17 @@ def _fetch_profile_stats(
     if stats_snap.exists:
         stats = extract_lifetime_vanity_metrics(stats_snap.to_dict() or {})
         # We still need processed_matches for some UI parts, but we can minimize work
-        stats["processed_matches"] = [
-            {"data": m.to_dict(), "user_won": m.to_dict().get("winnerId") == target_user_id}
-            for m in matches
-        ]
+        processed = []
+        for m in matches:
+            m_data = m.to_dict()
+            if m_data:
+                processed.append(
+                    {
+                        "data": m_data,
+                        "user_won": m_data.get("winnerId") == target_user_id,
+                    }
+                )
+        stats["processed_matches"] = processed
     else:
         stats = calculate_stats(matches, target_user_id)
         # Override totals with pre-calculated stats from user document for scalability

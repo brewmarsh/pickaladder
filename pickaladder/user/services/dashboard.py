@@ -101,7 +101,12 @@ def _fetch_vanity_stats(
     user_data = get_user_by_id(db, user_id) or {}
 
     # Fetch cached lifetime stats from subcollection
-    stats_ref = db.collection("users").document(user_id).collection("stats").document("lifetime")
+    stats_ref = (
+        db.collection("users")
+        .document(user_id)
+        .collection("stats")
+        .document("lifetime")
+    )
     stats_snap = stats_ref.get()
 
     if stats_snap.exists:

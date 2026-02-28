@@ -77,26 +77,30 @@ class MatchStatsUpdater:
             snapshot: Optional pre-fetched snapshot for the lifetime stats document.
         """
         stats_ref = (
-            db.collection("users").document(user_id).collection("stats").document("lifetime")
+            db.collection("users")
+            .document(user_id)
+            .collection("stats")
+            .document("lifetime")
         )
 
         if snapshot is None:
             snapshot = stats_ref.get(transaction=transaction)
 
-        stats = (
-            snapshot.to_dict()
-            if (snapshot and snapshot.exists)
-            else {"total_matches": 0, "wins": 0, "losses": 0, "current_streak": 0}
-        )
+        snapshot_dict = (
+            snapshot.to_dict() if (snapshot and snapshot.exists) else None
+        ) or {"total_matches": 0, "wins": 0, "losses": 0, "current_streak": 0}
 
-        stats["total_matches"] = stats.get("total_matches", 0) + 1
-        streak = stats.get("current_streak", 0)
+        # Create a mutable copy and ensure it's a dict for mypy
+        stats = dict(snapshot_dict)
+
+        stats["total_matches"] = int(stats.get("total_matches", 0)) + 1
+        streak = int(stats.get("current_streak", 0))
 
         if is_win:
-            stats["wins"] = stats.get("wins", 0) + 1
+            stats["wins"] = int(stats.get("wins", 0)) + 1
             stats["current_streak"] = streak + 1 if streak > 0 else 1
         else:
-            stats["losses"] = stats.get("losses", 0) + 1
+            stats["losses"] = int(stats.get("losses", 0)) + 1
             stats["current_streak"] = streak - 1 if streak < 0 else -1
 
         transaction.set(stats_ref, stats, merge=True)
