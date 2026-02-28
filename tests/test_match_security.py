@@ -58,9 +58,9 @@ class MatchSecurityTestCase(unittest.TestCase):
         self.assertTrue(mock_record_atomic.called)
 
         # Check match_data passed to record_atomic
-        # _record_match_atomic(db, transaction, match_ref, (p1_ref, p2_ref), user_ref, match_data, ...)
-        # index of match_data is 5
-        match_data = mock_record_atomic.call_args[0][5]
+        # _record_match_atomic(db, transaction, refs_tuple, match_data)
+        # index of match_data is 3
+        match_data = mock_record_atomic.call_args[0][3]
 
         self.assertNotIn("is_winner", match_data)
         self.assertNotIn("is_upset", match_data)

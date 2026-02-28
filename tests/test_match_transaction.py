@@ -91,16 +91,11 @@ class MatchTransactionTestCase(unittest.TestCase):
             "player2Score": 5,
             "player1Ref": p1_ref,
             "player2Ref": p2_ref,
+            "matchType": "singles",
         }
 
         MatchService._record_match_atomic(
-            db,
-            transaction,
-            match_ref,
-            (p1_ref, p2_ref),
-            user_ref,
-            match_data,
-            "singles",
+            db, transaction, (match_ref, (p1_ref, p2_ref), user_ref), match_data
         )
 
         # Verify snapshots were read via db.get_all
@@ -207,16 +202,11 @@ class MatchTransactionTestCase(unittest.TestCase):
             "player2Score": 11,
             "team1": u_refs[:2],
             "team2": u_refs[2:],
+            "matchType": "doubles",
         }
 
         MatchService._record_match_atomic(
-            db,
-            transaction,
-            match_ref,
-            (t1_ref, t2_ref),
-            user_ref,
-            match_data,
-            "doubles",
+            db, transaction, (match_ref, (t1_ref, t2_ref), user_ref), match_data
         )
 
         self.assertEqual(match_data["winner"], "team2")

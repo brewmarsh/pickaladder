@@ -58,16 +58,12 @@ class MatchCommandService(BaseRepository):
             side_refs: tuple[DocumentReference, DocumentReference],
             user_ref: DocumentReference,
             match_data: dict[str, Any],
-            match_type: str,
         ) -> None:
             cls._record_match_atomic(
                 db,
                 transaction,
-                match_ref,
-                side_refs,
-                user_ref,
+                (match_ref, side_refs, user_ref),
                 match_data,
-                match_type,
             )
 
         _execute_match_transaction(
@@ -76,7 +72,6 @@ class MatchCommandService(BaseRepository):
             (side1_ref, side2_ref),
             cast("DocumentReference", db.collection("users").document(user_id)),
             match_doc_data,
-            sub.match_type,
         )
 
         return cls._build_match_result(new_match_ref.id, match_doc_data)
@@ -159,21 +154,24 @@ class MatchCommandService(BaseRepository):
         )
 
     @classmethod
-    def _record_match_atomic(  # noqa: PLR0913
+    def _record_match_atomic(
         cls,
         db: Client,
         transaction: Transaction | WriteBatch,
-        match_ref: DocumentReference,
-        side_refs: tuple[DocumentReference, DocumentReference],
-        user_ref: DocumentReference,
+        refs: tuple[
+            DocumentReference,
+            tuple[DocumentReference, DocumentReference],
+            DocumentReference,
+        ],
         match_data: dict[str, Any],
-        match_type: str,
     ) -> None:
         """Record a match and update stats atomically."""
         from firebase_admin import firestore
         from google.cloud.firestore_v1.transaction import Transaction
 
+        match_ref, side_refs, user_ref = refs
         p1_ref, p2_ref = side_refs
+        match_type = match_data.get("matchType", "singles")
 
         # Perform all reads first
         read_refs = [p1_ref, p2_ref]
