@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.batch import WriteBatch
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
+    from google.cloud.firestore_v1.transaction import Transaction
 
     from pickaladder.user.models import UserSession
 
@@ -34,6 +35,8 @@ class MatchCommandService(BaseRepository):
         current_user: UserSession,
     ) -> MatchResult:
         """Process and record a match submission."""
+        from firebase_admin import firestore
+
         user_id = current_user["uid"]
         sub = data if isinstance(data, MatchSubmission) else MatchSubmission(**data)
         MatchValidationService.validate_submission(db, sub, user_id)
@@ -46,10 +49,31 @@ class MatchCommandService(BaseRepository):
         new_match_ref = cast(
             "DocumentReference", db.collection(cls.COLLECTION_NAME).document()
         )
-        batch = db.batch()
-        cls._record_match_batch(
-            db,
-            batch,
+        transaction = db.transaction()
+
+        @firestore.transactional
+        def _execute_match_transaction(
+            transaction: Transaction,
+            match_ref: DocumentReference,
+            p1_ref: DocumentReference,
+            p2_ref: DocumentReference,
+            user_ref: DocumentReference,
+            match_data: dict[str, Any],
+            match_type: str,
+        ) -> None:
+            cls._record_match_atomic(
+                db,
+                transaction,
+                match_ref,
+                p1_ref,
+                p2_ref,
+                user_ref,
+                match_data,
+                match_type,
+            )
+
+        _execute_match_transaction(
+            transaction,
             new_match_ref,
             side1_ref,
             side2_ref,
@@ -57,7 +81,6 @@ class MatchCommandService(BaseRepository):
             match_doc_data,
             sub.match_type,
         )
-        batch.commit()
 
         return cls._build_match_result(new_match_ref.id, match_doc_data)
 
@@ -139,10 +162,10 @@ class MatchCommandService(BaseRepository):
         )
 
     @classmethod
-    def _record_match_batch(  # noqa: PLR0913
+    def _record_match_atomic(  # noqa: PLR0913
         cls,
         db: Client,
-        batch: WriteBatch,
+        transaction: Transaction | WriteBatch,
         match_ref: DocumentReference,
         p1_ref: DocumentReference,
         p2_ref: DocumentReference,
@@ -150,13 +173,30 @@ class MatchCommandService(BaseRepository):
         match_data: dict[str, Any],
         match_type: str,
     ) -> None:
-        """Record a match and update stats using batched writes."""
+        """Record a match and update stats atomically."""
         from firebase_admin import firestore
+        from google.cloud.firestore_v1.transaction import Transaction
 
-        snaps_list = db.get_all([p1_ref, p2_ref])
-        snaps = {s.id: s for s in snaps_list if s.exists}
-        p1_snap = cast("DocumentSnapshot", snaps.get(p1_ref.id))
-        p2_snap = cast("DocumentSnapshot", snaps.get(p2_ref.id))
+        # Perform all reads first
+        read_refs = [p1_ref, p2_ref]
+        side1_ids, side2_ids = cls._get_side_ids(match_data, match_type)
+        all_participant_ids = list(set(side1_ids + side2_ids))
+        stats_refs = []
+        if isinstance(transaction, Transaction):
+            for uid in all_participant_ids:
+                stats_refs.append(
+                    db.collection("users")
+                    .document(uid)
+                    .collection("stats")
+                    .document("lifetime")
+                )
+            read_refs.extend(stats_refs)
+
+        snaps_list = db.get_all(read_refs, transaction=transaction)
+        snaps = {s.reference.path: s for s in snaps_list if s.exists}
+
+        p1_snap = cast("DocumentSnapshot", snaps.get(p1_ref.path))
+        p2_snap = cast("DocumentSnapshot", snaps.get(p2_ref.path))
         p1_data = p1_snap.to_dict() if p1_snap else {}
         p2_data = p2_snap.to_dict() if p2_snap else {}
 
@@ -165,7 +205,6 @@ class MatchCommandService(BaseRepository):
                 match_data, p1_ref, p1_data or {}, p2_ref, p2_data or {}
             )
 
-        side1_ids, side2_ids = cls._get_side_ids(match_data, match_type)
         outcome = MatchStatsCalculator.calculate_match_outcome(
             match_data["player1Score"],
             match_data["player2Score"],
@@ -184,22 +223,45 @@ class MatchCommandService(BaseRepository):
         ):
             match_data["is_upset"] = True
 
-        batch.set(match_ref, match_data)
-        batch.update(p1_ref, p1_upd)
-        batch.update(p2_ref, p2_upd)
+        # Now perform all writes
+        transaction.set(match_ref, match_data)
+        transaction.update(p1_ref, p1_upd)
+        transaction.update(p2_ref, p2_upd)
 
         if match_type == "doubles":
             MatchStatsUpdater.update_user_stats_batch(
-                batch,
+                transaction,
                 match_data.get("team1", []),
                 match_data.get("team2", []),
                 outcome["winner"],
             )
 
-        batch.update(user_ref, {"lastMatchRecordedType": match_type})
+        if isinstance(transaction, Transaction):
+            for uid in outcome.get("winners", []):
+                s_ref = (
+                    db.collection("users")
+                    .document(uid)
+                    .collection("stats")
+                    .document("lifetime")
+                )
+                MatchStatsUpdater.update_lifetime_stats_atomic(
+                    transaction, uid, True, db, snapshot=snaps.get(s_ref.path)
+                )
+            for uid in outcome.get("losers", []):
+                s_ref = (
+                    db.collection("users")
+                    .document(uid)
+                    .collection("stats")
+                    .document("lifetime")
+                )
+                MatchStatsUpdater.update_lifetime_stats_atomic(
+                    transaction, uid, False, db, snapshot=snaps.get(s_ref.path)
+                )
+
+        transaction.update(user_ref, {"lastMatchRecordedType": match_type})
 
         if gid := match_data.get("groupId"):
-            batch.update(
+            transaction.update(
                 db.collection("groups").document(gid),
                 {"updatedAt": firestore.SERVER_TIMESTAMP},
             )
