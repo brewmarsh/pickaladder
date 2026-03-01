@@ -4,6 +4,77 @@
 {% block content %}
 <div class="mt-4">
     <div class="dashboard-columns">
+        <div class="dashboard-column-right order-lg-1">
+            <div class="card text-center mb-4 border-0 shadow-sm">
+                <div class="card-body">
+                    <img src="{{ profile_user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl mb-3"
+                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                    <h2 class="text-truncate px-2">{{ profile_user | display_name }}</h2>
+                    <p class="text-muted">@{{ profile_user.username }}</p>
+
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <div class="mr-3 text-center">
+                            {% set dupr = profile_user.dupr_rating if profile_user.dupr_rating is not none else
+                            profile_user.duprRating %}
+                            <div class="h4 mb-0 fw-bold">
+                                {{ dupr if dupr is not none else 'Unrated' }}
+                                {% if profile_user.dupr_id %}
+                                <a href="{{ dupr_url_base }}{{ profile_user.dupr_id }}" target="_blank"
+                                    class="badge badge-primary ml-1 fs-xxs align-middle">View on DUPR</a>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted text-uppercase fs-xxs ls-1 d-block">
+                                DUPR Rating
+                                {% if not profile_user.dupr_id %}
+                                <br><a href="{{ url_for('user.edit_profile') }}" class="small">Add DUPR ID</a>
+                                {% endif %}
+                            </small>
+                        </div>
+                        <div class="text-left">
+                            <span class="badge badge-volt d-block mb-1 fs-xxs">
+                                {{ total_games }} {{ total_games | pluralize('Match', 'Matches') }}
+                            </span>
+                            <span class="badge badge-volt d-block mb-1 fs-xxs">
+                                Win Rate: {{ "%.0f"|format(win_rate) }}%
+                            </span>
+                            <span class="badge {{ 'badge-volt' if streak_type == 'W' else 'badge-danger' if streak_type == 'L' else 'badge-info' }} d-block fs-xxs">
+                                Streak: {{ current_streak }}{{ streak_type if total_games > 0 else '' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="px-2">
+                        {% if is_friend %}
+                        <a href="{{ url_for('match.record_match', opponent_id=profile_user.id) }}"
+                            class="btn btn-volt btn-block mb-2">Record Match</a>
+                        {% endif %}
+
+                        {% if not is_friend and not friend_request_sent and user.id != profile_user.id %}
+                        <button class="btn btn-volt btn-block mb-2" id="addFriendBtn"
+                            data-url="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}"
+                            data-csrf="{{ csrf_token() }}">Add Friend</button>
+                        {% elif friend_request_sent %}
+                        <button class="btn btn-secondary btn-block mb-2" disabled>Friend Request Sent</button>
+                        {% endif %}
+                    </div>
+
+                    {% if h2h_stats %}
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="text-muted text-uppercase mb-2 fs-xxs ls-1">Vs
+                            You</h6>
+                        <p class="h4 mb-0 fw-bold">
+                            {{ h2h_stats.wins }}-{{ h2h_stats.losses }}
+                        </p>
+                        <small
+                            class="{% if h2h_stats.point_diff > 0 %}text-volt{% elif h2h_stats.point_diff < 0 %}text-danger{% else %}text-muted{% endif %} fw-bold">
+                            ({% if h2h_stats.point_diff > 0 %}+{% endif %}{{ h2h_stats.point_diff }} points)
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
         <div class="dashboard-column-left">
             <div class="d-flex flex-column gap-4">
                 <div class="match-history-section">
@@ -99,77 +170,6 @@
                             {% endif %}
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-column-right">
-            <div class="card text-center mb-4 border-0 shadow-sm">
-                <div class="card-body">
-                    <img src="{{ profile_user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl mb-3"
-                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
-                    <h2 class="text-truncate px-2">{{ profile_user | display_name }}</h2>
-                    <p class="text-muted">@{{ profile_user.username }}</p>
-
-                    <div class="d-flex justify-content-center align-items-center mb-3">
-                        <div class="mr-3 text-center">
-                            {% set dupr = profile_user.dupr_rating if profile_user.dupr_rating is not none else
-                            profile_user.duprRating %}
-                            <div class="h4 mb-0 fw-bold">
-                                {{ dupr if dupr is not none else 'Unrated' }}
-                                {% if profile_user.dupr_id %}
-                                <a href="{{ dupr_url_base }}{{ profile_user.dupr_id }}" target="_blank"
-                                    class="badge badge-primary ml-1 fs-xxs align-middle">View on DUPR</a>
-                                {% endif %}
-                            </div>
-                            <small class="text-muted text-uppercase fs-xxs ls-1 d-block">
-                                DUPR Rating
-                                {% if not profile_user.dupr_id %}
-                                <br><a href="{{ url_for('user.edit_profile') }}" class="small">Add DUPR ID</a>
-                                {% endif %}
-                            </small>
-                        </div>
-                        <div class="text-left">
-                            <span class="badge badge-volt d-block mb-1 fs-xxs">
-                                {{ total_games }} {{ total_games | pluralize('Match', 'Matches') }}
-                            </span>
-                            <span class="badge badge-volt d-block mb-1 fs-xxs">
-                                Win Rate: {{ "%.0f"|format(win_rate) }}%
-                            </span>
-                            <span class="badge {{ 'badge-volt' if streak_type == 'W' else 'badge-danger' if streak_type == 'L' else 'badge-info' }} d-block fs-xxs">
-                                Streak: {{ current_streak }}{{ streak_type if total_games > 0 else '' }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="px-2">
-                        {% if is_friend %}
-                        <a href="{{ url_for('match.record_match', opponent_id=profile_user.id) }}"
-                            class="btn btn-volt btn-block mb-2">Record Match</a>
-                        {% endif %}
-
-                        {% if not is_friend and not friend_request_sent and user.id != profile_user.id %}
-                        <button class="btn btn-volt btn-block mb-2" id="addFriendBtn"
-                            data-url="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}"
-                            data-csrf="{{ csrf_token() }}">Add Friend</button>
-                        {% elif friend_request_sent %}
-                        <button class="btn btn-secondary btn-block mb-2" disabled>Friend Request Sent</button>
-                        {% endif %}
-                    </div>
-
-                    {% if h2h_stats %}
-                    <div class="mt-4 pt-3 border-top">
-                        <h6 class="text-muted text-uppercase mb-2 fs-xxs ls-1">Vs
-                            You</h6>
-                        <p class="h4 mb-0 fw-bold">
-                            {{ h2h_stats.wins }}-{{ h2h_stats.losses }}
-                        </p>
-                        <small
-                            class="{% if h2h_stats.point_diff > 0 %}text-volt{% elif h2h_stats.point_diff < 0 %}text-danger{% else %}text-muted{% endif %} fw-bold">
-                            ({% if h2h_stats.point_diff > 0 %}+{% endif %}{{ h2h_stats.point_diff }} points)
-                        </small>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
