@@ -252,14 +252,14 @@
 }
 
 .status-Active {
-    background-color: var(--success-color);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    background-color: var(--color-volt);
+    box-shadow: 0 0 10px rgba(132, 204, 22, 0.4);
 }
 .status-Completed {
     background-color: var(--text-secondary);
 }
 .status-PUBLISHED {
-    background-color: var(--accent-color);
+    background-color: var(--color-volt);
     box-shadow: 0 0 10px rgba(132, 204, 22, 0.4);
 }
 
