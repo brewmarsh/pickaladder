@@ -1,14 +1,16 @@
 """Tests for the Design System Style Guide."""
 
 import unittest
-from typing import Any
 from unittest.mock import MagicMock, patch
+
 from flask import g
+
 from pickaladder import create_app
 
 # Mock user payloads
 MOCK_ADMIN_ID = "admin_uid"
 MOCK_ADMIN_DATA = {"uid": "admin_uid", "name": "Admin User", "isAdmin": True}
+
 
 class StyleGuideTestCase(unittest.TestCase):
     """Test case for the design system style guide."""
@@ -20,7 +22,9 @@ class StyleGuideTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore_client": patch("firebase_admin.firestore.client"),
-            "match_service_record": patch("pickaladder.match.services.MatchService.record_match"),
+            "match_service_record": patch(
+                "pickaladder.match.services.MatchService.record_match"
+            ),
             "user_service_get_all": patch("pickaladder.user.UserService.get_all_users"),
         }
 
@@ -60,6 +64,7 @@ class StyleGuideTestCase(unittest.TestCase):
         # Mock g.user which is often used in templates/decorators
         with self.app.test_request_context():
             from pickaladder.user.models import UserSession
+
             g.user = UserSession(MOCK_ADMIN_DATA)
 
             # We need to use the client within this context if possible,
@@ -73,6 +78,7 @@ class StyleGuideTestCase(unittest.TestCase):
             self.assertIn(b"Tournament Card", response.data)
             self.assertIn(b"Match Row", response.data)
             self.assertIn(b"style-guide-wrapper", response.data)
+
 
 if __name__ == "__main__":
     unittest.main()
