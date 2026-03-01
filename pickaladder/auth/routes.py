@@ -1,6 +1,5 @@
 """Routes for authentication."""
 
-import re
 from typing import Any, cast
 
 from firebase_admin import auth, firestore
@@ -18,10 +17,7 @@ from flask import (
 from flask_login import login_user, logout_user
 
 from pickaladder.constants.messages import AUTH_MESSAGES
-from pickaladder.errors import DuplicateResourceError
-from pickaladder.user import UserService
 from pickaladder.user.helpers import wrap_user
-from pickaladder.utils import EmailError, send_email
 
 from . import bp
 from .forms import ChangePasswordForm, LoginForm, RegisterForm

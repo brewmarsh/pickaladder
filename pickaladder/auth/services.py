@@ -9,7 +9,6 @@ from flask import current_app, flash, redirect, session, url_for
 from pickaladder.constants.messages import AUTH_MESSAGES
 from pickaladder.errors import DuplicateResourceError
 from pickaladder.user import UserService
-from pickaladder.user.helpers import wrap_user
 from pickaladder.utils import EmailError, send_email
 
 from .forms import RegisterForm
