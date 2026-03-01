@@ -1,22 +1,9 @@
 /* --- 0. Layout Utilities --- */
-.grid-2-col-responsive {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-@media (max-width: 768px) {
-    .grid-2-col-responsive {
-        grid-template-columns: 1fr !important;
-    }
-}
-
 .w-auto { width: auto !important; }
 .mx-auto { margin-left: auto !important; margin-right: auto !important; }
 .gap-4 { gap: 1.5rem !important; }
 .justify-content-center { justify-content: center !important; }
 .text-center { text-align: center !important; }
-.text-volt { color: var(--color-volt) !important; }
 .text-danger { color: var(--danger-color) !important; }
 .text-volt { color: var(--color-volt) !important; }
 .border-danger { border: 1px solid var(--danger-color) !important; }
@@ -99,36 +86,7 @@
     width: auto;
 }
 
-/* --- 6b. Volt Input Group (Strict Layout) --- */
-.input-group-volt {
-    display: flex !important;
-    width: 100%;
-    gap: 0 !important;
-}
-
-.input-group-volt .form-control {
-    flex: 1;
-    border: 1px solid var(--color-volt) !important;
-    border-top-right-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-}
-
-.input-group-volt .btn,
-.input-group-volt a.btn {
-    width: auto !important;
-    border-radius: 0 !important;
-    border: 1px solid var(--color-volt) !important;
-    background-color: var(--color-volt) !important;
-    color: var(--text-on-accent, #111827) !important;
-}
-
-.input-group-volt .btn:last-child,
-.input-group-volt a.btn:last-child {
-    border-top-right-radius: var(--radius-md, 8px) !important;
-    border-bottom-right-radius: var(--radius-md, 8px) !important;
-}
-
-/* --- 6c. Search Form Specific (Flexbox Alignment) --- */
+/* --- 6b. Search Form Specific (Flexbox Alignment) --- */
 .search-form .input-group {
     display: flex;
     align-items: stretch;
@@ -267,15 +225,91 @@ body .d-none { display: none !important; }
     }
 }
 
+/* --- 7. Segmented Controls --- */
+.segmented-control {
+    display: flex;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    gap: 4px;
+}
 
-/* Standardized Font Scale */
-.fs-xxs { font-size: 0.65rem !important; }
-.fs-xs { font-size: 0.75rem !important; }
-.fs-sm { font-size: 0.875rem !important; }
-.fs-md { font-size: 1rem !important; }
-.fs-lg { font-size: 1.125rem !important; }
-.fs-xl { font-size: 1.25rem !important; }
-.fs-xxl { font-size: 1.5rem !important; }
+.segmented-item {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0;
+}
+
+.segmented-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.visually-hidden:checked + .segmented-item {
+    background-color: var(--bg-secondary);
+    color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .segmented-control {
+    background-color: #000000;
+}
+
+[data-theme="dark"] .segmented-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .visually-hidden:checked + .segmented-item {
+    background-color: var(--card-bg);
+    color: var(--primary-color);
+}
+
+/* --- 8. File Upload Styling --- */
+.file-upload-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.file-upload-button {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.file-upload-button:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.file-upload-input {
+    display: none;
+}
+
+.file-name-text {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+}
 
 /* --- Accessibility --- */
 .visually-hidden {

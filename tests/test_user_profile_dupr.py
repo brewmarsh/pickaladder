@@ -85,5 +85,5 @@ class UserProfileDuprTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Verify DUPR rating is present in HTML
-        self.assertIn(b"Rating", response.data)
+        self.assertIn(b"DUPR Rating", response.data)
         self.assertIn(b"4.5", response.data)

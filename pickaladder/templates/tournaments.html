@@ -8,7 +8,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4 page-header-actions">
     <h1>Tournaments</h1>
     {% if g.user.isAdmin %}
-    <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-volt btn-action">
+    <a href="{{ url_for('tournament.create_tournament') }}" class="btn btn-primary btn-action">
         <i class="fas fa-trophy"></i> Create Tournament
     </a>
     {% endif %}
