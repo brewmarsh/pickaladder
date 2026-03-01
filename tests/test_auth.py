@@ -25,13 +25,21 @@ class AuthFirebaseTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up a test client and a comprehensive mock environment."""
-        self.mock_auth_service = MagicMock()
         self.mock_firestore_service = MagicMock()
+        self.mock_auth_service = MagicMock()
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "auth": patch("pickaladder.auth.routes.auth", new=self.mock_auth_service),
-            "firestore": patch(
+            "auth_services": patch(
+                "pickaladder.auth.services.auth", new=self.mock_auth_service
+            ),
+            "firestore_services": patch(
+                "pickaladder.auth.services.firestore", new=self.mock_firestore_service
+            ),
+            "auth_routes": patch(
+                "pickaladder.auth.routes.auth", new=self.mock_auth_service
+            ),
+            "firestore_routes": patch(
                 "pickaladder.auth.routes.firestore", new=self.mock_firestore_service
             ),
             "firestore_app": patch(
@@ -46,7 +54,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         self.app = create_app({"TESTING": True, "SERVER_NAME": "localhost"})
         self.client = self.app.test_client()
 
-    @patch("pickaladder.auth.routes.send_email")
+    @patch("pickaladder.auth.services.send_email")
     def test_successful_registration(self, mock_send_email: MagicMock) -> None:
         """Test user registration with valid data."""
         # Mock the username check to return an empty list, simulating username is
@@ -196,7 +204,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
         mock_user_doc.set.assert_called_once()
         mock_settings_doc.set.assert_called_once_with({"value": True})
 
-    @patch("pickaladder.auth.routes.send_email")
+    @patch("pickaladder.auth.services.send_email")
     def test_registration_with_invite_token(self, mock_send_email: MagicMock) -> None:
         """Test user registration with a valid invite token."""
         # Mock the username check to return an empty list, simulating username is

@@ -9,12 +9,20 @@
     overflow: hidden;
     transition: box-shadow 0.2s ease;
 }
-.card:hover { box-shadow: var(--shadow-md); }
+
+.card:hover { 
+    box-shadow: var(--shadow-md); 
+}
+
 .card-notification {
     background-color: rgba(37, 99, 235, 0.1);
     border: 1px solid var(--primary-color);
 }
-.card-compact { padding: 16px; }
+
+.card-compact { 
+    padding: 16px; 
+}
+
 .card-header {
     background-color: transparent;
     border-bottom: 1px solid var(--border-color);
@@ -24,13 +32,14 @@
     font-size: 1.1rem;
 }
 
+/* Hero Component Engine */
 .hero-stats-card {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background-color: var(--card-bg);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
+    border-radius: var(--radius-lg); 
+    box-shadow: var(--shadow-md);
     padding: 24px;
     margin-bottom: 24px;
     position: relative;
@@ -47,7 +56,39 @@
     flex: 2;
 }
 
-/* Toasts */
+/* Modals & Overlays */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    outline: 0;
+    background: rgba(0, 0, 0, 0.7); /* Standardized high-contrast backdrop */
+}
+
+.modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    margin: auto;
+    padding: 24px;
+    border: 1px solid var(--border-color);
+    width: 90%;
+    max-width: 500px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+}
+
+/* Toasts & Notifications */
 .toast-container {
     position: fixed;
     top: 70px;
@@ -58,16 +99,16 @@
     align-items: flex-end;
     gap: 12px;
 }
+
 .toast {
     background-color: var(--card-bg);
     color: var(--text-primary);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-lg);
     border-radius: var(--radius-lg);
     border: none;
     overflow: hidden;
     position: relative;
     max-width: 350px;
-    width: fit-content;
     min-width: 280px;
     padding: 16px 8px;
     display: flex;
@@ -75,6 +116,7 @@
     align-items: center;
     justify-content: center;
 }
+
 .toast::before {
     content: '';
     position: absolute;
@@ -83,48 +125,11 @@
     bottom: 0;
     width: 5px;
     background-color: var(--primary-color);
-    z-index: 1;
 }
 
-/* Category-specific indicators */
 .toast.alert-success::before { background-color: var(--success-color); }
 .toast.alert-danger::before { background-color: var(--danger-color); }
 .toast.alert-warning::before { background-color: var(--warning-color); }
-.toast.alert-info::before { background-color: var(--primary-color); }
-
-.toast-header {
-    background: transparent;
-    border-bottom: none;
-    padding: 0 16px 4px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-}
-.toast-header .close {
-    position: absolute;
-    top: 10px;
-    right: 12px;
-    background: transparent;
-    border: 0;
-    padding: 0;
-    font-size: 1.25rem;
-    line-height: 1;
-    color: var(--text-secondary);
-    opacity: 0.5;
-    transition: opacity 0.2s;
-}
-.toast-header .close:hover { opacity: 1; }
-
-.toast-body {
-    padding: 8px 20px;
-    text-align: center;
-    font-weight: var(--fw-medium);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-}
 
 /* Unified Share Card */
 .share-card-container {
@@ -136,64 +141,7 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-.share-card-header {
-    font-size: 0.75rem;
-    text-transform: none;
-    letter-spacing: 0.1em;
-    opacity: 0.8;
-    margin-bottom: 20px;
-}
-
-.share-card-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50% !important;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    margin: 0 auto 15px;
-    display: block;
-    object-fit: cover;
-}
-
-.share-card-title {
-    font-size: 2rem;
-    margin-bottom: 15px;
-    font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 1.0);
-    color: white;
-}
-
-.share-card-stat {
-    font-size: 1.25rem;
-    font-weight: 700;
-    background: rgba(255, 255, 255, 0.2);
-    display: inline-block;
-    padding: 8px 20px;
-    border-radius: 50px;
-    margin-top: 10px;
-    color: white;
-}
-
-.share-card-visual {
-    width: 100%;
-    max-width: 300px;
-    height: 100px;
-    margin: 20px auto;
-    overflow: hidden;
-}
-
-.share-card-visual canvas {
-    width: 100% !important;
-    height: 100% !important;
-}
-
-.share-card-footer {
-    margin-top: 30px;
-    font-size: 0.85rem;
-    opacity: 0.7;
-    color: white;
-}
-
-/* --- 2. Tournament Cards & Badges --- */
+/* --- 2. Tournament & Competition System --- */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -204,16 +152,6 @@
     font-weight: var(--fw-bold);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-}
-
-.badge-success {
-    background-color: var(--success-color);
-    color: white;
-}
-
-.badge-warning {
-    background-color: var(--warning-color);
-    color: var(--text-on-accent);
 }
 
 .badge-volt {
@@ -232,60 +170,151 @@
     font-weight: var(--fw-bold);
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
     background: rgba(var(--bg-secondary-rgb, 255, 255, 255), 0.5);
     transition: all 0.2s ease;
 }
 
-.badge-outline:has(.text-volt) {
-    border-color: var(--color-volt);
-}
-
+/* Status Indicators */
 .status-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
     display: inline-block;
-    flex-shrink: 0;
 }
 
-.status-Active {
-    background-color: var(--color-volt);
-    box-shadow: 0 0 10px rgba(132, 204, 22, 0.4);
-}
-.status-Completed {
-    background-color: var(--text-secondary);
-}
-.status-PUBLISHED {
+.status-Active, .status-PUBLISHED {
     background-color: var(--color-volt);
     box-shadow: 0 0 10px rgba(206, 255, 0, 0.4);
 }
 
-/* Kebab Menu Overrides */
-.kebab-menu .dropbtn {
-    transition: all 0.2s ease;
-}
-.kebab-menu .dropbtn:hover {
-    background: rgba(0, 0, 0, 0.8) !important;
-    transform: scale(1.1);
+.status-Completed {
+    background-color: var(--text-secondary);
 }
 
+/* Card Stability Engine (Fixed Tech Debt) */
 .tournament-card {
     height: 100%;
     width: 100%;
-    min-width: 0;
+    min-width: 0; /* Prevents overflow in grid */
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important;
+    position: relative;
+}
+
+.tournament-card-banner {
+    height: 160px;
+    width: 100%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.tournament-card-banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tournament-card-sidebar .tournament-card-banner {
+    height: 120px !important;
+}
+
+.tournament-card-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 3rem;
+}
+
+.kebab-menu {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.kebab-menu .dropbtn {
+    background: rgba(0,0,0,0.5);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.kebab-menu .dropbtn:hover {
+    background: rgba(0,0,0,0.8);
 }
 
 .tournament-card.clickable-row {
     cursor: pointer;
+    transition: transform 0.2s ease;
 }
 
-.tournament-card .card-badges {
-    white-space: nowrap;
+.tournament-card.clickable-row:hover {
+    transform: translateY(-4px);
 }
 
-/* Sidebar Specifics */
+/* --- 3. Groups & Community Grids --- */
+.groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.group-card {
+    padding: 0 !important;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.group-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.group-card-img {
+    height: 180px;
+    width: 100%;
+    object-fit: cover;
+}
+
+.rank-badge {
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 0.85rem;
+}
+
+.rank-1 {
+    background-color: var(--color-volt);
+    color: var(--color-dark);
+    font-weight: bold;
+}
+
+.rank-other {
+    border: 1px solid var(--border-color);
+}
+
+.friend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 20px;
+}
+
+/* --- 4. Sidebar Specifics & Invites --- */
 .sidebar-header {
     margin-top: 0;
     margin-bottom: 16px;
@@ -300,33 +329,6 @@
     gap: 16px;
     margin-bottom: 20px;
     border-left: 5px solid var(--accent-color) !important;
-}
-
-.invite-content { flex: 2; }
-.invite-label {
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: var(--accent-color);
-}
-.invite-name {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-top: 4px;
-}
-.invite-actions {
-    flex: 1;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    align-items: center;
-}
-
-.quest-summary {
-    cursor: pointer;
-    list-style: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }
 
 .vanity-stats-loading {

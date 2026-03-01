@@ -24,9 +24,13 @@ class WelcomeToastTestCase(unittest.TestCase):
         # Patchers for all dependencies
         self.patchers = [
             patch("firebase_admin.initialize_app"),
+            patch("pickaladder.auth.services.auth", new=self.mock_auth_service),
+            patch(
+                "pickaladder.auth.services.firestore", new=self.mock_firestore_service
+            ),
             patch("pickaladder.auth.routes.auth", new=self.mock_auth_service),
             patch("pickaladder.auth.routes.firestore", new=self.mock_firestore_service),
-            patch("pickaladder.auth.routes.UserService.merge_ghost_user"),
+            patch("pickaladder.auth.services.UserService.merge_ghost_user"),
         ]
 
         self.mocks = []
@@ -52,7 +56,7 @@ class WelcomeToastTestCase(unittest.TestCase):
         for p in self.patchers:
             p.stop()
 
-    @patch("pickaladder.auth.routes.UserService.get_pending_tournament_invites")
+    @patch("pickaladder.auth.services.UserService.get_pending_tournament_invites")
     def test_welcome_toast_triggered_on_merge(
         self, mock_get_invites: MagicMock
     ) -> None:
@@ -90,7 +94,7 @@ class WelcomeToastTestCase(unittest.TestCase):
         with self.client.session_transaction() as sess:
             self.assertEqual(sess.get("show_welcome_invites"), 2)
 
-    @patch("pickaladder.auth.routes.UserService.get_pending_tournament_invites")
+    @patch("pickaladder.auth.services.UserService.get_pending_tournament_invites")
     def test_welcome_toast_not_triggered_on_no_merge(
         self, mock_get_invites: MagicMock
     ) -> None:
@@ -121,8 +125,8 @@ class WelcomeToastTestCase(unittest.TestCase):
 
         mock_get_invites.assert_not_called()
 
-    @patch("pickaladder.auth.routes.send_email")
-    @patch("pickaladder.auth.routes.UserService.get_pending_tournament_invites")
+    @patch("pickaladder.auth.services.send_email")
+    @patch("pickaladder.auth.services.UserService.get_pending_tournament_invites")
     def test_welcome_toast_triggered_on_register(
         self, mock_get_invites: MagicMock, mock_send_email: MagicMock
     ) -> None:

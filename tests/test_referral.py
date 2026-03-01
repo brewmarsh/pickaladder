@@ -74,9 +74,9 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
     with (
         patch("firebase_admin.auth.create_user") as mock_create,
         patch("firebase_admin.auth.generate_email_verification_link") as mock_gen,
-        patch("pickaladder.auth.routes.send_email"),
+        patch("pickaladder.auth.services.send_email"),
         patch(
-            "pickaladder.auth.routes.UserService.merge_ghost_user", return_value=False
+            "pickaladder.auth.services.UserService.merge_ghost_user", return_value=False
         ),
     ):
         mock_create.return_value = MagicMock(uid="new_user_uid")
