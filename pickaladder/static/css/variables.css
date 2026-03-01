@@ -2,7 +2,8 @@
     /* --- NEW "COURT & VOLT" SYSTEM --- */
     --primary-color: #2563EB;       /* Royal Blue */
     --primary-hover: #1D4ED8;
-    --accent-color: #84CC16;        /* Electric Lime */
+    --color-volt: #ceff00;          /* Volt Neon */
+    --accent-color: var(--color-volt);
     --accent-hover: #65A30D;
 
     --success-color: #10B981;

@@ -241,6 +241,11 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     background: rgba(var(--bg-secondary-rgb, 255, 255, 255), 0.5);
+    transition: all 0.2s ease;
+}
+
+.badge-outline:has(.text-volt) {
+    border-color: var(--color-volt);
 }
 
 .status-dot {
@@ -259,8 +264,8 @@
     background-color: var(--text-secondary);
 }
 .status-PUBLISHED {
-    background-color: var(--accent-color);
-    box-shadow: 0 0 10px rgba(132, 204, 22, 0.4);
+    background-color: var(--color-volt);
+    box-shadow: 0 0 10px rgba(206, 255, 0, 0.4);
 }
 
 /* Kebab Menu Overrides */
@@ -275,6 +280,7 @@
 .tournament-card {
     height: 100%;
     width: 100%;
+    min-width: 0;
     overflow: hidden;
 }
 

@@ -23,7 +23,7 @@
 
 /* High-Energy Volt Button */
 .btn-volt {
-    background-color: var(--accent-color);
+    background-color: var(--color-volt);
     color: var(--text-primary) !important;
     font-weight: 700;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
