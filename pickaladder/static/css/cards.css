@@ -285,3 +285,46 @@
 .tournament-card .card-badges {
     white-space: nowrap;
 }
+
+/* --- 3. Groups Page Styles --- */
+.groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.group-card {
+    padding: 0 !important;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.group-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.group-card-img {
+    height: 180px;
+    width: 100%;
+    object-fit: cover;
+}
+
+.rank-badge {
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 0.85rem;
+}
+
+.rank-1 {
+    background-color: var(--color-volt);
+    color: var(--color-dark);
+    font-weight: bold;
+}
+
+.rank-other {
+    border: 1px solid var(--border-color);
+}
