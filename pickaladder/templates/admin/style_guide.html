@@ -1,0 +1,136 @@
+{% extends "layout.html" %}
+{% from "components/_tournament_card.html" import tournament_card %}
+
+{% block title %}Design System Style Guide{% endblock %}
+
+{% block content %}
+<div class="style-guide-wrapper">
+    <div class="style-guide-main">
+        <div class="page-header mb-4">
+            <h1 class="display-font">Design System Style Guide</h1>
+            <p class="subhead">Standardized UI components for v0.10.0</p>
+        </div>
+
+        <!-- Colors -->
+        <section class="card mb-4">
+            <div class="card-header">Colors</div>
+            <div class="d-flex flex-wrap gap-3">
+                <div class="text-center">
+                    <div style="width: 100px; height: 100px; background-color: var(--primary-color); border-radius: 8px; border: 1px solid var(--border-color);"></div>
+                    <code class="d-block mt-2">Primary</code>
+                </div>
+                <div class="text-center">
+                    <div style="width: 100px; height: 100px; background-color: var(--accent-color); border-radius: 8px; border: 1px solid var(--border-color);"></div>
+                    <code class="d-block mt-2">Accent</code>
+                </div>
+                <div class="text-center">
+                    <div style="width: 100px; height: 100px; background-color: var(--color-volt); border-radius: 8px; border: 1px solid var(--border-color);"></div>
+                    <code class="d-block mt-2">Volt</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- Typography -->
+        <section class="card mb-4">
+            <div class="card-header">Typography</div>
+            <h1>H1: The Quick Brown Fox</h1>
+            <h2>H2: The Quick Brown Fox</h2>
+            <h3>H3: The Quick Brown Fox</h3>
+            <p>Standard body text: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+            <p class="text-muted">Muted text for secondary information.</p>
+            <p class="text-volt">Volt colored text for high energy highlights.</p>
+        </section>
+
+        <!-- Buttons -->
+        <section class="card mb-4">
+            <div class="card-header">Buttons</div>
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <button class="btn btn-primary w-auto">Primary</button>
+                <button class="btn btn-volt w-auto">Volt</button>
+                <button class="btn btn-outline-primary w-auto">Outline Primary</button>
+                <button class="btn btn-sm btn-secondary w-auto">Small Button</button>
+            </div>
+        </section>
+
+        <!-- Badges -->
+        <section class="card mb-4">
+            <div class="card-header">Badges</div>
+            <div class="d-flex flex-wrap gap-2">
+                <span class="badge badge-success">Success</span>
+                <span class="badge badge-warning">Warning</span>
+                <span class="badge badge-volt">Volt</span>
+                <span class="badge badge-outline">Outline Badge</span>
+            </div>
+        </section>
+
+        <!-- Components -->
+        <section class="mb-4">
+            <h2 class="mb-3">Components</h2>
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    <h3>Match Row</h3>
+                    <div class="table-container">
+                        <table class="table-standard">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Matchup</th>
+                                    <th>Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% with user={'uid': 'user-1'} %}
+                                    {% include "components/match_list_item.html" %}
+                                {% endwith %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Sidebar to demonstrate 2-column layout -->
+    <div class="style-guide-sidebar">
+        <h3 class="mb-3">Tournament Card</h3>
+        {{ tournament_card(tournament) }}
+
+        <div class="card mt-4">
+            <div class="card-header">Layout Specs</div>
+            <p class="small text-muted">This sidebar demonstrates the 350px fixed width in our 2-column grid system.</p>
+            <ul class="small p-0 m-0" style="list-style: none;">
+                <li>Main: <code>1fr</code></li>
+                <li>Sidebar: <code>350px</code></li>
+                <li>Gap: <code>24px</code></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+    .style-guide-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .style-guide-main {
+        min-width: 0; /* Prevent blowout */
+    }
+
+    .style-guide-sidebar {
+        position: sticky;
+        top: 20px;
+    }
+
+    @media (max-width: 992px) {
+        .style-guide-wrapper {
+            grid-template-columns: 1fr;
+        }
+        .style-guide-sidebar {
+            position: static;
+        }
+    }
+</style>
+{% endblock %}

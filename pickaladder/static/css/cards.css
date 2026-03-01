@@ -228,6 +228,33 @@
 }
 
 /* --- 2. Tournament Cards & Badges --- */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: var(--fw-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.badge-warning {
+    background-color: var(--warning-color);
+    color: var(--text-on-accent);
+}
+
+.badge-volt {
+    background-color: var(--color-volt);
+    color: var(--text-on-accent);
+}
+
 .badge-outline {
     display: inline-flex;
     align-items: center;
@@ -290,4 +317,55 @@
 
 .tournament-card .card-badges {
     white-space: nowrap;
+}
+
+/* Sidebar Specifics */
+.sidebar-header {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 1.25rem;
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.tournament-invite-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    border-left: 5px solid var(--accent-color) !important;
+}
+
+.invite-content { flex: 2; }
+.invite-label {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--accent-color);
+}
+.invite-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-top: 4px;
+}
+.invite-actions {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    align-items: center;
+}
+
+.quest-summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.vanity-stats-loading {
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

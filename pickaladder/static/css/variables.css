@@ -5,6 +5,7 @@
     --color-volt: #ceff00;          /* Volt Neon */
     --accent-color: var(--color-volt);
     --accent-hover: #65A30D;
+    --color-volt: var(--accent-color);
 
     --success-color: #10B981;
     --danger-color: #EF4444;
