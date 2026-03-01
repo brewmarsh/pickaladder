@@ -17,9 +17,18 @@
                         <div class="vanity-stat">
                             {% set dupr = profile_user.dupr_rating if profile_user.dupr_rating is not none else profile_user.duprRating %}
                             <div class="stat-value fs-large fw-bold">
-                                {{ dupr if dupr is not none else '—' }}
+                                {{ dupr if dupr is not none else 'Unrated' }}
+                                {% if profile_user.dupr_id %}
+                                <a href="{{ dupr_url_base }}{{ profile_user.dupr_id }}" target="_blank"
+                                    class="badge badge-primary ml-1 fs-xxs align-middle">View on DUPR</a>
+                                {% endif %}
                             </div>
-                            <div class="stat-label text-muted fs-xxs text-uppercase ls-1">DUPR</div>
+                            <div class="stat-label text-muted fs-xxs text-uppercase ls-1">
+                                DUPR Rating
+                                {% if not profile_user.dupr_id %}
+                                <br><a href="{{ url_for('user.edit_profile') }}" class="small">Add DUPR ID</a>
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="vanity-stat">
                             <div class="stat-value fs-large fw-bold text-volt">{{ total_games }}</div>
@@ -70,7 +79,9 @@
 
             {# Social Section #}
             <div class="card card-compact mb-4 border-0 shadow-sm">
-                <h3 class="sidebar-header">Friends</h3>
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-2">
+                    <h4 class="fw-bold">Friends</h4>
+                </div>
                 <div class="card-body p-0">
                     {% if friends %}
                     <div class="list-group list-group-flush">
@@ -104,7 +115,7 @@
         <div class="dashboard-column-left order-lg-1">
             <div class="card mb-4 border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                    <h3 class="fw-bold">Match History</h3>
+                    <h4 class="fw-bold">Match History</h4>
                 </div>
                 <div class="card-body p-0">
                     {% if matches %}
