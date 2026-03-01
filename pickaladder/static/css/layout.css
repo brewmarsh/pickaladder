@@ -140,8 +140,10 @@ body {
     gap: 24px;
 }
 
-.dashboard-column-left { min-width: 0; }
-.dashboard-column-right { min-width: 0; }
+.dashboard-column-left,
+.dashboard-column-right {
+    min-width: 0;
+}
 
 .card-grid {
     display: grid;
@@ -193,7 +195,7 @@ body {
 }
 
 @media screen and (max-width: 768px) {
-    .dashboard-columns { flex-direction: column; }
+    .dashboard-columns { grid-template-columns: 1fr; }
     .navbar-menu { display: none; }
 }
 
