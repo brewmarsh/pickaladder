@@ -32,12 +32,15 @@
                             </small>
                         </div>
                         <div class="text-left">
-                            <span class="badge badge-volt d-block mb-1" style="font-size: 0.75rem;">Win Rate: {{
-                                "%.0f"|format(win_rate) }}%</span>
-                            <span
-                                class="badge {{ 'badge-volt' if streak_type == 'W' else 'badge-danger' if streak_type == 'L' else 'badge-info' }} d-block"
-                                style="font-size: 0.75rem;">Streak: {{ current_streak }}{{ streak_type if total_games >
-                                0 else '' }}</span>
+                            <span class="badge badge-volt d-block mb-1" style="font-size: 0.75rem;">
+                                {{ total_games }} {{ total_games | pluralize('Match', 'Matches') }}
+                            </span>
+                            <span class="badge badge-volt d-block mb-1" style="font-size: 0.75rem;">
+                                Win Rate: {{ "%.0f"|format(win_rate) }}%
+                            </span>
+                            <span class="badge {{ 'badge-volt' if streak_type == 'W' else 'badge-danger' if streak_type == 'L' else 'badge-info' }} d-block" style="font-size: 0.75rem;">
+                                Streak: {{ current_streak }}{{ streak_type if total_games > 0 else '' }}
+                            </span>
                         </div>
                     </div>
 

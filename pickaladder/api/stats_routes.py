@@ -24,13 +24,10 @@ def vanity_metrics() -> Any:
     user_id = g.user["uid"]
     user_data, vanity_metrics = _fetch_vanity_stats(db, user_id)
 
-    # We also need current_streak from recent activity for the vanity stats card
-    activity = _fetch_recent_activity(db, user_id)
-
     return render_template(
         "components/_vanity_stats.html",
         stats=vanity_metrics,
-        current_streak=activity["current_streak"],
+        current_streak=vanity_metrics.get("current_streak", 0),
         user=user_data,
     )
 
