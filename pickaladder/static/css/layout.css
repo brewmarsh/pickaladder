@@ -140,9 +140,15 @@ body {
     gap: 24px;
 }
 
-.dashboard-column-left,
+.dashboard-column-left {
+    min-width: 0;
+}
+
 .dashboard-column-right {
     min-width: 0;
+    position: sticky;
+    top: 24px;
+    align-self: start;
 }
 
 .card-grid {
