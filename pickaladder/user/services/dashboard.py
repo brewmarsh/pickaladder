@@ -1,134 +1,309 @@
-"""Service for user dashboard data aggregation."""
+"""General user profile and community services."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
-
-from pickaladder.user.services.activity import (
-    get_group_rankings,
-)
-from pickaladder.user.services.core import get_user_by_id
-from pickaladder.user.services.friendship import (
-    get_user_friends,
-    get_user_pending_requests,
-)
-from pickaladder.user.services.match_formatting import (
-    format_matches_for_dashboard,
-)
-from pickaladder.user.services.match_stats import (
-    _calculate_streak,
-    get_recent_opponents,
-    get_user_matches,
-)
-from pickaladder.user.services.user_tournament_service import (
-    get_active_tournaments,
-    get_past_tournaments,
-    get_pending_tournament_invites,
-)
+from firebase_admin import firestore
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
 
-def get_dashboard_data(
-    db: Client, user_id: str, include_activity: bool = False
+def _extract_unique_owner_refs(public_group_docs: list[Any]) -> list[Any]:
+    """Gather unique owner references from a list of group documents."""
+    owner_refs = []
+    for doc in public_group_docs:
+        data = doc.to_dict()
+        if data and (ref := data.get("ownerRef")):
+            owner_refs.append(ref)
+    return list({ref for ref in owner_refs if ref})
+
+
+def _map_owner_docs_to_data(owner_docs: list[Any]) -> dict[str, dict[str, Any]]:
+    """Map owner document snapshots to sanitized data dictionaries."""
+    from .core import _sanitize_user_data
+
+    owners_data = {}
+    for doc in owner_docs:
+        if doc.exists:
+            data = doc.to_dict() or {}
+            data["id"] = doc.id
+            owners_data[doc.id] = _sanitize_user_data(data)
+    return owners_data
+
+
+def _fetch_owners_data(
+    db: Client, public_group_docs: list[Any]
+) -> dict[str, dict[str, Any]]:
+    """Fetch sanitized data for all unique owners in a list of group documents."""
+    unique_owner_refs = _extract_unique_owner_refs(public_group_docs)
+    if not unique_owner_refs:
+        return {}
+
+    try:
+        owner_docs = list(db.get_all(unique_owner_refs))
+        return _map_owner_docs_to_data(owner_docs)
+    except Exception:
+        return {}
+
+
+def _enrich_group_with_owner(
+    data: dict[str, Any], doc_id: str, owners_data: dict[str, dict[str, Any]]
 ) -> dict[str, Any]:
-    """Aggregate all data required for the user dashboard."""
-    from pickaladder.user.helpers import calculate_onboarding_progress
+    """Enrich group data with owner information."""
+    guest_user = {"username": "Guest", "id": "unknown", "name": "Guest"}
+    data["id"] = doc_id
+    owner_ref = data.get("ownerRef")
+    
+    if (
+        owner_ref is not None
+        and hasattr(owner_ref, "id")
+        and owner_ref.id in owners_data
+    ):
+        data["owner"] = owners_data[owner_ref.id]
+    else:
+        data["owner"] = guest_user
+    return data
 
-    # 1. Fetch user and vanity stats (Keep synchronous as they are fast)
-    user_data, vanity_metrics = _fetch_vanity_stats(db, user_id)
 
-    # 2. Fetch match activity (Fast path: just check if matches exist for onboarding)
-    total_matches = vanity_metrics.get("total_games", 0)
-
-    match_data = (
-        _fetch_recent_activity(db, user_id)
-        if include_activity
-        else {
-            "matches": [],
-            "next_cursor": None,
-            "current_streak": 0,
-            "streak_type": "",
-            "recent_opponents": [],
-        }
-    )
-
-    # 3. Fetch social and tournament data
-    social_data = _fetch_social_and_tournaments(db, user_id)
-
-    # 4. Calculate Onboarding Progress
-    onboarding_progress = calculate_onboarding_progress(
-        user_data,
-        total_matches,
-        len(social_data["group_rankings"]),
-        len(social_data["friends"]),
-    )
-
-    # Assemble final stats object
-    stats = {
-        **vanity_metrics,
+def _build_ranking_data(
+    group_id: str,
+    group_data: dict[str, Any],
+    player: dict[str, Any],
+    rank: int | str,
+) -> dict[str, Any]:
+    """Build the base ranking data dictionary."""
+    return {
+        "group_id": group_id,
+        "group_name": group_data.get("name", "N/A"),
+        "group_image": group_data.get("profilePictureUrl"),
+        "rank": rank,
+        "points": player.get("avg_score", 0),
+        "form": player.get("form", []),
     }
 
-    if include_activity:
-        stats["processed_matches"] = [
-            {"doc": d, "data": d.to_dict()} for d in match_data.get("recent_docs", [])
-        ]
+
+def _enrich_with_player_above(
+    ranking_data: dict[str, Any], player: dict[str, Any], player_above: dict[str, Any]
+) -> None:
+    """Add details about the player ranked immediately above."""
+    ranking_data["player_above"] = player_above.get("name")
+    ranking_data["points_to_overtake"] = player_above.get("avg_score", 0) - player.get(
+        "avg_score", 0
+    )
+
+
+def _calculate_user_ranking(
+    user_id: str,
+    leaderboard: list[dict[str, Any]],
+    group_id: str,
+    group_data: dict[str, Any],
+) -> dict[str, Any]:
+    """Calculate user ranking details from a leaderboard."""
+    for i, player in enumerate(leaderboard):
+        if player.get("id") == user_id:
+            ranking_data = _build_ranking_data(group_id, group_data, player, i + 1)
+            if i > 0:
+                _enrich_with_player_above(ranking_data, player, leaderboard[i - 1])
+            return ranking_data
 
     return {
-        "user": user_data,
-        "onboarding_progress": onboarding_progress,
-        "matches": match_data["matches"],
-        "next_cursor": match_data["next_cursor"],
+        "group_id": group_id,
+        "group_name": group_data.get("name", "N/A"),
+        "rank": "N/A",
+        "points": 0,
+        "form": [],
+    }
+
+
+def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
+    """Fetch a list of public groups, enriched with owner data."""
+    public_groups_query = (
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("is_public", "==", True))
+        .order_by("createdAt", direction=firestore.Query.DESCENDING)
+        .limit(limit)
+    )
+    public_group_docs = list(public_groups_query.stream())
+    owners_data = _fetch_owners_data(db, public_group_docs)
+
+    enriched_groups = []
+    for doc in public_group_docs:
+        data = doc.to_dict()
+        if data is not None:
+            enriched_groups.append(_enrich_group_with_owner(data, doc.id, owners_data))
+
+    return enriched_groups
+
+
+def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
+    """Fetch all groups a user belongs to."""
+    user_ref = db.collection("users").document(user_id)
+    groups_query = (
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
+    )
+    groups = []
+    for doc in groups_query:
+        data = doc.to_dict()
+        if data:
+            data["id"] = doc.id
+            groups.append(data)
+    return groups
+
+
+def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
+    """Fetch group rankings for a user."""
+    from pickaladder.group.utils import get_group_leaderboard
+
+    user_ref = db.collection("users").document(user_id)
+    group_rankings = []
+    my_groups_query = (
+        db.collection("groups")
+        .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
+        .stream()
+    )
+    for group_doc in my_groups_query:
+        group_data = group_doc.to_dict()
+        if group_data is None:
+            continue
+        leaderboard = get_group_leaderboard(group_doc.id)
+        group_rankings.append(
+            _calculate_user_ranking(user_id, leaderboard, group_doc.id, group_data)
+        )
+    return group_rankings
+
+
+def _fetch_profile_stats(
+    db: Client, target_user_id: str, profile_user_data: dict[str, Any]
+) -> tuple[dict[str, Any], list[Any]]:
+    """Fetch cached lifetime stats and limited matches for user profile."""
+    from pickaladder.user.helpers import extract_lifetime_vanity_metrics
+    from .match_stats import calculate_stats, get_user_matches
+
+    # 1. Fetch cached lifetime stats (Aggregation Pattern)
+    stats_ref = (
+        db.collection("users")
+        .document(target_user_id)
+        .collection("stats")
+        .document("lifetime")
+    )
+    
+    # 2. Fetch limited matches for recent activity (Scalability)
+    matches = get_user_matches(db, target_user_id, limit=10)
+
+    try:
+        stats_snap = stats_ref.get()
+        if stats_snap.exists:
+            stats = extract_lifetime_vanity_metrics(stats_snap.to_dict() or {})
+            
+            processed = []
+            for m in matches:
+                m_data = m.to_dict()
+                if m_data:
+                    processed.append({
+                        "data": m_data,
+                        "user_won": m_data.get("winnerId") == target_user_id,
+                    })
+            stats["processed_matches"] = processed
+            return stats, matches
+    except Exception:
+        pass
+
+    # 3. Fallback: Calculation from limited set if cache is missing
+    stats = calculate_stats(matches, target_user_id)
+    u_stats = profile_user_data.get("stats", {})
+    wins, losses = int(u_stats.get("wins", 0)), int(u_stats.get("losses", 0))
+    total = wins + losses
+    
+    stats.update({
+        "total_games": total,
+        "win_rate": (wins / total * 100) if total > 0 else 0,
+        "wins": wins,
+        "losses": losses,
+    })
+
+    return stats, matches
+
+
+def get_user_profile_data(
+    db: Client, current_user_id: str, target_user_id: str
+) -> dict[str, Any] | None:
+    """Fetch all data for a user's public profile."""
+    from .core import get_user_by_id
+    from .friendship import get_friendship_info, get_user_friends
+    from .match_formatting import format_matches_for_dashboard
+    from .match_stats import get_h2h_stats
+
+    u_data = get_user_by_id(db, target_user_id)
+    if not u_data:
+        return None
+
+    is_f, sent = get_friendship_info(db, current_user_id, target_user_id)
+    h2h = (
+        get_h2h_stats(db, current_user_id, target_user_id)
+        if current_user_id != target_user_id
+        else None
+    )
+
+    stats, matches = _fetch_profile_stats(db, target_user_id, u_data)
+    matches_data = format_matches_for_dashboard(db, matches, target_user_id)
+
+    return {
+        "profile_user": u_data,
+        "is_friend": is_f,
+        "friend_request_sent": sent,
+        "h2h_stats": h2h,
+        "friends": get_user_friends(db, target_user_id, limit=10),
+        "matches": matches_data,
         "stats": stats,
-        "current_streak": match_data["current_streak"],
-        "recent_opponents": match_data["recent_opponents"],
-        **social_data,
     }
 
 
-def _fetch_vanity_stats(
-    db: Client, user_id: str
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Fetch user document and calculate vanity metrics."""
-    from pickaladder.user.services.match_stats import calculate_stats, get_user_matches
+def get_community_data(db: Client, user_id: str, search_term: str) -> dict[str, Any]:
+    """Fetch and filter community hub data."""
+    from .core import get_all_users
+    from .friendship import (
+        get_user_friends,
+        get_user_pending_requests,
+        get_user_sent_requests,
+    )
+    from .user_tournament_service import get_pending_tournament_invites
 
-    user_data = get_user_by_id(db, user_id) or {}
-    all_matches = get_user_matches(db, user_id)
-    vanity_metrics = calculate_stats(all_matches, user_id)
+    friends = get_user_friends(db, user_id)
+    inc = get_user_pending_requests(db, user_id)
+    out = get_user_sent_requests(db, user_id)
 
-    return user_data, vanity_metrics
+    exclude = [user_id] + [f["id"] for f in friends] + [r["id"] for r in inc + out]
 
+    users = get_all_users(db, exclude, limit=20)
+    groups = get_public_groups(db, limit=10)
+    invites = get_pending_tournament_invites(db, user_id)
 
-def _fetch_recent_activity(db: Client, user_id: str) -> dict[str, Any]:
-    """Fetch recent matches and calculate engagement stats."""
-    from pickaladder.user.helpers import extract_match_results_for_streak
-
-    recent_docs = get_user_matches(db, user_id, limit=20)
-    matches = format_matches_for_dashboard(db, recent_docs, user_id)
-    next_cursor = recent_docs[-1].id if recent_docs else None
-
-    processed = extract_match_results_for_streak(recent_docs, user_id)
-    current_streak, streak_type = _calculate_streak(processed)
-    recent_opponents = get_recent_opponents(db, user_id, recent_docs)
-
+    term = search_term.lower() if search_term else ""
+    u_fields = ["username", "name", "email"]
     return {
-        "recent_docs": recent_docs,
-        "matches": matches,
-        "next_cursor": next_cursor,
-        "current_streak": current_streak,
-        "streak_type": streak_type,
-        "recent_opponents": recent_opponents,
+        "friends": _filter_community_list(friends, term, u_fields),
+        "incoming_requests": _filter_community_list(inc, term, u_fields),
+        "outgoing_requests": _filter_community_list(out, term, u_fields),
+        "all_users": _filter_community_list(users, term, u_fields),
+        "public_groups": _filter_community_list(groups, term, ["name", "description"]),
+        "pending_tournament_invites": _filter_community_list(invites, term, ["name"]),
     }
 
 
-def _fetch_social_and_tournaments(db: Client, user_id: str) -> dict[str, Any]:
-    """Fetch social relations and tournament participation data."""
-    return {
-        "friends": get_user_friends(db, user_id),
-        "requests": get_user_pending_requests(db, user_id),
-        "group_rankings": get_group_rankings(db, user_id),
-        "pending_tournament_invites": get_pending_tournament_invites(db, user_id),
-        "active_tournaments": get_active_tournaments(db, user_id),
-        "past_tournaments": get_past_tournaments(db, user_id),
-    }
+def _matches_community_search(
+    item: dict[str, Any], term: str, fields: list[str]
+) -> bool:
+    """Helper to check if any of the specified fields match the search term."""
+    return any(term in str(item.get(f, "")).lower() for f in fields)
+
+
+def _filter_community_list(
+    items: list[dict[str, Any]], term: str, fields: list[str]
+) -> list[dict[str, Any]]:
+    """Filter a list of items based on a search term and fields."""
+    if not term:
+        return items
+    return [i for i in items if _matches_community_search(i, term, fields)]

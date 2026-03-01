@@ -181,6 +181,12 @@ class MockFirestoreBuilder:
             Query._compare_func = _patched_compare_func
 
     @staticmethod
+    def _patch_doc_ref_path() -> None:
+        """Patch DocumentReference to have a path property."""
+        if not hasattr(DocumentReference, "path"):
+            DocumentReference.path = property(lambda self: "/".join(self._path))
+
+    @staticmethod
     def _patch_doc_ref_get() -> None:
         """Patch DocumentReference.get to handle transaction argument."""
         if not hasattr(DocumentReference, "_orig_get"):
@@ -194,6 +200,7 @@ class MockFirestoreBuilder:
         MockFirestoreBuilder._patch_doc_ref_identity()
         MockFirestoreBuilder._patch_query_comparison()
         MockFirestoreBuilder._patch_doc_ref_get()
+        MockFirestoreBuilder._patch_doc_ref_path()
 
     @staticmethod
     def patch_db_write() -> None:

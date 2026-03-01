@@ -42,6 +42,23 @@ def calculate_vanity_metrics(user_stats: dict[str, Any] | None) -> dict[str, Any
     }
 
 
+def extract_lifetime_vanity_metrics(stats: dict[str, Any]) -> dict[str, Any]:
+    """Extract vanity metrics from a UserLifetimeStats document."""
+    wins = int(stats.get("wins", 0))
+    losses = int(stats.get("losses", 0))
+    total = int(stats.get("total_matches", wins + losses))
+    streak = int(stats.get("current_streak", 0))
+
+    return {
+        "wins": wins,
+        "losses": losses,
+        "total_games": total,
+        "win_rate": (wins / total * 100) if total > 0 else 0,
+        "current_streak": abs(streak),
+        "streak_type": "W" if streak > 0 else "L" if streak < 0 else "N/A",
+    }
+
+
 def calculate_onboarding_progress(
     user_data: dict[str, Any],
     matches_count: int,
