@@ -1,53 +1,30 @@
 :root {
-    /* --- 1. CORE BRAND SYSTEM --- */
+    /* --- NEW "COURT & VOLT" SYSTEM --- */
     --primary-color: #2563EB;       /* Royal Blue */
     --primary-hover: #1D4ED8;
-    
-    /* The Signature Volt Aesthetic */
-    --color-volt: #ceff00;          /* Volt Neon - High Luminosity */
+    --color-volt: #ceff00;          /* Volt Neon */
     --accent-color: var(--color-volt);
-    --accent-hover: #b8e600;        /* Slightly deeper volt for hover states */
-    
-    /* Contrast & Text Semantics */
-    --text-on-accent: #111827;      /* Use dark text on Volt backgrounds */
+    --accent-hover: #65A30D;
     --color-dark: var(--text-on-accent);
-    --text-on-primary: #FFFFFF;
 
-    /* --- 2. FUNCTIONAL PALETTE --- */
     --success-color: #10B981;
     --danger-color: #EF4444;
     --warning-color: #F59E0B;
 
-    /* --- 3. SURFACE & NEUTRALS --- */
-    --bg-primary: #F3F4F6;            /* Main Page background */
-    --bg-secondary: #FFFFFF;          /* Cards, Navbars, Popovers */
+    --bg-primary: #F3F4F6;            /* Page background */
+    --bg-secondary: #FFFFFF;          /* Cards, Navbar, Dropdowns */
     --text-primary: #111827;
     --text-secondary: #6B7280;
     --border-color: #E5E7EB;
+    --text-on-primary: #FFFFFF;
+    --text-on-accent: #111827;      /* For Volt/Warning colors */
 
-    /* Semantic Surface Bridge */
+    /* Semantic Tokens Bridge */
     --bg-color: var(--bg-primary);
     --card-bg: var(--bg-secondary);
 
-    /* --- 4. STRUCTURE & ELEVATION --- */
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
-    --radius-pill: 50rem;
-
-    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-
-    /* --- 5. TYPOGRAPHY --- */
-    --font-family: 'Inter', sans-serif;
-    --font-score: 'Oswald', sans-serif;
-    --fw-regular: 400;
-    --fw-medium: 500;
-    --fw-bold: 700;
-
-    /* --- BACKWARD COMPATIBILITY BRIDGE --- */
-    /* Remove once all legacy .css files are refactored to use names above */
+    /* --- BACKWARD COMPATIBILITY BRIDGE (Do Not Remove Yet) --- */
+    /* This maps old variable names to the new system so the UI doesn't break */
     --primary-brand: var(--primary-color);
     --primary-brand-dark: var(--primary-hover);
     --surface-color: var(--bg-secondary);
@@ -55,4 +32,27 @@
     --text-color: var(--text-primary);
     --text-secondary-color: var(--text-secondary);
     --accent-highlight: var(--accent-color);
+
+    /* Typography */
+    --font-family: 'Inter', sans-serif;
+    --font-score: 'Oswald', sans-serif;
+
+    /* Structure */
+    --box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+    --border-radius: 8px;
+
+    /* Surface System */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 50rem;
+
+    --shadow-sm: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+    /* Font Weights */
+    --fw-regular: 400;
+    --fw-medium: 500;
+    --fw-bold: 700;
 }

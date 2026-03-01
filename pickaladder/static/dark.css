@@ -426,6 +426,51 @@ select:focus {
     letter-spacing: 1px;
 }
 
+/* Friends Grid */
+.friend-grid {
+    display: grid;
+    gap: 15px;
+    grid-template-columns: repeat(2, 1fr);
+    margin-top: 20px;
+}
+
+@media (min-width: 768px) {
+    .friend-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1200px) {
+    .friend-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.friend-card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s;
+}
+
+.friend-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.friend-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 16px;
+    border: 3px solid var(--border-color);
+}
 
 /* Match History */
 .list-group {
@@ -551,6 +596,10 @@ select:focus {
         display: none;
     }
 
+    /* Assuming hamburger handles this */
+    .friend-card {
+        padding: 16px;
+    }
 
     .leaderboard-row {
         display: flex;

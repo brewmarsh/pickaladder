@@ -52,10 +52,14 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.fill("input[name='name']", "User Two")
     page.fill("input[name='dupr_rating']", "3.5")
     with page.expect_navigation():
-        page.click("button:has-text('Create Account')")
+        page.click("button:has-text('Register')")
 
-    # Client-side registration auto-logins and redirects to dashboard
-    expect(page.locator("h3:has-text('Recent Activity')")).to_be_visible(timeout=10000)
+    # Now login as User Two
+    expect(page.locator("h2")).to_contain_text("Login")
+    page.fill("input[name='email']", "user2@example.com")
+    page.fill("input[name='password']", "MyPassword123")
+    with page.expect_navigation():
+        page.click("button:has-text('Login')")
 
     page.hover(".navbar-user-controls .dropdown")
     page.click("a:has-text('Settings')")

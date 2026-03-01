@@ -1,207 +1,126 @@
 {% extends "layout.html" %}
 {% block title %}Register{% endblock %}
-
-{% block body_class %}dark-mode{% endblock %}
-{% block body_attributes %}data-theme="dark"{% endblock %}
-
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
-<style>
-    .availability-icon {
-        position: absolute;
-        right: 12px;
-        top: 38px;
-        font-size: 1.2rem;
-        display: none;
-    }
-    .availability-icon.available { color: var(--color-volt); display: block; }
-    .availability-icon.taken { color: var(--danger-color); display: block; }
-
-    .form-group-relative { position: relative; }
-</style>
-
-<div class="login-landing-container">
-    <div class="login-form-side">
-        <h1 class="d-lg-none text-center mb-4 fw-bold" style="color: var(--text-primary);">Track. Compete. Climb.</h1>
-        <div class="form-container">
-            <div class="flashes">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} mb-3">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            </div>
-
-            {% if invite_name %}
-            <div class="alert alert-info mb-4 text-center">
-                🎾 <strong>{{ invite_name }}</strong> invited you to join their ladder!
-            </div>
+<div class="form-container">
+    <h2>Register</h2>
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    <form method="post">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            {{ form.username.label }}
+            {{ form.username(class="form-control") }}
+            {% if form.username.errors %}
+                <ul class=errors>
+                {% for error in form.username.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
             {% endif %}
-
-            <h2 class="mb-4">Create Account</h2>
-            <form id="registration-form" method="post">
-                {{ form.hidden_tag() }}
-                <input type="hidden" name="invite_token" value="{{ invite_token or '' }}">
-
-                <div class="form-group">
-                    {{ form.name.label(class="fs-xxs text-uppercase ls-1 fw-bold opacity-8") }}
-                    {{ form.name(class="form-control", placeholder="Your full name", data_testid="register-name") }}
-                </div>
-
-                <div class="form-group form-group-relative">
-                    {{ form.username.label(class="fs-xxs text-uppercase ls-1 fw-bold opacity-8") }}
-                    {{ form.username(class="form-control", placeholder="Pick a username", data_testid="register-username") }}
-                    <div id="username-availability-icon" class="availability-icon">
-                        <i class="fas fa-check-circle available-ui d-none"></i>
-                        <i class="fas fa-times-circle taken-ui d-none"></i>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    {{ form.email.label(class="fs-xxs text-uppercase ls-1 fw-bold opacity-8") }}
-                    {{ form.email(class="form-control", autocomplete="email", data_testid="register-email") }}
-                </div>
-
-                <div class="grid-2-col-responsive gap-4">
-                    <div class="form-group">
-                        {{ form.password.label(class="fs-xxs text-uppercase ls-1 fw-bold opacity-8") }}
-                        {{ form.password(class="form-control", autocomplete="new-password") }}
-                    </div>
-                    <div class="form-group">
-                        {{ form.confirm_password.label(class="fs-xxs text-uppercase ls-1 fw-bold opacity-8") }}
-                        {{ form.confirm_password(class="form-control", autocomplete="new-password") }}
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    {{ form.dupr_rating.label(class="fs-xxs text-uppercase ls-1 fw-bold opacity-8") }}
-                    {{ form.dupr_rating(class="form-control", placeholder="e.g. 3.50") }}
-                    <small class="text-muted fs-xxs">Leave blank if you don't know your rating.</small>
-                </div>
-
-                <button type="submit" name="submit" class="btn btn-volt w-100" data-testid="register-submit">Create Account</button>
-            </form>
-            <div class="or-separator">OR</div>
-            <button id="google-signup-btn" class="btn btn-google w-100">
-                <i class="fab fa-google"></i>
-                Sign up with Google
-            </button>
-            <p class="text-center mt-4">Already have an account? <a href="{{ url_for('auth.login', next=request.args.get('next')) }}" class="text-volt fw-bold">Login here</a></p>
         </div>
-    </div>
-
-    <div class="feature-hero-side d-none d-lg-flex">
-        <div class="hero-content">
-            <h1 class="fw-bold">Track. Compete. Climb.</h1>
-            <ul class="feature-list">
-                <li><span style="font-size: 1.5rem;">🏆</span> <strong>Run Ladders</strong></li>
-                <li><span style="font-size: 1.5rem;">📈</span> <strong>Track ELO</strong></li>
-                <li><span style="font-size: 1.5rem;">📊</span> <strong>Visualize Progress</strong></li>
-            </ul>
-            <div class="hero-image-placeholder">
-                <div style="background: var(--bg-color); height: 300px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); position: relative; overflow: hidden;">
-                    <div style="width: 80%; height: 200px; background: var(--card-bg); border-radius: 8px; box-shadow: var(--shadow-md); padding: 20px; border: 1px solid var(--border-color);">
-                        <div style="height: 20px; width: 40%; background: var(--border-color); margin-bottom: 20px; border-radius: 4px;"></div>
-                        {% for i in range(4) %}
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                            <div style="width: 24px; height: 24px; background: var(--border-color); border-radius: 50%;"></div>
-                            <div style="height: 12px; flex: 1; background: var(--border-color); border-radius: 4px;"></div>
-                            <div style="width: 40px; height: 12px; background: var(--color-volt); border-radius: 4px;"></div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                <p class="text-center text-muted mt-2 small">Live Leaderboards & Real-time Stats</p>
-            </div>
+        <div class="form-group">
+            {{ form.password.label }}
+            {{ form.password(class="form-control") }}
+            {% if form.password.errors %}
+                <ul class=errors>
+                {% for error in form.password.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+            <small style="color: #6c757d; font-size: 0.875em;">
+                Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.
+            </small>
         </div>
-    </div>
+        <div class="form-group">
+            {{ form.confirm_password.label }}
+            {{ form.confirm_password(class="form-control") }}
+            {% if form.confirm_password.errors %}
+                <ul class=errors>
+                {% for error in form.confirm_password.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            {{ form.email.label }}
+            {{ form.email(class="form-control") }}
+            {% if form.email.errors %}
+                <ul class=errors>
+                {% for error in form.email.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            {{ form.name.label }}
+            {{ form.name(class="form-control") }}
+            {% if form.name.errors %}
+                <ul class=errors>
+                {% for error in form.name.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            {{ form.dupr_rating.label }}
+            {{ form.dupr_rating(class="form-control") }}
+            {% if form.dupr_rating.errors %}
+                <ul class=errors>
+                {% for error in form.dupr_rating.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        <button type="submit" name="submit" class="btn">Register</button>
+    </form>
+    <div class="or-separator">OR</div>
+    <button id="google-signin-btn" class="btn btn-google">Sign up with Google</button>
+    <p class="text-center" style="margin-top: 20px;">Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>.</p>
 </div>
 {% endblock %}
-
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const registrationForm = document.getElementById('registration-form');
-    const googleSignUpBtn = document.getElementById('google-signup-btn');
-    const usernameInput = document.getElementById('username');
-    const availabilityIcon = document.getElementById('username-availability-icon');
-    const availableUi = availabilityIcon.querySelector('.available-ui');
-    const takenUi = availabilityIcon.querySelector('.taken-ui');
+    const googleSignInButton = document.getElementById('google-signin-btn');
 
-    // Real-time Username Check
-    let debounceTimer;
-    usernameInput.addEventListener('input', function() {
-        clearTimeout(debounceTimer);
-        const username = this.value.trim();
-
-        if (username.length < 3) {
-            availabilityIcon.style.display = 'none';
-            return;
-        }
-
-        debounceTimer = setTimeout(async () => {
-            const isAvailable = await AuthModule.checkUsernameAvailability(username);
-            availabilityIcon.style.display = 'block';
-            if (isAvailable) {
-                availabilityIcon.className = 'availability-icon available';
-                availableUi.classList.remove('d-none');
-                takenUi.classList.add('d-none');
-            } else {
-                availabilityIcon.className = 'availability-icon taken';
-                availableUi.classList.add('d-none');
-                takenUi.classList.remove('d-none');
-            }
-        }, 500);
-    });
-
-    // Google Sign-up
-    googleSignUpBtn.addEventListener('click', async function() {
-        try {
-            await AuthModule.handleGoogleSignIn(false);
-        } catch (error) {
-            const flashes = document.querySelector('.flashes');
-            flashes.innerHTML = `<div class="alert alert-danger">${AuthModule.getErrorMessage(error)}</div>`;
-        }
-    });
-
-    // Form Submission
-    registrationForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        const submitBtn = registrationForm.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
-
-        const registrationData = {
-            name: document.getElementById('name').value,
-            username: document.getElementById('username').value,
-            email: document.getElementById('email').value,
-            password: document.getElementById('password').value,
-            duprRating: document.getElementById('dupr_rating').value
-        };
-
-        const confirmPassword = document.getElementById('confirm_password').value;
-        if (registrationData.password !== confirmPassword) {
-            const flashes = document.querySelector('.flashes');
-            flashes.innerHTML = '<div class="alert alert-danger">Passwords do not match.</div>';
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
-            return;
-        }
-
-        try {
-            await AuthModule.handleRegistration(registrationData);
-        } catch (error) {
-            console.error("Registration error:", error);
-            const flashes = document.querySelector('.flashes');
-            flashes.innerHTML = `<div class="alert alert-danger">${AuthModule.getErrorMessage(error)}</div>`;
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
-        }
+    googleSignInButton.addEventListener('click', function() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth().signInWithPopup(provider)
+            .then((result) => {
+                return result.user.getIdToken();
+            })
+            .then((idToken) => {
+                return fetch("{{ url_for('auth.session_login') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ idToken: idToken }),
+                });
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = "{{ url_for('user.dashboard') }}";
+                } else {
+                    throw new Error("Server-side session creation failed.");
+                }
+            })
+            .catch((error) => {
+                const errorMessage = error.message;
+                const flashes = document.querySelector('.flashes');
+                flashes.innerHTML = ''; // Clear previous messages
+                const flash = document.createElement('div');
+                flash.className = 'alert alert-danger';
+                flash.textContent = `Google Sign-in failed: ${errorMessage}`;
+                flashes.appendChild(flash);
+            });
     });
 });
 </script>

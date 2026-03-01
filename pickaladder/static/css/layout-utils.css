@@ -43,12 +43,9 @@
 .p-2 { padding: 0.5rem !important; }
 
 /* Sizing Utilities */
-.w-16 { width: 16px !important; }
-.h-16 { height: 16px !important; }
 .w-28 { width: 28px !important; }
 .w-30 { width: 30px !important; }
 .w-100 { width: 100% !important; }
-.h-16 { height: 16px !important; }
 .h-28 { height: 28px !important; }
 .min-w-60 { min-width: 60px !important; }
 
@@ -112,29 +109,6 @@
 .search-form .input-group .form-control,
 .search-form .input-group .btn {
     border-radius: var(--radius-md, 8px) !important;
-}
-
-.input-group-volt {
-    display: flex;
-    border: 2px solid var(--color-volt);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    background: var(--card-bg);
-}
-
-.input-group-volt .form-control {
-    border: none !important;
-    background: transparent !important;
-    padding: 12px 16px;
-    box-shadow: none !important;
-}
-
-.input-group-volt .btn {
-    border: none !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
-    width: auto !important;
-    padding: 0 24px !important;
 }
 
 /* Progress Bar */

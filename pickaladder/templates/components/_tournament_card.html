@@ -1,12 +1,12 @@
-{% macro tournament_card(tournament, class="") %}
+{% macro tournament_card(tournament) %}
 {% set is_owner = g.user and (g.user.uid == tournament.organizer_id or g.user.isAdmin) %}
-<div class="card tournament-card clickable-row {{ class }}" data-href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}">
+<div class="card tournament-card clickable-row" data-href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" style="padding: 0; position: relative; display: flex; flex-direction: column; height: 100%;">
     {# Banner Area #}
-    <div class="tournament-card-banner">
+    <div class="tournament-card-banner" style="height: 160px; width: 100%; overflow: hidden; flex-shrink: 0;">
         {% if tournament.banner_url %}
-            <img src="{{ tournament.banner_url }}" alt="{{ tournament.name }}">
+            <img src="{{ tournament.banner_url }}" alt="{{ tournament.name }}" style="width: 100%; height: 100%; object-fit: cover;">
         {% else %}
-            <div class="tournament-card-placeholder">
+            <div class="d-flex align-items-center justify-content-center h-100" style="background-color: var(--primary-color); color: white; font-size: 3rem;">
                 🎾
             </div>
         {% endif %}
@@ -14,8 +14,8 @@
 
     {# Kebab Menu for Owners/Admins #}
     {% if is_owner %}
-    <div class="dropdown kebab-menu" onclick="event.preventDefault(); event.stopPropagation();">
-        <button class="dropbtn" type="button">
+    <div class="dropdown kebab-menu" style="position: absolute; top: 10px; right: 10px; z-index: 10;" onclick="event.preventDefault(); event.stopPropagation();">
+        <button class="dropbtn" type="button" style="background: rgba(0,0,0,0.5); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
             <i class="fas fa-ellipsis-v"></i>
         </button>
         <div class="dropdown-content">
@@ -26,9 +26,9 @@
                 <i class="fas fa-tasks mr-2"></i> Manage
             </a>
             <div class="dropdown-divider"></div>
-            <form action="{{ url_for('tournament.delete_tournament', tournament_id=tournament.id) }}" method="POST" class="d-block" onsubmit="return confirm('Are you sure you want to delete this tournament?');">
+            <form action="{{ url_for('tournament.delete_tournament', tournament_id=tournament.id) }}" method="POST" style="display: block;" onsubmit="return confirm('Are you sure you want to delete this tournament?');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn-dropdown-danger">
+                <button type="submit" style="width: 100%; text-align: left; padding: 12px 16px; border: none; background: none; color: var(--danger-color); cursor: pointer; font-size: 14px; display: flex; align-items: center;">
                     <i class="fas fa-trash-alt mr-2"></i> Delete
                 </button>
             </form>
@@ -37,10 +37,10 @@
     {% endif %}
 
     {# Card Content #}
-    <div class="tournament-card-body">
+    <div class="card-body d-flex flex-column flex-grow-1" style="padding: 20px;">
         <div class="d-flex justify-content-between align-items-start mb-3">
-            <h3 class="m-0 fs-xl">{{ tournament.name }}</h3>
-            <div class="tournament-card-badges">
+            <h3 class="m-0" style="font-size: 1.25rem; line-height: 1.2;">{{ tournament.name }}</h3>
+            <div class="card-badges d-flex align-items-center gap-2" style="flex-shrink: 0; margin-left: 10px;">
                 <span class="badge-outline">
                     {% if tournament.is_doubles %}
                         <i class="fas fa-users fs-xxs"></i>
@@ -55,7 +55,7 @@
 
         <div class="mt-auto">
             <p class="text-secondary fs-xs mb-1 d-flex align-items-center gap-2">
-                <i class="fas fa-calendar-alt text-center w-16 h-16"></i>
+                <i class="fas fa-calendar-alt text-center" style="width: 16px;"></i>
                 {% if tournament.date and tournament.date.strftime %}
                     {{ tournament.date.strftime('%b %d, %Y') }}
                 {% elif tournament.createdAt and tournament.createdAt.strftime %}
@@ -65,7 +65,7 @@
                 {% endif %}
             </p>
             <p class="text-secondary fs-xs mb-0 d-flex align-items-center gap-2">
-                <i class="fas fa-map-marker-alt text-center w-16 h-16"></i>
+                <i class="fas fa-map-marker-alt text-center" style="width: 16px;"></i>
                 {{ tournament.location_display }}
             </p>
         </div>
