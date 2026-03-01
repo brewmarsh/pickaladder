@@ -92,15 +92,34 @@ def get_dashboard_data(
 def _fetch_vanity_stats(
     db: Client, user_id: str
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Fetch user document and calculate vanity metrics."""
-    from pickaladder.user.helpers import calculate_vanity_metrics
+    """Fetch user document and calculate vanity metrics using cached stats."""
+    from pickaladder.user.helpers import (
+        calculate_vanity_metrics,
+        extract_lifetime_vanity_metrics,
+    )
 
     user_data = get_user_by_id(db, user_id) or {}
-    user_stats = user_data.get("stats")
-    if not isinstance(user_stats, dict):
-        user_stats = {}
 
-    vanity_metrics = calculate_vanity_metrics(user_stats)
+    # Fetch cached lifetime stats from subcollection
+    stats_ref = (
+        db.collection("users")
+        .document(user_id)
+        .collection("stats")
+        .document("lifetime")
+    )
+    stats_snap = stats_ref.get()
+
+    if stats_snap.exists:
+        vanity_metrics = extract_lifetime_vanity_metrics(stats_snap.to_dict() or {})
+    else:
+        # Fallback to user-level legacy stats
+        user_stats = user_data.get("stats")
+        if not isinstance(user_stats, dict):
+            user_stats = {}
+        vanity_metrics = calculate_vanity_metrics(user_stats)
+        vanity_metrics["current_streak"] = 0
+        vanity_metrics["streak_type"] = "N/A"
+
     return user_data, vanity_metrics
 
 
@@ -108,7 +127,7 @@ def _fetch_recent_activity(db: Client, user_id: str) -> dict[str, Any]:
     """Fetch recent matches and calculate engagement stats."""
     from pickaladder.user.helpers import extract_match_results_for_streak
 
-    recent_docs = get_user_matches(db, user_id, limit=20)
+    recent_docs = get_user_matches(db, user_id, limit=10)
     matches = format_matches_for_dashboard(db, recent_docs, user_id)
     next_cursor = recent_docs[-1].id if recent_docs else None
 

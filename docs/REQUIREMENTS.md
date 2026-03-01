@@ -35,6 +35,8 @@ This document outlines the requirements for the pickaladder application.
 
 ### Architecture
 *   **Monolithic Application:** The application is a monolithic web application built with Flask and PostgreSQL.
+*   **Firestore Integration:** The application uses Google Cloud Firestore for NoSQL data storage, leveraging subcollections for organized data structures.
+*   **Aggregated Stat Model:** User performance statistics (wins, losses, total matches, current streak) are aggregated into a `stats/lifetime` document for each user. This cached document is updated atomically via Firestore transactions upon match finalization, optimizing dashboard read performance.
 *   **Containerized:** The application is containerized with Docker and deployed with docker compose.
 *   **Blueprint-based:** The Flask application is organized using a blueprint-based structure.
 

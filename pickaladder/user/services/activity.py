@@ -175,23 +175,50 @@ def _fetch_profile_stats(
     db: Client, target_user_id: str, profile_user_data: dict[str, Any]
 ) -> tuple[dict[str, Any], list[Any]]:
     """Fetch matches and calculate statistics for user profile."""
+    from pickaladder.user.helpers import extract_lifetime_vanity_metrics
+
     from .match_stats import calculate_stats, get_user_matches
 
-    matches = get_user_matches(db, target_user_id, limit=20)
-    stats = calculate_stats(matches, target_user_id)
-
-    # Override totals with pre-calculated stats from user document for scalability
-    u_stats = profile_user_data.get("stats", {})
-    wins, losses = int(u_stats.get("wins", 0)), int(u_stats.get("losses", 0))
-    total = wins + losses
-    stats.update(
-        {
-            "total_games": total,
-            "win_rate": (wins / total * 100) if total > 0 else 0,
-            "wins": wins,
-            "losses": losses,
-        }
+    # Fetch cached lifetime stats from subcollection
+    stats_ref = (
+        db.collection("users")
+        .document(target_user_id)
+        .collection("stats")
+        .document("lifetime")
     )
+    stats_snap = stats_ref.get()
+
+    matches = get_user_matches(db, target_user_id, limit=10)
+
+    if stats_snap.exists:
+        stats = extract_lifetime_vanity_metrics(stats_snap.to_dict() or {})
+        # We still need processed_matches for some UI parts, but we can minimize work
+        processed = []
+        for m in matches:
+            m_data = m.to_dict()
+            if m_data:
+                processed.append(
+                    {
+                        "data": m_data,
+                        "user_won": m_data.get("winnerId") == target_user_id,
+                    }
+                )
+        stats["processed_matches"] = processed
+    else:
+        stats = calculate_stats(matches, target_user_id)
+        # Override totals with pre-calculated stats from user document for scalability
+        u_stats = profile_user_data.get("stats", {})
+        wins, losses = int(u_stats.get("wins", 0)), int(u_stats.get("losses", 0))
+        total = wins + losses
+        stats.update(
+            {
+                "total_games": total,
+                "win_rate": (wins / total * 100) if total > 0 else 0,
+                "wins": wins,
+                "losses": losses,
+            }
+        )
+
     return stats, matches
 
 
