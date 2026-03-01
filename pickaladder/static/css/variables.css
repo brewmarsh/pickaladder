@@ -4,6 +4,8 @@
     --primary-hover: #1D4ED8;
     --accent-color: #84CC16;        /* Electric Lime */
     --accent-hover: #65A30D;
+    --color-volt: var(--accent-color);
+    --color-dark: var(--text-on-accent);
 
     --success-color: #10B981;
     --danger-color: #EF4444;

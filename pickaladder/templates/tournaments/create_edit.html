@@ -8,6 +8,21 @@
         <h2>{{ action }} Tournament</h2>
     </div>
     <div class="card-body">
+        {% if action == 'Create' %}
+        <!-- Template Selector -->
+        <div class="form-group mb-4">
+            <label for="template-selector" class="form-label fw-bold">Select Template (Pre-fill)</label>
+            <select id="template-selector" class="form-input" onchange="applyTemplate(this.value)">
+                <option value="">-- Choose a template --</option>
+                <option value="round_robin">Standard Round Robin</option>
+                <option value="single_elim">Single Elim Smash</option>
+                <option value="family_ladder">Family Ladder</option>
+            </select>
+            <small class="text-muted" id="template-description">Select a template to auto-populate common rules and formats.</small>
+        </div>
+        <hr class="mb-4">
+        {% endif %}
+
         <form method="POST" enctype="multipart/form-data">
             {{ form.csrf_token }}
 
@@ -33,7 +48,9 @@
                         <i class="fas fa-cloud-upload-alt"></i> Choose Image...
                         {{ form.banner(class="file-upload-input", onchange="updateFileName(this)") }}
                     </label>
-                    <span id="file-name-display" class="file-name-text text-muted">No file chosen</span>
+                    <span id="file-name-display" class="file-name-text">
+                        {% if tournament and tournament.banner_url %}Change current banner...{% else %}No file chosen{% endif %}
+                    </span>
                 </div>
                 <small class="text-muted">Recommended: 16:9 aspect ratio.</small>
                 {% if form.banner.errors %}
@@ -43,7 +60,7 @@
                 {% endif %}
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="grid-2-col-responsive">
                 <div class="form-group">
                     {{ form.start_date.label(class="form-label") }}
                     {{ form.start_date(class="form-input", type="date") }}
@@ -75,7 +92,7 @@
                 {% endif %}
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="grid-2-col-responsive">
                 <div class="form-group">
                     {{ form.match_type.label(class="form-label") }}
                     <div class="segmented-control">
@@ -118,29 +135,60 @@
                 {% endif %}
             </div>
 
-            <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">{{ action }} Tournament</button>
+            <div class="form-actions mt-4 grid-2-col-responsive">
+                <button type="submit" class="btn btn-volt">{{ action }} Tournament</button>
                 {% if action == 'Edit' %}
-                    <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="btn btn-secondary" style="flex: 1; text-align: center; line-height: 2.5;">Cancel</a>
+                    <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" class="btn btn-secondary" style="line-height: 2.5;">Cancel</a>
                 {% else %}
-                    <a href="{{ url_for('tournament.list_tournaments') }}" class="btn btn-secondary" style="flex: 1; text-align: center; line-height: 2.5;">Cancel</a>
+                    <a href="{{ url_for('tournament.list_tournaments') }}" class="btn btn-secondary" style="line-height: 2.5;">Cancel</a>
                 {% endif %}
             </div>
         </form>
     </div>
 </div>
-
-<style>
-@media screen and (max-width: 600px) {
-    div[style*="grid-template-columns: 1fr 1fr"] {
-        grid-template-columns: 1fr !important;
-    }
-}
-</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+const tournamentTemplates = {
+    "round_robin": {
+        "description": "Everyone plays everyone. Best for competitive league play.",
+        "match_type": "SINGLES",
+        "format": "ROUND_ROBIN"
+    },
+    "single_elim": {
+        "description": "Win or go home. Standard bracket tournament.",
+        "match_type": "SINGLES",
+        "format": "SINGLE_ELIMINATION"
+    },
+    "family_ladder": {
+        "description": "Casual doubles play for families. Round Robin format.",
+        "match_type": "DOUBLES",
+        "format": "ROUND_ROBIN"
+    }
+};
+
+function applyTemplate(templateKey) {
+    const template = tournamentTemplates[templateKey];
+    if (!template) {
+        document.getElementById('template-description').textContent = "Select a template to auto-populate common rules and formats.";
+        return;
+    }
+
+    document.getElementById('template-description').textContent = template.description;
+
+    // Set match_type (segmented control)
+    const matchTypeInputs = document.getElementsByName('match_type');
+    matchTypeInputs.forEach(input => {
+        if (input.value === template.match_type) {
+            input.checked = true;
+        }
+    });
+
+    // Set format (select)
+    document.getElementById('format').value = template.format;
+}
+
 function updateFileName(input) {
     const fileName = input.files[0] ? input.files[0].name : 'No file chosen';
     document.getElementById('file-name-display').textContent = fileName;

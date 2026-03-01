@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import os
 import tempfile
 from collections import UserDict
@@ -21,15 +22,25 @@ class TournamentBase:
     """Base class with shared helpers for tournament services."""
 
     @staticmethod
+    def _format_tournament_date(data: dict[str, Any]) -> str | None:
+        """Helper to format tournament date from Firestore snapshot."""
+        raw_date = data.get("start_date") or data.get("date")
+        if not raw_date:
+            return None
+        if hasattr(raw_date, "to_datetime"):
+            return cast(datetime.datetime, raw_date.to_datetime()).strftime("%b %d, %Y")
+        if isinstance(raw_date, (datetime.datetime, datetime.date)):
+            return raw_date.strftime("%b %d, %Y")
+        return None
+
+    @staticmethod
     def _enrich_tournament(doc: Any) -> Tournament:
         """Format tournament data for display."""
         from pickaladder.tournament.models import Tournament
 
         data = cast(dict[str, Any], doc.to_dict() or {})
         data["id"] = doc.id
-        raw_date = data.get("start_date") or data.get("date")
-        if raw_date and hasattr(raw_date, "to_datetime"):
-            data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
+        data["date_display"] = TournamentBase._format_tournament_date(data)
 
         # Compatibility for legacy templates using 'location' instead of 'venue_name'
         if "venue_name" in data and not data.get("location"):
