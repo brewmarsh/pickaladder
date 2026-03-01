@@ -29,9 +29,9 @@
     </div>
     {% endif %}
 
-    <div style="padding: 20px; flex-grow: 1; display: flex; flex-direction: column;">
+    <div style="padding: 20px; flex-grow: 1; display: flex; flex-direction: column; min-width: 0;">
         <div class="d-flex justify-content-between align-items-start mb-2">
-            <h3 style="margin: 0; font-size: 1.25rem; line-height: 1.2;">{{ tournament.name }}</h3>
+            <h3 style="margin: 0; font-size: 1.25rem; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">{{ tournament.name }}</h3>
             <div class="card-badges d-flex align-items-center gap-2" style="flex-shrink: 0; margin-left: 10px;">
                 <span class="badge-outline">
                     {% if tournament.matchType|lower == 'doubles' %}

@@ -135,12 +135,13 @@ body {
 .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
 
 .dashboard-columns {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 350px;
     gap: 24px;
 }
 
-.dashboard-column-left { flex: 2; min-width: 0; }
-.dashboard-column-right { flex: 1; min-width: 0; }
+.dashboard-column-left { min-width: 0; }
+.dashboard-column-right { min-width: 0; }
 
 .card-grid {
     display: grid;
