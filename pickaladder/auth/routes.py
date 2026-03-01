@@ -168,6 +168,24 @@ def _handle_referral(db: Any, referrer_id: str) -> None:
         current_app.logger.error(f"Error incrementing referral count: {e}")
 
 
+def _get_invite_name(db: Any, invite_token: str) -> str | None:
+    """Retrieve the inviter's name from an invite token."""
+    invite_ref = db.collection("invites").document(invite_token)
+    invite = invite_ref.get()
+    if not invite.exists:
+        return None
+
+    inviter_id = invite.to_dict().get("userId")
+    if not inviter_id:
+        return None
+
+    inviter_doc = db.collection("users").document(inviter_id).get()
+    if not inviter_doc.exists:
+        return None
+
+    return inviter_doc.to_dict().get("name")
+
+
 def _handle_invite_token(db: Any, uid: str, invite_token: str) -> None:
     """Handle invite token by creating friendships and marking token as used."""
     invite_ref = db.collection("invites").document(invite_token)
@@ -281,17 +299,35 @@ def _execute_registration(form: RegisterForm, username: str, email: str) -> Any:
         return _handle_registration_error(e)
 
 
+@bp.route("/check_username")
+def check_username() -> Any:
+    """Check if a username is available (Ajax)."""
+    username = request.args.get("username", "").strip()
+    if not username:
+        return jsonify({"available": False, "message": "Username is required."})
+
+    db = firestore.client()
+    is_taken = _is_username_taken(db, username)
+    return jsonify({"available": not is_taken})
+
+
 @bp.route("/register", methods=["GET", "POST"])
 def register() -> Any:
     """Register a new user."""
-    if invite_token := request.args.get("invite_token"):
+    db = firestore.client()
+    invite_token = request.args.get("invite_token") or session.get("invite_token")
+    invite_name = None
+
+    if invite_token:
         session["invite_token"] = invite_token
+        invite_name = _get_invite_name(db, invite_token)
 
     form = RegisterForm()
     if not form.validate_on_submit():
-        return render_template("register.html", form=form)
+        return render_template(
+            "register.html", form=form, invite_name=invite_name, invite_token=invite_token
+        )
 
-    db = firestore.client()
     username = cast(str, form.username.data)
     email = cast(str, form.email.data)
 
@@ -344,26 +380,45 @@ def _generate_unique_username(db: Any, base_username: str) -> str:
 
 
 # TODO: Add type hints for Agent clarity
-def _prepare_new_user_info(db: Any, uid: str) -> tuple[dict[str, Any], str]:
+def _prepare_new_user_info(
+    db: Any, uid: str, registration_data: dict[str, Any] | None = None
+) -> tuple[dict[str, Any], str]:
     """Extract and prepare initial info for a new user from Firebase Auth."""
     user_record = auth.get_user(uid)
     email = user_record.email
-    name = user_record.display_name or email.split("@")[0]
-    base_username = re.sub(r"[^a-zA-Z0-9_.]", "", name.lower())
-    username = _generate_unique_username(db, base_username)
+
+    if registration_data:
+        username = registration_data.get("username")
+        name = registration_data.get("name")
+        dupr_rating = registration_data.get("duprRating")
+    else:
+        username = None
+        name = user_record.display_name or email.split("@")[0]
+        dupr_rating = None
+
+    if not username:
+        base_username = re.sub(r"[^a-zA-Z0-9_.]", "", name.lower())
+        username = _generate_unique_username(db, base_username)
+
+    try:
+        dupr_val = float(dupr_rating) if dupr_rating and str(dupr_rating).strip() else None
+    except (ValueError, TypeError):
+        dupr_val = None
 
     user_info = {
         "username": username,
         "email": email,
         "name": name,
-        "duprRating": None,
+        "duprRating": dupr_val,
         "isAdmin": False,
         "createdAt": firestore.SERVER_TIMESTAMP,
     }
     return user_info, email
 
 
-def _get_or_create_user_profile(db: Any, uid: str) -> dict[str, Any]:
+def _get_or_create_user_profile(
+    db: Any, uid: str, registration_data: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Retrieve existing user profile or create a new one from Firebase Auth."""
     user_doc_ref = db.collection("users").document(uid)
     user_doc = user_doc_ref.get()
@@ -371,10 +426,15 @@ def _get_or_create_user_profile(db: Any, uid: str) -> dict[str, Any]:
     if user_doc.exists:
         return cast(dict[str, Any], user_doc.to_dict())
 
-    user_info, email = _prepare_new_user_info(db, uid)
+    user_info, email = _prepare_new_user_info(db, uid, registration_data)
+
+    if referrer_id := session.pop("referrer_id", None):
+        user_info["referred_by"] = referrer_id
+        _handle_referral(db, referrer_id)
+
     user_doc_ref.set(user_info)
 
-    _merge_ghost_if_exists(db, uid, email)
+    _handle_post_registration(db, uid, email)
 
     return user_info
 
@@ -395,12 +455,13 @@ def _finalize_session_login(
 def session_login() -> Any:
     """Handle session login after Firebase client-side authentication."""
     id_token = request.json.get("idToken")
+    registration_data = request.json.get("registrationData")
     try:
         decoded_token = auth.verify_id_token(id_token)
         uid = decoded_token["uid"]
         db = firestore.client()
 
-        user_info = _get_or_create_user_profile(db, uid)
+        user_info = _get_or_create_user_profile(db, uid, registration_data)
         remember = request.json.get("remember", False)
         _finalize_session_login(user_info, uid, remember)
 
