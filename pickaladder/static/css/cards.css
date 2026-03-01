@@ -198,6 +198,70 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    padding: 0 !important;
+    position: relative;
+}
+
+.tournament-card-banner {
+    height: 160px;
+    width: 100%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.tournament-card-banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tournament-card-sidebar .tournament-card-banner {
+    height: 120px !important;
+}
+
+.tournament-card-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 3rem;
+}
+
+.tournament-card-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.tournament-card-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+
+.kebab-menu {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.kebab-menu .dropbtn {
+    background: rgba(0,0,0,0.5);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
 }
 
 .tournament-card.clickable-row {

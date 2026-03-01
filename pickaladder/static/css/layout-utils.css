@@ -42,9 +42,12 @@
 .p-2 { padding: 0.5rem !important; }
 
 /* Sizing Utilities */
+.w-16 { width: 16px !important; }
+.h-16 { height: 16px !important; }
 .w-28 { width: 28px !important; }
 .w-30 { width: 30px !important; }
 .w-100 { width: 100% !important; }
+.h-16 { height: 16px !important; }
 .h-28 { height: 28px !important; }
 .min-w-60 { min-width: 60px !important; }
 
