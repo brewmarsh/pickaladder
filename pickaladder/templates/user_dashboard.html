@@ -161,7 +161,7 @@
                     <div class="d-flex flex-column gap-3">
                         {# Section 1: Active Tournaments (Top Priority) - No outer card #}
                         {% for tournament in active_tournaments %}
-                            {{ tournament_card(tournament) }}
+                            {{ tournament_card(tournament, class="tournament-card-sidebar") }}
                         {% endfor %}
 
                         {# Section 2: Groups (Ongoing) #}
@@ -170,17 +170,15 @@
                             <div class="list-group list-group-flush">
                             {% for ranking in group_rankings %}
                             <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}"
-                                class="list-group-item list-group-item-action d-flex align-items-center py-3 px-3 text-none color-inherit border-bottom">
+                                class="list-group-item list-group-item-action d-flex align-items-center py-2 px-3 text-none color-inherit border-0">
                                 {% if ranking.group_image %}
-                                <div class="profile-picture-container avatar-sm mr-3">
-                                    <img src="{{ ranking.group_image }}" alt="{{ ranking.group_name }}" class="profile-picture">
-                                </div>
+                                <img src="{{ ranking.group_image }}" alt="{{ ranking.group_name }}" class="avatar avatar-sm mr-3">
                                 {% else %}
-                                <span class="mr-3 fs-large">👥</span>
+                                <div class="avatar avatar-sm mr-3 d-flex align-items-center justify-content-center bg-primary text-white fs-xs">👥</div>
                                 {% endif %}
-                                <div class="flex-grow-1">
-                                    <div class="fw-bold">{{ ranking.group_name }}</div>
-                                    <div class="text-muted small">Rank #{{ ranking.rank or '?' }}</div>
+                                <div class="flex-grow-1 text-truncate">
+                                    <div class="fw-bold fs-xs">{{ ranking.group_name }}</div>
+                                    <div class="text-muted small fs-xxs">Rank #{{ ranking.rank or '?' }}</div>
                                 </div>
                             </a>
                             {% endfor %}
@@ -191,7 +189,7 @@
                         {# Section 3: Past Tournaments (History) - No outer card #}
                         {% for tournament in past_tournaments %}
                             <div class="opacity-8">
-                                {{ tournament_card(tournament) }}
+                                {{ tournament_card(tournament, class="tournament-card-sidebar") }}
                             </div>
                         {% endfor %}
                     </div>
@@ -277,7 +275,7 @@
             });
 
         function setupLoadMore(btn) {
-            const tbody = document.getElementById('match-history-tbody');
+            const container = document.getElementById('match-history-tbody');
             btn.addEventListener('click', function () {
                 const cursor = btn.getAttribute('data-cursor');
                 btn.disabled = true;
@@ -289,7 +287,7 @@
                         if (data.matches && data.matches.length > 0) {
                             data.matches.forEach(match => {
                                 const rowHtml = renderMatchRow(match, currentUserId, isAdmin);
-                                tbody.insertAdjacentHTML('beforeend', rowHtml);
+                                container.insertAdjacentHTML('beforeend', rowHtml);
                             });
 
                             if (data.next_cursor) {
@@ -313,24 +311,22 @@
 
         function renderMatchRow(match, currentUserId, isAdmin) {
             const isDoubles = match.match_type === 'doubles';
-            let matchupHtml = '';
+            let opponentHtml = '';
+            let matchTypeLabel = '';
             let userScore, oppScore;
 
             if (isDoubles) {
                 const inTeam1 = match.player1.some(p => p.id === currentUserId);
-                let partner, opponentName;
                 if (inTeam1) {
-                    partner = match.player1[0].id === currentUserId ? match.player1[1] : match.player1[0];
-                    opponentName = match.team2_name;
+                    opponentHtml = `<div class="fw-bold">${match.team2_name}</div>`;
                     userScore = match.player1_score;
                     oppScore = match.player2_score;
                 } else {
-                    partner = match.player2[0].id === currentUserId ? match.player2[1] : match.player2[0];
-                    opponentName = match.team1_name;
+                    opponentHtml = `<div class="fw-bold">${match.team1_name}</div>`;
                     userScore = match.player2_score;
                     oppScore = match.player1_score;
                 }
-                matchupHtml = `<strong>You & ${partner.username}</strong> vs ${opponentName}`;
+                matchTypeLabel = match.tournament_name ? `🏆 ${match.tournament_name}` : 'Doubles Match';
             } else {
                 const isP1 = match.player1.id === currentUserId;
                 let opponent;
@@ -343,53 +339,49 @@
                     userScore = match.player2_score;
                     oppScore = match.player1_score;
                 }
-                matchupHtml = `<strong>You</strong> vs ${opponent.username}`;
+                opponentHtml = `<div class="fw-bold">${opponent.username || 'Opponent'}</div>`;
+                matchTypeLabel = match.tournament_name ? `🏆 ${match.tournament_name}` : 'Singles Match';
             }
 
-            const resultBadge = match.user_result === 'win' ?
-                '<span class="badge badge-success">W</span>' :
-                '<span class="badge badge-danger">L</span>';
-
-            let tournamentHtml = '';
-            if (match.tournament_name) {
-                tournamentHtml = `<div class="text-muted small" style="margin-top: 4px;">🏆 ${match.tournament_name}</div>`;
-            }
+            const badgeClass = match.user_result === 'win' ? 'badge-volt' : 'badge-danger';
+            const scoreBadgeClass = match.user_result === 'win' ? 'score-badge-win' : 'score-badge-loss';
 
             let editLinkHtml = '';
             if ((match.created_by === currentUserId && !match.tournament_id) || isAdmin) {
                 editLinkHtml = `
-                    <a href="/match/edit/${match.id}" class="text-muted" title="Edit Match">
+                    <a href="/match/edit/${match.id}" class="text-muted ml-2" title="Edit Match" onclick="event.stopPropagation();">
                         ✏️
                     </a>
                 `;
             }
 
             // Date formatting
-            let dateStr = match.date || 'Date N/A';
+            let dateStr = match.date || '—';
             if (typeof dateStr === 'string' && dateStr.includes(',')) {
                 try {
                     const d = new Date(dateStr);
                     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                     dateStr = months[d.getUTCMonths()] + ' ' + d.getUTCDate();
                 } catch (e) {
-                    // Fallback to original string
+                    // Fallback
                 }
             }
 
             return `
-                <tr>
-                    <td class="text-muted" data-label="Date">${dateStr}</td>
-                    <td data-label="Matchup">${matchupHtml}</td>
-                    <td data-label="Result">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                ${resultBadge} ${userScore} - ${oppScore}
-                                ${tournamentHtml}
-                            </div>
-                            ${editLinkHtml}
-                        </div>
-                    </td>
-                </tr>
+                <div class="match-compact-row clickable-row" data-href="/match/summary/${match.id}">
+                    <div class="match-date-compact">${dateStr}</div>
+                    <div class="match-info-compact text-truncate">
+                        ${opponentHtml}
+                        <div class="match-opponent-names text-muted fs-xxs">${matchTypeLabel}</div>
+                    </div>
+                    <div class="match-score-badge-compact">
+                        <div class="score-badge ${scoreBadgeClass}">${userScore} - ${oppScore}</div>
+                        <span class="badge ${badgeClass} rounded-circle w-28 h-28 lh-20 p-0">
+                            ${match.user_result === 'win' ? 'W' : 'L'}
+                        </span>
+                        ${editLinkHtml}
+                    </div>
+                </div>
             `;
         }
     });

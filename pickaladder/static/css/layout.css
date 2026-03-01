@@ -146,9 +146,9 @@ body {
 
 .dashboard-column-right {
     min-width: 0;
-    position: sticky;
-    top: 24px;
-    align-self: start;
+    position: sticky !important;
+    top: 24px !important;
+    align-self: start !important;
 }
 
 .card-grid {
