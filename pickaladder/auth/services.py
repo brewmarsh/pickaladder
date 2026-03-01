@@ -208,8 +208,10 @@ class AuthService:
 
         if not username:
             effective_name = name or (email.split("@")[0] if email else "user")
-            base_username = re.sub(r"[^a-zA-Z0-9_.]", "", str(effective_name).lower())
-            username = AuthService.generate_unique_username(db, base_username)
+            username = re.sub(r"[^a-zA-Z0-9_.]", "", str(effective_name).lower())
+
+        # Always ensure uniqueness, whether it came from registration_data or was derived
+        username = AuthService.generate_unique_username(db, username)
 
         try:
             dupr_val = (

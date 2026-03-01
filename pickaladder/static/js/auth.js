@@ -68,9 +68,14 @@ const AuthModule = {
             const idToken = await result.user.getIdToken();
             localStorage.setItem('firebaseIdToken', idToken);
 
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
             const response = await fetch("/auth/session_login", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
                 body: JSON.stringify({ idToken: idToken, remember: remember }),
             });
 
@@ -96,9 +101,14 @@ const AuthModule = {
             const idToken = await userCredential.user.getIdToken();
             localStorage.setItem('firebaseIdToken', idToken);
 
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
             const response = await fetch("/auth/session_login", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
                 body: JSON.stringify({
                     idToken: idToken,
                     registrationData: {
