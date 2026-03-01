@@ -38,7 +38,7 @@
     justify-content: space-between;
     align-items: center;
     background-color: var(--card-bg);
-    border-radius: var(--radius-lg); /* Fixed Tech Debt: use variable */
+    border-radius: var(--radius-lg); 
     box-shadow: var(--shadow-md);
     padding: 24px;
     margin-bottom: 24px;
@@ -131,7 +131,17 @@
 .toast.alert-danger::before { background-color: var(--danger-color); }
 .toast.alert-warning::before { background-color: var(--warning-color); }
 
-/* --- 2. Tournament Cards & Badges --- */
+/* Unified Share Card */
+.share-card-container {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+    border-radius: 20px;
+    padding: 30px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* --- 2. Tournament & Competition System --- */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -199,7 +209,49 @@
     transform: translateY(-4px);
 }
 
-/* --- 3. Community & Friends --- */
+/* --- 3. Groups & Community Grids --- */
+.groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.group-card {
+    padding: 0 !important;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.group-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.group-card-img {
+    height: 180px;
+    width: 100%;
+    object-fit: cover;
+}
+
+.rank-badge {
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 0.85rem;
+}
+
+.rank-1 {
+    background-color: var(--color-volt);
+    color: var(--color-dark);
+    font-weight: bold;
+}
+
+.rank-other {
+    border: 1px solid var(--border-color);
+}
+
 .friend-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -226,25 +278,6 @@
     box-shadow: var(--shadow-md);
 }
 
-.friend-card-link {
-    text-decoration: none;
-    color: inherit;
-    width: 100%;
-}
-
-.friend-card-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.friend-name {
-    margin: 12px 0 4px;
-    font-size: 1.25rem;
-    font-weight: var(--fw-bold);
-}
-
 .friend-rating {
     display: flex;
     align-items: center;
@@ -253,14 +286,6 @@
     padding: 4px 12px;
     border-radius: var(--radius-pill);
     margin-top: 8px;
-}
-
-.star-icon { color: var(--warning-color); }
-.dupr-value { font-weight: var(--fw-bold); font-size: 0.9rem; }
-
-.friend-card-actions {
-    width: 100%;
-    margin-top: auto;
 }
 
 /* --- 4. Sidebar Specifics & Invites --- */
@@ -286,24 +311,12 @@
     font-size: 1.1rem;
     color: var(--accent-color);
 }
-.invite-name {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-top: 4px;
-}
+
 .invite-actions {
     flex: 1;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    align-items: center;
-}
-
-.quest-summary {
-    cursor: pointer;
-    list-style: none;
-    display: flex;
-    justify-content: space-between;
     align-items: center;
 }
 

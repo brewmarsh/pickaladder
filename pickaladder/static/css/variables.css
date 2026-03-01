@@ -24,6 +24,10 @@
     --text-on-primary: #FFFFFF;
     --text-on-accent: #111827;      /* For Volt/Warning colors */
 
+    /* Volt Design System (Specific Aliases) */
+    --color-volt: var(--accent-color);
+    --color-dark: var(--text-on-accent);
+
     /* Semantic Tokens Bridge */
     --bg-color: var(--bg-primary);
     --card-bg: var(--bg-secondary);
