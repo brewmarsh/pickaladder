@@ -1,62 +1,170 @@
 {% extends "layout.html" %}
-{% block title %}Global Leaderboard{% endblock %}
+{% block title %}Leaderboard Discovery Hub{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>Global Leaderboard</h1>
-    <p class="subtitle">Top Players by Win Percentage</p>
+    <h1>Leaderboard</h1>
+    <p class="subtitle">Discover top talent and find your next rival</p>
 </div>
-<div class="table-container">
-    <table class="table-standard responsive-table">
-        <thead>
-            <tr>
-                <th class="text-center">Rank</th>
-                <th>Player</th>
-                <th class="text-right">Win Percentage</th>
-                <th class="text-right">Games Played</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for player in players %}
-            <tr class="{{ 'highlight-row' if player.id == current_user_id else '' }}">
-                <td data-label="Rank"
-                    class="{% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">
-                    <span class="mobile-rank-badge">{{ loop.index }}</span>
-                </td>
-                <td data-label="Player"><a href="{{ url_for('user.view_user', user_id=player.id) }}">{{ player.name
-                        }}</a></td>
-                <td data-label="Win Percentage" class="text-right">{{ "%.1f"|format(player.win_percentage) }}%</td>
-                <td data-label="Games Played" class="text-right">{{ player.games_played }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-<div class="page-header">
-    <h2>Latest Games</h2>
-</div>
-<div class="table-container">
-    <table class="table-standard">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Matchup</th>
-                <th>Result</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for match in latest_matches %}
-            <tr>
-                <td data-label="Date">{{ match.date }}</td>
-                <td data-label="Matchup">
-                    <span class="fw-bold text-primary">{{ match.winner_name }}</span> <span class="text-muted">vs</span>
-                    {{ match.loser_name }}
-                </td>
-                <td data-label="Result">
-                    {{ match.winner_score }} - {{ match.loser_score }}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+<div class="discovery-hub-grid">
+    {# Left Column: Tiered Leaderboard #}
+    <div class="discovery-main">
+        {# Section 1: The Podium #}
+        {% if podium %}
+        <div class="podium-section">
+            <h2 class="sidebar-header">The Podium</h2>
+            <div class="podium-grid">
+                {% for player in podium %}
+                <div class="podium-card {{ 'rank-1-card' if loop.index == 1 else '' }}">
+                    <div class="podium-rank-badge">{{ loop.index }}</div>
+                    <a href="{{ url_for('user.view_user', user_id=player.id) }}">
+                        <img src="{{ player | avatar_url }}" alt="{{ player.username }}" class="avatar podium-avatar">
+                    </a>
+                    <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="podium-name">
+                        {{ player.name if player.name else player.username }}
+                    </a>
+                    <div class="podium-stats">
+                        <span class="text-volt fw-bold">{{ "%.1f"|format(player.win_percentage) }}%</span>
+                        <br>
+                        <span class="fs-xxs text-muted">{{ player.games_played }} Games</span>
+                    </div>
+                    <div class="discovery-actions mt-3">
+                        {% if player.id != current_user_id %}
+                        <a href="{{ url_for('match.record_match', opponent_id=player.id) }}"
+                           class="btn-discovery btn-volt" title="Challenge">
+                            <i class="fas fa-swords"></i>
+                        </a>
+                        {% if not friend_statuses.get(player.id) %}
+                        <form action="{{ url_for('user.send_friend_request', friend_id=player.id) }}" method="post" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn-discovery btn-outline-primary" title="Add Friend">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# Section 2: Tiers #}
+        {% set tiers = [
+            {'name': 'Gold', 'class': 'tier-gold', 'players': gold_tier, 'icon': '🥇'},
+            {'name': 'Silver', 'class': 'tier-silver', 'players': silver_tier, 'icon': '🥈'},
+            {'name': 'Bronze', 'class': 'tier-bronze', 'players': bronze_tier, 'icon': '🥉'}
+        ] %}
+
+        {% for tier in tiers %}
+        {% if tier.players %}
+        <div class="tier-section {{ tier.class }}">
+            <div class="tier-header">
+                <h3>{{ tier.icon }} {{ tier.name }} Tier</h3>
+            </div>
+            <div class="table-container shadow-none border">
+                <table class="table-standard responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th class="text-right">Win %</th>
+                            <th class="text-right">Games</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in tier.players %}
+                        <tr class="{{ 'bg-primary-subtle' if player.id == current_user_id else '' }}">
+                            <td data-label="Player">
+                                <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="d-flex align-items-center color-inherit text-none">
+                                    <img src="{{ player | avatar_url }}" class="avatar avatar-sm mr-2" alt="Avatar">
+                                    <span class="fw-bold">{{ player.name if player.name else player.username }}</span>
+                                </a>
+                            </td>
+                            <td data-label="Win %" class="text-right">{{ "%.1f"|format(player.win_percentage) }}%</td>
+                            <td data-label="Games" class="text-right text-muted">{{ player.games_played }}</td>
+                            <td data-label="Actions" class="text-right">
+                                <div class="discovery-actions">
+                                    {% if player.id != current_user_id %}
+                                    <a href="{{ url_for('match.record_match', opponent_id=player.id) }}"
+                                       class="btn-discovery btn-volt" title="Challenge">
+                                        <i class="fas fa-swords"></i>
+                                    </a>
+                                    {% if not friend_statuses.get(player.id) %}
+                                    <form action="{{ url_for('user.send_friend_request', friend_id=player.id) }}" method="post" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn-discovery btn-outline-primary" title="Add Friend">
+                                            <i class="fas fa-user-plus"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+
+        {# Section 3: Recent Games #}
+        <div class="card p-0 overflow-hidden">
+            <h3 class="p-3 mb-0">Latest Games</h3>
+            <div class="match-history-feed">
+                {% for match in latest_matches %}
+                    <div class="match-compact-row clickable-row" data-href="{{ url_for('match.view_match_summary', match_id=match.id) }}">
+                        <div class="match-date-compact">{{ match.date }}</div>
+
+                        <div class="match-info-compact text-truncate">
+                            <div class="fw-bold text-truncate">{{ match.winner_name }}</div>
+                            <div class="match-opponent-names text-truncate">vs {{ match.loser_name }}</div>
+                        </div>
+
+                        <div class="match-score-badge-compact">
+                            <span class="score-badge score-badge-win">
+                                W {{ match.winner_score }}-{{ match.loser_score }}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# Right Column: Sidebar #}
+    <div class="discovery-sidebar">
+        <div class="card rising-stars-widget">
+            <h3 class="sidebar-header">🔥 Rising Stars</h3>
+            <p class="text-muted small mb-3">Most wins this week</p>
+            <div class="list-group list-group-flush">
+                {% for star in rising_stars %}
+                <div class="list-group-item d-flex align-items-center px-0">
+                    <img src="{{ star | avatar_url }}" class="avatar avatar-md mr-3" alt="Avatar">
+                    <div class="flex-grow-1">
+                        <a href="{{ url_for('user.view_user', user_id=star.id) }}" class="fw-bold d-block color-inherit text-none">
+                            {{ star.name if star.name else star.username }}
+                        </a>
+                        <span class="text-muted fs-xxs">@{{ star.username }}</span>
+                    </div>
+                    <div class="rising-stars-count text-right">
+                        {{ star.weekly_wins }}W
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted small">No matches played this week.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card card-compact">
+            <h3 class="sidebar-header">Climb the Ranks</h3>
+            <p class="text-muted small">Matches are the only way to climb the global leaderboard. Record your games and track your progress!</p>
+            <a href="{{ url_for('match.record_match') }}" class="btn btn-volt w-100">Record a Match</a>
+        </div>
+    </div>
 </div>
 {% endblock %}

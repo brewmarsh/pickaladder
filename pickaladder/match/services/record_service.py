@@ -59,6 +59,53 @@ class MatchRecordService:
         ) == uid
 
     @staticmethod
+    def get_rising_stars(db: Client, limit: int = 3) -> list[dict[str, Any]]:
+        """Fetch users with the most wins in the last 7 days."""
+        from datetime import datetime, timedelta, timezone
+
+        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        matches_query = db.collection("matches").where(
+            filter=firestore.FieldFilter("createdAt", ">=", seven_days_ago)
+        )
+
+        win_counts: dict[str, int] = {}
+        for m_snap in matches_query.stream():
+            m_data = m_snap.to_dict() or {}
+            winners = m_data.get("winners") or []
+            for uid in winners:
+                win_counts[uid] = win_counts.get(uid, 0) + 1
+
+        if not win_counts:
+            return []
+
+        # Sort and take top IDs
+        top_uids_with_counts = sorted(
+            win_counts.items(), key=lambda x: x[1], reverse=True
+        )[:limit]
+        top_uids = [uid for uid, _ in top_uids_with_counts]
+
+        # Bulk fetch user data
+        u_refs = [db.collection("users").document(uid) for uid in top_uids]
+        results = []
+        for u_snap in db.get_all(u_refs):
+            if u_snap.exists:
+                u_data = u_snap.to_dict() or {}
+                uid = u_snap.id
+                results.append(
+                    {
+                        "id": uid,
+                        "name": u_data.get("name") or u_data.get("username", "Unknown"),
+                        "username": u_data.get("username"),
+                        "profilePictureUrl": u_data.get("profilePictureUrl"),
+                        "weekly_wins": next(c for i, c in top_uids_with_counts if i == uid),
+                    }
+                )
+
+        # Ensure order is maintained after bulk fetch
+        results.sort(key=lambda x: x["weekly_wins"], reverse=True)
+        return results
+
+    @staticmethod
     def get_leaderboard_data(
         db: Client, limit: int = 50, min_games: int = GLOBAL_LEADERBOARD_MIN_GAMES
     ) -> list[User]:
