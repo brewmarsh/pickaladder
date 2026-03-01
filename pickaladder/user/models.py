@@ -54,15 +54,6 @@ class UserStats(TypedDict, total=False):
     processed_matches: list[dict[str, Any]]
 
 
-class UserLifetimeStats(TypedDict, total=False):
-    """Aggregated lifetime statistics for a user cached in Firestore."""
-
-    total_matches: int
-    wins: int
-    losses: int
-    current_streak: int
-
-
 class UserRanking(TypedDict, total=False):
     """A user's ranking within a group."""
 

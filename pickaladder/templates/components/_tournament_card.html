@@ -1,5 +1,5 @@
 {% macro tournament_card(tournament) %}
-<div class="card tournament-card clickable-row" data-href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" style="padding: 0; overflow: hidden; position: relative; height: 100%; width: 100%; max-width: 100%; min-width: 0; display: flex; flex-direction: column;">
+<div class="card tournament-card clickable-row" data-href="{{ url_for('tournament.view_tournament', tournament_id=tournament.id) }}" style="padding: 0; overflow: hidden; position: relative; height: 100%; width: 100%; display: flex; flex-direction: column;">
     {% if tournament.banner_url %}
         <img src="{{ tournament.banner_url }}" alt="{{ tournament.name }}" style="width: 100%; height: 160px; object-fit: cover;">
     {% else %}
