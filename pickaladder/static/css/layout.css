@@ -158,9 +158,15 @@ body {
     margin-top: 20px;
 }
 
-.groups-grid, .tournament-grid {
+.groups-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.tournament-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 24px;
 }
 
