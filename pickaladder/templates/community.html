@@ -60,9 +60,9 @@
 {# 2. SEARCH BAR #}
 <div class="mx-auto mb-5" style="max-width: 600px;">
     <form method="get" action="{{ url_for('user.view_community') }}" class="search-form">
-        <div class="input-group-volt">
-            <input type="text" name="search" class="form-control" placeholder="Search players or groups..." value="{{ search_term }}">
-            <button type="submit" class="btn btn-volt">Search</button>
+        <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Search by username, name, or email" value="{{ search_term }}">
+            <button type="submit" class="btn btn-primary">Search</button>
             {% if search_term %}
             <a href="{{ url_for('user.view_community') }}" class="btn btn-secondary">Clear</a>
             {% endif %}
@@ -72,8 +72,8 @@
 
 {# 3. SENT REQUESTS #}
 {% if outgoing_requests %}
-<div class="card requests-section mb-4">
-    <h4 class="card-header"><i class="fas fa-paper-plane me-2"></i> Sent Friend Requests</h4>
+<div class="card requests-section" style="margin-top: 40px;">
+    <h3>Sent Friend Requests</h3>
     <div class="table-container">
         <table class="table-standard responsive-table">
             <thead>
@@ -154,7 +154,7 @@
 </div>
 {% endif %}
 
-<div class="friends-section mb-5">
+<div class="friends-section" style="margin-bottom: 40px;">
     <h3>Your Friends</h3>
     {% if friends %}
     <div class="friend-grid">
@@ -171,7 +171,7 @@
                         {% endif %}
                     </h3>
                     {% if not friend.username.startswith('ghost_') and friend.name and friend.name != friend.username %}
-                    <p class="text-muted small">@{{ friend.username }}</p>
+                    <p class="text-muted" style="margin-top: -5px; font-size: 0.85em;">@{{ friend.username }}</p>
                     {% endif %}
                     <div class="friend-rating">
                         <span class="star-icon">⭐</span>
@@ -195,7 +195,7 @@
     {% endif %}
 </div>
 
-<div class="discover-section mb-5">
+<div class="discover-section" style="margin-bottom: 40px;">
     <h3>Discover Players</h3>
     {% if all_users %}
     <div class="friend-grid">
@@ -212,7 +212,7 @@
                         {% endif %}
                     </h3>
                     {% if not user_data.username.startswith('ghost_') and user_data.name and user_data.name != user_data.username %}
-                    <p class="text-muted small">@{{ user_data.username }}</p>
+                    <p class="text-muted" style="margin-top: -5px; font-size: 0.85em;">@{{ user_data.username }}</p>
                     {% endif %}
                     <div class="friend-rating">
                         <span class="star-icon">⭐</span>
@@ -223,7 +223,7 @@
             <div class="friend-card-actions">
                 <form method="post" action="{{ url_for('user.send_friend_request', friend_id=user_data.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-volt add-friend-btn">Add Friend</button>
+                    <button type="submit" class="btn add-friend-btn">Add Friend</button>
                 </form>
             </div>
         </div>
@@ -275,7 +275,7 @@
                         <form action="{{ url_for('group.join_group', group_id=group.id) }}" method="post"
                             style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-volt btn-sm">Join</button>
+                            <button type="submit" class="btn">Join</button>
                         </form>
                     </td>
                 </tr>

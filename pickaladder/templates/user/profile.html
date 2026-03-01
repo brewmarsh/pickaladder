@@ -4,8 +4,86 @@
 {% block content %}
 <div class="mt-4">
     <div class="dashboard-columns">
+        {# Left Column: Match History #}
+        <div class="dashboard-column-left">
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h4 class="fw-bold">Match History</h4>
+                </div>
+                <div class="card-body p-0">
+                    {% if matches %}
+                    <div class="match-history-list">
+                        {% for match in matches %}
+                        <div class="match-compact-row clickable-row"
+                            data-href="{{ url_for('match.view_match_summary', match_id=match.id) }}">
+                            <div class="match-date-compact">
+                                {% if match.date and match.date != 'N/A' %}
+                                    {{ match.date if match.date is string else match.date.strftime('%b %d') }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </div>
+
+                            <div class="match-info-compact text-truncate">
+                                {% if match.match_type == 'doubles' %}
+                                    {% set on_team1 = profile_user.id in match.participants[:2] if match.participants else (profile_user.id in match.player1|map(attribute='id') if match.player1 is iterable and match.player1 is not mapping else False) %}
+                                    <div class="fw-bold">
+                                        {% if on_team1 %}
+                                            {% if match.player2 is iterable and match.player2 is not mapping %}
+                                                {{ match.player2 | map(attribute='username') | join(' & ') }}
+                                            {% else %}
+                                                {{ match.team2_name }}
+                                            {% endif %}
+                                        {% else %}
+                                            {% if match.player1 is iterable and match.player1 is not mapping %}
+                                                {{ match.player1 | map(attribute='username') | join(' & ') }}
+                                            {% else %}
+                                                {{ match.team1_name }}
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="match-opponent-names text-muted fs-xxs">
+                                        {% if match.tournament_name %}🏆 {{ match.tournament_name }}{% else %}Doubles Match{% endif %}
+                                    </div>
+                                {% else %}
+                                    {% set is_p1 = (profile_user.id == match.player1.id) if match.player1.id is defined else (profile_user.id == match.player1) %}
+                                    {% set opponent = match.player2 if is_p1 else match.player1 %}
+                                    <div class="fw-bold">{{ opponent.username or opponent.display_name or opponent.name or 'Opponent' }}</div>
+                                    <div class="match-opponent-names text-muted fs-xxs">
+                                        {% if match.tournament_name %}🏆 {{ match.tournament_name }}{% else %}Singles Match{% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="match-score-badge-compact">
+                                <div class="score-badge {{ 'score-badge-win' if match.user_result == 'win' else 'score-badge-loss' }}">
+                                    {% set is_p1_side = profile_user.id in match.participants[:2] if match.participants else ((profile_user.id in match.player1|map(attribute='id') if match.player1 is iterable and match.player1 is not mapping else profile_user.id == match.player1.id) if match.match_type == 'doubles' else match.player1.id == profile_user.id) %}
+                                    {% set u_score = match.player1_score if is_p1_side else match.player2_score %}
+                                    {% set o_score = match.player2_score if is_p1_side else match.player1_score %}
+                                    {{ u_score }} - {{ o_score }}
+                                </div>
+                                <span class="badge {{ 'badge-volt' if match.user_result == 'win' else 'badge-danger' }} rounded-circle w-28 h-28 lh-20 p-0">
+                                    {{ 'W' if match.user_result == 'win' else 'L' }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    {{ empty_state(
+                        icon="🎾",
+                        title="No Matches Recorded",
+                        message="No matches recorded yet. Get out there and play!",
+                        action_url=url_for('match.record_match', opponent_id=profile_user.id) if is_friend else None,
+                        action_text="Challenge to Match" if is_friend else None
+                    ) }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
         {# Right Column: Profile & Social (Top on mobile) #}
-        <div class="dashboard-column-right order-lg-2">
+        <div class="dashboard-column-right">
             <div class="card text-center mb-4 border-0 shadow-sm">
                 <div class="card-body">
                     <img src="{{ profile_user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl mb-3"
@@ -24,7 +102,7 @@
                                 {% endif %}
                             </div>
                             <div class="stat-label text-muted fs-xxs text-uppercase ls-1">
-                                DUPR Rating
+                                Rating
                                 {% if not profile_user.dupr_id %}
                                 <br><a href="{{ url_for('user.edit_profile') }}" class="small">Add DUPR ID</a>
                                 {% endif %}
@@ -111,83 +189,6 @@
             </div>
         </div>
 
-        {# Left Column: Match History #}
-        <div class="dashboard-column-left order-lg-1">
-            <div class="card mb-4 border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
-                    <h4 class="fw-bold">Match History</h4>
-                </div>
-                <div class="card-body p-0">
-                    {% if matches %}
-                    <div class="match-history-list">
-                        {% for match in matches %}
-                        <div class="match-compact-row clickable-row"
-                            data-href="{{ url_for('match.view_match_summary', match_id=match.id) }}">
-                            <div class="match-date-compact">
-                                {% if match.date and match.date != 'N/A' %}
-                                    {{ match.date if match.date is string else match.date.strftime('%b %d') }}
-                                {% else %}
-                                    —
-                                {% endif %}
-                            </div>
-
-                            <div class="match-info-compact text-truncate">
-                                {% if match.match_type == 'doubles' %}
-                                    {% set on_team1 = profile_user.id in match.participants[:2] if match.participants else (profile_user.id in match.player1|map(attribute='id') if match.player1 is iterable and match.player1 is not mapping else False) %}
-                                    <div class="fw-bold">
-                                        {% if on_team1 %}
-                                            {% if match.player2 is iterable and match.player2 is not mapping %}
-                                                {{ match.player2 | map(attribute='username') | join(' & ') }}
-                                            {% else %}
-                                                {{ match.team2_name }}
-                                            {% endif %}
-                                        {% else %}
-                                            {% if match.player1 is iterable and match.player1 is not mapping %}
-                                                {{ match.player1 | map(attribute='username') | join(' & ') }}
-                                            {% else %}
-                                                {{ match.team1_name }}
-                                            {% endif %}
-                                        {% endif %}
-                                    </div>
-                                    <div class="match-opponent-names text-muted fs-xxs">
-                                        {% if match.tournament_name %}🏆 {{ match.tournament_name }}{% else %}Doubles Match{% endif %}
-                                    </div>
-                                {% else %}
-                                    {% set is_p1 = (profile_user.id == match.player1.id) if match.player1.id is defined else (profile_user.id == match.player1) %}
-                                    {% set opponent = match.player2 if is_p1 else match.player1 %}
-                                    <div class="fw-bold">{{ opponent.username or opponent.display_name or opponent.name or 'Opponent' }}</div>
-                                    <div class="match-opponent-names text-muted fs-xxs">
-                                        {% if match.tournament_name %}🏆 {{ match.tournament_name }}{% else %}Singles Match{% endif %}
-                                    </div>
-                                {% endif %}
-                            </div>
-
-                            <div class="match-score-badge-compact">
-                                <div class="score-badge {{ 'score-badge-win' if match.user_result == 'win' else 'score-badge-loss' }}">
-                                    {% set is_p1_side = profile_user.id in match.participants[:2] if match.participants else ((profile_user.id in match.player1|map(attribute='id') if match.player1 is iterable and match.player1 is not mapping else profile_user.id == match.player1.id) if match.match_type == 'doubles' else match.player1.id == profile_user.id) %}
-                                    {% set u_score = match.player1_score if is_p1_side else match.player2_score %}
-                                    {% set o_score = match.player2_score if is_p1_side else match.player1_score %}
-                                    {{ u_score }} - {{ o_score }}
-                                </div>
-                                <span class="badge {{ 'badge-volt' if match.user_result == 'win' else 'badge-danger' }} rounded-circle w-28 h-28 lh-20 p-0">
-                                    {{ 'W' if match.user_result == 'win' else 'L' }}
-                                </span>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    {{ empty_state(
-                        icon="🎾",
-                        title="No Matches Recorded",
-                        message="No matches recorded yet. Get out there and play!",
-                        action_url=url_for('match.record_match', opponent_id=profile_user.id) if is_friend else None,
-                        action_text="Challenge to Match" if is_friend else None
-                    ) }}
-                    {% endif %}
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 {% endblock %}
