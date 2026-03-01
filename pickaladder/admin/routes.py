@@ -352,10 +352,48 @@ def merge_players() -> Union[str, Response]:
     return render_template("admin/merge_players.html", users=users)
 
 
+@bp.route("/style-guide")
+@login_required(admin_required=True)
+def style_guide() -> str:
+    """Render the design system style guide."""
+    # Mock data for Tournament Card
+    mock_tournament = {
+        "id": "mock-t-1",
+        "name": "The Volt Championship",
+        "matchType": "doubles",
+        "status": "PUBLISHED",
+        "date": "2024-12-01",
+        "date_display": "Dec 1, 2024",
+        "location": "Central Courts",
+        "organizer_id": "admin-1",
+        "banner_url": None,
+    }
+
+    # Mock data for Match Row
+    mock_match = {
+        "id": "mock-m-1",
+        "date": datetime.datetime.now(),
+        "match_type": "singles",
+        "player_1_data": {"uid": "user-1", "display_name": "Jules"},
+        "player_2_data": {"uid": "user-2", "display_name": "Opponent"},
+        "player1_score": 11,
+        "player2_score": 8,
+        "user_result": "win",
+        "tournament_name": "The Volt Championship",
+        "created_by": "user-1",
+    }
+
+    return render_template(
+        "admin/style_guide.html",
+        tournament=mock_tournament,
+        match=mock_match,
+    )
+
+
 @bp.route("/styleguide")
 @login_required(admin_required=True)
 def styleguide() -> str:
-    """Render the design system styleguide."""
+    """Render the legacy design system styleguide."""
     return render_template("admin/styleguide.html")
 
 

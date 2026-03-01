@@ -2,19 +2,25 @@
     /* --- NEW "COURT & VOLT" SYSTEM --- */
     --primary-color: #2563EB;       /* Royal Blue */
     --primary-hover: #1D4ED8;
+    
     --accent-color: #84CC16;        /* Electric Lime */
     --accent-hover: #65A30D;
+    
     --color-volt: var(--accent-color);
+    --color-dark: var(--text-on-accent);
 
+    /* Functional Colors */
     --success-color: #10B981;
     --danger-color: #EF4444;
     --warning-color: #F59E0B;
 
+    /* Neutrals & Surfaces */
     --bg-primary: #F3F4F6;            /* Page background */
     --bg-secondary: #FFFFFF;          /* Cards, Navbar, Dropdowns */
     --text-primary: #111827;
     --text-secondary: #6B7280;
     --border-color: #E5E7EB;
+    
     --text-on-primary: #FFFFFF;
     --text-on-accent: #111827;      /* For Volt/Warning colors */
 
@@ -22,8 +28,8 @@
     --bg-color: var(--bg-primary);
     --card-bg: var(--bg-secondary);
 
-    /* --- BACKWARD COMPATIBILITY BRIDGE (Do Not Remove Yet) --- */
-    /* This maps old variable names to the new system so the UI doesn't break */
+    /* --- BACKWARD COMPATIBILITY BRIDGE --- */
+    /* Maps old variable names to the new system to prevent breaking legacy UI */
     --primary-brand: var(--primary-color);
     --primary-brand-dark: var(--primary-hover);
     --surface-color: var(--bg-secondary);
@@ -36,7 +42,7 @@
     --font-family: 'Inter', sans-serif;
     --font-score: 'Oswald', sans-serif;
 
-    /* Structure */
+    /* Structure & Elevation */
     --box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
     --border-radius: 8px;
 

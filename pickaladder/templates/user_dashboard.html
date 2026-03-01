@@ -11,23 +11,22 @@
     {# Section: Tournament Invites (Top Priority Alert Banner) #}
     {% if pending_tournament_invites %}
     {% for tournament in pending_tournament_invites %}
-    <div class="game-card tournament-invite-card"
-        style="margin-bottom: 20px; border-left: 5px solid var(--accent-color);">
-        <div style="flex: 2;">
-            <div style="font-weight: 600; font-size: 1.1rem; color: var(--accent-color);">🏆 You've been invited!</div>
-            <div style="font-size: 1.2rem; font-weight: bold; margin-top: 4px;">{{ tournament.name }}</div>
+    <div class="game-card tournament-invite-card card">
+        <div class="invite-content">
+            <div class="invite-label">🏆 You've been invited!</div>
+            <div class="invite-name">{{ tournament.name }}</div>
             <div class="text-muted small">Starts {{ tournament.date }}</div>
         </div>
-        <div style="flex: 1; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
+        <div class="invite-actions">
             <form action="{{ url_for('tournament.accept_invite', tournament_id=tournament.id) }}" method="post"
-                style="display: inline;">
+                class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-volt" style="width: auto; margin: 0;">Accept</button>
+                <button type="submit" class="btn btn-volt w-auto m-0">Accept</button>
             </form>
             <form action="{{ url_for('tournament.decline_invite', tournament_id=tournament.id) }}" method="post"
-                style="display: inline;">
+                class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-danger" style="width: auto; margin: 0;">Decline</button>
+                <button type="submit" class="btn btn-danger w-auto m-0">Decline</button>
             </form>
         </div>
     </div>
@@ -36,8 +35,8 @@
 
     {# Rookie Quest (Consolidated Onboarding) #}
     {% if onboarding_progress.percent < 100 or not onboarding_progress.has_match %}
-    <details class="card rookie-quest-card mb-4" style="border-left: 5px solid var(--accent-color);" open>
-        <summary class="card-header d-flex justify-content-between align-items-center" style="cursor: pointer; list-style: none;">
+    <details class="card rookie-quest-card mb-4 pulse" open>
+        <summary class="card-header quest-summary">
             <h3 class="mb-0">Rookie Quest</h3>
             <i class="fas fa-chevron-down toggle-icon"></i>
         </summary>
@@ -57,8 +56,8 @@
                         {% set is_next = not quest.done and not ns.next_found %}
                         {% if is_next %}{% set ns.next_found = true %}{% endif %}
 
-                        <div class="list-group-item d-flex align-items-center {{ 'text-muted' if quest.done else '' }}" style="padding: 12px 0; border-color: var(--border-color); {{ 'opacity: 0.6;' if quest.done else '' }}">
-                            <div class="quest-icon" style="font-size: 1.2rem; width: 30px; text-align: center; margin-right: 12px;">
+                        <div class="list-group-item d-flex align-items-center {{ 'text-muted' if quest.done else '' }} py-3 border-bottom {{ 'opacity-6' if quest.done else '' }}">
+                            <div class="quest-icon mr-3 text-center fs-large w-30">
                                 {% if quest.done %}
                                     <i class="fas fa-check-circle text-success"></i>
                                 {% else %}
@@ -66,12 +65,12 @@
                                 {% endif %}
                             </div>
                             <div class="flex-grow-1 {{ 'strikethrough' if quest.done else '' }}">
-                                <div class="{{ 'fw-bold' if is_next else '' }}" style="font-size: 1rem;">{{ quest.title }}</div>
-                                <div class="text-muted small" style="font-size: 0.8rem;">{{ quest.text }}</div>
+                                <div class="{{ 'fw-bold' if is_next else '' }} fs-md">{{ quest.title }}</div>
+                                <div class="text-muted small fs-xs">{{ quest.text }}</div>
                             </div>
-                            <div style="margin-left: 12px;">
+                            <div class="ml-3">
                                 {% if not quest.done %}
-                                    <a href="{{ quest.link }}" class="btn {{ 'btn-volt pulse' if is_next else 'btn-outline-primary btn-sm' }}" style="width: auto; min-width: 60px; text-transform: none; margin: 0; padding: 4px 8px; font-size: 0.8rem;">
+                                    <a href="{{ quest.link }}" class="btn {{ 'btn-volt pulse' if is_next else 'btn-outline-primary btn-sm' }} w-auto min-w-60 text-none m-0 py-1 px-2 fs-xs">
                                         Go
                                     </a>
                                 {% endif %}
@@ -93,7 +92,7 @@
         <div class="hero-middle-panel text-center">
             <h2 id="hero-username-text" class="mb-2">{{ user.name if user.name else user.username }}</h2>
             <!-- Vanity Stats Row (Lazy Loaded) -->
-            <div id="vanity-stats-placeholder" class="vanity-stats-container justify-content-center gap-4" style="min-height: 80px;">
+            <div id="vanity-stats-placeholder" class="vanity-stats-container justify-content-center gap-4 vanity-stats-loading">
                 <div class="text-center py-3">
                     <div class="spinner-border spinner-border-sm text-volt" role="status">
                         <span class="sr-only">Loading...</span>
@@ -111,7 +110,7 @@
     {% if recent_opponents and onboarding_progress.percent == 100 %}
     <div class="card mb-4">
         <div class="card-body">
-            <h4 class="card-header" style="border-bottom: none; margin-bottom: 0; padding-left: 0;">Jump Back In</h4>
+            <h4 class="card-header border-bottom-0 mb-0 pl-0">Jump Back In</h4>
             <div class="text-muted small mb-3">Recent Opponents</div>
             <div class="d-flex gap-3 mt-3">
                 {% for opponent in recent_opponents %}
@@ -143,12 +142,13 @@
         </div>
 
         {# Right Column: Competition Stack #}
-        <div class="dashboard-column-right" style="min-width: 0; width: 100%; max-width: 100%; overflow: hidden;">
-            <div class="competition-stack">
+        <div class="dashboard-column-right">
+            <div class="competition-stack d-flex flex-column gap-4">
                 {# Competitions Hub #}
-                <div class="card card-compact" style="padding: 16px;">
-                    <h3 style="margin-top: 0; margin-bottom: 16px;">Competitions</h3>
+                <div class="competitions-hub">
+                    <h3 class="sidebar-header">Competitions</h3>
                     {% if not active_tournaments and not group_rankings and not past_tournaments %}
+                    <div class="card card-compact">
                     {{ empty_state(
                         icon="👨‍👩‍👧‍👦",
                         title="Find your squad",
@@ -156,37 +156,41 @@
                         action_url=url_for('user.view_community'),
                         action_text="Find a Group"
                     ) }}
+                    </div>
                     {% else %}
                     <div class="d-flex flex-column gap-3">
-                        {# Section 1: Active Tournaments (Top Priority) #}
+                        {# Section 1: Active Tournaments (Top Priority) - No outer card #}
                         {% for tournament in active_tournaments %}
                             {{ tournament_card(tournament) }}
                         {% endfor %}
 
                         {# Section 2: Groups (Ongoing) #}
-                        <div class="list-group list-group-flush">
-                        {% for ranking in group_rankings %}
-                        <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}"
-                            class="list-group-item list-group-item-action"
-                            style="display: flex; align-items: center; padding: 12px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--border-color);">
-                            {% if ranking.group_image %}
-                            <div class="profile-picture-container avatar-sm" style="margin-right: 12px;">
-                                <img src="{{ ranking.group_image }}" alt="{{ ranking.group_name }}" class="profile-picture">
+                        {% if group_rankings %}
+                        <div class="card card-compact">
+                            <div class="list-group list-group-flush">
+                            {% for ranking in group_rankings %}
+                            <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}"
+                                class="list-group-item list-group-item-action d-flex align-items-center py-3 px-3 text-none color-inherit border-bottom">
+                                {% if ranking.group_image %}
+                                <div class="profile-picture-container avatar-sm mr-3">
+                                    <img src="{{ ranking.group_image }}" alt="{{ ranking.group_name }}" class="profile-picture">
+                                </div>
+                                {% else %}
+                                <span class="mr-3 fs-large">👥</span>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">{{ ranking.group_name }}</div>
+                                    <div class="text-muted small">Rank #{{ ranking.rank or '?' }}</div>
+                                </div>
+                            </a>
+                            {% endfor %}
                             </div>
-                            {% else %}
-                            <span style="margin-right: 12px; font-size: 1.25rem;">👥</span>
-                            {% endif %}
-                            <div style="flex-grow: 1;">
-                                <div class="fw-bold">{{ ranking.group_name }}</div>
-                                <div class="text-muted small">Rank #{{ ranking.rank or '?' }}</div>
-                            </div>
-                        </a>
-                        {% endfor %}
                         </div>
+                        {% endif %}
 
-                        {# Section 3: Past Tournaments (History) #}
+                        {# Section 3: Past Tournaments (History) - No outer card #}
                         {% for tournament in past_tournaments %}
-                            <div style="opacity: 0.8;">
+                            <div class="opacity-8">
                                 {{ tournament_card(tournament) }}
                             </div>
                         {% endfor %}
@@ -195,26 +199,24 @@
                 </div>
 
                 {# Social Section #}
-                <div class="card" style="padding: 16px;">
-                    <h3 style="margin-top: 0; margin-bottom: 16px;">Social</h3>
+                <div class="card card-compact">
+                    <h3 class="sidebar-header">Social</h3>
                     {% if requests %}
-                    <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Friend Requests</h4>
-                    <div class="table-container"
-                        style="box-shadow: none; border: 1px solid var(--border-color); margin-bottom: 16px; border-radius: 4px;">
-                        <table class="table" style="margin-top: 0;">
+                    <h4 class="fs-xs mb-2">Friend Requests</h4>
+                    <div class="table-container shadow-none border mb-3 rounded-sm">
+                        <table class="table mt-0">
                             <tbody>
                                 {% for request in requests %}
                                 <tr>
-                                    <td style="padding: 8px;">
+                                    <td class="p-2">
                                         <a href="{{ url_for('user.view_user', user_id=request.id) }}"
-                                            style="font-size: 0.85rem;">{{ request.username }}</a>
+                                            class="fs-xs">{{ request.username }}</a>
                                     </td>
-                                    <td style="padding: 8px; text-align: right;">
+                                    <td class="p-2 text-right">
                                         <form action="{{ url_for('user.accept_request', requester_id=request.id) }}"
-                                            method="post" style="display: inline;">
+                                            method="post" class="d-inline">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-volt btn-sm"
-                                                style="padding: 4px 8px; font-size: 0.75rem; width: auto; text-transform: none;">Accept</button>
+                                            <button type="submit" class="btn btn-volt btn-sm py-1 px-2 fs-xxs w-auto text-none">Accept</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -224,8 +226,8 @@
                     </div>
                     {% endif %}
 
-                    <h4 style="font-size: 0.9rem; margin-bottom: 8px;">Your Friends</h4>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <h4 class="fs-xs mb-2">Your Friends</h4>
+                    <div class="d-flex flex-wrap gap-2">
                         {% for friend in friends[:10] %}
                         <a href="{{ url_for('user.view_user', user_id=friend.id) }}" title="{{ friend.username }}">
                             <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="avatar avatar-md">
@@ -238,8 +240,7 @@
                         ) }}
                         {% endfor %}
                     </div>
-                    <a href="{{ url_for('user.view_community') }}" class="btn btn-sm btn-outline-primary"
-                        style="width: 100%; margin-top: 12px; text-transform: none;">Community Hub</a>
+                    <a href="{{ url_for('user.view_community') }}" class="btn btn-sm btn-outline-primary w-100 mt-3 text-none">Community Hub</a>
                 </div>
             </div>
         </div>
