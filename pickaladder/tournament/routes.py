@@ -147,7 +147,9 @@ def view_tournament(tournament_id: str) -> Any:
     except Exception as e:
         flash(TOURNAMENT_MESSAGES["INVITE_ERROR"].format(error=e), "danger")
 
-    return render_template("tournament/view.html", invite_form=form, **details)
+    return render_template(
+        "tournament/tournament_detail.html", invite_form=form, **details
+    )
 
 
 def _handle_tournament_update(tournament_id: str, form: TournamentForm) -> bool:

@@ -1,0 +1,169 @@
+/* Login Page Specific Styles */
+
+.login-landing-container {
+    display: flex;
+    min-height: calc(100vh - 120px);
+    align-items: center;
+    gap: 40px;
+}
+
+.form-container {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: 2.5rem !important;
+    box-shadow: var(--shadow-lg) !important;
+    margin: 0 auto !important;
+}
+
+/* Google Button Styling */
+.btn-google {
+    background-color: transparent !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    text-transform: none !important;
+    font-weight: 500 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    transition: all 0.2s ease !important;
+    margin-top: 1rem !important;
+}
+
+.btn-google:hover {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--text-secondary) !important;
+}
+
+/* Custom Volt Toggle Switch */
+.volt-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.volt-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--color-volt);
+}
+
+input:focus + .toggle-slider {
+    box-shadow: 0 0 1px var(--color-volt);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+}
+
+.form-check {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding-left: 0 !important;
+    margin-bottom: 1.5rem !important;
+}
+
+.form-check-label {
+    margin-bottom: 0 !important;
+    cursor: pointer !important;
+    font-weight: 500 !important;
+}
+
+/* Mobile Hero Headline */
+@media (max-width: 991px) {
+    .login-landing-container {
+        flex-direction: column !important;
+        padding: 20px 15px !important;
+        min-height: auto !important;
+        gap: 20px !important;
+        display: flex !important;
+    }
+
+    .login-form-side {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+        display: block !important;
+    }
+
+    .login-form-side h1 {
+        font-size: 2.25rem !important;
+        line-height: 1.1 !important;
+        margin-bottom: 24px !important;
+        text-align: center !important;
+        display: block !important;
+        width: 100% !important;
+    }
+
+    .form-container {
+        padding: 2rem 1.5rem !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .feature-hero-side {
+        display: none !important;
+    }
+
+    .btn-google {
+        font-size: 0.9rem !important;
+        padding: 12px !important;
+        white-space: nowrap !important;
+    }
+}
+
+.or-separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.5rem 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.or-separator::before,
+.or-separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.or-separator:not(:empty)::before {
+    margin-right: .75em;
+}
+
+.or-separator:not(:empty)::after {
+    margin-left: .75em;
+}

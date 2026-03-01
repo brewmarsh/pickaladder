@@ -216,3 +216,30 @@
 .upset-mini-badge {
     font-size: 0.75rem;
 }
+
+/* Vanity Stats */
+.vanity-stats-container {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}
+
+@media screen and (max-width: 768px) {
+    .vanity-stats-container {
+        gap: 1rem !important;
+    }
+}
+
+.vanity-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-value {
+    line-height: 1.2;
+}
+
+.stat-label {
+    white-space: nowrap;
+}

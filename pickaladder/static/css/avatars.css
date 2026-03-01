@@ -15,7 +15,7 @@
 
 /* Volt Badge (Primary Action/Status) */
 .badge-volt {
-    background-color: var(--accent-color);
+    background-color: var(--color-volt);
     color: var(--text-primary); /* Dark text for contrast */
 }
 

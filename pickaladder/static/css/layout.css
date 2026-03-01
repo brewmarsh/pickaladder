@@ -134,26 +134,27 @@ body {
 .hamburger-menu.active span:nth-child(2) { opacity: 0; }
 .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
 
+/* Dashboard Layout Engine */
 .dashboard-columns {
     display: grid;
     grid-template-columns: 1fr 350px;
     gap: 24px;
 }
 
-.dashboard-column-left,
-.dashboard-column-right {
+.dashboard-column-left {
     min-width: 0;
 }
 
-.card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
+.dashboard-column-right {
+    min-width: 0;
+    overflow: hidden; /* Prevents card blowout from long text */
+    position: sticky;
+    top: 24px;
+    align-self: start;
 }
 
-/* Resolved: Included both Groups and Tournament grid styles */
-.groups-grid {
+/* Grid Systems */
+.card-grid, .groups-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 24px;
@@ -186,7 +187,7 @@ body {
 
 .tournament-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 24px;
 }
 
@@ -194,8 +195,17 @@ body {
     height: 100%;
 }
 
+/* Responsive Overrides */
+@media screen and (max-width: 992px) {
+    .dashboard-columns {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-column-right {
+        position: static; /* Disable sticky on mobile stacks */
+    }
+}
+
 @media screen and (max-width: 768px) {
-    .dashboard-columns { grid-template-columns: 1fr; }
     .navbar-menu { display: none; }
 }
 
