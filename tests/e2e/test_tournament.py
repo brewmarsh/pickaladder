@@ -48,7 +48,7 @@ def test_tournament_flow(
         page.click("button:has-text('Create Tournament')")
 
     expect(page.locator("h1")).to_contain_text("Winter Open")
-    expect(page.locator(".badge-warning", has_text="Active")).to_be_visible()
+    expect(page.locator(".badge-volt", has_text="Active")).to_be_visible()
 
     # Create a friend to verify the Invite dropdown
     friend_id = "friend_user"
