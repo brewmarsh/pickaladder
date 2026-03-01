@@ -25,11 +25,17 @@ class TournamentBase:
         """Format tournament data for display."""
         from pickaladder.tournament.models import Tournament
 
+        import datetime
+
         data = cast(dict[str, Any], doc.to_dict() or {})
         data["id"] = doc.id
         raw_date = data.get("start_date") or data.get("date")
-        if raw_date and hasattr(raw_date, "to_datetime"):
-            data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
+
+        if raw_date:
+            if hasattr(raw_date, "to_datetime"):
+                data["date_display"] = raw_date.to_datetime().strftime("%b %d, %Y")
+            elif isinstance(raw_date, (datetime.datetime, datetime.date)):
+                data["date_display"] = raw_date.strftime("%b %d, %Y")
 
         # Compatibility for legacy templates using 'location' instead of 'venue_name'
         if "venue_name" in data and not data.get("location"):
