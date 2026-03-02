@@ -135,13 +135,18 @@ body {
 .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
 
 .dashboard-columns {
-    display: grid;
-    grid-template-columns: 1fr 350px;
+    display: flex;
+    flex-wrap: wrap;
     gap: 24px;
 }
 
-.dashboard-column-left,
+.dashboard-column-left {
+    flex: 1;
+    min-width: 0;
+}
+
 .dashboard-column-right {
+    flex: 0 0 350px;
     min-width: 0;
 }
 
@@ -190,12 +195,10 @@ body {
     gap: 24px;
 }
 
-.tournament-card {
-    height: 100%;
-}
 
 @media screen and (max-width: 768px) {
-    .dashboard-columns { grid-template-columns: 1fr; }
+    .dashboard-columns { flex-direction: column; }
+    .dashboard-column-right { flex: 1 1 auto; }
     .navbar-menu { display: none; }
 }
 
