@@ -68,7 +68,10 @@ class UserProfileDuprTestCase(unittest.TestCase):
         self.mock_db.collection.return_value.document.side_effect = document_side_effect
 
         # Mock friends query
-        self.mock_db.collection.return_value.document.return_value.collection.return_value.where.return_value.limit.return_value.stream.return_value = []
+        (
+            self.mock_db.collection.return_value.document.return_value.collection
+            .return_value.where.return_value.limit.return_value.stream.return_value
+        ) = []
 
         # Mock matches queries
         self.mock_db.collection("matches").where.return_value.stream.return_value = []
@@ -77,7 +80,8 @@ class UserProfileDuprTestCase(unittest.TestCase):
         ).where.return_value.where.return_value.stream.return_value = []
 
     def test_profile_dupr_display(self) -> None:
-        """Test that the DUPR rating and badge are correctly displayed on the profile page."""
+        """Test that the DUPR rating and badge are correctly displayed
+        on the profile page."""
         # Setup logged-in user
         viewer_id = "viewer_id"
         with self.client.session_transaction() as sess:

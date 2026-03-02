@@ -142,7 +142,8 @@ class DuprLinkTestCase(unittest.TestCase):
         self.assertIn(b'target="_blank"', response.data)
 
     def test_profile_no_dupr_link_display(self) -> None:
-        """Test that 'Add DUPR ID' is displayed when DUPR ID is missing and viewer is owner."""
+        """Test that 'Add DUPR ID' is displayed when DUPR ID is missing
+        and viewer is owner."""
         user_id = "test_user"
         target_id = "test_user"
         with self.client.session_transaction() as sess:

@@ -101,7 +101,8 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
     def test_leaderboard_includes_avatar_fields(
         self, mock_firestore: MagicMock
     ) -> None:
-        """Test the leaderboard entries include profilePictureUrl and profilePictureThumbnailUrl."""
+        """Test the leaderboard entries include profilePictureUrl
+        and profilePictureThumbnailUrl."""
         mock_db = mock_firestore.client.return_value
 
         # Mock user with avatar fields
@@ -128,7 +129,10 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
 
         # Mock empty matches and invites
         mock_db.collection.return_value.where.return_value.stream.return_value = []
-        mock_db.collection.return_value.where.return_value.where.return_value.stream.return_value = []
+        (
+            mock_db.collection.return_value.where.return_value.where.return_value.stream
+            .return_value
+        ) = []
 
         leaderboard = get_group_leaderboard("group1")
 
