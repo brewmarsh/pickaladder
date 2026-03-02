@@ -78,10 +78,10 @@ body {
 /* --- Dashboard Column System (Refactored to Grid) --- */
 
 .dashboard-columns {
-    display: grid;
+    display: grid !important;
     /* Forces columns into specific tracks: Feed gets the rest, Sidebar gets exactly 350px */
-    grid-template-columns: 1fr var(--sidebar-width);
-    gap: 24px;
+    grid-template-columns: 1fr 350px !important;
+    gap: 24px !important;
     align-items: flex-start;
 }
 
@@ -90,6 +90,7 @@ body {
     /* Critical: prevents children (like wide cards) from shoving the column wider than its track */
     min-width: 0; 
     width: 100%;
+    overflow: hidden;
 }
 
 /* --- Grid Systems --- */

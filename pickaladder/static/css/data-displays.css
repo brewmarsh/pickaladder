@@ -37,8 +37,8 @@
     align-items: center;
     justify-content: center;
     padding: 0 !important;
-    flex-shrink: 0;
-    aspect-ratio: 1 / 1;
+    flex-shrink: 0 !important;
+    aspect-ratio: 1 / 1 !important;
     text-align: center;
     overflow: hidden;
 }
