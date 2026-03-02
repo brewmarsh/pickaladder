@@ -206,7 +206,7 @@ else
         --agree-tos \
         --no-eff-email \
         --force-renewal \
-        -d $DOMAIN -d www.$DOMAIN
+        -d $DOMAIN -d www.$DOMAIN -d pickaladder.io -d www.pickaladder.io
 
     # 4. Stop the Nginx container that was using the dummy cert.
     # The next step will bring everything up with the real cert.
