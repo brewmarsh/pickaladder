@@ -113,11 +113,12 @@ class MatchRecordService:
         """Fetch data for the global leaderboard using cached statistics."""
         players: list[User] = []
         for u_snap in db.collection("users").stream():
-            user_data = cast("User", u_snap.to_dict() or {})
+            # Cast to dict for flexible access to 'stats' map
+            user_data = cast(dict[str, Any], u_snap.to_dict() or {})
             user_data["id"] = u_snap.id
 
             # Use cached stats from the user document instead of querying matches
-            stats = user_data.get("stats", {})
+            stats = cast(dict[str, Any], user_data.get("stats") or {})
             wins = int(stats.get("wins", 0))
             losses = int(stats.get("losses", 0))
             games = wins + losses
@@ -133,7 +134,7 @@ class MatchRecordService:
                         else 0.0,
                     }
                 )
-                players.append(user_data)
+                players.append(cast("User", user_data))
 
         players.sort(
             key=lambda p: (p.get("win_percentage", 0), p.get("wins", 0)), reverse=True
