@@ -9,6 +9,7 @@ from pickaladder.core.constants import GLOBAL_LEADERBOARD_MIN_GAMES
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
+
     from pickaladder.user.models import User
 
 
@@ -58,15 +59,17 @@ class MatchRecordService:
             p1_ref.id if p1_ref is not None and hasattr(p1_ref, "id") else ""
         ) == uid
 
-    # --- ACL Optimized Helpers for Rising Stars ---
-
     @staticmethod
     def _get_rolling_window_start(days: int = 7) -> datetime.datetime:
         """Calculate the start of the rolling date window."""
-        return datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
+        return datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+            days=days
+        )
 
     @staticmethod
-    def _calculate_performance_metrics(db: Client, start_date: datetime.datetime) -> dict[str, int]:
+    def _calculate_performance_metrics(
+        db: Client, start_date: datetime.datetime
+    ) -> dict[str, int]:
         """Aggregate win counts for players since the given start date."""
         query = db.collection("matches").where(
             filter=firestore.FieldFilter("matchDate", ">=", start_date)
@@ -74,34 +77,29 @@ class MatchRecordService:
         win_counts: dict[str, int] = {}
         for snap in query.stream():
             data = snap.to_dict() or {}
-            
-            # Extract winners from both singles (winnerId) and doubles (winners array)
-            winner_id = data.get("winnerId")
-            winners_list = data.get("winners") or []
-            
-            match_winners = {winner_id} if winner_id else set()
-            if winners_list:
-                match_winners.update(uid for uid in winners_list if isinstance(uid, str))
-            
-            for uid in match_winners:
-                win_counts[uid] = win_counts.get(uid, 0) + 1
+            winners = data.get("winners") or []
+            if wid := data.get("winnerId"):
+                winners = [wid]
+            for uid in winners:
+                if isinstance(uid, str):
+                    win_counts[uid] = win_counts.get(uid, 0) + 1
         return win_counts
 
     @staticmethod
     def get_rising_stars(db: Client, limit: int = 3) -> list[dict[str, Any]]:
-        """Identify players with the most wins in the last 7 days using bulk-fetch."""
+        """Identify players with the most wins in the last 7 days."""
         start_date = MatchRecordService._get_rolling_window_start(7)
         win_counts = MatchRecordService._calculate_performance_metrics(db, start_date)
 
         if not win_counts:
             return []
 
-        # Sort and take top IDs
-        sorted_uids = sorted(win_counts.items(), key=lambda x: x[1], reverse=True)[:limit]
+        sorted_uids = sorted(win_counts.items(), key=lambda x: x[1], reverse=True)[
+            :limit
+        ]
         top_uids = [u for u, _ in sorted_uids]
         top_counts = dict(sorted_uids)
 
-        # Bulk fetch user data for high performance (Single network trip)
         u_refs = [db.collection("users").document(uid) for uid in top_uids]
         results = []
         for u_snap in db.get_all(u_refs):
@@ -118,7 +116,6 @@ class MatchRecordService:
                     }
                 )
 
-        # Ensure correct order is maintained after bulk fetch
         results.sort(key=lambda x: x["weekly_wins"], reverse=True)
         return results
 
@@ -143,7 +140,9 @@ class MatchRecordService:
                         "wins": wins,
                         "losses": losses,
                         "games_played": games,
-                        "win_percentage": float((wins / games) * 100) if games > 0 else 0.0,
+                        "win_percentage": float((wins / games) * 100)
+                        if games > 0
+                        else 0.0,
                     }
                 )
                 players.append(cast("User", user_data))

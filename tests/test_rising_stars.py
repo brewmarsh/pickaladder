@@ -18,12 +18,10 @@ class TestRisingStars(unittest.TestCase):
 
         # Setup mock user docs
         user1_doc = MagicMock()
-        user1_doc.id = "u1"
         user1_doc.exists = True
         user1_doc.to_dict.return_value = {"username": "star1", "name": "Star One"}
 
         user2_doc = MagicMock()
-        user2_doc.id = "u2"
         user2_doc.exists = True
         user2_doc.to_dict.return_value = {"username": "star2", "name": "Star Two"}
 
@@ -35,7 +33,6 @@ class TestRisingStars(unittest.TestCase):
             return MagicMock(exists=False)
 
         mock_db.collection.return_value.document.side_effect = document_side_effect
-        mock_db.get_all.return_value = [user1_doc, user2_doc]
 
         # Setup mock matches
         now = datetime.datetime.now(datetime.timezone.utc)
