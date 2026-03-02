@@ -93,17 +93,15 @@ class MatchRecordService:
         return players[:limit]
 
     @staticmethod
-    def get_rising_stars(db: Client, limit: int = 3) -> list[dict[str, Any]]:
-        """Identify players with the most wins in the last 7 days."""
-        one_week_ago = datetime.datetime.now(
-            datetime.timezone.utc
-        ) - datetime.timedelta(days=7)
-
-        # Query matches from the last 7 days
-        query = db.collection("matches").where(
-            filter=firestore.FieldFilter("matchDate", ">=", one_week_ago)
+    def _get_rolling_window_start(days: int = 7) -> datetime.datetime:
+        """Calculate the start date for a rolling window of days."""
+        return datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+            days=days
         )
 
+    @staticmethod
+    def _calculate_performance_metrics(query: Any) -> dict[str, int]:
+        """Aggregate wins per player from a match query."""
         win_counts: dict[str, int] = {}
         for match in query.stream():
             data = match.to_dict()
@@ -116,12 +114,20 @@ class MatchRecordService:
             if winner_id:
                 win_counts[winner_id] = win_counts.get(winner_id, 0) + 1
             elif winners:
-                # Handle doubles or cases where winners is an array of UIDs
                 for uid in winners:
                     if isinstance(uid, str):
                         win_counts[uid] = win_counts.get(uid, 0) + 1
+        return win_counts
 
-        # Sort and fetch user details
+    @staticmethod
+    def get_rising_stars(db: Client, limit: int = 3) -> list[dict[str, Any]]:
+        """Identify players with the most wins in the last 7 days."""
+        one_week_ago = MatchRecordService._get_rolling_window_start(days=7)
+        query = db.collection("matches").where(
+            filter=firestore.FieldFilter("matchDate", ">=", one_week_ago)
+        )
+
+        win_counts = MatchRecordService._calculate_performance_metrics(query)
         sorted_stars = sorted(win_counts.items(), key=lambda x: x[1], reverse=True)[
             :limit
         ]
@@ -142,5 +148,4 @@ class MatchRecordService:
                         "weekly_wins": wins,
                     }
                 )
-
         return results
