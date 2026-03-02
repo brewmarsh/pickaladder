@@ -109,22 +109,33 @@ def wrap_user(
 def smart_display_name(user: dict[str, Any] | User) -> str:
     """Return a smart display name for a user.
 
-    If the user is a ghost user (is_ghost is True or username starts with 'ghost_'):
-    - Prioritize the name field.
+    If the user is a ghost user (is_ghost is True, or ID/username starts with 'ghost_'):
+    - Prioritize the name field (if it doesn't start with ghost_).
     - Fallback to a masked version of the email if available.
-    - Default to 'Pending Invite' if both are missing.
-    Regular users default to their username.
+    - Default to 'Guest Player' if both are missing.
+    Regular users default to their name, then username.
     """
+    if not user:
+        return "Guest Player"
+
+    uid = user.get("uid") or user.get("id", "")
     username = user.get("username", "")
-    name = user.get("name")
-    is_ghost = user.get("is_ghost") or username.startswith("ghost_")
+    name = user.get("name", "")
+    display_name = user.get("display_name", "")
+
+    def is_ghost_val(val: Any) -> bool:
+        return isinstance(val, str) and val.startswith("ghost_")
+
+    is_ghost = user.get("is_ghost") or is_ghost_val(uid) or is_ghost_val(username)
 
     if is_ghost:
-        if name:
+        if name and not is_ghost_val(name):
             return name
+        if display_name and not is_ghost_val(display_name):
+            return display_name
         email = user.get("email")
         if email:
             return mask_email(email)
-        return "Pending Invite"
+        return "Guest Player"
 
-    return username or name or "Unknown Player"
+    return name or display_name or username or "Anonymous"

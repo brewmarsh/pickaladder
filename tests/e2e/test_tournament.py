@@ -67,7 +67,7 @@ def test_tournament_flow(
     ).set({"status": "accepted"})
 
     page.reload()
-    expect(page.locator("select[name='user_id']")).to_contain_text("friend_user")
+    expect(page.locator("select[name='user_id']")).to_contain_text("Friend User")
 
     # 3. Check Directions button
     directions_btn = page.locator("text=Directions")

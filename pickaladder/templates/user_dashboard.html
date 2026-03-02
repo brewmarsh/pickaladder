@@ -277,30 +277,20 @@
             });
 
         function getDisplayName(user) {
-            if (!user) return "Unknown Player";
-
-            const userId = user.id || user.uid || "";
+            if (!user) return "Guest Player";
+            // Extract name components safely
+            const name = user.name || user.display_name || "";
             const username = user.username || "";
-            const name = user.name || "";
-            const displayName = user.display_name || "";
+            const uid = user.id || user.uid || "";
 
-            const isGhostValue = (v) => typeof v === 'string' && v.startsWith('ghost_');
+            // If any identifying field starts with ghost_, it's a temporary profile
+            const isGhost = (str) => typeof str === 'string' && str.startsWith('ghost_');
 
-            // Robust ghost detection: check flag, ID, or username for "ghost_" prefix
-            const isGhost = user.is_ghost === true ||
-                            isGhostValue(userId) ||
-                            isGhostValue(username);
-
-            if (isGhost) {
-                // If it's a ghost but has a valid name/display name, use that.
-                // Otherwise, fallback to "Guest Player".
-                if (name && !isGhostValue(name)) return name;
-                if (displayName && !isGhostValue(displayName)) return displayName;
-                return "Guest Player";
+            if (isGhost(uid) || isGhost(username)) {
+                return (name && !isGhost(name)) ? name : "Guest Player";
             }
 
-            // For regular users, prefer Name -> Display Name -> Username -> Anonymous
-            return name || displayName || username || "Anonymous";
+            return name || username || "Anonymous";
         }
 
         function setupLoadMore(btn) {
@@ -384,33 +374,10 @@
                 matchupHtml = `<strong>You</strong> vs ${opponentName}`;
             }
 
-            // Results badge using v0.10.0 styling (badge-volt, badge-danger)
-            let badgeClass = 'badge-secondary';
-            let badgeText = 'D';
-            if (match.user_result === 'win') {
-                badgeClass = 'badge-volt';
-                badgeText = 'W';
-            } else if (match.user_result === 'loss') {
-                badgeClass = 'badge-danger';
-                badgeText = 'L';
-            }
-            const resultBadge = `<span class="badge ${badgeClass} rounded-circle w-28 h-28 lh-20">${badgeText}</span>`;
-
             // Tournament label
             let tournamentHtml = '';
             if (match.tournament_name) {
                 tournamentHtml = `<div class="text-muted small" style="margin-top: 4px;">🏆 ${match.tournament_name}</div>`;
-            }
-
-            // Admin/Creator Edit link
-            let editLinkHtml = '';
-            const canEdit = (match.created_by === currentUserId && !match.tournament_id) || isAdmin;
-            if (canEdit) {
-                editLinkHtml = `
-                    <a href="/match/edit/${match.id}" class="text-muted ml-2" title="Edit Match">
-                        ✏️
-                    </a>
-                `;
             }
 
             // Date display (supports raw objects or strings)
@@ -425,18 +392,21 @@
                 }
             }
 
-            // Final V0.10.0 .match-compact-row structure
+            // Use the v0.10.0 Grid structure instead of TR/TD
             return `
-                <div class="list-group-item match-compact-row">
+                <div class="match-compact-row clickable-row" data-href="/match/summary/${match.id}">
                     <div class="match-date-compact">${dateStr}</div>
-                    <div class="match-info-compact">
+                    <div class="match-info-compact text-truncate">
                         ${matchupHtml}
                         ${tournamentHtml}
                     </div>
                     <div class="match-score-badge-compact">
-                        <span>${userScore} - ${oppScore}</span>
-                        ${resultBadge}
-                        ${editLinkHtml}
+                        <div class="score-badge ${match.user_result === 'win' ? 'score-badge-win' : 'score-badge-loss'}">
+                            ${userScore} - ${oppScore}
+                        </div>
+                        <span class="badge ${match.user_result === 'win' ? 'badge-volt' : 'badge-danger'} rounded-circle w-28 h-28 lh-20 p-0">
+                            ${match.user_result === 'win' ? 'W' : 'L'}
+                        </span>
                     </div>
                 </div>
             `;
