@@ -37,8 +37,8 @@
     align-items: center;
     justify-content: center;
     padding: 0 !important;
-    flex-shrink: 0;      /* Prevents 'squishing' into an oval */
-    aspect-ratio: 1 / 1; /* Ensures width matches height */
+    flex-shrink: 0;
+    aspect-ratio: 1 / 1;
     text-align: center;
     overflow: hidden;
 }
@@ -136,7 +136,6 @@
     width: 28px !important;
     height: 28px !important;
     font-size: 0.75rem;
-    line-height: 1;
 }
 
 .score-badge {
