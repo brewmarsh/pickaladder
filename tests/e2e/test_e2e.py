@@ -8,7 +8,7 @@ from playwright.sync_api import Page, expect
 
 
 def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -> None:
-    """Run a complete user journey test including registration, social, and scoring."""
+    """Run a complete user journey test."""
     page = page_with_firebase
     base_url = app_server
 
@@ -76,8 +76,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     # Click Add Friend for Admin User
     with page.expect_navigation():
         page.click("button:has-text('Add Friend')")
-    
-    expect(page.locator(".requests-section", has_text="admin")).to_be_visible(timeout=5000)
+    # After reload, the user should be in the "Sent Friend Requests" section
+    expect(page.locator(".requests-section", has_text="admin")).to_be_visible(
+        timeout=5000
+    )
 
     # Logout User 2, Login Admin
     page.goto(f"{base_url}/auth/logout")
@@ -114,30 +116,82 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Invite Friend')")
 
-    # 6. Score Individual Game (Admin vs User 2)
+    # Verify User 2 is added (Logout Admin, Login User 2)
+    page.goto(f"{base_url}/auth/logout")
+
+    page.fill("input[name='email']", "user2@example.com")
+    page.fill("input[name='password']", "MyPassword123")
+    with page.expect_navigation():
+        page.click("button:has-text('Login')")
+
+    # User 2 should see the group
+    with page.expect_navigation():
+        page.click("text=Groups")
+    expect(page.locator("text=Pickleballers")).to_be_visible()
+
+    # 6. Score Individual Game (User 2 vs Admin)
     page.goto(f"{base_url}/match/record")
     page.select_option("select[name='match_type']", value="singles")
-    page.select_option("select[name='player1']", value="admin")
-    page.select_option("select[name='player2']", value="user2")
+    page.select_option("select[name='player1']", value="user2")
+    page.select_option("select[name='player2']", value="admin")
     page.fill("input[name='player1_score']", "11")
     page.fill("input[name='player2_score']", "9")
     with page.expect_navigation():
         page.click("button:has-text('Record Match')")
 
+    # Check flash message
     expect(page.locator(".toast")).to_contain_text("Match recorded successfully")
 
-    # 7. Check Global Leaderboard
+    # 7. Score Group Game
+    with page.expect_navigation():
+        page.click("text=Groups")
+    with page.expect_navigation():
+        page.click("text=Pickleballers")
+    with page.expect_navigation():
+        page.click("a:has-text('Record a Match')")
+    page.select_option("select[name='player1']", value="user2")
+    page.select_option("select[name='player2']", value="admin")
+    page.fill("input[name='player1_score']", "5")
+    page.fill("input[name='player2_score']", "11")
+    with page.expect_navigation():
+        page.click("button:has-text('Record Match')")
+
+    expect(page.locator("h1")).to_contain_text("Pickleballers")
+    expect(page.locator(".toast")).to_contain_text("Match recorded successfully")
+
+    # Check Global Leaderboard (Req: "see the leaderboard")
     with page.expect_navigation():
         page.click("text=Leaderboard")
     expect(page.locator("h1")).to_contain_text("Leaderboard")
-    
-    # Use decoupled data-testids for resilience
-    expect(page.get_by_test_id("player-name").first).to_be_visible()
-    expect(page.get_by_test_id("player-name").nth(1)).to_be_visible()
+    # Verify players are listed
+    expect(page.get_by_text("Admin User").first).to_be_visible()
+    expect(page.get_by_text("User Two").first).to_be_visible()
 
-    # 8. Update Group Details
-    page.goto(f"{base_url}/group/")
-    page.click("text=Pickleballers")
+    # 8. Delete Group Game & 9. Delete Individual Game
+    # Needs Admin access
+    page.goto(f"{base_url}/auth/logout")
+
+    page.fill("input[name='email']", "admin@example.com")
+    page.fill("input[name='password']", "password")
+    with page.expect_navigation():
+        page.click("button:has-text('Login')")
+
+    page.goto(f"{base_url}/admin/matches")
+    # Delete match involving user2 (first one)
+    with page.expect_navigation():
+        page.click("button:has-text('Delete')")
+    expect(page.locator(".toast")).to_contain_text("Match deleted successfully")
+
+    # Delete second match
+    with page.expect_navigation():
+        page.click("button:has-text('Delete')")
+    expect(page.locator(".toast")).to_contain_text("Match deleted successfully")
+
+    # 10. Update Group Details (Login as Admin - already logged in)
+    with page.expect_navigation():
+        page.click("text=Groups")
+    with page.expect_navigation():
+        page.click("text=Pickleballers")
     with page.expect_navigation():
         page.click('[data-testid="group-settings-btn"]')
     page.fill("input[name='location']", "New Court")
@@ -145,7 +199,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Update Group')")
     expect(page.locator("text=New Court")).to_be_visible()
 
-    # 9. Invite Email to Group
+    # 11. Invite Email to Group
     page.click("summary:has-text('Manage Group & Members')")
     page.fill("form[action*='group'] input[name='name']", "New Guy")
     page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
@@ -153,7 +207,11 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Send Invite')")
     expect(page.locator(".toast-body").last).to_contain_text("Invitation is being sent")
 
-    # 10. Verification of Invite Token
+    # Verify invite token was created
     invites = list(mock_db.collection("group_invites").stream())
-    invite_token = next((inv.id for inv in invites if inv.to_dict().get("email") == "newguy@example.com"), None)
-    assert invite_token is not None
+    invite_token = None
+    for inv in invites:
+        if inv.to_dict().get("email") == "newguy@example.com":
+            invite_token = inv.id
+            break
+    assert invite_token is not None  # nosec
