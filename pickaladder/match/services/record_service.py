@@ -60,48 +60,46 @@ class MatchRecordService:
         ) == uid
 
     @staticmethod
-    def get_rising_stars(db: Client, limit: int = 3) -> list[dict[str, Any]]:
-        """Identify players with the most wins in the last 7 days."""
-        one_week_ago = datetime.datetime.now(
-            datetime.timezone.utc
-        ) - datetime.timedelta(days=7)
-
-        # Query matches from the last 7 days based on matchDate
-        query = db.collection("matches").where(
-            filter=firestore.FieldFilter("matchDate", ">=", one_week_ago)
+    def _get_rolling_window_start(days: int = 7) -> datetime.datetime:
+        """Calculate the start of the rolling date window."""
+        return datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+            days=days
         )
 
+    @staticmethod
+    def _calculate_performance_metrics(
+        db: Client, start_date: datetime.datetime
+    ) -> dict[str, int]:
+        """Aggregate win counts for players since the given start date."""
+        query = db.collection("matches").where(
+            filter=firestore.FieldFilter("matchDate", ">=", start_date)
+        )
         win_counts: dict[str, int] = {}
-        for match in query.stream():
-            data = match.to_dict()
-            if not data:
-                continue
-
-            # Count wins from both winnerId and winners array (doubles)
-            winner_id = data.get("winnerId")
+        for snap in query.stream():
+            data = snap.to_dict() or {}
             winners = data.get("winners") or []
-
-            current_winners = set()
-            if winner_id:
-                current_winners.add(winner_id)
+            if wid := data.get("winnerId"):
+                winners = [wid]
             for uid in winners:
                 if isinstance(uid, str):
-                    current_winners.add(uid)
+                    win_counts[uid] = win_counts.get(uid, 0) + 1
+        return win_counts
 
-            for uid in current_winners:
-                win_counts[uid] = win_counts.get(uid, 0) + 1
+    @staticmethod
+    def get_rising_stars(db: Client, limit: int = 3) -> list[dict[str, Any]]:
+        """Identify players with the most wins in the last 7 days."""
+        start_date = MatchRecordService._get_rolling_window_start(7)
+        win_counts = MatchRecordService._calculate_performance_metrics(db, start_date)
 
         if not win_counts:
             return []
 
-        # Sort and take top IDs
-        top_uids_with_counts = sorted(
-            win_counts.items(), key=lambda x: x[1], reverse=True
-        )[:limit]
-        top_win_map = dict(top_uids_with_counts)
-        top_uids = list(top_win_map.keys())
+        sorted_uids = sorted(win_counts.items(), key=lambda x: x[1], reverse=True)[
+            :limit
+        ]
+        top_uids = [u for u, _ in sorted_uids]
+        top_counts = dict(sorted_uids)
 
-        # Bulk fetch user data for high performance
         u_refs = [db.collection("users").document(uid) for uid in top_uids]
         results = []
         for u_snap in db.get_all(u_refs):
@@ -112,13 +110,12 @@ class MatchRecordService:
                     {
                         "id": uid,
                         "name": u_data.get("name") or u_data.get("username", "Unknown"),
-                        "username": u_data.get("username"),
+                        "username": u_data.get("username", "Unknown"),
                         "profilePictureUrl": u_data.get("profilePictureUrl"),
-                        "weekly_wins": top_win_map.get(uid, 0),
+                        "weekly_wins": top_counts.get(uid, 0),
                     }
                 )
 
-        # Ensure order is maintained after bulk fetch
         results.sort(key=lambda x: x["weekly_wins"], reverse=True)
         return results
 
@@ -129,11 +126,9 @@ class MatchRecordService:
         """Fetch data for the global leaderboard using cached statistics."""
         players: list[User] = []
         for u_snap in db.collection("users").stream():
-            # Cast to dict for flexible access to 'stats' map
             user_data = cast(dict[str, Any], u_snap.to_dict() or {})
             user_data["id"] = u_snap.id
 
-            # Use cached stats from the user document instead of querying matches
             stats = cast(dict[str, Any], user_data.get("stats") or {})
             wins = int(stats.get("wins", 0))
             losses = int(stats.get("losses", 0))

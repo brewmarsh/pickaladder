@@ -18,24 +18,36 @@ class TestRisingStars(unittest.TestCase):
 
         # Setup mock user docs
         user1_doc = MagicMock()
-        user1_doc.id = "u1"
         user1_doc.exists = True
+        user1_doc.id = "u1"
         user1_doc.to_dict.return_value = {"username": "star1", "name": "Star One"}
 
         user2_doc = MagicMock()
-        user2_doc.id = "u2"
         user2_doc.exists = True
+        user2_doc.id = "u2"
         user2_doc.to_dict.return_value = {"username": "star2", "name": "Star Two"}
 
         def document_side_effect(uid: str) -> MagicMock:
-            if uid == "u1":
-                return user1_doc
-            if uid == "u2":
-                return user2_doc
-            return MagicMock(exists=False)
+            mock_ref = MagicMock()
+            mock_ref.id = uid
+            return mock_ref
 
         mock_db.collection.return_value.document.side_effect = document_side_effect
-        mock_db.get_all.return_value = [user1_doc, user2_doc]
+
+        def get_all_side_effect(refs: list) -> list:
+            results = []
+            for ref in refs:
+                if ref.id == "u1":
+                    results.append(user1_doc)
+                elif ref.id == "u2":
+                    results.append(user2_doc)
+                else:
+                    m = MagicMock(exists=False)
+                    m.id = ref.id
+                    results.append(m)
+            return results
+
+        mock_db.get_all.side_effect = get_all_side_effect
 
         # Setup mock matches
         now = datetime.datetime.now(datetime.timezone.utc)
