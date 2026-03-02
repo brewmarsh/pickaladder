@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
@@ -7,6 +8,7 @@ from firebase_admin import firestore
 from pickaladder.core.constants import GLOBAL_LEADERBOARD_MIN_GAMES
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
     from pickaladder.user.models import User
@@ -89,3 +91,56 @@ class MatchRecordService:
             key=lambda p: (p.get("win_percentage", 0), p.get("wins", 0)), reverse=True
         )
         return players[:limit]
+
+    @staticmethod
+    def get_rising_stars(db: Client, limit: int = 3) -> list[dict[str, Any]]:
+        """Identify players with the most wins in the last 7 days."""
+        one_week_ago = datetime.datetime.now(
+            datetime.timezone.utc
+        ) - datetime.timedelta(days=7)
+
+        # Query matches from the last 7 days
+        query = db.collection("matches").where(
+            filter=firestore.FieldFilter("matchDate", ">=", one_week_ago)
+        )
+
+        win_counts: dict[str, int] = {}
+        for match in query.stream():
+            data = match.to_dict()
+            if not data:
+                continue
+
+            winner_id = data.get("winnerId")
+            winners = data.get("winners", [])
+
+            if winner_id:
+                win_counts[winner_id] = win_counts.get(winner_id, 0) + 1
+            elif winners:
+                # Handle doubles or cases where winners is an array of UIDs
+                for uid in winners:
+                    if isinstance(uid, str):
+                        win_counts[uid] = win_counts.get(uid, 0) + 1
+
+        # Sort and fetch user details
+        sorted_stars = sorted(win_counts.items(), key=lambda x: x[1], reverse=True)[
+            :limit
+        ]
+
+        results = []
+        for uid, wins in sorted_stars:
+            user_doc = cast(
+                "DocumentSnapshot", db.collection("users").document(uid).get()
+            )
+            if user_doc.exists:
+                user_data = user_doc.to_dict() or {}
+                results.append(
+                    {
+                        "id": uid,
+                        "username": user_data.get("username", "Unknown"),
+                        "name": user_data.get("name", "Unknown"),
+                        "profilePictureUrl": user_data.get("profilePictureUrl"),
+                        "weekly_wins": wins,
+                    }
+                )
+
+        return results
