@@ -6,11 +6,22 @@ import unittest
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+from flask import Flask
+from flask.ctx import AppContext
+from flask.sessions import SessionMixin
+from flask.testing import FlaskClient
+
 from pickaladder import create_app
 
 
 class UserProfileDuprTestCase(unittest.TestCase):
     """Test case for the DUPR rating display on the user profile."""
+
+    mock_db: MagicMock
+    mocks: dict[str, MagicMock]
+    app: Flask
+    client: FlaskClient
+    app_context: AppContext
 
     def setUp(self) -> None:
         """Set up the test case with mocks and app context."""
@@ -58,7 +69,7 @@ class UserProfileDuprTestCase(unittest.TestCase):
         mock_target_user_doc.to_dict.return_value = target_user_data
         mock_target_user_doc.get.return_value = mock_target_user_doc
 
-        def document_side_effect(doc_id):
+        def document_side_effect(doc_id: str) -> MagicMock:
             if doc_id == viewer_id:
                 return mock_viewer_doc
             if doc_id == target_user_id:
@@ -84,6 +95,7 @@ class UserProfileDuprTestCase(unittest.TestCase):
         on the profile page."""
         # Setup logged-in user
         viewer_id = "viewer_id"
+        sess: SessionMixin
         with self.client.session_transaction() as sess:
             sess["user_id"] = viewer_id
             sess["is_admin"] = False
@@ -117,6 +129,7 @@ class UserProfileDuprTestCase(unittest.TestCase):
         """Test that the DUPR badge is NOT displayed when dupr_id is missing."""
         # Setup logged-in user
         viewer_id = "viewer_id"
+        sess: SessionMixin
         with self.client.session_transaction() as sess:
             sess["user_id"] = viewer_id
             sess["is_admin"] = False
