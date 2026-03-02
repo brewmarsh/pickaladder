@@ -28,22 +28,31 @@
     overflow: hidden;
 }
 
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
+/* --- Base Shapes & Global Utilities --- */
+
+/* The "Oval Fix": Forces a perfect 1:1 circle regardless of parent pressure */
+.rounded-circle {
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    flex-shrink: 0;      /* Prevents 'squishing' into an oval */
+    aspect-ratio: 1 / 1; /* Ensures width matches height */
+    text-align: center;
+    overflow: hidden;
 }
 
-/* Responsive Table Logic (Migrated from mobile.css) */
+
+
+/* Responsive Table Logic */
 @media screen and (max-width: 768px) {
     .responsive-table {
         width: 100%;
         border-collapse: collapse;
     }
 
-    .responsive-table thead {
-        display: none;
-    }
+    .responsive-table thead { display: none; }
 
     .responsive-table tbody,
     .responsive-table tr,
@@ -66,11 +75,7 @@
         padding-top: 10px;
         padding-bottom: 10px;
         border-bottom: 1px solid var(--border-color);
-        text-align: right; /* Align content to right */
-    }
-
-    .responsive-table tr td:last-child {
-        border-bottom: none;
+        text-align: right;
     }
 
     .responsive-table td::before {
@@ -81,88 +86,14 @@
         padding-right: 10px;
         font-weight: bold;
         text-align: left;
-        white-space: nowrap;
-    }
-
-    /* Special handling for avatar cells in responsive mode */
-    .responsive-table td[data-label="Avatar"],
-    .responsive-table td[data-label="Logo"] {
-        padding-left: 10px;
-        text-align: center;
-    }
-
-    .responsive-table td[data-label="Avatar"]::before,
-    .responsive-table td[data-label="Logo"]::before {
-        display: none;
-    }
-
-    /* Hero Card Mobile Stacking */
-    .hero-stats-card {
-        flex-direction: column;
-        text-align: center;
-        gap: 20px;
-    }
-
-    .hero-left-panel, .hero-middle-panel, .hero-right-panel {
-        width: 100%;
-        margin-bottom: 0;
     }
 }
-
-.table th, .table td {
-    padding: 16px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.table-hover tbody tr:hover {
-    background-color: var(--bg-primary);
-}
-
-.table td[data-label="Result"] {
-    text-align: center;
-}
-
-.table th {
-    background-color: var(--primary-color);
-    color: var(--text-on-primary);
-    font-weight: 500;
-}
-
-.leaderboard-row {
-    display: grid;
-    grid-template-columns: 50px 1fr 100px 100px 80px;
-    align-items: center;
-    padding: 10px 15px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.rank-1 { color: #FFD700; }
-.rank-2 { color: #C0C0C0; }
-.rank-3 { color: #CD7F32; }
 
 /* --- Discovery Hub (Leaderboard v0.10.0) --- */
-.discovery-hub-grid {
-    display: grid;
-    grid-template-columns: 1fr 350px;
-    gap: 24px;
-}
-
-@media (max-width: 992px) {
-    .discovery-hub-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.podium-section {
-    margin-bottom: 32px;
-}
-
 .podium-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 16px;
-    margin-top: 16px;
 }
 
 .podium-card {
@@ -171,157 +102,26 @@
     border-radius: var(--radius-lg);
     padding: 20px;
     text-align: center;
-    position: relative;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease;
 }
 
-.podium-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-md);
-}
+.podium-card:hover { transform: translateY(-4px); }
 
-.podium-card.rank-1-card {
-    border-color: var(--color-volt);
-    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(132, 204, 22, 0.05) 100%);
-}
-
-.podium-rank-badge {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: var(--fw-bold);
-    font-size: 0.8rem;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-}
-
-.rank-1-card .podium-rank-badge {
-    background: var(--color-volt);
-    color: var(--color-dark);
-    border-color: var(--color-volt);
-}
-
-.podium-avatar {
-    width: 64px;
-    height: 64px;
-    margin-bottom: 12px;
-}
-
-.podium-name {
-    font-weight: var(--fw-bold);
-    margin-bottom: 4px;
-    display: block;
-    color: var(--text-primary);
-    text-decoration: none;
-}
-
-.podium-stats {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-}
-
-.tier-section {
-    margin-bottom: 32px;
-}
-
-.tier-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--border-color);
-}
-
-.tier-header h3 {
-    margin-bottom: 0;
-    font-size: 1.25rem;
-    font-weight: var(--fw-bold);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.tier-gold h3 { color: #FFD700; }
-.tier-silver h3 { color: #C0C0C0; }
-.tier-bronze h3 { color: #CD7F32; }
-
-.discovery-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-}
-
-.btn-discovery {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-md);
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-}
-
-.rising-stars-widget .list-group-item {
-    background: transparent;
-    padding: 12px 0;
-}
-
-.rising-stars-count {
-    font-weight: var(--fw-bold);
-    color: var(--color-volt);
-}
-
-/* --- 3. Scoring Typography --- */
-.score-display {
-    font-family: var(--font-score);
-    font-weight: var(--fw-bold);
-    font-size: 1.75rem;
-    letter-spacing: 1px;
-    line-height: 1;
-}
-.score-win { color: var(--success-color); }
-.score-loss { color: var(--text-secondary); }
-
-/* Match History Compact Rows */
+/* --- Match History Compact Rows --- */
 .match-compact-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
     border-bottom: 1px solid var(--border-color);
-    height: 60px;
-    box-sizing: border-box;
+    min-height: 60px; /* Use min-height to allow content growth */
     gap: 12px;
-}
-
-.match-compact-row:last-child {
-    border-bottom: none;
-}
-
-.match-date-compact {
-    flex: 0 0 45px;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
 }
 
 .match-info-compact {
     flex: 1;
-    min-width: 0;
+    min-width: 0; /* Critical for text-overflow to work */
     font-size: 0.9rem;
-    line-height: 1.2;
-}
-
-.match-opponent-names {
-    color: var(--text-secondary);
-    font-size: 0.85rem;
 }
 
 .match-score-badge-compact {
@@ -331,36 +131,31 @@
     gap: 8px;
 }
 
+/* Badge specific constraints */
+.match-score-badge-compact .badge.rounded-circle {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
 .score-badge {
     padding: 4px 8px;
     border-radius: var(--radius-sm);
     font-weight: var(--fw-bold);
     font-size: 0.8rem;
     white-space: nowrap;
+    border: 1px solid transparent;
 }
 
 .score-badge-win {
     background-color: rgba(16, 185, 129, 0.1);
     color: var(--success-color);
-    border: 1px solid var(--success-color);
+    border-color: var(--success-color);
 }
 
 .score-badge-loss {
     background-color: rgba(239, 68, 68, 0.1);
     color: var(--danger-color);
-    border: 1px solid var(--danger-color);
-}
-
-.upset-mini-badge {
-    font-size: 0.75rem;
-}
-
-/* Base Shapes */
-.match-score-badge-compact .badge.rounded-circle {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    border-color: var(--danger-color);
 }
