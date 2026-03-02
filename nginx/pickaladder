@@ -1,15 +1,6 @@
 server {
     listen 80;
-    server_name pickaladder.io www.pickaladder.io;
-
-    location / {
-        return 301 https://app.pickaladder.io$request_uri;
-    }
-}
-
-server {
-    listen 80;
-    server_name app.pickaladder.io;
+    server_name app.pickaladder.io www.app.pickaladder.io pickaladder.io www.pickaladder.io;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
