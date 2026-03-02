@@ -130,8 +130,7 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
         # Mock empty matches and invites
         mock_db.collection.return_value.where.return_value.stream.return_value = []
         (
-            mock_db.collection.return_value.where.return_value.where.return_value.stream
-            .return_value
+            mock_db.collection.return_value.where.return_value.where.return_value.stream.return_value
         ) = []
 
         leaderboard = get_group_leaderboard("group1")
