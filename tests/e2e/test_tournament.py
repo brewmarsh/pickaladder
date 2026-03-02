@@ -52,6 +52,7 @@ def test_tournament_flow(
 
     # Create a friend to verify the Invite dropdown
     import datetime
+
     friend_id = "friend_user"
     mock_db.collection("users").document(friend_id).set(
         {

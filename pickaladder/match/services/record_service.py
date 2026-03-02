@@ -8,6 +8,7 @@ from firebase_admin import firestore
 from pickaladder.core.constants import GLOBAL_LEADERBOARD_MIN_GAMES
 
 if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
     from pickaladder.user.models import User
@@ -94,9 +95,9 @@ class MatchRecordService:
     @staticmethod
     def get_rising_stars(db: Client, limit: int = 3) -> list[dict[str, Any]]:
         """Identify players with the most wins in the last 7 days."""
-        one_week_ago = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-            days=7
-        )
+        one_week_ago = datetime.datetime.now(
+            datetime.timezone.utc
+        ) - datetime.timedelta(days=7)
 
         # Query matches from the last 7 days
         query = db.collection("matches").where(
@@ -127,7 +128,9 @@ class MatchRecordService:
 
         results = []
         for uid, wins in sorted_stars:
-            user_doc = db.collection("users").document(uid).get()
+            user_doc = cast(
+                "DocumentSnapshot", db.collection("users").document(uid).get()
+            )
             if user_doc.exists:
                 user_data = user_doc.to_dict() or {}
                 results.append(
