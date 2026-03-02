@@ -239,9 +239,7 @@ def leaderboard() -> Any:
     # or by win percentage thresholds if preferred.
     # We'll use thresholds: Gold > 60%, Silver 40-60%, Bronze < 40%
     gold_tier = [
-        p
-        for p in others
-        if p.get("win_percentage", 0) > LEADERBOARD_GOLD_THRESHOLD
+        p for p in others if p.get("win_percentage", 0) > LEADERBOARD_GOLD_THRESHOLD
     ]
     silver_tier = [
         p
@@ -251,15 +249,15 @@ def leaderboard() -> Any:
         <= LEADERBOARD_GOLD_THRESHOLD
     ]
     bronze_tier = [
-        p
-        for p in others
-        if p.get("win_percentage", 0) < LEADERBOARD_SILVER_THRESHOLD
+        p for p in others if p.get("win_percentage", 0) < LEADERBOARD_SILVER_THRESHOLD
     ]
 
     # Social context: friends and pending requests
     user_id = g.user["uid"]
     friends_ref = db.collection("users").document(user_id).collection("friends")
-    friend_statuses = {doc.id: doc.to_dict().get("status") for doc in friends_ref.stream()}
+    friend_statuses = {
+        doc.id: doc.to_dict().get("status") for doc in friends_ref.stream()
+    }
 
     latest_matches = MatchQueryService.get_latest_matches(db)
     rising_stars = MatchQueryService.get_rising_stars(db)
