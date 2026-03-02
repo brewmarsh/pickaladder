@@ -93,7 +93,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     # Accept Friend Request
     with page.expect_navigation():
         page.click("text=Community")
-    expect(page.locator(".incoming-requests-section", has_text="User Two")).to_be_visible()
+    expect(
+        page.locator(".incoming-requests-section", has_text="User Two")
+    ).to_be_visible()
     with page.expect_navigation():
         page.click("button:has-text('Accept')")
     expect(page.locator(".friend-card", has_text="User Two")).to_be_visible()
