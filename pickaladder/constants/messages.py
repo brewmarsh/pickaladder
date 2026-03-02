@@ -3,7 +3,9 @@
 AUTH_MESSAGES = {
     "EMAIL_REGISTERED": "Email address is already registered.",
     "REGISTRATION_ERROR": "An unexpected error occurred during registration.",
-    "REGISTRATION_SUCCESS": "Registration successful! Please check your email to verify your account.",
+    "REGISTRATION_SUCCESS": (
+        "Registration successful! Please check your email to verify your account."
+    ),
     "USERNAME_EXISTS": "Username already exists. Please choose a different one.",
     "LOGOUT_SUCCESS": "You have been logged out.",
     "ADMIN_PROMOTED": "An existing user was promoted to admin.",
@@ -37,7 +39,9 @@ TOURNAMENT_MESSAGES = {
     "INVITE_DECLINED": "You have declined the tournament invite.",
     "INVITE_NOT_FOUND": "Invite not found.",
     "COMPLETE_SUCCESS": "Tournament completed and results emailed!",
-    "GROUP_ADMIN_REQUIRED": "You do not have permission to create a tournament for this group.",
+    "GROUP_ADMIN_REQUIRED": (
+        "You do not have permission to create a tournament for this group."
+    ),
     "ADMIN_ONLY_BRACKET": "Only admins can generate brackets.",
     "GEN_NOT_IMPLEMENTED": "Generation for {format} is not implemented.",
     "MIN_PARTICIPANTS": "At least 2 accepted participants are required.",
@@ -84,7 +88,9 @@ GROUP_MESSAGES = {
 USER_MESSAGES = {
     "SETTINGS_UPDATED": "Settings updated!",
     "PROFILE_PIC_REMOVED": "Profile picture removed.",
-    "PROFILE_PIC_REMOVE_ERROR": "An error occurred while removing your profile picture.",
+    "PROFILE_PIC_REMOVE_ERROR": (
+        "An error occurred while removing your profile picture."
+    ),
     "ACCOUNT_UPDATED": "Account updated!",
     "NOT_FOUND": "User not found.",
     "FRIEND_REQ_SELF": "You cannot send a friend request to yourself.",
