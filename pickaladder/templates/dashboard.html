@@ -1,174 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - pickaladder</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='dark.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/data-displays.css') }}">
 </head>
 
 {% from "components/_empty_state.html" import empty_state %}
+
 <body class="{{ 'dark-mode' if user and user.dark_mode else '' }}">
     {% include 'navbar.html' %}
-    <div class="content">
-        <div class="container">
-            <h2>Welcome, {{ user.name }}!</h2>
-            {% if user.profile_picture %}
-            <img src="{{ url_for('user.profile_picture', user_id=user.id) }}" alt="Profile Picture"
-                class="avatar avatar-xl">
-            {% endif %}
-            <div class="profile-info">
-                <p><strong>Username:</strong> {{ user.username }}</p>
-                <p><strong>Email:</strong> {{ user.email }}</p>
-                <p><strong>DUPR Rating:</strong> {{ user.dupr_rating }}</p>
-            </div>
-            <h3>Update Profile</h3>
-            <form method="post" action="{{ url_for('user.update_profile') }}" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" name="dark_mode" id="darkModeSwitch" {% if
-                        user.dark_mode %}checked{% endif %} onchange="this.form.submit()">
-                    <label class="form-check-label" for="darkModeSwitch">Dark Mode</label>
-                </div>
-                <label for="profile_picture">Profile Picture:</label>
-                <input type="file" id="profile_picture" name="profile_picture" accept="image/png, image/jpeg, image/gif"
-                    onchange="previewImage(event)">
-                <img id="preview" src="#" alt="your image" width="100" style="display:none;" />
-                <label for="dupr_rating">DUPR Rating:</label>
-                <input type="number" step="0.01" id="dupr_rating" name="dupr_rating" value="{{ user.dupr_rating }}">
-                <button type="submit">Update Profile</button>
-            </form>
-            <h3>Friend Requests</h3>
-            <div class="friend-requests-list">
-                {% if requests %}
-                <table class="table-standard responsive-table">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th></th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for request in requests %}
-                        <tr>
-                            <td data-label="Username">{{ request[1] }}</td>
-                            <td data-label="Actions">
-                                <form action="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}"
-                                    method="post" style="display: inline;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="button">Accept</button>
-                                </form>
-                            </td>
-                            <td>
-                                <form action="{{ url_for('user.decline_friend_request', friend_id=request[0]) }}"
-                                    method="post" style="display: inline;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="button">Decline</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                {{ empty_state(
-                    icon="📩",
-                    title="No Friend Requests",
-                    message="You have no pending friend requests at the moment."
-                ) }}
-                {% endif %}
-            </div>
-            <div class="header-with-button">
-                <h3>Your Matches</h3>
-                <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
-            </div>
-            <div class="matches-list">
-                {% if matches %}
-                <table class="table-standard responsive-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Opponent</th>
-                            <th>Score</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for match in matches %}
-                        <tr>
-                            <td data-label="Date">{{ match[5] }}</td>
-                            <td data-label="Opponent">{{ match[7] }}</td>
-                            <td data-label="Score">{{ match[3] }} - {{ match[4] }}</td>
-                            <td data-label="Link"><a
-                                    href="{{ url_for('match.view_match_summary', match_id=match[0]) }}">View</a></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                {{ empty_state(
-                    icon="🎾",
-                    title="No Matches Yet",
-                    message="You haven't recorded any matches yet. Ready to start your journey?",
-                    action_url=url_for('match.record_match'),
-                    action_text="Record a Match"
-                ) }}
-                {% endif %}
-            </div>
-            <h3>Your Friends</h3>
-            <div class="friends-list">
-                {% if friends %}
-                <table class="table-standard responsive-table">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>Username</th>
-                            <th>DUPR Rating</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for friend in friends %}
-                        <tr>
-                            <td data-label="Avatar">
-                                {% if friend[4] %}
-                                <img src="{{ url_for('static', filename='uploads/' + friend[4]) }}"
-                                    alt="Profile Picture" class="avatar avatar-sm">
-                                {% endif %}
-                            </td>
-                            <td data-label="Username">
-                                {{ friend[1] }}
-                            </td>
-                            <td data-label="DUPR Rating">{{ friend[3] }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                {{ empty_state(
-                    icon="🤝",
-                    title="No Friends Yet",
-                    message="You haven't added any friends yet. Connecting with others makes it easier to record matches!",
-                    action_url=url_for('user.users'),
-                    action_text="Find Friends"
-                ) }}
-                {% endif %}
-            </div>
-        </div>
-        {% include 'footer.html' %}
-        <script>
-            function previewImage(event) {
-                var reader = new FileReader();
-                reader.onload = function () {
-                    var output = document.getElementById('preview');
-                    output.src = reader.result;
-                    output.style.display = 'block';
-                };
-                reader.readAsDataURL(event.target.files[0]);
-            }
-        </script>
-</body>
 
+    <div class="container">
+        <main class="main-content">
+            
+            <div class="hero-stats-card">
+                <a href="{{ url_for('user.settings') }}" class="btn-edit-gear" title="Edit Profile">⚙️</a>
+                <div class="hero-left-panel">
+                    <div class="profile-picture-container avatar-xl">
+                        {% if user.profile_picture %}
+                        <img id="hero-profile-img" src="{{ url_for('user.profile_picture', user_id=user.id) }}" alt="Profile" class="profile-picture">
+                        {% else %}
+                        <img id="hero-profile-img" src="{{ url_for('static', filename='user_icon.png') }}" alt="Profile" class="profile-picture">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="hero-middle-panel text-center">
+                    <h2 id="hero-username-text" class="mb-2">{{ user.name }}</h2>
+                    <div class="vanity-stats-container justify-content-center gap-4">
+                        <div class="stat-item">
+                            <span class="stat-label">DUPR</span>
+                            <span class="stat-value">{{ user.dupr_rating or 'N/A' }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-right-panel">
+                    <a href="{{ url_for('match.record_match') }}" class="btn btn-volt">Record a Match</a>
+                </div>
+            </div>
+
+            <div class="dashboard-columns">
+                
+                <div class="dashboard-column-left">
+                    <div class="card">
+                        <div class="header-with-button">
+                            <h3>Recent Activity</h3>
+                        </div>
+                        <div id="latest-games-feed">
+                            {% if matches %}
+                                {% for match in matches %}
+                                <div class="match-compact-row clickable-row" data-href="{{ url_for('match.view_match_summary', match_id=match[0]) }}">
+                                    <div class="match-date-compact">{{ match[5] }}</div>
+                                    <div class="match-info-compact">
+                                        <strong>You</strong> vs {{ match[7] }}
+                                    </div>
+                                    <div class="match-score-badge-compact">
+                                        <div class="score-badge {{ 'score-badge-win' if match[3] > match[4] else 'score-badge-loss' }}">
+                                            {{ match[3] }} - {{ match[4] }}
+                                        </div>
+                                        <span class="badge rounded-circle {{ 'badge-volt' if match[3] > match[4] else 'badge-danger' }} w-28 h-28">
+                                            {{ 'W' if match[3] > match[4] else 'L' }}
+                                        </span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                {{ empty_state(icon="🎾", title="No Matches", message="Start your journey by recording a match.") }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-column-right">
+                    <div class="competition-stack d-flex flex-column gap-4">
+                        
+                        {% if requests %}
+                        <div class="card card-compact">
+                            <h3 class="sidebar-header">Requests</h3>
+                            <div class="list-group list-group-flush">
+                                {% for request in requests %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0 border-bottom">
+                                    <span class="small">{{ request[1] }}</span>
+                                    <div class="d-flex gap-1">
+                                        <form action="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}" method="post">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-volt p-1 px-2">✓</button>
+                                        </form>
+                                        <form action="{{ url_for('user.decline_friend_request', friend_id=request[0]) }}" method="post">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger p-1 px-2">×</button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="card card-compact">
+                            <h3 class="sidebar-header">Social</h3>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                {% if friends %}
+                                    {% for friend in friends %}
+                                        <a href="{{ url_for('user.view_profile', user_id=friend[0]) }}" title="{{ friend[1] }}">
+                                            {% if friend[4] %}
+                                                <img src="{{ url_for('static', filename='uploads/' + friend[4]) }}" class="avatar avatar-md">
+                                            {% else %}
+                                                <img src="https://api.dicebear.com/9.x/avataaars/svg?seed={{ friend[1] }}" class="avatar avatar-md">
+                                            {% endif %}
+                                        </a>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-muted small">No friends added yet.</p>
+                                {% endif %}
+                            </div>
+                            <a href="{{ url_for('user.users') }}" class="btn btn-sm btn-outline-primary w-100">Find Friends</a>
+                        </div>
+
+                        <div class="card card-compact">
+                            <h3 class="sidebar-header">Preferences</h3>
+                            <form method="post" action="{{ url_for('user.update_profile') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="custom-control custom-switch small">
+                                    <input type="checkbox" class="custom-control-input" id="darkModeSwitch" name="dark_mode" 
+                                           {% if user.dark_mode %}checked{% endif %} onchange="this.form.submit()">
+                                    <label class="custom-control-label" for="darkModeSwitch">Dark Mode</label>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    {% include 'footer.html' %}
+
+    <script>
+        // Preview Image logic for profile updates
+        function previewImage(event) {
+            var reader = new FileReader();
+            reader.onload = function () {
+                var output = document.getElementById('hero-profile-img');
+                output.src = reader.result;
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        // Generic row click handler
+        document.addEventListener("click", (e) => {
+            const row = e.target.closest(".clickable-row");
+            if (row && row.dataset.href && !e.target.closest("button") && !e.target.closest("a")) {
+                window.location.href = row.dataset.href;
+            }
+        });
+    </script>
+</body>
 </html>
