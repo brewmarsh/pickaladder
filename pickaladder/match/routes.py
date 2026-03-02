@@ -9,6 +9,10 @@ from flask import flash, g, jsonify, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, MATCH_MESSAGES
+from pickaladder.core.constants import (
+    LEADERBOARD_GOLD_THRESHOLD,
+    LEADERBOARD_SILVER_THRESHOLD,
+)
 
 from . import bp
 from .forms import MatchForm
@@ -234,11 +238,23 @@ def leaderboard() -> Any:
     # Partition others into Gold, Silver, Bronze tiers (roughly equal sized)
     # or by win percentage thresholds if preferred.
     # We'll use thresholds: Gold > 60%, Silver 40-60%, Bronze < 40%
-    gold_tier = [p for p in others if p.get("win_percentage", 0) > 60]
-    silver_tier = [
-        p for p in others if 40 <= p.get("win_percentage", 0) <= 60
+    gold_tier = [
+        p
+        for p in others
+        if p.get("win_percentage", 0) > LEADERBOARD_GOLD_THRESHOLD
     ]
-    bronze_tier = [p for p in others if p.get("win_percentage", 0) < 40]
+    silver_tier = [
+        p
+        for p in others
+        if LEADERBOARD_SILVER_THRESHOLD
+        <= p.get("win_percentage", 0)
+        <= LEADERBOARD_GOLD_THRESHOLD
+    ]
+    bronze_tier = [
+        p
+        for p in others
+        if p.get("win_percentage", 0) < LEADERBOARD_SILVER_THRESHOLD
+    ]
 
     # Social context: friends and pending requests
     user_id = g.user["uid"]
