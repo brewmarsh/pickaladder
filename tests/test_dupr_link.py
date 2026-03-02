@@ -142,7 +142,48 @@ class DuprLinkTestCase(unittest.TestCase):
         self.assertIn(b'target="_blank"', response.data)
 
     def test_profile_no_dupr_link_display(self) -> None:
-        """Test that 'Add DUPR ID' is displayed when DUPR ID is missing."""
+        """Test that 'Add DUPR ID' is displayed when DUPR ID is missing and viewer is owner."""
+        user_id = "test_user"
+        target_id = "test_user"
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = user_id
+            sess["is_admin"] = False
+
+        # Mock user without dupr_id
+        mock_user_doc = MagicMock()
+        mock_user_doc.exists = True
+        mock_user_doc.to_dict.return_value = {
+            "uid": user_id,
+            "username": "testuser",
+            "name": "Test User",
+            "dupr_rating": 3.5,
+        }
+
+        def get_doc(doc_id: str) -> Any:
+            if doc_id == user_id:
+                return mock_user_doc
+            return MagicMock(exists=False)
+
+        self.mock_firestore_client.collection.return_value.document.side_effect = (
+            lambda doc_id: MagicMock(get=lambda: get_doc(doc_id))
+        )
+
+        # Mock other dependencies
+        (
+            self.mock_firestore_client.collection.return_value.document.return_value.collection.return_value.where.return_value.limit.return_value.stream.return_value
+        ) = []
+        (
+            self.mock_firestore_client.collection.return_value.where.return_value.stream.return_value
+        ) = []
+
+        response = self.client.get(f"/user/{target_id}")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertIn(b"Add DUPR ID", response.data)
+        self.assertIn(b"3.5", response.data)
+
+    def test_profile_no_dupr_link_display_different_user(self) -> None:
+        """Test that 'Add DUPR ID' is NOT displayed when viewer is not owner."""
         user_id = "viewer_id"
         target_id = "target_id"
         with self.client.session_transaction() as sess:
@@ -186,7 +227,7 @@ class DuprLinkTestCase(unittest.TestCase):
         response = self.client.get(f"/user/{target_id}")
         self.assertEqual(response.status_code, 200)
 
-        self.assertIn(b"Add DUPR ID", response.data)
+        self.assertNotIn(b"Add DUPR ID", response.data)
         self.assertIn(b"3.5", response.data)
 
 
