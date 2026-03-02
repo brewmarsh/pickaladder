@@ -141,6 +141,144 @@
 .rank-2 { color: #C0C0C0; }
 .rank-3 { color: #CD7F32; }
 
+/* --- Discovery Hub (Leaderboard v0.10.0) --- */
+.discovery-hub-grid {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 24px;
+}
+
+@media (max-width: 992px) {
+    .discovery-hub-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.podium-section {
+    margin-bottom: 32px;
+}
+
+.podium-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.podium-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.podium-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.podium-card.rank-1-card {
+    border-color: var(--color-volt);
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(132, 204, 22, 0.05) 100%);
+}
+
+.podium-rank-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--fw-bold);
+    font-size: 0.8rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+}
+
+.rank-1-card .podium-rank-badge {
+    background: var(--color-volt);
+    color: var(--color-dark);
+    border-color: var(--color-volt);
+}
+
+.podium-avatar {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 12px;
+}
+
+.podium-name {
+    font-weight: var(--fw-bold);
+    margin-bottom: 4px;
+    display: block;
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.podium-stats {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.tier-section {
+    margin-bottom: 32px;
+}
+
+.tier-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.tier-header h3 {
+    margin-bottom: 0;
+    font-size: 1.25rem;
+    font-weight: var(--fw-bold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.tier-gold h3 { color: #FFD700; }
+.tier-silver h3 { color: #C0C0C0; }
+.tier-bronze h3 { color: #CD7F32; }
+
+.discovery-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.btn-discovery {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.rising-stars-widget .list-group-item {
+    background: transparent;
+    padding: 12px 0;
+}
+
+.rising-stars-count {
+    font-weight: var(--fw-bold);
+    color: var(--color-volt);
+}
+
 /* --- 3. Scoring Typography --- */
 .score-display {
     font-family: var(--font-score);

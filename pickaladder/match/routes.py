@@ -9,6 +9,10 @@ from flask import flash, g, jsonify, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, MATCH_MESSAGES
+from pickaladder.core.constants import (
+    LEADERBOARD_GOLD_THRESHOLD,
+    LEADERBOARD_SILVER_THRESHOLD,
+)
 
 from . import bp
 from .forms import MatchForm
@@ -19,7 +23,6 @@ if TYPE_CHECKING:
     pass
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
 @login_required
 def edit_match(match_id: str) -> Any:
@@ -196,7 +199,6 @@ def _get_record_match_context(db: Any, t_id: str | None) -> dict[str, Any]:
     return {"tournament_name": t_name}
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/history")
 @login_required
 def get_match_history() -> Any:
@@ -229,11 +231,45 @@ def leaderboard() -> Any:
         players = []
         flash(MATCH_MESSAGES["LEADERBOARD_ERROR"].format(error=e), "danger")
 
+    # Split into Podium and Tiers
+    podium = players[:10]
+    others = players[10:]
+
+    # Partition others into Gold, Silver, Bronze tiers (roughly equal sized)
+    # or by win percentage thresholds if preferred.
+    # We'll use thresholds: Gold > 60%, Silver 40-60%, Bronze < 40%
+    gold_tier = [
+        p for p in others if p.get("win_percentage", 0) > LEADERBOARD_GOLD_THRESHOLD
+    ]
+    silver_tier = [
+        p
+        for p in others
+        if LEADERBOARD_SILVER_THRESHOLD
+        <= p.get("win_percentage", 0)
+        <= LEADERBOARD_GOLD_THRESHOLD
+    ]
+    bronze_tier = [
+        p for p in others if p.get("win_percentage", 0) < LEADERBOARD_SILVER_THRESHOLD
+    ]
+
+    # Social context: friends and pending requests
+    user_id = g.user["uid"]
+    friends_ref = db.collection("users").document(user_id).collection("friends")
+    friend_statuses = {
+        doc.id: doc.to_dict().get("status") for doc in friends_ref.stream()
+    }
+
     latest_matches = MatchQueryService.get_latest_matches(db)
+    rising_stars = MatchQueryService.get_rising_stars(db)
 
     return render_template(
         "leaderboard.html",
-        players=players,
+        podium=podium,
+        gold_tier=gold_tier,
+        silver_tier=silver_tier,
+        bronze_tier=bronze_tier,
+        rising_stars=rising_stars,
         latest_matches=latest_matches,
-        current_user_id=g.user["uid"],
+        friend_statuses=friend_statuses,
+        current_user_id=user_id,
     )

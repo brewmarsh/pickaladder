@@ -12,59 +12,40 @@ class TestLeaderboardLogic(unittest.TestCase):
     """Test case for the global leaderboard filtering logic."""
 
     @patch("pickaladder.match.services.firestore")
-    @patch(
-        "pickaladder.match.services.record_service.MatchRecordService.get_player_record"
-    )
     def test_get_leaderboard_data_filters_inactive(
-        self, mock_get_player_record: MagicMock, mock_firestore: MagicMock
+        self, mock_firestore: MagicMock
     ) -> None:
-        """Test that players with zero games are filtered out."""
+        """Test that players with zero games are filtered out using cached stats."""
         # Mock Firestore client
         mock_db = MagicMock()
 
-        def document_side_effect(uid: str) -> MagicMock:
-            """Ensure document(uid).id returns uid."""
-            doc = MagicMock()
-            doc.id = uid
-            return doc
-
-        mock_db.collection.return_value.document.side_effect = document_side_effect
-
-        # Mock users
+        # Mock users with cached stats
         user1 = MagicMock()
         user1.id = "u1"
-        user1.to_dict.return_value = {"name": "User 1"}
+        user1.to_dict.return_value = {
+            "name": "User 1",
+            "stats": {"wins": 4, "losses": 2},
+        }
 
         user2 = MagicMock()
         user2.id = "u2"
-        user2.to_dict.return_value = {"name": "User 2"}
+        user2.to_dict.return_value = {
+            "name": "User 2",
+            "stats": {"wins": 2, "losses": 2},
+        }
 
         user3 = MagicMock()
         user3.id = "u3"
-        user3.to_dict.return_value = {"name": "User 3"}
+        user3.to_dict.return_value = {
+            "name": "User 3",
+            "stats": {"wins": 0, "losses": 0},
+        }
 
         mock_db.collection.return_value.stream.return_value = [
             user1,
             user2,
             user3,
         ]
-
-        # u1: 6 games (should stay)
-        # u2: 4 games (should stay)
-        # u3: 0 games (should be filtered)
-        def get_record_side_effect(
-            db: MagicMock, user_ref: MagicMock
-        ) -> dict[str, int]:
-            """Side effect to return different records for different users."""
-            if user_ref.id == "u1":
-                return {"wins": 4, "losses": 2}
-            if user_ref.id == "u2":
-                return {"wins": 2, "losses": 2}
-            if user_ref.id == "u3":
-                return {"wins": 0, "losses": 0}
-            return {"wins": 0, "losses": 0}
-
-        mock_get_player_record.side_effect = get_record_side_effect
 
         # Running the function
         players = MatchService.get_leaderboard_data(mock_db)

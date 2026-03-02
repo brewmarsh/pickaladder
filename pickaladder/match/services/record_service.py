@@ -61,31 +61,82 @@ class MatchRecordService:
         ) == uid
 
     @staticmethod
+    def get_rising_stars(db: Client, limit: int = 3) -> list[dict[str, Any]]:
+        """Fetch users with the most wins in the last 7 days."""
+        from datetime import datetime, timedelta, timezone
+
+        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        matches_query = db.collection("matches").where(
+            filter=firestore.FieldFilter("createdAt", ">=", seven_days_ago)
+        )
+
+        win_counts: dict[str, int] = {}
+        for m_snap in matches_query.stream():
+            m_data = m_snap.to_dict() or {}
+            winners = m_data.get("winners") or []
+            for uid in winners:
+                win_counts[uid] = win_counts.get(uid, 0) + 1
+
+        if not win_counts:
+            return []
+
+        # Sort and take top IDs
+        top_uids_with_counts = sorted(
+            win_counts.items(), key=lambda x: x[1], reverse=True
+        )[:limit]
+        top_win_map = dict(top_uids_with_counts)
+        top_uids = list(top_win_map.keys())
+
+        # Bulk fetch user data
+        u_refs = [db.collection("users").document(uid) for uid in top_uids]
+        results = []
+        for u_snap in db.get_all(u_refs):
+            if u_snap.exists:
+                u_data = u_snap.to_dict() or {}
+                uid = u_snap.id
+                results.append(
+                    {
+                        "id": uid,
+                        "name": u_data.get("name") or u_data.get("username", "Unknown"),
+                        "username": u_data.get("username"),
+                        "profilePictureUrl": u_data.get("profilePictureUrl"),
+                        "weekly_wins": top_win_map.get(uid, 0),
+                    }
+                )
+
+        # Ensure order is maintained after bulk fetch
+        results.sort(key=lambda x: x["weekly_wins"], reverse=True)
+        return results
+
+    @staticmethod
     def get_leaderboard_data(
         db: Client, limit: int = 50, min_games: int = GLOBAL_LEADERBOARD_MIN_GAMES
     ) -> list[User]:
-        """Fetch data for the global leaderboard."""
+        """Fetch data for the global leaderboard using cached statistics."""
         players: list[User] = []
         for u_snap in db.collection("users").stream():
-            user_data = cast("User", u_snap.to_dict() or {})
+            # Cast to dict for flexible access to 'stats' map
+            user_data = cast(dict[str, Any], u_snap.to_dict() or {})
             user_data["id"] = u_snap.id
-            record = MatchRecordService.get_player_record(
-                db, db.collection("users").document(u_snap.id)
-            )
 
-            games = record["wins"] + record["losses"]
+            # Use cached stats from the user document instead of querying matches
+            stats = cast(dict[str, Any], user_data.get("stats") or {})
+            wins = int(stats.get("wins", 0))
+            losses = int(stats.get("losses", 0))
+            games = wins + losses
+
             if games >= min_games:
                 user_data.update(
                     {
-                        "wins": record["wins"],
-                        "losses": record["losses"],
+                        "wins": wins,
+                        "losses": losses,
                         "games_played": games,
-                        "win_percentage": float((record["wins"] / games) * 100)
+                        "win_percentage": float((wins / games) * 100)
                         if games > 0
                         else 0.0,
                     }
                 )
-                players.append(user_data)
+                players.append(cast("User", user_data))
 
         players.sort(
             key=lambda p: (p.get("win_percentage", 0), p.get("wins", 0)), reverse=True
