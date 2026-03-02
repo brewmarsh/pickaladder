@@ -140,16 +140,9 @@ body {
     gap: 24px;
 }
 
-.dashboard-column-left {
-    min-width: 0;
-}
-
+.dashboard-column-left,
 .dashboard-column-right {
     min-width: 0;
-    overflow: hidden;
-    position: sticky;
-    top: 24px;
-    align-self: start;
 }
 
 .card-grid {
@@ -193,7 +186,7 @@ body {
 
 .tournament-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 24px;
 }
 
@@ -201,13 +194,8 @@ body {
     height: 100%;
 }
 
-@media screen and (max-width: 992px) {
-    .dashboard-columns {
-        grid-template-columns: 1fr;
-    }
-}
-
 @media screen and (max-width: 768px) {
+    .dashboard-columns { grid-template-columns: 1fr; }
     .navbar-menu { display: none; }
 }
 

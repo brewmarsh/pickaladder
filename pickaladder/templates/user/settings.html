@@ -3,146 +3,111 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-lg-10 mx-auto">
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
                 <h3 class="mb-0">Account Settings</h3>
-                <span class="badge badge-volt">v0.10.0</span>
             </div>
             <div class="card-body">
-                <form method="POST" enctype="multipart/form-data" id="settings-form">
+                <form method="POST" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
 
-                    <!-- Avatar Section -->
-                    <div class="text-center mb-5">
-                        <div class="position-relative d-inline-block">
-                            {% set avatar_src = "https://api.dicebear.com/9.x/avataaars/svg?seed=" ~ user.username %}
-                            {% if user.profilePictureUrl and user.profilePictureUrl != 'default' %}
-                                {% set avatar_src = user.profilePictureUrl %}
+                    <div class="text-center mb-4">
+                        <img src="{{ current_user | avatar_url }}" alt="Profile Picture" class="avatar avatar-xl mb-2" id="avatar-preview">
+                        <div class="form-group mt-2">
+                            {{ form.profile_picture.label }}
+                            {{ form.profile_picture(class="form-control-file") }}
+                            {% if form.profile_picture.errors %}
+                                {% for error in form.profile_picture.errors %}
+                                    <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
                             {% endif %}
-                            <img src="{{ avatar_src }}"
-                                 alt="Profile Picture"
-                                 class="avatar avatar-xl mb-3 shadow-sm border"
-                                 id="avatar-preview">
-                            <label for="profile_picture" class="btn btn-sm btn-volt position-absolute" style="bottom: 15px; right: -10px; border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-camera"></i>
-                            </label>
-                            {{ form.profile_picture(class="d-none", id="profile_picture") }}
+                            {% if current_user.is_authenticated and current_user.profilePictureUrl and current_user.profilePictureUrl != 'default' %}
+                                <div class="mt-1">
+                                    <a href="javascript:void(0)" class="text-danger small" onclick="if(confirm('Are you sure you want to remove your profile picture?')) document.getElementById('reset-avatar-form').submit();">Remove Picture</a>
+                                </div>
+                            {% endif %}
                         </div>
+                    </div>
 
-                        {% if user.profilePictureUrl and user.profilePictureUrl != 'default' %}
-                            <div class="mt-2">
-                                <a href="javascript:void(0)" class="text-danger small fw-medium" onclick="if(confirm('Are you sure you want to remove your profile picture?')) document.getElementById('reset-avatar-form').submit();">
-                                    <i class="fas fa-trash-alt mr-1"></i> Remove Picture
-                                </a>
-                            </div>
-                        {% endif %}
-
-                        {% if form.profile_picture.errors %}
-                            {% for error in form.profile_picture.errors %}
-                                <div class="text-danger small mt-2">{{ error }}</div>
+                    <div class="form-group mb-3">
+                        {{ form.name.label }}
+                        {{ form.name(class="form-control") }}
+                        {% if form.name.errors %}
+                            {% for error in form.name.errors %}
+                                <div class="text-danger small">{{ error }}</div>
                             {% endfor %}
                         {% endif %}
                     </div>
 
-                    <div class="settings-grid">
-                        <!-- Left Column: Basic Info -->
-                        <div class="settings-column">
-                            <h4 class="mb-4 pb-2 border-bottom">Basic Info</h4>
-
-                            <div class="form-group mb-3">
-                                {{ form.name.label(class="fw-medium") }}
-                                {{ form.name(class="form-control", placeholder="Your full name") }}
-                                {% if form.name.errors %}
-                                    {% for error in form.name.errors %}
-                                        <div class="text-danger small mt-1">{{ error }}</div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-
-                            <div class="form-group mb-3">
-                                {{ form.username.label(class="fw-medium") }}
-                                {{ form.username(class="form-control", placeholder="Choose a unique username") }}
-                                {% if form.username.errors %}
-                                    {% for error in form.username.errors %}
-                                        <div class="text-danger small mt-1">{{ error }}</div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-
-                            <div class="form-group mb-3">
-                                {{ form.email.label(class="fw-medium") }}
-                                {{ form.email(class="form-control", placeholder="Your email address") }}
-                                {% if form.email.errors %}
-                                    {% for error in form.email.errors %}
-                                        <div class="text-danger small mt-1">{{ error }}</div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- Right Column: Pickleball Ratings -->
-                        <div class="settings-column">
-                            <h4 class="mb-4 pb-2 border-bottom">Pickleball Ratings</h4>
-
-                            <div class="form-group mb-3">
-                                {{ form.dupr_id.label(class="fw-medium") }}
-                                {{ form.dupr_id(class="form-control", placeholder="Found in your DUPR profile URL") }}
-                                {% if form.dupr_id.errors %}
-                                    {% for error in form.dupr_id.errors %}
-                                        <div class="text-danger small mt-1">{{ error }}</div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-
-                            <div class="form-group mb-3">
-                                {{ form.dupr_rating.label(class="fw-medium") }}
-                                {{ form.dupr_rating(class="form-control", step="0.01", placeholder="e.g. 4.50") }}
-                                {% if form.dupr_rating.errors %}
-                                    {% for error in form.dupr_rating.errors %}
-                                        <div class="text-danger small mt-1">{{ error }}</div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-
-                            <div class="form-group mt-4">
-                                <label class="volt-toggle">
-                                    {{ form.dark_mode(id="dark_mode") }}
-                                    <span class="volt-toggle-slider"></span>
-                                    <span class="fw-medium">Enable Dark Mode</span>
-                                </label>
-                                {% if form.dark_mode.errors %}
-                                    {% for error in form.dark_mode.errors %}
-                                        <div class="text-danger small mt-1">{{ error }}</div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-                        </div>
+                    <div class="form-group mb-3">
+                        {{ form.username.label }}
+                        {{ form.username(class="form-control") }}
+                        {% if form.username.errors %}
+                            {% for error in form.username.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
 
-                    <div class="mt-4 pt-3 border-top">
-                        <button type="submit" class="btn btn-volt w-auto px-5">
-                            <i class="fas fa-save mr-2"></i> Save Changes
-                        </button>
+                    <div class="form-group mb-3">
+                        {{ form.email.label }}
+                        {{ form.email(class="form-control") }}
+                        {% if form.email.errors %}
+                            {% for error in form.email.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <h4 class="mt-4 mb-3">Pickleball Ratings</h4>
+                    <hr>
+                    <div class="form-group mb-3">
+                        {{ form.dupr_id.label }}
+                        {{ form.dupr_id(class="form-control", placeholder="Found in your DUPR profile URL") }}
+                        {% if form.dupr_id.errors %}
+                            {% for error in form.dupr_id.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-3">
+                        {{ form.dupr_rating.label }}
+                        {{ form.dupr_rating(class="form-control", step="0.01") }}
+                        {% if form.dupr_rating.errors %}
+                            {% for error in form.dupr_rating.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group mb-3 custom-control custom-switch">
+                        {{ form.dark_mode(class="custom-control-input", id="dark_mode") }}
+                        {{ form.dark_mode.label(class="custom-control-label", for="dark_mode") }}
+                        {% if form.dark_mode.errors %}
+                            {% for error in form.dark_mode.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-4">
+                        {{ form.submit(class="btn btn-volt") }}
                     </div>
                 </form>
 
                 <form id="reset-avatar-form" action="{{ url_for('user.reset_avatar') }}" method="POST" style="display:none;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 </form>
-            </div>
-        </div>
 
-        <!-- Security Section -->
-        <div class="security-card-danger shadow-sm">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <h4><i class="fas fa-shield-alt mr-2"></i> Security & Danger Zone</h4>
-                    <p class="text-muted mb-0">Manage your account credentials and security settings.</p>
+                <hr class="my-4">
+
+                <div class="security-section">
+                    <h4>Security</h4>
+                    <p class="text-muted small">Manage your account security and password.</p>
+                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-danger ms-2">Change Password</a>
                 </div>
-                <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-danger w-auto px-4">
-                    <i class="fas fa-key mr-2"></i> Change Password
-                </a>
             </div>
         </div>
     </div>
@@ -152,7 +117,7 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const profilePictureInput = document.getElementById('profile_picture');
+        const profilePictureInput = document.querySelector('input[name="profile_picture"]');
         const avatarPreview = document.getElementById('avatar-preview');
 
         if (profilePictureInput) {

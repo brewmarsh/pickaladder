@@ -17,10 +17,10 @@
 {% endif %}
 
 <div class="card hero-stats-card" style="
-    background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('{{ tournament.banner_url }}');
+    background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ tournament.banner_url }}');
     background-size: cover;
     background-position: center;
-    min-height: 250px;
+    height: 300px;
     border-radius: var(--radius-lg);
     margin-bottom: 24px;
     display: flex;
@@ -30,21 +30,20 @@
     color: white;
     text-align: center;
     position: relative;
-    padding: 40px 20px;
 ">
     {% if is_owner and g.user.is_admin %}
-        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" data-testid="tournament-settings-btn" style="color: white;" title="Edit Tournament">⚙️</a>
+        <a href="{{ url_for('tournament.edit_tournament', tournament_id=tournament.id) }}" class="btn-edit-gear" data-testid="tournament-settings-btn" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; text-decoration: none;" title="Edit Tournament">⚙️</a>
     {% endif %}
-    <h1 style="font-size: clamp(2rem, 5vw, 3.5rem); text-shadow: 0 2px 8px rgba(0,0,0,0.8); margin-bottom: 0.5rem; font-weight: 800;">{{ tournament.name }}</h1>
-    <p style="font-size: 1.25rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); opacity: 0.9;">
-        {{ tournament.display_date }} | {{ tournament.matchType|capitalize }}
+    <h1 style="font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,1); margin-bottom: 0.5rem;">{{ tournament.name }}</h1>
+    <p style="font-size: 1.25rem; text-shadow: 0 2px 4px rgba(0,0,0,1);">
+        {{ tournament.date_display or tournament.date }} | {{ tournament.matchType|capitalize }}
     </p>
-    <div style="display: flex; gap: 12px; align-items: center; margin-top: 20px; flex-wrap: wrap; justify-content: center;">
-        <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-volt' if tournament.status == 'Active' or tournament.status == 'Registration' else 'badge-warning' }}">
+    <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+        <span class="badge {{ 'badge-success' if tournament.status == 'Completed' else 'badge-warning' }}">
             {{ tournament.status or 'Active' }}
         </span>
         {% if tournament.status != 'Completed' %}
-            <a href="{{ url_for('match.record_match', tournament_id=tournament.id) }}" class="btn btn-volt btn-sm w-auto">Record Match</a>
+            <a href="{{ url_for('match.record_match', tournament_id=tournament.id) }}" class="btn btn-primary btn-sm">Record Match</a>
         {% endif %}
     </div>
 </div>
@@ -53,10 +52,10 @@
     <!-- Left Column: Tabs and Content -->
     <div class="dashboard-column-left">
         <!-- Tabs -->
-        <div class="tabs mb-4" style="display: flex; gap: 24px; border-bottom: 1px solid var(--border-color); overflow-x: auto; -webkit-overflow-scrolling: touch;">
-            <button class="tab-btn active" onclick="openTab(event, 'overview')">Overview</button>
-            <button class="tab-btn" onclick="openTab(event, 'bracket')">Bracket</button>
-            <button class="tab-btn" onclick="openTab(event, 'players')">Players</button>
+        <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+            <button class="tab-btn active" onclick="openTab(event, 'overview')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid var(--accent-color); font-weight: bold;">Overview</button>
+            <button class="tab-btn" onclick="openTab(event, 'bracket')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Bracket</button>
+            <button class="tab-btn" onclick="openTab(event, 'players')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Players</button>
         </div>
 
         <!-- Tab Content -->
@@ -64,7 +63,7 @@
             {% if tournament.description %}
             <div class="card">
                 <h3 class="card-header">About Tournament</h3>
-                <div style="white-space: pre-wrap; color: var(--text-secondary);">{{ tournament.description }}</div>
+                <div style="white-space: pre-wrap;">{{ tournament.description }}</div>
             </div>
             {% endif %}
 
@@ -75,28 +74,28 @@
                     {% if podium|length > 1 %}
                     <div style="text-align: center; order: 1;">
                         <div style="font-size: 3rem;">🥈</div>
-                        <div class="rank-badge rank-2" style="padding: 10px 20px; font-size: 1.2rem; border-radius: 10px; margin-bottom: 5px; background: rgba(192, 192, 192, 0.1);">
+                        <div class="rank-badge rank-2" style="padding: 10px 20px; font-size: 1.2rem; border-radius: 10px; margin-bottom: 5px;">
                             {{ podium[1].name }}
                         </div>
-                        <div class="text-muted small">2nd Place</div>
+                        <div class="text-muted">2nd Place</div>
                     </div>
                     {% endif %}
 
                     <div style="text-align: center; order: 0;">
                         <div style="font-size: 4rem;">🥇</div>
-                        <div class="rank-badge rank-1" style="padding: 15px 30px; font-size: 1.5rem; border-radius: 10px; box-shadow: 0 0 20px rgba(132, 204, 22, 0.3); margin-bottom: 5px; border: 2px solid var(--color-volt);">
+                        <div class="rank-badge rank-1" style="padding: 15px 30px; font-size: 1.5rem; border-radius: 10px; box-shadow: 0 0 15px var(--warning-color); margin-bottom: 5px;">
                             {{ podium[0].name }}
                         </div>
-                        <div class="text-muted small">Tournament Champion</div>
+                        <div class="text-muted">Tournament Champion</div>
                     </div>
 
                     {% if podium|length > 2 %}
                     <div style="text-align: center; order: 2;">
                         <div style="font-size: 2.5rem;">🥉</div>
-                        <div class="rank-badge rank-3" style="padding: 8px 15px; font-size: 1.1rem; border-radius: 10px; margin-bottom: 5px; background: rgba(205, 127, 50, 0.1);">
+                        <div class="rank-badge rank-3" style="padding: 8px 15px; font-size: 1.1rem; border-radius: 10px; margin-bottom: 5px;">
                             {{ podium[2].name }}
                         </div>
-                        <div class="text-muted small">3rd Place</div>
+                        <div class="text-muted">3rd Place</div>
                     </div>
                     {% endif %}
                 </div>
@@ -121,34 +120,7 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
                     <h3 style="margin: 0;">Standings</h3>
-                    {% if tournament.status|lower == 'registration' %}
-                        <div class="badge badge-volt pulse">Registration Open</div>
-                    {% endif %}
                 </div>
-
-                {% if tournament.status|lower == 'registration' %}
-                <div class="text-center py-5">
-                    <div class="fs-1 mb-3">📝</div>
-                    <h4>Registration is Open!</h4>
-                    <p class="text-muted mb-4">Pairings and standings will appear once the tournament begins.</p>
-
-                    {% set is_registered = participants | selectattr('user.id', 'equalto', g.user.uid) | list | length > 0 %}
-
-                    {% if not is_registered %}
-                        {% if tournament.is_doubles %}
-                            <button type="button" class="btn btn-volt w-auto" onclick="openPartnerModal()">Register Now</button>
-                        {% else %}
-                             <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-volt w-auto">Register Now</button>
-                            </form>
-                        {% endif %}
-                    {% else %}
-                        <div class="text-volt fw-bold"><i class="fas fa-check-circle mr-2"></i> You are registered!</div>
-                    {% endif %}
-                </div>
-                {% endif %}
-
                 <div class="table-container">
                     <table class="table-standard responsive-table">
                         <thead>
@@ -178,16 +150,16 @@
                                             {% if pending_partner_invite %}
                                                 <form action="{{ url_for('tournament.accept_team', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button type="submit" class="btn btn-sm btn-success w-auto">Accept Team</button>
+                                                    <button type="submit" class="btn btn-sm btn-success">Accept Team</button>
                                                 </form>
                                             {% elif not team_status %}
-                                                <button type="button" class="btn btn-sm btn-volt w-auto" onclick="openPartnerModal()">Join (Pick Partner)</button>
+                                                <button type="button" class="btn btn-sm btn-success" onclick="openPartnerModal()">Join (Pick Partner)</button>
                                             {% endif %}
                                         {% else %}
                                             {% if p.status == 'pending' %}
                                                 <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button type="submit" class="btn btn-sm btn-volt w-auto">Join</button>
+                                                    <button type="submit" class="btn btn-sm btn-success">Join</button>
                                                 </form>
                                             {% endif %}
                                         {% endif %}
@@ -233,7 +205,7 @@
                                         {% if p.user.id == g.user.uid and p.status == 'pending' %}
                                             <form action="{{ url_for('tournament.join_tournament', tournament_id=tournament.id) }}" method="POST" style="display: inline;">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-sm btn-volt w-auto">Join</button>
+                                                <button type="submit" class="btn btn-sm btn-success">Join</button>
                                             </form>
                                         {% endif %}
                                     </td>
@@ -252,14 +224,14 @@
         <div class="card">
             <h4 class="card-header">📍 Location</h4>
             {% if tournament.location_data %}
-                <p class="fw-bold mb-1">{{ tournament.location_data.name }}</p>
+                <p><strong>{{ tournament.location_data.name }}</strong></p>
                 {% if tournament.location_data.address %}
-                    <p class="text-muted small mb-3">{{ tournament.location_data.address }}</p>
+                    <p class="text-muted" style="font-size: 0.9rem;">{{ tournament.location_data.address }}</p>
                 {% endif %}
-                <a href="https://www.google.com/maps/search/?api=1&query={{ (tournament.location_data.address or tournament.location_data.name)|urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm">Get Directions</a>
+                <a href="https://www.google.com/maps/search/?api=1&query={{ (tournament.location_data.address or tournament.location_data.name)|urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm w-auto" style="margin-top: 10px; width: 100% !important; display: block; text-align: center;">Get Directions</a>
             {% else %}
-                <p class="mb-3">{{ tournament.location_display }}</p>
-                <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.location_display|urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm">Get Directions</a>
+                <p>{{ tournament.location }}</p>
+                <a href="https://www.google.com/maps/search/?api=1&query={{ tournament.location|urlencode }}" target="_blank" class="btn btn-outline-primary btn-sm w-auto" style="margin-top: 10px; width: 100% !important; display: block; text-align: center;">Get Directions</a>
             {% endif %}
         </div>
 
@@ -267,12 +239,10 @@
             {% if tournament.status != 'Completed' %}
             <div class="card">
                 <h4 class="card-header">Tournament Management</h4>
-                <div class="d-flex flex-column gap-2">
-                    <form action="{{ url_for('tournament.complete_tournament', tournament_id=tournament.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to complete this tournament? This will notify all participants of the final results.');">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-danger">Complete Tournament</button>
-                    </form>
-                </div>
+                <form action="{{ url_for('tournament.complete_tournament', tournament_id=tournament.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to complete this tournament? This will notify all participants of the final results.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger" style="margin-top: 10px; width: 100%;">Complete Tournament</button>
+                </form>
             </div>
 
             <div class="card">
@@ -282,7 +252,7 @@
                     <div class="form-group">
                         {{ invite_form.user_id(class="form-input") }}
                     </div>
-                    <button type="submit" class="btn btn-primary">Invite</button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Invite</button>
                 </form>
             </div>
 
@@ -298,7 +268,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary">Invite All Members</button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Invite All Members</button>
                 </form>
             </div>
             {% endif %}
@@ -324,30 +294,27 @@
 
                 <div class="form-group">
                     <label class="form-label">Search Partner</label>
-                    <div class="position-relative">
-                        <input type="text" id="partnerSearch" class="form-input" placeholder="Type username..." autocomplete="off">
-                        <div id="searchResults" class="search-results-dropdown" style="display:none; position:absolute; background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; z-index: 100; max-height: 200px; overflow-y: auto; box-shadow: var(--shadow-md); border-radius: var(--radius-md);"></div>
-                    </div>
+                    <input type="text" id="partnerSearch" class="form-input" placeholder="Type username..." autocomplete="off">
+                    <div id="searchResults" class="search-results-dropdown" style="display:none; position:absolute; background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; z-index: 100; max-height: 200px; overflow-y: auto;"></div>
                 </div>
 
                 <input type="hidden" name="partner_id" id="selectedPartnerId">
 
-                <div id="selectedPartnerDisplay" style="margin-bottom: 20px; display: none;">
-                    <div class="d-flex align-items-center gap-2 p-2 rounded" style="background: var(--bg-primary);">
-                        <span class="fs-xs fw-bold">Selected:</span>
-                        <span class="badge badge-info" id="selectedPartnerName"></span>
-                        <button type="button" class="btn-close fs-xxs ml-auto" onclick="clearSelectedPartner()">×</button>
-                    </div>
+                <div id="selectedPartnerDisplay" style="margin-bottom: 15px; display: none;">
+                    <span class="badge badge-info">Selected: <span id="selectedPartnerName"></span></span>
                 </div>
 
-                <button type="submit" class="btn btn-volt mb-4">Send Partnership Invite</button>
+                <button type="submit" class="btn btn-primary btn-block">Send Partnership Invite</button>
             </form>
 
-            <div class="text-center pt-3 border-top">
-                <p class="text-muted small mb-3">Can't find them? Share a registration link:</p>
-                <button type="button" class="btn btn-outline-primary" onclick="handleNativeShare('{{ url_for('.view_tournament', tournament_id=tournament.id, _external=True) }}', 'Join my team in {{ tournament.name }}!')">
-                    <i class="fas fa-share-alt mr-2"></i> Share Invite Link
-                </button>
+            <hr style="margin: 20px 0;">
+
+            <div class="text-center">
+                <p class="text-muted small">Can't find them? Send an invite link:</p>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="generateInviteLink()">🔗 Generate Invite Link</button>
+                <div id="inviteLinkContainer" style="display:none; margin-top: 10px;">
+                    <input type="text" id="inviteLinkInput" class="form-input" readonly>
+                </div>
             </div>
         </div>
     </div>
@@ -355,51 +322,26 @@
 
 <style>
 .search-results-dropdown .search-item {
-    padding: 12px;
+    padding: 10px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid var(--border-color);
+    gap: 10px;
 }
-.search-results-dropdown .search-item:last-child { border-bottom: none; }
 .search-results-dropdown .search-item:hover {
-    background: var(--bg-primary);
+    background: var(--bg-hover);
 }
 .search-item img {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
 }
-
-.tabs {
-    display: flex;
-    gap: 24px;
-    border-bottom: 1px solid var(--border-color);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.tab-btn {
+.btn-close {
     background: none;
     border: none;
-    padding: 12px 0;
-    color: var(--text-secondary);
+    font-size: 1.5rem;
     cursor: pointer;
-    border-bottom: 3px solid transparent;
-    font-weight: 500;
-    white-space: nowrap;
-    transition: all 0.2s;
-}
-
-.tab-btn.active {
-    color: var(--text-primary) !important;
-    border-bottom-color: var(--color-volt) !important;
-    font-weight: 700 !important;
-}
-
-@media (max-width: 768px) {
-    .hero-stats-card h1 { font-size: 2.25rem !important; }
+    color: var(--text-muted);
 }
 </style>
 
@@ -407,20 +349,6 @@
 
 {% block scripts %}
 <script>
-function openTab(evt, tabName) {
-    var i, tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("tab-content");
-    for (i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-    }
-    tablinks = document.getElementsByClassName("tab-btn");
-    for (i = 0; i < tablinks.length; i++) {
-        tablinks[i].classList.remove("active");
-    }
-    document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.classList.add("active");
-}
-
 function openPartnerModal() {
     document.getElementById('selectPartnerModal').classList.add('show');
 }
@@ -429,82 +357,81 @@ function closePartnerModal() {
     document.getElementById('selectPartnerModal').classList.remove('show');
 }
 
-function clearSelectedPartner() {
-    document.getElementById('selectedPartnerId').value = '';
-    document.getElementById('selectedPartnerDisplay').style.display = 'none';
-    document.getElementById('partnerSearch').value = '';
-}
-
-async function handleNativeShare(url, title) {
-    const shareData = {
-        title: title,
-        text: `Join my team for the ${title} tournament on Pickaladder!`,
-        url: url
-    };
-
-    if (navigator.share) {
-        try {
-            await navigator.share(shareData);
-        } catch (err) {
-            console.log('Error sharing:', err);
-        }
-    } else {
-        // Fallback to clipboard
-        try {
-            await navigator.clipboard.writeText(url);
-            if (typeof showToast === 'function') {
-                showToast("Invite link copied to clipboard!", "success");
-            } else {
-                alert("Invite link copied to clipboard!");
-            }
-        } catch (err) {
-            console.error('Failed to copy: ', err);
-        }
-    }
-}
-
 const partnerSearch = document.getElementById('partnerSearch');
 const searchResults = document.getElementById('searchResults');
 const selectedPartnerId = document.getElementById('selectedPartnerId');
 const selectedPartnerDisplay = document.getElementById('selectedPartnerDisplay');
 const selectedPartnerName = document.getElementById('selectedPartnerName');
 
-if (partnerSearch) {
-    partnerSearch.addEventListener('input', function() {
-        const q = this.value;
-        if (q.length < 2) {
-            searchResults.style.display = 'none';
-            return;
-        }
+partnerSearch.addEventListener('input', function() {
+    const q = this.value;
+    if (q.length < 2) {
+        searchResults.style.display = 'none';
+        return;
+    }
 
-        fetch(`/user/api/search?q=${encodeURIComponent(q)}`)
-            .then(r => r.json())
-            .then(users => {
-                searchResults.innerHTML = '';
-                if (users.length === 0) {
-                    searchResults.innerHTML = '<div class="search-item">No users found</div>';
-                } else {
-                    users.forEach(u => {
-                        const div = document.createElement('div');
-                        div.className = 'search-item';
-                        div.innerHTML = `<img src="${u.avatar}" onerror="this.onerror=null;this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
-                        div.onclick = () => {
-                            selectedPartnerId.value = u.id;
-                            selectedPartnerName.innerText = u.name;
-                            selectedPartnerDisplay.style.display = 'block';
-                            searchResults.style.display = 'none';
-                            partnerSearch.value = '';
-                        };
-                        searchResults.appendChild(div);
-                    });
-                }
-                searchResults.style.display = 'block';
-            });
-    });
+    fetch(`/user/api/search?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(users => {
+            searchResults.innerHTML = '';
+            if (users.length === 0) {
+                searchResults.innerHTML = '<div class="search-item">No users found</div>';
+            } else {
+                users.forEach(u => {
+                    const div = document.createElement('div');
+                    div.className = 'search-item';
+                    div.innerHTML = `<img src="${u.avatar}" onerror="this.src='/static/user_icon.png'"> <span>${u.name}</span>`;
+                    div.onclick = () => {
+                        selectedPartnerId.value = u.id;
+                        selectedPartnerName.innerText = u.name;
+                        selectedPartnerDisplay.style.display = 'block';
+                        searchResults.style.display = 'none';
+                        partnerSearch.value = '';
+                    };
+                    searchResults.appendChild(div);
+                });
+            }
+            searchResults.style.display = 'block';
+        });
+});
 
-    document.addEventListener('click', function(e) {
-        if (!partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
-            searchResults.style.display = 'none';
+document.addEventListener('click', function(e) {
+    if (!partnerSearch.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.style.display = 'none';
+    }
+});
+
+function generateInviteLink() {
+    const teamNameInput = document.querySelector('input[name="team_name"]');
+    const teamName = teamNameInput ? teamNameInput.value : '';
+    if (!teamName) {
+        alert('Please enter a team name first.');
+        return;
+    }
+
+    fetch("{{ url_for('tournament.register_team', tournament_id=tournament.id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            team_name: teamName,
+            partner_id: null
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const container = document.getElementById('inviteLinkContainer');
+            const input = document.getElementById('inviteLinkInput');
+            input.value = data.link;
+            container.style.display = 'block';
+            input.select();
+            document.execCommand('copy');
+            alert('Invite link generated and copied to clipboard!');
+        } else {
+            alert('Error: ' + data.error);
         }
     });
 }

@@ -3,183 +3,60 @@
 {% block title %}Create Tournament{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 800px; margin: 0 auto;">
+<div class="card" style="max-width: 600px; margin: 0 auto;">
     <div class="card-header">
         <h2>Create Tournament</h2>
     </div>
     <div class="card-body">
-        <!-- Template Selector -->
-        <div class="form-group mb-4">
-            <label for="template-selector" class="form-label fw-bold">Select Template (Pre-fill)</label>
-            <select id="template-selector" class="form-input" onchange="applyTemplate(this.value)">
-                <option value="">-- Choose a template --</option>
-                <option value="round_robin">Standard Round Robin</option>
-                <option value="single_elim">Single Elim Smash</option>
-                <option value="family_ladder">Family Ladder</option>
-            </select>
-            <small class="text-muted" id="template-description">Select a template to auto-populate common rules and formats.</small>
-        </div>
-
-        <hr class="mb-4">
-
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST">
             {{ form.csrf_token }}
-
             <div class="form-group">
                 {{ form.name.label(class="form-label") }}
-                {{ form.name(class="form-input", placeholder="Summer Smash 2024") }}
+                {{ form.name(class="form-input") }}
                 {% if form.name.errors %}
                     {% for error in form.name.errors %}
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
                 {% endif %}
             </div>
-
             <div class="form-group">
-                {{ form.banner.label(class="form-label") }}
-                <div class="file-upload-wrapper">
-                    <label class="file-upload-button">
-                        <i class="fas fa-cloud-upload-alt"></i> Choose Image...
-                        {{ form.banner(class="file-upload-input", onchange="updateFileName(this)") }}
-                    </label>
-                    <span id="file-name-display" class="file-name-text">No file chosen</span>
-                </div>
-                <small class="text-muted">Recommended: 16:9 aspect ratio.</small>
-                {% if form.banner.errors %}
-                    {% for error in form.banner.errors %}
+                {{ form.date.label(class="form-label") }}
+                {{ form.date(class="form-input", type="date") }}
+                {% if form.date.errors %}
+                    {% for error in form.date.errors %}
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
                 {% endif %}
             </div>
-
-            <div class="grid-2-col-responsive">
-                <div class="form-group">
-                    {{ form.start_date.label(class="form-label") }}
-                    {{ form.start_date(class="form-input", type="date") }}
-                    {% if form.start_date.errors %}
-                        {% for error in form.start_date.errors %}
-                            <span class="text-danger">{{ error }}</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                <div class="form-group">
-                    {{ form.venue_name.label(class="form-label") }}
-                    {{ form.venue_name(class="form-input", placeholder="Central Park Courts") }}
-                    {% if form.venue_name.errors %}
-                        {% for error in form.venue_name.errors %}
-                            <span class="text-danger">{{ error }}</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-            </div>
-
             <div class="form-group">
-                {{ form.address.label(class="form-label") }}
-                {{ form.address(class="form-input", placeholder="123 Park Lane, New York, NY") }}
-                <small class="text-muted">This will generate a 'Get Directions' link for players.</small>
-                {% if form.address.errors %}
-                    {% for error in form.address.errors %}
+                {{ form.location.label(class="form-label") }}
+                {{ form.location(class="form-input") }}
+                {% if form.location.errors %}
+                    {% for error in form.location.errors %}
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
                 {% endif %}
             </div>
-
-            <div class="grid-2-col-responsive">
-                <div class="form-group">
-                    {{ form.match_type.label(class="form-label") }}
-                    <div class="segmented-control">
-                        {% for subfield in form.match_type %}
-                            {{ subfield(class="visually-hidden") }}
-                            <label for="{{ subfield.id }}" class="segmented-item">
-                                {% if subfield.data == 'SINGLES' %}
-                                    <i class="fas fa-user small"></i>
-                                {% else %}
-                                    <i class="fas fa-users small"></i>
-                                {% endif %}
-                                {{ subfield.label.text }}
-                            </label>
-                        {% endfor %}
-                    </div>
-                    {% if form.match_type.errors %}
-                        {% for error in form.match_type.errors %}
-                            <span class="text-danger">{{ error }}</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                <div class="form-group">
-                    {{ form.format.label(class="form-label") }}
-                    {{ form.format(class="form-input") }}
-                    {% if form.format.errors %}
-                        {% for error in form.format.errors %}
-                            <span class="text-danger">{{ error }}</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-            </div>
-
             <div class="form-group">
-                {{ form.description.label(class="form-label") }}
-                {{ form.description(class="form-input", rows="5", placeholder="Rules, schedule, and other details...") }}
-                {% if form.description.errors %}
-                    {% for error in form.description.errors %}
+                {{ form.mode.label(class="form-label") }}
+                <div class="radio-group" style="display: flex; gap: 20px; padding: 10px 0;">
+                    {% for subfield in form.mode %}
+                        <label class="radio-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            {{ subfield }}
+                            <span>{{ subfield.label.text }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+                {% if form.mode.errors %}
+                    {% for error in form.mode.errors %}
                         <span class="text-danger">{{ error }}</span>
                     {% endfor %}
                 {% endif %}
             </div>
-
-            <div class="form-actions mt-4 grid-2-col-responsive">
-                <button type="submit" class="btn btn-volt">Create Tournament</button>
-                <a href="{{ url_for('tournament.list_tournaments') }}" class="btn btn-secondary" style="line-height: 2.5;">Cancel</a>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-block">Create Tournament</button>
             </div>
         </form>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-const tournamentTemplates = {
-    "round_robin": {
-        "description": "Everyone plays everyone. Best for competitive league play.",
-        "match_type": "SINGLES",
-        "format": "ROUND_ROBIN"
-    },
-    "single_elim": {
-        "description": "Win or go home. Standard bracket tournament.",
-        "match_type": "SINGLES",
-        "format": "SINGLE_ELIMINATION"
-    },
-    "family_ladder": {
-        "description": "Casual doubles play for families. Round Robin format.",
-        "match_type": "DOUBLES",
-        "format": "ROUND_ROBIN"
-    }
-};
-
-function applyTemplate(templateKey) {
-    const template = tournamentTemplates[templateKey];
-    if (!template) {
-        document.getElementById('template-description').textContent = "Select a template to auto-populate common rules and formats.";
-        return;
-    }
-
-    document.getElementById('template-description').textContent = template.description;
-
-    // Set match_type (segmented control)
-    const matchTypeInputs = document.getElementsByName('match_type');
-    matchTypeInputs.forEach(input => {
-        if (input.value === template.match_type) {
-            input.checked = true;
-        }
-    });
-
-    // Set format (select)
-    document.getElementById('format').value = template.format;
-}
-
-function updateFileName(input) {
-    const fileName = input.files[0] ? input.files[0].name : 'No file chosen';
-    document.getElementById('file-name-display').textContent = fileName;
-}
-</script>
 {% endblock %}
