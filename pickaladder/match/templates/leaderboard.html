@@ -20,7 +20,7 @@
                     <a href="{{ url_for('user.view_user', user_id=player.id) }}">
                         <img src="{{ player | avatar_url }}" alt="{{ player.username }}" class="avatar podium-avatar">
                     </a>
-                    <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="podium-name">
+                    <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="podium-name" data-testid="player-name">
                         {{ player.name if player.name else player.username }}
                     </a>
                     <div class="podium-stats">
@@ -79,7 +79,7 @@
                             <td data-label="Player">
                                 <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="d-flex align-items-center color-inherit text-none">
                                     <img src="{{ player | avatar_url }}" class="avatar avatar-sm mr-2" alt="Avatar">
-                                    <span class="fw-bold">{{ player.name if player.name else player.username }}</span>
+                                    <span class="fw-bold" data-testid="player-name">{{ player.name if player.name else player.username }}</span>
                                 </a>
                             </td>
                             <td data-label="Win %" class="text-right">{{ "%.1f"|format(player.win_percentage) }}%</td>
