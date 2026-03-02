@@ -118,16 +118,48 @@ body {
     object-fit: cover;
 }
 
+/* --- Desktop Bleed Fixes --- */
+.competition-stack, .tournament-card {
+    max-width: 100%;
+}
+
 /* --- Mobile Responsiveness --- */
 
 @media screen and (max-width: 992px) {
     .dashboard-columns {
-        /* Collapse the grid into a single column on mobile */
-        grid-template-columns: 1fr;
+        /* Strictly enforce column mode on mobile */
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 24px !important;
+    }
+
+    .dashboard-column-left,
+    .dashboard-column-right {
+        width: 100% !important;
+        max-width: 100%;
     }
     
     .dashboard-column-right {
         order: -1; /* Move social/competitions to top for mobile users */
+    }
+
+    .hero-stats-card {
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .hero-left-panel,
+    .hero-middle-panel,
+    .hero-right-panel {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .hero-right-panel .btn-volt {
+        width: 100%;
+        min-width: 250px;
     }
     
     .navbar-menu { 
