@@ -276,6 +276,33 @@
                 }
             });
 
+        function getDisplayName(user) {
+            if (!user) return "Unknown Player";
+
+            const userId = user.id || user.uid || "";
+            const username = user.username || "";
+            const name = user.name || "";
+            const displayName = user.display_name || "";
+
+            const isGhostValue = (v) => typeof v === 'string' && v.startsWith('ghost_');
+
+            // Robust ghost detection: check flag, ID, or username for "ghost_" prefix
+            const isGhost = user.is_ghost === true ||
+                            isGhostValue(userId) ||
+                            isGhostValue(username);
+
+            if (isGhost) {
+                // If it's a ghost but has a valid name/display name, use that.
+                // Otherwise, fallback to "Guest Player".
+                if (name && !isGhostValue(name)) return name;
+                if (displayName && !isGhostValue(displayName)) return displayName;
+                return "Guest Player";
+            }
+
+            // For regular users, prefer Name -> Display Name -> Username -> Anonymous
+            return name || displayName || username || "Anonymous";
+        }
+
         function setupLoadMore(btn) {
             const historyList = document.getElementById('match-history-list');
             btn.addEventListener('click', function () {
@@ -314,49 +341,71 @@
         function renderMatchRow(match, currentUserId, isAdmin) {
             const isDoubles = match.match_type === 'doubles';
             let matchupHtml = '';
-            let userScore, oppScore;
+            let userScore = 0;
+            let oppScore = 0;
 
             if (isDoubles) {
-                const inTeam1 = match.player1.some(p => p.id === currentUserId);
+                // Ensure players are arrays
+                const team1 = Array.isArray(match.player1) ? match.player1 : [];
+                const team2 = Array.isArray(match.player2) ? match.player2 : [];
+
+                const inTeam1 = team1.some(p => (p.id || p.uid) === currentUserId);
                 let partner, opponentName;
+
                 if (inTeam1) {
-                    partner = match.player1[0].id === currentUserId ? match.player1[1] : match.player1[0];
-                    opponentName = match.team2_name;
-                    userScore = match.player1_score;
-                    oppScore = match.player2_score;
+                    partner = (team1[0].id || team1[0].uid) === currentUserId ? team1[1] : team1[0];
+                    opponentName = match.team2_name || "Opposing Team";
+                    userScore = match.player1_score || 0;
+                    oppScore = match.player2_score || 0;
                 } else {
-                    partner = match.player2[0].id === currentUserId ? match.player2[1] : match.player2[0];
-                    opponentName = match.team1_name;
-                    userScore = match.player2_score;
-                    oppScore = match.player1_score;
+                    partner = (team2[0].id || team2[0].uid) === currentUserId ? team2[1] : team2[0];
+                    opponentName = match.team1_name || "Opposing Team";
+                    userScore = match.player2_score || 0;
+                    oppScore = match.player1_score || 0;
                 }
-                matchupHtml = `<strong>You & ${partner.username}</strong> vs ${opponentName}`;
+
+                const partnerName = getDisplayName(partner);
+                matchupHtml = `<strong>You & ${partnerName}</strong> vs ${opponentName}`;
             } else {
-                const isP1 = match.player1.id === currentUserId;
+                const isP1 = match.player1 && (match.player1.id || match.player1.uid) === currentUserId;
                 let opponent;
+
                 if (isP1) {
                     opponent = match.player2;
-                    userScore = match.player1_score;
-                    oppScore = match.player2_score;
+                    userScore = match.player1_score || 0;
+                    oppScore = match.player2_score || 0;
                 } else {
                     opponent = match.player1;
-                    userScore = match.player2_score;
-                    oppScore = match.player1_score;
+                    userScore = match.player2_score || 0;
+                    oppScore = match.player1_score || 0;
                 }
-                matchupHtml = `<strong>You</strong> vs ${opponent.username}`;
+
+                const opponentName = getDisplayName(opponent);
+                matchupHtml = `<strong>You</strong> vs ${opponentName}`;
             }
 
-            const resultBadge = match.user_result === 'win' ?
-                '<span class="badge badge-volt rounded-circle w-28 h-28 lh-20">W</span>' :
-                '<span class="badge badge-danger rounded-circle w-28 h-28 lh-20">L</span>';
+            // Results badge using v0.10.0 styling (badge-volt, badge-danger)
+            let badgeClass = 'badge-secondary';
+            let badgeText = 'D';
+            if (match.user_result === 'win') {
+                badgeClass = 'badge-volt';
+                badgeText = 'W';
+            } else if (match.user_result === 'loss') {
+                badgeClass = 'badge-danger';
+                badgeText = 'L';
+            }
+            const resultBadge = `<span class="badge ${badgeClass} rounded-circle w-28 h-28 lh-20">${badgeText}</span>`;
 
+            // Tournament label
             let tournamentHtml = '';
             if (match.tournament_name) {
                 tournamentHtml = `<div class="text-muted small" style="margin-top: 4px;">🏆 ${match.tournament_name}</div>`;
             }
 
+            // Admin/Creator Edit link
             let editLinkHtml = '';
-            if ((match.created_by === currentUserId && !match.tournament_id) || isAdmin) {
+            const canEdit = (match.created_by === currentUserId && !match.tournament_id) || isAdmin;
+            if (canEdit) {
                 editLinkHtml = `
                     <a href="/match/edit/${match.id}" class="text-muted ml-2" title="Edit Match">
                         ✏️
@@ -364,18 +413,19 @@
                 `;
             }
 
-            // Date formatting
+            // Date display (supports raw objects or strings)
             let dateStr = match.date || 'Date N/A';
             if (typeof dateStr === 'string' && dateStr.includes(',')) {
                 try {
                     const d = new Date(dateStr);
                     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                    dateStr = months[d.getUTCMonths()] + ' ' + d.getUTCDate();
+                    dateStr = months[d.getUTCMonth()] + ' ' + d.getUTCDate();
                 } catch (e) {
                     // Fallback to original string
                 }
             }
 
+            // Final V0.10.0 .match-compact-row structure
             return `
                 <div class="list-group-item match-compact-row">
                     <div class="match-date-compact">${dateStr}</div>
