@@ -131,39 +131,19 @@ body {
 
 .dashboard-columns {
     display: flex;
-    flex-wrap: wrap; /* Allows columns to wrap on tablet/mobile */
+    flex-wrap: wrap;
     gap: 24px;
     align-items: flex-start;
 }
 
 .dashboard-column-left {
     flex: 1;
-    min-width: min(100%, 600px); /* Prevents cards from squishing the sidebar */
+    min-width: min(100%, 600px);
 }
 
 .dashboard-column-right {
-    flex: 0 0 var(--sidebar-width);
-    max-width: 100%;
+    flex: 0 0 350px;
 }
-
-
-
-/* --- Badge & Shape Fixes (The Oval Fix) --- */
-
-.rounded-circle {
-    border-radius: 50% !important;
-    display: inline-flex !important; /* Center text reliably */
-    align-items: center;
-    justify-content: center;
-    padding: 0 !important;
-    flex-shrink: 0; /* Prevents the circle from being squashed */
-    aspect-ratio: 1 / 1; /* Forces height to equal width */
-    text-align: center;
-}
-
-.w-28 { width: 28px !important; height: 28px !important; }
-.h-28 { height: 28px !important; }
-.lh-20 { line-height: 1 !important; }
 
 /* --- Grid Systems --- */
 
