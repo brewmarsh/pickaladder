@@ -82,7 +82,8 @@ class MatchRecordService:
         top_uids_with_counts = sorted(
             win_counts.items(), key=lambda x: x[1], reverse=True
         )[:limit]
-        top_uids = [uid for uid, _ in top_uids_with_counts]
+        top_win_map = dict(top_uids_with_counts)
+        top_uids = list(top_win_map.keys())
 
         # Bulk fetch user data
         u_refs = [db.collection("users").document(uid) for uid in top_uids]
@@ -97,7 +98,7 @@ class MatchRecordService:
                         "name": u_data.get("name") or u_data.get("username", "Unknown"),
                         "username": u_data.get("username"),
                         "profilePictureUrl": u_data.get("profilePictureUrl"),
-                        "weekly_wins": next(c for i, c in top_uids_with_counts if i == uid),
+                        "weekly_wins": top_win_map.get(uid, 0),
                     }
                 )
 
@@ -109,23 +110,25 @@ class MatchRecordService:
     def get_leaderboard_data(
         db: Client, limit: int = 50, min_games: int = GLOBAL_LEADERBOARD_MIN_GAMES
     ) -> list[User]:
-        """Fetch data for the global leaderboard."""
+        """Fetch data for the global leaderboard using cached statistics."""
         players: list[User] = []
         for u_snap in db.collection("users").stream():
             user_data = cast("User", u_snap.to_dict() or {})
             user_data["id"] = u_snap.id
-            record = MatchRecordService.get_player_record(
-                db, db.collection("users").document(u_snap.id)
-            )
 
-            games = record["wins"] + record["losses"]
+            # Use cached stats from the user document instead of querying matches
+            stats = user_data.get("stats", {})
+            wins = int(stats.get("wins", 0))
+            losses = int(stats.get("losses", 0))
+            games = wins + losses
+
             if games >= min_games:
                 user_data.update(
                     {
-                        "wins": record["wins"],
-                        "losses": record["losses"],
+                        "wins": wins,
+                        "losses": losses,
                         "games_played": games,
-                        "win_percentage": float((record["wins"] / games) * 100)
+                        "win_percentage": float((wins / games) * 100)
                         if games > 0
                         else 0.0,
                     }

@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     pass
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
 @login_required
 def edit_match(match_id: str) -> Any:
@@ -196,7 +195,6 @@ def _get_record_match_context(db: Any, t_id: str | None) -> dict[str, Any]:
     return {"tournament_name": t_name}
 
 
-# TODO: Add type hints for Agent clarity
 @bp.route("/history")
 @login_required
 def get_match_history() -> Any:

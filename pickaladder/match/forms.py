@@ -40,7 +40,6 @@ class MatchForm(FlaskForm):
     group_id = HiddenField("Group ID", validators=[OptionalValidator()])
     tournament_id = HiddenField("Tournament ID", validators=[OptionalValidator()])
 
-    # TODO: Add type hints for Agent clarity
     def validate_player1_score(self, field: Field) -> None:
         """Validate that the score is not negative."""
         if field.data is None:
@@ -48,7 +47,6 @@ class MatchForm(FlaskForm):
         if field.data < 0:
             raise ValidationError("Scores cannot be negative.")
 
-    # TODO: Add type hints for Agent clarity
     def validate_player2_score(self, field: Field) -> None:
         """Validate that the score is not negative."""
         if field.data is None:
@@ -74,7 +72,6 @@ class MatchForm(FlaskForm):
                 f"The winner must win by at least {MIN_WIN_MARGIN} points."
             )
 
-    # TODO: Add type hints for Agent clarity
     def validate(
         self, extra_validators: Optional[Sequence[Callable[..., Any]]] = None
     ) -> bool:
