@@ -77,7 +77,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     with page.expect_navigation():
         page.click("button:has-text('Add Friend')")
     # After reload, the user should be in the "Sent Friend Requests" section
-    expect(page.locator(".requests-section", has_text="admin")).to_be_visible(
+    expect(page.locator(".requests-section", has_text="Admin User")).to_be_visible(
         timeout=5000
     )
 
@@ -93,10 +93,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     # Accept Friend Request
     with page.expect_navigation():
         page.click("text=Community")
-    expect(page.locator(".incoming-requests-section", has_text="user2")).to_be_visible()
+    expect(page.locator(".incoming-requests-section", has_text="User Two")).to_be_visible()
     with page.expect_navigation():
         page.click("button:has-text('Accept')")
-    expect(page.locator(".friend-card", has_text="user2")).to_be_visible()
+    expect(page.locator(".friend-card", has_text="User Two")).to_be_visible()
 
     # 4. Create Group
     with page.expect_navigation():

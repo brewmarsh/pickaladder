@@ -28,7 +28,7 @@ class TestGhostDisplay(unittest.TestCase):
 
     def test_smart_display_name_ghost_no_email_no_name(self) -> None:
         user = {"username": "ghost_ceec6a"}
-        self.assertEqual(smart_display_name(user), "Pending Invite")
+        self.assertEqual(smart_display_name(user), "Guest Player")
 
     def test_smart_display_name_ghost_no_email_with_name(self) -> None:
         user = {"username": "ghost_ceec6a", "name": "John Doe"}
@@ -37,7 +37,8 @@ class TestGhostDisplay(unittest.TestCase):
 
     def test_smart_display_name_regular_user(self) -> None:
         user = {"username": "jdoe", "email": "jdoe@example.com", "name": "John Doe"}
-        self.assertEqual(smart_display_name(user), "jdoe")
+        # Now prioritizes name over username
+        self.assertEqual(smart_display_name(user), "John Doe")
 
 
 if __name__ == "__main__":
