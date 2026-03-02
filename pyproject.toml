@@ -62,7 +62,7 @@ dev = [
     "pytest-flask>=1.3.0",
     "pytest-playwright>=0.7.2",
     "ruff==0.15.2",
-    "bandit==1.9.3",
+    "bandit==1.9.4",
     "mypy==1.19.1",
     "Faker==40.5.1",
     "coverage==7.13.4",
