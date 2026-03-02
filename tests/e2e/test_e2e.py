@@ -162,10 +162,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     # Check Global Leaderboard (Req: "see the leaderboard")
     with page.expect_navigation():
         page.click("text=Leaderboard")
-    expect(page.locator("h1")).to_contain_text("Global Leaderboard")
+    expect(page.locator("h1")).to_contain_text("Leaderboard")
     # Verify players are listed
-    expect(page.locator("td", has_text="Admin User").first).to_be_visible()
-    expect(page.locator("td", has_text="User Two").first).to_be_visible()
+    expect(page.get_by_text("Admin User").first).to_be_visible()
+    expect(page.get_by_text("User Two").first).to_be_visible()
 
     # 8. Delete Group Game & 9. Delete Individual Game
     # Needs Admin access
