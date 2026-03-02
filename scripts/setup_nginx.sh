@@ -11,4 +11,4 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 # 4. Run Certbot to obtain SSL certificates
-sudo certbot --nginx -d app.pickaladder.com -d pickaladder.com -d www.pickaladder.com
+sudo certbot --nginx -d app.pickaladder.io -d www.app.pickaladder.io
