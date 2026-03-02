@@ -1,4 +1,4 @@
-/* pickaladder - layout.css (v0.10.1 Refactored) */
+/* pickaladder - layout.css (v0.10.2 Final Layout Fix) */
 
 :root {
     --sidebar-width: 350px;
@@ -11,7 +11,7 @@ body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     line-height: 1.6;
-    overflow-x: hidden; /* Prevent horizontal scroll "ghosting" */
+    overflow-x: hidden; 
 }
 
 .container {
@@ -75,74 +75,21 @@ body {
     gap: 15px;
 }
 
-/* Dropdown Styles */
-.dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.dropbtn {
-    background-color: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    border-radius: 50%;
-}
-
-.dropdown-content {
-    display: none;
-    position: absolute;
-    right: 0;
-    background-color: var(--card-bg);
-    min-width: 220px;
-    box-shadow: var(--shadow-lg);
-    z-index: 1000;
-    border-radius: var(--radius-md);
-    padding: 0;
-    overflow: hidden;
-}
-
-.dropdown-content a {
-    color: var(--text-primary);
-    padding: 12px 16px;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    font-size: 14px;
-    transition: background-color 0.2s;
-}
-
-.dropdown-content a:hover {
-    background-color: var(--bg-color);
-}
-
-.dropdown-divider {
-    height: 1px;
-    margin: 4px 0;
-    overflow: hidden;
-    background-color: var(--border-color);
-}
-
-.dropdown:hover .dropdown-content {
-    display: block;
-}
-
-/* --- Dashboard Column System --- */
+/* --- Dashboard Column System (Refactored to Grid) --- */
 
 .dashboard-columns {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    /* Forces columns into specific tracks: Feed gets the rest, Sidebar gets exactly 350px */
+    grid-template-columns: 1fr var(--sidebar-width);
     gap: 24px;
     align-items: flex-start;
 }
 
-.dashboard-column-left {
-    flex: 1;
-    min-width: min(100%, 600px);
-}
-
+.dashboard-column-left, 
 .dashboard-column-right {
-    flex: 0 0 350px;
+    /* Critical: prevents children (like wide cards) from shoving the column wider than its track */
+    min-width: 0; 
+    width: 100%;
 }
 
 /* --- Grid Systems --- */
@@ -174,12 +121,12 @@ body {
 
 @media screen and (max-width: 992px) {
     .dashboard-columns {
-        flex-direction: column;
+        /* Collapse the grid into a single column on mobile */
+        grid-template-columns: 1fr;
     }
     
     .dashboard-column-right {
-        width: 100%;
-        order: -1; /* Move profile/social to the top for mobile users */
+        order: -1; /* Move social/competitions to top for mobile users */
     }
     
     .navbar-menu { 
