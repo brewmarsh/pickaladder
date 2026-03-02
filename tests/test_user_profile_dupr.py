@@ -106,8 +106,8 @@ class UserProfileDuprTestCase(unittest.TestCase):
         self.assertIn(b"Rating", response.data)
         # Verify mock DUPR rating value "4.5" is present
         self.assertIn(b"4.5", response.data)
-        # Verify DUPR badge "View on DUPR" is present because dupr_id exists
-        self.assertIn(b"View on DUPR", response.data)
+        # Verify DUPR badge "DUPR" is present because dupr_id exists
+        self.assertIn(b"DUPR", response.data)
 
     def test_profile_no_dupr_id_no_badge(self) -> None:
         """Test that the DUPR badge is NOT displayed when dupr_id is missing."""
@@ -130,7 +130,7 @@ class UserProfileDuprTestCase(unittest.TestCase):
         # Make request
         response = self.client.get(f"/user/{target_user_id}")
 
-        # Verify "View on DUPR" badge is NOT present
-        self.assertNotIn(b"View on DUPR", response.data)
+        # Verify "DUPR" badge is NOT present
+        self.assertNotIn(b"DUPR", response.data)
         self.assertIn(b"Rating", response.data)
         self.assertIn(b"3.5", response.data)

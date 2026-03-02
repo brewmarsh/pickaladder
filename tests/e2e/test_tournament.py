@@ -51,13 +51,14 @@ def test_tournament_flow(
     expect(page.locator(".badge-warning", has_text="Active")).to_be_visible()
 
     # Create a friend to verify the Invite dropdown
+    import datetime
     friend_id = "friend_user"
     mock_db.collection("users").document(friend_id).set(
         {
             "username": "friend_user",
             "email": "friend@example.com",
             "name": "Friend User",
-            "createdAt": "2023-01-01T00:00:00",
+            "createdAt": datetime.datetime(2023, 1, 1),
         }
     )
     mock_db.collection("users").document("admin").collection("friends").document(

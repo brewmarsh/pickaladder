@@ -270,7 +270,7 @@ class TournamentRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_db.collection("tournaments").add(
             {
                 "name": "Test Tournament",
-                "date": "2024-06-01",
+                "date": datetime.datetime(2024, 6, 1),
                 "location": "Courtside",
                 "matchType": "singles",
                 "ownerRef": user_ref,

@@ -11,6 +11,8 @@ def seeded_data(mock_db: Any) -> str:
     # Clear and seed data
     mock_db._data = {}
 
+    import datetime
+
     # Create a user
     user_id: str = "testuser"
     user_data: dict[str, Any] = {
@@ -20,7 +22,7 @@ def seeded_data(mock_db: Any) -> str:
         "name": "Test User",
         "dark_mode": False,
         "isAdmin": True,
-        "createdAt": "2023-01-01T00:00:00",
+        "createdAt": datetime.datetime(2023, 1, 1),
     }
     mock_db.collection("users").document(user_id).set(user_data)
 
@@ -31,7 +33,7 @@ def seeded_data(mock_db: Any) -> str:
         "description": "A group for pros",
         "ownerRef": mock_db.collection("users").document(user_id),
         "is_public": True,
-        "createdAt": "2023-01-01T00:00:00",
+        "createdAt": datetime.datetime(2023, 1, 1),
         "member_count": 5,
         "members": [mock_db.collection("users").document(user_id)],
     }
@@ -50,11 +52,11 @@ def seeded_data(mock_db: Any) -> str:
     tournament_id: str = "tourney1"
     tournament_data: dict[str, Any] = {
         "name": "Summer Open",
-        "date": "2023-07-01",
+        "date": datetime.datetime(2023, 7, 1),
         "location": "Central Park",
         "matchType": "doubles",
         "ownerRef": mock_db.collection("users").document(user_id),
-        "createdAt": "2023-01-01T00:00:00",
+        "createdAt": datetime.datetime(2023, 1, 1),
     }
     mock_db.collection("tournaments").document(tournament_id).set(tournament_data)
 
