@@ -354,3 +354,13 @@
 .upset-mini-badge {
     font-size: 0.75rem;
 }
+
+/* Base Shapes */
+.match-score-badge-compact .badge.rounded-circle {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
