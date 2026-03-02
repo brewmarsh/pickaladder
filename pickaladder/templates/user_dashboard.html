@@ -277,7 +277,7 @@
             });
 
         function setupLoadMore(btn) {
-            const tbody = document.getElementById('match-history-tbody');
+            const historyList = document.getElementById('match-history-list');
             btn.addEventListener('click', function () {
                 const cursor = btn.getAttribute('data-cursor');
                 btn.disabled = true;
@@ -289,7 +289,7 @@
                         if (data.matches && data.matches.length > 0) {
                             data.matches.forEach(match => {
                                 const rowHtml = renderMatchRow(match, currentUserId, isAdmin);
-                                tbody.insertAdjacentHTML('beforeend', rowHtml);
+                                historyList.insertAdjacentHTML('beforeend', rowHtml);
                             });
 
                             if (data.next_cursor) {
@@ -347,8 +347,8 @@
             }
 
             const resultBadge = match.user_result === 'win' ?
-                '<span class="badge badge-success">W</span>' :
-                '<span class="badge badge-danger">L</span>';
+                '<span class="badge badge-volt rounded-circle w-28 h-28 lh-20">W</span>' :
+                '<span class="badge badge-danger rounded-circle w-28 h-28 lh-20">L</span>';
 
             let tournamentHtml = '';
             if (match.tournament_name) {
@@ -358,7 +358,7 @@
             let editLinkHtml = '';
             if ((match.created_by === currentUserId && !match.tournament_id) || isAdmin) {
                 editLinkHtml = `
-                    <a href="/match/edit/${match.id}" class="text-muted" title="Edit Match">
+                    <a href="/match/edit/${match.id}" class="text-muted ml-2" title="Edit Match">
                         ✏️
                     </a>
                 `;
@@ -377,19 +377,18 @@
             }
 
             return `
-                <tr>
-                    <td class="text-muted" data-label="Date">${dateStr}</td>
-                    <td data-label="Matchup">${matchupHtml}</td>
-                    <td data-label="Result">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                ${resultBadge} ${userScore} - ${oppScore}
-                                ${tournamentHtml}
-                            </div>
-                            ${editLinkHtml}
-                        </div>
-                    </td>
-                </tr>
+                <div class="list-group-item match-compact-row">
+                    <div class="match-date-compact">${dateStr}</div>
+                    <div class="match-info-compact">
+                        ${matchupHtml}
+                        ${tournamentHtml}
+                    </div>
+                    <div class="match-score-badge-compact">
+                        <span>${userScore} - ${oppScore}</span>
+                        ${resultBadge}
+                        ${editLinkHtml}
+                    </div>
+                </div>
             `;
         }
     });
