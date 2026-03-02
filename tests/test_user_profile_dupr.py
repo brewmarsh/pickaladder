@@ -68,9 +68,7 @@ class UserProfileDuprTestCase(unittest.TestCase):
         self.mock_db.collection.return_value.document.side_effect = document_side_effect
 
         # Mock friends query
-        self.mock_db.collection.return_value.document.return_value.collection.return_value.where.return_value.limit.return_value.stream.return_value = (
-            []
-        )
+        self.mock_db.collection.return_value.document.return_value.collection.return_value.where.return_value.limit.return_value.stream.return_value = []
 
         # Mock matches queries
         self.mock_db.collection("matches").where.return_value.stream.return_value = []
