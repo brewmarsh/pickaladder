@@ -103,7 +103,7 @@
                             </div>
                             <div class="stat-label text-muted fs-xxs text-uppercase ls-1">
                                 Rating
-                                {% if not profile_user.dupr_id %}
+                                {% if not profile_user.dupr_id and user.uid == profile_user.id %}
                                 <br><a href="{{ url_for('user.edit_profile') }}" class="small">Add DUPR ID</a>
                                 {% endif %}
                             </div>
@@ -130,7 +130,7 @@
                             class="btn btn-volt btn-block mb-2">Record Match</a>
                         {% endif %}
 
-                        {% if not is_friend and not friend_request_sent and user.id != profile_user.id %}
+                        {% if not is_friend and not friend_request_sent and user.uid != profile_user.id %}
                         <button class="btn btn-volt btn-block mb-2" id="addFriendBtn"
                             data-url="{{ url_for('user.send_friend_request', friend_id=profile_user.id) }}"
                             data-csrf="{{ csrf_token() }}">Add Friend</button>
