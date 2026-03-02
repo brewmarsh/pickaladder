@@ -102,7 +102,8 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         details = TournamentService.get_tournament_details(t_id, uid, db)
         if not details:
             raise ValueError("Tournament not found.")
-        # details['tournament'] is now a Tournament model, but we need dict for form populate usually
+        # details['tournament'] is now a Tournament model, but we need dict for form
+        # populate usually
         # but Tournament is a UserDict, so it's fine.
         return cast(dict[str, Any], details["tournament"])
 
