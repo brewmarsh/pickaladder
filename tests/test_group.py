@@ -308,7 +308,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Groups</h1>", response.data)
         self.assertIn(
-            b"d-flex justify-content-between align-items-center mb-4", response.data
+            b"responsive-header-stack mb-4 page-header-actions", response.data
         )
         self.assertIn(b"btn btn-primary", response.data)
         self.assertIn(b"Create Group", response.data)

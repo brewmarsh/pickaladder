@@ -347,3 +347,41 @@ body .d-none { display: none !important; }
     white-space: nowrap !important;
     border: 0 !important;
 }
+
+/* --- Universal Responsive Utilities --- */
+.responsive-header-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+}
+
+.responsive-card-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+}
+
+.w-100-mobile {
+    width: 100% !important;
+}
+
+@media (min-width: 768px) {
+    .responsive-header-stack {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .responsive-card-stack {
+        flex-direction: row;
+        text-align: left;
+        align-items: center;
+    }
+
+    .w-100-mobile {
+        width: auto !important;
+    }
+}
