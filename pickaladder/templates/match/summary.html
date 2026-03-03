@@ -189,10 +189,10 @@
                 </div>
                 <div class="mt-4 text-center">
                     <div class="d-flex justify-content-center gap-2 mb-3">
-                        <button type="button" class="btn btn-outline-secondary btn-action" onclick="copyCard('matchShareCardContainer', this)">
+                        <button type="button" class="btn btn-outline-secondary btn-action" id="copyMatchCardBtn" onclick="handleShareClick('copyMatchCardBtn', 'matchShareCardContainer')">
                             <i class="fas fa-clipboard"></i> Copy Image
                         </button>
-                        <button type="button" class="btn btn-outline-secondary btn-action" onclick="downloadCard('matchShareCardContainer', 'match-card.png')">
+                        <button type="button" class="btn btn-outline-secondary btn-action" onclick="downloadCard('matchShareCardContainer', 'match-card.png', this)">
                             <i class="fas fa-download"></i> Download
                         </button>
                     </div>
@@ -214,19 +214,7 @@
 </style>
 
 <script>
-    async function copyCard(containerId, buttonEl) {
-        const original = showButtonSpinner(buttonEl);
-        try {
-            const canvas = await captureElement(containerId);
-            hideButtonSpinner(buttonEl, original);
-            await copyCanvasToClipboard(canvas, buttonEl);
-        } catch (err) {
-            console.error('Capture failed:', err);
-            hideButtonSpinner(buttonEl, original);
-        }
-    }
-
-    async function downloadCard(containerId, filename) {
+    async function downloadCard(containerId, filename, buttonEl) {
         const original = showButtonSpinner(buttonEl);
         try {
             const canvas = await captureElement(containerId);
