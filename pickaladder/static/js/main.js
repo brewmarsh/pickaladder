@@ -141,10 +141,39 @@ function handleFlashMessages() {
 }
 
 /**
+ * Handles the "Share" button click: shows a loading state, captures the element,
+ * and copies the resulting image to the clipboard.
+ * @param {string} buttonId - The ID of the button that was clicked.
+ * @param {string} targetElementId - The ID of the element to capture as an image.
+ */
+async function handleShareClick(buttonId, targetElementId) {
+    const buttonEl = document.getElementById(buttonId);
+    if (!buttonEl) return;
+
+    const originalHTML = buttonEl.innerHTML;
+    buttonEl.disabled = true;
+    buttonEl.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...';
+
+    try {
+        const canvas = await captureElement(targetElementId);
+        await copyCanvasToClipboard(canvas, buttonEl, originalHTML);
+    } catch (err) {
+        console.error('Share failed:', err);
+        buttonEl.innerHTML = originalHTML;
+    } finally {
+        buttonEl.disabled = false;
+    }
+}
+
+/**
  * Copies a canvas image to the clipboard.
  * Optimized for Safari's asynchronous clipboard security model.
+ * @param {HTMLCanvasElement} canvas - The canvas to copy.
+ * @param {HTMLElement} buttonEl - Optional button element to show success state on.
+ * @param {string} originalHTML - Optional original HTML to restore after success.
+ * @returns {Promise<void>}
  */
-function copyCanvasToClipboard(canvas, buttonEl) {
+function copyCanvasToClipboard(canvas, buttonEl, originalHTML) {
     try {
         // Safari Fix: Instead of awaiting the blob, we pass a function that returns
         // a Promise for the blob directly into the ClipboardItem dictionary.
@@ -162,35 +191,41 @@ function copyCanvasToClipboard(canvas, buttonEl) {
             })
         });
 
-        navigator.clipboard.write([clipboardItem]).then(() => {
+        return navigator.clipboard.write([clipboardItem]).then(() => {
             if (typeof showToast === 'function') {
                 showToast("Image copied to clipboard!", "success");
             }
 
             if (buttonEl) {
-                const originalContent = buttonEl.innerHTML;
+                const contentToRestore = originalHTML || buttonEl.innerHTML;
                 buttonEl.innerHTML = '<i class="fas fa-check"></i> Copied!';
                 setTimeout(() => {
-                    buttonEl.innerHTML = originalContent;
+                    buttonEl.innerHTML = contentToRestore;
                 }, 2000);
             }
         }).catch(err => {
             console.error('Clipboard write failed, falling back to download:', err);
-            fallbackToDownload(canvas, buttonEl);
+            return fallbackToDownload(canvas, buttonEl, originalHTML);
         });
     } catch (err) {
         console.error('Clipboard API failed, falling back to download:', err);
-        fallbackToDownload(canvas, buttonEl);
+        return fallbackToDownload(canvas, buttonEl, originalHTML);
     }
 }
 
 /**
  * Fallback to downloading the image if clipboard write fails.
+ * @param {HTMLCanvasElement} canvas - The canvas to download.
+ * @param {HTMLElement} buttonEl - Optional button element to restore.
+ * @param {string} originalHTML - Optional original HTML to restore.
  */
-function fallbackToDownload(canvas, buttonEl) {
+function fallbackToDownload(canvas, buttonEl, originalHTML) {
     downloadCanvas(canvas, 'match-result.png');
     if (typeof showToast === 'function') {
         showToast("Saved image to your device!", "success");
+    }
+    if (buttonEl && originalHTML) {
+        buttonEl.innerHTML = originalHTML;
     }
 }
 
