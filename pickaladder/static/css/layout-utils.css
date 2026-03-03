@@ -1,6 +1,7 @@
 /* --- 0. Layout Utilities --- */
 .w-auto { width: auto !important; }
 .mx-auto { margin-left: auto !important; margin-right: auto !important; }
+.gap-3 { gap: 1rem !important; }
 .gap-4 { gap: 1.5rem !important; }
 .justify-content-center { justify-content: center !important; }
 .text-center { text-align: center !important; }

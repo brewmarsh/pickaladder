@@ -3,9 +3,9 @@
 {% block title %}Groups{% endblock %}
 {% block content %}
 <div class="container">
-    <div class="responsive-header-stack mb-4 page-header-actions">
+    <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-3 mb-4 page-header-actions">
         <h1>Groups</h1>
-        <a href="{{ url_for('group.create_group') }}" class="btn btn-primary w-100-mobile btn-action">
+        <a href="{{ url_for('group.create_group') }}" class="btn btn-primary w-100 w-md-auto btn-action">
             <i class="fas fa-plus-circle"></i> Create Group
         </a>
     </div>
