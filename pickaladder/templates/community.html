@@ -2,9 +2,9 @@
 {% from "components/_empty_state.html" import empty_state %}
 {% block title %}Community Hub{% endblock %}
 {% block content %}
-<div class="responsive-header-stack mb-4">
+<div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-3 mb-4">
     <h1 class="mb-0">Community Hub</h1>
-    <button id="invite-friend-btn" class="btn btn-primary w-100-mobile btn-action" data-csrf="{{ csrf_token() }}">
+    <button id="invite-friend-btn" class="btn btn-primary w-100 w-md-auto btn-action" data-csrf="{{ csrf_token() }}">
         <i class="fas fa-user-plus me-1"></i> Invite Friend
     </button>
 </div>
