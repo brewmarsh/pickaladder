@@ -396,3 +396,16 @@ body .d-none { display: none !important; }
         width: auto !important;
     }
 }
+
+/* --- Responsive Form Grid --- */
+.responsive-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+@media (min-width: 768px) {
+    .responsive-form-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
