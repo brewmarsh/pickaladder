@@ -16,35 +16,51 @@
             {{ form.match_type(class="form-control", onchange="toggleFields()") }}
         </div>
 
-        <div class="form-group">
-            {{ form.player1.label }}
-            {{ form.player1(class="form-control") }}
-        </div>
-        <div class="form-group" id="partner-group" style="display: none;">
-            {{ form.partner.label }}
-            {{ form.partner(class="form-control") }}
+        <div class="row">
+            <div class="col-12 col-md-6 mb-3">
+                <div class="form-group mb-0">
+                    {{ form.player1.label }}
+                    {{ form.player1(class="form-control") }}
+                </div>
+            </div>
+            <div class="col-12 col-md-6 mb-3">
+                <div class="form-group mb-0">
+                    <label id="player2-label" for="player2">Opponent</label>
+                    {{ form.player2(class="form-control") }}
+                </div>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label id="player1-score-label" for="player1_score">Your Score</label>
-            {{ form.player1_score(class="form-control") }}
+        <div class="row">
+            <div class="col-12 col-md-6 mb-3" id="partner-group" style="display: none;">
+                <div class="form-group mb-0">
+                    {{ form.partner.label }}
+                    {{ form.partner(class="form-control") }}
+                </div>
+            </div>
+            <div class="col-12 col-md-6 mb-3" id="opponent2-group" style="display: none;">
+                <div class="form-group mb-0">
+                    {{ form.opponent2.label }}
+                    {{ form.opponent2(class="form-control") }}
+                </div>
+            </div>
         </div>
 
         <hr>
 
-        <div class="form-group">
-            <label id="player2-label" for="player2">Opponent</label>
-            {{ form.player2(class="form-control") }}
-        </div>
-
-        <div class="form-group" id="opponent2-group" style="display: none;">
-            {{ form.opponent2.label }}
-            {{ form.opponent2(class="form-control") }}
-        </div>
-
-        <div class="form-group">
-            <label id="player2-score-label" for="player2_score">Opponent's Score</label>
-            {{ form.player2_score(class="form-control") }}
+        <div class="row mt-4">
+            <div class="col-6 text-center">
+                <div class="form-group">
+                    <label id="player1-score-label" for="player1_score" class="fw-bold fs-md">Your Score</label>
+                    {{ form.player1_score(class="form-control input-score-massive", inputmode="numeric", pattern="[0-9]*", placeholder="0") }}
+                </div>
+            </div>
+            <div class="col-6 text-center">
+                <div class="form-group">
+                    <label id="player2-score-label" for="player2_score" class="fw-bold fs-md">Opponent's Score</label>
+                    {{ form.player2_score(class="form-control input-score-massive", inputmode="numeric", pattern="[0-9]*", placeholder="0") }}
+                </div>
+            </div>
         </div>
 
         <hr>

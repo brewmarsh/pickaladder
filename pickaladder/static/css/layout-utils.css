@@ -98,6 +98,16 @@
     border-radius: var(--radius-md, 8px) !important;
 }
 
+/* --- 6c. Score Input Optimization --- */
+.input-score-massive {
+    font-size: 2rem !important;
+    text-align: center !important;
+    padding: 15px !important;
+    border-radius: var(--radius-lg) !important;
+    font-weight: var(--fw-bold, 700) !important;
+    height: auto !important;
+}
+
 /* Progress Bar */
 .progress {
     display: flex;
