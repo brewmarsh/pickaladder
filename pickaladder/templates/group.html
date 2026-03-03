@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block title %}{{ group.name }}{% endblock %}
 {% block content %}
-<div class="card hero-stats-card">
+<div class="card hero-stats-card responsive-card-stack">
     {% if group.ownerRef.id == g.user['uid'] %}
     <a href="{{ url_for('group.edit_group', group_id=group.id) }}" title="Group Settings" class="btn-edit-gear"
         data-testid="group-settings-btn">⚙️</a>
@@ -34,12 +34,12 @@
 
     <div class="hero-right-panel">
         {% if is_member %}
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-primary w-auto" data-toggle="modal"
+        <div class="d-flex flex-column flex-md-row gap-2 w-100-mobile">
+            <button type="button" class="btn btn-outline-primary w-100-mobile" data-toggle="modal"
                 data-target="#shareGroupModal">
                 <i class="fas fa-share-alt"></i> Share
             </button>
-            <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-volt w-auto">Record a Match</a>
+            <a href="{{ url_for('match.record_match', group_id=group.id) }}" class="btn btn-volt w-100-mobile">Record a Match</a>
         </div>
         {% endif %}
     </div>
