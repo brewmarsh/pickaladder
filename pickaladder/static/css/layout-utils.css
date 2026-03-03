@@ -120,12 +120,22 @@
 /* --- Responsive Flex Utilities --- */
 .flex-column { flex-direction: column !important; }
 .flex-row { flex-direction: row !important; }
+.flex-wrap { flex-wrap: wrap !important; }
+.flex-shrink-0 { flex-shrink: 0 !important; }
+
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-2 { margin-top: 0.5rem !important; }
+
+@media (min-width: 576px) {
+    .mt-sm-0 { margin-top: 0 !important; }
+}
 
 @media (min-width: 768px) {
     .flex-md-column { flex-direction: column !important; }
     .flex-md-row { flex-direction: row !important; }
     .w-md-auto { width: auto !important; }
     .align-items-md-center { align-items: center !important; }
+    .mt-md-0 { margin-top: 0 !important; }
 }
 
 .flex-grow-1 { flex-grow: 1 !important; }
