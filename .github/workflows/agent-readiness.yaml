@@ -50,7 +50,7 @@ jobs:
           TARGET_BRANCH="origin/${{ github.base_ref || 'main' }}"
           echo "Running Agent Scorecard against $TARGET_BRANCH..."
           
-          # Use --diff for PRs to focus on changes and limit to Python files to avoid analyzer bugs
+          # Use --diff for PRs to focus on changes and limit to Python files
           DIFF_ARG=""
           if [ "${{ github.event_name }}" == pull_request ]; then
             DIFF_ARG="--diff"

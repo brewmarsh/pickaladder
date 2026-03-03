@@ -67,6 +67,123 @@
     justify-content: center;
 }
 
+/* Match Results Card */
+.match-results-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.match-results-player {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.match-results-player.winner-glow::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(132, 204, 22, 0.2) 0%, rgba(132, 204, 22, 0) 70%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+.match-results-player .player-name {
+    font-weight: var(--fw-bold);
+    font-size: 1rem;
+    color: var(--text-primary);
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 8px;
+}
+
+.match-results-player .winner-crown {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+    color: #FFD700;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    z-index: 2;
+}
+
+.match-results-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+}
+
+.match-results-score .score-display {
+    font-family: var(--font-score);
+    font-size: 4rem;
+    font-weight: var(--fw-bold);
+    line-height: 1;
+    color: var(--text-primary);
+}
+
+.match-results-score .vs-divider {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: var(--fw-medium);
+    margin-top: -4px;
+}
+
+.border-volt {
+    border: 3px solid var(--accent-color) !important;
+}
+
+@media (max-width: 576px) {
+    .match-results-card {
+        padding: 16px 12px;
+        gap: 8px;
+    }
+    .match-results-score .score-display {
+        font-size: 3rem;
+    }
+    .match-results-player .player-name {
+        font-size: 0.85rem;
+    }
+    .match-results-player .avatar-lg {
+        width: 60px;
+        height: 60px;
+    }
+    .match-results-player.doubles .avatar-lg {
+        width: 48px;
+        height: 48px;
+    }
+    .match-results-player.doubles .d-flex {
+        flex-direction: column;
+    }
+    .match-results-player.winner-glow::after {
+        width: 90px;
+        height: 90px;
+    }
+}
+
 .modal-header h5 { margin: 0; font-weight: 500; }
 .modal-content {
     background-color: var(--card-bg);

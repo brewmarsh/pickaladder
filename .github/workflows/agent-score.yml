@@ -40,8 +40,7 @@ jobs:
             exit 0
           fi
 
-          # Run with --diff to analyze only changed Python files and avoid crashes in unrelated files
-          # We include the specific directory to further narrow the scope
+          # Run with --diff to analyze only changed Python files
           SCORE=$(uv run --no-project agent-score score --diff . --limit-to .py | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
 
           if [ -z "$SCORE" ]; then
@@ -49,6 +48,7 @@ jobs:
             exit 1
           fi
 
+          # Use bc for floating point comparison if score is non-integer
           if (( $(echo "$SCORE < 75" | bc -l) )); then
             echo "Agent score of $SCORE is below the threshold of 75"
             exit 1
