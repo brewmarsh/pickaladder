@@ -461,7 +461,14 @@
                     </div>
                 </div>
                 <div class="mt-4 text-center">
-                    <p class="text-white mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Screenshot this card to share!</p>
+                    <div class="d-flex justify-content-center gap-2 mb-3">
+                        <button type="button" class="btn btn-outline-secondary btn-action" onclick="copyCard('bragCardContainer', this)">
+                            <i class="fas fa-clipboard"></i> Copy Image
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-action" onclick="downloadCard('bragCardContainer', 'brag-card.png')">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>
                     <button type="button" class="btn btn-volt" data-dismiss="modal" style="width: auto;">Done</button>
                 </div>
             </div>
@@ -472,7 +479,7 @@
     <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 400px;">
         <div class="modal-content" style="background: transparent; border: none; box-shadow: none;">
             <div class="modal-body p-0">
-                <div class="share-card-container">
+                <div id="groupShareCardContainer" class="share-card-container">
                     <div class="share-card-header">pickaladder group</div>
                     <img src="{{ g.user | avatar_url }}" alt="Profile Picture" class="share-card-avatar"
                         onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
@@ -500,7 +507,14 @@
                         </div>
                     </div>
                     <div id="qrcode" class="d-flex justify-content-center mt-3" style="background: white; padding: 10px; border-radius: 10px; width: fit-content; margin-left: auto; margin-right: auto;"></div>
-                    <p class="text-white mt-3 mb-2" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Screenshot this card or share the link!</p>
+                    <div class="d-flex justify-content-center gap-2 mb-3 mt-3">
+                        <button type="button" class="btn btn-outline-secondary btn-action" onclick="copyCard('groupShareCardContainer', this)">
+                            <i class="fas fa-clipboard"></i> Copy Image
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-action" onclick="downloadCard('groupShareCardContainer', 'group-card.png')">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>
                     <button type="button" class="btn btn-volt" data-dismiss="modal" style="width: auto;">Done</button>
                 </div>
             </div>
@@ -663,6 +677,30 @@
                 }
             }
         });
+    }
+
+    async function copyCard(containerId, buttonEl) {
+        const original = showButtonSpinner(buttonEl);
+        try {
+            const canvas = await captureElement(containerId);
+            hideButtonSpinner(buttonEl, original);
+            await copyCanvasToClipboard(canvas, buttonEl);
+        } catch (err) {
+            console.error('Capture failed:', err);
+            hideButtonSpinner(buttonEl, original);
+        }
+    }
+
+    async function downloadCard(containerId, filename) {
+        const original = showButtonSpinner(buttonEl);
+        try {
+            const canvas = await captureElement(containerId);
+            hideButtonSpinner(buttonEl, original);
+            downloadCanvas(canvas, filename);
+        } catch (err) {
+            console.error('Capture failed:', err);
+            hideButtonSpinner(buttonEl, original);
+        }
     }
 </script>
 {% endblock %}

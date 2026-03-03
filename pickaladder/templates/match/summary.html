@@ -214,32 +214,28 @@
 </style>
 
 <script>
-    function copyCard(containerId, buttonEl) {
-        const element = document.getElementById(containerId);
-        if (!element) return;
-
-        html2canvas(element, {
-            backgroundColor: null,
-            scale: 2,
-            logging: false,
-            useCORS: true
-        }).then(canvas => {
-            copyCanvasToClipboard(canvas, buttonEl);
-        });
+    async function copyCard(containerId, buttonEl) {
+        const original = showButtonSpinner(buttonEl);
+        try {
+            const canvas = await captureElement(containerId);
+            hideButtonSpinner(buttonEl, original);
+            await copyCanvasToClipboard(canvas, buttonEl);
+        } catch (err) {
+            console.error('Capture failed:', err);
+            hideButtonSpinner(buttonEl, original);
+        }
     }
 
-    function downloadCard(containerId, filename) {
-        const element = document.getElementById(containerId);
-        if (!element) return;
-
-        html2canvas(element, {
-            backgroundColor: null,
-            scale: 2,
-            logging: false,
-            useCORS: true
-        }).then(canvas => {
+    async function downloadCard(containerId, filename) {
+        const original = showButtonSpinner(buttonEl);
+        try {
+            const canvas = await captureElement(containerId);
+            hideButtonSpinner(buttonEl, original);
             downloadCanvas(canvas, filename);
-        });
+        } catch (err) {
+            console.error('Capture failed:', err);
+            hideButtonSpinner(buttonEl, original);
+        }
     }
 </script>
 {% endblock %}
