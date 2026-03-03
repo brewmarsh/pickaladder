@@ -19,3 +19,11 @@ def service_worker() -> Response:
     if static_folder is None:
         raise RuntimeError("Static folder is not configured.")
     return send_from_directory(static_folder, "service-worker.js")
+
+
+@bp.route("/offline")
+def offline() -> str:
+    """Render the offline fallback page."""
+    from flask import render_template
+
+    return render_template("offline.html")
