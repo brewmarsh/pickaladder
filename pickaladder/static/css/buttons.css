@@ -35,6 +35,20 @@
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
+.btn-volt:disabled {
+    background-color: var(--accent-color) !important;
+    opacity: 0.7;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.btn-volt .spinner-border {
+    color: #121212;
+    vertical-align: -0.125em;
+    border-width: 0.2em;
+}
+
 .btn-danger { background-color: var(--danger-color); color: white; }
 .btn-danger:hover { filter: brightness(90%); }
 .btn-warning { background-color: var(--warning-color); color: var(--text-primary); }
