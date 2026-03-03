@@ -2,7 +2,7 @@
 {% if matches %}
 <div class="list-group list-group-flush" id="match-history-list">
     {% for match in matches %}
-    <div class="match-compact-row clickable-row" data-href="{{ url_for('match.view_match_summary', match_id=match.id) }}">
+    <div class="match-compact-row clickable-row" data-href="{{ url_for('match.view_match_summary', match_id=match.id) }}" data-testid="match-history__match-row__container">
         <div class="match-date-compact">
             {% if match.date and match.date != 'N/A' %}
             {{ match.date if match.date is string else match.date.strftime('%b %d') }}
@@ -56,7 +56,7 @@
 {% if next_cursor %}
 <div class="text-center mt-3">
     <button id="load-more-btn" class="btn btn-outline-primary btn-sm"
-        data-cursor="{{ next_cursor }}">Show Older Matches</button>
+        data-cursor="{{ next_cursor }}" data-testid="match-history__load-more__button">Show Older Matches</button>
 </div>
 {% endif %}
 {% else %}

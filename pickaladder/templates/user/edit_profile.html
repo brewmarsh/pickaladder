@@ -6,7 +6,7 @@
     <h3>Edit Your Profile</h3>
     <p>Use this form to update your account details.</p>
     <hr>
-    <form method="post" action="{{ url_for('user.edit_profile') }}">
+    <form method="post" action="{{ url_for('user.edit_profile') }}" data-testid="settings__edit-profile__form">
         {{ form.hidden_tag() }}
         <div class="form-group">
             {{ form.name.label }}

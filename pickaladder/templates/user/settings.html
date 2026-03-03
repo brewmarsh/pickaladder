@@ -9,7 +9,7 @@
                 <h3 class="mb-0">Account Settings</h3>
             </div>
             <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" enctype="multipart/form-data" data-testid="settings__edit-profile__form">
                     {{ form.hidden_tag() }}
 
                     <div class="text-center mb-4">
@@ -82,7 +82,7 @@
                         {% endif %}
                     </div>
 
-                    <div class="form-group mb-3 custom-control custom-switch">
+                    <div class="form-group mb-3 custom-control custom-switch" data-testid="settings__dark-mode__switch">
                         {{ form.dark_mode(class="custom-control-input", id="dark_mode") }}
                         {{ form.dark_mode.label(class="custom-control-label", for="dark_mode") }}
                         {% if form.dark_mode.errors %}

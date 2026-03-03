@@ -15,7 +15,7 @@
             <h2 class="sidebar-header">The Podium</h2>
             <div class="podium-grid">
                 {% for player in podium %}
-                <div class="podium-card {{ 'rank-1-card' if loop.index == 1 else '' }}">
+                <div class="podium-card {{ 'rank-1-card' if loop.index == 1 else '' }}" {% if player.id == current_user_id %}data-testid="leaderboard__current-user-row__container"{% endif %}>
                     <div class="podium-rank-badge">{{ loop.index }}</div>
                     <a href="{{ url_for('user.view_user', user_id=player.id) }}">
                         <img src="{{ player | avatar_url }}" alt="{{ player.username }}" class="avatar podium-avatar">
@@ -67,15 +67,15 @@
                 <table class="table-standard responsive-table">
                     <thead>
                         <tr>
-                            <th>Player</th>
-                            <th class="text-right">Win %</th>
-                            <th class="text-right">Games</th>
-                            <th class="text-right">Actions</th>
+                            <th data-testid="leaderboard__table-header__player">Player</th>
+                            <th data-testid="leaderboard__table-header__win-percentage" class="text-right">Win %</th>
+                            <th data-testid="leaderboard__table-header__games" class="text-right">Games</th>
+                            <th data-testid="leaderboard__table-header__actions" class="text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for player in tier.players %}
-                        <tr class="{{ 'bg-primary-subtle' if player.id == current_user_id else '' }}">
+                        <tr class="{{ 'bg-primary-subtle' if player.id == current_user_id else '' }}" {% if player.id == current_user_id %}data-testid="leaderboard__current-user-row__container"{% endif %}>
                             <td data-label="Player">
                                 <a href="{{ url_for('user.view_user', user_id=player.id) }}" class="d-flex align-items-center color-inherit text-none">
                                     <img src="{{ player | avatar_url }}" class="avatar avatar-sm mr-2" alt="Avatar">

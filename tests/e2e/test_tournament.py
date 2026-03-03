@@ -35,7 +35,7 @@ def test_tournament_flow(
 
     # 2. Create a Tournament
     with page.expect_navigation():
-        page.click(".navbar a:has-text('Tournaments')")
+        page.get_by_test_id("navbar__tournaments-link").click()
     with page.expect_navigation():
         page.click("a.btn-action:has-text('Create Tournament')")
     page.fill("input[name='name']", "Winter Open")
