@@ -29,7 +29,10 @@
 
                 <!-- Team 1 -->
                 <div class="match-results-player doubles {{ 'winner-glow' if team1_won }}">
-                    {% if team1_won %}<div class="winner-crown">👑</div>{% endif %}
+                    {% if team1_won %}
+                        <div class="winner-crown">👑</div>
+                        <span class="visually-hidden">Winners</span>
+                    {% endif %}
                     <div class="d-flex gap-1 justify-content-center mb-1">
                         {% for player in team1 %}
                         <img src="{{ player | avatar_url }}" alt="{{ player.name }}"
@@ -47,7 +50,12 @@
 
                 <!-- Team 2 -->
                 <div class="match-results-player doubles {{ 'winner-glow' if team2_won }}">
-                    {% if team2_won %}<div class="winner-crown">👑</div>{% endif %}
+                    {% if team2_won %}
+                        <div class="winner-crown">👑</div>
+                        <span class="visually-hidden">Winners</span>
+                    {% else %}
+                        <span class="visually-hidden">Losers</span>
+                    {% endif %}
                     <div class="d-flex gap-1 justify-content-center mb-1">
                         {% for player in team2 %}
                         <img src="{{ player | avatar_url }}" alt="{{ player.name }}"
@@ -63,7 +71,10 @@
 
                 <!-- Player 1 -->
                 <div class="match-results-player {{ 'winner-glow' if p1_won }}">
-                    {% if p1_won %}<div class="winner-crown">👑</div>{% endif %}
+                    {% if p1_won %}
+                        <div class="winner-crown">👑</div>
+                        <span class="visually-hidden">Winner</span>
+                    {% endif %}
                     <a href="{{ url_for('user.view_user', user_id=player1.id) if player1.id else '#' }}">
                         <img src="{{ player1 | avatar_url }}" alt="{{ player1.name }}"
                              class="avatar avatar-lg {{ 'border-volt' if p1_won }}"
@@ -79,7 +90,12 @@
 
                 <!-- Player 2 -->
                 <div class="match-results-player {{ 'winner-glow' if p2_won }}">
-                    {% if p2_won %}<div class="winner-crown">👑</div>{% endif %}
+                    {% if p2_won %}
+                        <div class="winner-crown">👑</div>
+                        <span class="visually-hidden">Winner</span>
+                    {% else %}
+                        <span class="visually-hidden">Loser</span>
+                    {% endif %}
                     <a href="{{ url_for('user.view_user', user_id=player2.id) if player2.id else '#' }}">
                         <img src="{{ player2 | avatar_url }}" alt="{{ player2.name }}"
                              class="avatar avatar-lg {{ 'border-volt' if p2_won }}"

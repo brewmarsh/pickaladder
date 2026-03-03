@@ -23,7 +23,7 @@ jobs:
           python-version: '3.11' # tool requires 3.10+
 
       - name: Install agent-readiness-scorecard
-        run: uv pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
+        run: uv pip install tree-sitter git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
 
       - name: Run agent-score and check threshold
         env:
