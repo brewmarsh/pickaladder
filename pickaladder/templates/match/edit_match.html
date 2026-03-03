@@ -22,13 +22,13 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                         <div class="row mb-4">
-                            <div class="col-6">
+                            <div class="col-12 col-md-6 mb-3 mb-md-0">
                                 <label for="player1_score" class="form-label">{{ player1_name }} Score</label>
                                 <input type="number" class="form-control form-control-lg text-center"
                                        id="player1_score" name="player1_score"
                                        value="{{ match.player1Score }}" min="0" required>
                             </div>
-                            <div class="col-6">
+                            <div class="col-12 col-md-6">
                                 <label for="player2_score" class="form-label">{{ player2_name }} Score</label>
                                 <input type="number" class="form-control form-control-lg text-center"
                                        id="player2_score" name="player2_score"
