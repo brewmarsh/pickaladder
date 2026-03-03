@@ -158,3 +158,32 @@
     color: var(--danger-color);
     border-color: var(--danger-color);
 }
+
+/* Leaderboard */
+.leaderboard-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 100px 100px 80px;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.rank-1 { color: #FFD700; }
+.rank-2 { color: #C0C0C0; }
+.rank-3 { color: #CD7F32; }
+
+@media screen and (max-width: 768px) {
+    .leaderboard-row {
+        grid-template-columns: 50px 1fr;
+        gap: 8px;
+        padding: 12px 15px;
+    }
+
+    .leaderboard-row .leaderboard-stats {
+        grid-column: 2;
+        display: flex;
+        gap: 12px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+}

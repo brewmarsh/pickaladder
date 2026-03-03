@@ -204,8 +204,9 @@
                     {% if requests %}
                     <h4 class="fs-xs mb-2">Friend Requests</h4>
                     <div class="table-container shadow-none border mb-3 rounded-sm">
-                        <table class="table mt-0">
-                            <tbody>
+                        <div class="table-responsive">
+                            <table class="table mt-0">
+                                <tbody>
                                 {% for request in requests %}
                                 <tr>
                                     <td class="p-2">
@@ -224,7 +225,8 @@
                                 </tr>
                                 {% endfor %}
                             </tbody>
-                        </table>
+                            </table>
+                        </div>
                     </div>
                     {% endif %}
 

@@ -9,7 +9,8 @@
     <h3>Pending Requests</h3>
     {% if requests %}
     <div class="table-container">
-        <table class="table-standard responsive-table">
+        <div class="table-responsive">
+            <table class="table-standard responsive-table">
             <thead>
                 <tr>
                     <th>User</th>
@@ -44,7 +45,8 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
     {% else %}
     <p>No pending friend requests.</p>
@@ -55,7 +57,8 @@
     <h3>Sent Requests</h3>
     {% if sent_requests %}
     <div class="table-container">
-        <table class="table-standard responsive-table">
+        <div class="table-responsive">
+            <table class="table-standard responsive-table">
             <thead>
                 <tr>
                     <th>User</th>
@@ -85,7 +88,8 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
     {% else %}
     <p>No sent friend requests.</p>

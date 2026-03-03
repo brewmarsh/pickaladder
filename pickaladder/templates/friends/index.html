@@ -16,7 +16,8 @@
     {% if requests %}
     <h4>Received</h4>
     <div class="table-container">
-        <table class="table-standard responsive-table">
+        <div class="table-responsive">
+            <table class="table-standard responsive-table">
             <thead>
                 <tr>
                     <th>User</th>
@@ -49,14 +50,16 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
     {% endif %}
 
     {% if sent_requests %}
     <h4 style="margin-top: 20px;">Sent</h4>
     <div class="table-container">
-        <table class="table-standard responsive-table">
+        <div class="table-responsive">
+            <table class="table-standard responsive-table">
             <thead>
                 <tr>
                     <th>User</th>
@@ -84,7 +87,8 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
     {% endif %}
 </div>

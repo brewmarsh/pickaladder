@@ -15,7 +15,8 @@
 <div class="card card-notification incoming-requests-section mb-4">
     <h4 class="card-header"><i class="fas fa-user-clock me-2"></i> Pending Friend Requests</h4>
     <div class="table-container mt-3">
-        <table class="table-standard responsive-table">
+        <div class="table-responsive">
+            <table class="table-standard responsive-table">
             <thead>
                 <tr>
                     <th>User</th>
@@ -52,7 +53,8 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -77,7 +79,8 @@
 <div class="card requests-section" style="margin-top: 40px;">
     <h3>Sent Friend Requests</h3>
     <div class="table-container">
-        <table class="table-standard responsive-table">
+        <div class="table-responsive">
+            <table class="table-standard responsive-table">
             <thead>
                 <tr>
                     <th>User</th>
@@ -109,7 +112,8 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -119,7 +123,8 @@
 <div class="card tournament-invites-section" style="margin-bottom: 40px; border-left: 6px solid var(--primary-brand);">
     <h3>Tournament Invites</h3>
     <div class="table-container">
-        <table class="table-standard responsive-table">
+        <div class="table-responsive">
+            <table class="table-standard responsive-table">
             <thead>
                 <tr>
                     <th>Tournament</th>
@@ -151,7 +156,8 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -244,7 +250,8 @@
     <h3>Find Groups</h3>
     {% if public_groups %}
     <div class="table-container">
-        <table class="table-standard responsive-table">
+        <div class="table-responsive">
+            <table class="table-standard responsive-table">
             <thead>
                 <tr>
                     <th></th>
@@ -283,7 +290,8 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
     {% else %}
     {{ empty_state(

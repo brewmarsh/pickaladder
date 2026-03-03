@@ -67,7 +67,8 @@
                         {% endif %}
                     {% endfor %}
                     <div class="table-container">
-                        <table class="table table-standard responsive-table">
+                        <div class="table-responsive">
+                            <table class="table table-standard responsive-table">
                             <thead>
                                 <tr>
                                     <th class="text-center">Rank</th>
@@ -139,13 +140,15 @@
                                 </tr>
                                 {% endfor %}
                             </tbody>
-                        </table>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <div id="teams" class="tab-content" style="display: none;">
                     <div class="table-container">
-                        <table class="table table-standard responsive-table">
+                        <div class="table-responsive">
+                            <table class="table table-standard responsive-table">
                             <thead>
                                 <tr>
                                     <th class="text-center">Rank</th>
@@ -184,7 +187,8 @@
                                 </tr>
                                 {% endfor %}
                             </tbody>
-                        </table>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -309,7 +313,8 @@
         <div class="manage-group-content">
             <h3>Members</h3>
             <div class="table-container">
-                <table class="table-standard responsive-table">
+                <div class="table-responsive">
+                    <table class="table-standard responsive-table">
                     <tbody>
                         {% for member in members %}
                         <tr class="clickable-row" data-href="{{ url_for('user.view_user', user_id=member.id) }}">
@@ -321,7 +326,8 @@
                         </tr>
                         {% endfor %}
                     </tbody>
-                </table>
+                    </table>
+                </div>
             </div>
 
             {% if group.ownerRef.id == g.user['uid'] %}
@@ -367,7 +373,8 @@
         <div class="manage-group-content">
             <h3>Pending Members</h3>
             <div class="table-container">
-                <table class="table-standard responsive-table">
+                <div class="table-responsive">
+                    <table class="table-standard responsive-table">
                     <thead>
                         <tr>
                             <th class="pending-invites-avatar-header"></th>
@@ -432,7 +439,8 @@
                         </tr>
                         {% endfor %}
                     </tbody>
-                </table>
+                    </table>
+                </div>
             </div>
         </div>
     </details>
