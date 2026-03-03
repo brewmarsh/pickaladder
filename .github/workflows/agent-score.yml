@@ -23,13 +23,9 @@ jobs:
           python-version: '3.11' # tool requires 3.10+
 
       - name: Install agent-readiness-scorecard
-<<<<<<< Updated upstream
         run: |
           uv pip install tree-sitter tree-sitter-javascript tree-sitter-typescript tree-sitter-python --system
           uv pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
-=======
-        run: uv pip install tree-sitter tree-sitter-javascript tree-sitter-python git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
->>>>>>> Stashed changes
 
       - name: Run agent-score and check threshold
         env:
@@ -44,8 +40,7 @@ jobs:
             exit 0
           fi
 
-          # Run with --diff to analyze only changed Python files and avoid crashes in unrelated files
-          # We include the specific directory to further narrow the scope
+          # Run with --diff to analyze only changed Python files
           SCORE=$(uv run --no-project agent-score score --diff . --limit-to .py | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
 
           if [ -z "$SCORE" ]; then
@@ -53,6 +48,7 @@ jobs:
             exit 1
           fi
 
+          # Use bc for floating point comparison if score is non-integer
           if (( $(echo "$SCORE < 75" | bc -l) )); then
             echo "Agent score of $SCORE is below the threshold of 75"
             exit 1

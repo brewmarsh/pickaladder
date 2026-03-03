@@ -35,13 +35,9 @@ jobs:
           python-version: '3.11' # tool requires 3.10+
 
       - name: Install Tool
-<<<<<<< Updated upstream
         run: |
           uv pip install tree-sitter tree-sitter-javascript tree-sitter-typescript tree-sitter-python --system
           uv pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
-=======
-        run: uv pip install tree-sitter tree-sitter-javascript tree-sitter-python git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
->>>>>>> Stashed changes
 
       - name: Run Agent Scorecard
         env:
@@ -54,7 +50,7 @@ jobs:
           TARGET_BRANCH="origin/${{ github.base_ref || 'main' }}"
           echo "Running Agent Scorecard against $TARGET_BRANCH..."
           
-          # Use --diff for PRs to focus on changes and limit to Python files to avoid analyzer bugs
+          # Use --diff for PRs to focus on changes and limit to Python files
           DIFF_ARG=""
           if [ "${{ github.event_name }}" == pull_request ]; then
             DIFF_ARG="--diff"
