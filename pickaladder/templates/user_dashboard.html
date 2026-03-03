@@ -209,15 +209,17 @@
                                 {% for request in requests %}
                                 <tr>
                                     <td class="p-2">
-                                        <a href="{{ url_for('user.view_user', user_id=request.id) }}"
-                                            class="fs-xs">{{ request.username }}</a>
-                                    </td>
-                                    <td class="p-2 text-right">
-                                        <form action="{{ url_for('user.accept_request', requester_id=request.id) }}"
-                                            method="post" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-volt btn-sm py-1 px-2 fs-xxs w-auto text-none">Accept</button>
-                                        </form>
+                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                            <a href="{{ url_for('user.view_user', user_id=request.id) }}"
+                                                class="fs-xs flex-grow-1">{{ request.username }}</a>
+                                            <div class="flex-shrink-0 mt-1 mt-sm-0">
+                                                <form action="{{ url_for('user.accept_request', requester_id=request.id) }}"
+                                                    method="post" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-volt btn-sm py-1 px-2 fs-xxs w-auto text-none flex-shrink-0">Accept</button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}

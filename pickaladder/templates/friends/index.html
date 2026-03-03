@@ -34,17 +34,17 @@
                         </div>
                     </td>
                     <td data-label="Actions" style="text-align: right;">
-                        <form action="{{ url_for('user.accept_request', requester_id=request.id) }}" method="post"
-                            style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn">Accept</button>
-                        </form>
-                        <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post"
-                            style="display: inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-outline-danger"
-                                onclick="return confirm('Are you sure you want to decline this friend request?');">Decline</button>
-                        </form>
+                        <div class="d-flex justify-content-end gap-2 flex-wrap mt-2 mt-md-0">
+                            <form action="{{ url_for('user.accept_request', requester_id=request.id) }}" method="post">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn flex-shrink-0">Accept</button>
+                            </form>
+                            <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-danger flex-shrink-0"
+                                    onclick="return confirm('Are you sure you want to decline this friend request?');">Decline</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
