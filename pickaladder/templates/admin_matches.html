@@ -11,7 +11,8 @@
     <input type="submit" value="Search" class="btn">
 </form>
 <div class="table-container">
-    <table class="table-standard responsive-table">
+    <div class="table-responsive">
+        <table class="table-standard responsive-table">
         <thead>
             <tr>
                 <th>Date</th>
@@ -26,6 +27,7 @@
                 {% include 'components/match_list_item.html' %}
             {% endfor %}
         </tbody>
-    </table>
+        </table>
+    </div>
 </div>
 {% endblock %}

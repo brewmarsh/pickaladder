@@ -14,7 +14,8 @@
 
 <h3 style="margin-top: 30px;">Friends of Friends</h3>
 <div class="table-container">
-    <table class="table-standard responsive-table">
+    <div class="table-responsive">
+        <table class="table-standard responsive-table">
         <thead>
             <tr>
                 <th>Username</th>
@@ -36,12 +37,14 @@
             </tr>
             {% endfor %}
         </tbody>
-    </table>
+        </table>
+    </div>
 </div>
 
 <h3 style="margin-top: 30px;">All Users</h3>
 <div class="table-container">
-    <table class="table-standard responsive-table">
+    <div class="table-responsive">
+        <table class="table-standard responsive-table">
         <thead>
             <tr>
                 <th></th>
@@ -105,7 +108,8 @@
             </tr>
             {% endfor %}
         </tbody>
-    </table>
+        </table>
+    </div>
 </div>
 
 {% if pagination.pages > 1 %}

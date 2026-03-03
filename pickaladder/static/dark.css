@@ -498,26 +498,6 @@ select:focus {
     background-color: var(--bg-color);
 }
 
-/* Leaderboard */
-.leaderboard-row {
-    display: grid;
-    grid-template-columns: 50px 1fr 100px 100px 80px;
-    align-items: center;
-    padding: 10px 15px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.rank-1 {
-    color: #FFD700;
-}
-
-.rank-2 {
-    color: #C0C0C0;
-}
-
-.rank-3 {
-    color: #CD7F32;
-}
 
 /* Utilities */
 .d-flex {
@@ -601,10 +581,6 @@ select:focus {
         padding: 16px;
     }
 
-    .leaderboard-row {
-        display: flex;
-        justify-content: space-between;
-    }
 }
 
 /* Toasts */
