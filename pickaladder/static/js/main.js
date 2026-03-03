@@ -24,6 +24,72 @@ document.addEventListener('DOMContentLoaded', function () {
     handleFlashMessages();
 });
 
+/**
+ * Captures a DOM element as a high-quality canvas, ensuring images are loaded.
+ * @param {string} elementId - The ID of the element to capture.
+ * @returns {Promise<HTMLCanvasElement>}
+ */
+/**
+ * Shows a loading spinner on a button.
+ * @param {HTMLElement} buttonEl - The button element to show the spinner on.
+ * @returns {string} The original HTML content of the button.
+ */
+function showButtonSpinner(buttonEl) {
+    if (!buttonEl) return '';
+    const originalContent = buttonEl.innerHTML;
+    buttonEl.disabled = true;
+    buttonEl.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    return originalContent;
+}
+
+/**
+ * Hides the loading spinner and restores the button.
+ * @param {HTMLElement} buttonEl - The button element.
+ * @param {string} originalContent - The original HTML content to restore.
+ */
+function hideButtonSpinner(buttonEl, originalContent) {
+    if (!buttonEl) return;
+    buttonEl.disabled = false;
+    buttonEl.innerHTML = originalContent;
+}
+
+async function captureElement(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) throw new Error(`Element with ID ${elementId} not found.`);
+
+    // 1. Wait for all images inside the element to load/decode
+    const images = Array.from(element.getElementsByTagName('img'));
+    const loadPromises = images.map(img => {
+        if (img.complete) {
+            return img.decode().catch(() => {}); // Already loaded, just decode
+        }
+        return new Promise(resolve => {
+            img.onload = img.onerror = () => {
+                if (img.decode) {
+                    img.decode().then(resolve).catch(resolve);
+                } else {
+                    resolve();
+                }
+            };
+        });
+    });
+
+    // Also wait for a small buffer to handle any CSS backgrounds or late renders
+    await Promise.all([
+        Promise.all(loadPromises),
+        new Promise(resolve => setTimeout(resolve, 500))
+    ]);
+
+    // 2. Call html2canvas with optimized options
+    return html2canvas(element, {
+        useCORS: true,            // Handle cross-origin avatars (Firebase/Dicebear)
+        allowTaint: false,        // Avoid tainting the canvas
+        scale: window.devicePixelRatio || 2, // High-definition rendering
+        backgroundColor: null,    // Preserve border-radius (transparent bg)
+        logging: false            // Disable logs for cleaner console
+    });
+}
+
 function handleFlashMessages() {
     const toasts = document.querySelectorAll('.toast');
 

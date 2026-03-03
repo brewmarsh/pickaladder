@@ -42,7 +42,7 @@ def test_verify_fixes(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.click("button:has-text('Share')")
     page.wait_for_selector("#shareGroupModal.show", timeout=5000)
 
-    stat_text: str | None = page.locator(".social-share-card-stat").text_content()
+    stat_text: str | None = page.locator(".share-card-stat").first.text_content()
     print(f"Stat text: {stat_text}")
     # Since it's a new group, rank is Member or something.
     # In group.html:
