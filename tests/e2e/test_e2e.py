@@ -35,7 +35,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     page.hover(".navbar-user-controls .dropdown")
     page.get_by_test_id("navbar__settings-link").click()
-    expect(page.get_by_test_id("settings__edit-profile__form")).to_be_visible(timeout=10000)
+    expect(page.get_by_test_id("settings__edit-profile__form")).to_be_visible(
+        timeout=10000
+    )
 
     # Logout
     page.goto(f"{base_url}/auth/logout")
@@ -63,7 +65,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     page.hover(".navbar-user-controls .dropdown")
     page.get_by_test_id("navbar__settings-link").click()
-    expect(page.get_by_test_id("settings__edit-profile__form")).to_be_visible(timeout=10000)
+    expect(page.get_by_test_id("settings__edit-profile__form")).to_be_visible(
+        timeout=10000
+    )
 
     # 3. Add Friend (User 2 invites Admin)
     with page.expect_navigation():
@@ -167,7 +171,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.get_by_test_id("navbar__leaderboard-link").click()
     expect(page.locator("h1")).to_contain_text("Leaderboard")
     # Verify players are listed
-    expect(page.get_by_test_id("leaderboard__current-user-row__container")).to_be_visible()
+    expect(
+        page.get_by_test_id("leaderboard__current-user-row__container")
+    ).to_be_visible()
 
     # 8. Delete Group Game & 9. Delete Individual Game
     # Needs Admin access
