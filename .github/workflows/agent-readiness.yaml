@@ -35,7 +35,9 @@ jobs:
           python-version: '3.11' # tool requires 3.10+
 
       - name: Install Tool
-        run: uv pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
+        run: |
+          uv pip install tree-sitter tree-sitter-javascript tree-sitter-typescript tree-sitter-python --system
+          uv pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
 
       - name: Run Agent Scorecard
         env:
