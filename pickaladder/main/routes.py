@@ -25,4 +25,5 @@ def service_worker() -> Response:
 def offline() -> str:
     """Render the offline fallback page."""
     from flask import render_template
+
     return render_template("offline.html")
