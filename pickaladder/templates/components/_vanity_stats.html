@@ -1,13 +1,13 @@
 <div class="vanity-stats-container justify-content-center gap-4">
-    <div class="vanity-stat">
+    <div class="vanity-stat" data-testid="dashboard__vanity-stat__matches">
         <div class="stat-value fs-3 fw-bold">{{ stats.total_games }}</div>
         <div class="stat-label text-muted small">Matches</div>
     </div>
-    <div class="vanity-stat">
+    <div class="vanity-stat" data-testid="dashboard__vanity-stat__win-rate">
         <div class="stat-value fs-3 fw-bold">{{ stats.win_rate | round | int }}%</div>
         <div class="stat-label text-muted small">Win %</div>
     </div>
-    <div class="vanity-stat">
+    <div class="vanity-stat" data-testid="dashboard__vanity-stat__streak">
         <div class="stat-value fs-3 fw-bold text-volt">
             {% if stats.total_games > 0 %}
                 {% if current_streak > 2 %}

@@ -19,25 +19,25 @@
         </div>
 
         <!-- Desktop Navbar -->
-        <nav class="navbar d-none d-lg-flex">
+        <nav class="navbar d-none d-lg-flex" data-testid="navbar__container">
             {{ brand_logo() }}
             <div class="navbar-menu">
                 {% if g.user %}
                 <a href="{{ url_for('user.dashboard') }}"
-                    class="nav-link {{ 'active' if request.endpoint == 'user.dashboard' }}">📈 Dashboard</a>
+                    class="nav-link {{ 'active' if request.endpoint == 'user.dashboard' }}" data-testid="navbar__dashboard-link">📈 Dashboard</a>
                 <a href="{{ url_for('user.view_community') }}"
                     class="nav-link {{ 'active' if request.endpoint == 'user.view_community' }}"
-                    style="position: relative;">
+                    style="position: relative;" data-testid="navbar__community-link">
                     🌍 Community
                     {% if incoming_requests_count > 0 %}
                     <span class="notification-badge">{{ incoming_requests_count }}</span>
                     {% endif %}
                 </a>
                 <a href="{{ url_for('group.view_groups') }}"
-                    class="nav-link {{ 'active' if request.endpoint == 'group.view_groups' }}">👨‍👩‍👧‍👦 Groups</a>
+                    class="nav-link {{ 'active' if request.endpoint == 'group.view_groups' }}" data-testid="navbar__groups-link">👨‍👩‍👧‍👦 Groups</a>
                 <a href="{{ url_for('tournament.list_tournaments') }}"
                     class="nav-link {{ 'active' if request.endpoint == 'tournament.list_tournaments' }}"
-                    style="position: relative;">
+                    style="position: relative;" data-testid="navbar__tournaments-link">
                     🎾 Tournaments
                     {% if pending_tournament_invites %}
                     <span class="notification-badge">{{ pending_tournament_invites|length }}</span>
@@ -48,7 +48,7 @@
                     class="nav-link {{ 'active' if request.endpoint == 'tournament.create_tournament' }}">➕ New Tournament</a>
                 {% endif %}
                 <a href="{{ url_for('match.leaderboard') }}"
-                    class="nav-link {{ 'active' if request.endpoint == 'match.leaderboard' }}">🏆 Leaderboard</a>
+                    class="nav-link {{ 'active' if request.endpoint == 'match.leaderboard' }}" data-testid="navbar__leaderboard-link">🏆 Leaderboard</a>
                 {% else %}
                 <div class="desktop-auth-buttons">
                     {% if request.endpoint != 'auth.login' %}
@@ -65,9 +65,9 @@
                         <img src="{{ g.user | avatar_url }}" alt="Profile Picture" class="avatar avatar-sm"
                             onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                     </button>
-                    <div class="dropdown-content">
+                    <div class="dropdown-content" data-testid="navbar__user-dropdown__content">
                         <a href="{{ url_for('user.view_user', user_id=g.user['uid']) }}">👤 My Profile</a>
-                        <a href="{{ url_for('user.settings') }}">⚙️ Settings</a>
+                        <a href="{{ url_for('user.settings') }}" data-testid="navbar__settings-link">⚙️ Settings</a>
                         {% if session.get('is_admin') %}
                         <a href="{{ url_for('admin.admin') }}">👑 Admin</a>
                         {% endif %}

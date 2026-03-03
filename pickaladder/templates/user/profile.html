@@ -19,7 +19,7 @@
 
                     {# v10 Vanity Stats System #}
                     <div class="vanity-stats-container justify-content-center gap-4 mb-4">
-                        <div class="vanity-stat">
+                        <div class="vanity-stat" data-testid="profile__dupr-rating__display">
                             {% set dupr = profile_user.dupr_rating if profile_user.dupr_rating is not none else profile_user.duprRating %}
                             <div class="stat-value fs-large fw-bold">
                                 {{ dupr if dupr is not none else '—' }}

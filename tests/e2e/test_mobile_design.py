@@ -71,7 +71,7 @@ def test_mobile_layout(
     page.goto(f"{app_server}/auth/login")
     page.fill('input[name="email"]', "testuser@example.com")
     page.fill('input[name="password"]', "password123")
-    page.click('[data-testid="login-submit"]')
+    page.get_by_test_id("login-submit").click()
 
     # Wait for navigation to dashboard
     expect(page).to_have_url(f"{app_server}/user/dashboard")

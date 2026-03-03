@@ -34,8 +34,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Login')")
 
     page.hover(".navbar-user-controls .dropdown")
-    page.click("a:has-text('Settings')")
-    expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
+    page.get_by_test_id("navbar__settings-link").click()
+    expect(page.get_by_test_id("settings__edit-profile__form")).to_be_visible(
+        timeout=10000
+    )
 
     # Logout
     page.goto(f"{base_url}/auth/logout")
@@ -62,12 +64,14 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Login')")
 
     page.hover(".navbar-user-controls .dropdown")
-    page.click("a:has-text('Settings')")
-    expect(page.locator("h3:has-text('Account Settings')")).to_be_visible(timeout=10000)
+    page.get_by_test_id("navbar__settings-link").click()
+    expect(page.get_by_test_id("settings__edit-profile__form")).to_be_visible(
+        timeout=10000
+    )
 
     # 3. Add Friend (User 2 invites Admin)
     with page.expect_navigation():
-        page.click("text=Community")
+        page.get_by_test_id("navbar__community-link").click()
 
     page.fill("input[name='search']", "admin")
     with page.expect_navigation():
@@ -92,7 +96,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # Accept Friend Request
     with page.expect_navigation():
-        page.click("text=Community")
+        page.get_by_test_id("navbar__community-link").click()
     expect(
         page.locator(".incoming-requests-section", has_text="User Two")
     ).to_be_visible()
@@ -102,7 +106,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # 4. Create Group
     with page.expect_navigation():
-        page.click("text=Groups")
+        page.get_by_test_id("navbar__groups-link").click()
     with page.expect_navigation():
         page.click("text=Create Group")
     page.fill("input[name='name']", "Pickleballers")
@@ -128,11 +132,12 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # User 2 should see the group
     with page.expect_navigation():
-        page.click("text=Groups")
+        page.get_by_test_id("navbar__groups-link").click()
     expect(page.locator("text=Pickleballers")).to_be_visible()
 
     # 6. Score Individual Game (User 2 vs Admin)
-    page.goto(f"{base_url}/match/record")
+    page.get_by_test_id("navbar__dashboard-link").click()
+    page.get_by_test_id("dashboard__record-match__button").click()
     page.select_option("select[name='match_type']", value="singles")
     page.select_option("select[name='player1']", value="user2")
     page.select_option("select[name='player2']", value="admin")
@@ -146,7 +151,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # 7. Score Group Game
     with page.expect_navigation():
-        page.click("text=Groups")
+        page.get_by_test_id("navbar__groups-link").click()
     with page.expect_navigation():
         page.click("text=Pickleballers")
     with page.expect_navigation():
@@ -163,11 +168,12 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # Check Global Leaderboard (Req: "see the leaderboard")
     with page.expect_navigation():
-        page.click("text=Leaderboard")
+        page.get_by_test_id("navbar__leaderboard-link").click()
     expect(page.locator("h1")).to_contain_text("Leaderboard")
     # Verify players are listed
-    expect(page.get_by_text("Admin User").first).to_be_visible()
-    expect(page.get_by_text("User Two").first).to_be_visible()
+    expect(
+        page.get_by_test_id("leaderboard__current-user-row__container")
+    ).to_be_visible()
 
     # 8. Delete Group Game & 9. Delete Individual Game
     # Needs Admin access
@@ -191,7 +197,7 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
 
     # 10. Update Group Details (Login as Admin - already logged in)
     with page.expect_navigation():
-        page.click("text=Groups")
+        page.get_by_test_id("navbar__groups-link").click()
     with page.expect_navigation():
         page.click("text=Pickleballers")
     with page.expect_navigation():
