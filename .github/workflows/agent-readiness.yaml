@@ -77,7 +77,7 @@ jobs:
 
       - name: Comment on PR
         if: github.event_name == 'pull_request' && steps.check_report.outputs.exists == 'true'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: agent-readiness-report
           path: readiness_report.md
