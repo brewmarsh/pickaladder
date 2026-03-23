@@ -10,7 +10,7 @@ imgur-python==0.2.4
 types-Pillow==10.2.0.20240822
 bandit==1.9.4
 mypy==1.19.1
-firebase-admin==7.2.0
+firebase-admin==7.3.0
 mkdocs==1.6.1
 Faker==40.5.1
 coverage==7.13.4
