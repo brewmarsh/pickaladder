@@ -13,6 +13,6 @@ mypy==1.19.1
 firebase-admin==7.2.0
 mkdocs==1.6.1
 Faker==40.5.1
-coverage==7.13.4
+coverage==7.13.5
 email-validator==2.3.0
 Flask-Login==0.6.3
