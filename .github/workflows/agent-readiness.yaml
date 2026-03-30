@@ -37,7 +37,7 @@ jobs:
       - name: Install Tool
         run: |
           uv pip install tree-sitter tree-sitter-javascript tree-sitter-typescript tree-sitter-python --system
-          uv pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git@beta --system
+          uv pip install --pre agent-readiness-scorecard --system
 
       - name: Run Agent Scorecard
         env:
@@ -53,7 +53,7 @@ jobs:
           # Use --diff for PRs to focus on changes and limit to Python files
           DIFF_ARG=""
           if [ "${{ github.event_name }}" == pull_request ]; then
-            DIFF_ARG="--diff $TARGET_BRANCH"
+            DIFF_ARG="--diff --diff-base $TARGET_BRANCH"
           fi
 
           # Standardized command syntax targeting only Python files
