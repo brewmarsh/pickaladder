@@ -25,7 +25,7 @@ jobs:
       - name: Install agent-readiness-scorecard
         run: |
           uv pip install tree-sitter tree-sitter-javascript tree-sitter-typescript tree-sitter-python --system
-          uv pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git --system
+          uv pip install git+https://github.com/brewmarsh/agent-readiness-scorecard.git@beta --system
 
       - name: Run agent-score and check threshold
         env:
@@ -41,7 +41,7 @@ jobs:
           fi
 
           # Run with --diff to analyze only changed Python files
-          SCORE=$(uv run --no-project agent-score score --diff . --limit-to .py | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
+          SCORE=$(uv run --no-project agent-score score --diff origin/${{ github.base_ref || 'main' }} . --limit-to .py | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
 
           if [ -z "$SCORE" ]; then
             echo "Could not determine agent score"
