@@ -249,6 +249,7 @@ def verify_user(user_id: str) -> Response:
 
 
 @bp.route("/generate_users", methods=["POST"])
+@login_required(admin_required=True)
 def generate_users() -> str:
     """Generate fake users for testing."""
     db, fake, new_users = firestore.client(), Faker(), []
