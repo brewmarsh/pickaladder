@@ -133,6 +133,9 @@ from .profile import (
     reset_profile_picture as _reset_profile_picture,
 )
 from .profile import (
+    sync_dupr_rating as _sync_dupr_rating,
+)
+from .profile import (
     update_email_address as _update_email_address,
 )
 from .profile import (
@@ -212,6 +215,7 @@ class UserService:
     search_users = staticmethod(_search_users)
     get_friends_page_data = staticmethod(_get_friends_page_data)
     send_friend_request = staticmethod(_send_friend_request)
+    sync_dupr_rating = staticmethod(_sync_dupr_rating)
     create_invite_token = staticmethod(_create_invite_token)
     update_dashboard_profile = staticmethod(_update_dashboard_profile)
     update_settings = staticmethod(_update_settings)

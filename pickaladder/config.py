@@ -26,6 +26,8 @@ class Config:
 
     # External APIs
     GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+    DUPR_API_KEY = os.environ.get("DUPR_API_KEY")
+    DUPR_BASE_URL = os.environ.get("DUPR_BASE_URL") or "https://api.mydupr.com"
 
     # Mail
     MAIL_SERVER = os.environ.get("MAIL_SERVER") or "smtp.gmail.com"

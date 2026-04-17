@@ -10,12 +10,45 @@ from flask import current_app
 from werkzeug.utils import secure_filename
 
 from pickaladder.utils import EmailError, send_email
+from .dupr_service import DUPRService
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
     from werkzeug.datastructures import FileStorage
 
 logger = logging.getLogger(__name__)
+
+
+def sync_dupr_rating(db: Client, user_id: str) -> bool:
+    """Synchronize a user's DUPR rating from the DUPR API."""
+    try:
+        user_ref = db.collection("users").document(user_id)
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+            logger.error(f"User {user_id} not found for DUPR sync")
+            return False
+
+        user_data = user_doc.to_dict() or {}
+        dupr_id = user_data.get("dupr_id")
+
+        if not dupr_id:
+            logger.warning(f"User {user_id} has no DUPR ID linked")
+            return False
+
+        rating = DUPRService.fetch_rating(dupr_id)
+        if rating is not None:
+            user_ref.update(
+                {
+                    "dupr_rating": rating,
+                    "duprRating": rating,  # Compatibility with both naming conventions
+                }
+            )
+            return True
+
+        return False
+    except Exception as e:
+        logger.error(f"Error syncing DUPR rating for user {user_id}: {e}")
+        return False
 
 
 def check_username_availability(db: Client, username: str) -> bool:

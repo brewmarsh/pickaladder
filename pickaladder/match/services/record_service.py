@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import datetime
+import logging
+from datetime import datetime, timezone, timedelta
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
@@ -12,8 +13,46 @@ if TYPE_CHECKING:
 
     from pickaladder.user.models import User
 
+logger = logging.getLogger(__name__)
+
 
 class MatchRecordService:
+    @staticmethod
+    def calculate_rank_decay(user_data: dict[str, Any]) -> float:
+        """Calculate ELO penalty based on inactivity."""
+        last_match_date = user_data.get("last_match_date")
+        if not last_match_date:
+            # If no last match date, we can't calculate decay
+            return 0.0
+
+        # Handle different date formats (datetime or string)
+        if isinstance(last_match_date, str):
+            try:
+                # Firestore often returns ISO strings
+                dt = datetime.fromisoformat(last_match_date.replace("Z", "+00:00"))
+            except ValueError:
+                return 0.0
+        elif isinstance(last_match_date, datetime):
+            dt = last_match_date
+        else:
+            return 0.0
+
+        # Ensure it's timezone aware
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+
+        days_inactive = (datetime.now(timezone.utc) - dt).days
+
+        # Define decay parameters
+        DECAY_THRESHOLD_DAYS = 30
+        DECAY_RATE_PER_DAY = 5.0  # Lose 5 ELO points per day after 30 days
+
+        if days_inactive > DECAY_THRESHOLD_DAYS:
+            penalty = (days_inactive - DECAY_THRESHOLD_DAYS) * DECAY_RATE_PER_DAY
+            return float(penalty)
+
+        return 0.0
+
     @staticmethod
     def get_player_record(db: Client, player_ref: Any) -> dict[str, int]:
         """Calculate win/loss record for a player by doc reference."""
@@ -60,15 +99,13 @@ class MatchRecordService:
         ) == uid
 
     @staticmethod
-    def _get_rolling_window_start(days: int = 7) -> datetime.datetime:
+    def _get_rolling_window_start(days: int = 7) -> datetime:
         """Calculate the start of the rolling date window."""
-        return datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-            days=days
-        )
+        return datetime.now(timezone.utc) - timedelta(days=days)
 
     @staticmethod
     def _calculate_performance_metrics(
-        db: Client, start_date: datetime.datetime
+        db: Client, start_date: datetime
     ) -> dict[str, int]:
         """Aggregate win counts for players since the given start date."""
         query = db.collection("matches").where(
@@ -123,23 +160,37 @@ class MatchRecordService:
     def get_leaderboard_data(
         db: Client, limit: int = 50, min_games: int = GLOBAL_LEADERBOARD_MIN_GAMES
     ) -> list[User]:
-        """Fetch data for the global leaderboard using cached statistics."""
+        """Fetch data for the global leaderboard using denormalized stats."""
         players: list[User] = []
+        # Optimization: Fetch users and use their denormalized stats
+        # This avoids the O(U*M) bottleneck of streaming matches for every user
         for u_snap in db.collection("users").stream():
             user_data = cast(dict[str, Any], u_snap.to_dict() or {})
             user_data["id"] = u_snap.id
 
-            stats = cast(dict[str, Any], user_data.get("stats") or {})
-            wins = int(stats.get("wins", 0))
-            losses = int(stats.get("losses", 0))
-            games = wins + losses
+            stats = user_data.get("stats", {})
+            wins = stats.get("wins", 0)
+            losses = stats.get("losses", 0)
+            # Use elo, fallback to DUPR, then default to 1200.0
+            elo = stats.get("elo")
+            if elo is None:
+                elo = (
+                    user_data.get("duprRating") or user_data.get("dupr_rating") or 1200.0
+                )
 
+            # Apply rank decay penalty
+            penalty = MatchRecordService.calculate_rank_decay(user_data)
+            elo = max(100.0, float(elo) - penalty)
+            user_data["is_inactive"] = penalty > 0
+
+            games = wins + losses
             if games >= min_games:
                 user_data.update(
                     {
                         "wins": wins,
                         "losses": losses,
                         "games_played": games,
+                        "elo": float(elo),
                         "win_percentage": float((wins / games) * 100)
                         if games > 0
                         else 0.0,
@@ -147,7 +198,9 @@ class MatchRecordService:
                 )
                 players.append(cast("User", user_data))
 
+        # Sort by ELO descending, then by win percentage as a tie-breaker
         players.sort(
-            key=lambda p: (p.get("win_percentage", 0), p.get("wins", 0)), reverse=True
+            key=lambda p: (p.get("elo", 0.0), p.get("win_percentage", 0.0)),
+            reverse=True,
         )
         return players[:limit]

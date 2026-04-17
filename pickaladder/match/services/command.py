@@ -153,12 +153,33 @@ class MatchCommandService(BaseRepository):
         """Record a match and update stats using batched writes."""
         from firebase_admin import firestore
 
-        snaps_list = db.get_all([p1_ref, p2_ref])
+        # Fetch all participants to check for DUPR IDs and denormalize
+        participant_ids = match_data.get("participants", [])
+        participant_refs = [
+            db.collection("users").document(pid) for pid in participant_ids
+        ]
+
+        # We also need p1_ref and p2_ref snaps for ELO calculation (they might be teams for doubles)
+        # To avoid extra calls, we'll fetch all needed refs at once.
+        all_refs = list(set([p1_ref, p2_ref] + participant_refs))
+        snaps_list = db.get_all(all_refs)
         snaps = {s.id: s for s in snaps_list if s.exists}
+
         p1_snap = cast("DocumentSnapshot", snaps.get(p1_ref.id))
         p2_snap = cast("DocumentSnapshot", snaps.get(p2_ref.id))
         p1_data = p1_snap.to_dict() if p1_snap else {}
         p2_data = p2_snap.to_dict() if p2_snap else {}
+
+        # Check for verified status (all participants must have a dupr_id)
+        is_verified = (
+            all(
+                (snaps.get(pid) and (snaps[pid].to_dict() or {}).get("dupr_id"))
+                for pid in participant_ids
+            )
+            if participant_ids
+            else False
+        )
+        match_data["is_verified"] = is_verified
 
         if match_type == "singles":
             cls._denormalize_singles_players(
@@ -196,7 +217,13 @@ class MatchCommandService(BaseRepository):
                 outcome["winner"],
             )
 
+        # Update last match info for the recorder and all participants
         batch.update(user_ref, {"lastMatchRecordedType": match_type})
+        for pid in participant_ids:
+            batch.update(
+                db.collection("users").document(pid),
+                {"last_match_date": firestore.SERVER_TIMESTAMP},
+            )
 
         if gid := match_data.get("groupId"):
             batch.update(
@@ -256,6 +283,7 @@ class MatchCommandService(BaseRepository):
             team1Ref=data.get("team1Ref"),
             team2Ref=data.get("team2Ref"),
             is_upset=data.get("is_upset", False),
+            is_verified=data.get("is_verified", False),
         )
 
     @staticmethod

@@ -1,0 +1,8 @@
+{
+  "project_name": "pickaladder",
+  "goal": "Add GSD to this project so that we can add new features",
+  "tech_stack": "python, docker, firestore",
+  "research_depth": "domain",
+  "ui_style": "existing",
+  "workflow": "gsd"
+}

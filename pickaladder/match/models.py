@@ -196,6 +196,7 @@ class MatchResult:
     losers: list[str] | None = None
     participants: list[str] | None = None
     is_upset: bool = False
+    is_verified: bool = False
     groupId: str | None = None
     tournamentId: str | None = None
     player1Ref: Any = None
@@ -234,6 +235,7 @@ class MatchDict(FirestoreDocument, Score, total=False):
     groupId: str
     tournamentId: str
     status: str
+    is_verified: bool
     winnerId: str
     winners: list[str]
     losers: list[str]

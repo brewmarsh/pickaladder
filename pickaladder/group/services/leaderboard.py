@@ -18,17 +18,20 @@ from pickaladder.user.helpers import smart_display_name
 
 
 def _initialize_stats(players: list[Any]) -> dict[str, dict[str, Any]]:
-    """Initialize the stats dictionary for each player."""
+    """Initialize the stats dictionary for each player using batch fetch."""
+    db = firestore.client()
+    player_docs = db.get_all(players)
     return {
-        ref.id: {
+        doc.id: {
             "wins": 0,
             "losses": 0,
             "games": 0,
             "total_score": 0,
-            "user_data": ref.get(),
+            "user_data": doc,
             "match_results": [],
         }
-        for ref in players
+        for doc in player_docs
+        if doc.exists
     }
 
 
@@ -78,7 +81,7 @@ def _calculate_derived_stats(stats: dict[str, dict[str, Any]]) -> None:
 
 
 def _sort_leaderboard(stats: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    """Enrich stats with user data, format into a list, and sort."""
+    """Enrich stats with user data, format into a list, and sort by ELO."""
     leaderboard = []
     for user_id, s in stats.items():
         user_doc = s["user_data"]
@@ -89,6 +92,11 @@ def _sort_leaderboard(stats: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
         if user_data is None:
             continue
         user_data["id"] = user_id
+
+        # Use elo, fallback to DUPR, then default to 1200.0
+        elo = user_data.get("stats", {}).get("elo")
+        if elo is None:
+            elo = user_data.get("duprRating") or user_data.get("dupr_rating") or 1200.0
 
         is_ghost = user_data.get("is_ghost") or user_data.get(
             "username", ""
@@ -107,11 +115,12 @@ def _sort_leaderboard(stats: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
             "avg_score": s["avg_score"],
             "win_rate": s["win_rate"],
             "form": s["form"],
+            "elo": float(elo),
         }
         leaderboard.append(entry)
 
     leaderboard.sort(
-        key=operator.itemgetter("avg_score", "wins", "games_played"), reverse=True
+        key=operator.itemgetter("elo", "avg_score", "wins"), reverse=True
     )
     return leaderboard
 
