@@ -28,6 +28,7 @@ from . import match as match_bp
 from . import teams as teams_bp
 from . import tournament as tournament_bp
 from . import user as user_bp
+from .config import Config
 from .context_processors import (
     inject_firebase_api_key,
     inject_global_context,
@@ -61,10 +62,6 @@ def _configure_mail_logging(app: Flask) -> None:
         )
         print(
             f"DEBUG: Mail Password loaded: {bool(app.config.get('MAIL_PASSWORD'))}",
-            file=sys.stderr,
-        )
-        print(
-            f"DEBUG: Mail Config - User: {app.config.get('MAIL_USERNAME')}",
             file=sys.stderr,
         )
         print(
@@ -294,40 +291,11 @@ def _load_config(app: Flask, test_config: dict[str, Any] | None) -> None:
     """Load and process application configuration."""
     app.url_map.converters["uuid"] = UUIDConverter
 
-    mail_username = os.environ.get("MAIL_USERNAME")
-    if mail_username:
-        mail_username = mail_username.strip().replace(" ", "").strip("'").strip('"')
+    # Load from centralized Config class
+    app.config.from_object(Config)
 
-    mail_password = os.environ.get("MAIL_PASSWORD")
-    if mail_password:
-        mail_password = mail_password.strip().replace(" ", "").strip("'").strip('"')
-
-    app.config.from_mapping(
-        SECRET_KEY=os.environ.get("SECRET_KEY") or "dev",
-        ENV=os.environ.get("FLASK_ENV", "development"),
-        FLASK_ENV=os.environ.get("FLASK_ENV", "development"),
-        FIREBASE_API_KEY=os.environ.get("FIREBASE_API_KEY"),
-        FIREBASE_PROJECT_ID=os.environ.get("FIREBASE_PROJECT_ID"),
-        FIREBASE_STORAGE_BUCKET=os.environ.get("FIREBASE_STORAGE_BUCKET")
-        or "pickaladder.firebasestorage.app",
-        GOOGLE_API_KEY=os.environ.get("GOOGLE_API_KEY"),
-        MAIL_SERVER=os.environ.get("MAIL_SERVER") or "smtp.gmail.com",
-        MAIL_PORT=int(os.environ.get("MAIL_PORT") or 587),
-        MAIL_USE_TLS=(os.environ.get("MAIL_USE_TLS") or "true").lower()
-        in ("true", "1", "t"),
-        MAIL_USE_SSL=(os.environ.get("MAIL_USE_SSL") or "false").lower()
-        in ("true", "1", "t"),
-        MAIL_USERNAME=mail_username,
-        MAIL_PASSWORD=mail_password,
-        MAIL_DEFAULT_SENDER=os.environ.get("MAIL_DEFAULT_SENDER")
-        or "noreply@pickaladder.com",
-        UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
-        SESSION_PERMANENT=True,
-        PERMANENT_SESSION_LIFETIME=timedelta(days=31),
-        SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE="Lax",
-        SESSION_COOKIE_SECURE=os.environ.get("FLASK_ENV") != "development",
-    )
+    # Set dynamic paths and instance-specific settings
+    app.config["UPLOAD_FOLDER"] = os.path.join(app.instance_path, "uploads")
 
     if test_config:
         app.config.update(test_config)
