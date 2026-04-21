@@ -56,26 +56,28 @@
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 {% if match.user_result == 'win' %}
-                    <span class="badge badge-success">W</span>
+                    <span class="badge status-win">W</span>
                 {% elif match.user_result == 'loss' %}
-                    <span class="badge badge-danger">L</span>
+                    <span class="badge status-loss">L</span>
                 {% endif %}
 
-                {% if user and user.uid %}
-                    {% if match.match_type == 'doubles' %}
-                        {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
-                        {% set user_score = match.player1_score if in_team1 else match.player2_score %}
-                        {% set opp_score = match.player2_score if in_team1 else match.player1_score %}
+                <span class="font-score">
+                    {% if user and user.uid %}
+                        {% if match.match_type == 'doubles' %}
+                            {% set in_team1 = user.uid in match.player1|map(attribute='id') %}
+                            {% set user_score = match.player1_score if in_team1 else match.player2_score %}
+                            {% set opp_score = match.player2_score if in_team1 else match.player1_score %}
+                        {% else %}
+                            {% set p1_id = match.player_1_data.uid if match.player_1_data else match.player1.id %}
+                            {% set is_p1 = p1_id == user.uid %}
+                            {% set user_score = match.player1_score if is_p1 else match.player2_score %}
+                            {% set opp_score = match.player2_score if is_p1 else match.player1_score %}
+                        {% endif %}
+                        {{ user_score }} - {{ opp_score }}
                     {% else %}
-                        {% set p1_id = match.player_1_data.uid if match.player_1_data else match.player1.id %}
-                        {% set is_p1 = p1_id == user.uid %}
-                        {% set user_score = match.player1_score if is_p1 else match.player2_score %}
-                        {% set opp_score = match.player2_score if is_p1 else match.player1_score %}
+                        {{ match.player1_score if match.player1_score is defined else match.player1Score }} - {{ match.player2_score if match.player2_score is defined else match.player2Score }}
                     {% endif %}
-                    {{ user_score }} - {{ opp_score }}
-                {% else %}
-                    {{ match.player1_score if match.player1_score is defined else match.player1Score }} - {{ match.player2_score if match.player2_score is defined else match.player2Score }}
-                {% endif %}
+                </span>
 
                 {% if match.tournament_name %}
                     <div class="text-muted small" style="margin-top: 4px;">🏆 {{ match.tournament_name }}</div>

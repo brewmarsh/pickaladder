@@ -31,7 +31,9 @@
                 <div class="match-results-player doubles {{ 'winner-glow' if team1_won }}">
                     {% if team1_won %}
                         <div class="winner-crown">👑</div>
-                        <span class="visually-hidden">Winners</span>
+                        <span class="badge status-win mb-2">Winners</span>
+                    {% else %}
+                        <span class="badge status-loss mb-2">Losers</span>
                     {% endif %}
                     <div class="d-flex gap-1 justify-content-center mb-1">
                         {% for player in team1 %}
@@ -44,7 +46,7 @@
                 </div>
 
                 <div class="match-results-score">
-                    <div class="score-display">{{ match.player1Score }}-{{ match.player2Score }}</div>
+                    <div class="score-display font-score">{{ match.player1Score }}-{{ match.player2Score }}</div>
                     <div class="vs-divider">Final</div>
                 </div>
 
@@ -52,9 +54,9 @@
                 <div class="match-results-player doubles {{ 'winner-glow' if team2_won }}">
                     {% if team2_won %}
                         <div class="winner-crown">👑</div>
-                        <span class="visually-hidden">Winners</span>
+                        <span class="badge status-win mb-2">Winners</span>
                     {% else %}
-                        <span class="visually-hidden">Losers</span>
+                        <span class="badge status-loss mb-2">Losers</span>
                     {% endif %}
                     <div class="d-flex gap-1 justify-content-center mb-1">
                         {% for player in team2 %}
@@ -73,7 +75,9 @@
                 <div class="match-results-player {{ 'winner-glow' if p1_won }}">
                     {% if p1_won %}
                         <div class="winner-crown">👑</div>
-                        <span class="visually-hidden">Winner</span>
+                        <span class="badge status-win mb-2">Winner</span>
+                    {% else %}
+                        <span class="badge status-loss mb-2">Loser</span>
                     {% endif %}
                     <a href="{{ url_for('user.view_user', user_id=player1.id) if player1.id else '#' }}">
                         <img src="{{ player1 | avatar_url }}" alt="{{ player1.name }}"
@@ -84,7 +88,7 @@
                 </div>
 
                 <div class="match-results-score">
-                    <div class="score-display">{{ match.player1Score }}-{{ match.player2Score }}</div>
+                    <div class="score-display font-score">{{ match.player1Score }}-{{ match.player2Score }}</div>
                     <div class="vs-divider">Final</div>
                 </div>
 
@@ -92,9 +96,9 @@
                 <div class="match-results-player {{ 'winner-glow' if p2_won }}">
                     {% if p2_won %}
                         <div class="winner-crown">👑</div>
-                        <span class="visually-hidden">Winner</span>
+                        <span class="badge status-win mb-2">Winner</span>
                     {% else %}
-                        <span class="visually-hidden">Loser</span>
+                        <span class="badge status-loss mb-2">Loser</span>
                     {% endif %}
                     <a href="{{ url_for('user.view_user', user_id=player2.id) if player2.id else '#' }}">
                         <img src="{{ player2 | avatar_url }}" alt="{{ player2.name }}"
