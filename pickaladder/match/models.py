@@ -167,6 +167,7 @@ class MatchSubmission:
     opponent_2_id: str | None = None
     group_id: str | None = None
     tournament_id: str | None = None
+    session_id: str | None = None
     created_by: str | None = None
 
     def __getitem__(self, key: str) -> Any:
@@ -199,6 +200,7 @@ class MatchResult:
     is_verified: bool = False
     groupId: str | None = None
     tournamentId: str | None = None
+    sessionId: str | None = None
     player1Ref: Any = None
     player2Ref: Any = None
     team1: list[Any] | None = None
@@ -234,6 +236,7 @@ class MatchDict(FirestoreDocument, Score, total=False):
     team2Ref: Any
     groupId: str
     tournamentId: str
+    sessionId: str
     status: str
     is_verified: bool
     winnerId: str

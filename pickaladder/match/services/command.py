@@ -97,6 +97,8 @@ class MatchCommandService(BaseRepository):
             data["groupId"] = sub.group_id
         if sub.tournament_id:
             data["tournamentId"] = sub.tournament_id
+        if sub.session_id:
+            data["sessionId"] = sub.session_id
         return data
 
     @classmethod
@@ -274,6 +276,7 @@ class MatchCommandService(BaseRepository):
             participants=data.get("participants"),
             groupId=data.get("groupId"),
             tournamentId=data.get("tournamentId"),
+            sessionId=data.get("sessionId"),
             player1Ref=data.get("player1Ref"),
             player2Ref=data.get("player2Ref"),
             team1=data.get("team1"),
