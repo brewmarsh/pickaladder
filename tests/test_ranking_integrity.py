@@ -9,7 +9,9 @@ def test_elo_calculation_winner_gains_loser_drops():
     p1_data = {"stats": {"elo": BASE_ELO, "wins": 0, "losses": 0}}
     p2_data = {"stats": {"elo": BASE_ELO, "wins": 0, "losses": 0}}
 
-    p1_upd, p2_upd = MatchStatsCalculator.calculate_elo_updates("team1", p1_data, p2_data)
+    p1_upd, p2_upd = MatchStatsCalculator.calculate_elo_updates(
+        "team1", p1_data, p2_data
+    )
 
     assert p1_upd["stats.elo"] > BASE_ELO
     assert p2_upd["stats.elo"] < BASE_ELO
@@ -27,7 +29,9 @@ def test_elo_calculation_upset_yields_larger_change():
     # Scenario 2: Upset (p1 has 1000, p2 has 1400, p1 wins)
     p1_underdog = {"stats": {"elo": 1000.0}}
     p2_favorite = {"stats": {"elo": 1400.0}}
-    upd1_upset, _ = MatchStatsCalculator.calculate_elo_updates("team1", p1_underdog, p2_favorite)
+    upd1_upset, _ = MatchStatsCalculator.calculate_elo_updates(
+        "team1", p1_underdog, p2_favorite
+    )
     change_upset = upd1_upset["stats.elo"] - 1000.0
 
     assert change_upset > change_even

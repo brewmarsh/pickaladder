@@ -35,7 +35,10 @@ class MatchCommandService(BaseRepository):
         session_id: str | None = None,
     ) -> MatchResult:
         """Process and record a match submission."""
-        user_id = current_user["uid"] if isinstance(current_user, dict) else current_user.get("uid")
+        user_id = (
+            current_user["uid"] if isinstance(current_user, dict)
+            else current_user.get("uid")
+        )
         sub = data if isinstance(data, MatchSubmission) else MatchSubmission(**data)
         MatchValidationService.validate_submission(db, sub, user_id)
 
@@ -164,7 +167,8 @@ class MatchCommandService(BaseRepository):
             db.collection("users").document(pid) for pid in participant_ids
         ]
 
-        # We also need p1_ref and p2_ref snaps for ELO calculation (they might be teams for doubles)
+        # We also need p1_ref and p2_ref snaps for ELO calculation
+        # (they might be teams for doubles)
         # To avoid extra calls, we'll fetch all needed refs at once.
         all_refs = list(set([p1_ref, p2_ref] + participant_refs))
         snaps_list = db.get_all(all_refs)

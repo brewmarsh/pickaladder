@@ -175,7 +175,9 @@ class MatchRecordService:
             elo = stats.get("elo")
             if elo is None:
                 elo = (
-                    user_data.get("duprRating") or user_data.get("dupr_rating") or 1200.0
+                    user_data.get("duprRating")
+                    or user_data.get("dupr_rating")
+                    or 1200.0
                 )
 
             # Apply rank decay penalty

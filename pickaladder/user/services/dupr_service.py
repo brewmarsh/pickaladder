@@ -32,7 +32,8 @@ class DUPRService:
 
         try:
             # We assume a standard REST API structure for DUPR
-            # The exact endpoint and header might need adjustment based on real DUPR docs
+            # The exact endpoint and header might need adjustment
+            # based on real DUPR docs
             url = f"{base_url}/v1/player/{dupr_id}"
             headers = {
                 "X-API-KEY": api_key,
@@ -46,9 +47,16 @@ class DUPRService:
                 data = response.json()
                 # Typical response might have multiple ratings (doubles, singles)
                 # We'll default to doubles or a general rating field
-                return float(data.get("rating") or data.get("doubles_rating") or 0.0)
+                rating_val = (
+                    data.get("rating")
+                    or data.get("doubles_rating")
+                    or 0.0
+                )
+                return float(rating_val)
 
-            logger.error(f"DUPR API returned error {response.status_code}: {response.text}")
+            logger.error(
+                f"DUPR API returned error {response.status_code}: {response.text}"
+            )
             return None
 
         except Exception as e:

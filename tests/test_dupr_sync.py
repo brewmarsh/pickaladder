@@ -10,7 +10,9 @@ from pickaladder.user.services.profile import sync_dupr_rating
 @pytest.fixture
 def mock_dupr_api():
     # Use fetch_rating instead of get_rating
-    with patch("pickaladder.user.services.dupr_service.DUPRService.fetch_rating") as mock:
+    with patch(
+        "pickaladder.user.services.dupr_service.DUPRService.fetch_rating"
+    ) as mock:
         yield mock
 
 def test_sync_dupr_rating_updates_user(mock_db, mock_dupr_api):

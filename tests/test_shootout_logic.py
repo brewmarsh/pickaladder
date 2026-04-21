@@ -6,7 +6,9 @@ from pickaladder.group.services.shootout_service import ShootoutService
 def test_initial_court_grouping():
     """Verify that players are initially grouped into courts by rank."""
     player_uids = ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"]
-    assignments = ShootoutService.group_players_to_courts(player_uids, players_per_court=4)
+    assignments = ShootoutService.group_players_to_courts(
+        player_uids, players_per_court=4
+    )
 
     EXPECTED_PLAYERS = 8
     assert len(assignments) == EXPECTED_PLAYERS
