@@ -103,7 +103,7 @@ This document outlines the requirements for the pickaladder application.
 *   **Logging:** Implement a more robust and configurable logging system.
 
 ### Other Features
-*   **Multiple Ladder Rankings:** Add support for multiple ladder ranking systems.
+*   **Multiple Group/Tournament Rankings:** Add support for multiple group/tournament ranking systems.
 *   **Customizable Branding:** Allow admins to customize the branding of the admin page.
 *   **Terms of Service:** Add a terms of service page.
 *   **Data Export:** Allow users to export their data.
@@ -132,7 +132,7 @@ Based on a more in-depth review of the codebase, here are some more detailed fea
 *   **Achievements/Badges:** Add a system of achievements or badges that users can earn for reaching certain milestones (e.g., "Played 10 matches," "First win," "On a winning streak").
 
 #### Manager Features
-*   **Multiple Ladder Types:** Allow facility managers to create and manage different types of ladders, such as singles, doubles, mixed doubles, age-based ladders, or skill-level-based ladders (e.g., 3.0-3.5, 4.0-4.5).
+*   **Multiple Group/Tournament Types:** Allow facility managers to create and manage different types of groups and tournaments, such as singles, doubles, mixed doubles, age-based ladders, or skill-level-based ladders (e.g., 3.0-3.5, 4.0-4.5).
 *   **Court Reservation System:** Integrate a court reservation system. This would allow managers to define the courts available at their facility and allow users to book courts for their matches.
 *   **Event-specific Leaderboards:** For tournaments or leagues, create separate leaderboards that are specific to that event, in addition to the overall site-wide leaderboard.
 *   **Broadcast Messaging:** Give managers the ability to send broadcast messages to all participants of a specific tournament or league, or to all users who have played at their facility. This could be used for announcements, updates, or promotions.

@@ -4,7 +4,7 @@ This document outlines the design of the pickaladder application.
 
 ## 1. Introduction
 
-The pickaladder application is a web-based application that allows users to create and manage pickleball ladders.
+The pickaladder application is a web-based application that allows users to create and manage pickleball groups and tournaments.
 
 ## 2. System Architecture
 

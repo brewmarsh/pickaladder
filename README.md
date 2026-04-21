@@ -8,11 +8,11 @@
 
 # 🥒 pickaladder 🥇
 
-A modern web application for managing pickleball ladders, leagues, and tournaments! 🏆
+A modern web application for managing pickleball groups and tournaments! 🏆
 
 ## ✨ Features
 
-`pickaladder` is packed with features to make managing and participating in pickleball ladders a breeze.
+`pickaladder` is packed with features to make managing and participating in pickleball groups and tournaments a breeze.
 
 ### 👤 User & Profile Management
 * **Easy Registration:** Simple sign-up process for new players.
