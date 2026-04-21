@@ -187,3 +187,23 @@
         color: var(--text-secondary);
     }
 }
+
+/* --- High Contrast Match Display (Volt/Black) --- */
+.status-win {
+    background-color: var(--color-volt) !important;
+    color: var(--text-on-accent) !important;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-loss {
+    background-color: var(--text-primary) !important;
+    color: var(--bg-secondary) !important;
+    font-weight: bold;
+    text-transform: uppercase;
+    border: 1px solid var(--border-color);
+}
+
+.font-score {
+    font-family: var(--font-score) !important;
+}
