@@ -20,5 +20,12 @@ Add GSD planning to the project to facilitate the implementation of new features
 ## Milestone: UI Refinement & Batch Match Recording
 **Goal:** Improve workflows for consistent group players, making it easier to record multiple games in a series.
 
+## Milestone: Vocabulary Refactor (Ladders to Groups/Tournaments)
+**Goal:** Transition the application's user-facing vocabulary and internal code symbols from "Ladders" to a contextual mix of "Groups" and "Tournaments".
+
+## Milestone: Match Display Refactoring
+**Goal:** Standardize match displays (win/loss indicators, cards, typography) using a consistent High Contrast (Volt/Black) theme across the entire application.
+
 ## Context
-This project is an existing codebase with features like user profiles, social/friend systems, groups/leagues, match recording, and an admin panel. It emphasizes AI-readiness and code quality. Phases 1-3 established a solid foundation with ELO ranking, Shootout logic, and DUPR integration.
+This project is an existing codebase with features like user profiles, social/friend systems, groups/leagues, match recording, and an admin panel. It emphasizes AI-readiness and code quality. Phases 1-5 established the foundation for ranking, workflows, and terminology. Milestone 4 focuses on visual consistency and professionalizing the match history and leaderboard UI.
+
