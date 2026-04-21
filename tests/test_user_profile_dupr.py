@@ -68,7 +68,7 @@ class UserProfileDuprTestCase(unittest.TestCase):
         self.mock_db.collection.return_value.document.side_effect = document_side_effect
 
         # Mock friends query
-        mock_coll = self.mock_firestore_client.collection.return_value
+        mock_coll = self.mock_db.collection.return_value
         mock_res = mock_coll.document.return_value.collection.return_value
         mock_res.where.return_value.limit.return_value.stream.return_value = []
 

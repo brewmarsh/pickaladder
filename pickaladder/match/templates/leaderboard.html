@@ -118,9 +118,23 @@
                 {% for match in latest_matches %}
                     {% set is_participant = current_user_id in match.participants|default([]) %}
                     {% if is_participant %}
-                        {% set p1_id = (match.player1Ref.id if match.player1Ref and hasattr(match.player1Ref, 'id') else (match.player1.id if match.player1 and hasattr(match.player1, 'id') else '')) %}
-                        {% set in_team1 = current_user_id == p1_id or current_user_id in match.team1|map(attribute='id') %}
-                        {% set is_win = (in_team1 and match.player1Score > match.player2Score) or (not in_team1 and match.player2Score > match.player1Score) %}
+                        {# Detect which side the user is on #}
+                        {% set in_team1 = false %}
+                        {% if match.matchType == 'doubles' %}
+                            {% set team1_ids = match.team1 | map(attribute='id') | list %}
+                            {% if current_user_id in team1_ids %}
+                                {% set in_team1 = true %}
+                            {% endif %}
+                        {% else %}
+                            {% set p1_id = match.player1Ref.id if match.player1Ref else (match.player1.id if match.player1 and match.player1.id is defined else '') %}
+                            {% if current_user_id == p1_id %}
+                                {% set in_team1 = true %}
+                            {% endif %}
+                        {% endif %}
+
+                        {% set p1_score = match.player1Score | default(0) %}
+                        {% set p2_score = match.player2Score | default(0) %}
+                        {% set is_win = (in_team1 and p1_score > p2_score) or (not in_team1 and p2_score > p1_score) %}
                         {% set badge_class = 'status-win' if is_win else 'status-loss' %}
                         {% set badge_text = 'W' if is_win else 'L' %}
                     {% else %}
