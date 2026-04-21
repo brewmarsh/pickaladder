@@ -17,5 +17,8 @@ Add GSD planning to the project to facilitate the implementation of new features
 - **UI Style:** Preserve existing styles.
 - **Workflow:** GSD (Research -> Strategy -> Execution).
 
+## Milestone: UI Refinement & Batch Match Recording
+**Goal:** Improve workflows for consistent group players, making it easier to record multiple games in a series.
+
 ## Context
-This project is an existing codebase with features like user profiles, social/friend systems, groups/leagues, match recording, and an admin panel. It emphasizes AI-readiness and code quality.
+This project is an existing codebase with features like user profiles, social/friend systems, groups/leagues, match recording, and an admin panel. It emphasizes AI-readiness and code quality. Phases 1-3 established a solid foundation with ELO ranking, Shootout logic, and DUPR integration.

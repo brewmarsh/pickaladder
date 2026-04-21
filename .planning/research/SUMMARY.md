@@ -1,51 +1,49 @@
 # Research Summary: pickaladder
 
 **Domain:** Pickleball Ladder Systems
-**Researched:** 2025-05-24
+**Researched:** 2024-10-24 (Updated with Batch Recording)
 **Overall confidence:** HIGH
 
 ## Executive Summary
 
-The pickleball ecosystem is rapidly professionalizing, shifting from casual "open play" to structured competitive formats. The dominant force in this space is **DUPR (Dynamic Universal Pickleball Rating)**, which has become the de facto standard for skill assessment. 
+The pickleball ecosystem is rapidly professionalizing, shifting from casual "open play" to structured competitive formats. The dominant force in this space is **DUPR (Dynamic Universal Pickleball Rating)**. 
 
-Competitive platforms now focus on two primary value drivers: **Fairness** (accurate ratings/matchmaking) and **Convenience** (automated scheduling/reporting). Most modern systems utilize either a continuous **ELO-based ranking** or a session-based **"Shootout" (Step) algorithm** where players move between courts based on immediate performance.
-
-For `pickaladder`, the current implementation provides a solid foundation with ELO calculations and basic leaderboard logic, but there is a clear opportunity to move from "Average Score" sorting to a more sophisticated rating-driven leaderboard and eventually integrate official DUPR data.
+A critical discovery in recent research is the high friction of match recording. Most users play **sessions** (multiple games with the same 4–8 people) rather than isolated matches. Current systems fail because they require a full "search-and-select" flow for every game. Transitioning to a **Session-First Workflow**—where a pool of players is selected once and games are logged with 2-3 taps—is a major differentiator for user retention and data accuracy.
 
 ## Key Findings
 
-**Stack:** Python (Flask) with Firestore. Integration with DUPR API is the primary growth vector.
-**Architecture:** Service-oriented approach for match processing and leaderboard generation.
-**Critical pitfall:** Stagnation in ELO systems where top players stop playing to "protect" their rank, solved by "Leap-Frog" or activity requirements.
+**Stack:** Python (Flask) with Firestore. Frontend needs robust local state for "Session" management and offline recording.
+**Architecture:** Introduction of a **Session Entity** to group matches and pre-load player pools.
+**Critical pitfall:** "Reporting Friction" leading to data abandonment. If it takes more than 15 seconds to log a game, users won't do it.
 
 ## Implications for Roadmap
 
 Based on research, suggested phase structure:
 
-1. **Phase 1: Ranking & Movement Refinement** - Transition from "Average Score" to "ELO-First" sorting. Implement "Shootout" (Court Movement) logic for groups.
-   - Addresses: Table stakes competitive expectations.
-   - Avoids: Misleading rankings based on volume vs skill.
+1. **Phase 1: Session-First Core & Batch Recording** - Implement the "Session" container and a high-speed batch recording UI.
+   - Addresses: The #1 user pain point (friction).
+   - Features: Player pool selection, 2-tap score entry.
 
-2. **Phase 2: DUPR Integration** - Implement DUPR API sync to allow users to verify their "Official" rating within the app.
-   - Addresses: Market demand for DUPR-verified matches.
-   - Rationale: High value for competitive players.
+2. **Phase 2: Ranking & Movement Refinement** - Transition from "Average Score" to "ELO-First" sorting. Implement "Shootout" (Court Movement) logic.
+   - Addresses: Competitive integrity.
 
-3. **Phase 3: Automated Event Lifecycle** - From scheduling to court assignments to final reporting.
-   - Addresses: Organizer burnout (the #1 reason ladders fail).
+3. **Phase 3: DUPR Integration** - Implement DUPR API sync for official rating validation.
+
+4. **Phase 4: Automated Event Lifecycle** - Scheduling and full event management.
 
 **Phase ordering rationale:**
-- Establish internal rating integrity first (Phase 1) before connecting to external systems (Phase 2). Scaling to full event management (Phase 3) requires a robust core.
+- **UX First:** Solve the "Friction" problem (Phase 1) before perfecting the math (Phase 2). If users don't log matches because it's too hard, the best ELO algorithm in the world has no data to work with.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Core stack is well-suited for current needs. |
-| Features | HIGH | Table stakes are well-defined in the market. |
-| Architecture | MEDIUM | Current leaderboard logic is coupled with Firestore streams; may need optimization for scale. |
-| Pitfalls | HIGH | Common issues like sandbagging and inactivity are well-documented. |
+| Stack | HIGH | Core stack is well-suited. |
+| Features | HIGH | Batch recording is a clear "missing link" in current apps. |
+| Architecture | MEDIUM | Adding "Sessions" requires a schema update in Firestore. |
+| Pitfalls | HIGH | Friction and data abandonment are well-documented. |
 
 ## Gaps to Address
 
-- **Real-world DUPR API Access:** Requires "Club" status or partnership; needs investigation into developer sandbox access for the current project.
-- **Mobile Push Notifications:** Essential for "Flex" ladders (matches scheduled by players) to ensure timely reporting.
+- **Real-world DUPR API Access:** Still requires investigation into developer sandbox access.
+- **Offline Sync Patterns:** Need a solid strategy for syncing multi-game sessions recorded in low-signal areas.

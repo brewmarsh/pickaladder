@@ -69,14 +69,19 @@ def view_match_summary(match_id: str) -> Any:
 
 
 def _populate_match_form_choices(
-    db: Any, form: MatchForm, user_id: str, group_id: str | None, t_id: str | None
+    db: Any,
+    form: MatchForm,
+    user_id: str,
+    group_id: str | None,
+    t_id: str | None,
+    session_id: str | None = None,
 ) -> None:
     """Populate player choices for the match form."""
     p1_cands = MatchQueryService.get_candidate_player_ids(
-        db, user_id, group_id, t_id, True
+        db, user_id, group_id, t_id, session_id, True
     )
     other_cands = MatchQueryService.get_candidate_player_ids(
-        db, user_id, group_id, t_id
+        db, user_id, group_id, t_id, session_id
     )
     all_uids = p1_cands | other_cands
     all_names = {}
@@ -94,12 +99,18 @@ def _populate_match_form_choices(
 
 
 def _handle_record_match_get(
-    db: Any, form: MatchForm, user_id: str, group_id: str | None, t_id: str | None
+    db: Any,
+    form: MatchForm,
+    user_id: str,
+    group_id: str | None,
+    t_id: str | None,
+    session_id: str | None = None,
 ) -> None:
     """Handle GET parameters for pre-populating the match form."""
     form.player1.data = user_id
     form.group_id.data = group_id
     form.tournament_id.data = t_id
+    form.session_id.data = session_id
 
     _prepopulate_players_from_args(form)
 
@@ -130,11 +141,12 @@ def record_match() -> Any:
     """Handle match recording for both web form and optimistic JSON submission."""
     db, user_id = firestore.client(), g.user["uid"]
     group_id, t_id = request.args.get("group_id"), request.args.get("tournament_id")
+    session_id = request.args.get("session_id") or request.form.get("session_id")
     form = MatchForm(data=request.get_json() if request.is_json else None)
 
-    _populate_match_form_choices(db, form, user_id, group_id, t_id)
+    _populate_match_form_choices(db, form, user_id, group_id, t_id, session_id)
     if request.method == "GET":
-        _handle_record_match_get(db, form, user_id, group_id, t_id)
+        _handle_record_match_get(db, form, user_id, group_id, t_id, session_id)
 
     if form.validate_on_submit():
         response = _handle_match_submission(db, form, group_id, t_id)
@@ -167,6 +179,7 @@ def _handle_match_submission(
         opponent_2_id=data.get("opponent2"),
         group_id=data.get("group_id") or group_id,
         tournament_id=data.get("tournament_id") or t_id,
+        session_id=data.get("session_id"),
     )
     try:
         result = MatchCommandService.record_match(db, submission, g.user)
@@ -183,6 +196,8 @@ def _handle_match_submission(
 
 def _get_record_match_redirect(submission: MatchSubmission, match_id: str) -> str:
     """Determine the post-success redirect URL."""
+    if sid := submission.session_id:
+        return url_for("group.quick_log", session_id=sid)
     if tid := submission.tournament_id:
         return url_for("tournament.view_tournament", tournament_id=tid)
     if gid := submission.group_id:

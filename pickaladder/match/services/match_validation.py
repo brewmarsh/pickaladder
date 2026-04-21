@@ -40,10 +40,10 @@ class MatchValidationService:
     def _check_player_validity(db: Client, sub: MatchSubmission, user_id: str) -> None:
         """Validate that all players are valid candidates."""
         cands = MatchQueryService.get_candidate_player_ids(
-            db, user_id, sub.group_id, sub.tournament_id
+            db, user_id, sub.group_id, sub.tournament_id, sub.session_id
         )
         p1_cands = MatchQueryService.get_candidate_player_ids(
-            db, user_id, sub.group_id, sub.tournament_id, True
+            db, user_id, sub.group_id, sub.tournament_id, sub.session_id, True
         )
 
         if sub.player_1_id not in p1_cands:

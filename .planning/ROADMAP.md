@@ -5,7 +5,7 @@
 - [x] **Phase 1: Quality Foundation & Audit** - Comprehensive code review and establishing quality gates.
 - [x] **Phase 2: Ranking Logic & Integrity** - Transitioning to skill-based ranking and automated movement.
 - [x] **Phase 3: External Integration & Advanced Ranking** - DUPR sync and rank health management.
-- [ ] **Phase 4: Session-First Workflow & Batch Recording** - Streamlining courtside match logging via session pools.
+- [x] **Phase 4: Session-First Workflow & Batch Recording** - Streamlining courtside match logging via session pools.
 
 ---
 
@@ -58,9 +58,9 @@
   3. Mobile "Quick Log" view is usable in high-glare outdoor conditions (high contrast/large targets).
   4. Session participants can verify all matches in the batch with a single confirmation.
 **Plans**:
-- [ ] 04-01-PLAN.md — Session Core & Backend Service.
-- [ ] 04-02-PLAN.md — "Quick Log" UI & Batch Recording Workflow.
-- [ ] 04-03-PLAN.md — Session Summary & Batch Verification.
+- [x] 04-01-PLAN.md — Session Core & Backend Service.
+- [x] 04-02-PLAN.md — "Quick Log" UI & Batch Recording Workflow.
+- [x] 04-03-PLAN.md — Session Summary & Batch Verification.
 **UI hint**: yes
 
 ---
@@ -72,4 +72,4 @@
 | 1. Quality Foundation & Audit | 2/2 | Completed | 2026-04-17 |
 | 2. Ranking Logic & Integrity | 1/1 | Completed | 2026-04-17 |
 | 3. External Integration & Advanced Ranking | 1/1 | Completed | 2026-04-17 |
-| 4. Session-First Workflow & Batch Recording | 0/3 | Not started | - |
+| 4. Session-First Workflow & Batch Recording | 3/3 | Completed | 2026-04-21 |

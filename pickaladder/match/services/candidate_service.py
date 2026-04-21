@@ -16,11 +16,16 @@ class MatchCandidateService:
         user_id: str,
         group_id: str | None = None,
         tournament_id: str | None = None,
+        session_id: str | None = None,
         include_user: bool = False,
     ) -> set[str]:
         """Fetch a set of valid opponent IDs for a user."""
         candidate_ids: set[str] = {user_id}
-        if tournament_id:
+        if session_id:
+            candidate_ids.update(
+                MatchCandidateService._get_session_participants(db, session_id)
+            )
+        elif tournament_id:
             candidate_ids.update(
                 MatchCandidateService._get_tournament_participants(db, tournament_id)
             )
@@ -36,6 +41,17 @@ class MatchCandidateService:
         if not include_user:
             candidate_ids.discard(user_id)
         return candidate_ids
+
+    @staticmethod
+    def _get_session_participants(db: Client, session_id: str) -> list[str]:
+        """Fetch participant IDs for a session."""
+        from typing import cast
+
+        doc = cast(
+            "DocumentSnapshot",
+            db.collection("sessions").document(session_id).get(),
+        )
+        return (doc.to_dict() or {}).get("playerIds", []) if doc.exists else []
 
     @staticmethod
     def _get_tournament_participants(db: Client, tournament_id: str) -> list[str]:

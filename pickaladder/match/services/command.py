@@ -31,15 +31,18 @@ class MatchCommandService(BaseRepository):
         cls,
         db: Client,
         data: MatchSubmission | dict[str, Any],
-        current_user: UserSession,
+        current_user: UserSession | dict[str, Any],
+        session_id: str | None = None,
     ) -> MatchResult:
         """Process and record a match submission."""
-        user_id = current_user["uid"]
+        user_id = current_user["uid"] if isinstance(current_user, dict) else current_user.get("uid")
         sub = data if isinstance(data, MatchSubmission) else MatchSubmission(**data)
         MatchValidationService.validate_submission(db, sub, user_id)
 
         match_date = cls._parse_match_date(sub.match_date)
         match_doc_data = cls._prepare_match_doc_base(sub, user_id, match_date)
+        if session_id:
+            match_doc_data["sessionId"] = session_id
 
         side1_ref, side2_ref = cls._resolve_match_participants(db, sub, match_doc_data)
 

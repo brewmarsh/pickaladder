@@ -1,7 +1,7 @@
 # Architecture Patterns
 
 **Domain:** Pickleball Ladder Systems
-**Researched:** 2025-05-24
+**Researched:** 2024-10-24 (Updated with Batch Recording)
 
 ## Recommended Architecture
 
@@ -11,47 +11,35 @@ The system should follow a **Service-Oriented Pattern** within the Flask applica
 
 | Component | Responsibility | Communicates With |
 |-----------|---------------|-------------------|
-| Match Service | Records match results, triggers validation. | Firestore, Rating Service |
+| **Session Service** | **Manages player pools and "in-progress" session state.** | **Match Service, Firestore** |
+| Match Service | Records individual match results, triggers validation. | Firestore, Rating Service |
 | Rating Service | Calculates ELO, Upset probability, DUPR sync. | Match Service, User Service |
 | Leaderboard Service | Aggregates user stats for group display. | Firestore, Match Service |
 | Event Engine | Generates court assignments for Shootouts/Round-Robins. | User Service, Group Service |
 
 ### Data Flow
 
-1. **Match Entry:** User submits scores via UI.
-2. **Validation:** System checks for conflicting scores or "impossible" results.
+1. **Session Setup:** User creates a Session and selects a "Player Pool" (Firestore: `sessions` collection).
+2. **Match Entry:** User submits scores via Batch UI (Firestore: `matches` collection, linked to `sessionId`).
 3. **Calculation:** Rating Service updates ELO/stats for all participants.
-4. **Broadcast:** Leaderboards are updated (cached or real-time Firestore stream).
+4. **Broadcast:** Leaderboards are updated.
 
 ## Patterns to Follow
 
 ### Pattern 1: Strategy Pattern for Ratings
-Allows switching between ELO, DUPR, or internal point systems without rewriting the Match Service.
+Allows switching between ELO, DUPR, or internal systems.
 
-```python
-class RatingStrategy(Protocol):
-    def calculate(self, winner_data, loser_data) -> tuple[dict, dict]: ...
-
-class EloStrategy:
-    def calculate(self, winner_data, loser_data):
-        # Existing Elo logic
-        ...
-
-class DuprStrategy:
-    def calculate(self, winner_data, loser_data):
-        # DUPR API sync logic
-        ...
-```
-
-### Pattern 2: Optimistic Leaderboard Updates
-Since Firestore is real-time, the leaderboard should listen to the `matches` collection filtered by `groupId` to update instantly when a new match is recorded.
+### Pattern 2: **Session-Scoped Player Pool**
+Instead of querying the entire group roster for every match, the UI should use a pre-filtered "Session Pool" stored in local state or a temporary `session` document.
 
 ## Anti-Patterns to Avoid
 
 ### Anti-Pattern 1: Heavy In-Memory Aggregation
-**What:** Fetching ALL matches for a group to calculate a leaderboard on every request.
-**Why bad:** Performance degrades linearly with the number of matches.
-**Instead:** Maintain a "Leaderboard" or "Stats" document per user-group relationship that is updated incrementally when matches are recorded.
+Fetching ALL matches for a group to calculate a leaderboard on every request.
+
+### Anti-Pattern 2: **Stateless Batch Entry**
+**Problem:** Forcing the user to re-select players if the app crashes or they switch tabs during a session.
+**Instead:** Persist the "Active Session" pool in Firestore or LocalStorage so it remains available throughout the day.
 
 ## Scalability Considerations
 
@@ -65,3 +53,4 @@ Since Firestore is real-time, the leaderboard should listen to the `matches` col
 
 - [Firestore Best Practices](https://firebase.google.com/docs/firestore/best-practices)
 - [Clean Architecture in Python](https://pypi.org/project/clean-architecture/)
+- [Research: Batch Recording Workflows](./BATCH_RECORDING.md)
