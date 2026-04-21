@@ -282,6 +282,8 @@
                     {% endif %}
 
                     {% set is_win = primary_score >= opponent_score %}
+                    {% set is_participant = user_in_p1 or user_in_p2 %}
+                    {% set badge_class = ('status-win' if is_win else 'status-loss') if is_participant else 'status-neutral' %}
 
                     <div class="match-compact-row">
                         <div class="match-date-compact">{{ match.matchDate.strftime('%b %d') if match.matchDate else 'N/A' }}</div>
@@ -292,7 +294,7 @@
                         </div>
 
                         <div class="match-score-badge-compact">
-                            <span class="score-badge {{ 'status-win' if is_win else 'status-loss' }} font-score">
+                            <span class="score-badge {{ badge_class }} font-score">
                                 {{ 'W' if is_win else 'L' }} {{ primary_score }}-{{ opponent_score }}
                             </span>
                             {% if match.is_upset %}

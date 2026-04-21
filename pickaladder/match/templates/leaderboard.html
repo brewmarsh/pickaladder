@@ -116,6 +116,18 @@
             <h3 class="p-3 mb-0">Latest Games</h3>
             <div class="match-history-feed">
                 {% for match in latest_matches %}
+                    {% set is_participant = current_user_id in match.participants|default([]) %}
+                    {% if is_participant %}
+                        {% set p1_id = (match.player1Ref.id if match.player1Ref and hasattr(match.player1Ref, 'id') else (match.player1.id if match.player1 and hasattr(match.player1, 'id') else '')) %}
+                        {% set in_team1 = current_user_id == p1_id or current_user_id in match.team1|map(attribute='id') %}
+                        {% set is_win = (in_team1 and match.player1Score > match.player2Score) or (not in_team1 and match.player2Score > match.player1Score) %}
+                        {% set badge_class = 'status-win' if is_win else 'status-loss' %}
+                        {% set badge_text = 'W' if is_win else 'L' %}
+                    {% else %}
+                        {% set badge_class = 'status-neutral' %}
+                        {% set badge_text = 'W' %}
+                    {% endif %}
+
                     <div class="match-compact-row clickable-row" data-href="{{ url_for('match.view_match_summary', match_id=match.id) }}">
                         <div class="match-date-compact">{{ match.date }}</div>
 
@@ -125,8 +137,8 @@
                         </div>
 
                         <div class="match-score-badge-compact">
-                            <span class="score-badge status-win font-score">
-                                W {{ match.winner_score }}-{{ match.loser_score }}
+                            <span class="score-badge {{ badge_class }} font-score">
+                                {{ badge_text }} {{ match.winner_score }}-{{ match.loser_score }}
                             </span>
                         </div>
                     </div>

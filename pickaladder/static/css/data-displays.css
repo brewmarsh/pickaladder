@@ -204,6 +204,14 @@
     border: 1px solid var(--border-color);
 }
 
+.status-neutral {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
+    font-weight: bold;
+    text-transform: uppercase;
+    border: 1px solid var(--border-color);
+}
+
 .font-score {
     font-family: var(--font-score) !important;
 }
