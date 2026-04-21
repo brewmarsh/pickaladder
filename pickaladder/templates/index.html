@@ -3,7 +3,7 @@
 {% block content %}
     <div class="hero">
         <h1>Welcome to pickaladder</h1>
-        <p>The best place to manage your pickleball ladders, track matches, and connect with other players.</p>
+        <p>The best place to manage your pickleball groups and tournaments, track matches, and connect with other players.</p>
         {% if session['user_id'] %}
             <a href="{{ url_for('user.dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
         {% else %}
