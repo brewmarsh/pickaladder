@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from typing import Any
 
 
@@ -15,14 +14,14 @@ class ShootoutService:
     ) -> list[dict[str, Any]]:
         """
         Calculate next court assignments based on current match results.
-        
+
         player_results should be a list of dicts:
         {
             "uid": str,
             "court": int, (1-indexed, 1 is top court)
             "won": bool
         }
-        
+
         Returns a list of dicts with "uid" and "next_court".
         """
         if not player_results:
@@ -41,7 +40,7 @@ class ShootoutService:
 
         for court_id in sorted_court_ids:
             court_players = courts[court_id]
-            
+
             for player in court_players:
                 uid = player["uid"]
                 won = player["won"]
@@ -51,11 +50,10 @@ class ShootoutService:
                     # Winners move up (decrement court_id)
                     if court_id > 1:
                         next_court = court_id - 1
-                else:
-                    # Losers move down (increment court_id)
-                    if court_id < max(sorted_court_ids):
-                        next_court = court_id + 1
-                
+                # Losers move down (increment court_id)
+                elif court_id < max(sorted_court_ids):
+                    next_court = court_id + 1
+
                 assignments.append({"uid": uid, "next_court": next_court})
 
         return assignments

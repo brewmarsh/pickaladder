@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
+
 from pickaladder.group.services.session_service import SessionService
+
 
 class TestSessionService(unittest.TestCase):
     def setUp(self):
@@ -13,11 +15,11 @@ class TestSessionService(unittest.TestCase):
         # Mocking cls.create (inherited from BaseRepository)
         with patch("pickaladder.base.repository.BaseRepository.create") as mock_create:
             mock_create.return_value = "new_session_id"
-            
+
             session_id = SessionService.create_session(
                 self.db, self.group_id, self.creator_id, self.player_ids
             )
-            
+
             self.assertEqual(session_id, "new_session_id")
             mock_create.assert_called_once()
             args, _ = mock_create.call_args
@@ -31,9 +33,9 @@ class TestSessionService(unittest.TestCase):
     def test_get_session(self):
         with patch("pickaladder.base.repository.BaseRepository.get_by_id") as mock_get:
             mock_get.return_value = {"id": "session_123", "status": "ACTIVE"}
-            
+
             session = SessionService.get_session(self.db, "session_123")
-            
+
             self.assertEqual(session["id"], "session_123")
             mock_get.assert_called_once_with(self.db, "session_123")
 

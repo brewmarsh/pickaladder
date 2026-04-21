@@ -1,8 +1,9 @@
 """Tests for rank decay logic."""
 
-import pytest
 from datetime import datetime, timedelta, timezone
+
 from pickaladder.match.services.record_service import MatchRecordService
+
 
 def test_calculate_rank_decay_active_user():
     """Active users (played within 30 days) should have 0 decay."""
@@ -22,25 +23,27 @@ def test_calculate_rank_decay_inactive_user():
 def test_leaderboard_applies_decay(mock_db):
     """Verify that get_leaderboard_data applies decay to ELO."""
     # User 1: Active, 1200 ELO
+    STARTING_ELO = 1200
     mock_db.collection("users").document("u1").set({
         "username": "active",
-        "stats": {"elo": 1200, "wins": 5, "losses": 0},
+        "stats": {"elo": STARTING_ELO, "wins": 5, "losses": 0},
         "last_match_date": datetime.now(timezone.utc)
     })
-    
+
     # User 2: Inactive (60 days), 1250 ELO
+    INACTIVE_ELO = 1250
     mock_db.collection("users").document("u2").set({
         "username": "inactive",
-        "stats": {"elo": 1250, "wins": 5, "losses": 0},
+        "stats": {"elo": INACTIVE_ELO, "wins": 5, "losses": 0},
         "last_match_date": datetime.now(timezone.utc) - timedelta(days=60)
     })
-    
+
     leaderboard = MatchRecordService.get_leaderboard_data(mock_db, min_games=0)
-    
+
     u1 = next(u for u in leaderboard if u["id"] == "u1")
     u2 = next(u for u in leaderboard if u["id"] == "u2")
-    
+
     # MatchRecordService uses 'elo' as the field name in the returned dict
-    assert u1["elo"] == 1200
-    assert u2["elo"] < 1250
+    assert u1["elo"] == STARTING_ELO
+    assert u2["elo"] < INACTIVE_ELO
     assert u2["is_inactive"] is True

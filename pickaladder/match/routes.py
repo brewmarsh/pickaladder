@@ -68,7 +68,7 @@ def view_match_summary(match_id: str) -> Any:
     return render_template("match/summary.html", **context)
 
 
-def _populate_match_form_choices(
+def _populate_match_form_choices(  # noqa: PLR0913
     db: Any,
     form: MatchForm,
     user_id: str,
@@ -98,7 +98,7 @@ def _populate_match_form_choices(
     )
 
 
-def _handle_record_match_get(
+def _handle_record_match_get(  # noqa: PLR0913
     db: Any,
     form: MatchForm,
     user_id: str,

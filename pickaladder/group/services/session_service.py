@@ -12,6 +12,7 @@ class SessionService(BaseRepository):
     """Service class for session-related operations."""
 
     COLLECTION_NAME = "sessions"
+    MIN_VERIFICATIONS_FOR_COMPLETION = 2
 
     @classmethod
     def create_session(
@@ -81,7 +82,10 @@ class SessionService(BaseRepository):
         # Check if we should complete the session (Threshold: 2 unique approvals)
         updated_verified_by = list(set(verified_by + [user_id]))
 
-        if len(updated_verified_by) >= 2 and session.get("status") != "COMPLETED":
+        if (
+            len(updated_verified_by) >= cls.MIN_VERIFICATIONS_FOR_COMPLETION
+            and session.get("status") != "COMPLETED"
+        ):
             batch = db.batch()
             batch.update(
                 doc_ref,

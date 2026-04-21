@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from firebase_admin import firestore
+
 from pickaladder import create_app
 
 MOCK_USER_ID = "winner_uid"
@@ -68,7 +69,7 @@ class SessionMatchRecordingTestCase(unittest.TestCase):
             sess["user_id"] = MOCK_USER_ID
             sess["is_admin"] = False
         self.mocks["verify_id_token"].return_value = MOCK_USER_PAYLOAD
-        
+
         # Mock for auth before_request load_user_document
         mock_user_snap = MagicMock()
         mock_user_snap.exists = True
@@ -82,13 +83,13 @@ class SessionMatchRecordingTestCase(unittest.TestCase):
     def test_record_match_with_session_id(self, mock_record_match: MagicMock) -> None:
         """Test that recording a match with session_id redirects to quick log."""
         self._set_session_user()
-        
+
         # Mock session doc for choices population
         mock_session_snap = MagicMock()
         mock_session_snap.exists = True
         mock_session_snap.to_dict.return_value = MOCK_SESSION_DATA
         self.mock_db.collection("sessions").document(MOCK_SESSION_ID).get.return_value = mock_session_snap
-        
+
         # Mock users for SelectField choices (MatchQueryService.get_player_names equivalent)
         mock_user_snap = MagicMock(exists=True, id=MOCK_USER_ID)
         mock_user_snap.to_dict.return_value = MOCK_USER_DATA
@@ -119,7 +120,7 @@ class SessionMatchRecordingTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         # Verify redirect to quick log
         self.assertIn(f"/group/session/{MOCK_SESSION_ID}/quick-log", response.location)
-        
+
         # Verify session_id was passed to MatchCommandService.record_match via submission
         submission = mock_record_match.call_args[0][1]
         self.assertEqual(submission.session_id, MOCK_SESSION_ID)
@@ -127,18 +128,18 @@ class SessionMatchRecordingTestCase(unittest.TestCase):
     def test_candidate_players_limited_to_session(self) -> None:
         """Test that candidate players are limited to session pool when session_id is provided."""
         from pickaladder.match.services.candidate_service import MatchCandidateService
-        
+
         # Mock session doc with specific players
         SESSION_PLAYERS = ["p1", "p2", "p3"]
         mock_session_snap = MagicMock()
         mock_session_snap.exists = True
         mock_session_snap.to_dict.return_value = {"playerIds": SESSION_PLAYERS}
         self.mock_db.collection("sessions").document(MOCK_SESSION_ID).get.return_value = mock_session_snap
-        
+
         candidates = MatchCandidateService.get_candidate_player_ids(
             self.mock_db, "p1", session_id=MOCK_SESSION_ID, include_user=True
         )
-        
+
         self.assertEqual(candidates, set(SESSION_PLAYERS))
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 class MatchCandidateService:
     @staticmethod
-    def get_candidate_player_ids(
+    def get_candidate_player_ids(  # noqa: PLR0913
         db: Client,
         user_id: str,
         group_id: str | None = None,

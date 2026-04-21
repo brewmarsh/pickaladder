@@ -10,6 +10,7 @@ from flask import current_app
 from werkzeug.utils import secure_filename
 
 from pickaladder.utils import EmailError, send_email
+
 from .dupr_service import DUPRService
 
 if TYPE_CHECKING:

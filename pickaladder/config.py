@@ -2,7 +2,6 @@
 
 import os
 from datetime import timedelta
-from typing import Optional
 
 
 class Config:

@@ -9,7 +9,6 @@ import os
 import sys
 import uuid
 from contextlib import suppress
-from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
