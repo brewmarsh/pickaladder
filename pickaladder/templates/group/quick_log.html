@@ -1,0 +1,332 @@
+{% extends "layout.html" %}
+
+{% block title %}Quick Log{% endblock %}
+
+{% block extra_meta %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+<style>
+    :root {
+        --qc-bg: #000000;
+        --qc-card-bg: #1a1a1a;
+        --qc-card-border: #333333;
+        --qc-text: #ffffff;
+        --qc-accent: #84CC16; /* Volt Green */
+        --qc-winner: #16a34a;
+        --qc-loser: #dc2626;
+    }
+
+    body {
+        background-color: var(--qc-bg) !important;
+        color: var(--qc-text) !important;
+    }
+
+    #main-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: none !important;
+    }
+
+    .quick-log-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 1rem;
+        padding-bottom: 120px;
+    }
+
+    .player-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .player-card {
+        background-color: var(--qc-card-bg);
+        border: 3px solid var(--qc-card-border);
+        border-radius: 0.75rem;
+        padding: 1.5rem 0.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.1s ease-in-out;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 100px;
+    }
+
+    .player-card:active {
+        transform: scale(0.95);
+    }
+
+    .player-card.is-winner {
+        background-color: var(--qc-winner);
+        border-color: #fff;
+    }
+
+    .player-card.is-loser {
+        background-color: var(--qc-loser);
+        border-color: #fff;
+    }
+
+    .player-name {
+        font-size: 1.25rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        word-break: break-word;
+    }
+
+    .score-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+    }
+
+    .score-btn {
+        background-color: var(--qc-card-bg);
+        border: 2px solid var(--qc-card-border);
+        border-radius: 0.5rem;
+        padding: 1rem 0;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #fff;
+    }
+
+    .score-btn.active {
+        background-color: var(--qc-accent);
+        color: #000;
+        border-color: #fff;
+    }
+
+    .action-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #111;
+        padding: 1rem;
+        display: flex;
+        gap: 1rem;
+        border-top: 1px solid #333;
+        z-index: 1000;
+    }
+
+    .btn-qc {
+        flex: 1;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        font-size: 1.25rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        border: none;
+    }
+
+    .btn-qc-primary {
+        background-color: var(--qc-accent);
+        color: #000;
+    }
+
+    .btn-qc-secondary {
+        background-color: #333;
+        color: #fff;
+    }
+
+    .btn-qc:disabled {
+        opacity: 0.2;
+    }
+
+    .step-header {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: var(--qc-accent);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Hide standard elements for a clean mobile UI */
+    .navbar, footer, .breadcrumb-container {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="quick-log-container">
+    <div id="app">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-black tracking-tighter">QUICK LOG</h1>
+            <a href="{{ url_for('group.view_group', group_id=session.groupId) }}" class="text-sm font-bold text-gray-500 border border-gray-700 px-3 py-1 rounded">EXIT</a>
+        </div>
+
+        <!-- Step 1: Select Winners -->
+        <div id="step-1">
+            <div class="step-header">1. WHO WON?</div>
+            <div class="player-grid">
+                {% for player in players %}
+                <div class="player-card" id="pc-{{ player.id }}" onclick="handlePlayerTap('{{ player.id }}')">
+                    <div class="player-name">{{ player.username }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Step 2: Select Losers -->
+        <div id="step-2" style="display: none;">
+            <div class="step-header">2. WHO LOST?</div>
+            <div id="loser-grid" class="player-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Step 3: Enter Score -->
+        <div id="step-3" style="display: none;">
+            <div class="step-header">3. LOSER'S SCORE (WINNER GOT 11)</div>
+            <div class="score-grid mb-8">
+                {% for s in range(0, 16) %}
+                <button class="score-btn" onclick="setScore({{ s }})" id="sb-{{ s }}">{{ s }}</button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+            <button id="btn-back" class="btn-qc btn-qc-secondary" onclick="goBack()" style="display: none;">BACK</button>
+            <button id="btn-next" class="btn-qc btn-qc-primary" onclick="goNext()" disabled>NEXT</button>
+            <button id="btn-confirm" class="btn-qc btn-qc-primary" onclick="confirmMatch()" style="display: none;" disabled>CONFIRM</button>
+        </div>
+    </div>
+
+    <form id="record-form" method="POST" action="{{ url_for('match.record_match') }}" style="display: none;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="session_id" value="{{ session_id }}">
+        <input type="hidden" name="match_type" value="{{ session.matchTypeDefault|default('doubles') }}">
+        <input type="hidden" name="player1" id="f-winner1">
+        <input type="hidden" name="partner" id="f-winner2">
+        <input type="hidden" name="player2" id="f-loser1">
+        <input type="hidden" name="opponent2" id="f-loser2">
+        <input type="hidden" name="player1_score" value="11">
+        <input type="hidden" name="player2_score" id="f-loser-score">
+        <input type="hidden" name="match_date" id="f-date">
+    </form>
+</div>
+
+<script>
+    const players = {{ players|tojson }};
+    const matchType = "{{ session.matchTypeDefault|default('doubles') }}";
+    const winnerCountTarget = (matchType === 'singles') ? 1 : 2;
+    
+    let currentStep = 1;
+    let winners = [];
+    let losers = [];
+    let score = null;
+
+    function handlePlayerTap(id) {
+        if (currentStep === 1) {
+            const idx = winners.indexOf(id);
+            if (idx > -1) {
+                winners.splice(idx, 1);
+                document.getElementById(`pc-${id}`).classList.remove('is-winner');
+            } else if (winners.length < winnerCountTarget) {
+                winners.push(id);
+                document.getElementById(`pc-${id}`).classList.add('is-winner');
+            }
+            document.getElementById('btn-next').disabled = (winners.length !== winnerCountTarget);
+        } else if (currentStep === 2) {
+            const idx = losers.indexOf(id);
+            if (idx > -1) {
+                losers.splice(idx, 1);
+                document.getElementById(`pc-l-${id}`).classList.remove('is-loser');
+            } else if (losers.length < winnerCountTarget) {
+                losers.push(id);
+                document.getElementById(`pc-l-${id}`).classList.add('is-loser');
+            }
+            document.getElementById('btn-next').disabled = (losers.length !== winnerCountTarget);
+        }
+    }
+
+    function goNext() {
+        if (currentStep === 1) {
+            const remainingPlayers = players.filter(p => !winners.includes(p.id));
+            if (remainingPlayers.length === winnerCountTarget) {
+                losers = remainingPlayers.map(p => p.id);
+                currentStep = 3;
+                showStep(3);
+            } else {
+                currentStep = 2;
+                setupStep2(remainingPlayers);
+                showStep(2);
+            }
+        } else if (currentStep === 2) {
+            currentStep = 3;
+            showStep(3);
+        }
+        updateActionBar();
+    }
+
+    function goBack() {
+        if (currentStep === 3) {
+            const remainingPlayers = players.filter(p => !winners.includes(p.id));
+            if (remainingPlayers.length === winnerCountTarget) {
+                currentStep = 1;
+                showStep(1);
+            } else {
+                currentStep = 2;
+                showStep(2);
+            }
+        } else if (currentStep === 2) {
+            currentStep = 1;
+            showStep(1);
+        }
+        updateActionBar();
+    }
+
+    function setupStep2(remainingPlayers) {
+        const grid = document.getElementById('loser-grid');
+        grid.innerHTML = '';
+        remainingPlayers.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'player-card';
+            card.id = `pc-l-${p.id}`;
+            if (losers.includes(p.id)) card.classList.add('is-loser');
+            card.onclick = () => handlePlayerTap(p.id);
+            card.innerHTML = `<div class="player-name">${p.username}</div>`;
+            grid.appendChild(card);
+        });
+        document.getElementById('btn-next').disabled = (losers.length !== winnerCountTarget);
+    }
+
+    function showStep(step) {
+        document.getElementById('step-1').style.display = step === 1 ? 'block' : 'none';
+        document.getElementById('step-2').style.display = step === 2 ? 'block' : 'none';
+        document.getElementById('step-3').style.display = step === 3 ? 'block' : 'none';
+    }
+
+    function setScore(s) {
+        score = s;
+        document.querySelectorAll('.score-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`sb-${s}`).classList.add('active');
+        document.getElementById('btn-confirm').disabled = false;
+    }
+
+    function updateActionBar() {
+        document.getElementById('btn-back').style.display = currentStep > 1 ? 'block' : 'none';
+        document.getElementById('btn-next').style.display = currentStep < 3 ? 'block' : 'none';
+        document.getElementById('btn-confirm').style.display = currentStep === 3 ? 'block' : 'none';
+    }
+
+    function confirmMatch() {
+        document.getElementById('f-winner1').value = winners[0];
+        document.getElementById('f-winner2').value = winners[1] || '';
+        document.getElementById('f-loser1').value = losers[0];
+        document.getElementById('f-loser2').value = losers[1] || '';
+        document.getElementById('f-loser-score').value = score;
+        document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+        
+        document.getElementById('record-form').submit();
+    }
+</script>
+{% endblock %}

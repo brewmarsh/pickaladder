@@ -28,6 +28,7 @@ from .services.group_service import (
     GroupService,
 )
 from .services.leaderboard import get_leaderboard_trend_data
+from .services.session_service import SessionService
 from .services.stats import get_head_to_head_stats
 from .utils import (
     friend_group_members,
@@ -525,3 +526,30 @@ def get_user_group_trend(group_id: str, user_id: str) -> Any:
         "labels": trend_data["labels"],
         "dataset": user_dataset,
     }
+
+
+@bp.route("/session/<string:session_id>/quick-log", methods=["GET"])
+@login_required
+def quick_log(session_id: str) -> Any:
+    """Display the mobile-optimized quick log for a session."""
+    db = firestore.client()
+    session_data = SessionService.get_session(db, session_id)
+    if not session_data:
+        flash("Session not found", "danger")
+        return redirect(url_for(".view_groups"))
+
+    # Fetch player details for the pool
+    players = []
+    for player_id in session_data.get("playerIds", []):
+        player_doc = db.collection("users").document(player_id).get()
+        if player_doc.exists:
+            p_data = player_doc.to_dict()
+            p_data["id"] = player_id
+            players.append(p_data)
+
+    return render_template(
+        "group/quick_log.html",
+        session=session_data,
+        players=players,
+        session_id=session_id,
+    )
