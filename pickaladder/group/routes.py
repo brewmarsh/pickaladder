@@ -547,9 +547,15 @@ def quick_log(session_id: str) -> Any:
             p_data["id"] = player_id
             players.append(p_data)
 
+    group_name = "Group"
+    group_doc = db.collection("groups").document(session_data["groupId"]).get()
+    if group_doc.exists:
+        group_name = group_doc.to_dict().get("name", "Group")
+
     return render_template(
         "group/quick_log.html",
         session=session_data,
         players=players,
         session_id=session_id,
+        group_name=group_name,
     )
