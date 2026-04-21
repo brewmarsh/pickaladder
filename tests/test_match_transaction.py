@@ -49,7 +49,8 @@ class MatchTransactionTestCase(unittest.TestCase):
         )
 
         # Verify snapshots were read via db.get_all
-        db.get_all.assert_called_with([p1_ref, p2_ref])
+        actual_args = db.get_all.call_args[0][0]
+        self.assertCountEqual(actual_args, [p1_ref, p2_ref])
 
         # Verify match data updates
         self.assertEqual(match_data["winner"], "team1")

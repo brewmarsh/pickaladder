@@ -290,8 +290,9 @@ def _load_config(app: Flask, test_config: dict[str, Any] | None) -> None:
     """Load and process application configuration."""
     app.url_map.converters["uuid"] = UUIDConverter
 
-    # Load from centralized Config class
-    app.config.from_object(Config)
+    # Load from centralized Config class (instantiated to resolve env vars)
+    config_obj = Config()
+    app.config.from_object(config_obj)
 
     # Set dynamic paths and instance-specific settings
     app.config["UPLOAD_FOLDER"] = os.path.join(app.instance_path, "uploads")

@@ -121,7 +121,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         """Test recording a new match."""
 
         def get_candidates_side_effect(
-            db, user_id, group_id, tournament_id, include_user=False
+            db, user_id, group_id, tournament_id, session_id=None, include_user=False
         ):
             if include_user:
                 return {user_id, MOCK_OPPONENT_ID}

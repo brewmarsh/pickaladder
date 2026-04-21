@@ -4,62 +4,72 @@ import os
 from datetime import timedelta
 
 
+def get_env_bool(name, default="false"):
+    val = os.environ.get(name)
+    if val is None or val.strip() == "":
+        return default.lower() in ("true", "1", "t", "yes")
+    return val.lower() in ("true", "1", "t", "yes")
+
+
+def sanitize_cred(val):
+    if val:
+        return val.strip().replace(" ", "").strip("'").strip('"')
+    return None
+
+
+def get_env_str(name, default=None):
+    val = os.environ.get(name)
+    if val is None or val.strip() == "":
+        return default
+    return val
+
+
 class Config:
-    """Central configuration class."""
+    """Central configuration class.
 
-    # Environment
-    FLASK_ENV = os.environ.get("FLASK_ENV", "development")
-    ENV = FLASK_ENV  # Compatibility with older Flask patterns
+    Attributes are resolved at instantiation to allow dynamic environment overrides
+    during testing while maintaining standard Flask 'from_object' compatibility.
+    """
 
-    # Security
-    SECRET_KEY = os.environ.get("SECRET_KEY")
-    if not SECRET_KEY and FLASK_ENV == "development":
-        SECRET_KEY = "dev"
+    def __init__(self):
+        # Environment
+        self.FLASK_ENV = get_env_str("FLASK_ENV", "development")
+        self.ENV = self.FLASK_ENV
 
-    # Firebase
-    FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY")
-    FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
-    FIREBASE_STORAGE_BUCKET = (
-        os.environ.get("FIREBASE_STORAGE_BUCKET") or "pickaladder.firebasestorage.app"
-    )
+        # Security
+        self.SECRET_KEY = os.environ.get("SECRET_KEY")
+        if not self.SECRET_KEY and self.FLASK_ENV == "development":
+            self.SECRET_KEY = "dev"
 
-    # External APIs
-    GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
-    DUPR_API_KEY = os.environ.get("DUPR_API_KEY")
-    DUPR_BASE_URL = os.environ.get("DUPR_BASE_URL") or "https://api.mydupr.com"
+        # Firebase
+        self.FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY")
+        self.FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
+        self.FIREBASE_STORAGE_BUCKET = get_env_str(
+            "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+        )
 
-    # Mail
-    MAIL_SERVER = os.environ.get("MAIL_SERVER") or "smtp.gmail.com"
-    MAIL_PORT = int(os.environ.get("MAIL_PORT") or 587)
-    MAIL_USE_TLS = (os.environ.get("MAIL_USE_TLS") or "true").lower() in ("true", "1", "t")
-    MAIL_USE_SSL = (os.environ.get("MAIL_USE_SSL") or "false").lower() in (
-        "true",
-        "1",
-        "t",
-    )
+        # External APIs
+        self.GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+        self.DUPR_API_KEY = os.environ.get("DUPR_API_KEY")
+        self.DUPR_BASE_URL = get_env_str("DUPR_BASE_URL", "https://api.mydupr.com")
 
-    # Strip whitespace and quotes from mail credentials if present
-    _mail_username = os.environ.get("MAIL_USERNAME")
-    MAIL_USERNAME = (
-        _mail_username.strip().replace(" ", "").strip("'").strip('"')
-        if _mail_username
-        else None
-    )
+        # Mail
+        self.MAIL_SERVER = get_env_str("MAIL_SERVER", "smtp.gmail.com")
+        self.MAIL_PORT = int(get_env_str("MAIL_PORT", "587"))
+        self.MAIL_USE_TLS = get_env_bool("MAIL_USE_TLS", "true")
+        self.MAIL_USE_SSL = get_env_bool("MAIL_USE_SSL", "false")
+        self.MAIL_USERNAME = sanitize_cred(os.environ.get("MAIL_USERNAME"))
+        self.MAIL_PASSWORD = sanitize_cred(os.environ.get("MAIL_PASSWORD"))
+        self.MAIL_DEFAULT_SENDER = get_env_str(
+            "MAIL_DEFAULT_SENDER", "noreply@pickaladder.com"
+        )
 
-    _mail_password = os.environ.get("MAIL_PASSWORD")
-    MAIL_PASSWORD = (
-        _mail_password.strip().replace(" ", "").strip("'").strip('"')
-        if _mail_password
-        else None
-    )
+        # Session
+        self.SESSION_PERMANENT = True
+        self.PERMANENT_SESSION_LIFETIME = timedelta(days=31)
+        self.SESSION_COOKIE_HTTPONLY = True
+        self.SESSION_COOKIE_SAMESITE = "Lax"
+        self.SESSION_COOKIE_SECURE = self.FLASK_ENV != "development"
 
-    MAIL_DEFAULT_SENDER = (
-        os.environ.get("MAIL_DEFAULT_SENDER") or "noreply@pickaladder.com"
-    )
-
-    # Session
-    SESSION_PERMANENT = True
-    PERMANENT_SESSION_LIFETIME = timedelta(days=31)
-    SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = "Lax"
-    SESSION_COOKIE_SECURE = FLASK_ENV != "development"
+        # Testing
+        self.TESTING = get_env_bool("TESTING", "false")
