@@ -6,6 +6,8 @@
 - [x] **Phase 2: Ranking Logic & Integrity** - Transitioning to skill-based ranking and automated movement.
 - [x] **Phase 3: External Integration & Advanced Ranking** - DUPR sync and rank health management.
 - [x] **Phase 4: Session-First Workflow & Batch Recording** - Streamlining courtside match logging via session pools.
+- [ ] **Phase 5: Vocabulary Transition** - Transitioning terminology from "Ladders" to "Groups" and "Tournaments".
+- [ ] **Phase 6: Match Display Standardization** - Standardizing win/loss indicators and typography.
 
 ---
 
@@ -63,6 +65,33 @@
 - [x] 04-03-PLAN.md — Session Summary & Batch Verification.
 **UI hint**: yes
 
+### Phase 5: Vocabulary Transition
+**Goal**: Transition terminology from "Ladders" to "Groups" and "Tournaments" to better reflect product use cases.
+**Depends on**: Phase 4
+**Requirements**: VOCAB-01, VOCAB-02, VOCAB-03, VOCAB-04
+**Success Criteria**:
+  1. Landing pages and welcome templates use "Groups" or "Tournaments" instead of "Ladders".
+  2. System messages and constants consistently use contextual terminology.
+  3. Internal code symbols (where not related to branding/infra) reflect the new terminology.
+  4. Project documentation is fully updated to the new vocabulary.
+**Plans**:
+- [ ] 05-01-PLAN.md — UI Template and Metadata vocabulary transition.
+**UI hint**: yes
+
+### Phase 6: Match Display Standardization
+**Goal**: Standardize match displays (win/loss indicators, cards, typography) using a consistent High Contrast (Volt/Black) theme across the entire application.
+**Depends on**: Phase 5
+**Requirements**: DISPLAY-01, DISPLAY-02, DISPLAY-03, DISPLAY-04, DISPLAY-05
+**Success Criteria** (what must be TRUE):
+  1. `data-displays.css` defines `.status-win` (Volt background, dark text) and `.status-loss` (dark background) classes.
+  2. All match list items across the app use the new standardized status classes.
+  3. The match summary page is visually consistent with the new display standards.
+  4. Score typography globally uses the 'Oswald' font family.
+  5. The "Recent Matches" component correctly renders using the standardized theme.
+**Plans**:
+- [ ] 06-01-PLAN.md — CSS Standardization and Component Refactoring.
+**UI hint**: yes
+
 ---
 
 ## Progress
@@ -73,3 +102,5 @@
 | 2. Ranking Logic & Integrity | 1/1 | Completed | 2026-04-17 |
 | 3. External Integration & Advanced Ranking | 1/1 | Completed | 2026-04-17 |
 | 4. Session-First Workflow & Batch Recording | 3/3 | Completed | 2026-04-21 |
+| 5. Vocabulary Transition | 0/1 | In Progress | - |
+| 6. Match Display Standardization | 1/1 | Not started | - |
