@@ -559,3 +559,61 @@ def quick_log(session_id: str) -> Any:
         session_id=session_id,
         group_name=group_name,
     )
+
+
+@bp.route("/session/<string:session_id>", methods=["GET"])
+@login_required
+def view_session(session_id: str) -> Any:
+    """Display session summary and matches."""
+    db = firestore.client()
+    session_data = SessionService.get_session(db, session_id)
+    if not session_data:
+        flash("Session not found", "danger")
+        return redirect(url_for(".view_groups"))
+
+    # Fetch matches
+    match_ids = session_data.get("matchIds", [])
+    matches = []
+    for m_id in match_ids:
+        match_doc = db.collection("matches").document(m_id).get()
+        if match_doc.exists:
+            m_data = match_doc.to_dict()
+            m_data["id"] = m_id
+            matches.append(m_data)
+
+    # Fetch player details for the pool
+    players = {}
+    for player_id in session_data.get("playerIds", []):
+        player_doc = db.collection("users").document(player_id).get()
+        if player_doc.exists:
+            p_data = player_doc.to_dict()
+            p_data["id"] = player_id
+            players[player_id] = p_data
+
+    group_name = "Group"
+    group_doc = db.collection("groups").document(session_data["groupId"]).get()
+    if group_doc.exists:
+        group_name = group_doc.to_dict().get("name", "Group")
+
+    return render_template(
+        "group/session_view.html",
+        session=session_data,
+        matches=matches,
+        players=players,
+        session_id=session_id,
+        group_name=group_name,
+    )
+
+
+@bp.route("/session/<string:session_id>/verify", methods=["POST"])
+@login_required
+def verify_session(session_id: str) -> Any:
+    """Trigger batch verification for a session."""
+    db = firestore.client()
+    success = SessionService.verify_session(db, session_id, g.user["uid"])
+    if success:
+        flash("Session verified!", "success")
+    else:
+        flash("Failed to verify session. You may not be a participant.", "danger")
+
+    return redirect(url_for(".view_session", session_id=session_id))

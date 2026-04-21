@@ -1,0 +1,202 @@
+{% extends "layout.html" %}
+
+{% block title %}Session Summary{% endblock %}
+
+{% block extra_meta %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+<style>
+    :root {
+        --qc-bg: #000000;
+        --qc-card-bg: #1a1a1a;
+        --qc-card-border: #333333;
+        --qc-text: #ffffff;
+        --qc-accent: #84CC16; /* Volt Green */
+        --qc-winner: #16a34a;
+        --qc-loser: #dc2626;
+    }
+
+    body {
+        background-color: var(--qc-bg) !important;
+        color: var(--qc-text) !important;
+    }
+
+    #main-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: none !important;
+    }
+
+    .session-view-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 1rem;
+        padding-bottom: 120px;
+    }
+
+    .match-card {
+        background-color: var(--qc-card-bg);
+        border: 1px solid var(--qc-card-border);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .match-players {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .team {
+        flex: 1;
+        text-align: center;
+    }
+
+    .team.winner {
+        color: var(--qc-accent);
+    }
+
+    .vs {
+        padding: 0 0.5rem;
+        font-weight: bold;
+        color: #666;
+    }
+
+    .score {
+        font-size: 1.25rem;
+        font-weight: 800;
+        margin-top: 0.25rem;
+    }
+
+    .action-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #111;
+        padding: 1rem;
+        display: flex;
+        gap: 1rem;
+        border-top: 1px solid #333;
+        z-index: 1000;
+    }
+
+    .btn-qc {
+        flex: 1;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        font-size: 1.25rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        border: none;
+    }
+
+    .btn-qc-primary {
+        background-color: var(--qc-accent);
+        color: #000;
+    }
+
+    .btn-qc-secondary {
+        background-color: #333;
+        color: #fff;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .status-active { background-color: #3b82f6; color: #fff; }
+    .status-completed { background-color: var(--qc-accent); color: #000; }
+
+    /* Hide standard elements */
+    .navbar, footer, .breadcrumb-container {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="session-view-container">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-black tracking-tighter text-white">SESSION SUMMARY</h1>
+            <div class="text-xs font-bold text-gray-500 uppercase tracking-widest">{{ group_name }}</div>
+        </div>
+        <a href="{{ url_for('group.view_group', group_id=session.groupId) }}" class="text-sm font-bold text-gray-500 border border-gray-700 px-3 py-1 rounded">EXIT</a>
+    </div>
+
+    <div class="mb-6">
+        <div class="flex justify-between items-center bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+            <div>
+                <div class="text-xs text-zinc-500 font-bold uppercase">Status</div>
+                <div class="status-badge status-{{ session.status|lower }}">{{ session.status }}</div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-zinc-500 font-bold uppercase">Verified By</div>
+                <div class="text-sm font-bold text-white">{{ (session.verifiedBy or [])|length }} / 2</div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="text-sm font-bold text-zinc-500 uppercase mb-3 tracking-widest">Matches ({{ matches|length }})</h2>
+    
+    {% if not matches %}
+    <div class="text-center py-12 text-zinc-600">
+        No matches recorded yet.
+    </div>
+    {% endif %}
+
+    {% for match in matches %}
+    <div class="match-card">
+        <div class="match-players">
+            <div class="team winner">
+                <div class="text-xs font-bold uppercase opacity-50">Winner</div>
+                <div class="font-black text-white">
+                    {% if match.matchType == 'singles' %}
+                        {{ players.get(match.participants[0], {}).get('username', 'Unknown') }}
+                    {% else %}
+                        {{ players.get(match.participants[0], {}).get('username', 'Unknown') }} & {{ players.get(match.participants[1], {}).get('username', 'Unknown') }}
+                    {% endif %}
+                </div>
+                <div class="score text-white">{{ match.player1Score }}</div>
+            </div>
+            <div class="vs">VS</div>
+            <div class="team">
+                <div class="text-xs font-bold uppercase opacity-50">Loser</div>
+                <div class="font-black text-white">
+                    {% if match.matchType == 'singles' %}
+                        {{ players.get(match.participants[1], {}).get('username', 'Unknown') }}
+                    {% else %}
+                        {{ players.get(match.participants[2], {}).get('username', 'Unknown') }} & {{ players.get(match.participants[3], {}).get('username', 'Unknown') }}
+                    {% endif %}
+                </div>
+                <div class="score text-white">{{ match.player2Score }}</div>
+            </div>
+        </div>
+        {% if match.is_verified %}
+        <div class="mt-2 text-center text-xs font-bold text-lime-500 uppercase">
+            ✓ Verified
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    {% if session.status != 'COMPLETED' %}
+    <div class="action-bar">
+        <a href="{{ url_for('group.quick_log', session_id=session_id) }}" class="btn-qc btn-qc-secondary flex items-center justify-center">ADD MATCH</a>
+        <form action="{{ url_for('group.verify_session', session_id=session_id) }}" method="POST" class="flex-1">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-qc btn-qc-primary w-full" 
+                {% if g.user.uid in (session.verifiedBy or []) %}disabled{% endif %}>
+                {% if g.user.uid in (session.verifiedBy or []) %}WAITING...{% else %}APPROVE ALL{% endif %}
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
