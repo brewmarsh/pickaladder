@@ -292,7 +292,7 @@
                         </div>
 
                         <div class="match-score-badge-compact">
-                            <span class="score-badge {{ 'score-badge-win' if is_win else 'score-badge-loss' }}">
+                            <span class="score-badge {{ 'status-win' if is_win else 'status-loss' }} font-score">
                                 {{ 'W' if is_win else 'L' }} {{ primary_score }}-{{ opponent_score }}
                             </span>
                             {% if match.is_upset %}
