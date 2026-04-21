@@ -40,18 +40,68 @@ class TestSessionService(unittest.TestCase):
     def test_add_match_to_session(self):
         mock_doc = MagicMock()
         self.db.collection.return_value.document.return_value = mock_doc
-        
+
         with patch("firebase_admin.firestore.ArrayUnion") as mock_union:
             mock_union.return_value = "mock_union"
-            
+
             SessionService.add_match_to_session(self.db, "session_123", "match_456")
-            
+
             self.db.collection.assert_called_with("sessions")
             self.db.collection().document.assert_called_with("session_123")
             mock_doc.update.assert_called_once()
             update_data = mock_doc.update.call_args[0][0]
             self.assertEqual(update_data["matchIds"], "mock_union")
             mock_union.assert_called_once_with(["match_456"])
+
+    def test_verify_session_already_verified(self):
+        session_data = {
+            "id": "session_123",
+            "playerIds": ["user1", "user2"],
+            "verifiedBy": ["user1"],
+            "status": "ACTIVE",
+        }
+        with patch.object(SessionService, "get_session", return_value=session_data):
+            success = SessionService.verify_session(self.db, "session_123", "user1")
+            self.assertTrue(success)
+            self.db.collection.return_value.document.return_value.update.assert_not_called()
+
+    def test_verify_session_completes(self):
+        session_data = {
+            "id": "session_123",
+            "playerIds": ["user1", "user2"],
+            "verifiedBy": ["user1"],
+            "matchIds": ["match1", "match2"],
+            "status": "ACTIVE",
+        }
+        mock_doc = MagicMock()
+        self.db.collection.return_value.document.return_value = mock_doc
+        mock_batch = MagicMock()
+        self.db.batch.return_value = mock_batch
+
+        with patch.object(SessionService, "get_session", return_value=session_data):
+            success = SessionService.verify_session(self.db, "session_123", "user2")
+
+            self.assertTrue(success)
+            # Check session status update in batch
+            mock_batch.update.assert_any_call(
+                mock_doc, {"status": "COMPLETED", "updatedAt": unittest.mock.ANY}
+            )
+            # Check match updates in batch
+            self.assertEqual(mock_batch.update.call_count, 3)  # 1 session + 2 matches
+            mock_batch.commit.assert_called_once()
+
+    def test_verify_session_unauthorized(self):
+        session_data = {
+            "id": "session_123",
+            "playerIds": ["user1", "user2"],
+            "verifiedBy": [],
+            "status": "ACTIVE",
+        }
+        with patch.object(SessionService, "get_session", return_value=session_data):
+            success = SessionService.verify_session(
+                self.db, "session_123", "user_random"
+            )
+            self.assertFalse(success)
 
 if __name__ == "__main__":
     unittest.main()
