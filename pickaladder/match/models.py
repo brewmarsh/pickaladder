@@ -169,6 +169,8 @@ class MatchSubmission:
     tournament_id: str | None = None
     session_id: str | None = None
     created_by: str | None = None
+    namedTeam1Id: str | None = None
+    namedTeam2Id: str | None = None
 
     def __getitem__(self, key: str) -> Any:
         """Allow dict-like access for backward compatibility or convenience."""
@@ -207,6 +209,8 @@ class MatchResult:
     team2: list[Any] | None = None
     team1Id: str | None = None
     team2Id: str | None = None
+    namedTeam1Id: str | None = None
+    namedTeam2Id: str | None = None
     team1Ref: Any = None
     team2Ref: Any = None
 
@@ -232,6 +236,8 @@ class MatchDict(FirestoreDocument, Score, total=False):
     team2: list[User | Any]
     team1Id: str
     team2Id: str
+    namedTeam1Id: str
+    namedTeam2Id: str
     team1Ref: Any
     team2Ref: Any
     groupId: str
