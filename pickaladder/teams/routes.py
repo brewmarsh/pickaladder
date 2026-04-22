@@ -12,6 +12,7 @@ from pickaladder.constants.messages import COMMON_MESSAGES, MATCH_MESSAGES
 
 from . import bp
 from .forms import EditTeamNameForm, TeamForm
+from .repository import TeamRepository
 from .services import TeamService
 
 
