@@ -141,6 +141,6 @@
 | 4. Session-First Workflow & Batch Recording | 3/3 | Completed | 2026-04-21 |
 | 5. Vocabulary Transition | 1/1 | Completed | 2026-04-21 |
 | 6. Match Display Standardization | 1/1 | Completed | 2026-04-21 |
-| 7. Group & Team Foundation Refactor | 0/3 | In progress | - |
-| 8. Dynamic Team Model | 0/0 | Not started | - |
+| 7. Group & Team Foundation Refactor | 3/3 | Completed | 2026-04-21 |
+| 8. Dynamic Team Model | 0/1 | Not started | - |
 | 9. Group/Team UX Modernization | 0/0 | Not started | - |
