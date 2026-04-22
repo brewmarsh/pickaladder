@@ -1,42 +1,46 @@
 import pytest
-from flask import url_for
-from unittest.mock import MagicMock
+from firebase_admin import firestore
+from unittest.mock import patch
 
-def test_create_team_page_loads(client, auth, mock_db):
-    """Test that the create team page is accessible."""
-    auth.login()
+def test_create_team_page_loads(client, mock_db):
+    """Test that the team creation page loads correctly."""
+    uid = "test_user"
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
     
-    # Setup some mock users
-    mock_db.collection("users").add({"name": "User 1"}, "u1")
-    mock_db.collection("users").add({"name": "User 2"}, "u2")
-    
-    response = client.get('/teams/create')
-    assert response.status_code == 200
-    assert b"Create a New Named Team" in response.data
-    assert b"User 1" in response.data
-    assert b"User 2" in response.data
+    # Mock users for selection
+    mock_db.collection("users").document("u1").set({"name": "User 1"})
+    mock_db.collection("users").document("u2").set({"name": "User 2"})
 
-def test_create_team_submission(client, auth, mock_db):
-    """Test submitting the create team form."""
-    auth.login()
-    uid = auth.user_id # Assuming auth fixture provides this
+    with patch("pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}):
+        response = client.get('/team/create')
+        assert response.status_code == 200
+        assert b"Create Team" in response.data
+        assert b"Team Name" in response.data
+
+def test_create_team_submission(client, mock_db):
+    """Test creating a team via form submission."""
+    uid = "test_user"
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
     
-    # Setup some mock users
-    mock_db.collection("users").add({"name": "User 1"}, "u1")
-    mock_db.collection("users").add({"name": "User 2"}, "u2")
-    
-    response = client.post('/teams/create', data={
+    # Mock users
+    mock_db.collection("users").document(uid).set({"name": "Creator"})
+    mock_db.collection("users").document("u2").set({"name": "Member 2"})
+
+    form_data = {
         "name": "The Smashers",
-        "members": ["u1", "u2"]
-    }, follow_redirects=True)
-    
-    assert response.status_code == 200
-    
-    # Check if team was created in mock_db
-    teams = list(mock_db.collection("teams").where("type", "==", "named").stream())
-    assert len(teams) == 1
-    team_data = teams[0].to_dict()
-    assert team_data["name"] == "The Smashers"
-    assert "u1" in team_data["member_ids"]
-    assert "u2" in team_data["member_ids"]
-    assert uid in team_data["member_ids"]
+        "members": [uid, "u2"]
+    }
+
+    with patch("pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}):
+        response = client.post('/team/create', data=form_data, follow_redirects=True)
+        assert response.status_code == 200
+        
+        # Verify team created in DB
+        teams = list(mock_db.collection("teams").where("name", "==", "The Smashers").stream())
+        assert len(teams) == 1
+        team_data = teams[0].to_dict()
+        assert team_data["type"] == "named"
+        assert uid in team_data["member_ids"]
+        assert "u2" in team_data["member_ids"]

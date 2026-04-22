@@ -63,7 +63,7 @@ def view_team(team_id: str) -> Any:
 
 @bp.route("/<string:team_id>/edit", methods=["GET", "POST"])
 @login_required
-def edit_team(team_id: str) -> Any:
+def rename_team(team_id: str) -> Any:
     """Edit a team's name."""
     db = firestore.client()
     team_ref = db.collection("teams").document(team_id)
