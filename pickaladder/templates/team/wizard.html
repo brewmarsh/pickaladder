@@ -1,0 +1,112 @@
+{% extends "layout.html" %}
+
+{% block title %}Team Creation Wizard{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .wizard-step { display: none; }
+    .wizard-step.active { display: block; }
+    .step-indicator { margin-bottom: 2rem; }
+    .step-dot { height: 10px; width: 10px; background-color: #ccc; border-radius: 50%; display: inline-block; margin: 0 5px; }
+    .step-dot.active { background-color: var(--volt); }
+    .member-item { cursor: pointer; transition: background 0.2s; border-radius: 4px; margin-bottom: 2px; }
+    .member-item:hover { background: #f8f9fa; }
+    .member-item.selected { background: #e9ecef; border-color: var(--volt); }
+    .member-item.selected .custom-control-label::before {
+        background-color: var(--volt);
+        border-color: var(--volt);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="card shadow-sm mx-auto" style="max-width: 600px;">
+        <div class="card-header bg-white border-bottom-0 pt-4 text-center">
+            <h2 class="h4">Create Your Team</h2>
+            <div class="step-indicator mt-3">
+                <span class="step-dot active" id="dot-1"></span>
+                <span class="step-dot" id="dot-2"></span>
+                <span class="step-dot" id="dot-3"></span>
+            </div>
+        </div>
+        
+        <div class="card-body px-4 pb-4">
+            <form id="team-wizard-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- Step 1: Identity -->
+                <div class="wizard-step active" id="step-1">
+                    <h5 class="mb-3">Step 1: Team Identity</h5>
+                    <div class="form-group">
+                        <label for="team-name">Team Name</label>
+                        <input type="text" class="form-control" id="team-name" name="name" placeholder="e.g. The Dinking Divas" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="team-description">Description (Optional)</label>
+                        <textarea class="form-control" id="team-description" name="description" rows="3" placeholder="Tell us about your squad..."></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="button" class="btn btn-volt next-step">Next: Roster</button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Roster -->
+                <div class="wizard-step" id="step-2">
+                    <h5 class="mb-3">Step 2: Build Your Roster</h5>
+                    <p class="text-muted small">Select members to join your team. You are automatically included.</p>
+                    
+                    <div class="form-group">
+                        <input type="text" class="form-control mb-3" id="member-search" placeholder="Search members...">
+                        <div id="member-list" class="list-group list-group-flush border rounded" style="max-height: 300px; overflow-y: auto;">
+                            {% for member in member_choices %}
+                                {% if member.id != g.user.uid %}
+                                <div class="list-group-item member-item d-flex align-items-center" data-id="{{ member.id }}" data-name="{{ member.name }}">
+                                    <div class="mr-3">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input member-checkbox" id="check-{{ member.id }}">
+                                            <label class="custom-control-label" for="check-{{ member.id }}"></label>
+                                        </div>
+                                    </div>
+                                    <div>{{ member.name }}</div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn btn-outline-secondary prev-step">Back</button>
+                        <button type="button" class="btn btn-volt next-step">Next: Confirm</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Confirm -->
+                <div class="wizard-step" id="step-3">
+                    <h5 class="mb-3">Step 3: Confirm Details</h5>
+                    
+                    <div class="bg-light p-3 rounded mb-4">
+                        <div class="mb-2"><strong>Name:</strong> <span id="confirm-name"></span></div>
+                        <div class="mb-2"><strong>Description:</strong> <span id="confirm-description"></span></div>
+                        <div><strong>Roster:</strong></div>
+                        <ul id="confirm-roster" class="mb-0 mt-1 small"></ul>
+                    </div>
+
+                    <div id="wizard-error" class="alert alert-danger d-none"></div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn btn-outline-secondary prev-step">Back</button>
+                        <button type="submit" class="btn btn-volt">Create Team</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/team_wizard.js') }}"></script>
+{% endblock %}
