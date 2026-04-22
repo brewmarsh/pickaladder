@@ -9,7 +9,7 @@
 - [x] **Phase 5: Vocabulary Transition** - Transitioning terminology from "Ladders" to "Groups" and "Tournaments".
 - [x] **Phase 6: Match Display Standardization** - Standardizing win/loss indicators and typography.
 - [x] **Phase 7: Group & Team Foundation Refactor** - Standardizing architecture and data models for groups and teams.
-- [ ] **Phase 8: Dynamic Team Model** - Enabling flexible team structures beyond simple pairings.
+- [x] **Phase 8: Dynamic Team Model** - Enabling flexible team structures beyond simple pairings.
 - [ ] **Phase 9: Group/Team UX Modernization** - Improving management workflows and visibility for teams and groups.
 
 ---
@@ -117,9 +117,9 @@
   2. Match recording workflow supports selecting a Named Team and then selecting specific participants from its roster.
   3. Team statistics correctly aggregate performance metrics across different roster combinations.
 **Plans**:
-- [ ] 08-01-PLAN.md — Data Model & Repository Updates.
+- [x] 08-01-PLAN.md — Data Model & Repository Updates.
 - [x] 08-02-PLAN.md — Service Refactoring & Match Logic Integration.
-- [ ] 08-03-PLAN.md — UI Implementation for Team/Roster Selection.
+- [x] 08-03-PLAN.md — UI Implementation for Team/Roster Selection.
 
 ### Phase 9: Group/Team UX Modernization
 **Goal**: Improve management workflows and visibility for teams and groups.
@@ -145,5 +145,5 @@
 | 5. Vocabulary Transition | 1/1 | Completed | 2026-04-21 |
 | 6. Match Display Standardization | 1/1 | Completed | 2026-04-21 |
 | 7. Group & Team Foundation Refactor | 3/3 | Completed | 2026-04-21 |
-| 8. Dynamic Team Model | 0/3 | Not started | - |
+| 8. Dynamic Team Model | 3/3 | Completed | 2026-04-22 |
 | 9. Group/Team UX Modernization | 0/0 | Not started | - |

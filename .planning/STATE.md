@@ -2,39 +2,41 @@
 
 ## Project Reference
 **Core Value:** A robust and professional platform for pickleball ladder management that prioritizes ranking integrity and seamless external integrations.
-**Current Focus:** Phase 8 - Dynamic Team Model
+**Current Focus:** Phase 9 - Group/Team UX Modernization
 
 ## Current Position
-**Phase:** 8 - Dynamic Team Model
+**Phase:** 9 - Group/Team UX Modernization
 **Plan:** None
-**Status:** Phase 7 foundation complete. Ready for dynamic rosters.
+**Status:** Phase 8 complete. Named teams and rosters are live.
 
-[####################] 100% (Phase 7 Progress)
+[####################] 100% (Phase 8 Progress)
 
 ## Performance Metrics
-- **Phase 1-6 Completion:** 100%
-- **Phase 7 Completion:** 100%
-- **Total Requirements Covered:** 34/34
-- **Critical Path Hygiene:** Green (Architectural alignment complete)
+- **Phase 1-7 Completion:** 100%
+- **Phase 8 Completion:** 100%
+- **Total Requirements Covered:** 37/37
+- **Critical Path Hygiene:** Green (Dynamic rosters implemented and verified)
 
 ## Accumulated Context
 
 ### Decisions
-- **Repository Pattern:** Implemented for Groups and Teams to centralize data access.
-- **Schema Standardization:** All entity timestamps migrated to camelCase (`createdAt`, `updatedAt`).
-- **Logic Consolidation:** Team creation (get_or_create) now handled exclusively by `TeamRepository`.
+- **Repository Pattern:** Centralized data access for Groups and Teams.
+- **Dynamic Rosters:** Named teams support rosters of >2 members.
+- **Dual-Team Tracking:** Matches link to specific pairings AND optional named teams for aggregate stats.
+- **Atomic Updates:** Match recording updates users, pairings, and named teams in a single transaction.
 
 ### Todos
-- [x] Complete Phase 7: Group & Team Foundation Refactor.
-- [ ] Implement Dynamic Team Rosters (Phase 8).
+- [x] Complete Phase 8: Dynamic Team Model.
 - [ ] Implement Group Management Hub (Phase 9).
+- [ ] Implement Team Creation Wizard (Phase 9).
 
 ### Blockers
 - None.
 
 ## Session Continuity
 **Last Session:**
-- Executed 3 waves of Phase 7 refactoring.
-- Standardized BaseRepository and schemas.
-- Extracted Group and Team repositories.
-- Consolidated business logic and verified with full test suite.
+- Implemented Phase 8 across 3 waves.
+- Updated TeamRepository for named teams.
+- Refactored MatchCommandService for dual-stat tracking.
+- Implemented dynamic UI for roster selection during match recording.
+- Verified with comprehensive test suite.
