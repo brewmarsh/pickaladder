@@ -24,6 +24,18 @@ class TeamService:
         return TeamRepository.get_or_create_team(db, [user_a_id, user_b_id])
 
     @staticmethod
+    def create_named_team(
+        db: Client, name: str, creator_id: str, member_ids: list[str]
+    ) -> str:
+        """Create a named team with a roster."""
+        return TeamRepository.create_named_team(db, name, creator_id, member_ids)
+
+    @staticmethod
+    def get_user_named_teams(db: Client, user_id: str) -> list[dict[str, Any]]:
+        """Fetch all named teams that a specific user belongs to."""
+        return TeamRepository.get_user_named_teams(db, user_id)
+
+    @staticmethod
     def migrate_user_teams(
         db: Client, batch: firestore.WriteBatch, source_id: str, target_id: str
     ) -> None:
