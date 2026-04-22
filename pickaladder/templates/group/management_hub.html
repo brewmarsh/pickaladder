@@ -1,0 +1,309 @@
+{% extends "layout.html" %}
+{% block title %}Manage {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('group.view_groups') }}">Groups</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('group.view_group', group_id=group.id) }}">{{ group.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Management Hub</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h1 class="mb-0">Management Hub: {{ group.name }}</h1>
+        <a href="/teams/wizard?group_id={{ group.id }}" class="btn btn-volt">
+            <i class="fas fa-plus-circle"></i> Create New Team
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white p-0">
+            <ul class="nav nav-tabs card-header-tabs m-0" id="managementTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active py-3" id="roster-tab" data-toggle="tab" href="#roster" role="tab" aria-controls="roster" aria-selected="true">
+                        <i class="fas fa-users"></i> Roster
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link py-3" id="invites-tab" data-toggle="tab" href="#invites" role="tab" aria-controls="invites" aria-selected="false">
+                        <i class="fas fa-paper-plane"></i> Invites
+                        {% if pending_members %}
+                        <span class="badge badge-pill badge-primary ml-1">{{ pending_members|length }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link py-3" id="settings-tab" data-toggle="tab" href="#settings" role="tab" aria-controls="settings" aria-selected="false">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="managementTabsContent">
+                <!-- Roster Tab -->
+                <div class="tab-pane fade show active" id="roster" role="tabpanel" aria-labelledby="roster-tab">
+                    <h3 class="h5 mb-4">Group Members ({{ members|length }})</h3>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Member</th>
+                                    <th>Role</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in members %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ member | avatar_url }}" alt="{{ member.username }}" class="avatar avatar-md mr-3"
+                                                onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                            <div>
+                                                <div class="font-weight-bold">{{ member.username }}</div>
+                                                <small class="text-muted">{{ member.email if member.email else '' }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if member.id == group.ownerRef.id %}
+                                        <span class="badge badge-dark">Owner</span>
+                                        {% elif member.id in group.get('admins', []) %}
+                                        <span class="badge badge-info">Admin</span>
+                                        {% else %}
+                                        <span class="badge badge-secondary">Member</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right">
+                                        {% if member.id != g.user['uid'] %}
+                                            {% if is_owner %}
+                                                {% if member.id not in group.get('admins', []) %}
+                                                <form action="{{ url_for('group.promote_member', group_id=group.id, user_id=member.id) }}" method="POST" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Promote to Admin">
+                                                        <i class="fas fa-user-shield"></i> Promote
+                                                    </button>
+                                                </form>
+                                                {% else %}
+                                                <form action="{{ url_for('group.demote_member', group_id=group.id, user_id=member.id) }}" method="POST" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Demote to Member">
+                                                        <i class="fas fa-user-minus"></i> Demote
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                            {% endif %}
+                                            
+                                            {% if is_admin and member.id != group.ownerRef.id %}
+                                            <form action="{{ url_for('group.remove_member', group_id=group.id, user_id=member.id) }}" method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Member" 
+                                                    onclick="return confirm('Are you sure you want to remove this member?')">
+                                                    <i class="fas fa-user-times"></i> Remove
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Invites Tab -->
+                <div class="tab-pane fade" id="invites" role="tabpanel" aria-labelledby="invites-tab">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <h3 class="h5 mb-4">Pending Invitations</h3>
+                            {% if pending_members %}
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Invitee</th>
+                                            <th>Status</th>
+                                            <th class="text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for invite in pending_members %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img src="{{ invite | avatar_url }}" alt="Avatar" class="avatar avatar-md mr-3"
+                                                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                                    <div>
+                                                        <div class="font-weight-bold">{{ invite.username or invite.name }}</div>
+                                                        <small class="text-muted">{{ invite.email }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if invite.status == 'failed' %}
+                                                <span class="badge badge-danger" title="{{ invite.last_error }}">Failed</span>
+                                                {% elif invite.status == 'sending' %}
+                                                <span class="badge badge-warning">Sending...</span>
+                                                {% elif invite.status == 'sent' %}
+                                                <span class="badge badge-success">Sent</span>
+                                                {% else %}
+                                                <span class="badge badge-secondary">{{ invite.status or 'Pending' }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-right">
+                                                <div class="btn-group btn-group-sm">
+                                                    <form method="post" action="{{ url_for('group.resend_invite', token=invite.token) }}" class="d-inline">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        {% if invite.status == 'failed' %}
+                                                        <input type="hidden" name="email" value="{{ invite.email }}">
+                                                        {% endif %}
+                                                        <button type="submit" class="btn btn-outline-primary">
+                                                            <i class="fas fa-redo"></i> {% if invite.status == 'failed' %}Retry{% else %}Resend{% endif %}
+                                                        </button>
+                                                    </form>
+                                                    <form method="post" action="{{ url_for('group.delete_invite', token=invite.token) }}" class="d-inline ml-1">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Cancel this invitation?')">
+                                                            <i class="fas fa-trash"></i> Cancel
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No pending invitations.</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card bg-light border-0">
+                                <div class="card-body">
+                                    <h4 class="h6 font-weight-bold mb-3">Invite New Members</h4>
+                                    
+                                    <h5 class="h6 mt-4">Invite Friend</h5>
+                                    <form method="post" action="{{ url_for('group.manage_group', group_id=group.id) }}">
+                                        {{ invite_friend_form.hidden_tag() }}
+                                        <div class="form-group">
+                                            {{ invite_friend_form.friend.label }}
+                                            {{ invite_friend_form.friend(class="form-control") }}
+                                        </div>
+                                        <button type="submit" name="friend" class="btn btn-primary btn-block">Invite Friend</button>
+                                    </form>
+
+                                    <hr>
+
+                                    <h5 class="h6 mt-4">Invite by Email</h5>
+                                    <form method="post" action="{{ url_for('group.manage_group', group_id=group.id) }}">
+                                        {{ invite_email_form.hidden_tag() }}
+                                        <div class="form-group">
+                                            {{ invite_email_form.name.label }}
+                                            {{ invite_email_form.name(class="form-control", placeholder="Optional Name") }}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ invite_email_form.email.label }}
+                                            {{ invite_email_form.email(class="form-control", placeholder="friend@example.com") }}
+                                        </div>
+                                        <button type="submit" name="email" class="btn btn-outline-primary btn-block">Send Invite</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <h3 class="h5 mb-4">Group Details</h3>
+                            <form method="post" enctype="multipart/form-data" action="{{ url_for('group.manage_group', group_id=group.id) }}">
+                                {{ form.hidden_tag() }}
+                                <div class="form-group">
+                                    {{ form.name.label }}
+                                    {{ form.name(class="form-control") }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form.description.label }}
+                                    {{ form.description(class="form-control", rows=3) }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form.location.label }}
+                                    {{ form.location(class="form-control") }}
+                                </div>
+                                <div class="form-check mb-4">
+                                    {{ form.is_public(class="form-check-input") }}
+                                    {{ form.is_public.label(class="form-check-label") }}
+                                </div>
+                                <div class="form-group">
+                                    {{ form.profile_picture.label }}
+                                    <div class="custom-file">
+                                        {{ form.profile_picture(class="custom-file-input", id="profilePictureInput") }}
+                                        <label class="custom-file-label" for="profilePictureInput">Choose file...</label>
+                                    </div>
+                                    <small class="form-text text-muted">Leave blank to keep current picture.</small>
+                                </div>
+                                <button type="submit" class="btn btn-volt px-4">Save Changes</button>
+                            </form>
+                        </div>
+                        <div class="col-lg-4 mt-5 mt-lg-0">
+                            <div class="card border-danger shadow-sm">
+                                <div class="card-body">
+                                    <h4 class="h6 font-weight-bold text-danger mb-3">Danger Zone</h4>
+                                    <p class="small text-muted mb-4">Actions here are permanent and cannot be undone.</p>
+                                    
+                                    {% if is_owner %}
+                                    <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-danger btn-block"
+                                            onclick="return confirm('Are you sure you want to permanently delete this group? This action cannot be undone.')">
+                                            <i class="fas fa-trash-alt"></i> Delete Group
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <form method="post" action="{{ url_for('group.leave_group', group_id=group.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-block">
+                                            <i class="fas fa-sign-out-alt"></i> Leave Group
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Maintain active tab on reload if there's a hash in the URL
+        var hash = window.location.hash;
+        if (hash) {
+            $('.nav-tabs a[href="' + hash + '"]').tab('show');
+        }
+
+        // Update URL hash when tab is clicked
+        $('.nav-tabs a').on('shown.bs.tab', function (e) {
+            window.location.hash = e.target.hash;
+        });
+
+        // Update file input label
+        $('.custom-file-input').on('change', function() {
+            let fileName = $(this).val().split('\\').pop();
+            $(this).next('.custom-file-label').addClass("selected").html(fileName);
+        });
+    });
+</script>
+{% endblock %}
