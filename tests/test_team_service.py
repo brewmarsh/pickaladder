@@ -79,6 +79,28 @@ class TestTeamService(unittest.TestCase):
         data = TeamService.get_team_dashboard_data(self.db, "nonexistent")
         self.assertIsNone(data)
 
+    def test_create_named_team(self) -> None:
+        # Mock users
+        user1_ref = self.db.collection("users").document("user1")
+        user1_ref.set({"name": "Player 1"})
+        user2_ref = self.db.collection("users").document("user2")
+        user2_ref.set({"name": "Player 2"})
+
+        team_id = TeamService.create_named_team(
+            self.db, "Dream Team", "user1", ["user1", "user2"]
+        )
+
+        self.assertIsNotNone(team_id)
+
+        # Verify in DB
+        team_doc = self.db.collection("teams").document(team_id).get()
+        self.assertTrue(team_doc.exists)
+        data = team_doc.to_dict()
+        self.assertEqual(data["name"], "Dream Team")
+        self.assertEqual(data["type"], "named")
+        self.assertEqual(data["member_ids"], ["user1", "user2"])
+        self.assertEqual(data["createdBy"], "user1")
+
 
 if __name__ == "__main__":
     unittest.main()
