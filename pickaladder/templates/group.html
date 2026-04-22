@@ -81,7 +81,7 @@
                             </thead>
                             <tbody>
                                 {% for player in leaderboard %}
-                                <tr class="{{ 'bg-primary-subtle' if player.id == g.user['uid'] or player.user_id == g.user['uid'] else '' }}">
+                                <tr class="{{ 'bg-primary-subtle' if player.id == g.user.uid or player.user_id == g.user.uid else '' }}">
                                     <td data-label="Rank" class="rank-cell text-center {% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">
                                         <span class="mobile-rank-badge">
                                             {% if loop.index == 1 %}🥇
@@ -111,7 +111,7 @@
                                                 <span title="{{ player.streak }} Game Streak!">🔥</span>
                                                 {% endif %}
                                             </a>
-                                            {% if player.id == g.user['uid'] %}
+                                            {% if player.id == g.user.uid %}
                                             <button class="btn btn-volt small share-stats-btn"
                                                 style="width: auto; margin-left: 10px; padding: 4px 8px; font-size: 0.7rem;"
                                                 data-user-id="{{ player.id }}"
@@ -237,7 +237,7 @@
                     {% set p2_score = match.player2Score|default(0) %}
 
                     {# Use participants list for reliable detection #}
-                    {% set uid = current_user_id or g.user['uid'] %}
+                    {% set uid = current_user_id or g.user.uid %}
                     {% set is_participant = uid in match.participants|default([]) %}
 
                     {# Side detection for perspective #}
@@ -343,7 +343,7 @@
                 </div>
             </div>
 
-            {% if group.ownerRef.id == g.user['uid'] %}
+            {% if group.ownerRef.id == g.user.uid %}
             <h3>Invite Friends</h3>
             <form method="post" action="{{ url_for('group.view_group', group_id=group.id) }}">
                 {{ form.hidden_tag() }}
@@ -394,7 +394,7 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Status</th>
-                            {% if group.ownerRef.id == g.user['uid'] %}
+                            {% if group.ownerRef.id == g.user.uid %}
                             <th>Actions</th>
                             {% endif %}
                         </tr>
@@ -419,7 +419,7 @@
                                 <span class="badge">{{ invite.status or 'Pending' }}</span>
                                 {% endif %}
                             </td>
-                            {% if group.ownerRef.id == g.user['uid'] %}
+                            {% if group.ownerRef.id == g.user.uid %}
                             <td data-label="Actions">
                                 <div class="pending-invites-actions">
                                     <form method="post"
@@ -507,7 +507,7 @@
                     <h2 class="share-card-title">{{ group.name }}</h2>
                     {% set ns = namespace(user_rank='Member', streak=0) %}
                     {% for player in leaderboard %}
-                        {% if player.id == g.user['uid'] %}
+                        {% if player.id == g.user.uid %}
                             {% set ns.user_rank = 'Rank #' ~ loop.index %}
                             {% set ns.streak = player.streak %}
                         {% endif %}

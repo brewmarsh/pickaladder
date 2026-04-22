@@ -66,7 +66,7 @@
                             onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                     </button>
                     <div class="dropdown-content" data-testid="navbar__user-dropdown__content">
-                        <a href="{{ url_for('user.view_user', user_id=g.user['uid']) }}">👤 My Profile</a>
+                        <a href="{{ url_for('user.view_user', user_id=g.user.uid) }}">👤 My Profile</a>
                         <a href="{{ url_for('user.settings') }}" data-testid="navbar__settings-link">⚙️ Settings</a>
                         {% if session.get('is_admin') %}
                         <a href="{{ url_for('admin.admin') }}">👑 Admin</a>
@@ -111,7 +111,7 @@
             <a href="{{ url_for('match.leaderboard') }}" class="mobile-nav-link"><i class="fas fa-chart-line me-2"></i>
                 Leaderboard</a>
             <div class="mobile-nav-divider"></div>
-            <a href="{{ url_for('user.view_user', user_id=g.user['uid']) }}" class="mobile-nav-link"><i
+            <a href="{{ url_for('user.view_user', user_id=g.user.uid) }}" class="mobile-nav-link"><i
                     class="fas fa-user me-2"></i> My Profile</a>
             <a href="{{ url_for('user.settings') }}" class="mobile-nav-link"><i class="fas fa-cog me-2"></i>
                 Settings</a>

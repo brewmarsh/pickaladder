@@ -31,7 +31,7 @@ MIN_PARTICIPANTS_FOR_GENERATION = 2
 @login_required
 def list_tournaments() -> Any:
     """List all tournaments."""
-    tourneys = TournamentService.list_tournaments(g.user["uid"])
+    tourneys = TournamentService.list_tournaments(g.user.uid)
     return render_template("tournaments.html", tournaments=tourneys)
 
 
@@ -76,7 +76,7 @@ def _handle_creation_payload(form: TournamentForm, user_uid: str) -> str:
 def create_tournament() -> Any:
     """Create a new tournament."""
     gid = request.args.get("group_id")
-    error = _get_group_admin_error(gid, g.user["uid"])
+    error = _get_group_admin_error(gid, g.user.uid)
     if error:
         flash(error, "danger")
         return redirect(url_for("group.view_group", group_id=gid))
@@ -84,7 +84,7 @@ def create_tournament() -> Any:
     form = TournamentForm()
     if form.validate_on_submit():
         try:
-            t_id = _handle_creation_payload(form, g.user["uid"])
+            t_id = _handle_creation_payload(form, g.user.uid)
             flash(TOURNAMENT_MESSAGES["CREATE_SUCCESS"], "success")
             return redirect(url_for(".view_tournament", tournament_id=t_id))
         except Exception as e:
@@ -119,7 +119,7 @@ def _handle_view_invite(tournament_id: str, form: InvitePlayerForm) -> bool:
     if form.validate_on_submit() and "user_id" in request.form:
         uid = cast(str, form.user_id.data)
         if uid:
-            TournamentService.invite_player(tournament_id, g.user["uid"], uid)
+            TournamentService.invite_player(tournament_id, g.user.uid, uid)
             return True
     return False
 
@@ -128,7 +128,7 @@ def _handle_view_invite(tournament_id: str, form: InvitePlayerForm) -> bool:
 @login_required
 def view_tournament(tournament_id: str) -> Any:
     """View a single tournament lobby."""
-    details = TournamentService.get_tournament_details(tournament_id, g.user["uid"])
+    details = TournamentService.get_tournament_details(tournament_id, g.user.uid)
     if not details:
         flash(TOURNAMENT_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for(".list_tournaments"))
@@ -154,7 +154,7 @@ def _handle_tournament_update(tournament_id: str, form: TournamentForm) -> bool:
     """Process tournament update from form."""
     if form.validate_on_submit():
         TournamentService.update_tournament_from_form(
-            tournament_id, g.user["uid"], form.data, request.files.get("banner")
+            tournament_id, g.user.uid, form.data, request.files.get("banner")
         )
         return True
     return False
@@ -175,7 +175,7 @@ def edit_tournament(tournament_id: str) -> Any:
     """Edit tournament details."""
     form = TournamentForm()
     try:
-        t = TournamentService.get_tournament_for_edit(tournament_id, g.user["uid"])
+        t = TournamentService.get_tournament_for_edit(tournament_id, g.user.uid)
         if _handle_tournament_update(tournament_id, form):
             flash(TOURNAMENT_MESSAGES["UPDATE_SUCCESS"], "success")
             return redirect(url_for(".view_tournament", tournament_id=tournament_id))
@@ -198,7 +198,7 @@ def edit_tournament(tournament_id: str) -> Any:
 def delete_tournament(tournament_id: str) -> Any:
     """Delete a tournament."""
     try:
-        TournamentService.delete_tournament(tournament_id, g.user["uid"])
+        TournamentService.delete_tournament(tournament_id, g.user.uid)
         flash(TOURNAMENT_MESSAGES["DELETE_SUCCESS"], "success")
     except (ValueError, PermissionError) as e:
         flash(str(e), "danger")
@@ -218,7 +218,7 @@ def invite_player(tournament_id: str) -> Any:
     if form.validate_on_submit():
         try:
             invited_uid = cast(str, form.user_id.data)
-            TournamentService.invite_player(tournament_id, g.user["uid"], invited_uid)
+            TournamentService.invite_player(tournament_id, g.user.uid, invited_uid)
             flash(TOURNAMENT_MESSAGES["PLAYER_INVITE_SUCCESS"], "success")
         except Exception as e:
             flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
@@ -234,7 +234,7 @@ def invite_group(tournament_id: str) -> Any:
         flash(TOURNAMENT_MESSAGES["NO_GROUP_SPECIFIED"], "warning")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
     try:
-        count = TournamentService.invite_group(tournament_id, gid, g.user["uid"])
+        count = TournamentService.invite_group(tournament_id, gid, g.user.uid)
         flash(
             TOURNAMENT_MESSAGES["INVITE_COUNT_SUCCESS"].format(count=count), "success"
         )
@@ -250,7 +250,7 @@ def invite_group(tournament_id: str) -> Any:
 def accept_invite(tournament_id: str) -> Any:
     """Accept an invite to a tournament."""
     try:
-        if TournamentService.accept_invite(tournament_id, g.user["uid"]):
+        if TournamentService.accept_invite(tournament_id, g.user.uid):
             flash(TOURNAMENT_MESSAGES["INVITE_ACCEPTED"], "success")
         else:
             flash(TOURNAMENT_MESSAGES["INVITE_NOT_FOUND_OR_ACCEPTED"], "warning")
@@ -264,7 +264,7 @@ def accept_invite(tournament_id: str) -> Any:
 def decline_invite(tournament_id: str) -> Any:
     """Decline an invite to a tournament."""
     try:
-        if TournamentService.decline_invite(tournament_id, g.user["uid"]):
+        if TournamentService.decline_invite(tournament_id, g.user.uid):
             flash(TOURNAMENT_MESSAGES["INVITE_DECLINED"], "info")
         else:
             flash(TOURNAMENT_MESSAGES["INVITE_NOT_FOUND"], "warning")
@@ -278,7 +278,7 @@ def decline_invite(tournament_id: str) -> Any:
 def complete_tournament(tournament_id: str) -> Any:
     """Close tournament and send results."""
     try:
-        TournamentService.complete_tournament(tournament_id, g.user["uid"])
+        TournamentService.complete_tournament(tournament_id, g.user.uid)
         flash(TOURNAMENT_MESSAGES["COMPLETE_SUCCESS"], "success")
     except (ValueError, PermissionError) as e:
         flash(str(e), "danger")
@@ -311,7 +311,7 @@ def _get_accepted_uids(data: dict[str, Any]) -> list[str]:
 @login_required
 def generate_bracket(tournament_id: str) -> Any:
     """Generate the tournament bracket/pairings."""
-    if not g.user.get("isAdmin"):
+    if not g.user.is_admin:
         flash(TOURNAMENT_MESSAGES["ADMIN_ONLY_BRACKET"], "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
@@ -350,7 +350,7 @@ def join_tournament(tournament_id: str) -> Any:
 
 def _handle_registration(t_id: str, p_id: str | None, name: str, is_json: bool) -> Any:
     """Perform team registration and return response."""
-    tid = TournamentService.register_team(t_id, g.user["uid"], p_id, name)
+    tid = TournamentService.register_team(t_id, g.user.uid, p_id, name)
     if is_json:
         url = url_for(
             ".view_tournament", tournament_id=t_id, claim_team=tid, _external=True
@@ -389,7 +389,7 @@ def claim_team(tournament_id: str, team_id: str) -> Any:
     """Claim a placeholder team partnership."""
     try:
         if TournamentService.claim_team_partnership(
-            tournament_id, team_id, g.user["uid"]
+            tournament_id, team_id, g.user.uid
         ):
             flash(TOURNAMENT_MESSAGES["JOIN_TEAM_SUCCESS"], "success")
         else:
@@ -404,7 +404,7 @@ def claim_team(tournament_id: str, team_id: str) -> Any:
 def accept_team(tournament_id: str) -> Any:
     """Accept a team partnership invitation."""
     try:
-        if TournamentService.accept_team_partnership(tournament_id, g.user["uid"]):
+        if TournamentService.accept_team_partnership(tournament_id, g.user.uid):
             flash(TOURNAMENT_MESSAGES["PARTNERSHIP_ACCEPTED"], "success")
         else:
             flash(TOURNAMENT_MESSAGES["NO_PENDING_PARTNERSHIP"], "warning")

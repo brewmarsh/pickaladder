@@ -78,7 +78,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-right">
-                                        {% if member.id != g.user['uid'] %}
+                                        {% if member.id != g.user.uid %}
                                             {% if is_owner %}
                                                 {% if member.id not in group.get('admins', []) %}
                                                 <form action="{{ url_for('group.promote_member', group_id=group.id, user_id=member.id) }}" method="POST" class="d-inline">

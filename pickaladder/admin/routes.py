@@ -39,7 +39,7 @@ MIN_USERS_FOR_MATCH_GENERATION = 2
 @login_required(admin_required=True)
 def admin() -> Union[str, Response]:
     """Render the main admin dashboard."""
-    if not g.user or (not g.user.get("isAdmin") and not g.get("is_impersonating")):
+    if not g.user or (not g.user.is_admin and not g.get("is_impersonating")):
         flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
         return redirect(url_for("auth.login"))
 

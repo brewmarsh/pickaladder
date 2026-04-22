@@ -33,7 +33,7 @@ def edit_match(match_id: str) -> Any:
                 match_id,
                 request.form.get("player1_score"),
                 request.form.get("player2_score"),
-                g.user["uid"],
+                g.user.uid,
             )
             flash(MATCH_MESSAGES["UPDATE_SUCCESS"], "success")
             return redirect(url_for("match.view_match_summary", match_id=match_id))
@@ -50,7 +50,7 @@ def edit_match(match_id: str) -> Any:
     return render_template(
         "match/edit_match.html",
         **context,
-        is_admin=g.user.get("isAdmin", False),
+        is_admin=g.user.is_admin,
     )
 
 
@@ -139,7 +139,7 @@ def _prepopulate_players_from_args(form: MatchForm) -> None:
 @login_required
 def record_match() -> Any:
     """Handle match recording for both web form and optimistic JSON submission."""
-    db, user_id = firestore.client(), g.user["uid"]
+    db, user_id = firestore.client(), g.user.uid
     group_id, t_id = request.args.get("group_id"), request.args.get("tournament_id")
     session_id = request.args.get("session_id") or request.form.get("session_id")
     form = MatchForm(data=request.get_json() if request.is_json else None)
@@ -221,7 +221,7 @@ def get_match_history() -> Any:
     db = firestore.client()
     cursor = request.args.get("cursor")
     limit = request.args.get("limit", 20, type=int)
-    uid = g.user["uid"]
+    uid = g.user.uid
 
     matches, next_cursor = MatchQueryService.get_matches_for_user(
         db, uid, limit, cursor
@@ -268,7 +268,7 @@ def leaderboard() -> Any:
     ]
 
     # Social context: friends and pending requests
-    user_id = g.user["uid"]
+    user_id = g.user.uid
     friends_ref = db.collection("users").document(user_id).collection("friends")
     friend_statuses = {
         doc.id: doc.to_dict().get("status") for doc in friends_ref.stream()

@@ -48,7 +48,7 @@ DOUBLES_TEAM_SIZE = 2
 def view_groups() -> Any:
     """Display the user's groups."""
     db = firestore.client()
-    enriched_my_groups = GroupService.get_user_groups(db, g.user["uid"])
+    enriched_my_groups = GroupService.get_user_groups(db, g.user.uid)
 
     return render_template(
         "groups.html",
@@ -93,7 +93,7 @@ def _handle_invite_email_form(
             email = invite_email_form.email.data
             if email:
                 GroupService.invite_by_email(
-                    db, group_id, group_name, email, name, g.user["uid"]
+                    db, group_id, group_name, email, name, g.user.uid
                 )
                 flash(
                     GROUP_MESSAGES["INVITATION_SENDING"].format(email=email.lower()),
@@ -120,7 +120,7 @@ def view_group(group_id: str) -> Any:
 
     try:
         context = GroupService.get_group_details(
-            db, group_id, g.user["uid"], player_a_id, player_b_id
+            db, group_id, g.user.uid, player_a_id, player_b_id
         )
     except GroupNotFound:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
@@ -150,7 +150,7 @@ def manage_group(group_id: str) -> Any:
     """Display the group management hub."""
     db = firestore.client()
     try:
-        context = GroupService.get_group_details(db, group_id, g.user["uid"])
+        context = GroupService.get_group_details(db, group_id, g.user.uid)
         if not context["is_admin"]:
             flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
             return redirect(url_for(".view_group", group_id=group_id))
@@ -196,7 +196,7 @@ def create_group() -> Any:
         db = firestore.client()
         try:
             group_id = GroupService.create_group(
-                db, g.user["uid"], form.data, form.profile_picture.data
+                db, g.user.uid, form.data, form.profile_picture.data
             )
             flash(GROUP_MESSAGES["CREATE_SUCCESS"], "success")
             return redirect(url_for(".view_group", group_id=group_id))
@@ -215,7 +215,7 @@ def _get_group_for_edit(db: Any, group_id: str) -> dict[str, Any]:
     group_data = group.to_dict()
     group_data["id"] = group.id
 
-    if not GroupService.is_group_admin(group_data, g.user["uid"]):
+    if not GroupService.is_group_admin(group_data, g.user.uid):
         raise AccessDenied("You do not have permission to edit this group.")
 
     return group_data
@@ -229,7 +229,7 @@ def _handle_edit_group_form(
     if form.validate_on_submit():
         try:
             GroupService.update_group(
-                db, group_id, g.user["uid"], form.data, form.profile_picture.data
+                db, group_id, g.user.uid, form.data, form.profile_picture.data
             )
             flash(GROUP_MESSAGES["UPDATE_SUCCESS"], "success")
             return form, redirect(url_for(".view_group", group_id=group_id))
@@ -288,7 +288,7 @@ def resend_invite(token: str) -> Any:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for("auth.login"))
 
-    if not GroupService.is_group_admin(group.to_dict(), g.user["uid"]):
+    if not GroupService.is_group_admin(group.to_dict(), g.user.uid):
         flash(GROUP_MESSAGES["PERMISSION_DENIED"], "danger")
         return redirect(url_for(".view_group", group_id=group_id))
 
@@ -335,7 +335,7 @@ def view_leaderboard_trend(group_id: str) -> Any:
     group_data["id"] = group.id
 
     trend_data = get_leaderboard_trend_data(group_id)
-    user_stats = get_user_group_stats(group_id, g.user["uid"])
+    user_stats = get_user_group_stats(group_id, g.user.uid)
 
     return render_template(
         "group_leaderboard_trend.html",
@@ -366,7 +366,7 @@ def delete_invite(token: str) -> Any:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for("auth.login"))
 
-    if not GroupService.is_group_admin(group.to_dict(), g.user["uid"]):
+    if not GroupService.is_group_admin(group.to_dict(), g.user.uid):
         flash(GROUP_MESSAGES["PERMISSION_DENIED"], "danger")
         return redirect(url_for(".view_group", group_id=group_id))
 
@@ -395,7 +395,7 @@ def handle_invite(token: str) -> Any:
 
     group_id = invite_data.get("group_id")
     group_ref = db.collection("groups").document(group_id)
-    user_ref = db.collection("users").document(g.user["uid"])
+    user_ref = db.collection("users").document(g.user.uid)
 
     try:
         # Merge ghost user if exists
@@ -406,7 +406,7 @@ def handle_invite(token: str) -> Any:
         # Add user to group
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
         # Mark invite as used
-        invite_ref.update({"used": True, "used_by": g.user["uid"]})
+        invite_ref.update({"used": True, "used_by": g.user.uid})
 
         # Friend other group members
         friend_group_members(db, group_id, user_ref)
@@ -432,7 +432,7 @@ def delete_group(group_id: str) -> Any:
 
     group_data = group.to_dict()
     owner_ref = group_data.get("ownerRef")
-    if not owner_ref or owner_ref.id != g.user["uid"]:
+    if not owner_ref or owner_ref.id != g.user.uid:
         flash(GROUP_MESSAGES["DELETE_DENIED"], "danger")
         return redirect(url_for(".view_group", group_id=group.id))
 
@@ -452,7 +452,7 @@ def join_group(group_id: str) -> Any:
     """Join a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
-    user_ref = db.collection("users").document(g.user["uid"])
+    user_ref = db.collection("users").document(g.user.uid)
 
     try:
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
@@ -471,7 +471,7 @@ def leave_group(group_id: str) -> Any:
     """Leave a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
-    user_ref = db.collection("users").document(g.user["uid"])
+    user_ref = db.collection("users").document(g.user.uid)
 
     try:
         group_ref.update({"members": firestore.ArrayRemove([user_ref])})
@@ -488,7 +488,7 @@ def promote_member(group_id: str, user_id: str) -> Any:
     """Promote a member to captain."""
     db = firestore.client()
     try:
-        GroupService.promote_member(db, group_id, user_id, g.user["uid"])
+        GroupService.promote_member(db, group_id, user_id, g.user.uid)
         flash(GROUP_MESSAGES["PROMOTED_CAPTAIN"], "success")
     except AccessDenied:
         flash(GROUP_MESSAGES["PROMOTE_DENIED"], "danger")
@@ -503,7 +503,7 @@ def demote_member(group_id: str, user_id: str) -> Any:
     """Demote a captain to member."""
     db = firestore.client()
     try:
-        GroupService.demote_member(db, group_id, user_id, g.user["uid"])
+        GroupService.demote_member(db, group_id, user_id, g.user.uid)
         flash(GROUP_MESSAGES["REVOKED_CAPTAIN"], "success")
     except AccessDenied:
         flash(GROUP_MESSAGES["DEMOTE_DENIED"], "danger")
@@ -518,7 +518,7 @@ def remove_member(group_id: str, user_id: str) -> Any:
     """Remove a member from the group."""
     db = firestore.client()
     try:
-        GroupService.remove_member(db, group_id, user_id, g.user["uid"])
+        GroupService.remove_member(db, group_id, user_id, g.user.uid)
         flash(GROUP_MESSAGES["MEMBER_REMOVED"], "success")
     except AccessDenied as e:
         flash(str(e), "danger")
@@ -652,7 +652,7 @@ def view_session(session_id: str) -> Any:
 def verify_session(session_id: str) -> Any:
     """Trigger batch verification for a session."""
     db = firestore.client()
-    success = SessionService.verify_session(db, session_id, g.user["uid"])
+    success = SessionService.verify_session(db, session_id, g.user.uid)
     if success:
         flash("Session verified!", "success")
     else:

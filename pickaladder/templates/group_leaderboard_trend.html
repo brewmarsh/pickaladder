@@ -89,7 +89,7 @@
             });
         }
 
-        const currentUserId = "{{ g.user['uid'] }}";
+        const currentUserId = "{{ g.user.uid }}";
         const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#84CC16';
 
         trendData.datasets.forEach((dataset) => {

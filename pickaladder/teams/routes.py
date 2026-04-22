@@ -33,11 +33,11 @@ def create_team() -> Any:
         try:
             member_ids = form.members.data
             # Ensure creator is in the team
-            if g.user["uid"] not in member_ids:
-                member_ids.append(g.user["uid"])
+            if g.user.uid not in member_ids:
+                member_ids.append(g.user.uid)
 
             team_id = TeamService.create_named_team(
-                db, form.name.data, g.user["uid"], member_ids
+                db, form.name.data, g.user.uid, member_ids
             )
             flash("Team created successfully!", "success")
             return redirect(url_for(".view_team", team_id=team_id))
@@ -77,7 +77,7 @@ def rename_team(team_id: str) -> Any:
     team_data["id"] = team.id
 
     # Authorization check
-    if g.user["uid"] not in team_data.get("member_ids", []):
+    if g.user.uid not in team_data.get("member_ids", []):
         flash(MATCH_MESSAGES["RENAME_DENIED"], "danger")
         return redirect(url_for(".view_team", team_id=team_id))
 
@@ -99,7 +99,7 @@ def rename_team(team_id: str) -> Any:
 def get_user_teams() -> Any:
     """Fetch named teams for the current user."""
     db = firestore.client()
-    teams = TeamService.get_user_named_teams(db, g.user["uid"])
+    teams = TeamService.get_user_named_teams(db, g.user.uid)
     # Simplify for JSON response
     result = []
     for team in teams:
@@ -123,7 +123,7 @@ def get_team_roster(team_id: str) -> Any:
         return {"error": "Team not found"}, 404
 
     # Authorization check
-    if g.user["uid"] not in team_data.get("member_ids", []):
+    if g.user.uid not in team_data.get("member_ids", []):
         return {"error": "Unauthorized"}, 403
 
     members = TeamService._fetch_team_members(db, team_data)
@@ -158,11 +158,11 @@ def team_wizard() -> Any:
 
         try:
             # Ensure creator is in the team
-            if g.user["uid"] not in member_ids:
-                member_ids.append(g.user["uid"])
+            if g.user.uid not in member_ids:
+                member_ids.append(g.user.uid)
 
             team_id = TeamService.create_named_team(
-                db, name, g.user["uid"], member_ids
+                db, name, g.user.uid, member_ids
             )
             return {
                 "success": True,

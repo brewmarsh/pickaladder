@@ -94,7 +94,7 @@ def _populate_g_user(user_doc: Any, id_to_load: str, is_impersonating: bool) -> 
     """Populate g.user and sync session admin status."""
     g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
     if not is_impersonating:
-        session["is_admin"] = g.user.get("isAdmin", False)
+        session["is_admin"] = g.user.is_admin
 
 
 def _handle_missing_user(id_to_load: str, is_impersonating: bool) -> None:

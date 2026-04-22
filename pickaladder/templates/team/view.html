@@ -13,7 +13,7 @@
                 <h1>{{ team.name }}</h1>
             </div>
             {# Assuming only team members can edit. Add more specific logic if needed. #}
-            {% if g.user['uid'] in team.member_ids %}
+            {% if g.user.uid in team.member_ids %}
             <a href="{{ url_for('teams.rename_team', team_id=team.id) }}" title="Rename Team"
                 class="settings-icon">✏️</a>
             {% endif %}

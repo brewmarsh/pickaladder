@@ -96,7 +96,7 @@ class StyleguideTestCase(unittest.TestCase):
         # Depending on how @login_required(admin_required=True) is implemented,
         # it might redirect to login or show an error.
         # Based on admin() route in routes.py:
-        # if not g.user or not g.user.get("isAdmin"):
+        # if not g.user or not g.user.is_admin:
         #     flash("You are not authorized to view this page.", "danger")
         #     return redirect(url_for("auth.login"))
         # Wait, the @login_required(admin_required=True) decorator should handle it.

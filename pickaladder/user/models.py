@@ -69,9 +69,19 @@ class UserRanking(TypedDict, total=False):
 class UserSession(UserDict, UserMixin):
     """A wrapper class for user data that provides properties for Flask-Login."""
 
-    def get_id(self) -> str:
+    @property
+    def uid(self) -> str:
         """Return the user ID."""
         return str(self.get("uid", ""))
+
+    @property
+    def id(self) -> str:
+        """Alias for uid for object-style consistency."""
+        return self.uid
+
+    def get_id(self) -> str:
+        """Return the user ID."""
+        return self.uid
 
     @property
     def is_admin(self) -> bool:

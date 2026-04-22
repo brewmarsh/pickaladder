@@ -21,7 +21,7 @@ bp = Blueprint("api_stats", __name__, url_prefix="/api/stats")
 def vanity_metrics() -> Any:
     """Return vanity metrics HTML fragment."""
     db = firestore.client()
-    user_id = g.user["uid"]
+    user_id = g.user.uid
     user_data, vanity_metrics = _fetch_vanity_stats(db, user_id)
 
     return render_template(
@@ -37,7 +37,7 @@ def vanity_metrics() -> Any:
 def recent_matches() -> Any:
     """Return recent matches HTML fragment."""
     db = firestore.client()
-    user_id = g.user["uid"]
+    user_id = g.user.uid
     activity = _fetch_recent_activity(db, user_id)
 
     return render_template(

@@ -34,7 +34,7 @@ def test_verify_fixes(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.click("button:has-text('Create Group')")
     page.wait_for_url(re.compile(r".*/group/.*"))
 
-    # Check if Gear icon is visible (means g.user['uid'] matched group owner)
+    # Check if Gear icon is visible (means g.user.uid matched group owner)
     gear_icon = page.locator(".btn-edit-gear")
     expect(gear_icon).to_be_visible()
 

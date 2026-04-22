@@ -41,7 +41,7 @@ class MockPagination:
 def settings() -> Any:
     """Unified user settings page."""
     db = firestore.client()
-    user_id = g.user["uid"]
+    user_id = g.user.uid
     form = SettingsForm()
 
     if request.method == "GET":
@@ -73,7 +73,7 @@ def settings() -> Any:
 def reset_avatar() -> Any:
     """Reset the user's avatar to default."""
     db = firestore.client()
-    user_id = g.user["uid"]
+    user_id = g.user.uid
     if UserService.reset_profile_picture(db, user_id):
         flash(USER_MESSAGES["PROFILE_PIC_REMOVED"], "success")
     else:
@@ -88,7 +88,7 @@ def edit_profile() -> Any:
     form = UpdateUserForm(data=g.user)
     if form.validate_on_submit():
         res = UserService.process_profile_update(
-            firestore.client(), g.user["uid"], form, g.user
+            firestore.client(), g.user.uid, form, g.user
         )
         if res["success"]:
             if "info" in res:
@@ -104,7 +104,7 @@ def edit_profile() -> Any:
 def dashboard() -> Any:
     """Render user dashboard."""
     db = firestore.client()
-    user_id = g.user["uid"]
+    user_id = g.user.uid
 
     data = UserService.get_dashboard_data(db, user_id)
 
@@ -123,7 +123,7 @@ def dashboard() -> Any:
 def view_user(user_id: str) -> Any:
     """Display a user's public profile."""
     db = firestore.client()
-    data = UserService.get_user_profile_data(db, g.user["uid"], user_id)
+    data = UserService.get_user_profile_data(db, g.user.uid, user_id)
     if not data:
         flash(USER_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for(".users"))
@@ -151,10 +151,10 @@ def view_community() -> Any:
     db = firestore.client()
     search_term = request.args.get("search", "").strip()
 
-    incoming_requests = UserService.get_user_pending_requests(db, g.user["uid"])
-    outgoing_requests = UserService.get_user_sent_requests(db, g.user["uid"])
+    incoming_requests = UserService.get_user_pending_requests(db, g.user.uid)
+    outgoing_requests = UserService.get_user_sent_requests(db, g.user.uid)
 
-    data = UserService.get_community_data(db, g.user["uid"], search_term)
+    data = UserService.get_community_data(db, g.user.uid, search_term)
 
     # Filter out incoming/outgoing requests from data to avoid multiple values error
     filtered_data = {
@@ -179,7 +179,7 @@ def users() -> Any:
     """List and allows searching for users."""
     search_term = request.args.get("search", "")
     user_items = UserService.search_users(
-        firestore.client(), g.user["uid"], search_term
+        firestore.client(), g.user.uid, search_term
     )
     return render_template(
         "users.html",
@@ -193,12 +193,12 @@ def users() -> Any:
 @login_required
 def send_friend_request(friend_id: str) -> Any:
     """Send a friend request."""
-    if g.user["uid"] == friend_id:
+    if g.user.uid == friend_id:
         flash(USER_MESSAGES["FRIEND_REQ_SELF"], "danger")
         return redirect(url_for(".users"))
 
     success = UserService.send_friend_request(
-        firestore.client(), g.user["uid"], friend_id
+        firestore.client(), g.user.uid, friend_id
     )
     if success:
         flash(USER_MESSAGES["FRIEND_REQ_SENT"], "success")
@@ -233,7 +233,7 @@ def accept_request(requester_id: str) -> Any:
     requester = UserService.get_user_by_id(db, requester_id)
     name = UserService.smart_display_name(requester) if requester else "the user"
 
-    if UserService.accept_friend_request(db, g.user["uid"], requester_id):
+    if UserService.accept_friend_request(db, g.user.uid, requester_id):
         flash(USER_MESSAGES["FRIENDS_NOW"].format(name=name), "success")
     else:
         flash(COMMON_MESSAGES["GENERIC_ERROR_SIMPLE"], "danger")
@@ -246,7 +246,7 @@ def accept_request(requester_id: str) -> Any:
 @login_required
 def cancel_request(target_id: str) -> Any:
     """Cancel or decline a friend request."""
-    if UserService.cancel_friend_request(firestore.client(), g.user["uid"], target_id):
+    if UserService.cancel_friend_request(firestore.client(), g.user.uid, target_id):
         flash(USER_MESSAGES["FRIEND_REQ_PROCESSED"], "success")
     else:
         flash(COMMON_MESSAGES["GENERIC_ERROR_SIMPLE"], "danger")
@@ -257,7 +257,7 @@ def cancel_request(target_id: str) -> Any:
 @login_required
 def api_dashboard() -> Any:
     """Provide dashboard data as JSON."""
-    user_id = g.user["uid"]
+    user_id = g.user.uid
     # The JSON API should probably still include everything for backwards compatibility
     # and because it's usually used by clients that expect a full payload.
     data = UserService.get_dashboard_data(
@@ -288,7 +288,7 @@ def api_dashboard() -> Any:
 @login_required
 def create_invite() -> Any:
     """Generate a unique invite token."""
-    token = UserService.create_invite_token(firestore.client(), g.user["uid"])
+    token = UserService.create_invite_token(firestore.client(), g.user.uid)
     return jsonify({"token": token})
 
 
@@ -298,7 +298,7 @@ def api_search_users() -> Any:
     """Search for users and return JSON."""
     search_term = request.args.get("q", "")
     db = firestore.client()
-    users = UserService.search_users(db, g.user["uid"], search_term)
+    users = UserService.search_users(db, g.user.uid, search_term)
     results = []
     for user_data, _, _ in users:
         results.append(
