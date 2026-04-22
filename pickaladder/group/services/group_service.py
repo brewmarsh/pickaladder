@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import secrets
-from typing import Any, cast
+from typing import Any
 
 from firebase_admin import firestore, storage
 from flask import current_app, url_for
@@ -12,7 +12,6 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from pickaladder.group.repository import GroupRepository
-from pickaladder.teams.repository import TeamRepository
 from pickaladder.group.services.leaderboard import get_group_leaderboard
 from pickaladder.group.services.match_parser import (
     _get_match_scores,
@@ -21,6 +20,7 @@ from pickaladder.group.services.match_parser import (
 from pickaladder.group.services.stats import (
     get_head_to_head_stats as get_h2h_stats,
 )
+from pickaladder.teams.repository import TeamRepository
 
 logger = logging.getLogger(__name__)
 
@@ -254,7 +254,7 @@ class GroupService:
         member_refs = group_data.get("members", [])
         member_ids = {ref.id for ref in member_refs}
         members = GroupRepository.get_group_members(db, member_refs)
-        
+
         owner_ref = group_data.get("ownerRef")
         owner = None
         if owner_ref:

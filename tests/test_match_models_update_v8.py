@@ -1,7 +1,9 @@
 """Tests for match model updates in Phase 8 Wave 2."""
 
 import datetime
-from pickaladder.match.models import MatchSubmission, MatchResult, MatchDict
+
+from pickaladder.match.models import MatchDict, MatchResult, MatchSubmission
+
 
 def test_match_submission_with_named_teams():
     """Verify MatchSubmission supports namedTeamId fields."""
@@ -17,7 +19,7 @@ def test_match_submission_with_named_teams():
         namedTeam1Id="team_alpha",
         namedTeam2Id="team_beta"
     )
-    
+
     assert submission.namedTeam1Id == "team_alpha"
     assert submission.namedTeam2Id == "team_beta"
     assert submission["namedTeam1Id"] == "team_alpha"
@@ -39,7 +41,7 @@ def test_match_result_with_named_teams():
         namedTeam1Id="team_alpha",
         namedTeam2Id="team_beta"
     )
-    
+
     assert result.namedTeam1Id == "team_alpha"
     assert result.namedTeam2Id == "team_beta"
 
@@ -60,6 +62,6 @@ def test_match_dict_typing():
         "losers": ["p2", "p2_p"],
         "participants": ["p1", "p1_p", "p2", "p2_p"]
     }
-    
+
     assert match_data["namedTeam1Id"] == "team_alpha"
     assert match_data["namedTeam2Id"] == "team_beta"

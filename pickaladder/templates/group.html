@@ -4,7 +4,7 @@
 <div class="card hero-stats-card responsive-card-stack">
     {% if is_admin %}
     <a href="{{ url_for('group.manage_group', group_id=group.id) }}" title="Management Hub" class="btn-edit-gear"
-        data-testid="group-settings-btn">⚙️</a>
+        data-testid="manage-hub-btn">⚙️</a>
     {% endif %}
 
     <div class="hero-left-panel">

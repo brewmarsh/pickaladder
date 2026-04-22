@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from pickaladder.teams.services import TeamService
 from pickaladder.user.services.activity import (
     get_group_rankings,
     get_top_groups,
 )
-from pickaladder.teams.services import TeamService
 from pickaladder.user.services.core import get_user_by_id
 from pickaladder.user.services.friendship import (
     get_user_friends,

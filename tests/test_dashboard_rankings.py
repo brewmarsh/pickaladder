@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import unittest
 from unittest.mock import MagicMock, patch
+
 from pickaladder.user.services.dashboard import get_dashboard_data
+
 
 class TestDashboardRankings(unittest.TestCase):
     def setUp(self) -> None:

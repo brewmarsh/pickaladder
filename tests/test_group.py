@@ -383,6 +383,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         self.assertIn(b"Test Group", response.data)
         self.assertIn(b"Friend One", response.data)
 
+        # Check for Hub button (owner access)
+        self.assertIn(b'data-testid="manage-hub-btn"', response.data)
+
         # Verify db.get_all was called with the correct friend reference
         mock_db.get_all.assert_any_call([mock_friend_ref])
 

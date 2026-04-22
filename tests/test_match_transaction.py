@@ -144,12 +144,12 @@ class MatchTransactionTestCase(unittest.TestCase):
         t2_ref = MagicMock()
         t2_ref.id = "pairing2"
         user_ref = MagicMock()
-        
+
         nt1_ref = MagicMock()
         nt1_ref.id = "named_team1"
         nt2_ref = MagicMock()
         nt2_ref.id = "named_team2"
-        
+
         db.collection.return_value.document.side_effect = lambda x: {
             "pairing1": t1_ref,
             "pairing2": t2_ref,
@@ -197,12 +197,12 @@ class MatchTransactionTestCase(unittest.TestCase):
 
         # Let's check specifically for the named team updates
         # They should be at indices 2 and 3 if they follow p1/p2
-        
+
         # Pairing 1 update (win)
         self.assertEqual(batch.update.call_args_list[0][0][0], t1_ref)
         self.assertEqual(batch.update.call_args_list[0][0][1]["stats.wins"], 1)
         self.assertEqual(batch.update.call_args_list[0][0][1]["stats.elo"], 1216.0)
-        
+
         # Pairing 2 update (loss)
         self.assertEqual(batch.update.call_args_list[1][0][0], t2_ref)
         self.assertEqual(batch.update.call_args_list[1][0][1]["stats.losses"], 1)

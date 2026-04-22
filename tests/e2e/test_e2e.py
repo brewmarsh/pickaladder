@@ -117,7 +117,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     expect(page.locator("h1")).to_contain_text("Pickleballers")
 
     # 5. Invite Friend to Group
-    page.click("summary:has-text('Manage Group & Members')")
+    with page.expect_navigation():
+        page.get_by_test_id("manage-hub-btn").click()
+    
+    page.click("text=Invites")
     page.select_option("select[name='friend']", value="user2")
     with page.expect_navigation():
         page.click("button:has-text('Invite Friend')")
@@ -195,25 +198,33 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Delete')")
     expect(page.locator(".toast")).to_contain_text("Match deleted successfully")
 
-    # 10. Update Group Details (Login as Admin - already logged in)
-    with page.expect_navigation():
+    # 10. Update Group Location
+    if page.get_by_test_id("navbar__groups-link").is_visible():
         page.get_by_test_id("navbar__groups-link").click()
     with page.expect_navigation():
         page.click("text=Pickleballers")
     with page.expect_navigation():
-        page.click('[data-testid="group-settings-btn"]')
+        page.get_by_test_id("manage-hub-btn").click()
+
+    # Switch to Settings tab
+    page.click("text=Settings")
     page.fill("input[name='location']", "New Court")
     with page.expect_navigation():
         page.click("button:has-text('Update Group')")
     expect(page.locator("text=New Court")).to_be_visible()
 
     # 11. Invite Email to Group
-    page.click("summary:has-text('Manage Group & Members')")
-    page.fill("form[action*='group'] input[name='name']", "New Guy")
-    page.fill("form[action*='group'] input[name='email']", "newguy@example.com")
+    # hub-btn again if navigation happened
+    if not page.locator("text=Invites").is_visible():
+        page.get_by_test_id("manage-hub-btn").click()
+
+    page.click("text=Invites")
+    page.fill("form[action*='invite'] input[name='name']", "New Guy")
+    page.fill("form[action*='invite'] input[name='email']", "newguy@example.com")
     with page.expect_navigation():
         page.click("button:has-text('Send Invite')")
     expect(page.locator(".toast-body").last).to_contain_text("Invitation is being sent")
+
 
     # Verify invite token was created
     invites = list(mock_db.collection("group_invites").stream())

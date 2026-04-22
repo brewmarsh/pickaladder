@@ -88,7 +88,7 @@ class GroupRepository(BaseRepository):
         """Fetch full profile data for group members."""
         if not member_refs:
             return []
-        
+
         snaps = db.get_all(member_refs)
         members = []
         for snap in snaps:

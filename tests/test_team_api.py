@@ -1,13 +1,12 @@
-import pytest
-from flask import g
 from unittest.mock import patch
+
 
 def test_api_user_teams(client, mock_db):
     """Test the /team/api/user-teams endpoint."""
     uid = "test_user"
     with client.session_transaction() as sess:
         sess["user_id"] = uid
-    
+
     # Create a named team for the user
     mock_db.collection("teams").document("team_a").set({
         "name": "Team A",
@@ -15,7 +14,7 @@ def test_api_user_teams(client, mock_db):
         "member_ids": [uid, "other_user"],
         "isActive": True
     })
-    
+
     # Create a pairing team (should be ignored)
     mock_db.collection("teams").document("team_pairing").set({
         "name": "Pairing",
@@ -26,7 +25,8 @@ def test_api_user_teams(client, mock_db):
 
     with patch("pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}):
         response = client.get('/team/api/user-teams')
-        assert response.status_code == 200
+        SUCCESS_CODE = 200
+        assert response.status_code == SUCCESS_CODE
         data = response.get_json()
         assert "teams" in data
         assert len(data["teams"]) == 1
@@ -38,11 +38,11 @@ def test_api_team_roster(client, mock_db):
     uid = "test_user"
     with client.session_transaction() as sess:
         sess["user_id"] = uid
-    
+
     # Create users
     mock_db.collection("users").document(uid).set({"name": "User 1"})
     mock_db.collection("users").document("u2").set({"name": "User 2"})
-    
+
     # Create team
     mock_db.collection("teams").document("team_a").set({
         "name": "Team A",
@@ -51,14 +51,16 @@ def test_api_team_roster(client, mock_db):
         "members": [mock_db.collection("users").document(uid), mock_db.collection("users").document("u2")],
         "isActive": True
     })
-    
+
     with patch("pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}):
         response = client.get('/team/api/team_a/roster')
-        assert response.status_code == 200
+        SUCCESS_CODE = 200
+        assert response.status_code == SUCCESS_CODE
         data = response.get_json()
         assert "members" in data
-        assert len(data["members"]) == 2
-        
+        EXPECTED_MEMBERS = 2
+        assert len(data["members"]) == EXPECTED_MEMBERS
+
         member_ids = [m["id"] for m in data["members"]]
         assert uid in member_ids
         assert "u2" in member_ids
@@ -68,7 +70,7 @@ def test_api_team_roster_unauthorized(client, mock_db):
     uid = "test_user"
     with client.session_transaction() as sess:
         sess["user_id"] = uid
-    
+
     # Create team NOT containing the user
     mock_db.collection("teams").document("team_b").set({
         "name": "Team B",
@@ -76,7 +78,8 @@ def test_api_team_roster_unauthorized(client, mock_db):
         "member_ids": ["u2", "u3"],
         "isActive": True
     })
-    
+
     with patch("pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}):
         response = client.get('/team/api/team_b/roster')
-        assert response.status_code == 403
+        FORBIDDEN_CODE = 403
+        assert response.status_code == FORBIDDEN_CODE
