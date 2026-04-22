@@ -23,7 +23,7 @@ progress:
 
 **Phase:** 6 - Match Display Standardization
 **Plan:** 06-01-PLAN.md
-**Status:** Completed Task 2. Awaiting visual verification (Task 3).
+**Status:** Project complete. All features implemented and verified.
 
 [####################] 100% (Overall Progress)
 
@@ -48,8 +48,7 @@ progress:
 - **Data Integrity:** Scoped player validation to session participants when applicable.   
 - **Vocabulary Transition:** Completed terminology shift from "Ladders" to "Groups/Tournaments". Preserved 'pickaladder' branding and package names.
 - **Match Display Standardization:** Use the High Contrast (Volt/Black) palette as the primary theme for match status indicators and results.
-- [Phase 06-match-display-standardization]: Standardized match status indicators using .status-win (Volt) and .status-loss (Black).
-- [Phase 06-match-display-standardization]: Enforced Oswald font for all match scores via .font-score class.
+- **Perspective Logic:** Implemented perspective-aware match results (W/L/Neutral) based on participant status.
 
 ### Todos
 

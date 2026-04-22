@@ -6,8 +6,8 @@
 - [x] **Phase 2: Ranking Logic & Integrity** - Transitioning to skill-based ranking and automated movement.
 - [x] **Phase 3: External Integration & Advanced Ranking** - DUPR sync and rank health management.
 - [x] **Phase 4: Session-First Workflow & Batch Recording** - Streamlining courtside match logging via session pools.
- (completed 2026-04-21)
-- [ ] **Phase 6: Match Display Standardization** - Standardizing win/loss indicators and typography.
+- [x] **Phase 5: Vocabulary Transition** - Transitioning terminology from "Ladders" to "Groups" and "Tournaments".
+- [x] **Phase 6: Match Display Standardization** - Standardizing win/loss indicators and typography.
 
 ---
 
@@ -103,4 +103,4 @@
 | 3. External Integration & Advanced Ranking | 1/1 | Completed | 2026-04-17 |
 | 4. Session-First Workflow & Batch Recording | 3/3 | Completed | 2026-04-21 |
 | 5. Vocabulary Transition | 1/1 | Completed | 2026-04-21 |
-| 6. Match Display Standardization | 0/1 | Not started | - |
+| 6. Match Display Standardization | 1/1 | Completed | 2026-04-21 |
