@@ -6,8 +6,8 @@ from firebase_admin import firestore
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
-    from google.cloud.firestore_v1.base_reference import DocumentReference
     from google.cloud.firestore_v1.client import Client
+    from google.cloud.firestore_v1.document import DocumentReference
 
 
 class BaseRepository:
