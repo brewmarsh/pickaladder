@@ -91,3 +91,48 @@ def edit_team(team_id: str) -> Any:
 
     form.name.data = team_data.get("name")
     return render_template("team/edit.html", form=form, team=team_data)
+
+
+@bp.route("/api/user-teams")
+@login_required
+def get_user_teams() -> Any:
+    """Fetch named teams for the current user."""
+    db = firestore.client()
+    teams = TeamService.get_user_named_teams(db, g.user["uid"])
+    # Simplify for JSON response
+    result = []
+    for team in teams:
+        result.append(
+            {
+                "id": team["id"],
+                "name": team.get("name", "Unnamed Team"),
+                "member_ids": team.get("member_ids", []),
+            }
+        )
+    return {"teams": result}
+
+
+@bp.route("/api/<string:team_id>/roster")
+@login_required
+def get_team_roster(team_id: str) -> Any:
+    """Fetch the roster for a specific team."""
+    db = firestore.client()
+    team_data = TeamRepository.get_by_id(db, team_id)
+    if not team_data:
+        return {"error": "Team not found"}, 404
+
+    # Authorization check
+    if g.user["uid"] not in team_data.get("member_ids", []):
+        return {"error": "Unauthorized"}, 403
+
+    members = TeamService._fetch_team_members(db, team_data)
+    # Simplify for JSON response
+    result = []
+    for member in members:
+        result.append(
+            {
+                "id": member["id"],
+                "name": member.get("name", member["id"]),
+            }
+        )
+    return {"members": result}

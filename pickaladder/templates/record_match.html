@@ -4,44 +4,96 @@
 <div class="form-container">
     <h2>Record Match {% if tournament_name %} - {{ tournament_name }} {% endif %}</h2>
     {% for field, errors in form.errors.items() %}
-        <div class="alert alert-danger">
-            {{ ', '.join(errors) }}
-        </div>
+        {% if errors %}
+            <div class="alert alert-danger">
+                {{ field }}: {{ ', '.join(errors) }}
+            </div>
+        {% endif %}
     {% endfor %}
-    <form name="record-match-form" method="POST">
+    <form name="record-match-form" id="record-match-form" method="POST">
         {{ form.hidden_tag() }}
 
-        <div class="form-group">
-            {{ form.match_type.label }}
-            {{ form.match_type(class="form-control", onchange="toggleFields()") }}
+        <div class="form-group mb-4">
+            {{ form.match_type.label(class="form-label fw-bold") }}
+            {{ form.match_type(class="form-control form-control-lg") }}
+        </div>
+
+        <hr>
+
+        <!-- Selection Mode Toggles -->
+        <div class="row mb-3">
+            <div class="col-6">
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="side1_mode" id="side1_manual" value="manual" checked>
+                    <label class="btn btn-outline-volt" for="side1_manual">Manual Pair</label>
+                    <input type="radio" class="btn-check" name="side1_mode" id="side1_team" value="team">
+                    <label class="btn btn-outline-volt" for="side1_team">Saved Team</label>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="side2_mode" id="side2_manual" value="manual" checked>
+                    <label class="btn btn-outline-volt" for="side2_manual">Manual Pair</label>
+                    <input type="radio" class="btn-check" name="side2_mode" id="side2_team" value="team">
+                    <label class="btn btn-outline-volt" for="side2_team">Saved Team</label>
+                </div>
+            </div>
         </div>
 
         <div class="row">
+            <!-- Side 1 Selection -->
             <div class="col-12 col-md-6 mb-3">
-                <div class="form-group mb-0">
-                    {{ form.player1.label }}
-                    {{ form.player1(class="form-control") }}
+                <div id="side1-manual-container">
+                    <div class="form-group">
+                        {{ form.player1.label(class="form-label") }}
+                        {{ form.player1(class="form-control") }}
+                    </div>
+                    <div class="form-group mt-3" id="partner-group" style="display: none;">
+                        {{ form.partner.label(class="form-label") }}
+                        {{ form.partner(class="form-control") }}
+                    </div>
+                </div>
+                <div id="side1-team-container" style="display: none;">
+                    <div class="form-group">
+                        <label for="side1_team_select" class="form-label">Select Your Team</label>
+                        <select id="side1_team_select" class="form-control">
+                            <option value="">-- Select Team --</option>
+                        </select>
+                    </div>
+                    <div id="side1-roster-container" class="mt-3 card card-body bg-light" style="display: none;">
+                        <label class="fw-bold mb-2">Pick Participants</label>
+                        <div id="side1-roster-list" class="roster-list">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 mb-3">
-                <div class="form-group mb-0">
-                    <label id="player2-label" for="player2">Opponent</label>
-                    {{ form.player2(class="form-control") }}
-                </div>
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="col-12 col-md-6 mb-3" id="partner-group" style="display: none;">
-                <div class="form-group mb-0">
-                    {{ form.partner.label }}
-                    {{ form.partner(class="form-control") }}
+            <!-- Side 2 Selection -->
+            <div class="col-12 col-md-6 mb-3">
+                <div id="side2-manual-container">
+                    <div class="form-group">
+                        <label id="player2-label" for="player2" class="form-label">Opponent</label>
+                        {{ form.player2(class="form-control") }}
+                    </div>
+                    <div class="form-group mt-3" id="opponent2-group" style="display: none;">
+                        {{ form.opponent2.label(class="form-label") }}
+                        {{ form.opponent2(class="form-control") }}
+                    </div>
                 </div>
-            </div>
-            <div class="col-12 col-md-6 mb-3" id="opponent2-group" style="display: none;">
-                <div class="form-group mb-0">
-                    {{ form.opponent2.label }}
-                    {{ form.opponent2(class="form-control") }}
+                <div id="side2-team-container" style="display: none;">
+                    <div class="form-group">
+                        <label for="side2_team_select" class="form-label">Select Opponent Team</label>
+                        <select id="side2_team_select" class="form-control">
+                            <option value="">-- Select Team --</option>
+                        </select>
+                    </div>
+                    <div id="side2-roster-container" class="mt-3 card card-body bg-light" style="display: none;">
+                        <label class="fw-bold mb-2">Pick Participants</label>
+                        <div id="side2-roster-list" class="roster-list">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -66,7 +118,7 @@
         <hr>
 
         <div class="form-group">
-            {{ form.match_date.label }}
+            {{ form.match_date.label(class="form-label") }}
             {{ form.match_date(class="form-control") }}
         </div>
 
@@ -75,92 +127,22 @@
             {% include 'match/preview.html' %}
         </div>
 
-        <button type="submit" class="btn btn-volt">Record Match</button>
+        <button type="submit" class="btn btn-volt btn-lg w-100">Record Match</button>
         
-        {% if tournament_id %}
-            <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament_id) }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
-        {% elif group_id %}
-            <a href="{{ url_for('group.view_group', group_id=group_id) }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
-        {% else %}
-            <a href="{{ url_for('user.dashboard') }}" class="btn btn-danger" style="margin-top: 10px;">Cancel</a>
-        {% endif %}
+        <div class="mt-3">
+            {% if tournament_id %}
+                <a href="{{ url_for('tournament.view_tournament', tournament_id=tournament_id) }}" class="btn btn-outline-danger w-100">Cancel</a>
+            {% elif group_id %}
+                <a href="{{ url_for('group.view_group', group_id=group_id) }}" class="btn btn-outline-danger w-100">Cancel</a>
+            {% else %}
+                <a href="{{ url_for('user.dashboard') }}" class="btn btn-outline-danger w-100">Cancel</a>
+            {% endif %}
+        </div>
     </form>
-
-    <script>
-        document.getElementById('match_date').valueAsDate = new Date();
-
-        function toggleFields() {
-            var matchType = document.getElementById('match_type').value;
-            var partnerGroup = document.getElementById('partner-group');
-            var opponent2Group = document.getElementById('opponent2-group');
-            var predictionPreview = document.getElementById('prediction-preview');
-
-            var player1ScoreLabel = document.getElementById('player1-score-label');
-            var player2Label = document.getElementById('player2-label');
-            var player2ScoreLabel = document.getElementById('player2-score-label');
-
-            if (matchType === 'doubles') {
-                partnerGroup.style.display = 'block';
-                opponent2Group.style.display = 'block';
-                player1ScoreLabel.innerText = 'Team 1 Score';
-                player2Label.innerText = 'Opponent 1';
-                player2ScoreLabel.innerText = 'Team 2 Score';
-            } else {
-                partnerGroup.style.display = 'none';
-                opponent2Group.style.display = 'none';
-                player1ScoreLabel.innerText = 'Your Score';
-                player2Label.innerText = 'Opponent';
-                player2ScoreLabel.innerText = 'Opponent\'s Score';
-            }
-            
-            // Show prediction preview if players are selected
-            checkPredictionVisibility();
-        }
-
-        // Mutual Exclusivity for Player Dropdowns
-        const playerDropdowns = [
-            document.getElementById('player1'),
-            document.getElementById('partner'),
-            document.getElementById('player2'),
-            document.getElementById('opponent2')
-        ];
-
-        function checkPredictionVisibility() {
-            const p1 = document.getElementById('player1').value;
-            const p2 = document.getElementById('player2').value;
-            const preview = document.getElementById('prediction-preview');
-            
-            // Basic logic: show prediction widget if at least two opponents are selected
-            if (p1 && p2) {
-                preview.style.display = 'block';
-            } else {
-                preview.style.display = 'none';
-            }
-        }
-
-        function updateDropdowns() {
-            const selectedValues = playerDropdowns.map(dropdown => dropdown.value).filter(Boolean);
-
-            playerDropdowns.forEach(dropdown => {
-                Array.from(dropdown.options).forEach(option => {
-                    if (selectedValues.includes(option.value) && option.value !== dropdown.value) {
-                        option.disabled = true;
-                    } else {
-                        option.disabled = false;
-                    }
-                });
-            });
-            checkPredictionVisibility();
-        }
-
-        playerDropdowns.forEach(dropdown => {
-            dropdown.addEventListener('change', updateDropdowns);
-        });
-
-        // Initialize state
-        toggleFields();
-        updateDropdowns();
-    </script>
-    <script src="{{ url_for('static', filename='js/optimistic_submission.js') }}"></script>
 </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/optimistic_submission.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/match_recording.js') }}"></script>
 {% endblock %}

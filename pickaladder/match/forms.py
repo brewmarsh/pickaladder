@@ -40,6 +40,8 @@ class MatchForm(FlaskForm):
     group_id = HiddenField("Group ID", validators=[OptionalValidator()])
     tournament_id = HiddenField("Tournament ID", validators=[OptionalValidator()])
     session_id = HiddenField("Session ID", validators=[OptionalValidator()])
+    named_team_1_id = HiddenField("Named Team 1 ID", validators=[OptionalValidator()])
+    named_team_2_id = HiddenField("Named Team 2 ID", validators=[OptionalValidator()])
 
     def validate_player1_score(self, field: Field) -> None:
         """Validate that the score is not negative."""
