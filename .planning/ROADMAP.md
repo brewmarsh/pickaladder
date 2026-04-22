@@ -130,8 +130,8 @@
   2. Simplified 'Team Creation Wizard' allows users to create a team and invite members in a single, multi-step flow.
   3. Dashboard includes high-contrast (Volt/Black) widgets for displaying top-ranked teams and groups.
 **Plans**:
-- [ ] 09-01-PLAN.md — Unified Management Hub for group owners.
-- [ ] 09-02-PLAN.md — Multi-step Team Creation Wizard.
+- [x] 09-01-PLAN.md — Unified Management Hub for group owners.
+- [x] 09-02-PLAN.md — Multi-step Team Creation Wizard.
 - [ ] 09-03-PLAN.md — High-contrast Dashboard widgets & Visual polish.
 **UI hint**: yes
 
