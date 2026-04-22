@@ -236,16 +236,27 @@
                     {% set p1_score = match.player1Score|default(0) %}
                     {% set p2_score = match.player2Score|default(0) %}
 
-                    {# Perspective determination: Current user if involved, otherwise winner #}
-                    {% set m_p1 = match.player1 if match.player1 is defined else none %}
-                    {% set m_p2 = match.player2 if match.player2 is defined else none %}
-                    {% set m_partner = match.partner if match.partner is defined else none %}
-                    {% set m_opp2 = match.opponent2 if match.opponent2 is defined else none %}
+                    {# Use participants list for reliable detection #}
+                    {% set uid = current_user_id or g.user['uid'] %}
+                    {% set is_participant = uid in match.participants|default([]) %}
 
-                    {% set user_in_p1 = (m_p1 and m_p1.id == g.user['uid']) or (m_partner and m_partner.id == g.user['uid']) %}
-                    {% set user_in_p2 = (m_p2 and m_p2.id == g.user['uid']) or (m_opp2 and m_opp2.id == g.user['uid']) %}
+                    {# Side detection for perspective #}
+                    {% set in_team1 = false %}
+                    {% if match.matchType == 'doubles' %}
+                        {% set team1_ids = match.team1 | map(attribute='id') | list %}
+                        {% if uid in team1_ids %}
+                            {% set in_team1 = true %}
+                        {% endif %}
+                    {% else %}
+                        {% set p1_id = match.player1Ref.id if match.player1Ref else (match.player1.id if match.player1 and match.player1.id is defined else '') %}
+                        {% if uid == p1_id %}
+                            {% set in_team1 = true %}
+                        {% endif %}
+                    {% endif %}
 
-                    {% if user_in_p2 %}
+                    {% set in_team2 = is_participant and not in_team1 %}
+
+                    {% if in_team2 %}
                         {% set primary_names = (match.team2.name if (match.team2 is defined and match.team2 and match.team2.name) else (match.player2 | display_name if match.player2 is defined else 'Opponent')) %}
                         {% if not (match.team2 is defined and match.team2 and match.team2.name) and match.opponent2 is defined and match.opponent2 %}
                             {% set primary_names = primary_names + ' & ' + (match.opponent2 | display_name) %}
@@ -256,7 +267,7 @@
                         {% endif %}
                         {% set primary_score = p2_score %}
                         {% set opponent_score = p1_score %}
-                    {% elif user_in_p1 or p1_score >= p2_score %}
+                    {% elif in_team1 or p1_score >= p2_score %}
                         {% set primary_names = (match.team1.name if (match.team1 is defined and match.team1 and match.team1.name) else (match.player1 | display_name if match.player1 is defined else 'Player')) %}
                         {% if not (match.team1 is defined and match.team1 and match.team1.name) and match.partner is defined and match.partner %}
                             {% set primary_names = primary_names + ' & ' + (match.partner | display_name) %}
@@ -282,8 +293,8 @@
                     {% endif %}
 
                     {% set is_win = primary_score >= opponent_score %}
-                    {% set is_participant = user_in_p1 or user_in_p2 %}
                     {% set badge_class = ('status-win' if is_win else 'status-loss') if is_participant else 'status-neutral' %}
+                    {% set badge_text = 'W' if is_win else 'L' %}
 
                     <div class="match-compact-row">
                         <div class="match-date-compact">{{ match.matchDate.strftime('%b %d') if match.matchDate else 'N/A' }}</div>
