@@ -28,7 +28,7 @@ def create_team_document(db: Any, team_members: list[Any]) -> Any:
         "member_ids": member_ids,
         "name": team_name,
         "stats": {"wins": 0, "losses": 0, "elo": 1200},
-        "created_at": firestore.SERVER_TIMESTAMP,
+        "createdAt": firestore.SERVER_TIMESTAMP,
     }
 
     team_ref = db.collection("teams").add(team_data)

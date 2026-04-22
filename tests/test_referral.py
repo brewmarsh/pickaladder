@@ -40,7 +40,7 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
                     "id": "group1",
                     "name": "Group 1",
                     "ownerRef": mock_owner_ref,
-                    "created_at": firestore.SERVER_TIMESTAMP,
+                    "createdAt": firestore.SERVER_TIMESTAMP,
                 }
             ),
             "owner": {"username": "admin"},

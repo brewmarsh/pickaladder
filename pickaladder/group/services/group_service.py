@@ -649,7 +649,7 @@ class GroupService:
             for invite in pending:
                 GroupService._enrich_invite_with_user_data(invite, user_docs)
 
-        pending.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
+        pending.sort(key=lambda x: x.get("createdAt") or 0, reverse=True)
         return pending
 
     @staticmethod
@@ -732,7 +732,7 @@ class GroupService:
             "email": invite_email,
             "name": name,
             "inviter_id": current_user_id,
-            "created_at": firestore.SERVER_TIMESTAMP,
+            "createdAt": firestore.SERVER_TIMESTAMP,
             "used": False,
             "status": "sending",
         }
