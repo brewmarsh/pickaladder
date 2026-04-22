@@ -92,8 +92,8 @@ A robust and professional platform for pickleball ladder management that priorit
 | REFACTOR-02 | Phase 7 | Pending |
 | REFACTOR-03 | Phase 7 | Pending |
 | DYNAMIC-01 | Phase 8 | Pending |
-| DYNAMIC-02 | Phase 8 | Pending |
-| DYNAMIC-03 | Phase 8 | Pending |
+| DYNAMIC-02 | Phase 8 | Complete |
+| DYNAMIC-03 | Phase 8 | Complete |
 | TEAMUX-01 | Phase 9 | Pending |
 | TEAMUX-02 | Phase 9 | Pending |
 | TEAMUX-03 | Phase 9 | Pending |

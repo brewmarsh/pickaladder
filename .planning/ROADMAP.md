@@ -118,7 +118,7 @@
   3. Team statistics correctly aggregate performance metrics across different roster combinations.
 **Plans**:
 - [ ] 08-01-PLAN.md — Data Model & Repository Updates.
-- [ ] 08-02-PLAN.md — Service Refactoring & Match Logic Integration.
+- [x] 08-02-PLAN.md — Service Refactoring & Match Logic Integration.
 - [ ] 08-03-PLAN.md — UI Implementation for Team/Roster Selection.
 
 ### Phase 9: Group/Team UX Modernization
