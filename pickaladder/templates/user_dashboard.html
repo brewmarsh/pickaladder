@@ -101,8 +101,9 @@
                 </div>
             </div>
         </div>
-        <div class="hero-right-panel">
+        <div class="hero-right-panel d-flex flex-column gap-2">
             <a href="{{ url_for('match.record_match') }}" class="btn btn-volt" data-testid="dashboard__record-match__button">Record a Match</a>
+            <a href="{{ url_for('teams.team_wizard') }}" class="btn btn-outline-primary btn-sm" data-testid="dashboard__create-team__button">Create a Team</a>
         </div>
     </div>
     {% endif %}

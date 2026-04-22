@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from firebase_admin import firestore
-from flask import flash, g, redirect, render_template, url_for
+from flask import flash, g, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, MATCH_MESSAGES
@@ -137,3 +137,47 @@ def get_team_roster(team_id: str) -> Any:
             }
         )
     return {"members": result}
+
+
+@bp.route("/wizard", methods=["GET", "POST"])
+@login_required
+def team_wizard() -> Any:
+    """Multi-step wizard for team creation."""
+    db = firestore.client()
+
+    if request.method == "POST":
+        data = request.get_json()
+        if not data:
+            return {"error": "Invalid data"}, 400
+
+        name = data.get("name")
+        member_ids = data.get("member_ids", [])
+
+        if not name:
+            return {"error": "Team name is required"}, 400
+
+        try:
+            # Ensure creator is in the team
+            if g.user["uid"] not in member_ids:
+                member_ids.append(g.user["uid"])
+
+            team_id = TeamService.create_named_team(
+                db, name, g.user["uid"], member_ids
+            )
+            return {
+                "success": True,
+                "team_id": team_id,
+                "redirect": url_for(".view_team", team_id=team_id),
+            }
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+    # For GET, fetch potential members (all users for now, following create_team logic)
+    users_ref = db.collection("users")
+    users = users_ref.stream()
+    member_choices = [
+        {"id": u.id, "name": u.to_dict().get("name", u.to_dict().get("username", u.id))}
+        for u in users
+    ]
+
+    return render_template("team/wizard.html", member_choices=member_choices)
