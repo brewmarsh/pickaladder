@@ -386,6 +386,129 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         # Verify db.get_all was called with the correct friend reference
         mock_db.get_all.assert_any_call([mock_friend_ref])
 
+    def test_manage_group_admin_access(self) -> None:
+        """Test the management hub route for an admin."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+        group_id = "test_group_id"
+
+        # Mock user doc/snapshot
+        mock_user_doc = mock_db.collection("users").document(MOCK_USER_ID)
+        mock_user_doc.id = MOCK_USER_ID
+
+        # Mock group doc/snapshot where current user is the owner (hence admin)
+        mock_group_doc = MagicMock()
+        mock_group_doc.exists = True
+        mock_group_doc.id = group_id
+        mock_group_doc.to_dict.return_value = {
+            "name": "Admin Group",
+            "ownerRef": mock_user_doc,
+            "members": [mock_user_doc],
+            "admins": [],
+        }
+        mock_db.collection("groups").document(group_id).get.return_value = mock_group_doc
+
+        # Mock other necessary services called by get_group_details
+        with (
+            patch(
+                "pickaladder.group.services.group_service.get_group_leaderboard",
+                return_value=[],
+            ),
+            patch(
+                "pickaladder.group.services.group_service.GroupService._fetch_recent_matches",
+                return_value=([], []),
+            ),
+            patch(
+                "pickaladder.group.services.group_service.GroupService._fetch_group_teams",
+                return_value=([], None),
+            ),
+            patch(
+                "pickaladder.group.services.group_service.GroupRepository.get_pending_invites",
+                return_value=[],
+            ),
+            patch(
+                "pickaladder.group.services.group_service.GroupRepository.get_group_members",
+                return_value=[],
+            ),
+            patch(
+                "pickaladder.group.services.group_service.GroupService._get_eligible_friends",
+                return_value=[],
+            ),
+        ):
+            response = self.client.get(
+                f"/group/{group_id}/manage", headers=self._get_auth_headers()
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Management Hub: Admin Group", response.data)
+        self.assertIn(b"Roster", response.data)
+        self.assertIn(b"Invites", response.data)
+        self.assertIn(b"Settings", response.data)
+
+    def test_manage_group_non_admin_denied(self) -> None:
+        """Test the management hub route denies access to non-admins."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+        group_id = "test_group_id"
+
+        # Mock other user as owner
+        other_user_doc = mock_db.collection("users").document("other_user")
+        other_user_doc.id = "other_user"
+
+        # Mock group doc/snapshot where current user is just a member
+        mock_group_doc = MagicMock()
+        mock_group_doc.exists = True
+        mock_group_doc.id = group_id
+        mock_group_doc.to_dict.return_value = {
+            "name": "Member Group",
+            "ownerRef": other_user_doc,
+            "members": [
+                other_user_doc,
+                mock_db.collection("users").document(MOCK_USER_ID),
+            ],
+            "admins": [],
+        }
+        mock_db.collection("groups").document(group_id).get.return_value = mock_group_doc
+
+        # Mock other necessary services
+        with (
+            patch(
+                "pickaladder.group.services.group_service.get_group_leaderboard",
+                return_value=[],
+            ),
+            patch(
+                "pickaladder.group.services.group_service.GroupService._fetch_recent_matches",
+                return_value=([], []),
+            ),
+            patch(
+                "pickaladder.group.services.group_service.GroupService._fetch_group_teams",
+                return_value=([], None),
+            ),
+            patch(
+                "pickaladder.group.services.group_service.GroupRepository.get_pending_invites",
+                return_value=[],
+            ),
+            patch(
+                "pickaladder.group.services.group_service.GroupRepository.get_group_members",
+                return_value=[],
+            ),
+            patch(
+                "pickaladder.group.services.group_service.GroupService._get_eligible_friends",
+                return_value=[],
+            ),
+        ):
+            response = self.client.get(
+                f"/group/{group_id}/manage",
+                headers=self._get_auth_headers(),
+                follow_redirects=True,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        # Should redirect back to group view with error flash
+        self.assertIn(
+            b"You do not have permission to access this group.", response.data
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

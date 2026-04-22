@@ -144,6 +144,48 @@ def view_group(group_id: str) -> Any:
     )
 
 
+@bp.route("/<string:group_id>/manage", methods=["GET", "POST"])
+@login_required
+def manage_group(group_id: str) -> Any:
+    """Display the group management hub."""
+    db = firestore.client()
+    try:
+        context = GroupService.get_group_details(db, group_id, g.user["uid"])
+        if not context["is_admin"]:
+            flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
+            return redirect(url_for(".view_group", group_id=group_id))
+    except GroupNotFound:
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
+        return redirect(url_for(".view_groups"))
+    except AccessDenied:
+        flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
+        return redirect(url_for(".view_groups"))
+
+    # Settings form (Tab 3)
+    form, resp = _handle_edit_group_form(db, group_id, context["group"])
+    if resp:
+        return resp
+
+    # Invite forms (Tab 2)
+    invite_friend_form, resp = _handle_invite_friend_form(db, group_id, context)
+    if resp:
+        return resp
+
+    invite_email_form, resp = _handle_invite_email_form(
+        db, group_id, context["group"].get("name", "Unknown Group")
+    )
+    if resp:
+        return resp
+
+    return render_template(
+        "group/management_hub.html",
+        form=form,
+        invite_friend_form=invite_friend_form,
+        invite_email_form=invite_email_form,
+        **context,
+    )
+
+
 # TODO: Add type hints for Agent clarity
 @bp.route("/create", methods=["GET", "POST"])
 @login_required
