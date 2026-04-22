@@ -6,7 +6,7 @@
 - [x] **Phase 2: Ranking Logic & Integrity** - Transitioning to skill-based ranking and automated movement.
 - [x] **Phase 3: External Integration & Advanced Ranking** - DUPR sync and rank health management.
 - [x] **Phase 4: Session-First Workflow & Batch Recording** - Streamlining courtside match logging via session pools.
-- [x] **Phase 5: Vocabulary Transition** - Transitioning terminology from "Ladders" to "Groups" and "Tournaments".
+- [x] **Phase 5: Vocabulary Transition** - Transitioning terminology from "Ladders" to "Groups" and "Tournaments" to better reflect product use cases.
 - [x] **Phase 6: Match Display Standardization** - Standardizing win/loss indicators and typography.
 - [x] **Phase 7: Group & Team Foundation Refactor** - Standardizing architecture and data models for groups and teams.
 - [x] **Phase 8: Dynamic Team Model** - Enabling flexible team structures beyond simple pairings.
@@ -129,7 +129,10 @@
   1. Group owners have a unified 'Management Hub' for member management, invitations, and group settings.
   2. Simplified 'Team Creation Wizard' allows users to create a team and invite members in a single, multi-step flow.
   3. Dashboard includes high-contrast (Volt/Black) widgets for displaying top-ranked teams and groups.
-**Plans**: TBD
+**Plans**:
+- [ ] 09-01-PLAN.md — Unified Management Hub for group owners.
+- [ ] 09-02-PLAN.md — Multi-step Team Creation Wizard.
+- [ ] 09-03-PLAN.md — High-contrast Dashboard widgets & Visual polish.
 **UI hint**: yes
 
 ---
@@ -146,4 +149,4 @@
 | 6. Match Display Standardization | 1/1 | Completed | 2026-04-21 |
 | 7. Group & Team Foundation Refactor | 3/3 | Completed | 2026-04-21 |
 | 8. Dynamic Team Model | 3/3 | Completed | 2026-04-22 |
-| 9. Group/Team UX Modernization | 0/0 | Not started | - |
+| 9. Group/Team UX Modernization | 0/3 | Not started | - |
