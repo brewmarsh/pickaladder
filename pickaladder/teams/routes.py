@@ -11,8 +11,39 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, MATCH_MESSAGES
 
 from . import bp
-from .forms import EditTeamNameForm
+from .forms import EditTeamNameForm, TeamForm
 from .services import TeamService
+
+
+@bp.route("/create", methods=["GET", "POST"])
+@login_required
+def create_team() -> Any:
+    """Create a new named team."""
+    db = firestore.client()
+    form = TeamForm()
+
+    # Fetch all users for member selection
+    # In a real app, this should be limited to friends or group members
+    users_ref = db.collection("users")
+    users = users_ref.stream()
+    form.members.choices = [(u.id, u.to_dict().get("name", u.id)) for u in users]
+
+    if form.validate_on_submit():
+        try:
+            member_ids = form.members.data
+            # Ensure creator is in the team
+            if g.user["uid"] not in member_ids:
+                member_ids.append(g.user["uid"])
+
+            team_id = TeamService.create_named_team(
+                db, form.name.data, g.user["uid"], member_ids
+            )
+            flash("Team created successfully!", "success")
+            return redirect(url_for(".view_team", team_id=team_id))
+        except Exception as e:
+            flash(f"Error creating team: {e}", "danger")
+
+    return render_template("team/create.html", form=form)
 
 
 @bp.route("/<string:team_id>")

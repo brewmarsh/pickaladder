@@ -1,8 +1,8 @@
 """Forms for the teams blueprint."""
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms import SelectMultipleField, StringField, SubmitField
+from wtforms.validators import DataRequired, Length
 
 
 class EditTeamNameForm(FlaskForm):
@@ -10,3 +10,11 @@ class EditTeamNameForm(FlaskForm):
 
     name = StringField("Team Name", validators=[DataRequired()])
     submit = SubmitField("Save Changes")
+
+
+class TeamForm(FlaskForm):
+    """Form to create a new named team."""
+
+    name = StringField("Team Name", validators=[DataRequired(), Length(min=2, max=50)])
+    members = SelectMultipleField("Members", validators=[DataRequired()])
+    submit = SubmitField("Create Team")
