@@ -26,6 +26,9 @@ Add GSD planning to the project to facilitate the implementation of new features
 ## Milestone: Match Display Refactoring
 **Goal:** Standardize match displays (win/loss indicators, cards, typography) using a consistent High Contrast (Volt/Black) theme across the entire application.
 
+## Milestone: Group & Team Management Refactor
+**Goal:** Full refactor of the group and team management subsystems to improve UX, standardize architecture, and support dynamic team structures.
+
 ## Context
-This project is an existing codebase with features like user profiles, social/friend systems, groups/leagues, match recording, and an admin panel. It emphasizes AI-readiness and code quality. Phases 1-5 established the foundation for ranking, workflows, and terminology. Milestone 4 focuses on visual consistency and professionalizing the match history and leaderboard UI.
+This project is an existing codebase with features like user profiles, social/friend systems, groups/leagues, match recording, and an admin panel. It emphasizes AI-readiness and code quality. Phases 1-6 established the foundation for ranking, workflows, terminology, and match displays. Milestone 5 focuses on modernizing the core organizational units of the app: Groups and Teams.
 

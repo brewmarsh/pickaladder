@@ -11,6 +11,8 @@ from flask import current_app, url_for
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
+from pickaladder.group.repository import GroupRepository
+from pickaladder.teams.repository import TeamRepository
 from pickaladder.group.services.leaderboard import get_group_leaderboard
 from pickaladder.group.services.match_parser import (
     _get_match_scores,
@@ -44,17 +46,13 @@ class GroupService:
     @staticmethod
     def get_user_groups(db: Any, user_id: str) -> list[dict[str, Any]]:
         """Fetch and enrich all groups the user belongs to."""
-        user_ref = db.collection("users").document(user_id)
-        my_groups_query = db.collection("groups").where(
-            filter=firestore.FieldFilter("members", "array_contains", user_ref)
-        )
-        my_group_docs = list(my_groups_query.stream())
+        my_groups = GroupRepository.get_user_groups(db, user_id)
 
         # Enrich groups with owner data
         owner_refs = [
-            group.to_dict().get("ownerRef")
-            for group in my_group_docs
-            if group.to_dict().get("ownerRef")
+            group.get("ownerRef")
+            for group in my_groups
+            if group.get("ownerRef")
         ]
         unique_owner_refs = list({ref for ref in owner_refs if ref})
 
@@ -63,10 +61,8 @@ class GroupService:
             owner_docs = db.get_all(unique_owner_refs)
             owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
 
-        def enrich_group(group_doc: Any) -> dict[str, Any]:
-            group_data: dict[str, Any] = group_doc.to_dict()
-            group_id = group_doc.id
-            group_data["id"] = group_id
+        def enrich_group(group_data: dict[str, Any]) -> dict[str, Any]:
+            group_id = group_data["id"]
             group_data["member_count"] = len(group_data.get("members", []))
 
             # Current User's Stats for this group
@@ -89,7 +85,7 @@ class GroupService:
                 group_data["owner"] = GUEST_USER
             return group_data
 
-        return [{"group": enrich_group(doc)} for doc in my_group_docs]
+        return [{"group": enrich_group(doc)} for doc in my_groups]
 
     @staticmethod
     def create_group(
@@ -108,15 +104,13 @@ class GroupService:
             "ownerRef": user_ref,
             "members": [user_ref],
             "admins": [],
-            "createdAt": firestore.SERVER_TIMESTAMP,
         }
-        _, new_group_ref = db.collection("groups").add(group_data)
-        group_id = new_group_ref.id
+        group_id = GroupRepository.create(db, group_data)
 
         if profile_picture:
             url = GroupService.upload_group_profile_picture(group_id, profile_picture)
             if url:
-                new_group_ref.update({"profilePictureUrl": url})
+                GroupRepository.update(db, group_id, {"profilePictureUrl": url})
 
         return group_id
 
@@ -134,46 +128,40 @@ class GroupService:
         db: Any, group_id: str, target_uid: str, requester_uid: str
     ) -> None:
         """Promote a member to admin. Only the owner can do this."""
-        group_ref = db.collection("groups").document(group_id)
-        group = group_ref.get()
-        if not group.exists:
+        group_data = GroupRepository.get_by_id(db, group_id)
+        if not group_data:
             raise GroupNotFound("Group not found")
 
-        group_data = group.to_dict()
         owner_ref = group_data.get("ownerRef")
         if not owner_ref or owner_ref.id != requester_uid:
             raise AccessDenied("Only the group owner can promote members")
 
-        group_ref.update({"admins": firestore.ArrayUnion([target_uid])})
+        GroupRepository.update(db, group_id, {"admins": firestore.ArrayUnion([target_uid])})
 
     @staticmethod
     def demote_member(
         db: Any, group_id: str, target_uid: str, requester_uid: str
     ) -> None:
         """Demote an admin to a regular member. Only the owner can do this."""
-        group_ref = db.collection("groups").document(group_id)
-        group = group_ref.get()
-        if not group.exists:
+        group_data = GroupRepository.get_by_id(db, group_id)
+        if not group_data:
             raise GroupNotFound("Group not found")
 
-        group_data = group.to_dict()
         owner_ref = group_data.get("ownerRef")
         if not owner_ref or owner_ref.id != requester_uid:
             raise AccessDenied("Only the group owner can demote members")
 
-        group_ref.update({"admins": firestore.ArrayRemove([target_uid])})
+        GroupRepository.update(db, group_id, {"admins": firestore.ArrayRemove([target_uid])})
 
     @staticmethod
     def remove_member(
         db: Any, group_id: str, target_uid: str, requester_uid: str
     ) -> None:
         """Remove a member from the group. Only admins can do this."""
-        group_ref = db.collection("groups").document(group_id)
-        group = group_ref.get()
-        if not group.exists:
+        group_data = GroupRepository.get_by_id(db, group_id)
+        if not group_data:
             raise GroupNotFound("Group not found")
 
-        group_data = group.to_dict()
         if not GroupService.is_group_admin(group_data, requester_uid):
             raise AccessDenied("Only admins can remove members")
 
@@ -182,11 +170,13 @@ class GroupService:
             raise AccessDenied("Cannot remove the owner of the group")
 
         target_ref = db.collection("users").document(target_uid)
-        group_ref.update(
+        GroupRepository.update(
+            db,
+            group_id,
             {
                 "members": firestore.ArrayRemove([target_ref]),
                 "admins": firestore.ArrayRemove([target_uid]),
-            }
+            },
         )
 
     @staticmethod
@@ -198,12 +188,10 @@ class GroupService:
         profile_picture: FileStorage | None = None,
     ) -> None:
         """Update an existing group's details."""
-        group_ref = db.collection("groups").document(group_id)
-        group = group_ref.get()
-        if not group.exists:
+        group_data = GroupRepository.get_by_id(db, group_id)
+        if not group_data:
             raise GroupNotFound("Group not found")
 
-        group_data = group.to_dict()
         if not GroupService.is_group_admin(group_data, user_id):
             raise AccessDenied("You do not have permission to edit this group")
 
@@ -219,7 +207,7 @@ class GroupService:
             if url:
                 update_data["profilePictureUrl"] = url
 
-        group_ref.update(update_data)
+        GroupRepository.update(db, group_id, update_data)
 
     @staticmethod
     def upload_group_profile_picture(group_id: str, file: FileStorage) -> str | None:
@@ -275,13 +263,10 @@ class GroupService:
         player_b_id: str | None = None,
     ) -> dict[str, Any]:
         """Fetch all details for a group view."""
-        group_ref = db.collection("groups").document(group_id)
-        group = group_ref.get()
-        if not group.exists:
+        group_data = GroupRepository.get_by_id(db, group_id)
+        if not group_data:
             raise GroupNotFound("Group not found.")
 
-        group_data = cast(dict[str, Any], group.to_dict() or {})
-        group_data["id"] = group.id
         user_ref = db.collection("users").document(user_id)
 
         # Pre-calculate rivalry stats if players are selected
@@ -319,7 +304,7 @@ class GroupService:
 
         return {
             "group": group_data,
-            "group_id": group.id,
+            "group_id": group_id,
             "members": members,
             "owner": owner,
             "current_user_id": user_id,
@@ -524,20 +509,16 @@ class GroupService:
 
         team_ids = list(team_stats.keys())
         team_refs = [db.collection("teams").document(tid) for tid in team_ids]
-        team_docs = db.get_all(team_refs)
+        teams = TeamRepository.get_all(db, team_refs)
 
         all_member_refs = []
-        enriched_team_docs = []
-        for doc in team_docs:
-            if doc.exists:
-                team_data = {**doc.to_dict(), "id": doc.id}
-                all_member_refs.extend(team_data.get("members", []))
-                enriched_team_docs.append(team_data)
+        for team_data in teams:
+            all_member_refs.extend(team_data.get("members", []))
 
         members_map = GroupService._batch_fetch_entities(db, all_member_refs)
 
         team_leaderboard = []
-        for team_data in enriched_team_docs:
+        for team_data in teams:
             stats = team_stats[team_data["id"]]
             stats["win_percentage"] = (
                 (stats["wins"] / stats["games"]) * 100 if stats["games"] > 0 else 0
@@ -678,9 +659,8 @@ class GroupService:
     @staticmethod
     def invite_friend(db: Any, group_id: str, friend_id: str) -> None:
         """Add a friend to a group."""
-        group_ref = db.collection("groups").document(group_id)
         friend_ref = db.collection("users").document(friend_id)
-        group_ref.update({"members": firestore.ArrayUnion([friend_ref])})
+        GroupRepository.update(db, group_id, {"members": firestore.ArrayUnion([friend_ref])})
 
     @staticmethod
     def invite_by_email(  # noqa: PLR0913

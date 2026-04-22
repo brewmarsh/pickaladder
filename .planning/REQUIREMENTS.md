@@ -44,6 +44,21 @@ A robust and professional platform for pickleball ladder management that priorit
 - **DISPLAY-04**: Standardize score typography globally using the 'Oswald' font.
 - **DISPLAY-05**: Update recent matches component to match the new design.
 
+### 8. Group & Team Foundation Refactor (REFACTOR)
+- **REFACTOR-01**: Standardize entity schemas (unified timestamp keys, consistent ID handling).
+- **REFACTOR-02**: Consolidate creation and validation logic across groups and teams.
+- **REFACTOR-03**: Extract 'BaseRepository' and specialized repositories (GroupRepository, TeamRepository).
+
+### 9. Dynamic Team Model (DYNAMIC)
+- **DYNAMIC-01**: Implement 'Roster' model for teams (supporting >2 members).
+- **DYNAMIC-02**: Allow named teams with flexible participant selection during match recording.
+- **DYNAMIC-03**: Refactor stat aggregation to handle roster-based performance.
+
+### 10. Group/Team UX Modernization (TEAMUX)
+- **TEAMUX-01**: Unified 'Management Hub' for group owners.
+- **TEAMUX-02**: Simplified team creation wizard.
+- **TEAMUX-03**: High-contrast dashboard widgets for team rankings.
+
 ## Traceability
 
 | Requirement | Phase | Status |
@@ -73,3 +88,12 @@ A robust and professional platform for pickleball ladder management that priorit
 | DISPLAY-03 | Phase 6 | Complete |
 | DISPLAY-04 | Phase 6 | Complete |
 | DISPLAY-05 | Phase 6 | Complete |
+| REFACTOR-01 | Phase 7 | Pending |
+| REFACTOR-02 | Phase 7 | Pending |
+| REFACTOR-03 | Phase 7 | Pending |
+| DYNAMIC-01 | Phase 8 | Pending |
+| DYNAMIC-02 | Phase 8 | Pending |
+| DYNAMIC-03 | Phase 8 | Pending |
+| TEAMUX-01 | Phase 9 | Pending |
+| TEAMUX-02 | Phase 9 | Pending |
+| TEAMUX-03 | Phase 9 | Pending |

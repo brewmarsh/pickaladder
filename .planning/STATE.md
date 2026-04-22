@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: executing
-last_updated: "2024-05-23T12:00:00.000Z"
+milestone: v1.1
+milestone_name: Group & Team Management Refactor
+status: planning
+last_updated: "2026-04-21T14:00:00.000Z"
 progress:
-  total_phases: 6
+  total_phases: 9
   completed_phases: 6
   total_plans: 10
   completed_plans: 10
-  percent: 100
+  percent: 66
 ---
 
 # Project State: pickaladder
@@ -17,15 +17,15 @@ progress:
 ## Project Reference
 
 **Core Value:** A robust and professional platform for pickleball ladder management that prioritizes ranking integrity and seamless external integrations.
-**Current Focus:** Phase 6: Match Display Standardization
+**Current Focus:** Phase 7: Group & Team Foundation Refactor
 
 ## Current Position
 
-**Phase:** 6 - Match Display Standardization
-**Plan:** 06-01-PLAN.md
-**Status:** Project complete. All features implemented and verified.
+**Phase:** 7 - Group & Team Foundation Refactor
+**Plan:** TBD
+**Status:** Planning next milestone. Research complete.
 
-[####################] 100% (Overall Progress)
+[#############-------] 66% (Overall Progress)
 
 ## Performance Metrics
 
@@ -35,7 +35,7 @@ progress:
 - **Phase 4 Completion:** 100%
 - **Phase 5 Completion:** 100%
 - **Phase 6 Completion:** 100%
-- **Total Requirements Covered:** 30/30
+- **Total Requirements Covered:** 25/34
 - **Critical Path Hygiene:** Green
 
 ## Accumulated Context
@@ -48,13 +48,14 @@ progress:
 - **Data Integrity:** Scoped player validation to session participants when applicable.   
 - **Vocabulary Transition:** Completed terminology shift from "Ladders" to "Groups/Tournaments". Preserved 'pickaladder' branding and package names.
 - **Match Display Standardization:** Use the High Contrast (Volt/Black) palette as the primary theme for match status indicators and results.
-- **Perspective Logic:** Implemented perspective-aware match results (W/L/Neutral) based on participant status.
+- **Repository Pattern:** Decision made to extract data access logic into specialized repositories (GroupRepository, TeamRepository) to standardize Firestore interactions.
+- **Dynamic Teams:** Moving towards a roster-based model for teams to support named teams with >2 members.
 
 ### Todos
 
-- [x] Complete Phase 4: Session-First Workflow & Batch Recording.
-- [x] Complete Phase 5: Vocabulary Transition.
-- [x] Complete Phase 6: Match Display Standardization.
+- [ ] Complete Phase 7: Group & Team Foundation Refactor.
+- [ ] Complete Phase 8: Dynamic Team Model.
+- [ ] Complete Phase 9: Group/Team UX Modernization.
 
 ### Blockers
 
@@ -64,8 +65,7 @@ progress:
 
 **Last Session:**
 
-- Implemented High Contrast match display across the app.
-- Defined CSS classes in `data-displays.css`.
-- Refactored `match_list_item.html`, `summary.html`, and `_recent_matches.html`.
-- Updated ROADMAP.md and REQUIREMENTS.md.
-- **Current Session:** Completed Task 2 of Phase 6 Plan 01.
+- Updated ROADMAP.md and REQUIREMENTS.md with new phases for Group and Team management refactor.
+- Defined Phase 7 (Foundation Refactor), Phase 8 (Dynamic Model), and Phase 9 (UX Modernization).
+- Updated STATE.md for the new milestone.
+- **Current Session:** Initiating Phase 7 planning.

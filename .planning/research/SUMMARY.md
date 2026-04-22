@@ -1,49 +1,49 @@
-# Research Summary: pickaladder
+# Research Summary: Group and Team Management Refactor
 
-**Domain:** Pickleball Ladder Systems
-**Researched:** 2024-10-24 (Updated with Batch Recording)
+**Domain:** Sports/Pickleball Ladder Application
+**Researched:** 2026-04-21
 **Overall confidence:** HIGH
 
 ## Executive Summary
 
-The pickleball ecosystem is rapidly professionalizing, shifting from casual "open play" to structured competitive formats. The dominant force in this space is **DUPR (Dynamic Universal Pickleball Rating)**. 
+The current implementation of Groups and Teams in `pickaladder` follows a "Static Pairing" model where a Team is strictly defined as a unique combination of exactly two players. This model is efficient for tracking head-to-head stats for specific pairs but lacks the flexibility needed for sports clubs or "Named Teams" with rosters.
 
-A critical discovery in recent research is the high friction of match recording. Most users play **sessions** (multiple games with the same 4–8 people) rather than isolated matches. Current systems fail because they require a full "search-and-select" flow for every game. Transitioning to a **Session-First Workflow**—where a pool of players is selected once and games are logged with 2-3 taps—is a major differentiator for user retention and data accuracy.
+Architecturally, the project suffers from inconsistencies in data schema (camelCase vs snake_case for timestamps) and a blurred line between service and repository layers. `GroupService` and `TeamService` handle everything from low-level Firestore updates to complex business logic and UI enrichment.
+
+The research recommends moving towards a **Hybrid Team Model** that supports both ephemeral auto-pairings (for individual stat tracking) and managed "Named Teams" (with rosters). This will reduce UX friction during match recording and allow for richer social features.
 
 ## Key Findings
 
-**Stack:** Python (Flask) with Firestore. Frontend needs robust local state for "Session" management and offline recording.
-**Architecture:** Introduction of a **Session Entity** to group matches and pre-load player pools.
-**Critical pitfall:** "Reporting Friction" leading to data abandonment. If it takes more than 15 seconds to log a game, users won't do it.
+**Stack:** Flask (Python) with Firebase Firestore/Storage. Current implementation relies on `firebase-admin`.
+**Architecture:** Moving from Procedural Services to a Repository/Service pattern.
+**Critical pitfall:** Inconsistent timestamp fields (`createdAt` vs `created_at`) and divergent stat calculation sources (cached vs real-time).
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+Suggested phase structure for the refactor:
 
-1. **Phase 1: Session-First Core & Batch Recording** - Implement the "Session" container and a high-speed batch recording UI.
-   - Addresses: The #1 user pain point (friction).
-   - Features: Player pool selection, 2-tap score entry.
-
-2. **Phase 2: Ranking & Movement Refinement** - Transition from "Average Score" to "ELO-First" sorting. Implement "Shootout" (Court Movement) logic.
-   - Addresses: Competitive integrity.
-
-3. **Phase 3: DUPR Integration** - Implement DUPR API sync for official rating validation.
-
-4. **Phase 4: Automated Event Lifecycle** - Scheduling and full event management.
+1. **Phase 1: Foundation & Standardization** - Resolve schema inconsistencies and consolidate duplicate team creation logic.
+   - Addresses: `createdAt`/`created_at` split, Duplicate `create_team` logic.
+2. **Phase 2: Repository Layer Extraction** - Decouple data access from business logic.
+   - Addresses: Service bloat and architectural inconsistency.
+3. **Phase 3: Dynamic Teams & Rosters** - Implement the `memberships` junction collection and allow teams to have more than 2 members.
+   - Addresses: "Dynamic Teams" requirement.
+4. **Phase 4: UX Integration** - Update match recording and team management UIs to leverage the new flexible model.
+   - Addresses: Friction in naming and team selection.
 
 **Phase ordering rationale:**
-- **UX First:** Solve the "Friction" problem (Phase 1) before perfecting the math (Phase 2). If users don't log matches because it's too hard, the best ELO algorithm in the world has no data to work with.
+Standardization and Layering (Phases 1 & 2) are prerequisites for building the more complex Dynamic Team features (Phases 3 & 4) without adding more technical debt.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Core stack is well-suited. |
-| Features | HIGH | Batch recording is a clear "missing link" in current apps. |
-| Architecture | MEDIUM | Adding "Sessions" requires a schema update in Firestore. |
-| Pitfalls | HIGH | Friction and data abandonment are well-documented. |
+| Stack | HIGH | Standard Flask/Firestore patterns. |
+| Features | HIGH | Well-understood sports app requirements. |
+| Architecture | MEDIUM | Proposed pattern is standard but requires significant refactor of existing services. |
+| Pitfalls | HIGH | Common issues in early-stage Firestore projects. |
 
 ## Gaps to Address
 
-- **Real-world DUPR API Access:** Still requires investigation into developer sandbox access.
-- **Offline Sync Patterns:** Need a solid strategy for syncing multi-game sessions recorded in low-signal areas.
+- **Performance impact of dynamic aggregation**: Calculating ELO and stats for flexible rosters might require denormalization or Cloud Functions which were not fully explored in this research.
+- **Backwards Compatibility**: Migration strategy for existing "Static" teams into the new "Named" or "Pairing" categories needs detailed mapping.

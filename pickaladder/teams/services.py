@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Any, cast
 from firebase_admin import firestore
 from google.cloud.firestore_v1.field_path import FieldPath
 
+from pickaladder.teams.repository import TeamRepository
+
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
@@ -23,15 +25,11 @@ class TeamService:
         member_ids = sorted([user_a_id, user_b_id])
 
         # Query for an existing team with the exact same members
-        teams_ref = db.collection("teams")
-        query = teams_ref.where(
-            filter=firestore.FieldFilter("member_ids", "==", member_ids)
-        )
-        docs = list(query.stream())
+        team = TeamRepository.get_team_by_members(db, member_ids)
 
-        if docs:
+        if team:
             # Team already exists, return its ID
-            return docs[0].id
+            return team["id"]
         else:
             # Team does not exist, so create it
             user_a_ref = db.collection("users").document(user_a_id)
@@ -51,66 +49,44 @@ class TeamService:
                 "members": [user_a_ref, user_b_ref],
                 "name": f"{user_a_name} & {user_b_name}",
                 "stats": {"wins": 0, "losses": 0, "elo": 1200},
-                "createdAt": firestore.SERVER_TIMESTAMP,
             }
             # Add the new team to the 'teams' collection
-            new_team_ref = teams_ref.document()
-            new_team_ref.set(new_team_data)
-            return new_team_ref.id
+            return TeamRepository.create(db, new_team_data)
 
     @staticmethod
     def migrate_user_teams(
         db: Client, batch: firestore.WriteBatch, source_id: str, target_id: str
     ) -> None:
         """Migrate all teams from source user to target user."""
-        teams_query = (
-            db.collection("teams")
-            .where(
-                filter=firestore.FieldFilter("member_ids", "array_contains", source_id)
-            )
-            .stream()
-        )
+        teams = TeamRepository.get_teams_by_member(db, source_id)
 
-        for team_doc in teams_query:
-            team_data = team_doc.to_dict()
-            if not team_data:
-                continue
-
+        for team_data in teams:
             member_ids = team_data.get("member_ids", [])
             new_member_ids = sorted(
                 [target_id if mid == source_id else mid for mid in member_ids]
             )
 
             # Check if a team with the new member combination already exists
-            existing_team_query = (
-                db.collection("teams")
-                .where(filter=firestore.FieldFilter("member_ids", "==", new_member_ids))
-                .stream()
-            )
+            existing_team = TeamRepository.get_team_by_members(db, new_member_ids)
 
-            existing_teams = list(existing_team_query)
-            # Remove current team from existing_teams
-            existing_teams = [t for t in existing_teams if t.id != team_doc.id]
-
-            if existing_teams:
+            if existing_team and existing_team["id"] != team_data["id"]:
                 # Merge current team stats into existing team
-                existing_team = cast("DocumentSnapshot", existing_teams[0])
-                e_data = existing_team.to_dict() or {}
-
                 t_stats: dict[str, Any] = team_data.get("stats", {})
-                e_stats: dict[str, Any] = e_data.get("stats", {})
+                e_stats: dict[str, Any] = existing_team.get("stats", {})
 
                 new_wins = e_stats.get("wins", 0) + t_stats.get("wins", 0)
                 new_losses = e_stats.get("losses", 0) + t_stats.get("losses", 0)
 
+                existing_ref = db.collection(TeamRepository.COLLECTION_NAME).document(existing_team["id"])
                 batch.update(
-                    existing_team.reference,
+                    existing_ref,
                     {"stats.wins": new_wins, "stats.losses": new_losses},
                 )
 
                 # Update matches to point to the existing team
                 # This will be handled by match migration, but mark team for deletion
-                batch.delete(team_doc.reference)
+                team_ref = db.collection(TeamRepository.COLLECTION_NAME).document(team_data["id"])
+                batch.delete(team_ref)
             else:
                 # No existing team, just update the current team's members
                 target_ref = db.collection("users").document(target_id)
@@ -119,22 +95,19 @@ class TeamService:
                     for m in team_data.get("members", [])
                 ]
 
+                team_ref = db.collection(TeamRepository.COLLECTION_NAME).document(team_data["id"])
                 batch.update(
-                    team_doc.reference,
+                    team_ref,
                     {"member_ids": new_member_ids, "members": new_members},
                 )
 
     @staticmethod
     def get_team_dashboard_data(db: Client, team_id: str) -> dict[str, Any] | None:
         """Fetch all data required for the team dashboard."""
-        team_ref = db.collection("teams").document(team_id)
-        team = cast("DocumentSnapshot", team_ref.get())
+        team_data = TeamRepository.get_by_id(db, team_id)
 
-        if not team.exists:
+        if not team_data:
             return None
-
-        team_data = team.to_dict() or {}
-        team_data["id"] = team.id
 
         # Decomposed calls with efficient data passing
         members = TeamService._fetch_team_members(db, team_data)

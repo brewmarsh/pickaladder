@@ -1,20 +1,18 @@
 # Feature Landscape
 
-**Domain:** Pickleball Ladder Systems
-**Researched:** 2024-10-24 (Updated with Batch Recording)
+**Domain:** Sports/Pickleball Ladder App
+**Researched:** 2026-04-21
 
 ## Table Stakes
 
-Features users expect in any pickleball ladder app.
+Features users expect in any ladder/ranking app.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| ELO/Rating Ranking | Users want to see where they stand against others accurately. | Medium | Current system has ELO code but leaderboard uses Avg Score. |
-| Score Reporting | Direct entry of match results after play. | Low | Core functionality. |
-| **Batch Match Recording** | **Users play 3+ games per session; recording them individually is too slow.** | **Medium** | **Critical for user retention.** |
-| Double/Singles Support | Pickleball is predominantly played as doubles. | Medium | Handling partner pairings and rating updates. |
-| Leaderboards | Visual ranking of group members. | Low | Already exists in basic form. |
-| Match Verification | Prevention of "fake" wins by requiring opponent approval. | Medium | Critical for competitive integrity. |
+| Individual Leaderboard | Track ranking (ELO/DUPR). | Med | Needs reliable match history. |
+| Match Recording | Log wins/losses. | Low | Core loop of the app. |
+| Group Management | Group friends/clubs. | Med | Privacy and admin controls needed. |
+| Team Dashboards | See how a specific pair performs. | Low | Already exists but needs cleanup. |
 
 ## Differentiators
 
@@ -22,11 +20,10 @@ Features that set `pickaladder` apart.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Session-First Workflow** | **Pre-select a pool of 4-8 players and log a whole session in seconds.** | **Medium** | **Reduces friction by 80% compared to DUPR.** |
-| DUPR Sync | Official rating validation directly in the app. | High | Requires Partner API access. |
-| Shootout Automation | Handles "4-player" and "5-player" court movement automatically. | High | Unique to pickleball "round robin" social play. |
-| "On Fire" Badges | Gamification of winning streaks. | Low | Already implemented in current codebase. |
-| Ghost Management | Allowing organizers to handle "filler" players without breaking stats. | Medium | Essential for odd-numbered groups. |
+| Dynamic Team Rosters | Let a "Team" have many members. | High | Requires new junction collection. |
+| Hybrid Pair Tracking | Track "The Smashers" but also the specific duo stats inside it. | High | Complex aggregation. |
+| Giant Slayer Upsets | Highlight when low-rated players beat high-rated ones. | Low | Already partially implemented. |
+| Auto-Friending | frictionless social growth. | Low | Already exists. |
 
 ## Anti-Features
 
@@ -34,29 +31,26 @@ Features to explicitly NOT build.
 
 | Anti-Feature | Why Avoid | What to Do Instead |
 |--------------|-----------|-------------------|
-| Manual Ranking Overrides | Leads to accusations of bias or "playing favorites." | Use pure algorithm-based rankings with clear tiebreakers. |
-| In-App Messaging (Full) | High maintenance/moderation overhead. | Use integration with WhatsApp/SMS or simple match comments. |
+| Real-time chat | High maintenance, SEO spam risk. | Use deep links to WhatsApp/Discord. |
+| Financial Transactions | Compliance/Security burden. | Keep purely social/competitive. |
 
 ## Feature Dependencies
 
 ```
-Session Pool Selection → Batch Match Entry → ELO Calculation → Leaderboard
-Match Reporting → ELO Calculation → Leaderboard Display
-DUPR API Integration → Verified Rating Badge → Verified-Only Matches
-Group Management → Shootout Logic → Court Assignments
+Group Membership → Match Recording
+Match Recording → Team Entity (Auto or Manual)
+Team Entity → Team Leaderboard
+Individual Users → Individual Leaderboard
 ```
 
 ## MVP Recommendation
 
 Prioritize:
-1. **Batch Recording UI:** Use a "Session" concept to log multiple games from a single pool of players.
-2. **ELO-Based Leaderboard:** Switch primary sorting from `avg_score` to `elo`.
-3. **Score Verification:** Add a "Pending Verification" state to matches.
+1. **Schema Standardization** (Cleanup)
+2. **Named Teams with Rosters** (New capability)
+3. **Improved Match Recording** (UX improvement)
 
-Defer: **Full DUPR Sync** (until Partner API access is secured).
+Defer: **League/Season support** (Wait for stable team model)
 
 ## Sources
-
-- [Global Pickleball Network Features](https://www.globalpickleball.network/)
-- [PlayTime Scheduler Patterns](https://playtimescheduler.com/)
-- [Research: Batch Recording Workflows](./BATCH_RECORDING.md)
+- Competitive analysis of DUPR, Pickleball.com, and generic sports apps.

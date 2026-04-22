@@ -1,56 +1,69 @@
 # Architecture Patterns
 
-**Domain:** Pickleball Ladder Systems
-**Researched:** 2024-10-24 (Updated with Batch Recording)
+**Domain:** Sports/Pickleball Ladder App
+**Researched:** 2026-04-21
 
-## Recommended Architecture
+## Recommended Architecture: Repository-Service Pattern
 
-The system should follow a **Service-Oriented Pattern** within the Flask application, isolating rating logic from data persistence.
+The project should migrate towards a clear separation of concerns between data persistence and business logic.
 
 ### Component Boundaries
 
 | Component | Responsibility | Communicates With |
 |-----------|---------------|-------------------|
-| **Session Service** | **Manages player pools and "in-progress" session state.** | **Match Service, Firestore** |
-| Match Service | Records individual match results, triggers validation. | Firestore, Rating Service |
-| Rating Service | Calculates ELO, Upset probability, DUPR sync. | Match Service, User Service |
-| Leaderboard Service | Aggregates user stats for group display. | Firestore, Match Service |
-| Event Engine | Generates court assignments for Shootouts/Round-Robins. | User Service, Group Service |
+| **Repositories** | CRUD, query filters, Firestore batch management. | Firestore DB |
+| **Services** | Business logic (ELO), stat aggregation, data enrichment. | Repositories, External APIs |
+| **Blueprints (Routes)** | Request validation, session management, rendering. | Services |
 
 ### Data Flow
 
-1. **Session Setup:** User creates a Session and selects a "Player Pool" (Firestore: `sessions` collection).
-2. **Match Entry:** User submits scores via Batch UI (Firestore: `matches` collection, linked to `sessionId`).
-3. **Calculation:** Rating Service updates ELO/stats for all participants.
-4. **Broadcast:** Leaderboards are updated.
+```mermaid
+graph LR
+    UI[Flask Route] --> Service[Group/Team Service]
+    Service --> Repo[Firestore Repository]
+    Repo --> DB[(Firestore)]
+    Service --> External[DUPR API]
+```
 
 ## Patterns to Follow
 
-### Pattern 1: Strategy Pattern for Ratings
-Allows switching between ELO, DUPR, or internal systems.
+### Pattern 1: Deterministic IDs for Junctions
+**What:** Use `${userId}_${teamId}` for membership document IDs.
+**When:** Creating M:M relationships (Users in Teams, Users in Groups).
+**Example:**
+```python
+# In MembershipRepository
+def join_team(user_id, team_id):
+    doc_id = f"{user_id}_{team_id}"
+    db.collection("memberships").document(doc_id).set({
+        "userId": user_id,
+        "teamId": team_id,
+        "role": "member"
+    })
+```
 
-### Pattern 2: **Session-Scoped Player Pool**
-Instead of querying the entire group roster for every match, the UI should use a pre-filtered "Session Pool" stored in local state or a temporary `session` document.
+### Pattern 2: CamelCase Firestore Fields
+**What:** Always use `createdAt`, `updatedAt`, `ownerId`.
+**Why:** Consistent with the majority of the current codebase (~80%).
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Heavy In-Memory Aggregation
-Fetching ALL matches for a group to calculate a leaderboard on every request.
+### Anti-Pattern 1: Procedural Service Bloat
+**What:** Putting raw Firestore `where()` clauses and `update()` calls inside a Service method alongside business logic.
+**Instead:** Move the query to a Repository method.
 
-### Anti-Pattern 2: **Stateless Batch Entry**
-**Problem:** Forcing the user to re-select players if the app crashes or they switch tabs during a session.
-**Instead:** Persist the "Active Session" pool in Firestore or LocalStorage so it remains available throughout the day.
+### Anti-Pattern 2: Divergent Stats Calculation
+**What:** Calculating the same metric (e.g. Win %) differently in two places (Real-time vs Cached).
+**Instead:** Centralize the calculation logic in a Service or use a Cloud Function to keep cached stats in sync.
 
 ## Scalability Considerations
 
 | Concern | At 100 users | At 10K users | At 1M users |
 |---------|--------------|--------------|-------------|
-| DB Reads | Real-time streams | Filtered queries | Distributed caching (Redis) |
-| Ranking Calcs | Synchronous | Async Task (Celery) | Batch processing |
-| Leaderboards | On-the-fly | Incremental updates | Pre-computed materialized views |
+| Leaderboards | In-memory sort | Cached in document | Cloud Function / BigQuery |
+| Match History | Simple query | Pagination (Cursor) | Sharded collections |
+| Stat Aggregation | Real-time | Denormalized fields | Event-driven updates |
 
 ## Sources
-
-- [Firestore Best Practices](https://firebase.google.com/docs/firestore/best-practices)
-- [Clean Architecture in Python](https://pypi.org/project/clean-architecture/)
-- [Research: Batch Recording Workflows](./BATCH_RECORDING.md)
+- Firestore Best Practices (Official)
+- Domain Driven Design (DDD) Patterns

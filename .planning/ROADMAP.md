@@ -8,6 +8,9 @@
 - [x] **Phase 4: Session-First Workflow & Batch Recording** - Streamlining courtside match logging via session pools.
 - [x] **Phase 5: Vocabulary Transition** - Transitioning terminology from "Ladders" to "Groups" and "Tournaments".
 - [x] **Phase 6: Match Display Standardization** - Standardizing win/loss indicators and typography.
+- [ ] **Phase 7: Group & Team Foundation Refactor** - Standardizing architecture and data models for groups and teams.
+- [ ] **Phase 8: Dynamic Team Model** - Enabling flexible team structures beyond simple pairings.
+- [ ] **Phase 9: Group/Team UX Modernization** - Improving management workflows and visibility for teams and groups.
 
 ---
 
@@ -92,6 +95,40 @@
 - [x] 06-01-PLAN.md — CSS Standardization and Component Refactoring.
 **UI hint**: yes
 
+### Phase 7: Group & Team Foundation Refactor
+**Goal**: Standardize architecture and data models for groups and teams.
+**Depends on**: Phase 6
+**Requirements**: REFACTOR-01, REFACTOR-02, REFACTOR-03
+**Success Criteria** (what must be TRUE):
+  1. All Group and Team documents in Firestore use `createdAt` and `updatedAt` keys consistently (camelCase).
+  2. Team and Group creation and validation logic is centralized in dedicated service/repository layers.
+  3. `BaseRepository` is implemented and inherited by `GroupRepository` and `TeamRepository` for standardized data access.
+**Plans**:
+- [ ] 07-01-PLAN.md — Base Repository & Schema Standardization.
+- [ ] 07-02-PLAN.md — Specialized Repositories & Service Refactoring.
+- [ ] 07-03-PLAN.md — Validation Consolidation & Cleanup.
+
+### Phase 8: Dynamic Team Model
+**Goal**: Enable flexible team structures beyond simple pairings.
+**Depends on**: Phase 7
+**Requirements**: DYNAMIC-01, DYNAMIC-02, DYNAMIC-03
+**Success Criteria** (what must be TRUE):
+  1. Users can create named teams with a "Roster" supporting more than 2 members.
+  2. Match recording workflow supports selecting a Named Team and then selecting specific participants from its roster.
+  3. Team statistics correctly aggregate performance metrics across different roster combinations.
+**Plans**: TBD
+
+### Phase 9: Group/Team UX Modernization
+**Goal**: Improve management workflows and visibility for teams and groups.
+**Depends on**: Phase 8
+**Requirements**: TEAMUX-01, TEAMUX-02, TEAMUX-03
+**Success Criteria** (what must be TRUE):
+  1. Group owners have a unified 'Management Hub' for member management, invitations, and group settings.
+  2. Simplified 'Team Creation Wizard' allows users to create a team and invite members in a single, multi-step flow.
+  3. Dashboard includes high-contrast (Volt/Black) widgets for displaying top-ranked teams and groups.
+**Plans**: TBD
+**UI hint**: yes
+
 ---
 
 ## Progress
@@ -104,3 +141,6 @@
 | 4. Session-First Workflow & Batch Recording | 3/3 | Completed | 2026-04-21 |
 | 5. Vocabulary Transition | 1/1 | Completed | 2026-04-21 |
 | 6. Match Display Standardization | 1/1 | Completed | 2026-04-21 |
+| 7. Group & Team Foundation Refactor | 0/3 | In progress | - |
+| 8. Dynamic Team Model | 0/0 | Not started | - |
+| 9. Group/Team UX Modernization | 0/0 | Not started | - |

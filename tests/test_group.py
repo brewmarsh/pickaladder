@@ -93,7 +93,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         mock_groups_collection = mock_db.collection("groups")
         mock_doc_ref = MagicMock()
         mock_doc_ref.id = "new_group_id"
-        mock_groups_collection.add.return_value = (None, mock_doc_ref)
+        mock_groups_collection.document.return_value = mock_doc_ref
 
         mock_group_doc = mock_groups_collection.document("new_group_id")
         mock_group_snapshot = MagicMock()
@@ -112,8 +112,8 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Group created successfully.", response.data)
-        mock_groups_collection.add.assert_called_once()
-        call_args = mock_groups_collection.add.call_args[0]
+        mock_doc_ref.set.assert_called_once()
+        call_args = mock_doc_ref.set.call_args[0]
         self.assertEqual(call_args[0]["name"], "My Firebase Group")
 
     def test_create_group_with_image(self) -> None:
@@ -129,7 +129,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         mock_groups_collection = mock_db.collection("groups")
         mock_doc_ref = MagicMock()
         mock_doc_ref.id = "new_group_id_img"
-        mock_groups_collection.add.return_value = (None, mock_doc_ref)
+        mock_groups_collection.document.return_value = mock_doc_ref
 
         # Mock the new group ref update method (used for profilePictureUrl)
         mock_doc_ref.update = MagicMock()
@@ -165,8 +165,8 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Group created successfully.", response.data)
 
-        # Verify add called
-        mock_groups_collection.add.assert_called_once()
+        # Verify set called
+        mock_doc_ref.set.assert_called_once()
 
         # Verify storage interaction
         mock_bucket.blob.assert_called_with("group_pictures/new_group_id_img/test.jpg")
@@ -174,9 +174,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         mock_blob.make_public.assert_called()
 
         # Verify update called on doc_ref
-        mock_doc_ref.update.assert_called_with(
-            {"profilePictureUrl": "http://mock-storage-url/img.jpg"}
-        )
+        call_args = mock_doc_ref.update.call_args[0]
+        self.assertEqual(call_args[0]["profilePictureUrl"], "http://mock-storage-url/img.jpg")
+        self.assertIn("updatedAt", call_args[0])
 
     def test_get_rivalry_stats(self) -> None:
         """Test the head-to-head stats calculation."""
