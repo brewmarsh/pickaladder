@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% from "components/_tournament_card.html" import tournament_card %}
+{% from "components/_team_ranking_widget.html" import ranking_widget %}
 {% from "components/_empty_state.html" import empty_state %}
 {% block title %}Dashboard{% endblock %}
 {% block head %}
@@ -166,9 +167,17 @@
                             {{ tournament_card(tournament) }}
                         {% endfor %}
 
+                        {# Top Teams Widget #}
+                        {% if top_teams %}
+                            {{ ranking_widget("Top Teams", top_teams, type='team') }}
+                        {% endif %}
+
                         {# Section 2: Groups (Ongoing) #}
-                        {% if group_rankings %}
+                        {% if group_rankings or top_groups %}
                         <div class="card card-compact">
+                            <div class="card-header border-bottom-0 pb-0">
+                                <h4 class="fs-xs text-uppercase letter-spacing-widest fw-bold text-muted mb-0">Your Groups</h4>
+                            </div>
                             <div class="list-group list-group-flush">
                             {% for ranking in group_rankings %}
                             <a href="{{ url_for('group.view_group', group_id=ranking.group_id) }}"
@@ -188,6 +197,13 @@
                             {% endfor %}
                             </div>
                         </div>
+
+                        {# Top Groups Widget #}
+                        {% if top_groups %}
+                            <div class="mt-4">
+                                {{ ranking_widget("Top Groups", top_groups, type='group') }}
+                            </div>
+                        {% endif %}
                         {% endif %}
 
                         {# Section 3: Past Tournaments (History) - No outer card #}

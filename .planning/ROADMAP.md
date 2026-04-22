@@ -6,11 +6,11 @@
 - [x] **Phase 2: Ranking Logic & Integrity** - Transitioning to skill-based ranking and automated movement.
 - [x] **Phase 3: External Integration & Advanced Ranking** - DUPR sync and rank health management.
 - [x] **Phase 4: Session-First Workflow & Batch Recording** - Streamlining courtside match logging via session pools.
-- [x] **Phase 5: Vocabulary Transition** - Transitioning terminology from "Ladders" to "Groups" and "Tournaments" to better reflect product use cases.
+- [x] **Phase 5: Vocabulary Transition** - Transitioning terminology from "Ladders" to "Groups" and "Tournaments".
 - [x] **Phase 6: Match Display Standardization** - Standardizing win/loss indicators and typography.
 - [x] **Phase 7: Group & Team Foundation Refactor** - Standardizing architecture and data models for groups and teams.
 - [x] **Phase 8: Dynamic Team Model** - Enabling flexible team structures beyond simple pairings.
-- [ ] **Phase 9: Group/Team UX Modernization** - Improving management workflows and visibility for teams and groups.
+- [x] **Phase 9: Group/Team UX Modernization** - Improving management workflows and visibility for teams and groups.
 
 ---
 
@@ -39,7 +39,6 @@
   3. Core ranking services are protected by automated integration tests ensuring mathematical correctness.
 **Plans**:
 - [x] 02-01-PLAN.md — Implementation of ELO/Glicko and Shootout logic.
-**UI hint**: yes
 
 ### Phase 3: External Integration & Advanced Ranking
 **Goal**: Connect to the broader pickleball ecosystem through DUPR and ensure long-term leaderboard health.
@@ -51,7 +50,6 @@
   3. Inactive players' ranks are managed via decay or activity requirements to prevent rank protection.
 **Plans**:
 - [x] 03-01-PLAN.md — DUPR API sync and rank decay logic.
-**UI hint**: yes
 
 ### Phase 4: Session-First Workflow & Batch Recording
 **Goal**: Streamline courtside match logging by shifting focus from individual matches to session-based pools.
@@ -66,7 +64,6 @@
 - [x] 04-01-PLAN.md — Session Core & Backend Service.
 - [x] 04-02-PLAN.md — "Quick Log" UI & Batch Recording Workflow.
 - [x] 04-03-PLAN.md — Session Summary & Batch Verification.
-**UI hint**: yes
 
 ### Phase 5: Vocabulary Transition
 **Goal**: Transition terminology from "Ladders" to "Groups" and "Tournaments" to better reflect product use cases.
@@ -79,13 +76,12 @@
   4. Project documentation is fully updated to the new vocabulary.
 **Plans**:
 - [x] 05-01-PLAN.md — UI Template and Metadata vocabulary transition.
-**UI hint**: yes
 
 ### Phase 6: Match Display Standardization
 **Goal**: Standardize match displays (win/loss indicators, cards, typography) using a consistent High Contrast (Volt/Black) theme across the entire application.
 **Depends on**: Phase 5
 **Requirements**: DISPLAY-01, DISPLAY-02, DISPLAY-03, DISPLAY-04, DISPLAY-05
-**Success Criteria** (what must be TRUE):
+**Success Criteria**:
   1. `data-displays.css` defines `.status-win` (Volt background, dark text) and `.status-loss` (dark background) classes.
   2. All match list items across the app use the new standardized status classes.
   3. The match summary page is visually consistent with the new display standards.
@@ -93,13 +89,12 @@
   5. The "Recent Matches" component correctly renders using the standardized theme.
 **Plans**:
 - [x] 06-01-PLAN.md — CSS Standardization and Component Refactoring.
-**UI hint**: yes
 
 ### Phase 7: Group & Team Foundation Refactor
 **Goal**: Standardize architecture and data models for groups and teams.
 **Depends on**: Phase 6
 **Requirements**: REFACTOR-01, REFACTOR-02, REFACTOR-03
-**Success Criteria** (what must be TRUE):
+**Success Criteria**:
   1. All Group and Team documents in Firestore use `createdAt` and `updatedAt` keys consistently (camelCase).
   2. Team and Group creation and validation logic is centralized in dedicated service/repository layers.
   3. `BaseRepository` is implemented and inherited by `GroupRepository` and `TeamRepository` for standardized data access.
@@ -112,7 +107,7 @@
 **Goal**: Enable flexible team structures beyond simple pairings.
 **Depends on**: Phase 7
 **Requirements**: DYNAMIC-01, DYNAMIC-02, DYNAMIC-03
-**Success Criteria** (what must be TRUE):
+**Success Criteria**:
   1. Users can create named teams with a "Roster" supporting more than 2 members.
   2. Match recording workflow supports selecting a Named Team and then selecting specific participants from its roster.
   3. Team statistics correctly aggregate performance metrics across different roster combinations.
@@ -125,15 +120,14 @@
 **Goal**: Improve management workflows and visibility for teams and groups.
 **Depends on**: Phase 8
 **Requirements**: TEAMUX-01, TEAMUX-02, TEAMUX-03
-**Success Criteria** (what must be TRUE):
+**Success Criteria**:
   1. Group owners have a unified 'Management Hub' for member management, invitations, and group settings.
   2. Simplified 'Team Creation Wizard' allows users to create a team and invite members in a single, multi-step flow.
   3. Dashboard includes high-contrast (Volt/Black) widgets for displaying top-ranked teams and groups.
 **Plans**:
-- [x] 09-01-PLAN.md — Unified Management Hub for group owners.
-- [x] 09-02-PLAN.md — Multi-step Team Creation Wizard.
-- [ ] 09-03-PLAN.md — High-contrast Dashboard widgets & Visual polish.
-**UI hint**: yes
+- [x] 09-01-PLAN.md — Management Hub & Backend Wiring.
+- [x] 09-02-PLAN.md — Team Creation Wizard (Frontend & API).
+- [x] 09-03-PLAN.md — Dashboard Widgets & Polish.
 
 ---
 
@@ -149,4 +143,4 @@
 | 6. Match Display Standardization | 1/1 | Completed | 2026-04-21 |
 | 7. Group & Team Foundation Refactor | 3/3 | Completed | 2026-04-21 |
 | 8. Dynamic Team Model | 3/3 | Completed | 2026-04-22 |
-| 9. Group/Team UX Modernization | 0/3 | Not started | - |
+| 9. Group/Team UX Modernization | 3/3 | Completed | 2026-04-22 |
