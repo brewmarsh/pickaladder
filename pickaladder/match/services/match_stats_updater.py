@@ -37,6 +37,15 @@ class MatchStatsUpdater:
                 MatchStatsUpdater._increment_stats(ref, None, s1_won, delta)
             for ref in u2:
                 MatchStatsUpdater._increment_stats(None, ref, s1_won, delta)
+
+            # Phase 8: Support for Named Teams
+            nt1_id = data.get("namedTeam1Id")
+            nt2_id = data.get("namedTeam2Id")
+            if nt1_id or nt2_id:
+                db = firestore.client()
+                nt1_ref = db.collection("teams").document(nt1_id) if nt1_id else None
+                nt2_ref = db.collection("teams").document(nt2_id) if nt2_id else None
+                MatchStatsUpdater._increment_stats(nt1_ref, nt2_ref, s1_won, delta)
         else:
             r1, r2 = data.get("player1Ref"), data.get("player2Ref")
             MatchStatsUpdater._increment_stats(r1, r2, s1_won, delta)

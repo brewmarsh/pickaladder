@@ -105,6 +105,10 @@ class MatchCommandService(BaseRepository):
             data["tournamentId"] = sub.tournament_id
         if sub.session_id:
             data["sessionId"] = sub.session_id
+        if sub.namedTeam1Id:
+            data["namedTeam1Id"] = sub.namedTeam1Id
+        if sub.namedTeam2Id:
+            data["namedTeam2Id"] = sub.namedTeam2Id
         return data
 
     @classmethod
@@ -167,10 +171,19 @@ class MatchCommandService(BaseRepository):
             db.collection("users").document(pid) for pid in participant_ids
         ]
 
+        # Phase 8: Named Teams
+        nt1_id = match_data.get("namedTeam1Id")
+        nt2_id = match_data.get("namedTeam2Id")
+        nt_refs = []
+        if nt1_id:
+            nt_refs.append(db.collection("teams").document(nt1_id))
+        if nt2_id:
+            nt_refs.append(db.collection("teams").document(nt2_id))
+
         # We also need p1_ref and p2_ref snaps for ELO calculation
         # (they might be teams for doubles)
         # To avoid extra calls, we'll fetch all needed refs at once.
-        all_refs = list(set([p1_ref, p2_ref] + participant_refs))
+        all_refs = list(set([p1_ref, p2_ref] + participant_refs + nt_refs))
         snaps_list = db.get_all(all_refs)
         snaps = {s.id: s for s in snaps_list if s.exists}
 
@@ -217,6 +230,21 @@ class MatchCommandService(BaseRepository):
         batch.set(match_ref, match_data)
         batch.update(p1_ref, p1_upd)
         batch.update(p2_ref, p2_upd)
+
+        # Update Named Teams if present
+        if nt1_id or nt2_id:
+            nt1_snap = snaps.get(nt1_id) if nt1_id else None
+            nt2_snap = snaps.get(nt2_id) if nt2_id else None
+            nt1_data = nt1_snap.to_dict() if nt1_snap else {}
+            nt2_data = nt2_snap.to_dict() if nt2_snap else {}
+
+            nt1_upd, nt2_upd = MatchStatsCalculator.calculate_elo_updates(
+                outcome["winner"], nt1_data, nt2_data
+            )
+            if nt1_id and nt1_snap:
+                batch.update(db.collection("teams").document(nt1_id), nt1_upd)
+            if nt2_id and nt2_snap:
+                batch.update(db.collection("teams").document(nt2_id), nt2_upd)
 
         if match_type == "doubles":
             MatchStatsUpdater.update_user_stats_batch(
@@ -290,6 +318,8 @@ class MatchCommandService(BaseRepository):
             team2=data.get("team2"),
             team1Id=data.get("team1Id"),
             team2Id=data.get("team2Id"),
+            namedTeam1Id=data.get("namedTeam1Id"),
+            namedTeam2Id=data.get("namedTeam2Id"),
             team1Ref=data.get("team1Ref"),
             team2Ref=data.get("team2Ref"),
             is_upset=data.get("is_upset", False),
