@@ -21,37 +21,7 @@ class TeamService:
     @staticmethod
     def get_or_create_team(db: Client, user_a_id: str, user_b_id: str) -> str:
         """Retrieves a team for two users, creating one if it doesn't exist."""
-        # Sort IDs to ensure the query is consistent regardless of order
-        member_ids = sorted([user_a_id, user_b_id])
-
-        # Query for an existing team with the exact same members
-        team = TeamRepository.get_team_by_members(db, member_ids)
-
-        if team:
-            # Team already exists, return its ID
-            return team["id"]
-        else:
-            # Team does not exist, so create it
-            user_a_ref = db.collection("users").document(user_a_id)
-            user_b_ref = db.collection("users").document(user_b_id)
-
-            user_a_doc = cast("DocumentSnapshot", user_a_ref.get())
-            user_b_doc = cast("DocumentSnapshot", user_b_ref.get())
-
-            user_a_data = user_a_doc.to_dict() or {}
-            user_b_data = user_b_doc.to_dict() or {}
-
-            user_a_name = user_a_data.get("name", "Player A")
-            user_b_name = user_b_data.get("name", "Player B")
-
-            new_team_data = {
-                "member_ids": member_ids,
-                "members": [user_a_ref, user_b_ref],
-                "name": f"{user_a_name} & {user_b_name}",
-                "stats": {"wins": 0, "losses": 0, "elo": 1200},
-            }
-            # Add the new team to the 'teams' collection
-            return TeamRepository.create(db, new_team_data)
+        return TeamRepository.get_or_create_team(db, [user_a_id, user_b_id])
 
     @staticmethod
     def migrate_user_teams(

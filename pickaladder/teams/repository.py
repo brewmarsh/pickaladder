@@ -38,3 +38,32 @@ class TeamRepository(BaseRepository):
             for doc in query.stream()
             if (enriched := cls._enrich(doc)) is not None
         ]
+
+    @classmethod
+    def get_or_create_team(cls, db: Client, member_ids: list[str]) -> str:
+        """Retrieves a team for given members, creating one if it doesn't exist."""
+        # Use existing method to check for team (handles sorting)
+        team = cls.get_team_by_members(db, member_ids)
+        if team:
+            return team["id"]
+
+        # If not found, prepare data for creation
+        sorted_ids = sorted(member_ids)
+        member_refs = [db.collection("users").document(mid) for mid in sorted_ids]
+        member_docs = db.get_all(member_refs)
+
+        member_names = []
+        for doc in member_docs:
+            data = doc.to_dict() or {}
+            member_names.append(data.get("name", "Unknown Player"))
+
+        team_name = " & ".join(member_names)
+
+        new_team_data = {
+            "member_ids": sorted_ids,
+            "members": member_refs,
+            "name": team_name,
+            "stats": {"wins": 0, "losses": 0, "elo": 1200},
+        }
+
+        return cls.create(db, new_team_data)

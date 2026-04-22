@@ -21,7 +21,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from mockfirestore import MockFirestore
 
-from pickaladder.teams.models import create_team_document
+from pickaladder.teams.repository import TeamRepository
 
 # Add the project root to the Python path to allow importing 'pickaladder'
 project_root = Path(__file__).resolve().parent.parent
@@ -103,15 +103,9 @@ def get_or_create_team(db: Any, team_members: list[Any] | None) -> Any:
     if not team_members or len(team_members) != TEAM_SIZE:
         return None
 
-    sorted_member_ids = sorted([ref.id for ref in team_members])
-
-    teams_ref = db.collection("teams")
-    docs = list(teams_ref.where("member_ids", "==", sorted_member_ids).stream())
-
-    if docs:
-        return docs[0].reference
-    print(f"Creating new team for members: {sorted_member_ids}")
-    return create_team_document(db, team_members)
+    member_ids = [ref.id for ref in team_members]
+    team_id = TeamRepository.get_or_create_team(db, member_ids)
+    return db.collection("teams").document(team_id)
 
 
 def _setup_mock_db() -> MockFirestore:

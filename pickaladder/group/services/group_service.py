@@ -231,30 +231,6 @@ class GroupService:
             return None
 
     @staticmethod
-    def _fetch_group_members_data(member_refs: list[Any]) -> list[dict[str, Any]]:
-        """Fetch profile data for a list of member references."""
-        members_snapshots = [ref.get() for ref in member_refs]
-        members = []
-        for snapshot in members_snapshots:
-            if snapshot.exists:
-                data = snapshot.to_dict()
-                data["id"] = snapshot.id
-                members.append(data)
-        return members
-
-    @staticmethod
-    def _fetch_group_owner_data(owner_ref: Any | None) -> dict[str, Any] | None:
-        """Fetch profile data for the group owner."""
-        if not owner_ref:
-            return None
-        owner_doc = owner_ref.get()
-        if owner_doc.exists:
-            data = owner_doc.to_dict()
-            data["id"] = owner_doc.id
-            return data
-        return None
-
-    @staticmethod
     def get_group_details(
         db: Any,
         group_id: str,
@@ -274,15 +250,21 @@ class GroupService:
         if player_a_id and player_b_id:
             rivalry_stats = get_h2h_stats(group_id, player_a_id, player_b_id)
 
-        # Fetch members and owner data
+        # Fetch members and owner data using Repository
         member_refs = group_data.get("members", [])
         member_ids = {ref.id for ref in member_refs}
-        members = GroupService._fetch_group_members_data(member_refs)
-        owner = GroupService._fetch_group_owner_data(group_data.get("ownerRef"))
+        members = GroupRepository.get_group_members(db, member_refs)
+        
+        owner_ref = group_data.get("ownerRef")
+        owner = None
+        if owner_ref:
+            owners = GroupRepository.get_group_members(db, [owner_ref])
+            if owners:
+                owner = owners[0]
 
         # Permissions
         is_member = user_id in member_ids
-        is_owner = (ref := group_data.get("ownerRef")) is not None and ref.id == user_id
+        is_owner = owner_ref is not None and owner_ref.id == user_id
         is_admin = GroupService.is_group_admin(group_data, user_id)
 
         # Get eligible friends for invitation
@@ -297,10 +279,16 @@ class GroupService:
             db, group_id, member_ids, recent_matches_docs
         )
 
-        # Fetch Pending Invites
+        # Fetch Pending Invites using Repository
         pending_members = []
         if is_member:
-            pending_members = GroupService._get_pending_invites(db, group_id)
+            pending_members = GroupRepository.get_pending_invites(db, group_id)
+            # Still need to enrich with user docs for ghost/existing user info display
+            emails = [i.get("email") for i in pending_members if i.get("email")]
+            if emails:
+                user_docs = GroupService._fetch_user_docs_by_email(db, emails)
+                for invite in pending_members:
+                    GroupService._enrich_invite_with_user_data(invite, user_docs)
 
         return {
             "group": group_data,
@@ -609,29 +597,6 @@ class GroupService:
                 data = doc.to_dict()
                 user_docs[data["email"]] = data
         return user_docs
-
-    @staticmethod
-    def _get_pending_invites(db: Any, group_id: str) -> list[dict[str, Any]]:
-        """Fetch pending invites for a group."""
-        invites_ref = db.collection("group_invites")
-        query = invites_ref.where(
-            filter=firestore.FieldFilter("group_id", "==", group_id)
-        ).where(filter=firestore.FieldFilter("used", "==", False))
-
-        pending = []
-        for doc in query.stream():
-            data = doc.to_dict()
-            data["token"] = doc.id
-            pending.append(data)
-
-        emails = [i.get("email") for i in pending if i.get("email")]
-        if emails:
-            user_docs = GroupService._fetch_user_docs_by_email(db, emails)
-            for invite in pending:
-                GroupService._enrich_invite_with_user_data(invite, user_docs)
-
-        pending.sort(key=lambda x: x.get("createdAt") or 0, reverse=True)
-        return pending
 
     @staticmethod
     def get_random_joke() -> str:
