@@ -132,6 +132,11 @@ def get_public_groups(db: Client, limit: int = 10) -> list[dict[str, Any]]:
     return enriched_groups
 
 
+def get_top_groups(db: Client, limit: int = 5) -> list[dict[str, Any]]:
+    """Fetch top public groups."""
+    return get_public_groups(db, limit=limit)
+
+
 def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
     """Fetch all groups a user belongs to."""
     user_ref = db.collection("users").document(user_id)

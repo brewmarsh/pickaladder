@@ -84,6 +84,22 @@ class TeamService:
                 )
 
     @staticmethod
+    def get_top_teams(db: Client, limit: int = 5) -> list[dict[str, Any]]:
+        """Fetch the top teams globally based on ELO."""
+        query = (
+            db.collection(TeamRepository.COLLECTION_NAME)
+            .where(filter=firestore.FieldFilter("type", "==", "named"))
+            .order_by("stats.elo", direction=firestore.Query.DESCENDING)
+            .limit(limit)
+        )
+        teams = []
+        for doc in query.stream():
+            data = doc.to_dict() or {}
+            data["id"] = doc.id
+            teams.append(data)
+        return teams
+
+    @staticmethod
     def get_team_dashboard_data(db: Client, team_id: str) -> dict[str, Any] | None:
         """Fetch all data required for the team dashboard."""
         team_data = TeamRepository.get_by_id(db, team_id)

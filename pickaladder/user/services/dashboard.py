@@ -6,7 +6,9 @@ from typing import TYPE_CHECKING, Any
 
 from pickaladder.user.services.activity import (
     get_group_rankings,
+    get_top_groups,
 )
+from pickaladder.teams.services import TeamService
 from pickaladder.user.services.core import get_user_by_id
 from pickaladder.user.services.friendship import (
     get_user_friends,
@@ -128,6 +130,8 @@ def _fetch_social_and_tournaments(db: Client, user_id: str) -> dict[str, Any]:
         "friends": get_user_friends(db, user_id),
         "requests": get_user_pending_requests(db, user_id),
         "group_rankings": get_group_rankings(db, user_id),
+        "top_groups": get_top_groups(db, limit=3),
+        "top_teams": TeamService.get_top_teams(db, limit=3),
         "pending_tournament_invites": get_pending_tournament_invites(db, user_id),
         "active_tournaments": get_active_tournaments(db, user_id),
         "past_tournaments": get_past_tournaments(db, user_id),
