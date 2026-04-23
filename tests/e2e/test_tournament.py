@@ -97,9 +97,8 @@ def test_tournament_flow(
     with page.expect_navigation():
         page.click("button:has-text('Record Match')")
 
-    # Verify redirection back to tournament view (as per prioritized redirection logic)
+    # Verify redirection back to tournament view
     expect(page).to_have_url(re.compile(f".*/tournaments/{tournament_id}"))
-
     # 5. Complete Tournament (as owner)
     with page.expect_navigation():
         page.click("text=Complete Tournament")

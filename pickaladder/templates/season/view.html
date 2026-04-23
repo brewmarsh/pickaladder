@@ -1,0 +1,90 @@
+{% extends "layout.html" %}
+
+{% block title %}Season Standings - {{ season.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('group.view_groups') }}">Groups</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('group.view_group', group_id=group.id) }}">{{ group.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('.list_seasons', group_id=group.id) }}">Seasons</a></li>
+            <li class="breadcrumb-item active">{{ season.name }} Standings</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-0">{{ season.name }}</h1>
+            <p class="text-muted">
+                {{ season.startDate.strftime('%b %d, %Y') if hasattr(season.startDate, 'strftime') else season.startDate }} 
+                - 
+                {{ season.endDate.strftime('%b %d, %Y') if hasattr(season.endDate, 'strftime') else season.endDate }}
+            </p>
+        </div>
+        <div class="badge {% if season.status == 'ACTIVE' %}badge-success{% elif season.status == 'DRAFT' %}badge-warning{% else %}badge-secondary{% endif %} p-2 px-3">
+            {{ season.status }}
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 bg-dark text-white">
+        <div class="card-header border-bottom border-secondary bg-transparent d-flex justify-content-between align-items-center">
+            <h3 class="h5 mb-0 font-bold uppercase tracking-wider text-volt">Leaderboard</h3>
+        </div>
+        <div class="card-body p-0">
+            {% if standings %}
+            <div class="table-responsive">
+                <table class="table table-standard mb-0">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 80px;">Rank</th>
+                            <th>Player</th>
+                            <th class="text-center">W-L</th>
+                            <th class="text-center">Win %</th>
+                            <th class="text-center">PD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in standings %}
+                        <tr class="{% if entry.uid == g.user.uid %}bg-primary-subtle{% endif %}">
+                            <td class="text-center font-bold">
+                                {% if loop.index == 1 %}🥇
+                                {% elif loop.index == 2 %}🥈
+                                {% elif loop.index == 3 %}🥉
+                                {% else %}#{{ loop.index }}{% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ entry.user | avatar_url }}" class="avatar avatar-sm mr-2" 
+                                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                    <span class="font-bold">{{ entry.user.username }}</span>
+                                </div>
+                            </td>
+                            <td class="text-center font-score">{{ entry.wins }}-{{ entry.losses }}</td>
+                            <td class="text-center">{{ entry.win_percentage | round(1) }}%</td>
+                            <td class="text-center {% if entry.point_diff > 0 %}text-success{% elif entry.point_diff < 0 %}text-danger{% endif %} font-bold">
+                                {{ entry.point_diff }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <p class="text-muted mb-0">No matches have been recorded for this season yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .font-score {
+        font-family: 'Oswald', sans-serif;
+    }
+    .text-volt {
+        color: #84CC16;
+    }
+</style>
+{% endblock %}

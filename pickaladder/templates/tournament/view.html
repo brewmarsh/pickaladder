@@ -119,9 +119,19 @@
         <div id="bracket" class="tab-content" style="display: none;">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                    <h3 style="margin: 0;">Standings</h3>
+                    <h3 style="margin: 0;">Bracket & Standings</h3>
+                    {% if is_owner and g.user.is_admin and not matches %}
+                        <form action="{{ url_for('.generate_bracket', tournament_id=tournament.id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-primary">Generate Bracket</button>
+                        </form>
+                    {% endif %}
                 </div>
-                <div class="table-container">
+
+                <!-- Visual Bracket -->
+                {% include "tournaments/_bracket.html" %}
+
+                <div class="table-container mt-4">
                     <div class="table-responsive">
                         <table class="table-standard responsive-table">
                         <thead>

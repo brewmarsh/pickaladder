@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ title }} - {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('group.view_groups') }}">Groups</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('group.view_group', group_id=group.id) }}">{{ group.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('.list_seasons', group_id=group.id) }}">Seasons</a></li>
+            <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 bg-dark text-white">
+                <div class="card-header border-bottom border-secondary bg-transparent">
+                    <h2 class="mb-0 h4">{{ title }}</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="form-group mb-4">
+                            {{ form.name.label(class="form-label font-bold text-volt uppercase tracking-wider small") }}
+                            {{ form.name(class="form-control bg-dark border-secondary text-white", placeholder="e.g., Spring 2026") }}
+                            {% for error in form.name.errors %}
+                                <span class="text-danger small">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.start_date.label(class="form-label font-bold text-volt uppercase tracking-wider small") }}
+                                    {{ form.start_date(class="form-control bg-dark border-secondary text-white", type="date") }}
+                                    {% for error in form.start_date.errors %}
+                                        <span class="text-danger small">{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.end_date.label(class="form-label font-bold text-volt uppercase tracking-wider small") }}
+                                    {{ form.end_date(class="form-control bg-dark border-secondary text-white", type="date") }}
+                                    {% for error in form.end_date.errors %}
+                                        <span class="text-danger small">{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            {{ form.status.label(class="form-label font-bold text-volt uppercase tracking-wider small") }}
+                            {{ form.status(class="form-control bg-dark border-secondary text-white") }}
+                            {% for error in form.status.errors %}
+                                <span class="text-danger small">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top border-secondary">
+                            <a href="{{ url_for('.list_seasons', group_id=group.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-volt px-4">
+                                {% if season_id %}Update Season{% else %}Create Season{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

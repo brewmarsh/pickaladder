@@ -1,7 +1,7 @@
 """End-to-end integration tests for the session-first workflow."""
 
 from datetime import datetime, timezone
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from firebase_admin import firestore
 
@@ -12,78 +12,86 @@ from pickaladder.match.services.command import MatchCommandService
 
 def test_complete_session_lifecycle(mock_db, mock_db_write):
     """Test session creation, match recording, and batch verification."""
-    db = firestore.client()
+    from pickaladder import create_app
+    app = create_app({"TESTING": True, "WTF_CSRF_ENABLED": False})
 
-    # Simple manual batch mock
-    class MockBatch:
-        def __init__(self):
-            self.ops = []
+    with app.app_context():
+        db = firestore.client()
 
-        def set(self, ref, data):
-            self.ops.append(('set', ref, data))
+        # Simple manual batch mock
+        class MockBatch:
+            def __init__(self):
+                self.ops = []
 
-        def update(self, ref, data):
-            self.ops.append(('update', ref, data))
+            def set(self, ref, data):
+                self.ops.append(('set', ref, data))
 
-        def commit(self):
-            for op, ref, data in self.ops:
-                if op == 'set':
-                    ref.set(data)
-                elif op == 'update':
-                    ref.update(data)
+            def update(self, ref, data):
+                self.ops.append(('update', ref, data))
 
-    if not hasattr(db, "batch"):
-        db.batch = MagicMock(side_effect=MockBatch)
+            def commit(self):
+                for op, ref, data in self.ops:
+                    if op == 'set':
+                        ref.set(data)
+                    elif op == 'update':
+                        ref.update(data)
 
-    # 0. Setup mock group and players
-    group_id = "test_group"
-    player_ids = ["u1", "u2", "u3", "u4"]
-    player_refs = [db.collection("users").document(pid) for pid in player_ids]
+        if not hasattr(db, "batch"):
+            db.batch = MagicMock(side_effect=MockBatch)
 
-    db.collection("groups").document(group_id).set({
-        "name": "Test Group",
-        "members": player_refs
-    })
+        # 0. Setup mock group and players
+        group_id = "test_group"
+        player_ids = ["u1", "u2", "u3", "u4"]
+        player_refs = [db.collection("users").document(pid) for pid in player_ids]
 
-    BASE_ELO = 1200
-    for pid in player_ids:
-        db.collection("users").document(pid).set({
-            "username": f"user_{pid}",
-            "email": f"{pid}@test.com",
-            "stats": {"wins": 0, "losses": 0, "elo": BASE_ELO}
+        db.collection("groups").document(group_id).set({
+            "name": "Test Group",
+            "members": player_refs
         })
 
-    # 1. Create a session
-    creator_id = "u1"
+        BASE_ELO = 1200
+        for pid in player_ids:
+            db.collection("users").document(pid).set({
+                "username": f"user_{pid}",
+                "email": f"{pid}@test.com",
+                "stats": {"wins": 0, "losses": 0, "elo": BASE_ELO}
+            })
 
-    session_id = SessionService.create_session(db, group_id, creator_id, player_ids)
-    assert session_id is not None
+        # 1. Create a session
+        creator_id = "u1"
 
-    # 2. Record multiple matches via the session
-    match_ids = []
-    NUM_MATCHES = 2
-    for _ in range(NUM_MATCHES):
-        sub = MatchSubmission(
-            match_type="doubles",
-            player_1_id="u1",
-            player_2_id="u3",
-            partner_id="u2",
-            opponent_2_id="u4",
-            score_p1=11,
-            score_p2=5,
-            match_date=datetime.now(timezone.utc),
-            group_id=group_id,
-            created_by=creator_id
-        )
-        res = MatchCommandService.record_match(
-            db,
-            sub,
-            current_user={"uid": creator_id},
-            session_id=session_id
-        )
-        match_ids.append(res.id)
-        SessionService.add_match_to_session(db, session_id, res.id)
+        session_id = SessionService.create_session(db, group_id, creator_id, player_ids)
+        assert session_id is not None
 
+        # 2. Record multiple matches via the session
+        match_ids = []
+        NUM_MATCHES = 2
+
+        # Mock build match result to avoid url_for
+        with patch("pickaladder.match.services.command.MatchCommandService._build_match_result") as mock_build:
+            mock_build.side_effect = lambda mid, data: MagicMock(id=mid)
+
+            for _ in range(NUM_MATCHES):
+                sub = MatchSubmission(
+                    match_type="doubles",
+                    player_1_id="u1",
+                    player_2_id="u3",
+                    partner_id="u2",
+                    opponent_2_id="u4",
+                    score_p1=11,
+                    score_p2=5,
+                    match_date=datetime.now(timezone.utc),
+                    group_id=group_id,
+                    created_by=creator_id
+                )
+                res = MatchCommandService.record_match(
+                    db,
+                    sub,
+                    current_user={"uid": creator_id},
+                    session_id=session_id
+                )
+                match_ids.append(res.id)
+                SessionService.add_match_to_session(db, session_id, res.id)
     # Verify matches are linked
     session_data = SessionService.get_session(db, session_id)
     assert len(session_data["matchIds"]) == NUM_MATCHES

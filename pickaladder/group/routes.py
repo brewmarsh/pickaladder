@@ -139,9 +139,17 @@ def view_group(group_id: str) -> Any:
     if resp:
         return resp
 
+    # 10. Fetch Seasons
+    from pickaladder.season.services import SeasonService
+    context["seasons"] = SeasonService.get_seasons_for_group(db, group_id)
+
     return render_template(
-        "group.html", form=form, invite_email_form=invite_email_form, **context
+        "group.html",
+        form=form,
+        invite_email_form=invite_email_form,
+        **context
     )
+
 
 
 @bp.route("/<string:group_id>/manage", methods=["GET", "POST"])
@@ -178,13 +186,18 @@ def manage_group(group_id: str) -> Any:
     if resp:
         return resp
 
+    # 4. Fetch Seasons
+    from pickaladder.season.services import SeasonService
+    context["seasons"] = SeasonService.get_seasons_for_group(db, group_id)
+
     return render_template(
         "group/management_hub.html",
         form=form,
         invite_friend_form=invite_friend_form,
         invite_email_form=invite_email_form,
-        **context,
+        **context
     )
+
 
 
 # TODO: Add type hints for Agent clarity

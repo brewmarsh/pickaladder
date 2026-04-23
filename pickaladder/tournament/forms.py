@@ -28,6 +28,7 @@ class TournamentForm(FlaskForm):
         choices=[
             ("ROUND_ROBIN", "Round Robin"),
             ("SINGLE_ELIMINATION", "Single Elimination"),
+            ("DOUBLE_ELIMINATION", "Double Elimination"),
         ],
         validators=[DataRequired()],
     )

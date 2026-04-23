@@ -179,6 +179,7 @@ def _handle_match_submission(
         opponent_2_id=data.get("opponent2"),
         group_id=data.get("group_id") or group_id,
         tournament_id=data.get("tournament_id") or t_id,
+        season_id=data.get("season_id") or request.args.get("season_id"),
         session_id=data.get("session_id"),
     )
     try:
@@ -196,6 +197,8 @@ def _handle_match_submission(
 
 def _get_record_match_redirect(submission: MatchSubmission, match_id: str) -> str:
     """Determine the post-success redirect URL."""
+    if sid := submission.season_id:
+        return url_for("season.view_season", season_id=sid)
     if sid := submission.session_id:
         return url_for("group.quick_log", session_id=sid)
     if tid := submission.tournament_id:

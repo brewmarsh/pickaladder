@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import Any, cast
 
 from firebase_admin import firestore
@@ -22,7 +23,7 @@ from pickaladder.user.helpers import smart_display_name
 
 from . import bp
 from .forms import InvitePlayerForm, TournamentForm
-from .services import TournamentGenerator, TournamentService
+from .services import TournamentService
 
 MIN_PARTICIPANTS_FOR_GENERATION = 2
 
@@ -147,6 +148,7 @@ def view_tournament(tournament_id: str) -> Any:
     except Exception as e:
         flash(TOURNAMENT_MESSAGES["INVITE_ERROR"].format(error=e), "danger")
 
+    details["matches"] = TournamentService.get_tournament_matches(tournament_id)
     return render_template("tournament/view.html", invite_form=form, **details)
 
 
@@ -315,29 +317,18 @@ def generate_bracket(tournament_id: str) -> Any:
         flash(TOURNAMENT_MESSAGES["ADMIN_ONLY_BRACKET"], "danger")
         return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
-    db = firestore.client()
-    doc = cast(Any, db.collection("tournaments").document(tournament_id).get())
-    if not doc.exists:
-        flash(TOURNAMENT_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for(".list_tournaments"))
+    try:
+        count = TournamentService.publish_bracket(tournament_id, g.user.uid)
+        if count > 0:
+            flash(TOURNAMENT_MESSAGES["BRACKET_GEN_SUCCESS"].format(count=count), "success")
+        else:
+            flash(TOURNAMENT_MESSAGES["MIN_PARTICIPANTS"], "warning")
+    except (ValueError, PermissionError) as e:
+        flash(str(e), "danger")
+    except Exception as e:
+        flash(TOURNAMENT_MESSAGES["GEN_NOT_IMPLEMENTED"].format(format="selected"), "warning")
+        logging.error(f"Bracket gen failed: {e}")
 
-    d = cast(dict[str, Any], doc.to_dict() or {})
-    if d.get("format") != "ROUND_ROBIN":
-        flash(
-            TOURNAMENT_MESSAGES["GEN_NOT_IMPLEMENTED"].format(format=d.get("format")),
-            "warning",
-        )
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
-
-    uids = _get_accepted_uids(d)
-    if len(uids) < MIN_PARTICIPANTS_FOR_GENERATION:
-        flash(TOURNAMENT_MESSAGES["MIN_PARTICIPANTS"], "warning")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
-
-    count = TournamentService.save_pairings(
-        tournament_id, TournamentGenerator.generate_round_robin(uids)
-    )
-    flash(TOURNAMENT_MESSAGES["BRACKET_GEN_SUCCESS"].format(count=count), "success")
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 

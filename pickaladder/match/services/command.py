@@ -65,6 +65,17 @@ class MatchCommandService(BaseRepository):
         )
         batch.commit()
 
+        # Phase 10: Tournament Progression
+        if t_id := match_doc_data.get("tournamentId"):
+            from pickaladder.tournament.services.tournament_service import (
+                TournamentService,
+            )
+
+            match_doc_data["id"] = new_match_ref.id
+            TournamentService.handle_match_completion(
+                db, t_id, match_doc_data, match_doc_data["winnerId"]
+            )
+
         return cls._build_match_result(new_match_ref.id, match_doc_data)
 
     @staticmethod
@@ -103,6 +114,8 @@ class MatchCommandService(BaseRepository):
             data["groupId"] = sub.group_id
         if sub.tournament_id:
             data["tournamentId"] = sub.tournament_id
+        if sub.season_id:
+            data["seasonId"] = sub.season_id
         if sub.session_id:
             data["sessionId"] = sub.session_id
         if sub.namedTeam1Id:
@@ -311,6 +324,7 @@ class MatchCommandService(BaseRepository):
             participants=data.get("participants"),
             groupId=data.get("groupId"),
             tournamentId=data.get("tournamentId"),
+            seasonId=data.get("seasonId"),
             sessionId=data.get("sessionId"),
             player1Ref=data.get("player1Ref"),
             player2Ref=data.get("player2Ref"),
@@ -367,7 +381,16 @@ class MatchCommandService(BaseRepository):
 
         cls._check_match_edit_permissions(data, editor_uid, db)
         cls._perform_stats_update(data, s1, s2)
-        cls.update(db, match_id, cls._get_match_updates(data, s1, s2))
+        upd = cls._get_match_updates(data, s1, s2)
+        cls.update(db, match_id, upd)
+
+        # Phase 10: Tournament Progression
+        if t_id := data.get("tournamentId"):
+            from pickaladder.tournament.services.tournament_service import (
+                TournamentService,
+            )
+
+            TournamentService.handle_match_completion(db, t_id, upd, upd["winnerId"])
 
     @staticmethod
     def _check_match_edit_permissions(

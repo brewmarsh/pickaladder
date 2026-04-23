@@ -113,10 +113,12 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'apiKey: "dummy-test-key"', response.data)
 
+    @patch("pickaladder.match.routes.MatchCommandService.record_match")
     @patch("pickaladder.match.routes.MatchQueryService.get_match_by_id")
     @patch("pickaladder.match.services.MatchQueryService.get_candidate_player_ids")
     def test_record_match(
-        self, mock_get_candidate_player_ids: MagicMock, mock_get_match: MagicMock
+        self, mock_get_candidate_player_ids: MagicMock, mock_get_match: MagicMock,
+        mock_record_match: MagicMock
     ) -> None:
         """Test recording a new match."""
 
@@ -131,6 +133,11 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user()
 
         mock_db = self.mock_firestore_service.client.return_value
+
+        # Mock successful recording result
+        mock_res = MagicMock()
+        mock_res.id = "match_123"
+        mock_record_match.return_value = mock_res
 
         # Mock the db.get_all call that populates the form choices
         mock_user_snapshot = MagicMock()

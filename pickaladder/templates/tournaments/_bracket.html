@@ -1,0 +1,72 @@
+<div class="tournament-bracket-container">
+    {% if tournament.format == 'SINGLE_ELIMINATION' or tournament.format == 'DOUBLE_ELIMINATION' %}
+    <div class="bracket-wrapper overflow-auto py-4">
+        <!-- Winners Bracket -->
+        <div class="bracket-title mb-3">
+            <span class="badge badge-primary uppercase tracking-widest">Winners Bracket</span>
+        </div>
+        <div class="d-flex flex-row align-items-start gap-4">
+            {% set max_round = matches | map(attribute='round') | max if matches else 1 %}
+            {% for r in range(1, max_round + 1) %}
+                <div class="bracket-round">
+                    <div class="round-label text-center text-xs font-bold text-gray-500 mb-3 uppercase">Round {{ r }}</div>
+                    <div class="round-matches d-flex flex-column justify-content-around h-100 gap-4">
+                        {% for m in matches if m.round == r and m.bracketType != 'LOSERS' %}
+                            <div class="bracket-match card border-secondary bg-dark text-white p-2 shadow-sm" style="min-width: 180px;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-xs text-muted">#{{ m.bracketPosition }}</span>
+                                    {% if m.isBye %}<span class="badge badge-info text-xs">BYE</span>{% endif %}
+                                </div>
+                                <div class="player-slot d-flex justify-content-between {% if m.winner == 'team1' %}text-volt font-bold{% endif %}">
+                                    <span class="truncate">{{ m.player1_name or 'TBD' }}</span>
+                                    <span>{{ m.player1Score if m.status == 'COMPLETED' else '' }}</span>
+                                </div>
+                                <div class="player-slot d-flex justify-content-between {% if m.winner == 'team2' %}text-volt font-bold{% endif %}">
+                                    <span class="truncate">{{ m.player2_name or 'TBD' }}</span>
+                                    <span>{{ m.player2Score if m.status == 'COMPLETED' else '' }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if tournament.format == 'DOUBLE_ELIMINATION' %}
+        <!-- Losers Bracket -->
+        <div class="bracket-title mt-5 mb-3">
+            <span class="badge badge-danger uppercase tracking-widest">Losers Bracket</span>
+        </div>
+        <div class="d-flex flex-row align-items-start gap-4">
+             <!-- Placeholder for Losers Logic (Implementation in Phase 10-03) -->
+             <div class="text-muted text-sm italic">Losers bracket pairings will populate as matches complete.</div>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        Round Robin matches are listed below in chronological order.
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .tournament-bracket-container {
+        background: #111827;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    .bracket-match {
+        font-family: 'Oswald', sans-serif;
+        border-left: 4px solid #374151;
+    }
+    .bracket-match:hover {
+        border-color: #84CC16;
+    }
+    .text-volt {
+        color: #84CC16;
+    }
+    .round-matches {
+        min-height: 200px;
+    }
+</style>

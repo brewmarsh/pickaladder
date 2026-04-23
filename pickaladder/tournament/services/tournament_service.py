@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+import math
 from typing import TYPE_CHECKING, Any, cast
 
+from firebase_admin import firestore
 from pickaladder.utils import send_email
 
 from .base import TournamentBase
@@ -17,6 +19,159 @@ MIN_PARTICIPANTS = 2
 
 class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
     """Handles business logic and data access for tournaments."""
+
+    @staticmethod
+    def handle_match_completion(
+        db: Client, t_id: str, match_data: dict[str, Any], winner_uid: str
+    ) -> None:
+        """Triggered when a tournament match is completed to advance the winner."""
+        # Ensure we have the necessary bracket metadata (round, position)
+        if "round" not in match_data or "bracketPosition" not in match_data:
+            if mid := match_data.get("id"):
+                doc = db.collection("matches").document(mid).get()
+                if doc.exists:
+                    match_data = {**doc.to_dict(), "id": mid}
+
+        tournament = TournamentService.get_tournament(t_id, db=db)
+        fmt = str(tournament.get("format", "ROUND_ROBIN")).upper()
+        
+        if fmt in ["SINGLE_ELIMINATION", "DOUBLE_ELIMINATION"]:
+            # Handle Grand Final Reset
+            if match_data.get("isGrandFinal") and fmt == "DOUBLE_ELIMINATION":
+                if TournamentService._check_grand_final_reset(db, t_id, match_data, winner_uid):
+                    return
+
+            # Advance Winner
+            TournamentService._advance_winner(db, t_id, match_data, winner_uid)
+            
+            # Handle Loser for Double Elimination
+            if fmt == "DOUBLE_ELIMINATION" and match_data.get("bracketType") == "WINNERS":
+                TournamentService._drop_loser(db, t_id, match_data)
+
+    @staticmethod
+    def _check_grand_final_reset(db: Client, t_id: str, match_data: dict[str, Any], winner_uid: str) -> bool:
+        """Check if a bracket reset match is needed and create it if so."""
+        p1_ref = match_data.get("player1Ref")
+        p2_ref = match_data.get("player2Ref")
+        if not p1_ref or not p2_ref:
+            return False
+
+        # If loser-bracket player (p2) wins, we need a reset match
+        if p2_ref.id == winner_uid and not match_data.get("isResetMatch"):
+            reset_match = {
+                "tournamentId": t_id,
+                "round": match_data["round"],
+                "bracketPosition": 1,
+                "bracketType": "FINALS",
+                "isGrandFinal": True,
+                "isResetMatch": True,
+                "player1Ref": p1_ref,
+                "player2Ref": p2_ref,
+                "participants": [p1_ref.id, p2_ref.id],
+                "matchType": match_data.get("matchType", "singles"),
+                "status": "DRAFT",
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
+            db.collection("matches").add(reset_match)
+            return True
+        return False
+
+    @staticmethod
+    def _advance_winner(
+        db: Client, t_id: str, match_data: dict[str, Any], winner_uid: str
+    ) -> None:
+        """Calculate and update the next match in the Winners bracket."""
+        current_round = match_data.get("round")
+        if current_round is None:
+            return
+
+        current_pos = match_data.get("bracketPosition", 0)
+        bracket_type = match_data.get("bracketType", "WINNERS")
+
+        next_round = current_round + 1
+        next_pos = math.floor(current_pos / 2)
+        is_player_1 = (current_pos % 2 == 0)
+
+        query = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("tournamentId", "==", t_id))
+            .where(filter=firestore.FieldFilter("round", "==", next_round))
+            .where(filter=firestore.FieldFilter("bracketPosition", "==", next_pos))
+            .where(filter=firestore.FieldFilter("bracketType", "==", bracket_type))
+            .limit(1)
+        )
+
+        next_match_snap = list(query.stream())
+        winner_ref = db.collection("users").document(winner_uid)
+
+        if next_match_snap:
+            match_id = next_match_snap[0].id
+            field = "player1Ref" if is_player_1 else "player2Ref"
+            db.collection("matches").document(match_id).update({
+                field: winner_ref,
+                "participants": firestore.ArrayUnion([winner_uid])
+            })
+        elif bracket_type == "WINNERS":
+             TournamentService._push_to_finals(db, t_id, winner_uid, is_winners=True)
+        elif bracket_type == "LOSERS":
+             TournamentService._push_to_finals(db, t_id, winner_uid, is_winners=False)
+
+    @staticmethod
+    def _push_to_finals(db: Client, t_id: str, winner_uid: str, is_winners: bool) -> None:
+        """Push a bracket winner to the Grand Finals match."""
+        query = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("tournamentId", "==", t_id))
+            .where(filter=firestore.FieldFilter("bracketType", "==", "FINALS"))
+            .limit(1)
+        )
+        finals_snap = list(query.stream())
+        if finals_snap:
+            winner_ref = db.collection("users").document(winner_uid)
+            field = "player1Ref" if is_winners else "player2Ref"
+            db.collection("matches").document(finals_snap[0].id).update({
+                field: winner_ref,
+                "participants": firestore.ArrayUnion([winner_uid])
+            })
+
+    @staticmethod
+    def _drop_loser(db: Client, t_id: str, match_data: dict[str, Any]) -> None:
+        """Logic for moving the loser to the Losers bracket (Double Elimination)."""
+        current_round = match_data.get("round")
+        current_pos = match_data.get("bracketPosition", 0)
+        if current_round is None:
+            return
+
+        # DE Formula: 1->1, 2->2, 3->4, 4->6...
+        next_round = 1 if current_round == 1 else (2 * current_round) - 2
+        
+        from pickaladder.tournament.services.generator import TournamentGenerator
+        t_data = TournamentService.get_tournament(t_id, db=db)
+        p_count = len(t_data.get("participant_ids", []))
+        bracket_size = TournamentGenerator._next_power_of_2(p_count)
+        
+        num_winners_matches = bracket_size // (2 ** current_round)
+        next_pos = (num_winners_matches - 1) - current_pos
+
+        query = (
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("tournamentId", "==", t_id))
+            .where(filter=firestore.FieldFilter("round", "==", next_round))
+            .where(filter=firestore.FieldFilter("bracketPosition", "==", next_pos))
+            .where(filter=firestore.FieldFilter("bracketType", "==", "LOSERS"))
+            .limit(1)
+        )
+
+        target_snap = list(query.stream())
+        if target_snap:
+            loser_uid = match_data.get("loserId")
+            if not loser_uid:
+                return
+            loser_ref = db.collection("users").document(loser_uid)
+            db.collection("matches").document(target_snap[0].id).update({
+                "player2Ref": loser_ref,
+                "participants": firestore.ArrayUnion([loser_uid])
+            })
 
     @staticmethod
     def _build_create_payload(
@@ -58,7 +213,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         """Check if any matches exist for a tournament."""
 
         query = (
-            db.collection("matches").where("tournamentId", "==", t_id).limit(1).stream()
+            db.collection("matches").where(filter=firestore.FieldFilter("tournamentId", "==", t_id)).limit(1).stream()
         )
         return any(query)
 
@@ -102,9 +257,6 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         details = TournamentService.get_tournament_details(t_id, uid, db)
         if not details:
             raise ValueError("Tournament not found.")
-        # details['tournament'] is now a Tournament model, but we need
-        # dict for form populate usually
-        # but Tournament is a UserDict, so it's fine.
         return cast(dict[str, Any], details["tournament"])
 
     @staticmethod
@@ -262,6 +414,32 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         return len(pairings)
 
     @staticmethod
+    def _get_seeded_participant_ids(db: Client, t_data: dict[str, Any]) -> list[str]:
+        """Fetch participant UIDs and sort them by Glicko-2 rating for seeding."""
+        participant_ids = t_data.get("participant_ids", [])
+        if not participant_ids:
+            return []
+
+        user_refs = [db.collection("users").document(uid) for uid in participant_ids]
+        user_snaps = db.get_all(user_refs)
+
+        # Pair ID with rating
+        ratings = []
+        for snap in user_snaps:
+            if snap.exists:
+                data = snap.to_dict() or {}
+                # Use Glicko-2 mu, fallback to ELO, fallback to 1200
+                stats = data.get("stats", {})
+                rating = stats.get("glicko2", {}).get("mu") or stats.get("elo") or 1200.0
+                ratings.append((snap.id, rating))
+            else:
+                ratings.append((snap.id, 0.0))
+
+        # Sort by rating descending
+        ratings.sort(key=lambda x: x[1], reverse=True)
+        return [r[0] for r in ratings]
+
+    @staticmethod
     def _gen_singles_bracket(
         db: Client, t_data: dict[str, Any]
     ) -> list[dict[str, Any]]:
@@ -302,7 +480,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             db.collection("tournaments")
             .document(t_id)
             .collection("teams")
-            .where("status", "==", "CONFIRMED")
+            .where(filter=firestore.FieldFilter("status", "==", "CONFIRMED"))
             .stream()
         )
         return [
@@ -325,6 +503,41 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         if m_type == "singles":
             return TournamentService._gen_singles_bracket(db, t_data)
         return TournamentService._gen_doubles_bracket(db, t_id)
+
+    @staticmethod
+    def publish_bracket(t_id: str, uid: str, db: Client | None = None) -> int:
+        """Generate and save the tournament pairings based on the chosen format."""
+        from firebase_admin import firestore
+
+        from pickaladder.tournament.services.generator import TournamentGenerator
+
+        db = db or firestore.client()
+        t_ref = db.collection("tournaments").document(t_id)
+        t_snap = cast(Any, t_ref.get())
+        if not t_snap.exists:
+            raise ValueError("Tournament not found")
+
+        t_data = t_snap.to_dict() or {}
+        TournamentService._validate_tournament_ownership(t_data, uid)
+
+        fmt = t_data.get("format", "ROUND_ROBIN").upper()
+        pairings = []
+
+        if fmt == "SINGLE_ELIMINATION":
+            seeded_ids = TournamentService._get_seeded_participant_ids(db, t_data)
+            pairings = TournamentGenerator.generate_single_elimination(seeded_ids)
+        elif fmt == "DOUBLE_ELIMINATION":
+            seeded_ids = TournamentService._get_seeded_participant_ids(db, t_data)
+            pairings = TournamentGenerator.generate_double_elimination(seeded_ids)
+        else:
+            # Default to Round Robin
+            participant_ids = t_data.get("participant_ids", [])
+            pairings = TournamentGenerator.generate_round_robin(participant_ids)
+
+        if not pairings:
+            return 0
+
+        return TournamentService.save_pairings(t_id, pairings)
 
     @staticmethod
     def _check_user_in_team(

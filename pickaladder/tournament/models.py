@@ -97,6 +97,7 @@ class TournamentDict(FirestoreDocument, total=False):
     ownerRef: User | Any
     participants: list[Participant]
     participant_ids: list[str]
+    seasonId: str
 
     # UI and calculated fields
     date_display: str

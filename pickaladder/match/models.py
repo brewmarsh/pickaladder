@@ -167,6 +167,7 @@ class MatchSubmission:
     opponent_2_id: str | None = None
     group_id: str | None = None
     tournament_id: str | None = None
+    season_id: str | None = None
     session_id: str | None = None
     created_by: str | None = None
     namedTeam1Id: str | None = None
@@ -202,6 +203,7 @@ class MatchResult:
     is_verified: bool = False
     groupId: str | None = None
     tournamentId: str | None = None
+    seasonId: str | None = None
     sessionId: str | None = None
     player1Ref: Any = None
     player2Ref: Any = None

@@ -57,6 +57,7 @@
                 <div class="tab-buttons">
                     <button class="tab-button active" onclick="openTab(event, 'players')">Players</button>
                     <button class="tab-button" onclick="openTab(event, 'teams')">Teams</button>
+                    <button class="tab-button" onclick="openTab(event, 'seasons')">Seasons</button>
                 </div>
 
                 <div id="players" class="tab-content" style="display: block;">
@@ -190,9 +191,41 @@
                             </table>
                         </div>
                     </div>
+                <div id="seasons" class="tab-content" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="h5 mb-0">Group Seasons</h4>
+                        <a href="{{ url_for('season.list_seasons', group_id=group.id) }}" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                    {% if seasons %}
+                    <div class="row">
+                        {% for season in seasons[:3] %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-dark border-secondary h-100 shadow-sm">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="font-bold mb-0">{{ season.name }}</h6>
+                                        <span class="badge {% if season.status == 'ACTIVE' %}badge-success{% elif season.status == 'DRAFT' %}badge-warning{% else %}badge-secondary{% endif %}" style="font-size: 0.6rem;">
+                                            {{ season.status }}
+                                        </span>
+                                    </div>
+                                    <div class="text-muted small">
+                                        {{ season.startDate.strftime('%b %d') if hasattr(season.startDate, 'strftime') else season.startDate }} 
+                                        - 
+                                        {{ season.endDate.strftime('%b %d') if hasattr(season.endDate, 'strftime') else season.endDate }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted border border-secondary rounded">
+                        <p class="mb-0">No active seasons. Check back later!</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-            {% else %}
+{% else %}
             <div class="card card-notification text-center">
                 <p class="mb-0">No matches recorded yet. Be the first to play!</p>
             </div>

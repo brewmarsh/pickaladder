@@ -235,8 +235,35 @@ class TournamentBase:
             if (p := TournamentBase._resolve_single_participant(obj, u_map))
         ]
 
+    @classmethod
+    def get_tournament(cls, t_id: str, db: Client | None = None) -> dict[str, Any]:
+        """Fetch a single tournament document by ID."""
+        from firebase_admin import firestore
+        db = db or firestore.client()
+        doc = db.collection("tournaments").document(t_id).get()
+        if not doc.exists:
+            return {}
+        data = doc.to_dict() or {}
+        data["id"] = doc.id
+        return data
+
     @staticmethod
     def _validate_tournament_ownership(data: dict[str, Any], user_uid: str) -> None:
         """Raise PermissionError if user is not the tournament owner."""
         if TournamentBase._get_tournament_owner_id(data) != user_uid:
             raise PermissionError("Unauthorized access to tournament.")
+
+    @staticmethod
+    def get_tournament_matches(t_id: str, db: Client | None = None) -> list[dict[str, Any]]:
+        """Fetch all matches for a specific tournament."""
+        from firebase_admin import firestore
+        db = db or firestore.client()
+        query = db.collection("matches").where(
+            filter=firestore.FieldFilter("tournamentId", "==", t_id)
+        )
+        matches = []
+        for doc in query.stream():
+            data = doc.to_dict() or {}
+            data["id"] = doc.id
+            matches.append(data)
+        return matches
