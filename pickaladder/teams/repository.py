@@ -101,7 +101,9 @@ class TeamRepository(BaseRepository):
         query = (
             db.collection(cls.COLLECTION_NAME)
             .where(filter=firestore.FieldFilter("type", "==", "named"))
-            .where(filter=firestore.FieldFilter("member_ids", "array_contains", user_id))
+            .where(
+                filter=firestore.FieldFilter("member_ids", "array_contains", user_id)
+            )
         )
         return [
             enriched

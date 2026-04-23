@@ -1,5 +1,6 @@
 """
-Migration script to rename created_at to createdAt in teams and group_invites collections.
+Migration script to rename created_at to createdAt in teams
+and group_invites collections.
 """
 
 from __future__ import annotations
@@ -56,7 +57,12 @@ def initialize_firebase() -> bool:
     return True
 
 
-def migrate_collection(db: Any, collection_name: str, dry_run: bool = False, batch_size: int = 500) -> None:
+def migrate_collection(
+    db: Any,
+    collection_name: str,
+    dry_run: bool = False,
+    batch_size: int = 500,
+) -> None:
     """Rename created_at to createdAt in the specified collection."""
     print(f"Migrating collection: {collection_name}")
     # Detect if we're using mockfirestore

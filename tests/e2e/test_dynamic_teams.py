@@ -11,7 +11,9 @@ def test_create_team_page_loads(client, mock_db):
     mock_db.collection("users").document("u1").set({"name": "User 1"})
     mock_db.collection("users").document("u2").set({"name": "User 2"})
 
-    with patch("pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}):
+    with patch(
+        "pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}
+    ):
         response = client.get('/team/create')
         SUCCESS_CODE = 200
         assert response.status_code == SUCCESS_CODE
@@ -33,13 +35,17 @@ def test_create_team_submission(client, mock_db):
         "members": [uid, "u2"]
     }
 
-    with patch("pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}):
+    with patch(
+        "pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}
+    ):
         response = client.post('/team/create', data=form_data, follow_redirects=True)
         SUCCESS_CODE = 200
         assert response.status_code == SUCCESS_CODE
 
         # Verify team created in DB
-        teams = list(mock_db.collection("teams").where("name", "==", "The Smashers").stream())
+        teams = list(
+            mock_db.collection("teams").where("name", "==", "The Smashers").stream()
+        )
         assert len(teams) == 1
         team_data = teams[0].to_dict()
         assert team_data["type"] == "named"

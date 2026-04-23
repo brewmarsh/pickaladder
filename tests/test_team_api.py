@@ -23,7 +23,9 @@ def test_api_user_teams(client, mock_db):
         "isActive": True
     })
 
-    with patch("pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}):
+    with patch(
+        "pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}
+    ):
         response = client.get('/team/api/user-teams')
         SUCCESS_CODE = 200
         assert response.status_code == SUCCESS_CODE
@@ -48,11 +50,16 @@ def test_api_team_roster(client, mock_db):
         "name": "Team A",
         "type": "named",
         "member_ids": [uid, "u2"],
-        "members": [mock_db.collection("users").document(uid), mock_db.collection("users").document("u2")],
+        "members": [
+            mock_db.collection("users").document(uid),
+            mock_db.collection("users").document("u2"),
+        ],
         "isActive": True
     })
 
-    with patch("pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}):
+    with patch(
+        "pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}
+    ):
         response = client.get('/team/api/team_a/roster')
         SUCCESS_CODE = 200
         assert response.status_code == SUCCESS_CODE
@@ -79,7 +86,9 @@ def test_api_team_roster_unauthorized(client, mock_db):
         "isActive": True
     })
 
-    with patch("pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}):
+    with patch(
+        "pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}
+    ):
         response = client.get('/team/api/team_b/roster')
         FORBIDDEN_CODE = 403
         assert response.status_code == FORBIDDEN_CODE

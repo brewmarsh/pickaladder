@@ -29,7 +29,9 @@ class GroupRepository(BaseRepository):
         ]
 
     @classmethod
-    def validate(cls, db: Client, data: dict[str, Any], group_id: str | None = None) -> None:
+    def validate(
+        cls, db: Client, data: dict[str, Any], group_id: str | None = None
+    ) -> None:
         """Validate group data for consistency and business rules."""
         name = data.get("name")
         if not name:
@@ -56,7 +58,8 @@ class GroupRepository(BaseRepository):
     @classmethod
     def update(cls, db: Client, doc_id: str, data: dict[str, Any]) -> None:
         """Update a group with validation."""
-        # For updates, we might only have partial data, so we fetch the full doc to validate
+        # For updates, we might only have partial data,
+        # so we fetch the full doc to validate
         existing = cls.get_by_id(db, doc_id)
         if not existing:
             raise ValueError(f"Group {doc_id} not found.")
@@ -84,7 +87,9 @@ class GroupRepository(BaseRepository):
         return pending
 
     @classmethod
-    def get_group_members(cls, db: Client, member_refs: list[Any]) -> list[dict[str, Any]]:
+    def get_group_members(
+        cls, db: Client, member_refs: list[Any]
+    ) -> list[dict[str, Any]]:
         """Fetch full profile data for group members."""
         if not member_refs:
             return []

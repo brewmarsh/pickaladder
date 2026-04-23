@@ -409,7 +409,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "members": [mock_user_doc],
             "admins": [],
         }
-        mock_db.collection("groups").document(group_id).get.return_value = mock_group_doc
+        mock_db.collection("groups").document(group_id).get.return_value = (
+            mock_group_doc
+        )
 
         # Mock other necessary services called by get_group_details
         with (
@@ -471,7 +473,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             ],
             "admins": [],
         }
-        mock_db.collection("groups").document(group_id).get.return_value = mock_group_doc
+        mock_db.collection("groups").document(group_id).get.return_value = (
+            mock_group_doc
+        )
 
         # Mock other necessary services
         with (

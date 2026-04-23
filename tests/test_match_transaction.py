@@ -191,7 +191,8 @@ class MatchTransactionTestCase(unittest.TestCase):
         # 2. p2 (pairing2)
         # 3. nt1 (named_team1)
         # 4. nt2 (named_team2)
-        # 5. user stats batch (users in team1) - Wait, we didn't mock team1 in match_data
+        # 5. user stats batch (users in team1)
+        # Wait, we didn't mock team1 in match_data
         # 6. lastMatchRecordedType for user_ref
         # 7. last_match_date for each participant
 

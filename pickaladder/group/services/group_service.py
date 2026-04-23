@@ -136,7 +136,9 @@ class GroupService:
         if not owner_ref or owner_ref.id != requester_uid:
             raise AccessDenied("Only the group owner can promote members")
 
-        GroupRepository.update(db, group_id, {"admins": firestore.ArrayUnion([target_uid])})
+        GroupRepository.update(
+            db, group_id, {"admins": firestore.ArrayUnion([target_uid])}
+        )
 
     @staticmethod
     def demote_member(
@@ -151,7 +153,9 @@ class GroupService:
         if not owner_ref or owner_ref.id != requester_uid:
             raise AccessDenied("Only the group owner can demote members")
 
-        GroupRepository.update(db, group_id, {"admins": firestore.ArrayRemove([target_uid])})
+        GroupRepository.update(
+            db, group_id, {"admins": firestore.ArrayRemove([target_uid])}
+        )
 
     @staticmethod
     def remove_member(
@@ -625,7 +629,9 @@ class GroupService:
     def invite_friend(db: Any, group_id: str, friend_id: str) -> None:
         """Add a friend to a group."""
         friend_ref = db.collection("users").document(friend_id)
-        GroupRepository.update(db, group_id, {"members": firestore.ArrayUnion([friend_ref])})
+        GroupRepository.update(
+            db, group_id, {"members": firestore.ArrayUnion([friend_ref])}
+        )
 
     @staticmethod
     def invite_by_email(  # noqa: PLR0913

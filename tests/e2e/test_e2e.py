@@ -82,8 +82,12 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Add Friend')")
 
     # [CHANGE] Manually mark as accepted in mock_db to skip dual-acceptance complexity
-    admin_friend_ref = mock_db.collection("users").document("admin").collection("friends").document("user2")
-    user2_friend_ref = mock_db.collection("users").document("user2").collection("friends").document("admin")
+    admin_friend_ref = mock_db.collection("users").document("admin").collection(
+        "friends"
+    ).document("user2")
+    user2_friend_ref = mock_db.collection("users").document("user2").collection(
+        "friends"
+    ).document("admin")
     admin_friend_ref.set({"status": "accepted", "id": "user2"})
     user2_friend_ref.set({"status": "accepted", "id": "admin"})
 
@@ -121,7 +125,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Invite Friend')")
 
     # [CHANGE] Add user2 to the group members directly in mock_db
-    group_docs = list(mock_db.collection("groups").where("name", "==", "Pickleballers").stream())
+    group_docs = list(
+        mock_db.collection("groups").where("name", "==", "Pickleballers").stream()
+    )
     assert len(group_docs) > 0
     group_ref = group_docs[0].reference
     user2_ref = mock_db.collection("users").document("user2")
@@ -153,7 +159,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         # Use simple click
         page.click("button:has-text('Record Match')")
         # Check for toast first as it appears immediately
-        expect(page.locator(".toast")).to_contain_text("Match recorded successfully", timeout=30000)
+        expect(page.locator(".toast")).to_contain_text(
+            "Match recorded successfully", timeout=30000
+        )
     except Exception as e:
         page.screenshot(path="e2e_failure_record_match.png")
         print(f"DEBUG: Failed at Step 6. URL: {page.url}")
@@ -236,7 +244,9 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         # Allow time for navigation and flash message to appear
         page.wait_for_url("**/group/*")
         # Check success toast - searching for unique part of the message
-        expect(page.locator(".toast")).to_contain_text("Invitation is being sent", timeout=15000)
+        expect(page.locator(".toast")).to_contain_text(
+            "Invitation is being sent", timeout=15000
+        )
     except Exception:
         page.screenshot(path="e2e_failure_invite.png")
         print(f"DEBUG: Failed at Step 11. URL: {page.url}")
