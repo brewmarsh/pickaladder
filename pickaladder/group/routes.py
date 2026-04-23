@@ -161,19 +161,20 @@ def manage_group(group_id: str) -> Any:
         flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
         return redirect(url_for(".view_groups"))
 
-    # Settings form (Tab 3)
-    form, resp = _handle_edit_group_form(db, group_id, context["group"])
+    # 1. Invite Email form
+    invite_email_form, resp = _handle_invite_email_form(
+        db, group_id, context["group"].get("name", "Unknown Group")
+    )
     if resp:
         return resp
 
-    # Invite forms (Tab 2)
+    # 2. Invite Friend form
     invite_friend_form, resp = _handle_invite_friend_form(db, group_id, context)
     if resp:
         return resp
 
-    invite_email_form, resp = _handle_invite_email_form(
-        db, group_id, context["group"].get("name", "Unknown Group")
-    )
+    # 3. Settings form (Update Group)
+    form, resp = _handle_edit_group_form(db, group_id, context["group"])
     if resp:
         return resp
 
