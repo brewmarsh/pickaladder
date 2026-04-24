@@ -22,8 +22,15 @@
                 {{ season.endDate.strftime('%b %d, %Y') if hasattr(season.endDate, 'strftime') else season.endDate }}
             </p>
         </div>
-        <div class="badge {% if season.status == 'ACTIVE' %}badge-success{% elif season.status == 'DRAFT' %}badge-warning{% else %}badge-secondary{% endif %} p-2 px-3">
-            {{ season.status }}
+        <div class="d-flex align-items-center gap-3">
+            <div class="badge {% if season.status == 'ACTIVE' %}badge-success{% elif season.status == 'DRAFT' %}badge-warning{% else %}badge-secondary{% endif %} p-2 px-3">
+                {{ season.status }}
+            </div>
+            {% if is_admin and season.status != 'COMPLETED' %}
+                <a href="{{ url_for('.finalize_season', season_id=season.id) }}" class="btn btn-outline-warning btn-sm">
+                    <i class="fas fa-lock mr-1"></i> Finalize Season
+                </a>
+            {% endif %}
         </div>
     </div>
 

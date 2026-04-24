@@ -11,6 +11,12 @@ class Division(TypedDict, total=False):
     participant_ids: list[str]
 
 
+class MovementRules(TypedDict):
+    """Rules for moving between divisions."""
+    promotionCount: int
+    relegationCount: int
+
+
 class Season(TypedDict, total=False):
     """Represents a recurring competition season."""
     id: str
@@ -18,7 +24,9 @@ class Season(TypedDict, total=False):
     groupId: str
     startDate: Any  # Timestamp
     endDate: Any    # Timestamp
-    status: str     # DRAFT, ACTIVE, COMPLETED
+    status: str     # DRAFT, ACTIVE, COMPLETED, FINALIZING
     divisions: list[Division]
+    movementRules: MovementRules
+    finalStandings: list[dict[str, Any]]  # Snapshot of results
     createdAt: Any
     updatedAt: Any

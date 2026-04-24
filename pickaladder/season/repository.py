@@ -40,3 +40,13 @@ class SeasonRepository(BaseRepository):
             doc.to_dict() | {"id": doc.id}
             for doc in query.stream()
         ]
+
+    @classmethod
+    def get_all(cls, db: Client) -> list[dict[str, Any]]:
+        """Fetch all seasons globally."""
+        docs = db.collection(cls.COLLECTION_NAME).stream()
+        return [
+            enriched
+            for doc in docs
+            if (enriched := cls._enrich(doc)) is not None
+        ]

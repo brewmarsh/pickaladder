@@ -184,6 +184,7 @@ def _handle_match_submission(
     )
     try:
         result = MatchCommandService.record_match(db, submission, g.user)
+
         if request.is_json:
             return jsonify({"status": "success", "match_id": result.id}), 200
         flash(MATCH_MESSAGES["RECORD_SUCCESS"], "success")

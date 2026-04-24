@@ -13,22 +13,26 @@
 - [x] **Phase 9: Group/Team UX Modernization** - Improving management workflows and visibility for teams and groups.
 - [x] **Phase 10: Elimination Formats** - Advanced tournament logic (Single/Double Elimination) and bracket visualization.
 - [x] **Phase 11: Season Infrastructure** - Generalizing tournament entities into recurring seasons and standings.
-- [ ] **Phase 12: Advanced Standings & Tie-breaks** - Implementing H2H logic, set-based standings, and point-differential rules.
+- [x] **Phase 12: Advanced Standings & Tie-breaks** - Implementing H2H logic, set-based standings, and point-differential rules.
+- [x] **Phase 13: Promotion & Relegation Logic** - Automated movement between divisions based on season results.
+- [x] **Phase 14: Seasonal Analytics & Reporting** - Deep dive into player performance trends across multiple seasons.
+- [x] **Phase 15: Social Engagement & Feed** - Enhancing community interaction with a global activity feed and reactions.
+- [ ] **Phase 16: Mobile-First Optimization & PWA** - Deep focus on offline usage and mobile courtside UX.
 
 ---
 
 ## Phase Details
 
-### Phase 12: Advanced Standings & Tie-breaks
-**Goal**: Implement robust, tournament-standard standing aggregation with complex tie-break rules.
-**Depends on**: Phase 11
+### Phase 15: Social Engagement & Feed
+**Goal**: Transform pickaladder into a more interactive community by surfacing activity and enabling social engagement.
+**Depends on**: Phase 14
 **Success Criteria**:
-  1. Rankings correctly reflect H2H results when match wins are equal.
-  2. Three-way ties are resolved via Point Differential or Reset Rule.
-  3. Standings dashboard displays all data points used in the hierarchy.
+  1. Users see a live feed of recent matches and season completions on their dashboard.
+  2. Users can react to feed items with at least one interaction type (e.g., "Cheer").
+  3. Feed is enriched with user profile data for a social feel.
 **Plans**:
-- [x] 01-PLAN.md — Standing Aggregator Core.
-- [ ] 02-PLAN.md — Tie-break Reason UI.
+- [x] 15-01-PLAN.md — Event Logging & Base Feed.
+- [x] 15-02-PLAN.md — Social Reactions & Interactive Engagement.
 
 ---
 
@@ -47,4 +51,7 @@
 | 9. Group/Team UX Modernization | 3/3 | Completed | 2026-04-22 |
 | 10. Elimination Formats | 4/4 | Completed | 2026-04-23 |
 | 11. Season Infrastructure | 2/2 | Completed | 2026-04-23 |
-| 12. Advanced Standings | 1/2 | In Progress | - |
+| 12. Advanced Standings | 2/2 | Completed | 2026-04-24 |
+| 13. Promotion & Relegation | 2/2 | Completed | 2026-04-24 |
+| 14. Seasonal Analytics | 2/2 | Completed | 2026-04-24 |
+| 15. Social Engagement | 2/2 | Completed | 2026-04-24 |

@@ -17,7 +17,9 @@ from flask import (
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, USER_MESSAGES
+from pickaladder.core.activity.services import ActivityService
 from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
+from pickaladder.season.analytics import AnalyticsService
 
 from . import bp
 from .forms import SettingsForm, UpdateUserForm
@@ -108,12 +110,16 @@ def dashboard() -> Any:
 
     data = UserService.get_dashboard_data(db, user_id)
 
+    # Fetch community activity feed
+    feed = ActivityService.get_global_feed(db, limit=10)
+
     # Remove user from data to avoid conflict with g.user passed to template
     data.pop("user", None)
 
     return render_template(
         "user_dashboard.html",
         user=g.user,
+        feed=feed,
         **data,
     )
 
@@ -131,6 +137,10 @@ def view_user(user_id: str) -> Any:
     stats = data.get("stats", {})
     total_games = stats.get("total_games", 0)
 
+    # Fetch historical performance from completed seasons
+    season_history = AnalyticsService.get_user_season_history(db, user_id)
+    achievements = AnalyticsService.get_user_achievements(season_history)
+
     return render_template(
         "user/profile.html",
         user=g.user,
@@ -140,6 +150,8 @@ def view_user(user_id: str) -> Any:
         win_rate=stats.get("win_rate", 0),
         current_streak=stats.get("current_streak", 0),
         streak_type=stats.get("streak_type", "N/A"),
+        season_history=season_history,
+        achievements=achievements,
         **data,
     )
 

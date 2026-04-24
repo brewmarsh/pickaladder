@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+
+{% block title %}Finalize Season - {{ season.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('group.view_groups') }}">Groups</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('group.view_group', group_id=group.id) }}">{{ group.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('.list_seasons', group_id=group.id) }}">Seasons</a></li>
+            <li class="breadcrumb-item active">Finalize {{ season.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm border-0 bg-dark text-white">
+                <div class="card-header border-bottom border-secondary bg-transparent">
+                    <h2 class="mb-0 h4">Season Finalization Preview</h2>
+                </div>
+                <div class="card-body">
+                    <p class="mb-4">Finalizing a season will lock all results and capture a snapshot of the standings. Based on the rules defined, the following movements are suggested for the next season:</p>
+
+                    <div class="row mb-5">
+                        <div class="col-md-6">
+                            <div class="p-3 border border-success rounded bg-success-subtle mb-3">
+                                <h4 class="h6 font-bold uppercase text-success mb-3"><i class="fas fa-arrow-up mr-2"></i>Promotion Candidates</h4>
+                                {% if movements.promoted %}
+                                    <ul class="list-unstyled mb-0">
+                                        {% for p in movements.promoted %}
+                                            <li class="mb-2 d-flex align-items-center">
+                                                <span class="badge badge-success mr-2">Rank {{ loop.index }}</span>
+                                                {{ p.user.username }}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p class="text-muted small mb-0">No promotions configured or candidates found.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border border-danger rounded bg-danger-subtle mb-3">
+                                <h4 class="h6 font-bold uppercase text-danger mb-3"><i class="fas fa-arrow-down mr-2"></i>Relegation Candidates</h4>
+                                {% if movements.relegated %}
+                                    <ul class="list-unstyled mb-0">
+                                        {% for p in movements.relegated %}
+                                            <li class="mb-2 d-flex align-items-center">
+                                                <span class="badge badge-danger mr-2">Rank {{ loop.index0 + movements.promoted|length + movements.retained|length + 1 }}</span>
+                                                {{ p.user.username }}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p class="text-muted small mb-0">No relegations configured or candidates found.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning border-warning shadow-sm mb-4">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <strong>Warning:</strong> This action is permanent. Standings will be snapshotted and the season status will change to COMPLETED.
+                    </div>
+
+                    <form method="POST" class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" id="finalize-action" value="finalize_only">
+                        
+                        <a href="{{ url_for('.view_season', season_id=season.id) }}" class="btn btn-outline-secondary">Back to Standings</a>
+                        
+                        <div class="d-flex gap-3">
+                            <button type="submit" onclick="document.getElementById('finalize-action').value='finalize_only'" class="btn btn-secondary font-bold px-4">
+                                Finalize Only
+                            </button>
+                            <button type="submit" onclick="document.getElementById('finalize-action').value='start_next'" class="btn btn-volt font-bold px-4 py-2">
+                                Finalize & Start Next Season
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-success-subtle { background-color: rgba(40, 167, 69, 0.1); }
+    .bg-danger-subtle { background-color: rgba(220, 53, 69, 0.1); }
+</style>
+{% endblock %}

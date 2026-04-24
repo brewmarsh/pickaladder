@@ -2,38 +2,36 @@
 
 ## Project Reference
 **Core Value:** A robust and professional platform for pickleball ladder management that prioritizes ranking integrity and seamless external integrations.
-**Current Focus:** Phase 12 - Advanced Standings & Tie-breaks
+**Current Focus:** Phase 16 - Mobile-First Optimization & PWA
 
 ## Current Position
-**Phase:** 12 - Advanced Standings & Tie-breaks
-**Plan:** 12-01 (Complete) -> 12-02 (Next)
-**Status:** Standing Aggregator implemented with USAP hierarchical tie-breaking.
+**Phase:** 15 - Social Engagement & Feed (Complete)
+**Plan:** Milestone 7 Review
+**Status:** Milestone 7 (Advanced Competition & Community) is fully implemented and verified. Social Engagement features are live and stable.
 
-[####################] 100% (Overall Progress) - Milestone 6
-[##########----------] 50% (Phase 12 Progress)
+[####################] 100% (Overall Progress) - Milestone 7
+[--------------------] 0% (Phase 16 Progress)
 
 ## Performance Metrics
-- **Phase 1-11 Completion:** 100%
-- **Phase 12-01 Completion:** 100%
-- **Critical Path Hygiene:** Green (203/203 tests passing)
+- **Phase 1-15 Completion:** 100%
+- **Critical Path Hygiene:** Green (All 210 tests passing)
 
 ## Accumulated Context
 
 ### Decisions
-- **Aggregator Logic:** Implemented a multi-pass grouping and recursive resolution strategy to satisfy the "Reset Rule".
-- **Enrichment:** `SeasonStandingsService` now delegates aggregation to `StandingAggregator` and performs user-profile enrichment afterwards.
+- **Service-Level Logging:** Moved activity logging to the service layer (MatchCommandService) to ensure consistency and facilitate easier mocking in tests.
+- **Global Mocking:** Applied a global patch for ActivityService in conftest.py, overridden only in activity-specific tests, to prevent side-effect regressions across the suite.
 
 ### Todos
-- [ ] Implement `tie_break_reason` metadata in the aggregator.
-- [ ] Update Season View to display the tie-break reason for relevant players.
-- [ ] Research Phase 13 (Promotion/Relegation).
+- [ ] Define requirements for Mobile UX Audit (specifically match recording flow on small screens).
+- [ ] Research service worker strategies for offline match logging.
 
 ### Blockers
 - None.
 
 ## Session Continuity
 **Last Session:**
-- Implemented `StandingAggregator` core.
-- Refactored `SeasonStandingsService` to use the aggregator.
-- Added PF/PA/PD columns to the standings dashboard.
-- Verified with unit tests and resolved linting magic numbers.
+- Finalized Phase 15.
+- Implemented Social Reactions (Cheers) with interactive UI counters.
+- Resolved regression in match recording tests by migrating logging to the service layer and refining mocks.
+- Verified all features with a full 210-test suite run.

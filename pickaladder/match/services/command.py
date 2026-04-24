@@ -8,6 +8,8 @@ from pickaladder.match.models import MatchResult, MatchSubmission
 from pickaladder.teams.services import TeamService
 from pickaladder.user.services.core import get_avatar_url, smart_display_name
 
+from pickaladder.core.activity.models import ActivityType
+from pickaladder.core.activity.services import ActivityService
 from .calculator import MatchStatsCalculator
 from .match_stats_updater import MatchStatsUpdater
 from .match_validation import MatchValidationService
@@ -64,6 +66,18 @@ class MatchCommandService(BaseRepository):
             sub.match_type,
         )
         batch.commit()
+
+        # Log community activity
+        ActivityService.log_activity(
+            db,
+            user_id,
+            ActivityType.MATCH_COMPLETED,
+            {
+                "matchId": new_match_ref.id,
+                "score": f"{sub.score_p1}-{sub.score_p2}",
+                "player1Name": current_user.get("username", "Unknown") if hasattr(current_user, 'get') else "Unknown"
+            }
+        )
 
         # Phase 10: Tournament Progression
         if t_id := match_doc_data.get("tournamentId"):

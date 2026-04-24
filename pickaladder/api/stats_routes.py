@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from firebase_admin import firestore
-from flask import Blueprint, g, render_template
+from flask import Blueprint, g, jsonify, render_template
 
 from pickaladder.auth.decorators import login_required
+from pickaladder.core.activity.services import ActivityService
 from pickaladder.user.services.dashboard import (
     _fetch_recent_activity,
     _fetch_vanity_stats,
@@ -46,3 +47,19 @@ def recent_matches() -> Any:
         next_cursor=activity["next_cursor"],
         user=g.user,
     )
+
+
+@bp.route("/activity/<string:activity_id>/react", methods=["POST"])
+@login_required
+def react_to_activity(activity_id: str) -> Any:
+    """Toggle reaction on an activity."""
+    db = firestore.client()
+    user_id = g.user.uid
+
+    reactions = ActivityService.toggle_reaction(db, activity_id, user_id)
+
+    return jsonify({
+        "status": "success",
+        "count": len(reactions),
+        "user_reacted": any(r["userId"] == user_id for r in reactions)
+    })

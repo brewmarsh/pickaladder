@@ -41,10 +41,6 @@ class StandingAggregatorTestCase(unittest.TestCase):
 
     def test_h2h_tie_breaker(self):
         """Test that H2H breaks a tie when wins are equal."""
-        p1_ref = MagicMock(id="p1")
-        p2_ref = MagicMock(id="p2")
-        p3_ref = MagicMock(id="p3")
-
         matches = [
             # p1 beat p2 (H2H)
             {"status": "COMPLETED", "winnerId": "p1", "participants": ["p1", "p2"], "player1Id": "p1", "player2Id": "p2", "player1Score": 11, "player2Score": 9},

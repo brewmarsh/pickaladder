@@ -39,8 +39,8 @@ class SeasonStandingsService:
     """Calculates and aggregates standings for a season."""
 
     @staticmethod
-    def get_season_standings(db: Client, season_id: str) -> list[dict[str, Any]]:
-        """Calculate aggregate standings for a specific season using USAP hierarchy."""
+    def get_season_standings(db: Client, season_id: str, division_index: int | None = None) -> list[dict[str, Any]]:
+        """Calculate aggregate standings for a specific season/division using USAP hierarchy."""
         from pickaladder.core.ranking.aggregator import StandingAggregator
         from pickaladder.group.services.group_service import GroupService
 
@@ -51,18 +51,21 @@ class SeasonStandingsService:
         matches = SeasonRepository.get_season_matches(db, season_id)
 
         # 1. Determine participant pool
-        # For now, we use all group members. Later we can segment by division.
-        group_data = GroupService.get_group_details(db, season["groupId"], "")
-        if not group_data:
-            return []
-
-        # participants is a list of resolved profile dicts
-        participant_ids = [p["user"]["id"] for p in group_data.get("participants", [])]
+        # If division_index is provided, only include those participants
+        if division_index is not None and "divisions" in season and len(season["divisions"]) > division_index:
+            participant_ids = season["divisions"][division_index].get("participant_ids", [])
+        else:
+            # Fallback to all group members
+            group_data = GroupService.get_group_details(db, season["groupId"], "")
+            if not group_data:
+                return []
+            participant_ids = [p["user"]["id"] for p in group_data.get("participants", [])]
 
         # 2. Use Aggregator
         standings = StandingAggregator.aggregate(participant_ids, matches)
 
-        # 3. Enrich with user data (Aggregator returns basic stats + uid)
+        # 3. Enrich with user data (we fetch from group service for simplicity)
+        group_data = GroupService.get_group_details(db, season["groupId"], "")
         user_map = {
             p["user"]["id"]: p["user"]
             for p in group_data.get("participants", [])
@@ -72,3 +75,100 @@ class SeasonStandingsService:
             s["user"] = user_map.get(s["uid"], {"username": "Unknown"})
 
         return standings
+
+
+class SeasonFinalizationService:
+    """Handles season closure and player movements."""
+
+    @staticmethod
+    def calculate_movements(db: Client, season_id: str) -> dict[str, Any]:
+        """
+        Calculate who moves up and down based on standings and season rules.
+        Returns a dict with 'promoted', 'relegated', and 'retained' lists.
+        """
+        season = SeasonRepository.get_by_id(db, season_id)
+        if not season:
+            raise ValueError("Season not found")
+
+        standings = SeasonStandingsService.get_season_standings(db, season_id)
+        rules = season.get("movementRules", {"promotionCount": 0, "relegationCount": 0})
+
+        prom_count = rules.get("promotionCount", 0)
+        rel_count = rules.get("relegationCount", 0)
+
+        # Sort is already handled by aggregator (Matches > H2H > PD)
+        # Promoted: Top X
+        promoted = standings[:prom_count] if prom_count > 0 else []
+
+        # Relegated: Bottom Y
+        relegated = standings[-rel_count:] if rel_count > 0 else []
+
+        # Retained: The rest
+        promoted_uids = {p["uid"] for p in promoted}
+        relegated_uids = {p["uid"] for p in relegated}
+
+        retained = [
+            p for p in standings
+            if p["uid"] not in promoted_uids and p["uid"] not in relegated_uids
+        ]
+
+        return {
+            "promoted": promoted,
+            "relegated": relegated,
+            "retained": retained
+        }
+
+    @staticmethod
+    def finalize_season(db: Client, season_id: str) -> None:
+        """Lock the season and capture final standings snapshot."""
+        from pickaladder.core.activity.models import ActivityType
+        from pickaladder.core.activity.services import ActivityService
+
+        season = SeasonRepository.get_by_id(db, season_id)
+        standings = SeasonStandingsService.get_season_standings(db, season_id)
+
+        # Store snapshot directly on the season document for easy historical access
+        SeasonRepository.update(db, season_id, {
+            "status": "COMPLETED",
+            "finalStandings": standings
+        })
+
+        # Log community activity
+        ActivityService.log_activity(
+            db,
+            "", # System level / generic actor if needed, but here we can use an empty string or omit
+            ActivityType.SEASON_FINALIZED,
+            {
+                "seasonId": season_id,
+                "seasonName": season.get("name") if season else "Unknown Season"
+            }
+        )
+
+    @staticmethod
+    def apply_movements(db: Client, old_season_id: str) -> list[dict[str, Any]]:
+        """
+        Calculate movements and return a suggested divisions list for the NEXT season.
+        Logic:
+        - Div 1 promoted -> stay in Div 1.
+        - Div 2 promoted -> move to Div 1.
+        - Div 1 relegated -> move to Div 2.
+        - etc.
+        """
+        old_season = SeasonRepository.get_by_id(db, old_season_id)
+        if not old_season:
+            return []
+
+        # Currently we only have one 'pool' in get_season_standings.
+        # In a real multi-division setup, we'd iterate through each division.
+        # For MVP: We assume one division and movements are just lists.
+
+        movements = SeasonFinalizationService.calculate_movements(db, old_season_id)
+
+        # Suggested new divisions (for now, just reconstructing the pool)
+        # If we had 3 divisions, this logic would be more complex.
+        # We'll return the flattened suggestions for the next creation form.
+
+        return {
+            "suggested_participants": [p["uid"] for p in movements["promoted"] + movements["retained"]],
+            "relegated_participants": [p["uid"] for p in movements["relegated"]]
+        }

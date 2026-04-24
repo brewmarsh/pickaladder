@@ -5,7 +5,11 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from pickaladder.season.services import SeasonService, SeasonStandingsService
+from pickaladder.season.services import (
+    SeasonFinalizationService,
+    SeasonService,
+    SeasonStandingsService,
+)
 
 
 class SeasonServiceTestCase(unittest.TestCase):
@@ -89,6 +93,54 @@ class SeasonServiceTestCase(unittest.TestCase):
         self.assertEqual(standings[1]["uid"], "p2")
         self.assertEqual(standings[1]["losses"], 2)
         self.assertEqual(standings[1]["point_diff"], -8)
+
+    @patch("pickaladder.season.services.SeasonStandingsService.get_season_standings")
+    @patch("pickaladder.season.services.SeasonRepository")
+    def test_calculate_movements(self, mock_repo, mock_standings):
+        """Test promotion and relegation logic."""
+        # Setup: P1 (1st), P2 (2nd), P3 (3rd), P4 (4th)
+        # Rules: Top 1 promote, Bottom 1 relegate
+        mock_repo.get_by_id.return_value = {
+            "id": "s1",
+            "movementRules": {"promotionCount": 1, "relegationCount": 1}
+        }
+        mock_standings.return_value = [
+            {"uid": "p1", "wins": 3},
+            {"uid": "p2", "wins": 2},
+            {"uid": "p3", "wins": 1},
+            {"uid": "p4", "wins": 0}
+        ]
+
+        movements = SeasonFinalizationService.calculate_movements(self.mock_db, "s1")
+
+        self.assertEqual(len(movements["promoted"]), 1)
+        self.assertEqual(movements["promoted"][0]["uid"], "p1")
+
+        self.assertEqual(len(movements["relegated"]), 1)
+        self.assertEqual(movements["relegated"][0]["uid"], "p4")
+
+        self.assertEqual(len(movements["retained"]), 2)
+        self.assertEqual(movements["retained"][0]["uid"], "p2")
+        self.assertEqual(movements["retained"][1]["uid"], "p3")
+
+    @patch("pickaladder.season.services.SeasonFinalizationService.calculate_movements")
+    @patch("pickaladder.season.services.SeasonRepository")
+    def test_apply_movements(self, mock_repo, mock_calc):
+        """Test the transition suggestion engine."""
+        mock_repo.get_by_id.return_value = {"id": "old_s"}
+        mock_calc.return_value = {
+            "promoted": [{"uid": "p1"}],
+            "relegated": [{"uid": "p4"}],
+            "retained": [{"uid": "p2"}, {"uid": "p3"}]
+        }
+
+        result = SeasonFinalizationService.apply_movements(self.mock_db, "old_s")
+
+        self.assertIn("p1", result["suggested_participants"])
+        self.assertIn("p2", result["suggested_participants"])
+        self.assertIn("p3", result["suggested_participants"])
+        self.assertIn("p4", result["relegated_participants"])
+        self.assertEqual(len(result["suggested_participants"]), 3)
 
 if __name__ == "__main__":
     unittest.main()
