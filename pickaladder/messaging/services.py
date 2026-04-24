@@ -64,3 +64,13 @@ class MessagingService:
             conv["display_avatar"] = other_user.get("profilePictureUrl") if other_user else None
 
         return conversations
+
+    @staticmethod
+    def get_total_unread_count(db: Client, user_id: str) -> int:
+        """Sum the unread counts for a user across all their conversations."""
+        conversations = MessagingRepository.get_user_conversations(db, user_id)
+        total = 0
+        for conv in conversations:
+            unread_dict = conv.get("unreadCount", {})
+            total += unread_dict.get(user_id, 0)
+        return total

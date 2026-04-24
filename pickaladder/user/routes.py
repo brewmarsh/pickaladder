@@ -304,6 +304,26 @@ def create_invite() -> Any:
     return jsonify({"token": token})
 
 
+@bp.route("/api/save_fcm_token", methods=["POST"])
+@login_required
+def save_fcm_token() -> Any:
+    """Save the user's FCM token for push notifications."""
+    token = request.json.get("token")
+    if not token:
+        return jsonify({"success": False, "error": "No token provided"}), 400
+
+    db = firestore.client()
+    user_id = g.user.uid
+
+    # Update the user document with the FCM token
+    db.collection("users").document(user_id).update({
+        "fcmToken": token,
+        "updatedAt": firestore.SERVER_TIMESTAMP
+    })
+
+    return jsonify({"success": True})
+
+
 @bp.route("/api/search")
 @login_required
 def api_search_users() -> Any:

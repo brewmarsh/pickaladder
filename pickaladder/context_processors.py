@@ -147,6 +147,23 @@ def inject_pending_tournament_invites() -> dict[str, Any]:
     return _try_fetch_invites(uid)
 
 
+def inject_unread_messages_count() -> dict[str, Any]:
+    """Injects total unread messaging count into the template context."""
+    from pickaladder.messaging.services import MessagingService
+
+    uid = _get_user_uid()
+    if not uid:
+        return dict(unread_messages_count=0)
+
+    try:
+        db = firestore.client()
+        count = MessagingService.get_total_unread_count(db, uid)
+        return dict(unread_messages_count=count)
+    except Exception as e:
+        _log_context_error("unread messages count", e)
+        return dict(unread_messages_count=0)
+
+
 def inject_firebase_api_key() -> dict[str, Any]:
     """Injects the Firebase API key into the template context."""
     firebase_api_key = current_app.config.get(

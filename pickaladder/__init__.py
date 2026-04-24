@@ -35,6 +35,7 @@ from .context_processors import (
     inject_global_context,
     inject_incoming_requests_count,
     inject_pending_tournament_invites,
+    inject_unread_messages_count,
 )
 from .extensions import csrf, login_manager, mail
 from .user.helpers import smart_display_name, wrap_user
@@ -237,6 +238,7 @@ def _register_template_utilities(app: Flask) -> None:
     app.context_processor(inject_global_context)
     app.context_processor(inject_incoming_requests_count)
     app.context_processor(inject_pending_tournament_invites)
+    app.context_processor(inject_unread_messages_count)
     app.context_processor(inject_firebase_api_key)
 
     # Filters
