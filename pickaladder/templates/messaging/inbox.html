@@ -37,9 +37,9 @@
                                             {{ conv.lastMessage or 'No messages yet' }}
                                         </div>
                                     </div>
-                                    {% if conv.unreadCount and conv.unreadCount.get(user.uid, 0) > 0 %}
+                                    {% if conv.unreadCount and conv.unreadCount.get(g.user.uid, 0) > 0 %}
                                         <span class="badge badge-volt rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.7rem;">
-                                            {{ conv.unreadCount[user.uid] }}
+                                            {{ conv.unreadCount[g.user.uid] }}
                                         </span>
                                     {% endif %}
                                 </a>

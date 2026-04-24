@@ -14,15 +14,15 @@
                 
                 <div id="message-container" class="card-body overflow-auto p-4 d-flex flex-column" 
                      data-conversation-id="{{ conversation.id }}"
-                     data-current-user-id="{{ user.uid }}"
+                     data-current-user-id="{{ g.user.uid }}"
                      style="height: 500px;">
                     {% if messages %}
                         {% for msg in messages %}
-                            <div class="chat-bubble-container d-flex {% if msg.senderId == user.uid %}justify-content-end{% endif %} mb-3">
-                                <div class="chat-bubble px-3 py-2 rounded shadow-sm {% if msg.senderId == user.uid %}bg-volt text-dark{% else %}bg-secondary text-white{% endif %}" 
+                            <div class="chat-bubble-container d-flex {% if msg.senderId == g.user.uid %}justify-content-end{% endif %} mb-3">
+                                <div class="chat-bubble px-3 py-2 rounded shadow-sm {% if msg.senderId == g.user.uid %}bg-volt text-dark{% else %}bg-secondary text-white{% endif %}" 
                                      style="max-width: 75%; overflow-wrap: break-word;">
                                     <div style="font-size: 0.9rem;">{{ msg.content }}</div>
-                                    <div class="mt-1 {% if msg.senderId == user.uid %}text-dark-50{% else %}text-muted{% endif %}" 
+                                    <div class="mt-1 {% if msg.senderId == g.user.uid %}text-dark-50{% else %}text-muted{% endif %}" 
                                          style="font-size: 0.65rem; text-align: right;">
                                         {{ msg.timestamp.strftime('%I:%M %p') if msg.timestamp and hasattr(msg.timestamp, 'strftime') else '' }}
                                     </div>

@@ -52,7 +52,7 @@
                     </div>
 
                     <div class="px-2">
-                        {% if user.uid != profile_user.id and is_friend %}
+                        {% if g.user.uid != profile_user.id and is_friend %}
                         <a href="{{ url_for('messaging.start_chat', other_user_id=profile_user.id) }}"
                             class="btn btn-outline-volt btn-block mb-2">Message</a>
                         {% endif %}
