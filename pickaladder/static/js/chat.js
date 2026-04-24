@@ -108,13 +108,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
 
-    // Intercept form submission for "instant" feel (optional, but requested in task)
-    const form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', function() {
-            // The Firestore listener will pick up the change after the server writes it,
-            // or we could optimistically add it here.
-            // For now, we rely on Firestore's speed.
+    // Intercept form submission for "instant" feel
+    const chatForm = container.closest('.card').querySelector('form');
+    if (chatForm) {
+        chatForm.addEventListener('submit', function() {
             setTimeout(scrollToBottom, 100);
         });
     }

@@ -9,7 +9,12 @@
             <div class="card bg-dark text-white border-0 shadow-sm flex-grow-1 overflow-hidden">
                 <div class="card-header border-bottom border-secondary bg-transparent d-flex align-items-center gap-3">
                     <a href="{{ url_for('messaging.inbox') }}" class="text-white"><i class="fas fa-arrow-left"></i></a>
-                    <h2 class="mb-0 h5">Chat</h2>
+                    <h2 class="mb-0 h5">
+                        Chat
+                        {% if conversation.type == 'group_announcement' %}
+                        <span class="badge badge-primary ml-2"><i class="fas fa-bullhorn"></i> Announcement</span>
+                        {% endif %}
+                    </h2>
                 </div>
                 
                 <div id="message-container" class="card-body overflow-auto p-4 d-flex flex-column" 
@@ -37,14 +42,20 @@
                 </div>
 
                 <div class="card-footer border-top border-secondary bg-transparent p-3">
-                    <form action="{{ url_for('messaging.send', conversation_id=conversation.id) }}" method="POST" class="d-flex gap-2">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="text" name="content" class="form-control bg-dark border-secondary text-white" 
-                               placeholder="Type a message..." required autocomplete="off">
-                        <button type="submit" class="btn btn-volt">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </form>
+                    {% if conversation.type == 'group_announcement' and g.user.uid != conversation.ownerId %}
+                        <div class="text-center text-muted py-2">
+                            <i class="fas fa-lock"></i> This is a read-only announcement channel.
+                        </div>
+                    {% else %}
+                        <form action="{{ url_for('messaging.send', conversation_id=conversation.id) }}" method="POST" class="d-flex gap-2">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="text" name="content" class="form-control bg-dark border-secondary text-white" 
+                                   placeholder="Type a message..." required autocomplete="off">
+                            <button type="submit" class="btn btn-volt">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    {% endif %}
                 </div>
             </div>
         </div>
