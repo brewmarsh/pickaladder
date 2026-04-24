@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from enum import Enum
+
 """Global constants for the pickaladder application."""
 
 # Database-related constants
@@ -73,3 +77,19 @@ JOKES = [
     "means nothing.",
     "What do you serve but not eat? A tennis ball.",
 ]
+
+
+class Visibility(str, Enum):
+    """Visibility levels for groups and divisions."""
+
+    PUBLIC = "PUBLIC"
+    UNLISTED = "UNLISTED"
+    PRIVATE = "PRIVATE"
+
+
+class JoinPolicy(str, Enum):
+    """Membership join policies."""
+
+    OPEN = "OPEN"
+    REQUEST = "REQUEST"
+    INVITE = "INVITE"

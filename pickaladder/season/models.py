@@ -9,6 +9,8 @@ class Division(TypedDict, total=False):
     """Represents a sub-grouping within a season."""
     name: str
     participant_ids: list[str]
+    visibility: str  # PUBLIC, UNLISTED, PRIVATE
+    join_policy: str  # OPEN, REQUEST, INVITE
 
 
 class MovementRules(TypedDict):
