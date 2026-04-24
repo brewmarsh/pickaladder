@@ -24,6 +24,7 @@ from . import error_handlers
 from . import group as group_bp
 from . import main as main_bp
 from . import match as match_bp
+from . import messaging as messaging_bp
 from . import season as season_bp
 from . import teams as teams_bp
 from . import tournament as tournament_bp
@@ -182,6 +183,7 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(match_bp.bp)
     app.register_blueprint(group_bp.bp)
     app.register_blueprint(season_bp.bp)
+    app.register_blueprint(messaging_bp.bp)
     app.register_blueprint(teams_bp.bp)
     app.register_blueprint(tournament_bp.bp)
     from .api import stats_routes

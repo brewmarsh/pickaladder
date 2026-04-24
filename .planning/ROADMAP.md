@@ -17,22 +17,23 @@
 - [x] **Phase 13: Promotion & Relegation Logic** - Automated movement between divisions based on season results.
 - [x] **Phase 14: Seasonal Analytics & Reporting** - Deep dive into player performance trends across multiple seasons.
 - [x] **Phase 15: Social Engagement & Feed** - Enhancing community interaction with a global activity feed and reactions.
-- [ ] **Phase 16: Mobile-First Optimization & PWA** - Deep focus on offline usage and mobile courtside UX.
+- [x] **Phase 16: Mobile-First Optimization & PWA** - Deep focus on offline usage and mobile courtside UX.
+- [ ] **Phase 17: Community Messaging & Real-time Chat** - Enabling direct player-to-player communication for match coordination.
 
 ---
 
 ## Phase Details
 
-### Phase 16: Mobile-First Optimization & PWA
-**Goal**: Ensure a premium, app-like experience for players recording matches courtside, even with poor connectivity.
+### Phase 17: Community Messaging & Real-time Chat
+**Goal**: Facilitate match coordination and community building via a secure, real-time messaging system.
 **Depends on**: Phase 15
 **Success Criteria**:
-  1. Lighthouse "PWA" score > 90.
-  2. "Record Match" flow completed in under 3 taps from the dashboard on mobile.
-  3. App remains functional for viewing recent activity without an active internet connection.
+  1. Users can send and receive direct messages.
+  2. Group-level announcement channels for group owners.
+  3. Real-time notifications for new messages.
 **Plans**:
-- [x] 16-01-PLAN.md — PWA Manifest & App-Like Foundation.
-- [x] 16-02-PLAN.md — Offline Sync & Service Worker Logic.
+- [ ] 17-01-PLAN.md — Messaging Infrastructure & Direct Chat.
+- [ ] 17-02-PLAN.md — Real-time Notifications & Push.
 
 ---
 
@@ -56,3 +57,4 @@
 | 14. Seasonal Analytics | 2/2 | Completed | 2026-04-24 |
 | 15. Social Engagement | 2/2 | Completed | 2026-04-24 |
 | 16. Mobile Optimization | 2/2 | Completed | 2026-04-24 |
+| 17. Community Messaging | 0/2 | In Progress | - |

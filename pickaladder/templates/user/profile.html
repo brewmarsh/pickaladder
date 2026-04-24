@@ -52,6 +52,11 @@
                     </div>
 
                     <div class="px-2">
+                        {% if user.uid != profile_user.id %}
+                        <a href="{{ url_for('messaging.start_chat', other_user_id=profile_user.id) }}"
+                            class="btn btn-outline-volt btn-block mb-2">Message</a>
+                        {% endif %}
+
                         {% if is_friend %}
                         <a href="{{ url_for('match.record_match', opponent_id=profile_user.id) }}"
                             class="btn btn-volt btn-block mb-2">Record Match</a>

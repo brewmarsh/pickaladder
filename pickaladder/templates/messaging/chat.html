@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+
+{% block title %}Chat{% endblock %}
+
+{% block content %}
+<div class="container mt-4 h-100">
+    <div class="row justify-content-center h-100">
+        <div class="col-md-8 d-flex flex-column" style="max-height: 80vh;">
+            <div class="card bg-dark text-white border-0 shadow-sm flex-grow-1 overflow-hidden">
+                <div class="card-header border-bottom border-secondary bg-transparent d-flex align-items-center gap-3">
+                    <a href="{{ url_for('messaging.inbox') }}" class="text-white"><i class="fas fa-arrow-left"></i></a>
+                    <h2 class="mb-0 h5">Chat</h2>
+                </div>
+                
+                <div id="message-container" class="card-body overflow-auto p-4 d-flex flex-column gap-3">
+                    {% if messages %}
+                        {% for msg in messages %}
+                            <div class="chat-bubble-container d-flex {% if msg.senderId == user.uid %}justify-content-end{% endif %}">
+                                <div class="chat-bubble px-3 py-2 rounded shadow-sm {% if msg.senderId == user.uid %}bg-volt text-dark{% else %}bg-secondary text-white{% endif %}" 
+                                     style="max-width: 75%; overflow-wrap: break-word;">
+                                    <div class="fs-xs">{{ msg.content }}</div>
+                                    <div class="fs-xxxxs mt-1 {% if msg.senderId == user.uid %}text-dark-50{% else %}text-muted{% endif %} text-right">
+                                        {{ msg.timestamp.strftime('%I:%M %p') if hasattr(msg.timestamp, 'strftime') else '' }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="flex-grow-1 d-flex align-items-center justify-content-center text-muted">
+                            <small>Say hello! 👋</small>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer border-top border-secondary bg-transparent p-3">
+                    <form action="{{ url_for('messaging.send', conversation_id=conversation.id) }}" method="POST" class="d-flex gap-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="text" name="content" class="form-control bg-dark border-secondary text-white" 
+                               placeholder="Type a message..." required autocomplete="off">
+                        <button type="submit" class="btn btn-volt">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('message-container');
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    });
+</script>
+{% endblock %}
