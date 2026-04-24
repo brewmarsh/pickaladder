@@ -1,0 +1,38 @@
+<div id="offline-indicator" class="alert alert-warning py-1 px-3 m-0 border-0 rounded-0 text-center" style="display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;">
+    <small><i class="fas fa-wifi-slash mr-2"></i> Working Offline. Matches will be synced when you reconnect.</small>
+</div>
+
+<div id="sync-status" class="position-fixed bottom-0 right-0 p-3" style="z-index: 9999; display: none;">
+    <div class="sync-toast show bg-dark text-white border-secondary p-3 rounded shadow">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <strong class="me-auto"><i class="fas fa-sync fa-spin text-volt mr-2"></i> Syncing Data</strong>
+        </div>
+        <div class="fs-xxs">
+            Uploading <span id="pending-sync-count">0</span> pending matches...
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const indicator = document.getElementById('offline-indicator');
+        
+        function updateOnlineStatus() {
+            if (navigator.onLine) {
+                indicator.style.display = 'none';
+                // Trigger sync
+                if (window.triggerOfflineSync) {
+                    window.triggerOfflineSync();
+                }
+            } else {
+                indicator.style.display = 'block';
+            }
+        }
+
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        
+        // Initial check
+        updateOnlineStatus();
+    })();
+</script>

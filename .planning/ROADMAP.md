@@ -23,16 +23,16 @@
 
 ## Phase Details
 
-### Phase 15: Social Engagement & Feed
-**Goal**: Transform pickaladder into a more interactive community by surfacing activity and enabling social engagement.
-**Depends on**: Phase 14
+### Phase 16: Mobile-First Optimization & PWA
+**Goal**: Ensure a premium, app-like experience for players recording matches courtside, even with poor connectivity.
+**Depends on**: Phase 15
 **Success Criteria**:
-  1. Users see a live feed of recent matches and season completions on their dashboard.
-  2. Users can react to feed items with at least one interaction type (e.g., "Cheer").
-  3. Feed is enriched with user profile data for a social feel.
+  1. Lighthouse "PWA" score > 90.
+  2. "Record Match" flow completed in under 3 taps from the dashboard on mobile.
+  3. App remains functional for viewing recent activity without an active internet connection.
 **Plans**:
-- [x] 15-01-PLAN.md — Event Logging & Base Feed.
-- [x] 15-02-PLAN.md — Social Reactions & Interactive Engagement.
+- [x] 16-01-PLAN.md — PWA Manifest & App-Like Foundation.
+- [x] 16-02-PLAN.md — Offline Sync & Service Worker Logic.
 
 ---
 
@@ -55,3 +55,4 @@
 | 13. Promotion & Relegation | 2/2 | Completed | 2026-04-24 |
 | 14. Seasonal Analytics | 2/2 | Completed | 2026-04-24 |
 | 15. Social Engagement | 2/2 | Completed | 2026-04-24 |
+| 16. Mobile Optimization | 2/2 | Completed | 2026-04-24 |

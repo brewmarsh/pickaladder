@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pickaladder-cache-v0.10.1';
+const CACHE_NAME = 'pickaladder-cache-v16.0.1';
 const OFFLINE_URL = '/offline';
 
 const ASSETS_TO_CACHE = [
@@ -15,10 +15,9 @@ const ASSETS_TO_CACHE = [
   '/static/mobile.css',
   '/static/js/main.js',
   '/static/js/navbar.js',
-  '/static/img/logo.png',
-  '/static/img/icon-192.png',
-  '/static/img/icon-512.png',
   '/static/pickaladder_logo_64.png',
+  '/static/img/pwa/icon-192.png',
+  '/static/img/pwa/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Oswald:wght@300;400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'
 ];

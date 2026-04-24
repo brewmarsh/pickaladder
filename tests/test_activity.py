@@ -18,7 +18,7 @@ class ActivityServiceTestCase(unittest.TestCase):
         """Test recording a community event."""
         # Directly call the static method to bypass any class-level patching issues
         from pickaladder.core.activity.services import ActivityService as OrigService
-        
+
         mock_coll = self.mock_db.collection.return_value
         mock_doc = mock_coll.document.return_value
         mock_doc.id = "act123"
@@ -26,7 +26,7 @@ class ActivityServiceTestCase(unittest.TestCase):
         act_id = OrigService.log_activity(
             self.mock_db, "user1", "MATCH_COMPLETED", {"score": "11-5"}
         )
-        
+
         self.assertEqual(act_id, "act123")
         mock_doc.set.assert_called_once()
         args = mock_doc.set.call_args[0][0]

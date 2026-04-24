@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#84CC16">
+    <meta name="theme-color" content="#111827">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     {% block extra_meta %}{% endblock %}
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='pickaladder_logo_64.png') }}">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <title>pickaladder{% if config['FLASK_ENV'] == 'beta' %} (BETA){% endif %} - {% block title %}{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -57,6 +57,7 @@
     </div>
     {% endif %}
     {% include 'navbar.html' %}
+    {% include 'components/_offline_indicator.html' %}
 
     <div class="toast-container">
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -110,6 +111,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/offline_store.js') }}"></script>
     <script src="{{ url_for('static', filename='js/navbar.js') }}"></script>
 
     <script>

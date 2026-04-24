@@ -97,7 +97,7 @@ class SessionMatchRecordingTestCase(unittest.TestCase):
         return {"Authorization": "Bearer mock-token"}
 
     @patch("pickaladder.match.routes.MatchCommandService.record_match")
-    def test_record_match_with_session_id(self, mock_record_match: MagicMock) -> None:        
+    def test_record_match_with_session_id(self, mock_record_match: MagicMock) -> None:
         """Test that recording a match with session_id redirects to quick log."""
         self._set_session_user()
 

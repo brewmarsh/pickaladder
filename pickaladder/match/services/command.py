@@ -4,12 +4,12 @@ import datetime
 from typing import TYPE_CHECKING, Any, cast
 
 from pickaladder.base.repository import BaseRepository
+from pickaladder.core.activity.models import ActivityType
+from pickaladder.core.activity.services import ActivityService
 from pickaladder.match.models import MatchResult, MatchSubmission
 from pickaladder.teams.services import TeamService
 from pickaladder.user.services.core import get_avatar_url, smart_display_name
 
-from pickaladder.core.activity.models import ActivityType
-from pickaladder.core.activity.services import ActivityService
 from .calculator import MatchStatsCalculator
 from .match_stats_updater import MatchStatsUpdater
 from .match_validation import MatchValidationService

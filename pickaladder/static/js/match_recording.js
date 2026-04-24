@@ -245,4 +245,32 @@ document.addEventListener('DOMContentLoaded', function() {
             elements.predictionPreview.style.display = 'none';
         }
     }
+
+    // Offline Interceptor
+    const form = document.getElementById('record-match-form');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            if (navigator.onLine) return; // Proceed normally if online
+
+            e.preventDefault();
+            console.log('Offline detected. Saving match locally...');
+
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => data[key] = value);
+
+            try {
+                await window.offlineStore.saveMatch(data);
+                
+                // Show a fake success message or redirect
+                alert('Offline: Match saved locally. It will be uploaded automatically when you reconnect.');
+                
+                // Redirect back to dashboard to maintain flow
+                window.location.href = '/user/dashboard';
+            } catch (err) {
+                console.error('Failed to save match offline:', err);
+                alert('Error saving match offline. Please try again.');
+            }
+        });
+    }
 });
