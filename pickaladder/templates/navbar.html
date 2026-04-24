@@ -26,7 +26,12 @@
                 <a href="{{ url_for('user.dashboard') }}"
                     class="nav-link {{ 'active' if request.endpoint == 'user.dashboard' }}" data-testid="navbar__dashboard-link">📈 Dashboard</a>
                 <a href="{{ url_for('messaging.inbox') }}"
-                    class="nav-link {{ 'active' if request.endpoint == 'messaging.inbox' }}">💬 Messages</a>
+                    class="nav-link {{ 'active' if request.endpoint == 'messaging.inbox' }}" style="position: relative;">
+                    💬 Messages
+                    <span id="unread-messages-badge" class="notification-badge" {% if not unread_messages_count or unread_messages_count == 0 %}style="display: none;"{% endif %}>
+                        {{ unread_messages_count if unread_messages_count > 0 else '' }}
+                    </span>
+                </a>
                 <a href="{{ url_for('user.view_community') }}"
                     class="nav-link {{ 'active' if request.endpoint == 'user.view_community' }}"
                     style="position: relative;" data-testid="navbar__community-link">
@@ -94,8 +99,14 @@
             {% if g.user %}
             <a href="{{ url_for('user.dashboard') }}" class="mobile-nav-link"><i class="fas fa-home me-2"></i>
                 Dashboard</a>
-            <a href="{{ url_for('messaging.inbox') }}" class="mobile-nav-link"><i class="fas fa-comment-dots me-2"></i>
-                Messages</a>
+            <a href="{{ url_for('messaging.inbox') }}" class="mobile-nav-link" style="position: relative;">
+                <i class="fas fa-comment-dots me-2"></i>
+                Messages
+                <span id="unread-messages-badge-mobile" class="notification-badge"
+                    style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); {% if not unread_messages_count or unread_messages_count == 0 %}display: none;{% endif %}">
+                    {{ unread_messages_count if unread_messages_count > 0 else '' }}
+                </span>
+            </a>
             <a href="{{ url_for('user.view_community') }}" class="mobile-nav-link" style="position: relative;">
                 <i class="fas fa-users me-2"></i> Community
                 {% if incoming_requests_count > 0 %}
