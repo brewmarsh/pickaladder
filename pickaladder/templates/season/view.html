@@ -40,7 +40,8 @@
                             <th class="text-center" style="width: 80px;">Rank</th>
                             <th>Player</th>
                             <th class="text-center">W-L</th>
-                            <th class="text-center">Win %</th>
+                            <th class="text-center">PF</th>
+                            <th class="text-center">PA</th>
                             <th class="text-center">PD</th>
                         </tr>
                     </thead>
@@ -58,10 +59,16 @@
                                     <img src="{{ entry.user | avatar_url }}" class="avatar avatar-sm mr-2" 
                                         onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                                     <span class="font-bold">{{ entry.user.username }}</span>
+                                    {% if entry.tie_break_reason %}
+                                        <span class="badge badge-info ml-2" style="font-size: 0.6rem;" title="Tie-breaker applied: {{ entry.tie_break_reason }}">
+                                            {{ entry.tie_break_reason }}
+                                        </span>
+                                    {% endif %}
                                 </div>
                             </td>
                             <td class="text-center font-score">{{ entry.wins }}-{{ entry.losses }}</td>
-                            <td class="text-center">{{ entry.win_percentage | round(1) }}%</td>
+                            <td class="text-center">{{ entry.points_for }}</td>
+                            <td class="text-center">{{ entry.points_against }}</td>
                             <td class="text-center {% if entry.point_diff > 0 %}text-success{% elif entry.point_diff < 0 %}text-danger{% endif %} font-bold">
                                 {{ entry.point_diff }}
                             </td>

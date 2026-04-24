@@ -31,8 +31,9 @@ class SeasonServiceTestCase(unittest.TestCase):
         self.assertEqual(season_id, "season1")
         mock_repo.create.assert_called_once_with(self.mock_db, data)
 
+    @patch("pickaladder.group.services.group_service.GroupService.get_group_details")
     @patch("pickaladder.season.services.SeasonRepository")
-    def test_calculate_standings(self, mock_repo):
+    def test_calculate_standings(self, mock_repo, mock_group_service):
         """Test calculating standings from matches."""
         # 2 matches:
         # Match 1: p1 beats p2 11-5
@@ -66,19 +67,15 @@ class SeasonServiceTestCase(unittest.TestCase):
             }
         ]
         mock_repo.get_season_matches.return_value = matches
+        mock_repo.get_by_id.return_value = {"id": "s1", "groupId": "g1"}
 
-        # Mock user fetch
-        u1_snap = MagicMock()
-        u1_snap.exists = True
-        u1_snap.id = "p1"
-        u1_snap.to_dict.return_value = {"username": "Player 1"}
-
-        u2_snap = MagicMock()
-        u2_snap.exists = True
-        u2_snap.id = "p2"
-        u2_snap.to_dict.return_value = {"username": "Player 2"}
-
-        self.mock_db.get_all.return_value = [u1_snap, u2_snap]
+        # Mock group service to return participant ids
+        mock_group_service.return_value = {
+            "participants": [
+                {"user": {"id": "p1", "username": "Player 1"}},
+                {"user": {"id": "p2", "username": "Player 2"}}
+            ]
+        }
 
         standings = SeasonStandingsService.get_season_standings(self.mock_db, "s1")
 

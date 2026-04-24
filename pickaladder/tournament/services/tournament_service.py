@@ -5,6 +5,7 @@ import math
 from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
+
 from pickaladder.utils import send_email
 
 from .base import TournamentBase
@@ -34,7 +35,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
 
         tournament = TournamentService.get_tournament(t_id, db=db)
         fmt = str(tournament.get("format", "ROUND_ROBIN")).upper()
-        
+
         if fmt in ["SINGLE_ELIMINATION", "DOUBLE_ELIMINATION"]:
             # Handle Grand Final Reset
             if match_data.get("isGrandFinal") and fmt == "DOUBLE_ELIMINATION":
@@ -43,7 +44,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
 
             # Advance Winner
             TournamentService._advance_winner(db, t_id, match_data, winner_uid)
-            
+
             # Handle Loser for Double Elimination
             if fmt == "DOUBLE_ELIMINATION" and match_data.get("bracketType") == "WINNERS":
                 TournamentService._drop_loser(db, t_id, match_data)
@@ -144,12 +145,12 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
 
         # DE Formula: 1->1, 2->2, 3->4, 4->6...
         next_round = 1 if current_round == 1 else (2 * current_round) - 2
-        
+
         from pickaladder.tournament.services.generator import TournamentGenerator
         t_data = TournamentService.get_tournament(t_id, db=db)
         p_count = len(t_data.get("participant_ids", []))
         bracket_size = TournamentGenerator._next_power_of_2(p_count)
-        
+
         num_winners_matches = bracket_size // (2 ** current_round)
         next_pos = (num_winners_matches - 1) - current_pos
 

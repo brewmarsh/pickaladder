@@ -40,67 +40,35 @@ class SeasonStandingsService:
 
     @staticmethod
     def get_season_standings(db: Client, season_id: str) -> list[dict[str, Any]]:
-        """Calculate aggregate standings for a specific season."""
+        """Calculate aggregate standings for a specific season using USAP hierarchy."""
+        from pickaladder.core.ranking.aggregator import StandingAggregator
+        from pickaladder.group.services.group_service import GroupService
+
+        season = SeasonRepository.get_by_id(db, season_id)
+        if not season:
+            return []
+
         matches = SeasonRepository.get_season_matches(db, season_id)
 
-        # Aggregate by participant
-        # { uid: { wins, losses, points_for, points_against } }
-        stats: dict[str, dict[str, Any]] = {}
+        # 1. Determine participant pool
+        # For now, we use all group members. Later we can segment by division.
+        group_data = GroupService.get_group_details(db, season["groupId"], "")
+        if not group_data:
+            return []
 
-        def ensure_player(uid: str):
-            if uid not in stats:
-                stats[uid] = {
-                    "uid": uid,
-                    "wins": 0,
-                    "losses": 0,
-                    "points_for": 0,
-                    "points_against": 0,
-                }
+        # participants is a list of resolved profile dicts
+        participant_ids = [p["user"]["id"] for p in group_data.get("participants", [])]
 
-        for m in matches:
-            if m.get("status") != "COMPLETED":
-                continue
+        # 2. Use Aggregator
+        standings = StandingAggregator.aggregate(participant_ids, matches)
 
-            winner_id = m.get("winnerId")
-            participants = m.get("participants", [])
-            s1 = m.get("player1Score", 0)
-            s2 = m.get("player2Score", 0)
+        # 3. Enrich with user data (Aggregator returns basic stats + uid)
+        user_map = {
+            p["user"]["id"]: p["user"]
+            for p in group_data.get("participants", [])
+        }
 
-            for p in participants:
-                ensure_player(p)
-                if p == winner_id:
-                    stats[p]["wins"] += 1
-                else:
-                    stats[p]["losses"] += 1
+        for s in standings:
+            s["user"] = user_map.get(s["uid"], {"username": "Unknown"})
 
-                # Point diff logic (assuming singles for now, doubles needs team mapping)
-                # Find if p was p1 or p2
-                p1_id = m.get("player1Ref").id if m.get("player1Ref") else None
-                if p == p1_id:
-                    stats[p]["points_for"] += s1
-                    stats[p]["points_against"] += s2
-                else:
-                    stats[p]["points_for"] += s2
-                    stats[p]["points_against"] += s1
-
-        # Convert to list and enrich with user data
-        standings = []
-        user_ids = list(stats.keys())
-        if user_ids:
-            user_refs = [db.collection("users").document(uid) for uid in user_ids]
-            user_snaps = db.get_all(user_refs)
-            user_map = {
-                snap.id: (snap.to_dict() | {"id": snap.id})
-                for snap in user_snaps if snap.exists
-            }
-
-            for uid, s in stats.items():
-                s["user"] = user_map.get(uid, {"username": "Unknown"})
-                s["point_diff"] = s["points_for"] - s["points_against"]
-                total = s["wins"] + s["losses"]
-                s["win_percentage"] = (s["wins"] / total * 100) if total > 0 else 0
-                standings.append(s)
-
-        # Sort by Wins (desc), then Point Diff (desc)
-        standings.sort(key=lambda x: (x["wins"], x["point_diff"]), reverse=True)
         return standings

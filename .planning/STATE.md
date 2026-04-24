@@ -2,36 +2,38 @@
 
 ## Project Reference
 **Core Value:** A robust and professional platform for pickleball ladder management that prioritizes ranking integrity and seamless external integrations.
-**Current Focus:** Awaiting Next Milestone Definition
+**Current Focus:** Phase 12 - Advanced Standings & Tie-breaks
 
 ## Current Position
-**Phase:** 11 - Season Infrastructure (Complete)
-**Plan:** Milestone 6 Review Complete
-**Status:** Milestone 6 (Advanced Tournaments & Season Standings) 100% Complete. All quality gates passed.
+**Phase:** 12 - Advanced Standings & Tie-breaks
+**Plan:** 12-01 (Complete) -> 12-02 (Next)
+**Status:** Standing Aggregator implemented with USAP hierarchical tie-breaking.
 
-[####################] 100% (Overall Progress)
+[####################] 100% (Overall Progress) - Milestone 6
+[##########----------] 50% (Phase 12 Progress)
 
 ## Performance Metrics
 - **Phase 1-11 Completion:** 100%
-- **Critical Path Hygiene:** Green (200/200 tests passing)
+- **Phase 12-01 Completion:** 100%
+- **Critical Path Hygiene:** Green (203/203 tests passing)
 
 ## Accumulated Context
 
 ### Decisions
-- **Bracket Logic:** Implemented crossover mapping for losers and Grand Final bracket reset logic.
-- **Service Integration:** Unified `TournamentService` for robust progression handling.
-- **Season Standings:** Real-time aggregation for temporal ranking segmentation.
+- **Aggregator Logic:** Implemented a multi-pass grouping and recursive resolution strategy to satisfy the "Reset Rule".
+- **Enrichment:** `SeasonStandingsService` now delegates aggregation to `StandingAggregator` and performs user-profile enrichment afterwards.
 
 ### Todos
-- [ ] Implement Phase 12 (Advanced Tie-breaks).
-- [ ] Add Season-end Promotion/Relegation automation.
+- [ ] Implement `tie_break_reason` metadata in the aggregator.
+- [ ] Update Season View to display the tie-break reason for relevant players.
+- [ ] Research Phase 13 (Promotion/Relegation).
 
 ### Blockers
 - None.
 
 ## Session Continuity
 **Last Session:**
-- Stabilized tournament progression logic and fixed mock environments in tests.
-- Resolved E2E redirect ambiguity.
-- Finalized Season Standings aggregation.
-- Reached 100% test coverage for new features (200 total tests).
+- Implemented `StandingAggregator` core.
+- Refactored `SeasonStandingsService` to use the aggregator.
+- Added PF/PA/PD columns to the standings dashboard.
+- Verified with unit tests and resolved linting magic numbers.

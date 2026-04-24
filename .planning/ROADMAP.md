@@ -19,17 +19,16 @@
 
 ## Phase Details
 
-### Phase 11: Season Infrastructure
-**Goal**: Create a recurring "Season" model to manage leagues, promotion/relegation, and historical standings.
-**Depends on**: Phase 10
+### Phase 12: Advanced Standings & Tie-breaks
+**Goal**: Implement robust, tournament-standard standing aggregation with complex tie-break rules.
+**Depends on**: Phase 11
 **Success Criteria**:
-  1. CRUD for Seasons (Name, Dates, Status).
-  2. Standings Service aggregating match performance within season windows.
-  3. Visual standings dashboard with ranks, W-L, and Point Differential.
-  4. Divisions support for segmenting large group seasons.
+  1. Rankings correctly reflect H2H results when match wins are equal.
+  2. Three-way ties are resolved via Point Differential or Reset Rule.
+  3. Standings dashboard displays all data points used in the hierarchy.
 **Plans**:
-- [x] 11-01-PLAN.md — Season Data Model & CRUD.
-- [x] 11-02-PLAN.md — Division Support & Standings Aggregation.
+- [x] 01-PLAN.md — Standing Aggregator Core.
+- [ ] 02-PLAN.md — Tie-break Reason UI.
 
 ---
 
@@ -48,3 +47,4 @@
 | 9. Group/Team UX Modernization | 3/3 | Completed | 2026-04-22 |
 | 10. Elimination Formats | 4/4 | Completed | 2026-04-23 |
 | 11. Season Infrastructure | 2/2 | Completed | 2026-04-23 |
+| 12. Advanced Standings | 1/2 | In Progress | - |
