@@ -40,6 +40,9 @@ def chat(conversation_id: str) -> Any:
         flash("You do not have access to this conversation.", "danger")
         return redirect(url_for(".inbox"))
 
+    # Mark as read
+    MessagingService.mark_as_read(db, conversation_id, g.user.uid)
+
     return render_template(
         "messaging/chat.html",
         conversation=conv,

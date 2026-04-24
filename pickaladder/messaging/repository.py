@@ -64,14 +64,37 @@ class MessagingRepository(BaseRepository):
     def add_message(cls, db: Client, conversation_id: str, message_data: dict[str, Any]) -> str:
         """Append a message to a conversation and update metadata."""
         conv_ref = db.collection(cls.COLLECTION_NAME).document(conversation_id)
+
+        # Fetch participants to handle unread counts
+        conv_doc = conv_ref.get()
+        participants = conv_doc.to_dict().get("participants", []) if conv_doc.exists else []
+
+        sender_id = message_data.get("senderId")
+        recipient_id = next((p for p in participants if p != sender_id), None)
+
         msg_ref = conv_ref.collection("messages").document()
 
         batch = db.batch()
         batch.set(msg_ref, message_data | {"timestamp": firestore.SERVER_TIMESTAMP})
-        batch.update(conv_ref, {
+
+        updates = {
             "lastMessage": message_data.get("content", "")[:100],
+            "lastMessageSenderId": sender_id,
             "updatedAt": firestore.SERVER_TIMESTAMP
-        })
+        }
+
+        if recipient_id:
+            updates[f"unreadCount.{recipient_id}"] = firestore.Increment(1)
+
+        batch.update(conv_ref, updates)
         batch.commit()
 
         return msg_ref.id
+
+    @classmethod
+    def mark_as_read(cls, db: Client, conversation_id: str, user_id: str) -> None:
+        """Reset unread count for a user in a conversation."""
+        conv_ref = db.collection(cls.COLLECTION_NAME).document(conversation_id)
+        conv_ref.update({
+            f"unreadCount.{user_id}": 0
+        })

@@ -48,5 +48,11 @@ class MessagingServiceTestCase(unittest.TestCase):
         self.assertEqual(args["content"], "Hello")
         self.assertEqual(args["senderId"], "u1")
 
+    @patch("pickaladder.messaging.services.MessagingRepository")
+    def test_mark_as_read(self, mock_repo):
+        """Test marking a conversation as read."""
+        MessagingService.mark_as_read(self.mock_db, "conv1", "u1")
+        mock_repo.mark_as_read.assert_called_once_with(self.mock_db, "conv1", "u1")
+
 if __name__ == "__main__":
     unittest.main()

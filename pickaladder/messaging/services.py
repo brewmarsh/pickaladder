@@ -45,6 +45,11 @@ class MessagingService:
         return MessagingRepository.add_message(db, conversation_id, msg_data)
 
     @staticmethod
+    def mark_as_read(db: Client, conversation_id: str, user_id: str) -> None:
+        """Resets the unread count for that user in the conversation."""
+        MessagingRepository.mark_as_read(db, conversation_id, user_id)
+
+    @staticmethod
     def get_inbox(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Retrieves the user's conversation list with enriched participant names."""
         from pickaladder.user.services import UserService
