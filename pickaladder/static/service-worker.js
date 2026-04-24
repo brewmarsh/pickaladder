@@ -1,6 +1,36 @@
 const CACHE_NAME = 'pickaladder-cache-v16.0.1';
 const OFFLINE_URL = '/offline';
 
+// Import Firebase Scripts
+importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
+importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js');
+
+// Initialize Firebase in Service Worker
+firebase.initializeApp({
+  apiKey: "AIzaSyB...", // This should ideally be passed in, but FCM only strictly needs messagingSenderId for background messages
+  authDomain: "pickaladder.firebaseapp.com",
+  projectId: "pickaladder",
+  storageBucket: "pickaladder.appspot.com",
+  messagingSenderId: "402457219675",
+  appId: "1:402457219675:web:a346e2dc0dfa732d31e57e",
+  measurementId: "G-E28CXCXTSK"
+});
+
+const messaging = firebase.messaging();
+
+// Handle background messages
+messaging.setBackgroundMessageHandler(function(payload) {
+  console.log('[service-worker.js] Received background message ', payload);
+  const notificationTitle = payload.notification.title;
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: '/static/pickaladder_logo_64.png',
+    data: payload.data
+  };
+
+  return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
 const ASSETS_TO_CACHE = [
   OFFLINE_URL,
   '/static/css/variables.css',
@@ -15,6 +45,7 @@ const ASSETS_TO_CACHE = [
   '/static/mobile.css',
   '/static/js/main.js',
   '/static/js/navbar.js',
+  '/static/js/notifications.js',
   '/static/pickaladder_logo_64.png',
   '/static/img/pwa/icon-192.png',
   '/static/img/pwa/icon-512.png',
