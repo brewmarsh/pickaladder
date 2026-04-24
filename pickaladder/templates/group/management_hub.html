@@ -13,9 +13,14 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 class="mb-0">Management Hub: {{ group.name }}</h1>
-        <a href="/teams/wizard?group_id={{ group.id }}" class="btn btn-volt">
-            <i class="fas fa-plus-circle"></i> Create New Team
-        </a>
+        <div class="btn-group">
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#broadcastModal">
+                <i class="fas fa-bullhorn"></i> Broadcast Announcement
+            </button>
+            <a href="/teams/wizard?group_id={{ group.id }}" class="btn btn-volt">
+                <i class="fas fa-plus-circle"></i> Create New Team
+            </a>
+        </div>
     </div>
 
     <div class="card shadow-sm border-0">
@@ -335,6 +340,36 @@
                     {% endif %}
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Broadcast Modal -->
+<div class="modal fade" id="broadcastModal" tabindex="-1" role="dialog" aria-labelledby="broadcastModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form action="{{ url_for('messaging.broadcast', group_id=group.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="broadcastModalLabel">Broadcast Announcement</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">This message will be sent to all current members of <strong>{{ group.name }}</strong>. They will see it as a read-only announcement in their inbox.</p>
+                    <div class="form-group">
+                        <label for="broadcastContent">Message Content</label>
+                        <textarea class="form-control" id="broadcastContent" name="content" rows="5" placeholder="Type your announcement here..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Send Broadcast
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
