@@ -32,6 +32,30 @@ class MessagingService:
         return MessagingRepository.create(db, payload)
 
     @staticmethod
+    def get_or_create_group_announcement(db: Client, group_id: str, owner_id: str, member_ids: list[str]) -> str:
+        """Finds or initializes a group announcement channel."""
+        query = db.collection(MessagingRepository.COLLECTION_NAME)\
+                  .where(filter=firestore.FieldFilter("groupId", "==", group_id))\
+                  .where(filter=firestore.FieldFilter("type", "==", "group_announcement"))\
+                  .limit(1)
+
+        docs = list(query.stream())
+        if docs:
+            return docs[0].id
+
+        # Create new
+        payload = {
+            "participants": member_ids,
+            "type": "group_announcement",
+            "ownerId": owner_id,
+            "groupId": group_id,
+            "lastMessage": "",
+            "updatedAt": firestore.SERVER_TIMESTAMP,
+            "unreadCount": {uid: 0 for uid in member_ids}
+        }
+        return MessagingRepository.create(db, payload)
+
+    @staticmethod
     def send_message(db: Client, conversation_id: str, sender_id: str, content: str) -> str:
         """Sends a message in a conversation."""
         # Note: In a production app, we would use Firestore Security Rules
@@ -53,15 +77,22 @@ class MessagingService:
     def get_inbox(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Retrieves the user's conversation list with enriched participant names."""
         from pickaladder.user.services import UserService
+        from pickaladder.group.repository import GroupRepository
 
         conversations = MessagingRepository.get_user_conversations(db, user_id)
 
         for conv in conversations:
-            # Find the OTHER participant
-            other_uid = next((p for p in conv["participants"] if p != user_id), user_id)
-            other_user = UserService.get_user_by_id(db, other_uid)
-            conv["display_name"] = other_user.get("username", "Unknown User") if other_user else "Deleted User"
-            conv["display_avatar"] = other_user.get("profilePictureUrl") if other_user else None
+            if conv.get("type") == "group_announcement":
+                group = GroupRepository.get_by_id(db, conv["groupId"])
+                group_name = group.get("name", "Unknown Group") if group else "Deleted Group"
+                conv["display_name"] = f"{group_name} (Announcements)"
+                conv["display_avatar"] = None  # Or a group icon if we have one
+            else:
+                # Find the OTHER participant
+                other_uid = next((p for p in conv["participants"] if p != user_id), user_id)
+                other_user = UserService.get_user_by_id(db, other_uid)
+                conv["display_name"] = other_user.get("username", "Unknown User") if other_user else "Deleted User"
+                conv["display_avatar"] = other_user.get("profilePictureUrl") if other_user else None
 
         return conversations
 

@@ -17,7 +17,9 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read: if isParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants);
         allow create: if isParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants)
-                      && request.resource.data.senderId == request.auth.uid;
+                      && request.resource.data.senderId == request.auth.uid
+                      && (get(/databases/$(database)/documents/conversations/$(conversationId)).data.type != 'group_announcement' 
+                          || get(/databases/$(database)/documents/conversations/$(conversationId)).data.ownerId == request.auth.uid);
       }
     }
 

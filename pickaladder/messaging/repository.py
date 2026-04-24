@@ -70,7 +70,6 @@ class MessagingRepository(BaseRepository):
         participants = conv_doc.to_dict().get("participants", []) if conv_doc.exists else []
 
         sender_id = message_data.get("senderId")
-        recipient_id = next((p for p in participants if p != sender_id), None)
 
         msg_ref = conv_ref.collection("messages").document()
 
@@ -83,8 +82,9 @@ class MessagingRepository(BaseRepository):
             "updatedAt": firestore.SERVER_TIMESTAMP
         }
 
-        if recipient_id:
-            updates[f"unreadCount.{recipient_id}"] = firestore.Increment(1)
+        for participant_id in participants:
+            if participant_id != sender_id:
+                updates[f"unreadCount.{participant_id}"] = firestore.Increment(1)
 
         batch.update(conv_ref, updates)
         batch.commit()
