@@ -115,11 +115,12 @@ class MatchQueryService(
 
     @staticmethod
     def get_matches_for_user(
-        db: Client, uid: str, limit: int = 20, start_after: str | None = None
+        db: Client, uid: str, limit: int = 20, cursor: str | None = None
     ) -> tuple[list[dict[str, Any]], str | None]:
         """Fetch matches for a user with cursor-based pagination."""
         from firebase_admin import firestore
 
+        from pickaladder.core.pagination import FirestorePaginator
         from pickaladder.user.services.match_formatting import (
             format_matches_for_dashboard,
         )
@@ -128,21 +129,10 @@ class MatchQueryService(
             db.collection("matches")
             .where(filter=firestore.FieldFilter("participants", "array_contains", uid))
             .order_by("matchDate", direction=firestore.Query.DESCENDING)
-            .limit(limit)
         )
-        if start_after:
-            last_doc = cast(
-                "DocumentSnapshot", db.collection("matches").document(start_after).get()
-            )
-            if last_doc.exists:
-                query = query.start_after(last_doc)
 
-        docs = list(query.stream())
-        return (
-            (format_matches_for_dashboard(db, docs, uid), docs[-1].id)
-            if docs
-            else ([], None)
-        )
+        docs, next_cursor = FirestorePaginator.paginate(query, limit, cursor)
+        return (format_matches_for_dashboard(db, docs, uid), next_cursor)
 
     @staticmethod
     def get_player_names(db: Client, uids: Iterable[str]) -> dict[str, str]:

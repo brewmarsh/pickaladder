@@ -346,6 +346,37 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             found, "Did not find query filtering by 'inviter_id' == user_id"
         )
 
+    def test_get_match_history(self) -> None:
+        """Test fetching paginated match history."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+
+        # Mock matches query
+        mock_matches_col = mock_db.collection("matches")
+        mock_query = mock_matches_col.where.return_value.order_by.return_value
+        
+        # Mock result of FirestorePaginator.paginate
+        mock_doc = MagicMock()
+        mock_doc.id = "match_1"
+        mock_doc.to_dict.return_value = {
+            "matchType": "singles",
+            "participants": [MOCK_USER_ID, MOCK_OPPONENT_ID],
+            "player1Ref": MagicMock(id=MOCK_USER_ID),
+            "player2Ref": MagicMock(id=MOCK_OPPONENT_ID),
+            "matchDate": datetime.datetime.now()
+        }
+        
+        # FirestorePaginator uses .limit(limit + 1).stream()
+        mock_query.limit.return_value.stream.return_value = [mock_doc]
+
+        response = self.client.get("/match/history", headers=self._get_auth_headers())
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertIn("matches", data)
+        self.assertIn("next_cursor", data)
+        self.assertEqual(len(data["matches"]), 1)
+        self.assertEqual(data["matches"][0]["id"], "match_1")
+
     def _is_inviter_id_filter(self, call: Any) -> bool:
         """Check if a mock call contains the inviter_id filter."""
         f = call.kwargs.get("filter")
