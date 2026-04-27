@@ -87,14 +87,29 @@ class GroupRepository(BaseRepository):
         return pending
 
     @classmethod
-    def get_group_members(
-        cls, db: Client, member_refs: list[Any]
-    ) -> list[dict[str, Any]]:
-        """Fetch full profile data for group members."""
+    def get_group_members_raw(
+        cls, db: Client, member_refs: list[Any], offset: int = 0, limit: int | None = None
+    ) -> list[Any]:
+        """Fetch full profile data for group members as snapshots."""
         if not member_refs:
             return []
 
-        snaps = db.get_all(member_refs)
+        # Slice the references list before fetching from Firestore
+        start = offset
+        end = offset + limit if limit is not None else None
+        sliced_refs = member_refs[start:end]
+
+        if not sliced_refs:
+            return []
+
+        return list(db.get_all(sliced_refs))
+
+    @classmethod
+    def get_group_members(
+        cls, db: Client, member_refs: list[Any], offset: int = 0, limit: int | None = None
+    ) -> list[dict[str, Any]]:
+        """Fetch full profile data for group members, with optional slicing."""
+        snaps = cls.get_group_members_raw(db, member_refs, offset, limit)
         members = []
         for snap in snaps:
             if snap.exists:

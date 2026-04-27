@@ -19,8 +19,14 @@ from pickaladder.user.helpers import smart_display_name
 
 def _initialize_stats(players: list[Any]) -> dict[str, dict[str, Any]]:
     """Initialize the stats dictionary for each player using batch fetch."""
-    db = firestore.client()
-    player_docs = db.get_all(players)
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
+
+    if players and isinstance(players[0], DocumentSnapshot):
+        player_docs = players
+    else:
+        db = firestore.client()
+        player_docs = db.get_all(players)
+
     return {
         doc.id: {
             "wins": 0,
@@ -216,25 +222,37 @@ def _calculate_winning_streaks(
         player["is_on_fire"] = player["streak"] >= HOT_STREAK_THRESHOLD
 
 
-def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
+def get_group_leaderboard(
+    group_id: str,
+    member_docs: list[Any] | None = None,
+    all_matches: list[Any] | None = None,
+) -> list[dict[str, Any]]:
     """Calculate the leaderboard for a specific group using Firestore."""
     db = firestore.client()
-    group_ref = db.collection("groups").document(group_id)
-    group = group_ref.get()
-    if not group.exists:
-        return []
 
-    group_data = group.to_dict()
-    member_refs = group_data.get("members", [])
+    if member_docs is None:
+        group_ref = db.collection("groups").document(group_id)
+        group = group_ref.get()
+        if not group.exists:
+            return []
+        group_data = group.to_dict() or {}
+        member_refs = group_data.get("members", [])
+    else:
+        # If member_docs are provided, they could be snapshots or dicts.
+        # _initialize_stats handles snapshots. If they are dicts, we might need refs.
+        # For leaderboard calculation, we primarily need the snapshots for _initialize_stats.
+        member_refs = member_docs
+
     if not member_refs:
         return []
 
-    all_matches_stream = (
-        db.collection("matches")
-        .where(filter=FieldFilter("groupId", "==", group_id))
-        .stream()
-    )
-    all_matches = list(all_matches_stream)
+    if all_matches is None:
+        all_matches_stream = (
+            db.collection("matches")
+            .where(filter=FieldFilter("groupId", "==", group_id))
+            .stream()
+        )
+        all_matches = list(all_matches_stream)
 
     current_leaderboard = _calculate_leaderboard_from_matches(all_matches, member_refs)
 

@@ -12,6 +12,7 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from pickaladder.group.repository import GroupRepository
+from pickaladder.group.membership_repository import MembershipRequestRepository
 from pickaladder.group.services.leaderboard import get_group_leaderboard
 from pickaladder.group.services.match_parser import (
     _get_match_scores,
@@ -257,14 +258,17 @@ class GroupService:
         # Fetch members and owner data using Repository
         member_refs = group_data.get("members", [])
         member_ids = {ref.id for ref in member_refs}
-        members = GroupRepository.get_group_members(db, member_refs)
+        member_snaps = GroupRepository.get_group_members_raw(db, member_refs)
+        members = [
+            {**(s.to_dict() or {}), "id": s.id} for s in member_snaps if s.exists
+        ]
 
         owner_ref = group_data.get("ownerRef")
         owner = None
         if owner_ref:
-            owners = GroupRepository.get_group_members(db, [owner_ref])
-            if owners:
-                owner = owners[0]
+            owner_snaps = GroupRepository.get_group_members_raw(db, [owner_ref])
+            if owner_snaps and owner_snaps[0].exists:
+                owner = {**(owner_snaps[0].to_dict() or {}), "id": owner_snaps[0].id}
 
         # Permissions
         is_member = user_id in member_ids
@@ -275,7 +279,7 @@ class GroupService:
         eligible_friends = GroupService._get_eligible_friends(db, user_ref, member_ids)
 
         # Fetch leaderboard and matches
-        leaderboard = get_group_leaderboard(group_id)
+        leaderboard = get_group_leaderboard(group_id, member_docs=member_snaps)
         recent_matches_docs, recent_matches = GroupService._fetch_recent_matches(
             db, group_id
         )
@@ -285,6 +289,7 @@ class GroupService:
 
         # Fetch Pending Invites using Repository
         pending_members = []
+        pending_requests = []
         if is_member:
             pending_members = GroupRepository.get_pending_invites(db, group_id)
             # Still need to enrich with user docs for ghost/existing user info display
@@ -294,6 +299,9 @@ class GroupService:
                 for invite in pending_members:
                     GroupService._enrich_invite_with_user_data(invite, user_docs)
 
+        if is_admin:
+            pending_requests = GroupService.get_pending_requests(db, group_id)
+
         return {
             "group": group_data,
             "group_id": group_id,
@@ -302,6 +310,7 @@ class GroupService:
             "current_user_id": user_id,
             "leaderboard": leaderboard,
             "pending_members": pending_members,
+            "pending_requests": pending_requests,
             "is_member": is_member,
             "is_owner": is_owner,
             "is_admin": is_admin,
@@ -705,3 +714,85 @@ class GroupService:
             token,
             email_data,
         )
+
+    @staticmethod
+    def create_membership_request(
+        db: Any, group_id: str, user_id: str, message: str | None = None
+    ) -> str:
+        """Create a membership request for a group."""
+        group_data = GroupRepository.get_by_id(db, group_id)
+        if not group_data:
+            raise GroupNotFound("Group not found")
+
+        # Check if already a member
+        member_refs = group_data.get("members", [])
+        if any(ref.id == user_id for ref in member_refs):
+            raise ValueError("You are already a member of this group")
+
+        # Check for existing pending request
+        existing = MembershipRequestRepository.get_user_request_for_group(
+            db, group_id, user_id
+        )
+        if existing and existing.get("status") == "PENDING":
+            raise ValueError("You already have a pending request for this group")
+
+        if existing:
+            # Re-open the request if it was declined before
+            MembershipRequestRepository.update_status(db, existing["id"], "PENDING")
+            if message:
+                MembershipRequestRepository.update(db, existing["id"], {"message": message})
+            return existing["id"]
+
+        return MembershipRequestRepository.create_request(db, group_id, user_id, message)
+
+    @staticmethod
+    def get_pending_requests(db: Any, group_id: str) -> list[dict[str, Any]]:
+        """Fetch and enrich pending requests for a group."""
+        requests = MembershipRequestRepository.get_pending_for_group(db, group_id)
+        if not requests:
+            return []
+
+        user_ids = [r["userId"] for r in requests]
+        user_refs = [db.collection("users").document(uid) for uid in user_ids]
+        users_map = GroupService._batch_fetch_entities(db, user_refs)
+
+        for req in requests:
+            req["user"] = users_map.get(req["userId"], GUEST_USER)
+
+        return requests
+
+    @staticmethod
+    def handle_membership_request(
+        db: Any, group_id: str, request_id: str, requester_uid: str, action: str
+    ) -> None:
+        """Approve or decline a membership request."""
+        group_data = GroupRepository.get_by_id(db, group_id)
+        if not group_data:
+            raise GroupNotFound("Group not found")
+
+        if not GroupService.is_group_admin(group_data, requester_uid):
+            raise AccessDenied("Only admins can handle membership requests")
+
+        request_data = MembershipRequestRepository.get_by_id(db, request_id)
+        if not request_data or request_data.get("groupId") != group_id:
+            raise ValueError("Request not found")
+
+        if action == "approve":
+            target_uid = request_data["userId"]
+            target_ref = db.collection("users").document(target_uid)
+            
+            # Update group members
+            GroupRepository.update(
+                db, group_id, {"members": firestore.ArrayUnion([target_ref])}
+            )
+            
+            # Mark request as approved
+            MembershipRequestRepository.update_status(db, request_id, "APPROVED")
+            
+            # Auto-friend logic
+            GroupService.friend_group_members(db, group_id, target_ref)
+            
+        elif action == "decline":
+            MembershipRequestRepository.update_status(db, request_id, "DECLINED")
+        else:
+            raise ValueError("Invalid action")
