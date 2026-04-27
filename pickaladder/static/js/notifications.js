@@ -73,7 +73,72 @@
         });
     }
 
-    // 2. FCM Push Notification Setup
+    // 2. Listen for Challenge Updates
+    let previousChallengeStatuses = {};
+    let isInitialChallengesLoad = true;
+
+    function handleChallengeUpdate(doc) {
+        const data = doc.data();
+        const id = doc.id;
+        const status = data.status;
+        const prevStatus = previousChallengeStatuses[id];
+
+        if (!isInitialChallengesLoad && status !== prevStatus) {
+            if (status === 'pending' && data.challenged_id === currentUserId) {
+                showToast(`New Challenge from ${data.challenger_name || 'a player'}!`, 'info');
+            } else if (status === 'accepted') {
+                if (data.challenger_id === currentUserId) {
+                    showToast(`Challenge accepted by ${data.challenged_name || 'player'}!`, 'success');
+                }
+            } else if (status === 'declined') {
+                if (data.challenger_id === currentUserId) {
+                    showToast(`Challenge declined by ${data.challenged_name || 'player'}.`, 'warning');
+                }
+            } else if (status === 'completed') {
+                showToast(`Challenge resolved!`, 'success');
+            } else if (status === 'expired') {
+                showToast(`Challenge expired.`, 'secondary');
+            }
+            
+            // Trigger UI refresh if ChallengeUI is available
+            if (window.ChallengeUI && typeof window.ChallengeUI.refreshHub === 'function') {
+                window.ChallengeUI.refreshHub();
+            }
+        }
+        previousChallengeStatuses[id] = status;
+    }
+
+    db.collection("challenges")
+        .where("challenger_id", "==", currentUserId)
+        .onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(change => {
+                handleChallengeUpdate(change.doc);
+            });
+            isInitialChallengesLoad = false;
+        }, (error) => console.error("Challenge listener error (challenger):", error));
+
+    db.collection("challenges")
+        .where("challenged_id", "==", currentUserId)
+        .onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(change => {
+                handleChallengeUpdate(change.doc);
+            });
+            isInitialChallengesLoad = false;
+        }, (error) => console.error("Challenge listener error (challenged):", error));
+
+    // 3. Listen for User Credit Balance
+    db.collection("users").doc(currentUserId)
+        .onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                const credits = data.social_credits !== undefined ? data.social_credits : 100;
+                document.querySelectorAll('.credit-balance-nav span').forEach(el => {
+                    el.innerText = credits;
+                });
+            }
+        }, (error) => console.error("User credit listener error:", error));
+
+    // 4. FCM Push Notification Setup
     setupPushNotifications();
 
     function setupPushNotifications() {
