@@ -47,6 +47,43 @@ class TournamentGenerator:
         return pairings
 
     @staticmethod
+    def generate_pool_play(
+        participant_ids: list[str], pool_count: int
+    ) -> list[dict[str, Any]]:
+        """Divide participants into pools and generate Round Robin matches for each."""
+        import random
+        from firebase_admin import firestore
+
+        if not participant_ids or pool_count < 1:
+            return []
+
+        # Shuffle to ensure random distribution
+        shuffled_ids = list(participant_ids)
+        random.shuffle(shuffled_ids)
+
+        # Split into pools
+        pools: list[list[str]] = [[] for _ in range(pool_count)]
+        for i, uid in enumerate(shuffled_ids):
+            pools[i % pool_count].append(uid)
+
+        all_pairings = []
+        pool_labels = [chr(65 + i) for i in range(pool_count)] # A, B, C...
+
+        for i, pool_participants in enumerate(pools):
+            if len(pool_participants) < MIN_PARTICIPANTS:
+                continue
+                
+            pool_id = pool_labels[i]
+            pool_pairings = TournamentGenerator.generate_round_robin(pool_participants)
+            
+            # Tag matches with pool_id
+            for match in pool_pairings:
+                match["pool_id"] = pool_id
+                all_pairings.append(match)
+
+        return all_pairings
+
+    @staticmethod
     def _next_power_of_2(n: int) -> int:
         """Calculate the next power of 2 greater than or equal to n."""
         if n <= 0:
