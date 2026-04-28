@@ -9,6 +9,7 @@ from typing import Any
 from firebase_admin import firestore
 from google.cloud.firestore import FieldFilter
 
+from pickaladder.extensions import cache
 from pickaladder.core.constants import (
     HOT_STREAK_THRESHOLD,
     RECENT_MATCHES_LIMIT,
@@ -17,15 +18,18 @@ from pickaladder.group.services.match_parser import _extract_team_ids, _get_matc
 from pickaladder.user.helpers import smart_display_name
 
 
-def _initialize_stats(players: list['DocumentSnapshot']) -> dict[str, dict[str, object]]:
+def _initialize_stats(players: list['DocumentSnapshot'] | Any) -> dict[str, dict[str, object]]:
     """Initialize the stats dictionary for each player using batch fetch."""
-    from google.cloud.firestore_v1.base_document import DocumentSnapshot
-
-    if players and isinstance(players[0], DocumentSnapshot):
-        player_docs = players
+    # Handle generators or other iterables
+    player_list = list(players) if players else []
+    
+    if player_list and hasattr(player_list[0], "exists") and not hasattr(player_list[0], "get_all"):
+        # Already snapshots
+        player_docs = player_list
     else:
+        # Likely references, need to fetch
         db = firestore.client()
-        player_docs = db.get_all(players)
+        player_docs = db.get_all(player_list)
 
     return {
         doc.id: {
@@ -222,10 +226,11 @@ def _calculate_winning_streaks(
         player["is_on_fire"] = player["streak"] >= HOT_STREAK_THRESHOLD
 
 
+@cache.memoize(timeout=600)
 def get_group_leaderboard(
     group_id: str,
-    member_docs: list['DocumentSnapshot'] | None = None,
-    all_matches: list['DocumentSnapshot'] | None = None,
+    member_docs: list["DocumentSnapshot"] | None = None,
+    all_matches: list["DocumentSnapshot"] | None = None,
 ) -> list[dict[str, object]]:
     """Calculate the leaderboard for a specific group using Firestore."""
     db = firestore.client()

@@ -102,6 +102,14 @@ class MatchCommandService(BaseRepository):
                 db, t_id, match_doc_data, match_doc_data["winnerId"]
             )
 
+        # Invalidate leaderboards cache
+        from pickaladder.extensions import cache
+        cache.delete("global_leaderboard")
+        if sub.group_id:
+            from pickaladder.group.services.leaderboard import get_group_leaderboard
+
+            cache.delete_memoized(get_group_leaderboard, sub.group_id)
+
         return cls._build_match_result(new_match_ref.id, match_doc_data)
 
     @staticmethod

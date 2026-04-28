@@ -15,6 +15,7 @@ from pickaladder.core.constants import (
     LEADERBOARD_SILVER_THRESHOLD,
 )
 
+from pickaladder.extensions import cache
 from . import bp
 from .forms import MatchForm
 from .models import MatchSubmission
@@ -238,6 +239,7 @@ def get_match_history() -> "Response":
 
 @bp.route("/leaderboard")
 @login_required
+@cache.cached(timeout=600, key_prefix="global_leaderboard")
 def leaderboard() -> "Response":
     """Display a global leaderboard.
 
