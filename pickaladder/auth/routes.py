@@ -84,13 +84,13 @@ def _cleanup_missing_user_session(is_impersonating: bool) -> None:
     g.is_impersonating = False
 
 
-def _fetch_user_doc(id_to_load: str) -> Any:
+def _fetch_user_doc(id_to_load: str) -> "Response":
     """Fetch user document from Firestore."""
     db = firestore.client()
     return db.collection("users").document(id_to_load).get()
 
 
-def _populate_g_user(user_doc: Any, id_to_load: str, is_impersonating: bool) -> None:
+def _populate_g_user(user_doc: "firestore.DocumentSnapshot", id_to_load: str, is_impersonating: bool) -> None:
     """Populate g.user and sync session admin status."""
     g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
     if not is_impersonating:
@@ -114,7 +114,7 @@ def _load_user_document(id_to_load: str, is_impersonating: bool) -> None:
         _handle_load_user_error(id_to_load, is_impersonating, e)
 
 
-def _process_user_doc(user_doc: Any, id_to_load: str, is_impersonating: bool) -> None:
+def _process_user_doc(user_doc: "firestore.DocumentSnapshot", id_to_load: str, is_impersonating: bool) -> None:
     """Process the fetched user document."""
     if not user_doc.exists:
         _handle_missing_user(id_to_load, is_impersonating)
@@ -147,7 +147,7 @@ def load_user_from_auth_source() -> None:
 
 
 # TODO: Add type hints for Agent clarity
-def _is_username_taken(db: Any, username: str) -> bool:
+def _is_username_taken(db: "firestore.Client", username: str) -> bool:
     """Check if username is already taken in Firestore."""
     taken = (
         db.collection("users")
@@ -158,7 +158,7 @@ def _is_username_taken(db: Any, username: str) -> bool:
     return len(list(taken)) > 0
 
 
-def _handle_referral(db: Any, referrer_id: str) -> None:
+def _handle_referral(db: "firestore.Client", referrer_id: str) -> None:
     """Increment referral count for the referrer."""
     try:
         db.collection("users").document(referrer_id).update(
@@ -168,7 +168,7 @@ def _handle_referral(db: Any, referrer_id: str) -> None:
         current_app.logger.error(f"Error incrementing referral count: {e}")
 
 
-def _handle_invite_token(db: Any, uid: str, invite_token: str) -> None:
+def _handle_invite_token(db: "firestore.Client", uid: str, invite_token: str) -> None:
     """Handle invite token by creating friendships and marking token as used."""
     invite_ref = db.collection("invites").document(invite_token)
     invite = invite_ref.get()
@@ -189,7 +189,7 @@ def _handle_invite_token(db: Any, uid: str, invite_token: str) -> None:
     invite_ref.update({"used": True})
 
 
-def _create_firebase_auth_user(email: str, password: str, username: str) -> Any:
+def _create_firebase_auth_user(email: str, password: str, username: str) -> "Response":
     """Create user in Firebase Auth and send verification email."""
     user_record = auth.create_user(email=email, password=password, email_verified=False)
     verification_link = auth.generate_email_verification_link(email)
@@ -219,7 +219,7 @@ def _prepare_firestore_user_data(
     }
 
 
-def _merge_ghost_if_exists(db: Any, uid: str, email: str) -> None:
+def _merge_ghost_if_exists(db: "firestore.Client", uid: str, email: str) -> None:
     """Check for and merge ghost user data if found."""
     user_doc_ref = db.collection("users").document(uid)
     if not (email and UserService.merge_ghost_user(db, user_doc_ref, email)):
@@ -230,7 +230,7 @@ def _merge_ghost_if_exists(db: Any, uid: str, email: str) -> None:
         session["show_welcome_invites"] = len(invites)
 
 
-def _handle_post_registration(db: Any, uid: str, email: str) -> None:
+def _handle_post_registration(db: "firestore.Client", uid: str, email: str) -> None:
     """Handle ghost user merging and invite tokens after successful registration."""
     _merge_ghost_if_exists(db, uid, email)
 
@@ -255,7 +255,7 @@ def _process_registration(form: RegisterForm, username: str, email: str) -> None
     _handle_post_registration(db, user_record.uid, email)
 
 
-def _handle_registration_error(e: Exception) -> Any:
+def _handle_registration_error(e: Exception) -> None:
     """Handle different types of registration errors and flash messages."""
     if isinstance(e, auth.EmailAlreadyExistsError):
         flash(AUTH_MESSAGES["EMAIL_REGISTERED"], "danger")
@@ -268,7 +268,7 @@ def _handle_registration_error(e: Exception) -> Any:
     return redirect(url_for(".register"))
 
 
-def _execute_registration(form: RegisterForm, username: str, email: str) -> Any:
+def _execute_registration(form: RegisterForm, username: str, email: str) -> "Response":
     """Execute the registration process and handle errors."""
     try:
         _process_registration(form, username, email)
@@ -282,7 +282,7 @@ def _execute_registration(form: RegisterForm, username: str, email: str) -> Any:
 
 
 @bp.route("/register", methods=["GET", "POST"])
-def register() -> Any:
+def register() -> "Response":
     """Register a new user."""
     if invite_token := request.args.get("invite_token"):
         session["invite_token"] = invite_token
@@ -304,7 +304,7 @@ def register() -> Any:
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/login", methods=["GET", "POST"])
-def login() -> Any:
+def login() -> "Response":
     """Render the login page.
 
     The actual login process is handled by the Firebase client-side SDK.
@@ -328,7 +328,7 @@ def login() -> Any:
 
 
 # TODO: Add type hints for Agent clarity
-def _generate_unique_username(db: Any, base_username: str) -> str:
+def _generate_unique_username(db: "firestore.Client", base_username: str) -> str:
     """Generate a unique username by appending a number if the base username exists."""
     username = base_username
     i = 1
@@ -344,7 +344,7 @@ def _generate_unique_username(db: Any, base_username: str) -> str:
 
 
 # TODO: Add type hints for Agent clarity
-def _prepare_new_user_info(db: Any, uid: str) -> tuple[dict[str, Any], str]:
+def _prepare_new_user_info(db: "firestore.Client", uid: str) -> tuple[dict[str, Any], str]:
     """Extract and prepare initial info for a new user from Firebase Auth."""
     user_record = auth.get_user(uid)
     email = user_record.email
@@ -363,7 +363,7 @@ def _prepare_new_user_info(db: Any, uid: str) -> tuple[dict[str, Any], str]:
     return user_info, email
 
 
-def _get_or_create_user_profile(db: Any, uid: str) -> dict[str, Any]:
+def _get_or_create_user_profile(db: "firestore.Client", uid: str) -> dict[str, Any]:
     """Retrieve existing user profile or create a new one from Firebase Auth."""
     user_doc_ref = db.collection("users").document(uid)
     user_doc = user_doc_ref.get()
@@ -392,7 +392,7 @@ def _finalize_session_login(
 
 
 @bp.route("/session_login", methods=["POST"])
-def session_login() -> Any:
+def session_login() -> "Response":
     """Handle session login after Firebase client-side authentication."""
     id_token = request.json.get("idToken")
     try:
@@ -415,7 +415,7 @@ def session_login() -> Any:
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/logout")
-def logout() -> Any:
+def logout() -> "Response":
     """Log the user out.
 
     The actual logout is handled by the Firebase client-side SDK.
@@ -429,7 +429,7 @@ def logout() -> Any:
 
 # TODO: Add type hints for Agent clarity
 def _create_admin_account(
-    db: Any,
+    db: "firestore.Client",
     email: str,
     password: str,
     username: str,
@@ -458,20 +458,20 @@ def _create_admin_account(
     return cast(str, admin_user_record.uid)
 
 
-def _is_user_non_admin(user_doc: Any) -> bool:
+def _is_user_non_admin(user_doc: "firestore.DocumentSnapshot") -> bool:
     """Check if the user exists and is not an admin."""
     if not user_doc.exists:
         return False
     return not user_doc.to_dict().get("isAdmin")
 
 
-def _fetch_user_doc_ref_by_email(db: Any, email: str) -> Any:
+def _fetch_user_doc_ref_by_email(db: "firestore.Client", email: str) -> "Response":
     """Fetch user document reference from Firestore using email via Firebase Auth."""
     user = auth.get_user_by_email(email)
     return db.collection("users").document(user.uid)
 
 
-def _promote_existing_user_to_admin(db: Any, email: str) -> bool:
+def _promote_existing_user_to_admin(db: "firestore.Client", email: str) -> bool:
     """Attempt to promote an existing user to admin if they are not one."""
     try:
         doc_ref = _fetch_user_doc_ref_by_email(db, email)
@@ -484,7 +484,7 @@ def _promote_existing_user_to_admin(db: Any, email: str) -> bool:
         return False
 
 
-def _check_admin_exists(db: Any) -> bool:
+def _check_admin_exists(db: "firestore.Client") -> bool:
     """Check if any admin user exists in Firestore."""
     admin_query = (
         db.collection("users")
@@ -495,7 +495,7 @@ def _check_admin_exists(db: Any) -> bool:
     return len(list(admin_query)) > 0
 
 
-def _handle_install_error(db: Any, email: str, e: Exception) -> Any:
+def _handle_install_error(db: "firestore.Client", email: str, e: Exception) -> None:
     """Handle exceptions during installation."""
     if isinstance(e, auth.EmailAlreadyExistsError):
         if _promote_existing_user_to_admin(db, email):
@@ -508,7 +508,7 @@ def _handle_install_error(db: Any, email: str, e: Exception) -> Any:
     return redirect(url_for(".install"))
 
 
-def _handle_install_post(db: Any) -> Any:
+def _handle_install_post(db: "firestore.Client") -> "Response":
     """Handle POST request for installation."""
     email = request.form.get("email")
     password = request.form.get("password")
@@ -537,7 +537,7 @@ def _handle_install_post(db: Any) -> Any:
 
 
 @bp.route("/install", methods=["GET", "POST"])
-def install() -> Any:
+def install() -> "Response":
     """Install the application by creating an admin user."""
     db = firestore.client()
     if _check_admin_exists(db):
@@ -551,7 +551,7 @@ def install() -> Any:
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/change_password", methods=["GET", "POST"])
-def change_password() -> Any:
+def change_password() -> "Response":
     """Render the change password page.
 
     The actual password change is handled by the Firebase client-side SDK.

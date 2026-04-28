@@ -10,7 +10,7 @@ class AdminService:
     """Service class for admin-related operations."""
 
     @staticmethod
-    def get_admin_stats(db: Any) -> dict[str, Any]:
+    def get_admin_stats(db: "firestore.Client") -> dict[str, Any]:
         """Fetch high-level stats for the admin dashboard.
 
         Uses efficient count aggregations.
@@ -46,7 +46,7 @@ class AdminService:
         }
 
     @staticmethod
-    def toggle_setting(db: Any, setting_key: str) -> bool:
+    def toggle_setting(db: "firestore.Client", setting_key: str) -> bool:
         """Toggle a boolean setting in the Firestore 'settings' collection."""
         setting_ref = db.collection("settings").document(setting_key)
         setting = setting_ref.get()
@@ -58,7 +58,7 @@ class AdminService:
         return not_current_value
 
     @staticmethod
-    def delete_user(db: Any, user_id: str) -> None:
+    def delete_user(db: "firestore.Client", user_id: str) -> None:
         """Delete a user from Firebase Auth and Firestore."""
         from firebase_admin import auth  # noqa: PLC0415
 
@@ -68,7 +68,7 @@ class AdminService:
         db.collection("users").document(user_id).delete()
 
     @staticmethod
-    def delete_user_data(db: Any, uid: str) -> None:
+    def delete_user_data(db: "firestore.Client", uid: str) -> None:
         """Delete a user from Firestore and Firebase Auth."""
         from firebase_admin import auth  # noqa: PLC0415
 
@@ -82,7 +82,7 @@ class AdminService:
             pass
 
     @staticmethod
-    def build_friend_graph(db: Any) -> dict[str, Any]:
+    def build_friend_graph(db: "firestore.Client") -> dict[str, Any]:
         """Build a dictionary representing the social graph of users and friendships."""
         users_stream = db.collection("users").stream()
         nodes = []
@@ -113,14 +113,14 @@ class AdminService:
         return {"nodes": nodes, "edges": edges}
 
     @staticmethod
-    def promote_user(db: Any, user_id: str) -> str:
+    def promote_user(db: "firestore.Client", user_id: str) -> str:
         """Promote a user to admin status in Firestore."""
         user_ref = db.collection("users").document(user_id)
         user_ref.update({"isAdmin": True})
         return user_ref.get().to_dict().get("username", "user")
 
     @staticmethod
-    def verify_user(db: Any, user_id: str) -> None:
+    def verify_user(db: "firestore.Client", user_id: str) -> None:
         """Manually verify a user's email in Auth and Firestore."""
         from firebase_admin import auth  # noqa: PLC0415
 

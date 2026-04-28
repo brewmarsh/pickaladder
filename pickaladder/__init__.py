@@ -14,7 +14,7 @@ from typing import Any
 
 import firebase_admin
 from firebase_admin import credentials, firestore
-from flask import Flask, current_app, session
+from flask import Flask, Response, current_app, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.routing import BaseConverter
 
@@ -23,6 +23,7 @@ from . import auth as auth_bp
 from . import error_handlers
 from . import group as group_bp
 from . import main as main_bp
+from . import marketplace as marketplace_bp
 from . import match as match_bp
 from . import messaging as messaging_bp
 from . import season as season_bp
@@ -39,6 +40,7 @@ from .context_processors import (
 )
 from .extensions import csrf, login_manager, mail
 from .user.helpers import smart_display_name, wrap_user
+from .user.models import UserSession
 
 APP_PASSWORD_LENGTH = 16
 
@@ -183,6 +185,7 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(user_bp.bp)
     app.register_blueprint(match_bp.bp)
     app.register_blueprint(group_bp.bp)
+    app.register_blueprint(marketplace_bp.bp)
     app.register_blueprint(season_bp.bp)
     app.register_blueprint(messaging_bp.bp)
     app.register_blueprint(teams_bp.bp)
@@ -196,7 +199,7 @@ def _register_blueprints(app: Flask) -> None:
     app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
 
     @app.after_request
-    def add_beta_headers(response: Any) -> Any:
+    def add_beta_headers(response: Response) -> Response:
         """Add SEO safeguards if in beta environment."""
         if app.config.get("ENV") == "beta":
             response.headers["X-Robots-Tag"] = "noindex, nofollow"
@@ -213,7 +216,7 @@ def _register_extensions(app: Flask) -> None:
     login_manager.login_view = "auth.login"
 
     @login_manager.user_loader
-    def load_user(user_id: str) -> Any:
+    def load_user(user_id: str) -> UserSession | None:
         """Load user by ID for Flask-Login."""
         impersonate_id = session.get("impersonate_id")
         is_admin = session.get("is_admin", False)
@@ -246,7 +249,7 @@ def _register_template_utilities(app: Flask) -> None:
     app.template_filter("display_name")(smart_display_name)
 
     @app.template_filter("avatar_url")
-    def avatar_url_filter(user: Any) -> str:
+    def avatar_url_filter(user: dict[str, Any] | UserSession | None) -> str:
         """Return the avatar URL for a user."""
         if not user:
             return ""

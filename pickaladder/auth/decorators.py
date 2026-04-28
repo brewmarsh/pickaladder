@@ -28,7 +28,7 @@ def login_required(
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         # TODO: Add type hints for Agent clarity
         @wraps(func)
-        def decorated_function(*args: Any, **kwargs: Any) -> Any:
+        def decorated_function(*args: object, **kwargs: object) -> "Response":
             """Ensure user is logged in before accessing the view."""
             if not g.get("user"):
                 return redirect(url_for("auth.login"))
@@ -52,7 +52,7 @@ def admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """
 
     @wraps(f)
-    def decorated_function(*args: Any, **kwargs: Any) -> Any:
+    def decorated_function(*args: object, **kwargs: object) -> "Response":
         if not g.get("user"):
             return redirect(url_for("auth.login"))
         if not session.get("is_admin"):

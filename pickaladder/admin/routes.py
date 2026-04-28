@@ -47,7 +47,7 @@ def admin() -> Union[str, Response]:
     admin_stats = AdminService.get_admin_stats(db)
     setting_ref = db.collection("settings").document("enforceEmailVerification")
     email_verification_setting = setting_ref.get()
-    users = UserService.get_all_users(db, limit=50, public_only=False)
+    users, _ = UserService.get_all_users(db, limit=50, public_only=False)
 
     return render_template(
         "admin/admin.html",
@@ -161,7 +161,7 @@ def friend_graph_data() -> Union[Response, tuple[Response, int]]:
 
 
 def _lookup_user_by_identifier(
-    db: Any, identifier: str
+    db: "firestore.Client", identifier: str
 ) -> tuple[str | None, str | None]:
     """Look up a user UID and email by their identifier (ID or Email)."""
     user_doc = db.collection("users").document(identifier).get()
@@ -179,7 +179,7 @@ def _lookup_user_by_identifier(
     return None, None
 
 
-def _perform_user_deletion(db: Any, uid: str, email: str | None) -> None:
+def _perform_user_deletion(db: "firestore.Client", uid: str, email: str | None) -> None:
     """Orchestrate the deletion of a user and flash results."""
     try:
         AdminService.delete_user(db, uid)
@@ -284,7 +284,7 @@ def generate_users() -> str:
     return render_template("generated_users.html", users=new_users)
 
 
-def _generate_single_random_match(db: Any, users: list[Any]) -> bool:
+def _generate_single_random_match(db: "firestore.Client", users: list[Any]) -> bool:
     """Generate a single random match between users."""
     p1, p2 = random.sample(users, 2)  # nosec B311
     s1, s2 = 11, random.randint(0, 9)  # nosec B311
@@ -307,7 +307,7 @@ def _generate_single_random_match(db: Any, users: list[Any]) -> bool:
         return False
 
 
-def _batch_generate_random_matches(db: Any, users: list[Any], count: int = 10) -> int:
+def _batch_generate_random_matches(db: "firestore.Client", users: list[Any], count: int = 10) -> int:
     """Generate multiple random matches and return success count."""
     return sum(1 for _ in range(count) if _generate_single_random_match(db, users))
 
@@ -346,8 +346,9 @@ def merge_players() -> Union[str, Response]:
                 flash(ADMIN_MESSAGES["PLAYERS_MERGE_ERROR"].format(error=e), "error")
         return redirect(url_for(".merge_players"))
 
+    all_users, _ = UserService.get_all_users(db, public_only=False)
     users = sorted(
-        UserService.get_all_users(db, public_only=False),
+        all_users,
         key=lambda u: (u.get("is_ghost", False), u.get("name", "").lower()),
     )
     return render_template("admin/merge_players.html", users=users)

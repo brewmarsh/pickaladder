@@ -19,7 +19,7 @@ class EmailError(Exception):
     pass
 
 
-def send_email(to: Any, subject: str, template: str, **kwargs: Any) -> None:
+def send_email(to: str | list[str], subject: str, template: str, **kwargs: object) -> None:
     """Send an email to a recipient.
 
     Raises:
