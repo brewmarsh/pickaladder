@@ -27,3 +27,9 @@ def offline() -> str:
     from flask import render_template
 
     return render_template("offline.html")
+
+
+@bp.route("/health")
+def health() -> dict[str, str]:
+    """Health check endpoint."""
+    return {"status": "healthy"}
