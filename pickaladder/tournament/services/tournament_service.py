@@ -189,6 +189,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             "address": data.get("address"),
             "matchType": m_type,
             "mode": m_type.upper(),
+            "format": data.get("format", "SINGLE_ELIMINATION"),
+            "pool_count": data.get("pool_count", 0),
+            "promoted_per_pool": data.get("promoted_per_pool", 0),
             "ownerRef": user_ref,
             "organizer_id": user_uid,
             "status": "Active",
@@ -283,6 +286,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             "address": fd.get("address"),
             "matchType": m_type,
             "mode": m_type.upper(),
+            "format": fd.get("format", "SINGLE_ELIMINATION"),
+            "pool_count": fd.get("pool_count", 0),
+            "promoted_per_pool": fd.get("promoted_per_pool", 0),
         }
 
     @staticmethod
@@ -530,11 +536,64 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         elif fmt == "DOUBLE_ELIMINATION":
             seeded_ids = TournamentService._get_seeded_participant_ids(db, t_data)
             pairings = TournamentGenerator.generate_double_elimination(seeded_ids)
+        elif fmt == "POOL_PLAY":
+            participant_ids = t_data.get("participant_ids", [])
+            pool_count = t_data.get("pool_count", 2)
+            pairings = TournamentGenerator.generate_pool_play(participant_ids, pool_count)
         else:
             # Default to Round Robin
             participant_ids = t_data.get("participant_ids", [])
             pairings = TournamentGenerator.generate_round_robin(participant_ids)
 
+        if not pairings:
+            return 0
+
+        return TournamentService.save_pairings(t_id, pairings)
+
+    @staticmethod
+    def promote_pools_to_bracket(
+        t_id: str, uid: str, promoted_per_pool: int, db: Client | None = None
+    ) -> int:
+        """Promote top performers from pools to a single elimination bracket."""
+        from firebase_admin import firestore
+
+        from pickaladder.tournament.services.generator import TournamentGenerator
+        from pickaladder.tournament.utils import get_tournament_standings
+
+        db = db or firestore.client()
+        t_ref = db.collection("tournaments").document(t_id)
+        t_snap = cast(Any, t_ref.get())
+        if not t_snap.exists:
+            raise ValueError("Tournament not found")
+
+        t_data = t_snap.to_dict() or {}
+        TournamentService._validate_tournament_ownership(t_data, uid)
+
+        pool_count = t_data.get("pool_count", 0)
+        if pool_count < 1:
+            raise ValueError("Tournament does not have pools")
+
+        match_type = (t_data.get("matchType") or t_data.get("mode", "singles")).lower()
+        pool_labels = [chr(65 + i) for i in range(pool_count)]
+
+        # 1. Extract top players from each pool
+        promoted_items = []
+        for pool_id in pool_labels:
+            stands = get_tournament_standings(db, t_id, match_type, pool_id=pool_id)
+            # Get top performers
+            for i in range(min(promoted_per_pool, len(stands))):
+                promoted_items.append((stands[i]["id"], i)) # (uid, rank_in_pool)
+
+        if not promoted_items:
+            return 0
+
+        # 2. Seed promoted players
+        # Seeding logic: Rank 1s from all pools first, then Rank 2s, etc.
+        promoted_items.sort(key=lambda x: x[1])
+        final_seeded_ids = [x[0] for x in promoted_items]
+
+        # 3. Generate and save pairings
+        pairings = TournamentGenerator.generate_single_elimination(final_seeded_ids)
         if not pairings:
             return 0
 
