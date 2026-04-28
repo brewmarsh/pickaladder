@@ -26,7 +26,7 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
         sess["user_id"] = "test_user_id"
 
     # Mock group details
-    with patch("pickaladder.group.routes.GroupService.get_group_details") as mock_get:
+    with patch("pickaladder.group.routes.membership.GroupService.get_group_details") as mock_get:
         from pickaladder.group.models import Group
 
         mock_owner_ref = MagicMock()
@@ -64,7 +64,10 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
 def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> None:
     """Test that referral is attributed during registration."""
     # Setup referrer in Firestore
-    mock_db.collection("users").document(REFERRER_ID).set({"username": "referrer"})
+    mock_db.collection("users").document(REFERRER_ID).set({
+        "username": "referrer",
+        "social_credits": 100
+    })
 
     # Set referrer in session
     with client.session_transaction() as sess:
@@ -74,7 +77,7 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
     with (
         patch("firebase_admin.auth.create_user") as mock_create,
         patch("firebase_admin.auth.generate_email_verification_link") as mock_gen,
-        patch("pickaladder.auth.routes.send_email"),
+        patch("pickaladder.auth.routes.MailService.send_email"),
         patch(
             "pickaladder.auth.routes.UserService.merge_ghost_user", return_value=False
         ),
@@ -91,6 +94,7 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
                 "password": MOCK_PASSWORD,
                 "confirm_password": MOCK_PASSWORD,
                 "name": "New User",
+                "dupr_rating": "3.5",
             },
             follow_redirects=True,
         )
@@ -113,6 +117,11 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
     new_user_doc = mock_db.collection("users").document("new_user_uid").get().to_dict()
     assert new_user_doc is not None  # nosec B101
     assert new_user_doc.get("referred_by") == REFERRER_ID  # nosec B101
+    assert new_user_doc.get("social_credits") == 120  # nosec B101
+
+    # Verify referrer got bonus credits
+    referrer_doc = mock_db.collection("users").document(REFERRER_ID).get().to_dict()
+    assert referrer_doc.get("social_credits") == 120  # nosec B101
 
     # Verify session was cleared
     with client.session_transaction() as sess:

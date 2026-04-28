@@ -23,6 +23,7 @@ from pickaladder.errors import DuplicateResourceError
 from pickaladder.services.mail_service import EmailError, MailService
 from pickaladder.user import UserService
 from pickaladder.user.helpers import wrap_user
+from pickaladder.user.services.credits import SocialCreditService
 
 from . import bp
 from .forms import ChangePasswordForm, LoginForm, RegisterForm
@@ -160,13 +161,21 @@ def _is_username_taken(db: "firestore.Client", username: str) -> bool:
 
 
 def _handle_referral(db: "firestore.Client", referrer_id: str) -> None:
-    """Increment referral count for the referrer."""
+    """Award 20 credits to the referrer and increment referral count."""
     try:
-        db.collection("users").document(referrer_id).update(
-            {"referral_count": firestore.Increment(1)}
-        )
+        transaction = db.transaction()
+
+        @firestore.transactional
+        def award_credits(transaction: firestore.Transaction, r_id: str) -> None:
+            SocialCreditService.adjust_balance(db, transaction, r_id, 20)
+            transaction.update(
+                db.collection("users").document(r_id),
+                {"referral_count": firestore.Increment(1)},
+            )
+
+        award_credits(transaction, referrer_id)
     except Exception as e:
-        current_app.logger.error(f"Error incrementing referral count: {e}")
+        current_app.logger.error(f"Error rewarding referrer {referrer_id}: {e}")
 
 
 def _handle_invite_token(db: "firestore.Client", uid: str, invite_token: str) -> None:
@@ -250,6 +259,7 @@ def _process_registration(form: RegisterForm, username: str, email: str) -> None
 
     if referrer_id := session.pop("referrer_id", None):
         user_data["referred_by"] = referrer_id
+        user_data["social_credits"] = 120
         _handle_referral(db, referrer_id)
 
     db.collection("users").document(user_record.uid).set(user_data)
