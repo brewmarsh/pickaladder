@@ -4,20 +4,20 @@ import os
 from datetime import timedelta
 
 
-def get_env_bool(name, default="false"):
+def get_env_bool(name: str, default: str = "false") -> bool:
     val = os.environ.get(name)
     if val is None or val.strip() == "":
         return default.lower() in ("true", "1", "t", "yes")
     return val.lower() in ("true", "1", "t", "yes")
 
 
-def sanitize_cred(val):
+def sanitize_cred(val: str | None) -> str | None:
     if val:
         return val.strip().replace(" ", "").strip("'").strip('"')
     return None
 
 
-def get_env_str(name, default=None):
+def get_env_str(name: str, default: str | None = None) -> str | None:
     val = os.environ.get(name)
     if val is None or val.strip() == "":
         return default
@@ -31,7 +31,7 @@ class Config:
     during testing while maintaining standard Flask 'from_object' compatibility.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Environment
         self.FLASK_ENV = get_env_str("FLASK_ENV", "development")
         self.ENV = self.FLASK_ENV
@@ -67,9 +67,16 @@ class Config:
         # Session
         self.SESSION_PERMANENT = True
         self.PERMANENT_SESSION_LIFETIME = timedelta(days=31)
-        self.SESSION_COOKIE_HTTPONLY = True
-        self.SESSION_COOKIE_SAMESITE = "Lax"
-        self.SESSION_COOKIE_SECURE = self.FLASK_ENV != "development"
+        self.SESSION_COOKIE_HTTPONLY = get_env_bool("SESSION_COOKIE_HTTPONLY", "true")
+        self.SESSION_COOKIE_SAMESITE = get_env_str("SESSION_COOKIE_SAMESITE", "Lax")
+        self.SESSION_COOKIE_SECURE = get_env_bool(
+            "SESSION_COOKIE_SECURE", str(self.FLASK_ENV != "development")
+        )
 
         # Testing
         self.TESTING = get_env_bool("TESTING", "false")
+
+        # Caching
+        self.CACHE_TYPE = get_env_str("CACHE_TYPE", "SimpleCache")
+        self.CACHE_DEFAULT_TIMEOUT = int(get_env_str("CACHE_DEFAULT_TIMEOUT", "300"))
+        self.CACHE_REDIS_URL = get_env_str("CACHE_REDIS_URL")
