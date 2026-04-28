@@ -33,24 +33,24 @@ class MockArrayRemove:
 class MockBatch:
     def __init__(self, db: Any) -> None:
         self.db = db
-        self.updates: list[tuple[Any, Any]] = []
+        self.updates: list[tuple[Any, str, Any]] = []
         self.commit = unittest.mock.MagicMock(side_effect=self._real_commit)
 
     def update(self, ref: Any, data: Any) -> None:
-        self.updates.append((ref, data))
+        self.updates.append((ref, "UPDATE", data))
 
     def set(self, ref: Any, data: Any, merge: bool = False) -> None:
-        # For set with merge=True, it's like update.
-        # For simplicity in tests, we just update.
-        self.updates.append((ref, data))
+        self.updates.append((ref, "SET", data))
 
     def delete(self, ref: Any) -> None:
-        self.updates.append((ref, "DELETE"))
+        self.updates.append((ref, "DELETE", None))
 
     def _real_commit(self) -> None:
-        for ref, data in self.updates:
-            if data == "DELETE":
+        for ref, op, data in self.updates:
+            if op == "DELETE":
                 ref.delete()
+            elif op == "SET":
+                ref.set(data)
             else:
                 ref.update(data)
 
