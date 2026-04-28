@@ -7,7 +7,7 @@ dependencies = [
     "gunicorn==25.1.0",
     "Flask-Mail==0.10.0",
     "Pillow==12.1.1",
-    "pydantic==2.12.5",
+    "pydantic==2.13.3",
     "Flask-WTF==1.2.2",
     "types-WTForms==3.2.1.20260312",
     "imgur-python==0.2.4",
