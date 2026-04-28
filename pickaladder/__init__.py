@@ -38,6 +38,7 @@ from .context_processors import (
     inject_pending_tournament_invites,
     inject_unread_messages_count,
 )
+from .core.logging import setup_logging
 from .extensions import csrf, login_manager, mail
 from .user.helpers import smart_display_name, wrap_user
 from .user.models import UserSession
@@ -60,49 +61,25 @@ class UUIDConverter(BaseConverter):
 def _configure_mail_logging(app: Flask) -> None:
     """Configure detailed mail configuration logging."""
     if not app.config.get("TESTING"):
-        print(
-            f"DEBUG: Mail User loaded: {bool(app.config.get('MAIL_USERNAME'))}",
-            file=sys.stderr,
-        )
-        print(
-            f"DEBUG: Mail Password loaded: {bool(app.config.get('MAIL_PASSWORD'))}",
-            file=sys.stderr,
-        )
-        print(
-            f"DEBUG: Mail Config - Server: {app.config.get('MAIL_SERVER')}",
-            file=sys.stderr,
-        )
-        print(
-            f"DEBUG: Mail Config - Port: {app.config.get('MAIL_PORT')}", file=sys.stderr
-        )
-        print(
-            f"DEBUG: Mail Config - TLS: {app.config.get('MAIL_USE_TLS')}",
-            file=sys.stderr,
-        )
-        print(
-            f"DEBUG: Mail Config - SSL: {app.config.get('MAIL_USE_SSL')}",
-            file=sys.stderr,
-        )
+        app.logger.debug(f"Mail User loaded: {bool(app.config.get('MAIL_USERNAME'))}")
+        app.logger.debug(f"Mail Password loaded: {bool(app.config.get('MAIL_PASSWORD'))}")
+        app.logger.debug(f"Mail Config - Server: {app.config.get('MAIL_SERVER')}")
+        app.logger.debug(f"Mail Config - Port: {app.config.get('MAIL_PORT')}")
+        app.logger.debug(f"Mail Config - TLS: {app.config.get('MAIL_USE_TLS')}")
+        app.logger.debug(f"Mail Config - SSL: {app.config.get('MAIL_USE_SSL')}")
         pwd = app.config.get("MAIL_PASSWORD")
         if pwd:
-            print(
-                f"DEBUG: Mail Config - Password Length: {len(pwd)}",
-                file=sys.stderr,
-            )
+            app.logger.debug(f"Mail Config - Password Length: {len(pwd)}")
             if len(pwd) == APP_PASSWORD_LENGTH:
-                print(
-                    "DEBUG: Password length matches standard App Password length "
-                    f"({APP_PASSWORD_LENGTH}).",
-                    file=sys.stderr,
+                app.logger.debug(
+                    f"Password length matches standard App Password length ({APP_PASSWORD_LENGTH})."
                 )
             else:
-                print(
-                    "DEBUG: Password length DOES NOT match standard App Password "
-                    f"length ({APP_PASSWORD_LENGTH}). Possible regular password used?",
-                    file=sys.stderr,
+                app.logger.debug(
+                    f"Password length DOES NOT match standard App Password length ({APP_PASSWORD_LENGTH}). Possible regular password used?"
                 )
         else:
-            print("DEBUG: Mail Config - No Password set!", file=sys.stderr)
+            app.logger.debug("Mail Config - No Password set!")
 
 
 def _load_cred_from_env(flask_env: str | None) -> tuple[Any, str | None]:
@@ -285,6 +262,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         static_url_path="/static",
     )
 
+    setup_logging(app)
     _load_config(app, test_config)
     _configure_mail_logging(app)
     _initialize_firebase(app)
