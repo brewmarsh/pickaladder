@@ -24,49 +24,64 @@
 - [x] **Phase 20: Visual Polish & UX Refinement**
 - [x] **Phase 21: Data Access & Scale**
 - [x] **Phase 22: Architectural Refactor & Type Safety**
-- [x] **Phase 23: Production Readiness & Observability** (completed 2026-04-28)
+- [x] **Phase 23: Production Readiness & Observability**
+- [x] **Phase 24: Asynchronous Processing & Reliability**
+- [x] **Phase 25: High-Performance Data Access (Caching)**
+- [x] **Phase 26: Viral Growth & Launch Prep** (completed 2026-04-28)
+- [ ] **Phase 27: Operational Dashboard**
+- [ ] **Phase 28: Advanced Tournament Formats**
+- [ ] **Phase 29: In-app Feedback & Support**
 
 ---
 
 ## Phase Details
 
-... (existing phases) ...
+...
 
-### Phase 21: Data Access & Scale
-**Goal**: Address performance bottlenecks and implement reusable pagination.
-**Depends on**: Phase 20
-**Requirements**: [SCALE-01, SCALE-02, SCALE-03]
+### Phase 26: Viral Growth & Launch Prep
+**Goal**: Finalize the user-facing polish for launch day.
+**Depends on**: Phase 25
+**Requirements**: [GROWTH-01, GROWTH-02]
 **Success Criteria**:
-  1. Standardized pagination utility for Firestore.
-  2. N+1 queries resolved in core views.
+  1. Enhanced Referral System with Social Credit rewards.
+  2. Open Graph (OG) meta tags for dynamic social sharing of Brag Cards.
+  3. Final SEO basics (robots.txt, sitemap) and launch audit completed.
 **Plans**:
-- [x] 21-01-PLAN.md — Pagination & Query Optimization
+- [x] 26-01-PLAN.md — Viral Loops & Sharing
+- [x] 26-02-PLAN.md — Final Launch Audit & SEO
 
-### Phase 22: Architectural Refactor & Type Safety
-**Goal**: Modularize the codebase and achieve 100% type hint coverage.
-**Depends on**: Phase 21
-**Requirements**: [ARCH-01, ARCH-02]
+### Phase 27: Operational Dashboard
+**Goal**: Centralize production monitoring for admins to ensure system health and track growth.
+**Depends on**: Phase 23, Phase 26
+**Requirements**: [OPS-01]
 **Success Criteria**:
-  1. Large route files split into modules.
-  2. Zero ANN violations in ruff.
+  1. Automated error persistence to `system_errors` collection.
+  2. Integrated Dashboard in Admin panel with Audit Logs, Errors, and Growth charts.
+  3. Expanded `/health` check with cache and DB status.
 **Plans**:
-- [x] 22-01-PLAN.md — Modularize User Routes & Service Consolidation
-- [x] 22-02-PLAN.md — Modularize Group Routes & Service Consolidation
-- [x] 22-03-PLAN.md — Type Safety Blitz
+- [ ] 27-01-PLAN.md — Error Persistence & Admin Dashboard Foundation
 
-### Phase 23: Production Readiness & Observability
-**Goal**: Finalize the deployment environment, add centralized logging, and ensure robust security project-wide.
-**Depends on**: Phase 22
-**Requirements**: [PROD-01, PROD-02, PROD-03, PROD-04]
+### Phase 28: Advanced Tournament Formats
+**Goal**: Support competitive pickleball structures like Round Robin and Pool Play.
+**Depends on**: Phase 10
+**Requirements**: [TOUR-03]
 **Success Criteria**:
-  1. Centralized structured logging utility.
-  2. Audit trail for administrative actions in Firestore.
-  3. Hardened session security and CSRF protection.
-  4. Endpoint rate limiting for sensitive operations.
+  1. Round Robin format fully functional in UI.
+  2. Pool Play (Pools -> Bracket) generation logic implemented.
+  3. Standings engine with tie-break support.
 **Plans**:
-- [x] 23-01-PLAN.md — Centralized Logging & Audit System
-- [x] 23-02-PLAN.md — Security Hardening & Rate Limiting
-- [x] 23-03-PLAN.md — CI/CD Enrichment
+- [To be planned]
+
+### Phase 29: In-app Feedback & Support
+**Goal**: Establish a direct feedback loop between users and the team.
+**Depends on**: Phase 26
+**Requirements**: [ENG-01]
+**Success Criteria**:
+  1. Feedback submission UI accessible to all authenticated users.
+  2. Admin interface to review and triage feedback.
+  3. Feedback status tracking and notifications.
+**Plans**:
+- [To be planned]
 
 ---
 
@@ -75,7 +90,10 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 ...
-| 20. Visual Polish & UX Refinement | 2/2 | Completed | 2026-04-27 |
-| 21. Data Access & Scale | 1/1 | Completed | 2026-04-27 |
-| 22. Architectural Refactor | 3/3 | Completed | 2026-04-27 |
-| 23. Production Readiness | 3/3 | Complete   | 2026-04-28 |
+| 23. Production Readiness | 3/3 | Completed | 2026-04-28 |
+| 24. Asynchronous Processing | 2/2 | Completed | 2026-04-28 |
+| 25. Caching & Performance | 1/1 | Completed | 2026-04-28 |
+| 26. Viral Growth & Launch Prep | 2/2 | Complete   | 2026-04-28 |
+| 27. Operational Dashboard | 0/1 | Planned    | - |
+| 28. Advanced Formats | 0/0 | Planned    | - |
+| 29. Feedback & Support | 0/0 | Planned    | - |

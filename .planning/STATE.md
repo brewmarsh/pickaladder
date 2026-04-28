@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-last_updated: "2026-04-28T20:20:09.313Z"
+milestone: "12"
+milestone_name: Operational Excellence & Expansion
+status: in-progress
+last_updated: "2026-04-28T23:00:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
-  percent: 100
+  completed_phases: 0
+  total_plans: 1
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State: pickaladder
@@ -17,42 +17,36 @@ progress:
 ## Project Reference
 
 **Core Value:** A robust and professional platform for pickleball ladder management that prioritizes ranking integrity and seamless external integrations.
-**Current Focus:** Milestone 10 Complete: Performance, Scale & Architectural Integrity.
+**Current Focus:** Milestone 12: Operational Excellence & Expansion.
 
 ## Current Position
 
-**Phase:** Complete
-**Plan:** N/A
-**Status:** Phase 23 (Production Readiness & Observability) and Milestone 10 Complete.
+**Phase:** Phase 27: Operational Dashboard
+**Plan:** 27-01-PLAN.md
+**Status:** Initializing Milestone 12. Planning Phase 27.
 
-[####################] 100% (Overall Progress) - Milestone 10
-[####################] 100% (Phase 23 Progress)
+[                    ] 0% (Overall Progress) - Milestone 12
+[                    ] 0% (Phase 27 Progress)
 
 ## Performance Metrics
 
-- **Phase 1-22 Completion:** 100%
-- **Phase 23-01 & 23-02 Completion:** 100%
+- **Phase 1-26 Completion:** 100%
 - **Critical Path Hygiene:** Green (All tests passing)
-- **Quality Gates:** All strict ruff checks passing.
+- **Monitoring Capability:** Basic logging active.
 
 ## Accumulated Context
 
 ### Decisions
 
-- **Messaging Architecture:** Leveraged Firestore Real-time listeners for instant chat and notifications.
-- **Marketplace Discovery**: Implemented a unified discovery layer for both Groups and Divisions with granular visibility controls (Public, Unlisted, Private).
-- **Membership Orchestration**: Transitioned to a formal "Request to Join" workflow for non-open groups.
-- **Architectural Refactor**: Moving towards a domain-driven route structure where blueprints are split into sub-modules (e.g., `routes/profile.py`) to keep files < 300 lines.
-- [Phase 22]: Split the monolithic pickaladder/group/routes.py into 5 specialized modules (discovery, management, membership, sessions, stats).
-- [Phase 22]: Migrated direct Firestore manipulations in route handlers (like join/leave group) into GroupService methods.
-- [Phase 22]: Addressed all ruff ANN violations in pickaladder/group/ by adding comprehensive type hints, improving maintainability.
-- [Phase 23]: Use standard Flask app.logger configured with structured formatting for consistency.
-- [Phase 23]: Store audit logs in a dedicated 'audit_logs' collection in Firestore for persistence and easy querying.
-- [Phase 23]: Integrated automated performance benchmarking into the CI/CD pipeline using a custom script and mockfirestore enhancements.
+- [Phase 27]: Error rates will be tracked by persisting server-side exceptions (500 errors) into a `system_errors` collection in Firestore.
+- [Phase 27]: Admin Dashboard will leverage existing Admin blueprint but add a new "Dashboard" tab with visualization components (Chart.js or similar).
+- [Phase 27]: `/health` endpoint will be enhanced to check downstream dependencies (Firestore, Redis/Memory Cache) to provide a more accurate system state.
 
 ### Todos
 
-- [ ] Phase 23: Production Readiness & Observability (Remaining plans).
+- [ ] Implement `ErrorService` to handle persistence of exceptions.
+- [ ] Create `system_errors` collection and indexes.
+- [ ] Design and implement the Admin Dashboard UI.
 
 ### Blockers
 
@@ -62,8 +56,9 @@ progress:
 
 **Last Session:**
 
-2026-04-28T15:30:00.000Z
+2026-04-28T23:00:00.000Z
 
-- Completed Phase 23, Plan 01: Centralized Logging & Audit System.
-- Implemented structured logging utility.
-- Implemented Firestore audit logging service and wired it to admin routes.
+- Initialized Milestone 12: Operational Excellence & Expansion.
+- Created `MILESTONE_12_DEFINITION.md`.
+- Updated `ROADMAP.md` and `REQUIREMENTS.md` with Phases 27-29.
+- Starting Phase 27: Operational Dashboard.
