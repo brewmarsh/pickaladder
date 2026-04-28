@@ -127,3 +127,22 @@ class AdminService:
         auth.update_user(user_id, email_verified=True)
         user_ref = db.collection("users").document(user_id)
         user_ref.update({"email_verified": True})
+
+    @staticmethod
+    def log_action(
+        db: "firestore.Client",
+        admin_id: str,
+        target_id: str | None,
+        action_type: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> str:
+        """Log an administrative action to the audit_logs collection."""
+        log_entry = {
+            "admin_id": admin_id,
+            "target_id": target_id,
+            "action": action_type,
+            "metadata": metadata or {},
+            "timestamp": firestore.SERVER_TIMESTAMP,
+        }
+        _, doc_ref = db.collection("audit_logs").add(log_entry)
+        return doc_ref.id
