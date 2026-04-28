@@ -11,7 +11,7 @@ from pickaladder.group.services.match_parser import _extract_team_ids, _get_matc
 
 
 def _check_partnership_win(
-    data: dict[str, Any], playerA_id: str, playerB_id: str, wins: int, losses: int
+    data: dict[str, object], playerA_id: str, playerB_id: str, wins: int, losses: int
 ) -> tuple[int, int]:
     """Determine if a partnership won or lost a specific match."""
     team1_ids, team2_ids = _extract_team_ids(data)
@@ -46,7 +46,7 @@ def get_partnership_stats(
 
 
 def _process_h2h_match(
-    match_doc: Any, playerA_id: str, playerB_id: str, stats: dict[str, Any]
+    match_doc: 'DocumentSnapshot', playerA_id: str, playerB_id: str, stats: dict[str, object]
 ) -> None:
     """Process a single match for head-to-head statistics."""
     data = match_doc.to_dict()
@@ -86,7 +86,7 @@ def _process_h2h_match(
 
 def get_head_to_head_stats(
     group_id: str, playerA_id: str, playerB_id: str
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Calculates head-to-head statistics for two players in doubles matches."""
     db = firestore.client()
     query = db.collection("matches").where(
@@ -94,7 +94,7 @@ def get_head_to_head_stats(
     )
     all_matches_in_group = list(query.stream())
 
-    h2h_stats: dict[str, Any] = {
+    h2h_stats: dict[str, object] = {
         "wins": 0,
         "losses": 0,
         "point_diff": 0,
@@ -123,7 +123,7 @@ def get_head_to_head_stats(
 
 
 def _update_all_time_streak(
-    data: dict[str, Any], user_id: str, current: int, longest: int
+    data: dict[str, object], user_id: str, current: int, longest: int
 ) -> tuple[int, int]:
     """Update current and longest winning streaks based on a single match."""
     p1_score, p2_score = _get_match_scores(data)
@@ -148,7 +148,7 @@ def _update_all_time_streak(
     return current, longest
 
 
-def _calculate_all_time_streaks(matches: list[Any], user_ref: Any) -> tuple[int, int]:
+def _calculate_all_time_streaks(matches: list[Any], user_ref: 'DocumentReference') -> tuple[int, int]:
     """Calculate current and longest winning streaks for a user."""
     from datetime import datetime
 
@@ -162,7 +162,7 @@ def _calculate_all_time_streaks(matches: list[Any], user_ref: Any) -> tuple[int,
     return current, max(longest, current)
 
 
-def get_user_group_stats(group_id: str, user_id: str) -> dict[str, Any]:
+def get_user_group_stats(group_id: str, user_id: str) -> dict[str, object]:
     """Calculate detailed statistics for a specific user within a group."""
     from pickaladder.group.services.leaderboard import get_group_leaderboard
 

@@ -26,8 +26,20 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_routes": patch(
-                "pickaladder.group.routes.firestore", new=self.mock_firestore_service
+            "firestore_discovery": patch(
+                "pickaladder.group.routes.discovery.firestore", new=self.mock_firestore_service
+            ),
+            "firestore_membership": patch(
+                "pickaladder.group.routes.membership.firestore", new=self.mock_firestore_service
+            ),
+            "firestore_management": patch(
+                "pickaladder.group.routes.management.firestore", new=self.mock_firestore_service
+            ),
+            "firestore_stats_routes": patch(
+                "pickaladder.group.routes.stats.firestore", new=self.mock_firestore_service
+            ),
+            "firestore_sessions": patch(
+                "pickaladder.group.routes.sessions.firestore", new=self.mock_firestore_service
             ),
             "firestore_utils": patch(
                 "pickaladder.group.utils.firestore", new=self.mock_firestore_service
