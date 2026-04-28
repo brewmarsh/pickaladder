@@ -89,13 +89,23 @@ def announcement() -> Response:
     """Update the global system announcement."""
     db = firestore.client()
     try:
+        announcement_text = request.form.get("announcement_text")
+        is_active = request.form.get("is_active") == "on"
+        level = request.form.get("level", "info")
         db.collection("system").document("settings").set(
             {
-                "announcement_text": request.form.get("announcement_text"),
-                "is_active": request.form.get("is_active") == "on",
-                "level": request.form.get("level", "info"),
+                "announcement_text": announcement_text,
+                "is_active": is_active,
+                "level": level,
             },
             merge=True,
+        )
+        AdminService.log_action(
+            db,
+            g.user.uid,
+            None,
+            "update_announcement",
+            {"text": announcement_text, "active": is_active, "level": level},
         )
         flash(ADMIN_MESSAGES["ANNOUNCEMENT_UPDATED"], "success")
     except Exception as e:
@@ -144,6 +154,7 @@ def admin_delete_match(match_id: str) -> Response:
     db = firestore.client()
     try:
         db.collection("matches").document(match_id).delete()
+        AdminService.log_action(db, g.user.uid, match_id, "delete_match")
         flash(ADMIN_MESSAGES["MATCH_DELETE_SUCCESS"], "success")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
@@ -183,6 +194,7 @@ def _perform_user_deletion(db: "firestore.Client", uid: str, email: str | None) 
     """Orchestrate the deletion of a user and flash results."""
     try:
         AdminService.delete_user(db, uid)
+        AdminService.log_action(db, g.user.uid, uid, "delete_user", {"email": email})
         flash(
             ADMIN_MESSAGES["USER_DELETED_COUNT"].format(identifier=email or uid),
             "success",
@@ -217,7 +229,9 @@ def admin_delete_user() -> Response:
 def delete_user(user_id: str) -> Response:
     """Delete a user from Firebase Auth and Firestore."""
     try:
-        AdminService.delete_user(firestore.client(), user_id)
+        db = firestore.client()
+        AdminService.delete_user(db, user_id)
+        AdminService.log_action(db, g.user.uid, user_id, "delete_user")
         flash(ADMIN_MESSAGES["USER_DELETE_SUCCESS"], "success")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
@@ -229,7 +243,9 @@ def delete_user(user_id: str) -> Response:
 def promote_user(user_id: str) -> Response:
     """Promote a user to admin status in Firestore."""
     try:
-        name = AdminService.promote_user(firestore.client(), user_id)
+        db = firestore.client()
+        name = AdminService.promote_user(db, user_id)
+        AdminService.log_action(db, g.user.uid, user_id, "promote_user")
         flash(ADMIN_MESSAGES["ADMIN_PROMOTION"].format(name=name), "success")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
