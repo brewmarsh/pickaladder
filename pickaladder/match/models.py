@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class Match(UserDict):
     """A wrapper class for match data that provides methods for templates."""
 
-    def can_edit(self, user: Any) -> bool:
+    def can_edit(self, user: object) -> bool:
         """Return True if the user has permission to edit the match."""
         if not user:
             return False
@@ -37,7 +37,7 @@ class Match(UserDict):
         """Return True if the match is doubles."""
         return self.get("match_type") == "doubles" or self.get("matchType") == "doubles"
 
-    def get_matchup_info(self, user: Any) -> dict[str, Any]:
+    def get_matchup_info(self, user: object) -> dict[str, Any]:
         """Return matchup information relative to the given user."""
         res = {"user_partner": None, "opponent_name": "Unknown", "is_user_p1": False}
         uid = (
@@ -96,7 +96,7 @@ class Match(UserDict):
 
         return res
 
-    def get_user_result(self, user: Any) -> str | None:
+    def get_user_result(self, user: object) -> str | None:
         """Return the match result for the given user ('win', 'loss', or None)."""
         uid = (
             user.get("uid")
@@ -128,7 +128,7 @@ class Match(UserDict):
             return "win" if is_p1 else "loss"
         return "loss" if is_p1 else "win"
 
-    def get_score_display(self, user: Any) -> tuple[int, int]:
+    def get_score_display(self, user: object) -> tuple[int, int]:
         """Return (user_score, opponent_score) tuple."""
         uid = (
             user.get("uid")
@@ -173,11 +173,11 @@ class MatchSubmission:
     namedTeam1Id: str | None = None
     namedTeam2Id: str | None = None
 
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: str) -> object:
         """Allow dict-like access for backward compatibility or convenience."""
         return getattr(self, key)
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: str, default: object = None) -> object:
         """Allow dict-like get for backward compatibility."""
         return getattr(self, key, default)
 
@@ -222,6 +222,22 @@ class Score(TypedDict, total=False):
 
     player1Score: int
     player2Score: int
+
+
+class Challenge(TypedDict, total=False):
+    """A formal challenge between two users."""
+
+    id: str
+    challenger_id: str
+    challenged_id: str
+    status: str  # pending, accepted, completed, expired, declined
+    wager_amount: int
+    match_id: str
+    winner_id: str
+    created_at: Any
+    expires_at: Any
+    accepted_at: Any
+    resolved_at: Any
 
 
 class MatchDict(FirestoreDocument, Score, total=False):

@@ -40,7 +40,7 @@ class MatchStatsCalculator:
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         """Calculate Elo and win/loss updates for both players."""
 
-        def get_stat(data: dict[str, Any] | None, key: str, default: Any) -> Any:
+        def get_stat(data: dict[str, Any] | None, key: str, default: float) -> float:
             if data is None:
                 return default
             return data.get("stats", {}).get(key, default)

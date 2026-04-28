@@ -67,6 +67,18 @@ class MatchCommandService(BaseRepository):
         )
         batch.commit()
 
+        # Phase 19: Challenge Resolution
+        if sub.match_type == "singles" and match_doc_data.get("winnerId"):
+            from pickaladder.match.services.challenge_service import ChallengeService
+
+            ChallengeService.find_and_resolve_challenge(
+                db,
+                sub.player_1_id,
+                sub.player_2_id,
+                new_match_ref.id,
+                match_doc_data["winnerId"],
+            )
+
         # Log community activity
         ActivityService.log_activity(
             db,
@@ -93,7 +105,7 @@ class MatchCommandService(BaseRepository):
         return cls._build_match_result(new_match_ref.id, match_doc_data)
 
     @staticmethod
-    def _parse_match_date(date_input: Any) -> datetime.datetime:
+    def _parse_match_date(date_input: str | datetime.datetime) -> datetime.datetime:
         """Parse match date input into a timezone-aware datetime."""
         if isinstance(date_input, str) and date_input:
             return datetime.datetime.strptime(date_input, "%Y-%m-%d").replace(
@@ -378,7 +390,7 @@ class MatchCommandService(BaseRepository):
 
     @classmethod
     def update_match_score(
-        cls, match_id: str, s1_raw: Any, s2_raw: Any, editor_uid: str
+        cls, match_id: str, s1_raw: str | int, s2_raw: str | int, editor_uid: str
     ) -> None:
         """Update a match score with permission checks and stats rollback."""
         from firebase_admin import firestore

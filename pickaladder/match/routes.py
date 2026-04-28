@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 @bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
 @login_required
-def edit_match(match_id: str) -> Any:
+def edit_match(match_id: str) -> "Response":
     """Edit an existing match's scores."""
     if request.method == "POST":
         try:
@@ -57,7 +57,7 @@ def edit_match(match_id: str) -> Any:
 @bp.route("/<string:match_id>")
 @bp.route("/summary/<string:match_id>")
 @login_required
-def view_match_summary(match_id: str) -> Any:
+def view_match_summary(match_id: str) -> "Response":
     """Display the summary of a single match."""
     db = firestore.client()
     context = MatchQueryService.get_match_summary_context(db, match_id)
@@ -69,7 +69,7 @@ def view_match_summary(match_id: str) -> Any:
 
 
 def _populate_match_form_choices(  # noqa: PLR0913
-    db: Any,
+    db: "firestore.Client",
     form: MatchForm,
     user_id: str,
     group_id: str | None,
@@ -99,7 +99,7 @@ def _populate_match_form_choices(  # noqa: PLR0913
 
 
 def _handle_record_match_get(  # noqa: PLR0913
-    db: Any,
+    db: "firestore.Client",
     form: MatchForm,
     user_id: str,
     group_id: str | None,
@@ -137,7 +137,7 @@ def _prepopulate_players_from_args(form: MatchForm) -> None:
 
 @bp.route("/record", methods=["GET", "POST"])
 @login_required
-def record_match() -> Any:
+def record_match() -> "Response":
     """Handle match recording for both web form and optimistic JSON submission."""
     db, user_id = firestore.client(), g.user.uid
     group_id, t_id = request.args.get("group_id"), request.args.get("tournament_id")
@@ -164,8 +164,8 @@ def record_match() -> Any:
 
 
 def _handle_match_submission(
-    db: Any, form: MatchForm, group_id: str | None, t_id: str | None
-) -> Any:
+    db: "firestore.Client", form: MatchForm, group_id: str | None, t_id: str | None
+) -> "Response":
     """Process form data and record the match."""
     data = form.data
     submission = MatchSubmission(
@@ -209,7 +209,7 @@ def _get_record_match_redirect(submission: MatchSubmission, match_id: str) -> st
     return url_for("match.view_match_summary", match_id=match_id)
 
 
-def _get_record_match_context(db: Any, t_id: str | None) -> dict[str, Any]:
+def _get_record_match_context(db: "firestore.Client", t_id: str | None) -> dict[str, Any]:
     """Build context for record match template."""
     t_name = None
     if t_id:
@@ -220,7 +220,7 @@ def _get_record_match_context(db: Any, t_id: str | None) -> dict[str, Any]:
 
 @bp.route("/history")
 @login_required
-def get_match_history() -> Any:
+def get_match_history() -> "Response":
     """Fetch paginated match history for the current user."""
     db = firestore.client()
     cursor = request.args.get("cursor")
@@ -236,7 +236,7 @@ def get_match_history() -> Any:
 
 @bp.route("/leaderboard")
 @login_required
-def leaderboard() -> Any:
+def leaderboard() -> "Response":
     """Display a global leaderboard.
 
     Note: This is a simplified, non-scalable implementation. A production-ready
@@ -292,3 +292,82 @@ def leaderboard() -> Any:
         friend_statuses=friend_statuses,
         current_user_id=user_id,
     )
+
+
+@bp.route("/challenge/create", methods=["POST"])
+@login_required
+def create_challenge() -> "Response":
+    """Create a new challenge."""
+    db = firestore.client()
+    data = request.get_json() or {}
+    challenged_id = data.get("challenged_id")
+    wager = data.get("wager", 0)
+
+    if not challenged_id:
+        return jsonify({"status": "error", "message": "challenged_id is required"}), 400
+
+    try:
+        from .services.challenge_service import ChallengeService
+
+        challenge_id = ChallengeService.issue_challenge(
+            db, g.user.uid, challenged_id, int(wager)
+        )
+        return jsonify({"status": "success", "challenge_id": challenge_id}), 201
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+@bp.route("/challenge/<string:challenge_id>/accept", methods=["POST"])
+@login_required
+def accept_challenge(challenge_id: str) -> "Response":
+    """Accept a pending challenge."""
+    db = firestore.client()
+    try:
+        from .services.challenge_service import ChallengeService
+
+        ChallengeService.accept_challenge(db, challenge_id, g.user.uid)
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+@bp.route("/challenge/<string:challenge_id>/decline", methods=["POST"])
+@login_required
+def decline_challenge(challenge_id: str) -> "Response":
+    """Decline a pending challenge."""
+    db = firestore.client()
+    try:
+        from .services.challenge_service import ChallengeService
+
+        ChallengeService.decline_challenge(db, challenge_id, g.user.uid)
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+@bp.route("/challenge/<string:challenge_id>/cancel", methods=["POST"])
+@login_required
+def cancel_challenge(challenge_id: str) -> "Response":
+    """Cancel a pending challenge."""
+    db = firestore.client()
+    try:
+        from .services.challenge_service import ChallengeService
+
+        ChallengeService.cancel_challenge(db, challenge_id, g.user.uid)
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+@bp.route("/api/challenges")
+@login_required
+def get_challenges_api() -> "Response":
+    """Fetch categorized challenges for the current user."""
+    db = firestore.client()
+    try:
+        from .services.challenge_service import ChallengeService
+
+        challenges = ChallengeService.get_user_challenges(db, g.user.uid)
+        return jsonify(challenges), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
