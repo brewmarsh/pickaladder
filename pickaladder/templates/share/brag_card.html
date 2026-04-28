@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user_name }}'s Brag Card - Pickaladder</title>
+
+    {# Open Graph Meta Tags #}
+    <meta property="og:title" content="{{ user_name }}'s Pickaladder Stats">
+    <meta property="og:description" content="Rank #{{ rank }} | {{ streak }} Win Streak in {{ group.name }}. Join the ladder!">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="{{ avatar_url }}">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cards.css') }}">
+
+    <style>
+        body {
+            background-color: #121212;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .share-card-container {
+            width: 100%;
+            max-width: 400px;
+        }
+        .share-card-visual {
+            height: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div id="bragCardContainer" class="share-card-container">
+        <div class="share-card-header">player stats</div>
+        <img src="{{ avatar_url }}" alt="{{ user_name }}" class="share-card-avatar"
+             onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+        <h2 class="share-card-title">{{ user_name }}</h2>
+
+        <div class="share-card-stat">
+            {% if rank == 1 %}
+            GROUP RANKING: RANK #1
+            {% elif streak >= 3 %}
+            CURRENT STREAK: {{ streak }} WINS
+            {% else %}
+            GROUP RANKING: RANK #{{ rank }}
+            {% endif %}
+        </div>
+
+        <div class="share-card-visual">
+            <canvas id="bragCardSparkline"></canvas>
+        </div>
+
+        <div class="share-card-footer">
+            Pickaladder - {{ group.name }}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const trendData = {{ trend_data | tojson }};
+            const ctx = document.getElementById('bragCardSparkline').getContext('2d');
+            
+            // Filter out nulls for the sparkline
+            const cleanData = trendData.filter(v => v !== null);
+
+            // Fallback color if CSS variable is not available
+            const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || '#c3ff00';
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: cleanData.map((_, i) => i),
+                    datasets: [{
+                        data: cleanData,
+                        borderColor: accentColor,
+                        borderWidth: 4,
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            display: false,
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
