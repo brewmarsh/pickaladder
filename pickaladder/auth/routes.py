@@ -20,9 +20,9 @@ from flask_login import login_user, logout_user
 from pickaladder.constants.messages import AUTH_MESSAGES
 from pickaladder.core.security import rate_limit
 from pickaladder.errors import DuplicateResourceError
+from pickaladder.services.mail_service import EmailError, MailService
 from pickaladder.user import UserService
 from pickaladder.user.helpers import wrap_user
-from pickaladder.utils import EmailError, send_email
 
 from . import bp
 from .forms import ChangePasswordForm, LoginForm, RegisterForm
@@ -194,7 +194,7 @@ def _create_firebase_auth_user(email: str, password: str, username: str) -> "Res
     """Create user in Firebase Auth and send verification email."""
     user_record = auth.create_user(email=email, password=password, email_verified=False)
     verification_link = auth.generate_email_verification_link(email)
-    send_email(
+    MailService.send_email(
         to=email,
         subject="Verify Your Email",
         template="email/verify_email.html",

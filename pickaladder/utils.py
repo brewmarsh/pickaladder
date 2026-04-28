@@ -2,51 +2,17 @@
 
 from __future__ import annotations
 
-import smtplib
 from typing import Any
 
-from flask import current_app, render_template
-from flask_mail import Message
-
-from pickaladder.core.constants import SMTP_AUTH_ERROR_CODE
-
-from .extensions import mail
+from pickaladder.services.mail_service import EmailError, MailService
 
 
-class EmailError(Exception):
-    """Base class for email errors."""
+def send_email(to: str | list[str], subject: str, template: str, **kwargs: Any) -> None:
+    """Send an email to a recipient asynchronously.
 
-    pass
-
-
-def send_email(to: str | list[str], subject: str, template: str, **kwargs: object) -> None:
-    """Send an email to a recipient.
-
-    Raises:
-        EmailError: If sending the email fails.
+    This function is maintained for backward compatibility.
     """
-    msg = Message(
-        subject,
-        recipients=[to],
-        html=render_template(template, **kwargs),
-        sender=current_app.config["MAIL_DEFAULT_SENDER"],
-    )
-    try:
-        mail.send(msg)
-    except smtplib.SMTPAuthenticationError as e:
-        if e.smtp_code == SMTP_AUTH_ERROR_CODE:
-            error_message = (
-                f"Authentication failed with code {SMTP_AUTH_ERROR_CODE}. This "
-                "specifically means Google rejected the password because it expects "
-                "an App Password. Even if your password is 16 characters, please "
-                "ensure it is a freshly generated App Password, not your regular "
-                "account password. See "
-                "https://support.google.com/accounts/answer/185833"
-            )
-            raise EmailError(error_message) from e
-        raise EmailError(f"SMTP Authentication failed: {e}") from e
-    except Exception as e:
-        raise EmailError(f"Failed to send email: {e}") from e
+    MailService.send_email(to, subject, template, **kwargs)
 
 
 def mask_email(email: str) -> str:

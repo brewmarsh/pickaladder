@@ -22,8 +22,8 @@ from pickaladder.core.constants import (
     RECENT_MATCHES_LIMIT,
 )
 from pickaladder.group.services.match_parser import _extract_team_ids, _get_match_scores
+from pickaladder.services.mail_service import MailService
 from pickaladder.user.helpers import smart_display_name
-from pickaladder.utils import send_email
 
 
 def get_random_joke() -> str:
@@ -620,28 +620,25 @@ def get_user_group_stats(group_id: str, user_id: str) -> dict[str, object]:
     return stats
 
 
-def _perform_invite_email_task(invite_token: str, email_data: dict[str, object]) -> None:
-    """Perform the email sending task."""
+def _perform_invite_email_task(invite_token: str, email_data: dict[str, Any]) -> None:
+    """Perform the email sending task synchronously (meant for background thread)."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(invite_token)
     try:
-        send_email(**email_data)
+        MailService.send_email_now(**email_data)
         invite_ref.update({"status": "sent", "last_error": firestore.DELETE_FIELD})
     except Exception as e:
-        print(f"ERROR: Background invite email failed: {e}", file=sys.stderr)
         invite_ref.update({"status": "failed", "last_error": str(e)})
+        raise
 
 
 def send_invite_email_background(
-    app: Flask, invite_token: str, email_data: dict[str, object]
+    app: Flask, invite_token: str, email_data: dict[str, Any]
 ) -> None:
-    """Send an invite email in a background thread."""
+    """Send an invite email using the centralized TaskExecutor."""
+    from pickaladder.extensions import executor
 
-    def task() -> None:
-        with app.app_context():
-            _perform_invite_email_task(invite_token, email_data)
-
-    threading.Thread(target=task).start()
+    executor.run_async(_perform_invite_email_task, invite_token, email_data)
 
 
 def _add_friend_pair(batch: 'WriteBatch', member_ref: 'DocumentReference', new_member_ref: 'DocumentReference') -> int:

@@ -9,7 +9,7 @@ from firebase_admin import auth, firestore, storage
 from flask import current_app
 from werkzeug.utils import secure_filename
 
-from pickaladder.utils import EmailError, send_email
+from pickaladder.services.mail_service import EmailError, MailService
 
 from .dupr_service import DUPRService
 
@@ -80,7 +80,7 @@ def update_email_address(
         db.collection("users").document(user_id).update(update_data)
 
         try:
-            send_email(
+            MailService.send_email(
                 to=new_email,
                 subject="Verify Your New Email Address",
                 template="email/verify_email.html",

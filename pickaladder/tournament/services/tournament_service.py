@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
-from pickaladder.utils import send_email
+from pickaladder.services.mail_service import MailService
 
 from .base import TournamentBase
 from .invites import TournamentInvites
@@ -327,7 +327,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         """Internal helper to send email if user has one."""
         if not user.get("email"):
             return
-        send_email(
+        MailService.send_email(
             to=user["email"],
             subject=f"Results: {t_data['name']}",
             template="email/tournament_results.html",
