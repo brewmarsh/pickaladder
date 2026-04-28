@@ -376,30 +376,32 @@ def _prepare_new_user_info(db: "firestore.Client", uid: str) -> tuple[dict[str, 
     return user_info, email
 
 
-def _get_or_create_user_profile(db: "firestore.Client", uid: str) -> dict[str, Any]:
+def _get_or_create_user_profile(db: "firestore.Client", uid: str) -> tuple[dict[str, Any], bool]:
     """Retrieve existing user profile or create a new one from Firebase Auth."""
     user_doc_ref = db.collection("users").document(uid)
     user_doc = user_doc_ref.get()
 
     if user_doc.exists:
-        return cast(dict[str, Any], user_doc.to_dict())
+        return cast(dict[str, Any], user_doc.to_dict()), False
 
     user_info, email = _prepare_new_user_info(db, uid)
     user_doc_ref.set(user_info)
 
     _merge_ghost_if_exists(db, uid, email)
 
-    return user_info
+    return user_info, True
 
 
 def _finalize_session_login(
-    user_info: dict[str, Any], uid: str, remember: bool
+    user_info: dict[str, Any], uid: str, remember: bool, is_new: bool = False
 ) -> None:
     """Initialize Flask-Login and server-side session."""
     user = wrap_user(user_info, uid=uid)
     login_user(user, remember=remember)
     session["user_id"] = uid
     session["is_admin"] = user_info.get("isAdmin", False)
+    if is_new:
+        session["first_login"] = True
     if remember:
         session.permanent = True
 
@@ -413,9 +415,9 @@ def session_login() -> "Response":
         uid = decoded_token["uid"]
         db = firestore.client()
 
-        user_info = _get_or_create_user_profile(db, uid)
+        user_info, is_new = _get_or_create_user_profile(db, uid)
         remember = request.json.get("remember", False)
-        _finalize_session_login(user_info, uid, remember)
+        _finalize_session_login(user_info, uid, remember, is_new=is_new)
 
         return jsonify({"status": "success"})
 

@@ -106,6 +106,10 @@ def dashboard() -> str:
     # Fetch community activity feed
     feed = ActivityService.get_global_feed(db, limit=10)
 
+    # Check for first login to show welcome modal
+    from flask import session
+    show_welcome = session.pop("first_login", False)
+
     # Remove user from data to avoid conflict with g.user passed to template
     data.pop("user", None)
 
@@ -113,6 +117,7 @@ def dashboard() -> str:
         "user_dashboard.html",
         user=g.user,
         feed=feed,
+        show_welcome=show_welcome,
         **data,
     )
 

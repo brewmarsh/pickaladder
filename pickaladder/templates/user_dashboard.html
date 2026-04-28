@@ -6,6 +6,7 @@
 {% block head %}
 {{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', filename='toggle.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/challenges.css') }}">
 {% endblock %}
 {% block content %}
 <div id="dashboard-content">
@@ -204,6 +205,9 @@
         {# Right Column: Competition Stack #}
         <div class="dashboard-column-right">
             <div class="competition-stack flex-column gap-4">
+                {# Challenge Hub #}
+                {% include "match/_challenge_hub.html" %}
+
                 {# Competitions Hub #}
                 <div class="competitions-hub">
                     <h3 class="sidebar-header">Competitions</h3>
@@ -325,6 +329,33 @@
         </div>
     </div>
 
+    {# Onboarding Welcome Modal #}
+    {% if show_welcome %}
+    <div class="modal fade" id="welcomeModal" tabindex="-1" role="dialog" aria-labelledby="welcomeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-volt shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center pt-0 px-4 pb-4">
+                    <div class="mb-4 fs-xxlarge">🚀</div>
+                    <h2 class="modal-title mb-3" id="welcomeModalLabel">Welcome to Pickaladder!</h2>
+                    <p class="text-muted mb-4">We're thrilled to have you here. Pickaladder is your ultimate companion for pickleball competition and community.</p>
+                    
+                    <div class="alert alert-volt border-0 mb-4 text-left">
+                        <h5 class="mb-2 text-dark">🏁 Your Mission</h5>
+                        <p class="small mb-0 text-dark">Check out your <strong>Rookie Quest</strong> on the dashboard. Complete those steps to unlock your full potential and start climbing the ranks!</p>
+                    </div>
+                    
+                    <button type="button" class="btn btn-volt btn-lg w-100 py-3" data-dismiss="modal">Let's Go!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}
 
@@ -334,6 +365,10 @@
     document.addEventListener('DOMContentLoaded', function () {
         const currentUserId = "{{ user.uid }}";
         const isAdmin = {{ 'true' if user.isAdmin else 'false' }};
+
+        {% if show_welcome %}
+        $('#welcomeModal').modal('show');
+        {% endif %}
 
         // Lazy load stats
         fetch('/api/stats/vanity_metrics')
