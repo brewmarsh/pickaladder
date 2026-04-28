@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from google.cloud.firestore_v1.document import DocumentReference
 
 
 def _get_ids_from_refs(refs: list[Any]) -> set[str]:
@@ -9,7 +12,7 @@ def _get_ids_from_refs(refs: list[Any]) -> set[str]:
 
 
 def _extract_id_from_match_slot(
-    slot_ref: Any, slot_data: dict[str, Any], slot_id: Any
+    slot_ref: DocumentReference | None, slot_data: dict[str, Any], slot_id: str | None
 ) -> str:
     """Extract ID from reference, dictionary data, or direct ID string."""
     return str(

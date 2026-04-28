@@ -10,6 +10,8 @@ from .core import _sanitize_user_data
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
+    from google.cloud.firestore_v1.document import DocumentReference
+    from google.cloud.firestore_v1.query import Query
 
 
 def _fetch_users_by_ids(db: Client, user_ids: list[str]) -> list[dict[str, Any]]:
@@ -25,7 +27,7 @@ def _fetch_users_by_ids(db: Client, user_ids: list[str]) -> list[dict[str, Any]]
     return results
 
 
-def _get_accepted_friends_query(user_ref: Any, limit: int | None = None) -> Any:
+def _get_accepted_friends_query(user_ref: DocumentReference, limit: int | None = None) -> Query:
     """Construct a query for accepted friends."""
     query = user_ref.collection("friends").where(
         filter=firestore.FieldFilter("status", "==", "accepted")
@@ -45,7 +47,7 @@ def get_user_friends(
     return _fetch_users_by_ids(db, friend_ids)
 
 
-def _get_friendship_ref(db: Client, user_id: str, target_id: str) -> Any:
+def _get_friendship_ref(db: Client, user_id: str, target_id: str) -> DocumentReference:
     """Get the Firestore reference for a friendship document."""
     return (
         db.collection("users")

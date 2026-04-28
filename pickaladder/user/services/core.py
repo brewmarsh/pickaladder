@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
+from ...core.pagination import FirestorePaginator
 from ..helpers import smart_display_name as _smart_display_name
 from .profile import (
     check_username_availability,
@@ -15,6 +16,8 @@ from .profile import (
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
+    from werkzeug.datastructures import FileStorage
+    from flask_wtf import FlaskForm
 
 
 def _sanitize_user_data(
@@ -88,43 +91,51 @@ def _process_user_doc(
     return None
 
 
-def _get_users_base_query(db: Client, exclude_ids: list[str], limit: int) -> Any:
+from flask_wtf import FlaskForm
+
+
+def _get_users_base_query(db: Client, exclude_ids: list[str], limit: int) -> firestore.Query:
     """Construct the base query for fetching users with ordering and limit."""
     try:
         return (
             db.collection("users")
             .order_by("createdAt", direction=firestore.Query.DESCENDING)
             .limit(limit + len(exclude_ids))
-            .stream()
         )
     except KeyError:
-        return db.collection("users").stream()
+        return db.collection("users")
 
 
 def get_all_users(
     db: Client,
     exclude_ids: list[str] | None = None,
     limit: int = 20,
+    cursor: str | None = None,
     public_only: bool = True,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], str | None]:
     """Fetch a list of users, excluding given IDs, sorted by date."""
     exclude_ids = exclude_ids or []
-    users_query = _get_users_base_query(db, exclude_ids, limit)
+    query = db.collection("users").order_by("createdAt", direction=firestore.Query.DESCENDING)
+
+    all_users_docs, next_cursor = FirestorePaginator.paginate(
+        query, limit + len(exclude_ids), cursor
+    )
 
     users = []
-    for doc in users_query:
+    for doc in all_users_docs:
         if processed := _process_user_doc(doc, exclude_ids, public_only):
             users.append(processed)
         if len(users) >= limit:
             break
-    return users
+
+    return users, next_cursor
 
 
-def _map_dupr_data(form_data: Any) -> tuple[str | None, float | None]:
+def _map_dupr_data(form_data: FlaskForm) -> tuple[str | None, float | None]:
     """Extract DUPR ID and rating from form data."""
     dupr_id = None
     if hasattr(form_data, "dupr_id") and form_data.dupr_id and form_data.dupr_id.data:
-        dupr_id = form_data.dupr_id.data.strip()
+        dupr_id = str(form_data.dupr_id.data).strip()
 
     rating = None
     if (
@@ -137,7 +148,7 @@ def _map_dupr_data(form_data: Any) -> tuple[str | None, float | None]:
 
 
 def _handle_profile_picture(
-    user_id: str, update_data: dict[str, Any], profile_picture_file: Any
+    user_id: str, update_data: dict[str, Any], profile_picture_file: FileStorage | None
 ) -> None:
     """Handle profile picture upload and update the update_data dictionary."""
     if not profile_picture_file:
@@ -183,11 +194,11 @@ def _handle_email_change(
     return None
 
 
-def _extract_profile_update_data(form_data: Any) -> dict[str, Any]:
+def _extract_profile_update_data(form_data: FlaskForm) -> dict[str, Any]:
     """Extract and map profile form data into a Firestore-ready dictionary."""
     update_data: dict[str, Any] = {
-        "name": form_data.name.data,
-        "username": form_data.username.data,
+        "name": getattr(form_data, "name").data if hasattr(form_data, "name") else "",
+        "username": getattr(form_data, "username").data if hasattr(form_data, "username") else "",
     }
     if hasattr(form_data, "dark_mode") and form_data.dark_mode:
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
@@ -214,9 +225,9 @@ def _commit_user_updates(
 def process_profile_update(
     db: Client,
     user_id: str,
-    form_data: Any,
+    form_data: FlaskForm,
     current_user_data: dict[str, Any],
-    profile_picture_file: Any = None,
+    profile_picture_file: FileStorage | None = None,
 ) -> dict[str, Any]:
     """Handle complex profile updates, including email change and verification."""
     update_data = _extract_profile_update_data(form_data)
@@ -230,7 +241,7 @@ def process_profile_update(
         return err
 
     email_res = _handle_email_change(
-        db, form_data.email.data, new_username, update_data, current_user_data
+        db, getattr(form_data, "email").data if hasattr(form_data, "email") else "", new_username, update_data, current_user_data
     )
     if email_res:
         return email_res
@@ -246,9 +257,11 @@ def _get_current_user_data(db: Client, user_id: str) -> dict[str, Any]:
     return doc.to_dict() or {}
 
 
-def _map_settings_update_data(form_data: Any) -> dict[str, Any]:
+def _map_settings_update_data(form_data: FlaskForm) -> dict[str, Any]:
     """Map form data to Firestore update dictionary."""
-    update_data: dict[str, Any] = {"username": form_data.username.data}
+    update_data: dict[str, Any] = {
+        "username": getattr(form_data, "username").data if hasattr(form_data, "username") else ""
+    }
     if hasattr(form_data, "dark_mode") and form_data.dark_mode:
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
     if hasattr(form_data, "name") and form_data.name and form_data.name.data:
@@ -266,16 +279,17 @@ def _map_settings_update_data(form_data: Any) -> dict[str, Any]:
 def update_settings(
     db: Client,
     user_id: str,
-    form_data: Any,
+    form_data: FlaskForm,
     current_user_data: dict[str, Any] | None = None,
-    profile_picture_file: Any = None,
+    profile_picture_file: FileStorage | None = None,
 ) -> dict[str, Any]:
     """Update user settings (username, rating, dark mode, and profile picture)."""
     if current_user_data is None:
         current_user_data = _get_current_user_data(db, user_id)
 
+    username = getattr(form_data, "username").data if hasattr(form_data, "username") else ""
     if err := _validate_username_change(
-        db, form_data.username.data, current_user_data.get("username")
+        db, username, current_user_data.get("username")
     ):
         return err
 
@@ -286,7 +300,7 @@ def update_settings(
         email_res = _handle_email_change(
             db,
             form_data.email.data,
-            form_data.username.data,
+            username,
             update_data,
             current_user_data,
         )
@@ -298,18 +312,28 @@ def update_settings(
 
 
 def search_users(
-    db: Client, current_user_id: str, search_term: str, public_only: bool = True
-) -> list[tuple[dict[str, Any], str | None, str | None]]:
+    db: Client,
+    current_user_id: str,
+    search_term: str,
+    limit: int = 20,
+    cursor: str | None = None,
+    public_only: bool = True,
+) -> tuple[list[tuple[dict[str, Any], str | None, str | None]], str | None]:
     """Search for users and return their friend status with the current user."""
-    query: Any = db.collection("users")
+    query: firestore.Query = db.collection("users")
     if search_term:
-        query = query.where("username", ">=", search_term).where(
-            "username", "<=", search_term + "\uf8ff"
+        query = (
+            query.where("username", ">=", search_term)
+            .where("username", "<=", search_term + "\uf8ff")
+            .order_by("username")
         )
+    else:
+        query = query.order_by("username")
 
-    all_users_docs = [
-        doc for doc in query.limit(20).stream() if doc.id != current_user_id
-    ]
+    all_users_docs, next_cursor = FirestorePaginator.paginate(query, limit, cursor)
+
+    # Filter out current user if present
+    all_users_docs = [doc for doc in all_users_docs if doc.id != current_user_id]
 
     friends_ref = db.collection("users").document(current_user_id).collection("friends")
     friend_statuses = {doc.id: doc.to_dict() for doc in friends_ref.stream()}
@@ -327,7 +351,7 @@ def search_users(
             else:
                 received_status = status
         user_items.append((sanitized_data, sent_status, received_status))
-    return user_items
+    return user_items, next_cursor
 
 
 def create_invite_token(db: Client, user_id: str) -> str:
@@ -346,16 +370,42 @@ def create_invite_token(db: Client, user_id: str) -> str:
 def update_dashboard_profile(
     db: Client,
     user_id: str,
-    form_data: Any,
+    form_data: FlaskForm,
     current_user_data: dict[str, Any] | None = None,
-    profile_picture_file: Any = None,
+    profile_picture_file: FileStorage | None = None,
 ) -> None:
     """Update user profile from dashboard form, including image upload."""
-    update_data: dict[str, Any] = {"dark_mode": bool(form_data.dark_mode.data)}
-    if form_data.dupr_rating.data is not None:
+    update_data: dict[str, Any] = {"dark_mode": bool(getattr(form_data, "dark_mode").data)}
+    if hasattr(form_data, "dupr_rating") and form_data.dupr_rating.data is not None:
         rating = float(form_data.dupr_rating.data)
         update_data.update({"duprRating": rating, "dupr_rating": rating})
 
     _handle_profile_picture(user_id, update_data, profile_picture_file)
 
     _commit_user_updates(db, user_id, update_data, current_user_data)
+
+
+def update_fcm_token(db: Client, user_id: str, token: str) -> None:
+    """Update the user's FCM token for push notifications."""
+    db.collection("users").document(user_id).update(
+        {"fcmToken": token, "updatedAt": firestore.SERVER_TIMESTAMP}
+    )
+
+
+def search_users_json(
+    db: Client, current_user_id: str, search_term: str
+) -> list[dict[str, Any]]:
+    """Search for users and return in JSON-friendly format for API."""
+    from flask import url_for
+    users, _ = search_users(db, current_user_id, search_term)
+    results = []
+    for user_data, _, _ in users:
+        results.append(
+            {
+                "id": user_data["id"],
+                "name": smart_display_name(user_data),
+                "avatar": user_data.get("profilePictureUrl")
+                or url_for("static", filename="user_icon.png"),
+            }
+        )
+    return results

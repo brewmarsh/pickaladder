@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
 
 
-def _format_match_date(match_date: Any) -> str:
+def _format_match_date(match_date: datetime.datetime | str | None) -> str:
     """Format match date to string."""
     if isinstance(match_date, datetime.datetime):
         return match_date.strftime("%b %d")

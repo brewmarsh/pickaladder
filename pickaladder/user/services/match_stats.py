@@ -32,7 +32,7 @@ def get_user_matches(
     return list(query.stream())
 
 
-def _process_match_for_streak(m: Any, user_id: str) -> dict[str, Any] | None:
+def _process_match_for_streak(m: DocumentSnapshot | dict[str, Any], user_id: str) -> dict[str, Any] | None:
     """Extract result and date information from a match object."""
     if hasattr(m, "to_dict"):
         data = m.to_dict()

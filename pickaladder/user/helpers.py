@@ -122,7 +122,7 @@ def smart_display_name(user: dict[str, Any] | User) -> str:
     username = user.get("username", "")
     name = user.get("name", "")
 
-    def is_ghost_val(val: Any) -> bool:
+    def is_ghost_val(val: str | None) -> bool:
         return isinstance(val, str) and val.startswith("ghost_")
 
     is_ghost = user.get("is_ghost") or is_ghost_val(uid) or is_ghost_val(username)
