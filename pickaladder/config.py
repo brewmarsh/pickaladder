@@ -72,6 +72,8 @@ class Config:
         self.SESSION_COOKIE_SECURE = get_env_bool(
             "SESSION_COOKIE_SECURE", str(self.FLASK_ENV != "development")
         )
+        self.REMEMBER_COOKIE_SECURE = self.SESSION_COOKIE_SECURE
+        self.REMEMBER_COOKIE_HTTPONLY = True
 
         # Testing
         self.TESTING = get_env_bool("TESTING", "false")

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /settings/
+Disallow: /auth/logout
+Disallow: /impersonate/
+Disallow: /api/
+
+Sitemap: https://pickaladder.com/sitemap.xml
