@@ -68,6 +68,8 @@ A robust and professional platform for pickleball ladder management that priorit
 ### 16. Production Readiness & Observability (PROD)
 - **PROD-01**: Implement a centralized, structured logging system for error tracking and system health monitoring. [DONE]
 - **PROD-02**: Implement a persistent administrative audit trail in Firestore to track sensitive actions. [DONE]
+- **PROD-03**: Harden application security including CSRF protection, secure cookies, and rate limiting. [DONE]
+- **PROD-04**: Integrate automated performance benchmarking into the CI/CD pipeline. [DONE]
 
 ## Traceability
 
@@ -82,6 +84,8 @@ A robust and professional platform for pickleball ladder management that priorit
 | ARCH-02 | Phase 22 | Completed |
 | PROD-01 | Phase 23 | Completed |
 | PROD-02 | Phase 23 | Completed |
+| PROD-03 | Phase 23 | Completed |
+| PROD-04 | Phase 23 | Completed |
 
 | AUDIT-03 | Phase 1 | Completed |
 | QUAL-01 | Phase 1 | Completed |
