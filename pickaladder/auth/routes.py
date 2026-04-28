@@ -18,6 +18,7 @@ from flask import (
 from flask_login import login_user, logout_user
 
 from pickaladder.constants.messages import AUTH_MESSAGES
+from pickaladder.core.security import rate_limit
 from pickaladder.errors import DuplicateResourceError
 from pickaladder.user import UserService
 from pickaladder.user.helpers import wrap_user
@@ -282,6 +283,7 @@ def _execute_registration(form: RegisterForm, username: str, email: str) -> "Res
 
 
 @bp.route("/register", methods=["GET", "POST"])
+@rate_limit(limit=5, window=60)
 def register() -> "Response":
     """Register a new user."""
     if invite_token := request.args.get("invite_token"):
@@ -304,6 +306,7 @@ def register() -> "Response":
 
 # TODO: Add type hints for Agent clarity
 @bp.route("/login", methods=["GET", "POST"])
+@rate_limit(limit=5, window=60)
 def login() -> "Response":
     """Render the login page.
 

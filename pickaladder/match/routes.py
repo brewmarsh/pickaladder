@@ -9,6 +9,7 @@ from flask import flash, g, jsonify, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, MATCH_MESSAGES
+from pickaladder.core.security import rate_limit
 from pickaladder.core.constants import (
     LEADERBOARD_GOLD_THRESHOLD,
     LEADERBOARD_SILVER_THRESHOLD,
@@ -137,6 +138,7 @@ def _prepopulate_players_from_args(form: MatchForm) -> None:
 
 @bp.route("/record", methods=["GET", "POST"])
 @login_required
+@rate_limit(limit=5, window=60)
 def record_match() -> "Response":
     """Handle match recording for both web form and optimistic JSON submission."""
     db, user_id = firestore.client(), g.user.uid

@@ -1,0 +1,45 @@
+import time
+from functools import wraps
+from typing import Any, Callable, Dict, List
+from flask import request, abort, current_app
+from collections import defaultdict
+
+# Simple in-memory storage for rate limiting
+# NOTE: This is per-process. In multi-worker environments (gunicorn),
+# each worker will have its own counter. For a truly production-grade
+# solution, a shared store like Redis should be used.
+_rate_limit_storage: Dict[str, List[float]] = defaultdict(list)
+
+def rate_limit(limit: int = 5, window: int = 60) -> Callable:
+    """
+    Rate limiter decorator.
+    
+    Args:
+        limit (int): Number of allowed requests within the window.
+        window (int): Time window in seconds.
+    """
+    def decorator(f: Callable) -> Callable:
+        @wraps(f)
+        def wrapped(*args: Any, **kwargs: Any) -> Any:
+            # Skip rate limiting in testing if needed, or keep it for verification
+            # If we want to skip:
+            # if current_app.testing: return f(*args, **kwargs)
+
+            # Key by remote address and endpoint
+            # We use both to ensure rate limiting is per-user per-endpoint
+            key = f"{request.remote_addr}:{request.endpoint}"
+            now = time.time()
+            
+            # Clean up old requests outside the window
+            _rate_limit_storage[key] = [t for t in _rate_limit_storage[key] if t > now - window]
+            
+            if len(_rate_limit_storage[key]) >= limit:
+                current_app.logger.warning(
+                    f"Rate limit exceeded for {request.remote_addr} on {request.endpoint}"
+                )
+                abort(429, description="Too many requests. Please try again later.")
+                
+            _rate_limit_storage[key].append(now)
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
