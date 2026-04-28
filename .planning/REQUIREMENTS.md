@@ -44,27 +44,45 @@ A robust and professional platform for pickleball ladder management that priorit
 - **DISPLAY-04**: Standardize score typography globally using the 'Oswald' font. [DONE]
 - **DISPLAY-05**: Update recent matches component to match the new design. [DONE]
 
-### 8. Group & Team Foundation Refactor (REFACTOR)
-- **REFACTOR-01**: Standardize entity schemas (camelCase timestamps, consistent IDs). [DONE]
-- **REFACTOR-02**: Consolidate creation and validation logic across groups and teams. [DONE]
-- **REFACTOR-03**: Extract 'BaseRepository' and specialized repositories. [DONE]
+### 12. Division & Group Marketplace (MARKET)
+- **MARKET-01**: Implement a centralized marketplace for discovering public groups and divisions with search and filtering. [DONE]
+- **MARKET-02**: Implement a membership request workflow allowing users to apply to join restricted groups. [DONE]
+- **MARKET-03**: Enable group owners to manage visibility (Public/Unlisted/Private) and join policies (Open/Request/Invite). [DONE]
 
-### 9. Dynamic Team Model (DYNAMIC)
-- **DYNAMIC-01**: Implement 'Roster' model for teams (supporting >2 members). [DONE]
-- **DYNAMIC-02**: Allow named teams with flexible participant selection. [DONE]
-- **DYNAMIC-03**: Refactor stat aggregation to handle roster-based performance. [DONE]
+### 13. Competitive Challenges & Wagering (CHAL)
+- **CHAL-01**: Implement a formal challenge lifecycle (Issue, Accept, Decline, Expire) with persistent state. [DONE]
+- **CHAL-02**: Implement a virtual economy (Social Credits) with atomic wagering transactions and escrow logic. [DONE]
+- **CHAL-03**: Integrate challenges with match recording for automated wager resolution based on match outcome. [DONE]
+### 14. Visual Polish & UX Refinement (POLISH)
+- **POLISH-01**: Refine global CSS variables and remove legacy bridging code for a unified "Pro" aesthetic. [DONE]
+- **POLISH-02**: Standardize component styling (Cards, Buttons, Modals) across all features (Messaging, Marketplace, Challenges). [DONE]
+- **POLISH-03**: Optimize mobile navigation and touch targets for better usability on small devices. [DONE]
+- **POLISH-04**: Address page-specific UX "papercuts" (alignment, spacing, typography) in Dashboard and Community views. [DONE]
 
-### 10. Group/Team UX Modernization (TEAMUX)
-- **TEAMUX-01**: Unified 'Management Hub' for group owners. [DONE]
-- **TEAMUX-02**: Simplified team creation wizard. [DONE]
-- **TEAMUX-03**: High-contrast dashboard widgets for team rankings. [DONE]
+### 15. Performance, Scale & Integrity (SCALE/ARCH)
+- **SCALE-01**: Standardized pagination utility for Firestore to handle large collections (Users, Matches, Groups). [DONE]
+- **SCALE-02**: N+1 query resolution in high-traffic views (Leaderboards, Group Hub) using batching or denormalization. [DONE]
+- **ARCH-01**: Modularize monolithic route files (user/routes, group/routes) into smaller, domain-specific sub-blueprints. [DONE]
+- **ARCH-02**: Achieve 100% Type Hint coverage and resolve all ANN violations in Ruff. [DONE]
+
+### 16. Production Readiness & Observability (PROD)
+- **PROD-01**: Implement a centralized, structured logging system for error tracking and system health monitoring. [DONE]
+- **PROD-02**: Implement a persistent administrative audit trail in Firestore to track sensitive actions. [DONE]
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUDIT-01 | Phase 1 | Completed |
-| AUDIT-02 | Phase 1 | Completed |
+...
+| POLISH-03 | Phase 20 | Completed |
+| POLISH-04 | Phase 20 | Completed |
+| SCALE-01 | Phase 21 | Completed |
+| SCALE-02 | Phase 21 | Completed |
+| ARCH-01 | Phase 22 | Completed |
+| ARCH-02 | Phase 22 | Completed |
+| PROD-01 | Phase 23 | Completed |
+| PROD-02 | Phase 23 | Completed |
+
 | AUDIT-03 | Phase 1 | Completed |
 | QUAL-01 | Phase 1 | Completed |
 | QUAL-03 | Phase 1 | Completed |
@@ -97,3 +115,16 @@ A robust and professional platform for pickleball ladder management that priorit
 | TEAMUX-01 | Phase 9 | Completed |
 | TEAMUX-02 | Phase 9 | Completed |
 | TEAMUX-03 | Phase 9 | Completed |
+| COMM-01 | Phase 17 | Completed |
+| COMM-02 | Phase 17 | Completed |
+| COMM-03 | Phase 17 | Completed |
+| MARKET-01 | Phase 18 | Completed |
+| MARKET-02 | Phase 18 | Completed |
+| MARKET-03 | Phase 18 | Completed |
+| CHAL-01 | Phase 19 | Completed |
+| CHAL-02 | Phase 19 | Completed |
+| CHAL-03 | Phase 19 | Completed |
+| POLISH-01 | Phase 20 | Completed |
+| POLISH-02 | Phase 20 | Completed |
+| POLISH-03 | Phase 20 | Completed |
+| POLISH-04 | Phase 20 | Completed |

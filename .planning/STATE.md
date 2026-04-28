@@ -1,38 +1,68 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: in_progress
+last_updated: "2026-04-28T15:30:00.000Z"
+progress:
+  total_phases: 23
+  completed_phases: 22
+  total_plans: 1
+  completed_plans: 1
+  percent: 100
+---
+
 # Project State: pickaladder
 
 ## Project Reference
+
 **Core Value:** A robust and professional platform for pickleball ladder management that prioritizes ranking integrity and seamless external integrations.
-**Current Focus:** Milestone 8 - Communication & Marketplace
+**Current Focus:** Milestone 10: Performance, Scale & Architectural Integrity.
 
 ## Current Position
-**Phase:** 17 - Community Messaging & Real-time Chat
-**Plan:** 17-01 (Next)
-**Status:** Milestone 7 (Advanced Competition & Community) 100% Complete. project is now entering Milestone 8 focusing on direct communication and marketplace features.
+**Phase:** 23 - Production Readiness & Observability
+**Plan:** 23-01-PLAN.md
+**Status:** Plan 23-01 Complete.
 
-[####################] 100% (Overall Progress) - Milestone 7
-[--------------------] 0% (Phase 17 Progress)
+[####################] 100% (Overall Progress) - Milestone 9
+[####################] 100% (Phase 23-01 Progress)
+
 
 ## Performance Metrics
-- **Phase 1-16 Completion:** 100%
-- **Critical Path Hygiene:** Green (All 210 tests passing)
+
+- **Phase 1-22 Completion:** 100%
+- **Phase 23-01 Completion:** 100%
+- **Critical Path Hygiene:** Green (All tests passing)
 - **Quality Gates:** All strict ruff checks passing.
 
 ## Accumulated Context
 
 ### Decisions
-- **Messaging Architecture:** Decided to leverage Firestore Real-time listeners for the chat implementation to maintain consistency with the existing tech stack.
-- **Privacy First:** Chat will be limited to Friends or Group-mates by default to prevent spam.
+
+- **Messaging Architecture:** Leveraged Firestore Real-time listeners for instant chat and notifications.
+- **Marketplace Discovery**: Implemented a unified discovery layer for both Groups and Divisions with granular visibility controls (Public, Unlisted, Private).
+- **Membership Orchestration**: Transitioned to a formal "Request to Join" workflow for non-open groups.
+- **Architectural Refactor**: Moving towards a domain-driven route structure where blueprints are split into sub-modules (e.g., `routes/profile.py`) to keep files < 300 lines.
+- [Phase 22]: Split the monolithic pickaladder/group/routes.py into 5 specialized modules (discovery, management, membership, sessions, stats).
+- [Phase 22]: Migrated direct Firestore manipulations in route handlers (like join/leave group) into GroupService methods.
+- [Phase 22]: Addressed all ruff ANN violations in pickaladder/group/ by adding comprehensive type hints, improving maintainability.
+- [Phase 23]: Use standard Flask app.logger configured with structured formatting for consistency.
+- [Phase 23]: Store audit logs in a dedicated 'audit_logs' collection in Firestore for persistence and easy querying.
 
 ### Todos
-- [ ] Initialize Phase 17 directory and research research.
-- [ ] Define Chat Data Model (Conversations, Messages).
-- [ ] Implement Direct Messaging UI.
+
+- [ ] Phase 23: Production Readiness & Observability (Remaining plans).
 
 ### Blockers
+
 - None.
 
 ## Session Continuity
+
 **Last Session:**
-- Completed Milestone 7.
-- Finalized Phase 16 (PWA & Offline Sync).
-- Initialized Milestone 8 / Phase 17.
+
+2026-04-28T15:30:00.000Z
+
+- Completed Phase 23, Plan 01: Centralized Logging & Audit System.
+- Implemented structured logging utility.
+- Implemented Firestore audit logging service and wired it to admin routes.
