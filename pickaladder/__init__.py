@@ -39,7 +39,7 @@ from .context_processors import (
     inject_unread_messages_count,
 )
 from .core.logging import setup_logging
-from .extensions import csrf, login_manager, mail
+from .extensions import csrf, executor, login_manager, mail
 from .user.helpers import smart_display_name, wrap_user
 from .user.models import UserSession
 
@@ -189,6 +189,7 @@ def _register_extensions(app: Flask) -> None:
     """Initialize Flask extensions."""
     mail.init_app(app)
     csrf.init_app(app)
+    executor.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
 
