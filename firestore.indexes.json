@@ -23,6 +23,15 @@
 { "fieldPath": "type", "order": "ASCENDING" },
 { "fieldPath": "stats.elo", "order": "DESCENDING" }
 ]
+},
+{
+"collectionGroup": "seasons",
+"queryScope": "COLLECTION",
+"fields": [
+{ "fieldPath": "groupId", "order": "ASCENDING" },
+{ "fieldPath": "startDate", "order": "ASCENDING" },
+{ "fieldPath": "__name__", "order": "ASCENDING" }
+]
 }
 ],
 "fieldOverrides": []
