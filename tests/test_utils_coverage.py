@@ -446,12 +446,14 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(mock_batch.set.call_count, 4)
         mock_batch.commit.assert_called_once()
 
+    @patch("pickaladder.group.utils.render_template")
     @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_success(
         self,
         mock_firestore: MagicMock,
         mock_send_email: MagicMock,
+        mock_render: MagicMock,
     ) -> None:
         mock_app = MagicMock()
         mock_app.app_context.return_value.__enter__.return_value = None
@@ -461,6 +463,7 @@ class TestUtilsCoverage(unittest.TestCase):
 
         # Make the thread run synchronously
         mock_send_email.side_effect = None
+        mock_render.return_value = "<html></html>"
         
         send_invite_email_background(mock_app, "invite_token", email_data)
 
@@ -471,12 +474,14 @@ class TestUtilsCoverage(unittest.TestCase):
             {"status": "sent", "last_error": mock_firestore.DELETE_FIELD}
         )
 
+    @patch("pickaladder.group.utils.render_template")
     @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_failure(
         self,
         mock_firestore: MagicMock,
         mock_send_email: MagicMock,
+        mock_render: MagicMock,
     ) -> None:
         mock_app = MagicMock()
         mock_app.app_context.return_value.__enter__.return_value = None
@@ -484,6 +489,7 @@ class TestUtilsCoverage(unittest.TestCase):
 
         email_data = {"to": "test@example.com", "subject": "Test", "body": "Test", "template": "test.html"}
         mock_send_email.side_effect = Exception("Email failed")
+        mock_render.return_value = "<html></html>"
 
         # Make the thread run synchronously
         
