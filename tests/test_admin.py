@@ -91,11 +91,9 @@ class AdminRoutesTestCase(unittest.TestCase):
         mock_db = self.mock_firestore_service.client.return_value
 
         # Mock growth metrics
-        mock_db.collection.return_value.where.return_value.where.return_value.count.return_value.get.return_value = [
-            [MagicMock(value=0)],
-        ]
-
-        response = self.client.get("/admin/", follow_redirects=True)
+        with patch("pickaladder.admin.services.AdminService.get_growth_metrics") as mock_metrics:
+            mock_metrics.return_value = {"labels": [], "values": []}
+            response = self.client.get("/admin/", follow_redirects=True)
         assert response.status_code == 200
         assert b"Admin Panel" in response.data
         assert b"Operational Dashboard" in response.data
