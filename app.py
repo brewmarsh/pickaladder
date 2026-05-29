@@ -1,16 +1,19 @@
 """Main entry point for the application."""
 
-from typing import Union
+from __future__ import annotations
 
-from werkzeug.wrappers import Response
+from typing import TYPE_CHECKING
 
 from pickaladder import create_app
+
+if TYPE_CHECKING:
+    from werkzeug.wrappers import Response
 
 app = create_app()
 
 
 @app.route("/health")
-def health_check() -> Union[str, Response, tuple[str, int]]:
+def health_check() -> str | Response | tuple[str, int]:
     """Perform a simple health check."""
     return "OK", 200
 

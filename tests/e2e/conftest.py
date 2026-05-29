@@ -42,7 +42,10 @@ def collection_where(
     """Handle FieldFilter argument in where."""
     if filter:
         return original_collection_where(
-            self, filter.field_path, filter.op_string, filter.value
+            self,
+            filter.field_path,
+            filter.op_string,
+            filter.value,
         )
     return original_collection_where(self, field_path, op_string, value)
 
@@ -97,7 +100,7 @@ def query_compare_func(self: Query, op: str) -> Any:
     """Handle document ID comparisons and array_contains."""
     if op == "in":
         return _in_op
-    elif op == "array_contains":
+    if op == "array_contains":
         return _array_contains_op
     return original_compare_func(self, op)
 
@@ -197,7 +200,8 @@ def _apply_e2e_array_op(current_list: list[Any], sentinel: MockSentinel) -> list
 
 
 def _handle_e2e_sentinels(
-    doc_ref: DocumentReference, sentinels: dict[str, MockSentinel]
+    doc_ref: DocumentReference,
+    sentinels: dict[str, MockSentinel],
 ) -> dict[str, Any]:
     """Handle sentinel updates for e2e tests."""
     doc_snapshot = doc_ref.get()
@@ -266,7 +270,10 @@ class MockBatch:
         self.ops: list[Any] = []
 
     def set(
-        self, doc_ref: DocumentReference, data: dict[str, Any], merge: bool = False
+        self,
+        doc_ref: DocumentReference,
+        data: dict[str, Any],
+        merge: bool = False,
     ) -> None:
         """Mock set."""
         self.ops.append(("set", doc_ref, data, merge))
@@ -301,21 +308,19 @@ class MockTransaction(Transaction):
         """Handle missing attributes by returning a no-op or mock."""
         if name.startswith("_"):
             return MagicMock()
+        msg = f"'{self.__class__.__name__}' object has no attribute '{name}'"
         raise AttributeError(
-            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+            msg,
         )
 
     def _begin(self, retry_id: Any = None, **kwargs: Any) -> None:
         """Mock begin."""
-        pass
 
     def _rollback(self) -> None:
         """Mock rollback."""
-        pass
 
     def _clean_up(self) -> None:
         """Mock clean up."""
-        pass
 
     def _commit(self) -> list[Any]:
         """Mock commit."""
@@ -330,7 +335,10 @@ class MockTransaction(Transaction):
         reference.set(document_data, merge=merge)
 
     def update(
-        self, reference: Any, field_updates: dict[str, Any], option: Any = None
+        self,
+        reference: Any,
+        field_updates: dict[str, Any],
+        option: Any = None,
     ) -> None:
         """Mock update."""
         reference.update(field_updates)
@@ -374,21 +382,20 @@ class MockAuthService:
     class EmailAlreadyExistsError(Exception):
         """Mock EmailAlreadyExistsError."""
 
-        pass
-
     class UserNotFoundError(Exception):
         """Mock UserNotFoundError."""
 
-        pass
-
     def verify_id_token(
-        self, token: str, check_revoked: bool = False
+        self,
+        token: str,
+        check_revoked: bool = False,
     ) -> dict[str, Any]:
         """Mock verify_id_token."""
         if token.startswith("token_"):
             uid = token.replace("token_", "")
             return {"uid": uid, "email": f"{uid}@example.com", "name": uid}
-        raise Exception("Invalid token")
+        msg = "Invalid token"
+        raise Exception(msg)
 
     def generate_email_verification_link(self, email: str) -> str:
         """Mock generate_email_verification_link."""
@@ -409,7 +416,6 @@ class MockAuthService:
 
     def update_user(self, uid: str, **kwargs: Any) -> None:
         """Mock update_user."""
-        pass
 
 
 # --- Fixtures ---
@@ -435,7 +441,8 @@ def mock_auth() -> MockAuthService:
 
 @pytest.fixture(scope="module")
 def app_server(
-    mock_db: EnhancedMockFirestore, mock_auth: MockAuthService
+    mock_db: EnhancedMockFirestore,
+    mock_auth: MockAuthService,
 ) -> Generator[str, None, None]:
     """Start Flask server with mocks."""
     # Ensure firebase_admin submodules are loaded for patching
@@ -449,10 +456,14 @@ def app_server(
     p1 = patch("firebase_admin.initialize_app")
     p2 = patch.object(firebase_admin.firestore, "client", return_value=mock_db)
     p3 = patch.object(
-        firebase_admin.auth, "create_user", side_effect=mock_auth.create_user
+        firebase_admin.auth,
+        "create_user",
+        side_effect=mock_auth.create_user,
     )
     p4 = patch.object(
-        firebase_admin.auth, "verify_id_token", side_effect=mock_auth.verify_id_token
+        firebase_admin.auth,
+        "verify_id_token",
+        side_effect=mock_auth.verify_id_token,
     )
     p5 = patch.object(firebase_admin.auth, "get_user", side_effect=mock_auth.get_user)
     p6 = patch.object(
@@ -461,17 +472,25 @@ def app_server(
         side_effect=mock_auth.generate_email_verification_link,
     )
     p7 = patch.object(
-        firebase_admin.firestore, "SERVER_TIMESTAMP", "2023-01-01T00:00:00"
+        firebase_admin.firestore,
+        "SERVER_TIMESTAMP",
+        "2023-01-01T00:00:00",
     )
     p8 = patch.object(
-        firebase_admin.firestore, "ArrayUnion", side_effect=mock_array_union
+        firebase_admin.firestore,
+        "ArrayUnion",
+        side_effect=mock_array_union,
     )
     p9 = patch.object(
-        firebase_admin.firestore, "ArrayRemove", side_effect=mock_array_remove
+        firebase_admin.firestore,
+        "ArrayRemove",
+        side_effect=mock_array_remove,
     )
     p10 = patch.object(firebase_admin.firestore, "FieldFilter", MockFieldFilter)
     p11 = patch.object(
-        firebase_admin.firestore, "transactional", side_effect=lambda x: x
+        firebase_admin.firestore,
+        "transactional",
+        side_effect=lambda x: x,
     )
     p12 = patch.object(google.cloud.firestore, "transactional", side_effect=lambda x: x)
 

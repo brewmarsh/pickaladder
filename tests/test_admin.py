@@ -28,10 +28,12 @@ class AdminRoutesTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore": patch(
-                "pickaladder.admin.routes.firestore", new=self.mock_firestore_service
+                "pickaladder.admin.routes.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
+                "pickaladder.firestore",
+                new=self.mock_firestore_service,
             ),
             "user_firestore": patch(
                 "pickaladder.user.routes.profile.firestore",
@@ -44,7 +46,7 @@ class AdminRoutesTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"},
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -55,7 +57,10 @@ class AdminRoutesTestCase(unittest.TestCase):
         self.app_context.pop()
 
     def _login_user(
-        self, user_id: str, user_data: dict[str, Any], is_admin: bool
+        self,
+        user_id: str,
+        user_data: dict[str, Any],
+        is_admin: bool,
     ) -> None:
         """Simulate a user login by setting the session and mocking Firestore."""
         with self.client.session_transaction() as sess:
@@ -87,22 +92,22 @@ class AdminRoutesTestCase(unittest.TestCase):
 
         # Mock growth metrics
         mock_db.collection.return_value.where.return_value.where.return_value.count.return_value.get.return_value = [
-            [MagicMock(value=0)]
+            [MagicMock(value=0)],
         ]
 
         response = self.client.get("/admin/", follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Admin Panel", response.data)
-        self.assertIn(b"Operational Dashboard", response.data)
+        assert response.status_code == 200
+        assert b"Admin Panel" in response.data
+        assert b"Operational Dashboard" in response.data
 
     def test_admin_panel_inaccessible_to_non_admin(self) -> None:
         """Ensure a non-admin user is redirected from the admin panel."""
         self._login_user(MOCK_USER_ID, MOCK_USER_DATA, is_admin=False)
 
         response = self.client.get("/admin/", follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"You are not authorized to view this page.", response.data)
-        self.assertNotIn(b"Admin Panel", response.data)
+        assert response.status_code == 200
+        assert b"You are not authorized to view this page." in response.data
+        assert b"Admin Panel" not in response.data
 
 
 if __name__ == "__main__":

@@ -70,7 +70,8 @@ def calculate_onboarding_progress(
 
 
 def extract_match_results_for_streak(
-    recent_docs: list[Any], user_id: str
+    recent_docs: list[Any],
+    user_id: str,
 ) -> list[dict[str, bool]]:
     """Extract user_won flag from match documents for streak calculation."""
     from pickaladder.user.services.match_stats import _get_user_match_won_lost
@@ -84,7 +85,8 @@ def extract_match_results_for_streak(
 
 
 def wrap_user(
-    user_data: dict[str, Any] | User | None, uid: str | None = None
+    user_data: dict[str, Any] | User | None,
+    uid: str | None = None,
 ) -> UserSession | None:
     """Wrap a user dictionary in a UserSession model object.
 

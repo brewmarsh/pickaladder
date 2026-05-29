@@ -72,7 +72,8 @@ def _update_player_stats(
 
 
 def _process_single_match(
-    stats: dict[str, dict[str, object]], match: DocumentSnapshot
+    stats: dict[str, dict[str, object]],
+    match: DocumentSnapshot,
 ) -> None:
     """Update raw stats and records match outcomes for players in a single match."""
     data = match.to_dict()
@@ -117,7 +118,8 @@ def _sort_leaderboard(stats: dict[str, dict[str, object]]) -> list[dict[str, obj
             elo = user_data.get("duprRating") or user_data.get("dupr_rating") or 1200.0
 
         is_ghost = user_data.get("is_ghost") or user_data.get(
-            "username", ""
+            "username",
+            "",
         ).startswith("ghost_")
         entry = {
             "id": user_id,
@@ -142,11 +144,13 @@ def _sort_leaderboard(stats: dict[str, dict[str, object]]) -> list[dict[str, obj
 
 
 def _calculate_leaderboard_from_matches(
-    matches: list[DocumentSnapshot], players: list[DocumentSnapshot]
+    matches: list[DocumentSnapshot],
+    players: list[DocumentSnapshot],
 ) -> list[dict[str, object]]:
     """Calculate the leaderboard from a list of matches using a pipeline of helpers."""
     matches.sort(
-        key=lambda m: m.to_dict().get("matchDate") or datetime.min, reverse=True
+        key=lambda m: m.to_dict().get("matchDate") or datetime.min,
+        reverse=True,
     )
 
     stats = _initialize_stats(players)
@@ -176,7 +180,8 @@ def _calculate_rank_changes(
 
 
 def _map_matches_to_users(
-    matches: list[DocumentSnapshot], member_refs: list[DocumentSnapshot]
+    matches: list[DocumentSnapshot],
+    member_refs: list[DocumentSnapshot],
 ) -> dict[str, list[dict[str, object]]]:
     """Map matches to each user for efficient lookup."""
     user_matches_map: dict[str, list[dict[str, object]]] = {
@@ -203,7 +208,8 @@ def _is_match_won(user_id: str, data: dict[str, object]) -> bool:
 
 
 def _calculate_player_winning_streak(
-    user_id: str, matches_data: list[dict[str, object]]
+    user_id: str,
+    matches_data: list[dict[str, object]],
 ) -> int:
     """Calculate the current winning streak for a single player."""
     streak = 0
@@ -277,13 +283,15 @@ def get_group_leaderboard(
     ]
 
     last_week_leaderboard = _calculate_leaderboard_from_matches(
-        matches_last_week, member_refs
+        matches_last_week,
+        member_refs,
     )
 
     _calculate_rank_changes(current_leaderboard, last_week_leaderboard)
 
     all_matches.sort(
-        key=lambda m: m.to_dict().get("matchDate") or datetime.min, reverse=True
+        key=lambda m: m.to_dict().get("matchDate") or datetime.min,
+        reverse=True,
     )
     _calculate_winning_streaks(current_leaderboard, all_matches, member_refs)
 
@@ -303,7 +311,8 @@ def _collect_match_player_refs(data: dict[str, object], all_player_refs: set) ->
 
 
 def _get_involved_player_data(
-    db: Client, matches: list[DocumentSnapshot]
+    db: Client,
+    matches: list[DocumentSnapshot],
 ) -> dict[str, dict[str, object]]:
     """Get profile data for all players involved in matches."""
     all_player_refs: set[DocumentReference] = set()
@@ -323,7 +332,8 @@ def _get_involved_player_data(
 
 
 def _record_trend_averages(
-    player_stats: dict[str, object], datasets: dict[str, object]
+    player_stats: dict[str, object],
+    datasets: dict[str, object],
 ) -> None:
     """Calculate and record current average scores for all players in trend datasets."""
     for pid, stats in player_stats.items():
@@ -375,7 +385,8 @@ def _calculate_trend_points(
 
 
 def _update_trend_player_stats(
-    player_stats: dict[str, object], match_data: dict[str, object]
+    player_stats: dict[str, object],
+    match_data: dict[str, object],
 ) -> None:
     """Update running totals for trend calculation from a single match."""
     p1_score, p2_score = _get_match_scores(match_data)
@@ -395,7 +406,7 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, object]:
     """Generate data for a leaderboard trend chart."""
     db = firestore.client()
     matches_query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
+        filter=FieldFilter("groupId", "==", group_id),
     )
     matches = [m for m in matches_query.stream() if m.to_dict().get("matchDate")]
     matches.sort(key=lambda x: x.to_dict().get("matchDate"))
@@ -404,7 +415,7 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, object]:
 
     players_data = _get_involved_player_data(db, matches)
     unique_dates = sorted(
-        list({m.to_dict().get("matchDate").strftime("%Y-%m-%d") for m in matches})
+        {m.to_dict().get("matchDate").strftime("%Y-%m-%d") for m in matches},
     )
 
     datasets_dict = _calculate_trend_points(matches, players_data, unique_dates)

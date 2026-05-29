@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
-from google.cloud.firestore_v1.base_document import DocumentSnapshot
-from google.cloud.firestore_v1.query import Query
+if TYPE_CHECKING:
+    from google.cloud.firestore_v1.base_document import DocumentSnapshot
+    from google.cloud.firestore_v1.query import Query
 
 T = TypeVar("T")
 

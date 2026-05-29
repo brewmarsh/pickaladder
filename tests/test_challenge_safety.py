@@ -16,13 +16,13 @@ def mock_transaction():
     return MagicMock()
 
 
-def test_issue_challenge_wager_limit(mock_db):
+def test_issue_challenge_wager_limit(mock_db) -> None:
     """Test that challenges with wager > 50 are rejected."""
     with pytest.raises(ValueError, match="Wager cannot exceed 50 credits"):
         ChallengeService.issue_challenge(mock_db, "user1", "user2", 51)
 
 
-def test_issue_challenge_active_limit(mock_db):
+def test_issue_challenge_active_limit(mock_db) -> None:
     """Test that users cannot have more than 3 active challenges."""
     # Mocking the query that checks for active challenges
     mock_query = MagicMock()
@@ -36,7 +36,7 @@ def test_issue_challenge_active_limit(mock_db):
 
 
 @patch("pickaladder.match.services.challenge_service.datetime")
-def test_issue_challenge_expiration(mock_datetime, mock_db):
+def test_issue_challenge_expiration(mock_datetime, mock_db) -> None:
     """Test that challenges expire in 48 hours."""
     now = datetime(2024, 1, 1, tzinfo=timezone.utc)
     mock_datetime.now.return_value = now
@@ -55,7 +55,7 @@ def test_issue_challenge_expiration(mock_datetime, mock_db):
     )
 
     with patch(
-        "pickaladder.match.services.challenge_service.firestore"
+        "pickaladder.match.services.challenge_service.firestore",
     ) as mock_firestore:
         # mock_firestore.transactional is a decorator
         def side_effect(f):
@@ -66,14 +66,14 @@ def test_issue_challenge_expiration(mock_datetime, mock_db):
         ChallengeService.issue_challenge(mock_db, "user1", "user2", 10)
 
         # Get the challenge_data from the set call
-        args, kwargs = mock_tx.set.call_args
+        args, _kwargs = mock_tx.set.call_args
         challenge_data = args[1]
 
         expected_expiry = now + timedelta(hours=48)
         assert challenge_data["expires_at"] == expected_expiry
 
 
-def test_accept_challenge_expiration_check(mock_db):
+def test_accept_challenge_expiration_check(mock_db) -> None:
     """Test that accepting an expired challenge fails and updates status."""
     challenge_id = "chal123"
     user_id = "user2"
@@ -91,7 +91,7 @@ def test_accept_challenge_expiration_check(mock_db):
     }
 
     with patch(
-        "pickaladder.match.services.challenge_service.firestore"
+        "pickaladder.match.services.challenge_service.firestore",
     ) as mock_firestore:
 
         def side_effect(f):
@@ -116,11 +116,11 @@ if __name__ == "__main__":
     import unittest
 
     class TestChallengeSafety(unittest.TestCase):
-        def setUp(self):
+        def setUp(self) -> None:
             self.db = MagicMock()
             # Mock firestore.transactional to just call the function
             with patch(
-                "pickaladder.match.services.challenge_service.firestore"
+                "pickaladder.match.services.challenge_service.firestore",
             ) as mock_firestore:
 
                 def side_effect(f):
@@ -131,18 +131,18 @@ if __name__ == "__main__":
 
         @patch("pickaladder.match.services.challenge_service.SocialCreditService")
         @patch("pickaladder.match.services.challenge_service.firestore")
-        def test_wager_limit(self, mock_firestore, mock_social):
+        def test_wager_limit(self, mock_firestore, mock_social) -> None:
             def side_effect(f):
                 return f
 
             mock_firestore.transactional.side_effect = side_effect
 
-            with self.assertRaisesRegex(ValueError, "Wager cannot exceed 50 credits"):
+            with pytest.raises(ValueError, match="Wager cannot exceed 50 credits"):
                 ChallengeService.issue_challenge(self.db, "u1", "u2", 51)
 
         @patch("pickaladder.match.services.challenge_service.SocialCreditService")
         @patch("pickaladder.match.services.challenge_service.firestore")
-        def test_active_limit(self, mock_firestore, mock_social):
+        def test_active_limit(self, mock_firestore, mock_social) -> None:
             def side_effect(f):
                 return f
 
@@ -154,12 +154,11 @@ if __name__ == "__main__":
             )
             mock_query.get.return_value = [MagicMock(), MagicMock(), MagicMock()]
 
-            with self.assertRaisesRegex(
-                ValueError, "You already have 3 active challenges"
+            with pytest.raises(
+                ValueError, match="You already have 3 active challenges"
             ):
                 ChallengeService.issue_challenge(self.db, "u1", "u2", 10)
 
     # Note: expiration tests are harder to do with simple unittest without more patching
     # But this at least gives us some signal.
-    print("Running basic safety checks...")
     unittest.main()

@@ -42,13 +42,13 @@ def sync_dupr_rating(db: Client, user_id: str) -> bool:
                 {
                     "dupr_rating": rating,
                     "duprRating": rating,  # Compatibility with both naming conventions
-                }
+                },
             )
             return True
 
         return False
     except Exception as e:
-        logger.error(f"Error syncing DUPR rating for user {user_id}: {e}")
+        logger.exception(f"Error syncing DUPR rating for user {user_id}: {e}")
         return False
 
 
@@ -88,7 +88,7 @@ def update_email_address(
                 verification_link=verification_link,
             )
         except EmailError as e:
-            logger.error(f"Email error updating email: {e}")
+            logger.exception(f"Email error updating email: {e}")
             return (
                 True,
                 (
@@ -107,7 +107,7 @@ def update_email_address(
     except auth.EmailAlreadyExistsError:
         return False, "That email address is already in use."
     except Exception as e:
-        logger.error(f"Error updating email: {e}")
+        logger.exception(f"Error updating email: {e}")
         return False, "An error occurred while updating your email."
 
 
@@ -115,7 +115,8 @@ def _get_storage_bucket() -> str:
     """Safely get the Firebase Storage bucket name."""
     try:
         return current_app.config.get(
-            "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+            "FIREBASE_STORAGE_BUCKET",
+            "pickaladder.firebasestorage.app",
         )
     except RuntimeError:
         return "pickaladder.firebasestorage.app"
@@ -141,7 +142,7 @@ def upload_profile_picture(user_id: str, file_storage: FileStorage) -> str | Non
         blob.make_public()
         return blob.public_url
     except Exception as e:
-        logger.error(f"Error uploading profile picture: {e}")
+        logger.exception(f"Error uploading profile picture: {e}")
         return None
 
 
@@ -153,7 +154,7 @@ def delete_user_profile_pictures(user_id: str) -> None:
         for blob in blobs:
             blob.delete()
     except Exception as e:
-        logger.error(f"Error deleting profile pictures for user {user_id}: {e}")
+        logger.exception(f"Error deleting profile pictures for user {user_id}: {e}")
 
 
 def reset_profile_picture(db: Client, user_id: str) -> bool:
@@ -168,9 +169,9 @@ def reset_profile_picture(db: Client, user_id: str) -> bool:
             {
                 "profilePictureUrl": "default",
                 "profilePictureThumbnailUrl": firestore.DELETE_FIELD,
-            }
+            },
         )
         return True
     except Exception as e:
-        logger.error(f"Error resetting profile picture for user {user_id}: {e}")
+        logger.exception(f"Error resetting profile picture for user {user_id}: {e}")
         return False

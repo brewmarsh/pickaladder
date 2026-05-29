@@ -22,7 +22,8 @@ class MatchValidationService:
     def _check_score_bounds(sub: MatchSubmission) -> None:
         """Ensure scores are non-negative."""
         if sub.score_p1 < 0 or sub.score_p2 < 0:
-            raise ValueError("Scores must be non-negative.")
+            msg = "Scores must be non-negative."
+            raise ValueError(msg)
 
     @staticmethod
     def _check_duplicate_players(sub: MatchSubmission) -> None:
@@ -34,24 +35,38 @@ class MatchValidationService:
         # Filter out None values and check for uniqueness
         valid_players = [p for p in players if p is not None]
         if len(valid_players) != len(set(valid_players)):
-            raise ValueError("Duplicate players selected.")
+            msg = "Duplicate players selected."
+            raise ValueError(msg)
 
     @staticmethod
     def _check_player_validity(db: Client, sub: MatchSubmission, user_id: str) -> None:
         """Validate that all players are valid candidates."""
         cands = MatchQueryService.get_candidate_player_ids(
-            db, user_id, sub.group_id, sub.tournament_id, sub.session_id
+            db,
+            user_id,
+            sub.group_id,
+            sub.tournament_id,
+            sub.session_id,
         )
         p1_cands = MatchQueryService.get_candidate_player_ids(
-            db, user_id, sub.group_id, sub.tournament_id, sub.session_id, True
+            db,
+            user_id,
+            sub.group_id,
+            sub.tournament_id,
+            sub.session_id,
+            True,
         )
 
         if sub.player_1_id not in p1_cands:
-            raise ValueError("Invalid Team 1 Player 1 selected.")
+            msg = "Invalid Team 1 Player 1 selected."
+            raise ValueError(msg)
         if sub.player_2_id not in cands:
-            raise ValueError("Invalid Opponent 1 selected.")
+            msg = "Invalid Opponent 1 selected."
+            raise ValueError(msg)
         if sub.match_type == "doubles":
             if sub.partner_id not in cands:
-                raise ValueError("Invalid Partner selected.")
+                msg = "Invalid Partner selected."
+                raise ValueError(msg)
             if sub.opponent_2_id not in cands:
-                raise ValueError("Invalid Opponent 2 selected.")
+                msg = "Invalid Opponent 2 selected."
+                raise ValueError(msg)

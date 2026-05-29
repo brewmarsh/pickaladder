@@ -3,20 +3,20 @@ from __future__ import annotations
 from firebase_admin import firestore, storage
 
 from pickaladder.teams.services import TeamService
+from pickaladder.tournament.utils import get_tournament_standings
 
-from ..utils import get_tournament_standings
 from .generator import TournamentGenerator
 from .invites import TournamentInvites
 from .teams import TournamentTeams
 from .tournament_service import TournamentService
 
 __all__ = [
-    "TournamentService",
+    "TeamService",
     "TournamentGenerator",
     "TournamentInvites",
+    "TournamentService",
     "TournamentTeams",
     "firestore",
-    "storage",
     "get_tournament_standings",
-    "TeamService",
+    "storage",
 ]

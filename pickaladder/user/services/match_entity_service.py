@@ -44,7 +44,10 @@ def get_tournaments_map(db: Client, tournament_ids: set[str]) -> dict[str, Any]:
 
 
 def fetch_match_entities(
-    db: Client, user_refs: set[Any], team_refs: set[Any], tournament_ids: set[str]
+    db: Client,
+    user_refs: set[Any],
+    team_refs: set[Any],
+    tournament_ids: set[str],
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Batch fetch users, teams, and tournaments from Firestore."""
     return (

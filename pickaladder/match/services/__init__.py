@@ -13,15 +13,13 @@ from .record_service import MatchRecordService
 class MatchService(MatchQueryService, MatchCommandService):  # type: ignore
     """Deprecated alias for MatchQueryService and MatchCommandService."""
 
-    pass
-
 
 __all__ = [
-    "MatchQueryService",
     "MatchCommandService",
-    "MatchRecordService",
-    "MatchStatsCalculator",
     "MatchFormatter",
+    "MatchQueryService",
+    "MatchRecordService",
     "MatchService",
+    "MatchStatsCalculator",
     "firestore",
 ]

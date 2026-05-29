@@ -37,10 +37,12 @@ class TournamentInvitesTestCase(unittest.TestCase):
                 new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
+                "pickaladder.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_init": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
+                "pickaladder.firestore",
+                new=self.mock_firestore_service,
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
@@ -50,7 +52,7 @@ class TournamentInvitesTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"},
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -97,9 +99,9 @@ class TournamentInvitesTestCase(unittest.TestCase):
 
         invites = UserService.get_pending_tournament_invites(mock_db, MOCK_USER_ID)
 
-        self.assertEqual(len(invites), 1)
-        self.assertEqual(invites[0]["id"], "t1")
-        self.assertEqual(invites[0]["name"], "Tournament 1")
+        assert len(invites) == 1
+        assert invites[0]["id"] == "t1"
+        assert invites[0]["name"] == "Tournament 1"
 
     def test_accept_invite_route(self) -> None:
         """Test POST /tournaments/<id>/accept."""
@@ -126,13 +128,13 @@ class TournamentInvitesTestCase(unittest.TestCase):
         mock_user_ref = MagicMock()
         mock_user_ref.id = MOCK_USER_ID
         mock_snapshot.get.side_effect = lambda key: {
-            "participants": [{"userRef": mock_user_ref, "status": "pending"}]
+            "participants": [{"userRef": mock_user_ref, "status": "pending"}],
         }[key]
         mock_tournament_ref.get.return_value = mock_snapshot
 
         # Patch the transactional decorator in the Service layer
         with patch(
-            "pickaladder.tournament.services.firestore.transactional"
+            "pickaladder.tournament.services.firestore.transactional",
         ) as mock_trans_decorator:
             # Make the decorator just return the function so logic executes immediately
             mock_trans_decorator.side_effect = lambda x: x
@@ -143,8 +145,8 @@ class TournamentInvitesTestCase(unittest.TestCase):
                 follow_redirects=True,
             )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"You have accepted the tournament invite!", response.data)
+        assert response.status_code == 200
+        assert b"You have accepted the tournament invite!" in response.data
 
     def test_decline_invite_route(self) -> None:
         """Test POST /tournaments/<id>/decline."""
@@ -178,7 +180,7 @@ class TournamentInvitesTestCase(unittest.TestCase):
 
         # Patch the transactional decorator in the Service layer
         with patch(
-            "pickaladder.tournament.services.firestore.transactional"
+            "pickaladder.tournament.services.firestore.transactional",
         ) as mock_trans_decorator:
             mock_trans_decorator.side_effect = lambda x: x
 
@@ -188,8 +190,8 @@ class TournamentInvitesTestCase(unittest.TestCase):
                 follow_redirects=True,
             )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"You have declined the tournament invite.", response.data)
+        assert response.status_code == 200
+        assert b"You have declined the tournament invite." in response.data
 
 
 if __name__ == "__main__":

@@ -58,26 +58,24 @@ class TestTeamService(unittest.TestCase):
                 "matchDate": firestore.SERVER_TIMESTAMP,
                 "player1_score": 11,
                 "player2_score": 5,
-            }
+            },
         )
 
         data = TeamService.get_team_dashboard_data(self.db, team_id)
 
-        self.assertIsNotNone(data)
+        assert data is not None
         if data:
-            self.assertEqual(data["team"]["name"], "Team A")
-            self.assertEqual(len(data["members"]), 2)
-            self.assertEqual(len(data["recent_matches"]), 1)
-            self.assertEqual(
-                data["recent_matches"][0]["opponent"]["id"], opponent_team_id
-            )
-            self.assertEqual(data["win_percentage"], (10 / 15) * 100)
-            self.assertEqual(data["streak"], 1)
-            self.assertEqual(data["streak_type"], "W")
+            assert data["team"]["name"] == "Team A"
+            assert len(data["members"]) == 2
+            assert len(data["recent_matches"]) == 1
+            assert data["recent_matches"][0]["opponent"]["id"] == opponent_team_id
+            assert data["win_percentage"] == 10 / 15 * 100
+            assert data["streak"] == 1
+            assert data["streak_type"] == "W"
 
     def test_get_team_dashboard_data_not_found(self) -> None:
         data = TeamService.get_team_dashboard_data(self.db, "nonexistent")
-        self.assertIsNone(data)
+        assert data is None
 
     def test_create_named_team(self) -> None:
         # Mock users
@@ -87,19 +85,22 @@ class TestTeamService(unittest.TestCase):
         user2_ref.set({"name": "Player 2"})
 
         team_id = TeamService.create_named_team(
-            self.db, "Dream Team", "user1", ["user1", "user2"]
+            self.db,
+            "Dream Team",
+            "user1",
+            ["user1", "user2"],
         )
 
-        self.assertIsNotNone(team_id)
+        assert team_id is not None
 
         # Verify in DB
         team_doc = self.db.collection("teams").document(team_id).get()
-        self.assertTrue(team_doc.exists)
+        assert team_doc.exists
         data = team_doc.to_dict()
-        self.assertEqual(data["name"], "Dream Team")
-        self.assertEqual(data["type"], "named")
-        self.assertEqual(data["member_ids"], ["user1", "user2"])
-        self.assertEqual(data["createdBy"], "user1")
+        assert data["name"] == "Dream Team"
+        assert data["type"] == "named"
+        assert data["member_ids"] == ["user1", "user2"]
+        assert data["createdBy"] == "user1"
 
 
 if __name__ == "__main__":

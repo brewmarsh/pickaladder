@@ -59,7 +59,8 @@ class BestBudsTestCase(unittest.TestCase):
 
     @patch("pickaladder.group.services.group_service.get_group_leaderboard")
     def test_best_buds_identification(
-        self, mock_leaderboard_service: MagicMock
+        self,
+        mock_leaderboard_service: MagicMock,
     ) -> None:
         # Arrange
         group_id = "group1"
@@ -72,7 +73,9 @@ class BestBudsTestCase(unittest.TestCase):
         self._verify_best_buds_response(response)
 
     def _setup_best_buds_data(
-        self, mock_leaderboard_service: MagicMock, group_id: str
+        self,
+        mock_leaderboard_service: MagicMock,
+        group_id: str,
     ) -> None:
         self._mock_leaderboard(mock_leaderboard_service)
         with self.client.session_transaction() as sess:
@@ -117,7 +120,10 @@ class BestBudsTestCase(unittest.TestCase):
         return {"user1": user_doc1, "user2": user_doc2}
 
     def _setup_group(
-        self, mock_db: MagicMock, group_id: str, user_docs: dict[str, MagicMock]
+        self,
+        mock_db: MagicMock,
+        group_id: str,
+        user_docs: dict[str, MagicMock],
     ) -> None:
         mock_group_ref = mock_db.collection("groups").document(group_id)
         mock_group_doc = MagicMock(exists=True)
@@ -135,7 +141,9 @@ class BestBudsTestCase(unittest.TestCase):
         mock_group_ref.get.return_value = mock_group_doc
 
     def _setup_teams(
-        self, mock_db: MagicMock, user_docs: dict[str, MagicMock]
+        self,
+        mock_db: MagicMock,
+        user_docs: dict[str, MagicMock],
     ) -> dict[str, MagicMock]:
         user_ref1 = MagicMock(id="user1")
         user_ref2 = MagicMock(id="user2")
@@ -188,7 +196,7 @@ class BestBudsTestCase(unittest.TestCase):
         }
         (
             mock_db.collection(
-                "matches"
+                "matches",
             ).where.return_value.order_by.return_value.limit.return_value.stream.return_value
         ) = [match_doc] * 10
 
@@ -201,12 +209,12 @@ class BestBudsTestCase(unittest.TestCase):
         ) = []
 
     def _verify_best_buds_response(self, response: Any) -> None:
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Best Buds", response.data)
-        self.assertIn(b"User 1", response.data)
-        self.assertIn(b"User 2", response.data)
-        self.assertIn(b"10 Wins Together!", response.data)
-        self.assertNotIn(b"20 Wins Together!", response.data)
+        assert response.status_code == 200
+        assert b"Best Buds" in response.data
+        assert b"User 1" in response.data
+        assert b"User 2" in response.data
+        assert b"10 Wins Together!" in response.data
+        assert b"20 Wins Together!" not in response.data
 
 
 if __name__ == "__main__":

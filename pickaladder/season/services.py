@@ -38,27 +38,35 @@ class SeasonService:
 
     @staticmethod
     def join_season_division(
-        db: Client, season_id: str, division_index: int, user_id: str
+        db: Client,
+        season_id: str,
+        division_index: int,
+        user_id: str,
     ) -> None:
         """Add a user to a specific division within a season, and ensure they are in the parent group."""
         from pickaladder.group.repository import GroupRepository
 
         season = SeasonRepository.get_by_id(db, season_id)
         if not season:
-            raise ValueError("Season not found")
+            msg = "Season not found"
+            raise ValueError(msg)
 
         group_id = season.get("groupId")
         if not group_id:
-            raise ValueError("Season has no associated group")
+            msg = "Season has no associated group"
+            raise ValueError(msg)
 
         divisions = season.get("divisions", [])
         if division_index >= len(divisions):
-            raise ValueError("Invalid division index")
+            msg = "Invalid division index"
+            raise ValueError(msg)
 
         # 1. Add to parent group
         user_ref = db.collection("users").document(user_id)
         GroupRepository.update(
-            db, group_id, {"members": firestore.ArrayUnion([user_ref])}
+            db,
+            group_id,
+            {"members": firestore.ArrayUnion([user_ref])},
         )
 
         # 2. Add to division participant_ids
@@ -77,7 +85,9 @@ class SeasonStandingsService:
 
     @staticmethod
     def get_season_standings(
-        db: Client, season_id: str, division_index: int | None = None
+        db: Client,
+        season_id: str,
+        division_index: int | None = None,
     ) -> list[dict[str, Any]]:
         """Calculate aggregate standings for a specific season/division using USAP hierarchy."""
         from pickaladder.core.ranking.aggregator import StandingAggregator
@@ -97,7 +107,8 @@ class SeasonStandingsService:
             and len(season["divisions"]) > division_index
         ):
             participant_ids = season["divisions"][division_index].get(
-                "participant_ids", []
+                "participant_ids",
+                [],
             )
         else:
             # Fallback to all group members
@@ -134,7 +145,8 @@ class SeasonFinalizationService:
         """
         season = SeasonRepository.get_by_id(db, season_id)
         if not season:
-            raise ValueError("Season not found")
+            msg = "Season not found"
+            raise ValueError(msg)
 
         standings = SeasonStandingsService.get_season_standings(db, season_id)
         rules = season.get("movementRules", {"promotionCount": 0, "relegationCount": 0})
@@ -172,7 +184,9 @@ class SeasonFinalizationService:
 
         # Store snapshot directly on the season document for easy historical access
         SeasonRepository.update(
-            db, season_id, {"status": "COMPLETED", "finalStandings": standings}
+            db,
+            season_id,
+            {"status": "COMPLETED", "finalStandings": standings},
         )
 
         # Log community activity

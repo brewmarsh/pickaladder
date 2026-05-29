@@ -15,11 +15,11 @@ from pickaladder.season.services import (
 class SeasonServiceTestCase(unittest.TestCase):
     """Test cases for the SeasonService."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.mock_db = MagicMock()
 
     @patch("pickaladder.season.services.SeasonRepository")
-    def test_create_season(self, mock_repo):
+    def test_create_season(self, mock_repo) -> None:
         """Test creating a season."""
         data = {
             "name": "Spring 2026",
@@ -32,12 +32,12 @@ class SeasonServiceTestCase(unittest.TestCase):
         mock_repo.create.return_value = "season1"
 
         season_id = SeasonService.create_season(self.mock_db, data)
-        self.assertEqual(season_id, "season1")
+        assert season_id == "season1"
         mock_repo.create.assert_called_once_with(self.mock_db, data)
 
     @patch("pickaladder.group.services.group_service.GroupService.get_group_details")
     @patch("pickaladder.season.services.SeasonRepository")
-    def test_calculate_standings(self, mock_repo, mock_group_service):
+    def test_calculate_standings(self, mock_repo, mock_group_service) -> None:
         """Test calculating standings from matches."""
         # 2 matches:
         # Match 1: p1 beats p2 11-5
@@ -78,25 +78,25 @@ class SeasonServiceTestCase(unittest.TestCase):
             "participants": [
                 {"user": {"id": "p1", "username": "Player 1"}},
                 {"user": {"id": "p2", "username": "Player 2"}},
-            ]
+            ],
         }
 
         standings = SeasonStandingsService.get_season_standings(self.mock_db, "s1")
 
-        self.assertEqual(len(standings), 2)
+        assert len(standings) == 2
         # p1 should be first
-        self.assertEqual(standings[0]["uid"], "p1")
-        self.assertEqual(standings[0]["wins"], 2)
-        self.assertEqual(standings[0]["point_diff"], 8)  # (11-5) + (11-9) = 6 + 2 = 8
+        assert standings[0]["uid"] == "p1"
+        assert standings[0]["wins"] == 2
+        assert standings[0]["point_diff"] == 8  # (11-5) + (11-9) = 6 + 2 = 8
 
         # p2 should be second
-        self.assertEqual(standings[1]["uid"], "p2")
-        self.assertEqual(standings[1]["losses"], 2)
-        self.assertEqual(standings[1]["point_diff"], -8)
+        assert standings[1]["uid"] == "p2"
+        assert standings[1]["losses"] == 2
+        assert standings[1]["point_diff"] == -8
 
     @patch("pickaladder.season.services.SeasonStandingsService.get_season_standings")
     @patch("pickaladder.season.services.SeasonRepository")
-    def test_calculate_movements(self, mock_repo, mock_standings):
+    def test_calculate_movements(self, mock_repo, mock_standings) -> None:
         """Test promotion and relegation logic."""
         # Setup: P1 (1st), P2 (2nd), P3 (3rd), P4 (4th)
         # Rules: Top 1 promote, Bottom 1 relegate
@@ -113,19 +113,19 @@ class SeasonServiceTestCase(unittest.TestCase):
 
         movements = SeasonFinalizationService.calculate_movements(self.mock_db, "s1")
 
-        self.assertEqual(len(movements["promoted"]), 1)
-        self.assertEqual(movements["promoted"][0]["uid"], "p1")
+        assert len(movements["promoted"]) == 1
+        assert movements["promoted"][0]["uid"] == "p1"
 
-        self.assertEqual(len(movements["relegated"]), 1)
-        self.assertEqual(movements["relegated"][0]["uid"], "p4")
+        assert len(movements["relegated"]) == 1
+        assert movements["relegated"][0]["uid"] == "p4"
 
-        self.assertEqual(len(movements["retained"]), 2)
-        self.assertEqual(movements["retained"][0]["uid"], "p2")
-        self.assertEqual(movements["retained"][1]["uid"], "p3")
+        assert len(movements["retained"]) == 2
+        assert movements["retained"][0]["uid"] == "p2"
+        assert movements["retained"][1]["uid"] == "p3"
 
     @patch("pickaladder.season.services.SeasonFinalizationService.calculate_movements")
     @patch("pickaladder.season.services.SeasonRepository")
-    def test_apply_movements(self, mock_repo, mock_calc):
+    def test_apply_movements(self, mock_repo, mock_calc) -> None:
         """Test the transition suggestion engine."""
         mock_repo.get_by_id.return_value = {"id": "old_s"}
         mock_calc.return_value = {
@@ -136,11 +136,11 @@ class SeasonServiceTestCase(unittest.TestCase):
 
         result = SeasonFinalizationService.apply_movements(self.mock_db, "old_s")
 
-        self.assertIn("p1", result["suggested_participants"])
-        self.assertIn("p2", result["suggested_participants"])
-        self.assertIn("p3", result["suggested_participants"])
-        self.assertIn("p4", result["relegated_participants"])
-        self.assertEqual(len(result["suggested_participants"]), 3)
+        assert "p1" in result["suggested_participants"]
+        assert "p2" in result["suggested_participants"]
+        assert "p3" in result["suggested_participants"]
+        assert "p4" in result["relegated_participants"]
+        assert len(result["suggested_participants"]) == 3
 
 
 if __name__ == "__main__":

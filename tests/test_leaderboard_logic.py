@@ -13,7 +13,8 @@ class TestLeaderboardLogic(unittest.TestCase):
 
     @patch("pickaladder.match.services.firestore")
     def test_get_leaderboard_data_filters_inactive(
-        self, mock_firestore: MagicMock
+        self,
+        mock_firestore: MagicMock,
     ) -> None:
         """Test that players with zero games are filtered out using cached stats."""
         # Mock Firestore client
@@ -52,11 +53,11 @@ class TestLeaderboardLogic(unittest.TestCase):
 
         # Assertions
         # User 1 and User 2 have > 0 games
-        self.assertEqual(len(players), 2)
-        self.assertEqual(players[0]["id"], "u1")
-        self.assertEqual(players[0]["games_played"], 6)
-        self.assertEqual(players[1]["id"], "u2")
-        self.assertEqual(players[1]["games_played"], 4)
+        assert len(players) == 2
+        assert players[0]["id"] == "u1"
+        assert players[0]["games_played"] == 6
+        assert players[1]["id"] == "u2"
+        assert players[1]["games_played"] == 4
 
 
 if __name__ == "__main__":

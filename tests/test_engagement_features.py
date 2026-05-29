@@ -56,7 +56,7 @@ class TestEngagementFeatures(unittest.TestCase):
                 "matchType": "singles",
             },  # Win (ignored)
         ]
-        self.assertEqual(calculate_current_streak(self.user_id, matches), 3)
+        assert calculate_current_streak(self.user_id, matches) == 3
 
         # Case 2: Latest is a loss
         matches = [
@@ -75,10 +75,10 @@ class TestEngagementFeatures(unittest.TestCase):
                 "matchType": "singles",
             },  # Win
         ]
-        self.assertEqual(calculate_current_streak(self.user_id, matches), 0)
+        assert calculate_current_streak(self.user_id, matches) == 0
 
         # Case 3: Empty matches
-        self.assertEqual(calculate_current_streak(self.user_id, []), 0)
+        assert calculate_current_streak(self.user_id, []) == 0
 
         # Case 4: No losses in history
         matches = [
@@ -97,7 +97,7 @@ class TestEngagementFeatures(unittest.TestCase):
                 "matchType": "singles",
             },  # Win
         ]
-        self.assertEqual(calculate_current_streak(self.user_id, matches), 2)
+        assert calculate_current_streak(self.user_id, matches) == 2
 
     def test_get_recent_opponents(self) -> None:
         matches: list[dict[str, Any]] = [
@@ -137,11 +137,11 @@ class TestEngagementFeatures(unittest.TestCase):
 
         opponents = get_recent_opponents(self.db, self.user_id, matches, limit=4)
 
-        self.assertEqual(len(opponents), 2)
-        self.assertEqual(opponents[0]["id"], "user2")
-        self.assertEqual(opponents[1]["id"], "user3")
+        assert len(opponents) == 2
+        assert opponents[0]["id"] == "user2"
+        assert opponents[1]["id"] == "user3"
         # Check if uid is set as requested
-        self.assertEqual(opponents[0]["uid"], "user2")
+        assert opponents[0]["uid"] == "user2"
 
 
 if __name__ == "__main__":

@@ -1,11 +1,15 @@
 """Mock utilities for Firestore and Auth."""
 
+from __future__ import annotations
+
 import unittest.mock
-from collections.abc import Iterator
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from mockfirestore import CollectionReference, Query
 from mockfirestore.document import DocumentReference
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class MockArrayUnion:
@@ -65,7 +69,8 @@ def _apply_array_union(current_list: list[Any], values: list[Any]) -> list[Any]:
 
 
 def _apply_array_operation(
-    current_list: list[Any], sentinel: MockArrayUnion | MockArrayRemove
+    current_list: list[Any],
+    sentinel: MockArrayUnion | MockArrayRemove,
 ) -> list[Any]:
     """Apply ArrayUnion or ArrayRemove operation to a list."""
     if isinstance(sentinel, MockArrayUnion):
@@ -75,7 +80,8 @@ def _apply_array_operation(
 
 
 def _handle_sentinel_updates(
-    doc_ref: Any, sentinels: dict[str, MockArrayUnion | MockArrayRemove]
+    doc_ref: Any,
+    sentinels: dict[str, MockArrayUnion | MockArrayRemove],
 ) -> dict[str, list[Any]]:
     """Process sentinel updates and return the new data dictionary."""
     current_data = doc_ref.get().to_dict() or {}
@@ -114,8 +120,8 @@ def _patched_update(self: Any, data: dict[str, Any]) -> Any:
 
 def _where_impl(
     self: Any,
-    field_path: Optional[str] = None,
-    op_string: Optional[str] = None,
+    field_path: str | None = None,
+    op_string: str | None = None,
     value: Any = None,
     filter: Any = None,
 ) -> Any:

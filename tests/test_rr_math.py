@@ -1,7 +1,7 @@
 from pickaladder.tournament.services.generator import TournamentGenerator
 
 
-def test_rr_even():
+def test_rr_even() -> None:
     ids = ["p1", "p2", "p3", "p4"]
     pairs = TournamentGenerator._get_RR_pair_ids(ids)
 
@@ -18,7 +18,7 @@ def test_rr_even():
             assert tuple(sorted((ids[i], ids[j]))) in normalized_pairs
 
 
-def test_rr_odd():
+def test_rr_odd() -> None:
     ids = ["p1", "p2", "p3", "p4", "p5"]
     pairs = TournamentGenerator._get_RR_pair_ids(ids)
 
@@ -40,13 +40,13 @@ def test_rr_odd():
             assert tuple(sorted((ids[i], ids[j]))) in real_matches
 
 
-def test_rr_small():
+def test_rr_small() -> None:
     ids = ["p1", "p2"]
     pairs = TournamentGenerator._get_RR_pair_ids(ids)
     assert len(pairs) == 1
     assert tuple(sorted(pairs[0])) == ("p1", "p2")
 
 
-def test_rr_empty():
+def test_rr_empty() -> None:
     assert TournamentGenerator.generate_round_robin([]) == []
     assert TournamentGenerator.generate_round_robin(["p1"]) == []

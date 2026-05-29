@@ -15,7 +15,9 @@ class BetaSafeguardsTestCase(unittest.TestCase):
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
     def test_robots_tag_in_beta(
-        self, mock_firestore_client: MagicMock, mock_init_app: MagicMock
+        self,
+        mock_firestore_client: MagicMock,
+        mock_init_app: MagicMock,
     ) -> None:
         """Test that X-Robots-Tag is present when ENV is beta."""
         env_vars = {
@@ -26,14 +28,14 @@ class BetaSafeguardsTestCase(unittest.TestCase):
             app = create_app({"TESTING": True, "WTF_CSRF_ENABLED": False})
             with app.test_client() as client:
                 response = client.get("/")
-                self.assertEqual(
-                    response.headers.get("X-Robots-Tag"), "noindex, nofollow"
-                )
+                assert response.headers.get("X-Robots-Tag") == "noindex, nofollow"
 
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
     def test_robots_tag_not_in_development(
-        self, mock_firestore_client: MagicMock, mock_init_app: MagicMock
+        self,
+        mock_firestore_client: MagicMock,
+        mock_init_app: MagicMock,
     ) -> None:
         """Test that X-Robots-Tag is not present when ENV is development."""
         env_vars = {
@@ -44,12 +46,14 @@ class BetaSafeguardsTestCase(unittest.TestCase):
             app = create_app({"TESTING": True, "WTF_CSRF_ENABLED": False})
             with app.test_client() as client:
                 response = client.get("/")
-                self.assertIsNone(response.headers.get("X-Robots-Tag"))
+                assert response.headers.get("X-Robots-Tag") is None
 
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
     def test_robots_tag_not_in_production(
-        self, mock_firestore_client: MagicMock, mock_init_app: MagicMock
+        self,
+        mock_firestore_client: MagicMock,
+        mock_init_app: MagicMock,
     ) -> None:
         """Test that X-Robots-Tag is not present when ENV is production."""
         env_vars = {
@@ -60,7 +64,7 @@ class BetaSafeguardsTestCase(unittest.TestCase):
             app = create_app({"TESTING": True, "WTF_CSRF_ENABLED": False})
             with app.test_client() as client:
                 response = client.get("/")
-                self.assertIsNone(response.headers.get("X-Robots-Tag"))
+                assert response.headers.get("X-Robots-Tag") is None
 
 
 if __name__ == "__main__":

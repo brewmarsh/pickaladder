@@ -15,7 +15,10 @@ class TestDashboardRankings(unittest.TestCase):
     @patch("pickaladder.user.services.dashboard._fetch_social_and_tournaments")
     @patch("pickaladder.user.helpers.calculate_onboarding_progress")
     def test_get_dashboard_data_includes_rankings(
-        self, mock_onboarding, mock_social, mock_vanity
+        self,
+        mock_onboarding,
+        mock_social,
+        mock_vanity,
     ) -> None:
         mock_vanity.return_value = ({}, {"total_games": 0})
         mock_social.return_value = {
@@ -32,10 +35,10 @@ class TestDashboardRankings(unittest.TestCase):
 
         result = get_dashboard_data(self.db, self.user_id)
 
-        self.assertIn("top_groups", result)
-        self.assertIn("top_teams", result)
-        self.assertEqual(result["top_groups"][0]["name"], "Top Group")
-        self.assertEqual(result["top_teams"][0]["name"], "Top Team")
+        assert "top_groups" in result
+        assert "top_teams" in result
+        assert result["top_groups"][0]["name"] == "Top Group"
+        assert result["top_teams"][0]["name"] == "Top Team"
 
 
 if __name__ == "__main__":

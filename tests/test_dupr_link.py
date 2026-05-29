@@ -33,7 +33,7 @@ class DuprLinkTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"},
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -83,12 +83,12 @@ class DuprLinkTestCase(unittest.TestCase):
                 follow_redirects=True,
             )
 
-            self.assertEqual(response.status_code, 200)
+            assert response.status_code == 200
             mock_update.assert_called_once()
             args = mock_update.call_args[0]
-            self.assertEqual(args[1], user_id)
-            self.assertEqual(args[2]["dupr_id"], "12345")
-            self.assertEqual(args[2]["dupr_rating"], 4.25)
+            assert args[1] == user_id
+            assert args[2]["dupr_id"] == "12345"
+            assert args[2]["dupr_rating"] == 4.25
 
     def test_profile_dupr_link_display(self) -> None:
         """Test that the DUPR link is displayed on the profile page."""
@@ -134,16 +134,17 @@ class DuprLinkTestCase(unittest.TestCase):
         ) = []
 
         response = self.client.get(f"/user/{target_id}")
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
 
-        self.assertIn(b"DUPR", response.data)
+        assert b"DUPR" in response.data
         expected_url = (DUPR_PROFILE_BASE_URL + "67890").encode()
-        self.assertIn(expected_url, response.data)
-        self.assertIn(b'target="_blank"', response.data)
+        assert expected_url in response.data
+        assert b'target="_blank"' in response.data
 
     def test_profile_no_dupr_link_display(self) -> None:
         """Test that 'Add DUPR ID' is displayed when DUPR ID is missing
-        and viewer is owner."""
+        and viewer is owner.
+        """
         user_id = "test_user"
         target_id = "test_user"
         with self.client.session_transaction() as sess:
@@ -178,10 +179,10 @@ class DuprLinkTestCase(unittest.TestCase):
         ) = []
 
         response = self.client.get(f"/user/{target_id}")
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
 
-        self.assertIn(b"Add DUPR ID", response.data)
-        self.assertIn(b"3.5", response.data)
+        assert b"Add DUPR ID" in response.data
+        assert b"3.5" in response.data
 
     def test_profile_no_dupr_link_display_different_user(self) -> None:
         """Test that 'Add DUPR ID' is NOT displayed when viewer is not owner."""
@@ -226,10 +227,10 @@ class DuprLinkTestCase(unittest.TestCase):
         ) = []
 
         response = self.client.get(f"/user/{target_id}")
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
 
-        self.assertNotIn(b"Add DUPR ID", response.data)
-        self.assertIn(b"3.5", response.data)
+        assert b"Add DUPR ID" not in response.data
+        assert b"3.5" in response.data
 
 
 if __name__ == "__main__":

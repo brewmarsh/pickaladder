@@ -36,4 +36,4 @@ class TestConfigIntegrity(unittest.TestCase):
 
             # Assert: It should not be a ValueError (implicitly handled if it reaches)
             # Assert: It should return a Mock object or a MockFirestore object.
-            self.assertIsInstance(client, (Mock, MagicMock, MockFirestore))
+            assert isinstance(client, (Mock, MagicMock, MockFirestore))

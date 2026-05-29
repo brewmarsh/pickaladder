@@ -15,7 +15,10 @@ def _extract_id(val: object) -> str | None:
 
 
 def _resolve_team_ids(
-    data: dict[str, object], team_key: str, player_prefix: str, partner_prefix: str
+    data: dict[str, object],
+    team_key: str,
+    player_prefix: str,
+    partner_prefix: str,
 ) -> set[str]:
     """Resolve player IDs for a single team from various possible fields."""
     team_ids: set[str] = set()
@@ -26,7 +29,7 @@ def _resolve_team_ids(
 
     # 2. Check individual fields for the team
     team_ids.update(
-        _resolve_from_individual_fields(data, team_key, player_prefix, partner_prefix)
+        _resolve_from_individual_fields(data, team_key, player_prefix, partner_prefix),
     )
 
     return team_ids
@@ -44,7 +47,10 @@ def _resolve_from_team_key(data: dict[str, object], team_key: str) -> set[str]:
 
 
 def _resolve_from_individual_fields(
-    data: dict[str, object], team_key: str, player_prefix: str, partner_prefix: str
+    data: dict[str, object],
+    team_key: str,
+    player_prefix: str,
+    partner_prefix: str,
 ) -> set[str]:
     """Resolve IDs from individual player and team fields."""
     team_ids = set()

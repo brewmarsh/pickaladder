@@ -35,17 +35,13 @@ class TournamentUtilsTestCase(unittest.TestCase):
         matches = [match1, match2]
         raw_standings = aggregate_match_data(matches, "singles")
 
-        self.assertEqual(raw_standings["p1"]["wins"], 1)
-        self.assertEqual(raw_standings["p1"]["losses"], 1)
-        self.assertEqual(
-            raw_standings["p1"]["point_diff"], 11 - 5 + 8 - 11
-        )  # 6 - 3 = 3
+        assert raw_standings["p1"]["wins"] == 1
+        assert raw_standings["p1"]["losses"] == 1
+        assert raw_standings["p1"]["point_diff"] == 11 - 5 + 8 - 11  # 6 - 3 = 3
 
-        self.assertEqual(raw_standings["p2"]["wins"], 1)
-        self.assertEqual(raw_standings["p2"]["losses"], 1)
-        self.assertEqual(
-            raw_standings["p2"]["point_diff"], 5 - 11 + 11 - 8
-        )  # -6 + 3 = -3
+        assert raw_standings["p2"]["wins"] == 1
+        assert raw_standings["p2"]["losses"] == 1
+        assert raw_standings["p2"]["point_diff"] == 5 - 11 + 11 - 8  # -6 + 3 = -3
 
     def test_aggregate_match_data_doubles(self) -> None:
         """Test aggregation for doubles matches."""
@@ -59,10 +55,10 @@ class TournamentUtilsTestCase(unittest.TestCase):
         matches = [match1]
         raw_standings = aggregate_match_data(matches, "doubles")
 
-        self.assertEqual(raw_standings["t1"]["wins"], 1)
-        self.assertEqual(raw_standings["t1"]["point_diff"], 6)
-        self.assertEqual(raw_standings["t2"]["losses"], 1)
-        self.assertEqual(raw_standings["t2"]["point_diff"], -6)
+        assert raw_standings["t1"]["wins"] == 1
+        assert raw_standings["t1"]["point_diff"] == 6
+        assert raw_standings["t2"]["losses"] == 1
+        assert raw_standings["t2"]["point_diff"] == -6
 
     def test_sort_and_format_standings(self) -> None:
         """Test sorting and formatting of standings."""
@@ -94,16 +90,16 @@ class TournamentUtilsTestCase(unittest.TestCase):
         sorted_standings = sort_and_format_standings(db, raw_standings, "singles")
 
         # p3 should be first (2 wins)
-        self.assertEqual(sorted_standings[0]["id"], "p3")
-        self.assertEqual(sorted_standings[0]["name"], "User3")
+        assert sorted_standings[0]["id"] == "p3"
+        assert sorted_standings[0]["name"] == "User3"
 
         # p1 should be second (1 win, 1 loss, 10 point_diff)
-        self.assertEqual(sorted_standings[1]["id"], "p1")
-        self.assertEqual(sorted_standings[1]["point_diff"], 10)
+        assert sorted_standings[1]["id"] == "p1"
+        assert sorted_standings[1]["point_diff"] == 10
 
         # p2 should be third (1 win, 1 loss, 5 point_diff)
-        self.assertEqual(sorted_standings[2]["id"], "p2")
-        self.assertEqual(sorted_standings[2]["point_diff"], 5)
+        assert sorted_standings[2]["id"] == "p2"
+        assert sorted_standings[2]["point_diff"] == 5
 
 
 if __name__ == "__main__":

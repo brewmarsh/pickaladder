@@ -44,7 +44,8 @@ class TournamentDoublesTestCase(unittest.TestCase):
                 new=self.mock_firestore_module,
             ),
             "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_module
+                "pickaladder.firestore",
+                new=self.mock_firestore_module,
             ),
             "team_service": patch("pickaladder.tournament.services.TeamService"),
         }
@@ -58,7 +59,7 @@ class TournamentDoublesTestCase(unittest.TestCase):
                 "TESTING": True,
                 "SECRET_KEY": "test_secret",  # nosec B105
                 "WTF_CSRF_ENABLED": False,
-            }
+            },
         )
         self.client = self.app.test_client()
 
@@ -70,7 +71,7 @@ class TournamentDoublesTestCase(unittest.TestCase):
                 "username": "testuser",
                 "email": "user1@example.com",
                 "isAdmin": True,
-            }
+            },
         )
         self.mock_db.collection("users").document(MOCK_PARTNER_ID).set(
             {
@@ -78,7 +79,7 @@ class TournamentDoublesTestCase(unittest.TestCase):
                 "name": "Partner User",
                 "username": "partneruser",
                 "email": "user2@example.com",
-            }
+            },
         )
 
     def _get_auth_headers(self) -> dict[str, str]:
@@ -98,7 +99,7 @@ class TournamentDoublesTestCase(unittest.TestCase):
 
         # Mock tournament doc
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"name": "Test Tournament", "mode": "DOUBLES"}
+            {"name": "Test Tournament", "mode": "DOUBLES"},
         )
 
         response = self.client.post(
@@ -107,21 +108,21 @@ class TournamentDoublesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Invite link generated!", response.data)
+        assert response.status_code == 200
+        assert b"Invite link generated!" in response.data
 
         # Verify team document was created
         teams = list(
             self.mock_db.collection("tournaments")
             .document(tournament_id)
             .collection("teams")
-            .stream()
+            .stream(),
         )
-        self.assertEqual(len(teams), 1)
+        assert len(teams) == 1
         team_data = teams[0].to_dict()
-        self.assertEqual(team_data["p1_uid"], MOCK_USER_ID)
-        self.assertIsNone(team_data["p2_uid"])
-        self.assertEqual(team_data["team_name"], team_name)
+        assert team_data["p1_uid"] == MOCK_USER_ID
+        assert team_data["p2_uid"] is None
+        assert team_data["team_name"] == team_name
 
     def test_claim_team_partnership(self) -> None:
         """Test claiming a placeholder team partnership."""
@@ -139,17 +140,17 @@ class TournamentDoublesTestCase(unittest.TestCase):
                 "participants": [
                     {
                         "userRef": self.mock_db.collection("users").document(
-                            MOCK_USER_ID
+                            MOCK_USER_ID,
                         ),
                         "status": "accepted",
-                    }
+                    },
                 ],
-            }
+            },
         )
         self.mock_db.collection("tournaments").document(tournament_id).collection(
-            "teams"
+            "teams",
         ).document(team_id).set(
-            {"p1_uid": MOCK_USER_ID, "p2_uid": None, "team_name": "Dynamic Duo"}
+            {"p1_uid": MOCK_USER_ID, "p2_uid": None, "team_name": "Dynamic Duo"},
         )
 
         # Mock TeamService
@@ -160,8 +161,8 @@ class TournamentDoublesTestCase(unittest.TestCase):
             follow_redirects=True,
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"You have joined the team!", response.data)
+        assert response.status_code == 200
+        assert b"You have joined the team!" in response.data
 
         # Verify team document was updated
         updated_team = (
@@ -172,9 +173,9 @@ class TournamentDoublesTestCase(unittest.TestCase):
             .get()
             .to_dict()
         )
-        self.assertEqual(updated_team["p2_uid"], MOCK_PARTNER_ID)
-        self.assertEqual(updated_team["status"], "CONFIRMED")
-        self.assertEqual(updated_team["team_id"], "global_team_abc")
+        assert updated_team["p2_uid"] == MOCK_PARTNER_ID
+        assert updated_team["status"] == "CONFIRMED"
+        assert updated_team["team_id"] == "global_team_abc"
 
     def test_generate_bracket_doubles(self) -> None:
         """Test normalized bracket seeding for doubles."""
@@ -184,10 +185,10 @@ class TournamentDoublesTestCase(unittest.TestCase):
 
         # Setup tournament mode and confirmed team
         self.mock_db.collection("tournaments").document(tournament_id).set(
-            {"mode": "DOUBLES"}
+            {"mode": "DOUBLES"},
         )
         self.mock_db.collection("tournaments").document(tournament_id).collection(
-            "teams"
+            "teams",
         ).document("t_team_1").set(
             {
                 "team_id": "global_team_1",
@@ -195,16 +196,16 @@ class TournamentDoublesTestCase(unittest.TestCase):
                 "p1_uid": "u1",
                 "p2_uid": "u2",
                 "status": "CONFIRMED",
-            }
+            },
         )
 
         bracket = TournamentService.generate_bracket(tournament_id, self.mock_db)
 
-        self.assertEqual(len(bracket), 1)
-        self.assertEqual(bracket[0]["name"], "Team Alpha")
-        self.assertEqual(bracket[0]["type"], "team")
-        self.assertEqual(bracket[0]["id"], "global_team_1")
-        self.assertIn("u1", bracket[0]["members"])
+        assert len(bracket) == 1
+        assert bracket[0]["name"] == "Team Alpha"
+        assert bracket[0]["type"] == "team"
+        assert bracket[0]["id"] == "global_team_1"
+        assert "u1" in bracket[0]["members"]
 
 
 if __name__ == "__main__":

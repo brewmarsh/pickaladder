@@ -21,23 +21,23 @@ class MatchSummaryService:
         if not match_data:
             return {}
 
-        match_type = cast(dict[str, Any], match_data).get("matchType", "singles")
+        match_type = cast("dict[str, Any]", match_data).get("matchType", "singles")
         context = {"match": match_data, "match_type": match_type}
 
         if match_type == "doubles":
             context.update(
-                MatchSummaryService._get_doubles_summary_context(db, match_data)
+                MatchSummaryService._get_doubles_summary_context(db, match_data),
             )
         else:
             context.update(
-                MatchSummaryService._get_singles_summary_context(db, match_data)
+                MatchSummaryService._get_singles_summary_context(db, match_data),
             )
         return context
 
     @staticmethod
     def _get_doubles_summary_context(db: Client, match_data: Match) -> dict[str, Any]:
         """Fetch doubles-specific context for match summary."""
-        m_dict = cast(dict[str, Any], match_data)
+        m_dict = cast("dict[str, Any]", match_data)
         return {
             "team1": MatchSummaryService._fetch_team_data(db, m_dict.get("team1", [])),
             "team2": MatchSummaryService._fetch_team_data(db, m_dict.get("team2", [])),
@@ -61,7 +61,7 @@ class MatchSummaryService:
         """Fetch singles-specific context for match summary."""
         res = {}
         for key, ref_key in [("player1", "player1Ref"), ("player2", "player2Ref")]:
-            ref = cast(dict[str, Any], match_data).get(ref_key)
+            ref = cast("dict[str, Any]", match_data).get(ref_key)
             data: dict[str, Any] = {}
             record = {"wins": 0, "losses": 0}
             if ref:

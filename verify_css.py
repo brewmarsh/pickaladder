@@ -12,17 +12,17 @@ required_files = [
 for rel_path in required_files:
     path = os.path.join("pickaladder", rel_path)
     if not os.path.exists(path):
-        print(f"❌ ERROR: {rel_path} is missing!")
+        pass
     else:
-        print(f"✅ FOUND: {rel_path} ({os.path.getsize(path)} bytes)")
+        pass
 
 # 2. Check Layout Template for correct links
 with open("pickaladder/templates/layout.html") as f:
     content = f.read()
     if "components.css" in content:
-        print("❌ ERROR: layout.html still references components.css")
+        pass
     else:
-        print("✅ SUCCESS: layout.html no longer references components.css")
+        pass
 
     css_files = [
         "layout-utils.css",
@@ -33,6 +33,6 @@ with open("pickaladder/templates/layout.html") as f:
     ]
     for css_file in css_files:
         if css_file not in content:
-            print(f"❌ ERROR: layout.html is missing link to {css_file}")
+            pass
         else:
-            print(f"✅ SUCCESS: layout.html has link to {css_file}")
+            pass

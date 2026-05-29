@@ -3,13 +3,9 @@
 from __future__ import annotations
 
 import unittest
-from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 from pickaladder import create_app
-
-if TYPE_CHECKING:
-    pass
 
 
 class PWATestCase(unittest.TestCase):
@@ -23,31 +19,37 @@ class PWATestCase(unittest.TestCase):
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
     def test_manifest_served(
-        self, mock_firestore: MagicMock, mock_init: MagicMock
+        self,
+        mock_firestore: MagicMock,
+        mock_init: MagicMock,
     ) -> None:
         """Test that manifest.json is served from static."""
         response = self.client.get("/static/manifest.json")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.mimetype, "application/json")
-        self.assertIn(b'"name": "pickaladder"', response.data)
+        assert response.status_code == 200
+        assert response.mimetype == "application/json"
+        assert b'"name": "pickaladder"' in response.data
 
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
     def test_service_worker_served_from_root(
-        self, mock_firestore: MagicMock, mock_init: MagicMock
+        self,
+        mock_firestore: MagicMock,
+        mock_init: MagicMock,
     ) -> None:
         """Test that service-worker.js is served from the root."""
         response = self.client.get("/service-worker.js")
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
         # Flask might send it as application/javascript or text/javascript
         # depending on the system
-        self.assertIn(response.mimetype, ["application/javascript", "text/javascript"])
-        self.assertIn(b"CACHE_NAME", response.data)
+        assert response.mimetype in ["application/javascript", "text/javascript"]
+        assert b"CACHE_NAME" in response.data
 
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
     def test_layout_contains_pwa_elements(
-        self, mock_firestore: MagicMock, mock_init: MagicMock
+        self,
+        mock_firestore: MagicMock,
+        mock_init: MagicMock,
     ) -> None:
         """Test that layout.html contains manifest and service worker registration."""
         # We need a route that renders layout.html. auth.login usually does.
@@ -62,11 +64,11 @@ class PWATestCase(unittest.TestCase):
             return render_template("layout.html")
 
         response = self.client.get("/test_layout")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'link rel="manifest"', response.data)
-        self.assertIn(b'meta name="theme-color"', response.data)
-        self.assertIn(
-            b"navigator.serviceWorker.register('/service-worker.js')", response.data
+        assert response.status_code == 200
+        assert b'link rel="manifest"' in response.data
+        assert b'meta name="theme-color"' in response.data
+        assert (
+            b"navigator.serviceWorker.register('/service-worker.js')" in response.data
         )
 
 

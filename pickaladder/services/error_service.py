@@ -19,7 +19,9 @@ class ErrorService:
 
     @classmethod
     def log_error(
-        cls, exception: Exception, request_context: Any | None = None
+        cls,
+        exception: Exception,
+        request_context: Any | None = None,
     ) -> str | None:
         """Persist a server-side error to Firestore."""
         try:
@@ -49,7 +51,7 @@ class ErrorService:
             # Fallback to standard logging if Firestore fails to avoid recursive loops
             import logging
 
-            logging.error(f"Failed to log error to Firestore: {e}")
+            logging.exception(f"Failed to log error to Firestore: {e}")
             return None
 
     @classmethod

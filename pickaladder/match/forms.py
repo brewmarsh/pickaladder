@@ -1,7 +1,8 @@
 """Forms for the match blueprint."""
 
-from collections.abc import Sequence
-from typing import Any, Callable, Optional, cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from flask_wtf import FlaskForm  # type: ignore
 from wtforms import (
@@ -14,6 +15,9 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, InputRequired
 from wtforms.validators import Optional as OptionalValidator
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 MIN_WINNING_SCORE = 11
 MIN_WIN_MARGIN = 2
@@ -34,7 +38,8 @@ class MatchForm(FlaskForm):
     opponent2 = SelectField("Opponent 2", validators=[OptionalValidator()])
     player1_score = IntegerField("Your / Team 1 Score", validators=[InputRequired()])
     player2_score = IntegerField(
-        "Opponent / Team 2 Score", validators=[InputRequired()]
+        "Opponent / Team 2 Score",
+        validators=[InputRequired()],
     )
     match_date = DateField("Date", validators=[DataRequired()])
     group_id = HiddenField("Group ID", validators=[OptionalValidator()])
@@ -48,35 +53,43 @@ class MatchForm(FlaskForm):
         if field.data is None:
             return
         if field.data < 0:
-            raise ValidationError("Scores cannot be negative.")
+            msg = "Scores cannot be negative."
+            raise ValidationError(msg)
 
     def validate_player2_score(self, field: Field) -> None:
         """Validate that the score is not negative."""
         if field.data is None:
             return
         if field.data < 0:
-            raise ValidationError("Scores cannot be negative.")
+            msg = "Scores cannot be negative."
+            raise ValidationError(msg)
 
         if self.player1_score.data is None:
             return
 
         if field.data == self.player1_score.data:
-            raise ValidationError("Scores cannot be the same.")
+            msg = "Scores cannot be the same."
+            raise ValidationError(msg)
 
         p1_score = self.player1_score.data
         p2_score = field.data
 
         if max(p1_score, p2_score) < MIN_WINNING_SCORE:
-            raise ValidationError(
+            msg = (
                 f"One team/player must have at least {MIN_WINNING_SCORE} points to win."
             )
-        if abs(p1_score - p2_score) < MIN_WIN_MARGIN:
             raise ValidationError(
-                f"The winner must win by at least {MIN_WIN_MARGIN} points."
+                msg,
+            )
+        if abs(p1_score - p2_score) < MIN_WIN_MARGIN:
+            msg = f"The winner must win by at least {MIN_WIN_MARGIN} points."
+            raise ValidationError(
+                msg,
             )
 
     def validate(
-        self, extra_validators: Optional[Sequence[Callable[..., Any]]] = None
+        self,
+        extra_validators: Sequence[Callable[..., Any]] | None = None,
     ) -> bool:
         """Validate the form for singles or doubles."""
         if not super().validate(extra_validators=extra_validators):
@@ -92,8 +105,8 @@ class MatchForm(FlaskForm):
         # Check for duplicate players in singles
         if self.player1.data == self.player2.data:
             error_msg = "You cannot play a match against yourself."
-            cast(list[str], self.player1.errors).append(error_msg)
-            cast(list[str], self.player2.errors).append(error_msg)
+            cast("list[str]", self.player1.errors).append(error_msg)
+            cast("list[str]", self.player2.errors).append(error_msg)
             return False
         return True
 
@@ -108,13 +121,13 @@ class MatchForm(FlaskForm):
         """Check that partner and second opponent are provided."""
         has_error = False
         if not self.partner.data:
-            cast(list[str], self.partner.errors).append(
-                "Partner is required for doubles."
+            cast("list[str]", self.partner.errors).append(
+                "Partner is required for doubles.",
             )
             has_error = True
         if not self.opponent2.data:
-            cast(list[str], self.opponent2.errors).append(
-                "Opponent 2 is required for doubles."
+            cast("list[str]", self.opponent2.errors).append(
+                "Opponent 2 is required for doubles.",
             )
             has_error = True
         return not has_error
@@ -130,6 +143,6 @@ class MatchForm(FlaskForm):
         if len(players) != len(set(players)):
             error_msg = "All players in a doubles match must be unique."
             for field in [self.player1, self.partner, self.player2, self.opponent2]:
-                cast(list[str], field.errors).append(error_msg)
+                cast("list[str]", field.errors).append(error_msg)
             return False
         return True

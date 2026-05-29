@@ -47,7 +47,8 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
                 new=self.mock_firestore_service,
             ),
             "firestore_utils": patch(
-                "pickaladder.group.utils.firestore", new=self.mock_firestore_service
+                "pickaladder.group.utils.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_stats": patch(
                 "pickaladder.group.services.stats.firestore",
@@ -58,7 +59,8 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
                 new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
+                "pickaladder.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_group_service": patch(
                 "pickaladder.group.services.group_service.firestore",
@@ -76,7 +78,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"},
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -127,11 +129,11 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             data={"name": "My Firebase Group"},
             follow_redirects=True,
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Group created successfully.", response.data)
+        assert response.status_code == 200
+        assert b"Group created successfully." in response.data
         mock_doc_ref.set.assert_called_once()
         call_args = mock_doc_ref.set.call_args[0]
-        self.assertEqual(call_args[0]["name"], "My Firebase Group")
+        assert call_args[0]["name"] == "My Firebase Group"
 
     def test_create_group_with_image(self) -> None:
         """Test successfully creating a new group with an image."""
@@ -179,8 +181,8 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             follow_redirects=True,
             content_type="multipart/form-data",
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Group created successfully.", response.data)
+        assert response.status_code == 200
+        assert b"Group created successfully." in response.data
 
         # Verify set called
         mock_doc_ref.set.assert_called_once()
@@ -192,10 +194,8 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
 
         # Verify update called on doc_ref
         call_args = mock_doc_ref.update.call_args[0]
-        self.assertEqual(
-            call_args[0]["profilePictureUrl"], "http://mock-storage-url/img.jpg"
-        )
-        self.assertIn("updatedAt", call_args[0])
+        assert call_args[0]["profilePictureUrl"] == "http://mock-storage-url/img.jpg"
+        assert "updatedAt" in call_args[0]
 
     def test_get_rivalry_stats(self) -> None:
         """Test the head-to-head stats calculation."""
@@ -284,12 +284,12 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             headers=self._get_auth_headers(),
         )
 
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
         stats = response.get_json()
-        self.assertEqual(stats["wins"], 1)
-        self.assertEqual(stats["losses"], 1)
-        self.assertEqual(stats["point_diff"], 3)
-        self.assertEqual(len(stats["matches"]), 2)
+        assert stats["wins"] == 1
+        assert stats["losses"] == 1
+        assert stats["point_diff"] == 3
+        assert len(stats["matches"]) == 2
 
     def test_get_rivalry_stats_missing_params(self) -> None:
         """Test head-to-head stats with missing player IDs."""
@@ -298,8 +298,8 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "/group/some_group/stats/rivalry?playerA_id=p1",
             headers=self._get_auth_headers(),
         )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("error", response.get_json())
+        assert response.status_code == 400
+        assert "error" in response.get_json()
 
     def test_view_groups(self) -> None:
         """Test the view_groups route renders correctly."""
@@ -324,16 +324,14 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         ):
             response = self.client.get("/group/", headers=self._get_auth_headers())
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Groups</h1>", response.data)
-        self.assertIn(
-            b"d-flex flex-column flex-md-row align-items-stretch "
-            b"align-items-md-center justify-content-between gap-3 "
-            b"mb-4 page-header-actions",
-            response.data,
+        assert response.status_code == 200
+        assert b"Groups</h1>" in response.data
+        assert (
+            b"d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-3 mb-4 page-header-actions"
+            in response.data
         )
-        self.assertIn(b"btn btn-primary", response.data)
-        self.assertIn(b"Create Group", response.data)
+        assert b"btn btn-primary" in response.data
+        assert b"Create Group" in response.data
 
     def test_view_group(self) -> None:
         """Test the view_group route and eligible friends logic."""
@@ -359,7 +357,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "members": [mock_user_doc],
         }
         mock_db.collection("groups").document(
-            group_id
+            group_id,
         ).get.return_value = mock_group_doc
 
         # Mock friends
@@ -395,15 +393,16 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             ),
         ):
             response = self.client.get(
-                f"/group/{group_id}", headers=self._get_auth_headers()
+                f"/group/{group_id}",
+                headers=self._get_auth_headers(),
             )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Test Group", response.data)
-        self.assertIn(b"Friend One", response.data)
+        assert response.status_code == 200
+        assert b"Test Group" in response.data
+        assert b"Friend One" in response.data
 
         # Check for Hub button (owner access)
-        self.assertIn(b'data-testid="manage-hub-btn"', response.data)
+        assert b'data-testid="manage-hub-btn"' in response.data
 
         # Verify db.get_all was called with the correct friend reference
         mock_db.get_all.assert_any_call([mock_friend_ref])
@@ -429,7 +428,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "admins": [],
         }
         mock_db.collection("groups").document(
-            group_id
+            group_id,
         ).get.return_value = mock_group_doc
 
         # Mock other necessary services called by get_group_details
@@ -460,14 +459,15 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             ),
         ):
             response = self.client.get(
-                f"/group/{group_id}/manage", headers=self._get_auth_headers()
+                f"/group/{group_id}/manage",
+                headers=self._get_auth_headers(),
             )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Management Hub: Admin Group", response.data)
-        self.assertIn(b"Roster", response.data)
-        self.assertIn(b"Invites", response.data)
-        self.assertIn(b"Settings", response.data)
+        assert response.status_code == 200
+        assert b"Management Hub: Admin Group" in response.data
+        assert b"Roster" in response.data
+        assert b"Invites" in response.data
+        assert b"Settings" in response.data
 
     def test_manage_group_non_admin_denied(self) -> None:
         """Test the management hub route denies access to non-admins."""
@@ -493,7 +493,7 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "admins": [],
         }
         mock_db.collection("groups").document(
-            group_id
+            group_id,
         ).get.return_value = mock_group_doc
 
         # Mock other necessary services
@@ -529,11 +529,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
                 follow_redirects=True,
             )
 
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
         # Should redirect back to group view with error flash
-        self.assertIn(
-            b"You do not have permission to access this group.", response.data
-        )
+        assert b"You do not have permission to access this group." in response.data
 
 
 if __name__ == "__main__":

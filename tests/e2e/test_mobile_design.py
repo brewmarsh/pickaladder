@@ -45,7 +45,7 @@ def seeded_data(mock_db: Any) -> str:
             "groupRef": mock_db.collection("groups").document(group_id),
             "userRef": mock_db.collection("users").document(user_id),
             "role": "owner",
-        }
+        },
     )
 
     # Create a tournament
@@ -64,7 +64,9 @@ def seeded_data(mock_db: Any) -> str:
 
 
 def test_mobile_layout(
-    page_with_firebase: Page, app_server: str, seeded_data: str
+    page_with_firebase: Page,
+    app_server: str,
+    seeded_data: str,
 ) -> None:
     page = page_with_firebase
     # 1. Login

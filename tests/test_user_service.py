@@ -19,11 +19,11 @@ class TestUserService(unittest.TestCase):
         self.db.collection().document().get.return_value = mock_doc
 
         result = UserService.get_user_by_id(self.db, self.user_id)
-        self.assertIsNotNone(result)
+        assert result is not None
         # Using cast to narrow type for Mypy without adding runtime logic
-        res = cast(dict[str, Any], result)
-        self.assertEqual(res["id"], self.user_id)
-        self.assertEqual(res["username"], "testuser")
+        res = cast("dict[str, Any]", result)
+        assert res["id"] == self.user_id
+        assert res["username"] == "testuser"
 
     def test_get_user_by_id_not_found(self) -> None:
         mock_doc = MagicMock()
@@ -31,7 +31,7 @@ class TestUserService(unittest.TestCase):
         self.db.collection().document().get.return_value = mock_doc
 
         result = UserService.get_user_by_id(self.db, self.user_id)
-        self.assertIsNone(result)
+        assert result is None
 
     def test_get_friendship_info_is_friend(self) -> None:
         mock_doc = MagicMock()
@@ -42,10 +42,12 @@ class TestUserService(unittest.TestCase):
         )
 
         is_friend, request_sent = UserService.get_friendship_info(
-            self.db, "user1", "user2"
+            self.db,
+            "user1",
+            "user2",
         )
-        self.assertTrue(is_friend)
-        self.assertFalse(request_sent)
+        assert is_friend
+        assert not request_sent
 
     def test_get_friendship_info_pending(self) -> None:
         mock_doc = MagicMock()
@@ -56,16 +58,18 @@ class TestUserService(unittest.TestCase):
         )
 
         is_friend, request_sent = UserService.get_friendship_info(
-            self.db, "user1", "user2"
+            self.db,
+            "user1",
+            "user2",
         )
-        self.assertFalse(is_friend)
-        self.assertTrue(request_sent)
+        assert not is_friend
+        assert request_sent
 
     def test_get_user_friends(self) -> None:
         mock_f1 = MagicMock()
         mock_f1.id = "friend1"
         self.db.collection().document().collection().where().stream.return_value = [
-            mock_f1
+            mock_f1,
         ]
 
         mock_doc1 = MagicMock()
@@ -75,8 +79,8 @@ class TestUserService(unittest.TestCase):
         self.db.get_all.return_value = [mock_doc1]
 
         result = UserService.get_user_friends(self.db, self.user_id)
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "friend1")
+        assert len(result) == 1
+        assert result[0]["id"] == "friend1"
 
     def test_calculate_stats(self) -> None:
         mock_match1 = MagicMock()
@@ -98,15 +102,16 @@ class TestUserService(unittest.TestCase):
         mock_match2.create_time = 200
 
         stats = UserService.calculate_stats(
-            cast("list[Any]", [mock_match1, mock_match2]), self.user_id
+            cast("list[Any]", [mock_match1, mock_match2]),
+            self.user_id,
         )
-        self.assertEqual(stats["wins"], 1)
-        self.assertEqual(stats["losses"], 1)
-        self.assertEqual(stats["total_games"], 2)
+        assert stats["wins"] == 1
+        assert stats["losses"] == 1
+        assert stats["total_games"] == 2
         # Match 2 is later (create_time 200) and was a loss. Match 1 was a win.
         # Streak calculation should see the latest match (loss) first.
-        self.assertEqual(stats["current_streak"], 1)
-        self.assertEqual(stats["streak_type"], "L")
+        assert stats["current_streak"] == 1
+        assert stats["streak_type"] == "L"
 
     @patch("pickaladder.group.utils.get_group_leaderboard")
     def test_get_group_rankings(self, mock_leaderboard: MagicMock) -> None:
@@ -121,11 +126,11 @@ class TestUserService(unittest.TestCase):
         ]
 
         rankings = UserService.get_group_rankings(self.db, self.user_id)
-        self.assertEqual(len(rankings), 1)
-        self.assertEqual(rankings[0]["rank"], 2)
-        self.assertEqual(rankings[0]["group_name"], "Test Group")
+        assert len(rankings) == 1
+        assert rankings[0]["rank"] == 2
+        assert rankings[0]["group_name"] == "Test Group"
 
-    def test_get_public_groups(self):
+    def test_get_public_groups(self) -> None:
         mock_group1 = MagicMock()
         mock_group1.id = "g1"
         mock_group1.to_dict.return_value = {
@@ -135,7 +140,7 @@ class TestUserService(unittest.TestCase):
         }
 
         self.db.collection().where().order_by().limit().stream.return_value = [
-            mock_group1
+            mock_group1,
         ]
 
         mock_owner = MagicMock()
@@ -145,9 +150,9 @@ class TestUserService(unittest.TestCase):
         self.db.get_all.return_value = [mock_owner]
 
         result = UserService.get_public_groups(self.db, limit=10)
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "g1")
-        self.assertEqual(result[0]["owner"]["username"], "owner_user")
+        assert len(result) == 1
+        assert result[0]["id"] == "g1"
+        assert result[0]["owner"]["username"] == "owner_user"
 
     def test_get_all_users_with_exclusions(self) -> None:
         mock_u1 = MagicMock()
@@ -168,13 +173,15 @@ class TestUserService(unittest.TestCase):
 
         # Exclude user1 and user3
         exclude_ids = ["user1", "user3"]
-        result_users, next_cursor = UserService.get_all_users(
-            self.db, exclude_ids, limit=10
+        result_users, _next_cursor = UserService.get_all_users(
+            self.db,
+            exclude_ids,
+            limit=10,
         )
 
-        self.assertEqual(len(result_users), 1)
-        self.assertEqual(result_users[0]["username"], "u2")
-        self.assertEqual(result_users[0]["id"], "user2")
+        assert len(result_users) == 1
+        assert result_users[0]["username"] == "u2"
+        assert result_users[0]["id"] == "user2"
 
     def test_update_settings_success(self) -> None:
         mock_user_doc = MagicMock()
@@ -191,12 +198,12 @@ class TestUserService(unittest.TestCase):
         mock_form.dupr_rating.data = 4.5
 
         result = UserService.update_settings(self.db, self.user_id, mock_form)
-        self.assertTrue(result["success"])
+        assert result["success"]
         self.db.collection().document().update.assert_called_once()
         update_data = self.db.collection().document().update.call_args[0][0]
-        self.assertEqual(update_data["username"], "newuser")
-        self.assertEqual(update_data["dupr_rating"], 4.5)
-        self.assertEqual(update_data["duprRating"], 4.5)
+        assert update_data["username"] == "newuser"
+        assert update_data["dupr_rating"] == 4.5
+        assert update_data["duprRating"] == 4.5
 
     @patch("pickaladder.user.services.profile.storage")
     def test_reset_profile_picture(self, mock_storage: MagicMock) -> None:
@@ -206,14 +213,14 @@ class TestUserService(unittest.TestCase):
 
         result = UserService.reset_profile_picture(self.db, self.user_id)
 
-        self.assertTrue(result)
+        assert result
         mock_bucket.list_blobs.assert_called_with(
-            prefix=f"profile_pictures/{self.user_id}/"
+            prefix=f"profile_pictures/{self.user_id}/",
         )
         mock_blob.delete.assert_called_once()
         self.db.collection().document().update.assert_called_once()
         update_data = self.db.collection().document().update.call_args[0][0]
-        self.assertEqual(update_data["profilePictureUrl"], "default")
+        assert update_data["profilePictureUrl"] == "default"
 
 
 if __name__ == "__main__":

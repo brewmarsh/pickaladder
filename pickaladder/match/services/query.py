@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
-
-from pickaladder.match.models import Match
 
 from .base_query import MatchBaseQueryService
 from .candidate_service import MatchCandidateService
@@ -12,9 +9,13 @@ from .record_service import MatchRecordService
 from .summary_service import MatchSummaryService
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
+
+    from pickaladder.match.models import Match
 
 
 class MatchQueryService(
@@ -100,7 +101,8 @@ class MatchQueryService(
 
     @staticmethod
     def _fetch_player_names(
-        db: Client, player_refs: set[DocumentReference]
+        db: Client,
+        player_refs: set[DocumentReference],
     ) -> dict[str, str]:
         """Fetch names for a set of player references."""
         players: dict[str, str] = {}
@@ -115,7 +117,10 @@ class MatchQueryService(
 
     @staticmethod
     def get_matches_for_user(
-        db: Client, uid: str, limit: int = 20, cursor: str | None = None
+        db: Client,
+        uid: str,
+        limit: int = 20,
+        cursor: str | None = None,
     ) -> tuple[list[dict[str, Any]], str | None]:
         """Fetch matches for a user with cursor-based pagination."""
         from firebase_admin import firestore

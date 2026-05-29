@@ -32,10 +32,12 @@ class TournamentMatchIntegrationTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore_match": patch(
-                "pickaladder.match.routes.firestore", new=self.mock_firestore_service
+                "pickaladder.match.routes.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_user_utils": patch(
-                "pickaladder.user.services.firestore", new=self.mock_firestore_service
+                "pickaladder.user.services.firestore",
+                new=self.mock_firestore_service,
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
@@ -45,7 +47,7 @@ class TournamentMatchIntegrationTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"},
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -68,7 +70,7 @@ class TournamentMatchIntegrationTestCase(unittest.TestCase):
         """Test that candidate players are restricted to tournament participants."""
         mock_db = self.mock_firestore_service.client.return_value
         mock_tourney_doc = mock_db.collection("tournaments").document(
-            MOCK_TOURNAMENT_ID
+            MOCK_TOURNAMENT_ID,
         )
         mock_tourney_snapshot = MagicMock()
         mock_tourney_snapshot.exists = True
@@ -76,13 +78,15 @@ class TournamentMatchIntegrationTestCase(unittest.TestCase):
         mock_tourney_doc.get.return_value = mock_tourney_snapshot
 
         candidates = MatchService.get_candidate_player_ids(
-            mock_db, MOCK_USER_ID, tournament_id=MOCK_TOURNAMENT_ID
+            mock_db,
+            MOCK_USER_ID,
+            tournament_id=MOCK_TOURNAMENT_ID,
         )
 
-        self.assertEqual(candidates, {"opponent789"})
+        assert candidates == {"opponent789"}
         # Should NOT include friends or other users
         mock_db.collection("users").document(MOCK_USER_ID).collection(
-            "friends"
+            "friends",
         ).stream.assert_not_called()
 
     def test_format_matches_for_dashboard_includes_tournament(self) -> None:
@@ -111,7 +115,9 @@ class TournamentMatchIntegrationTestCase(unittest.TestCase):
         mock_db.get_all.side_effect = [
             [
                 MagicMock(
-                    exists=True, id=MOCK_USER_ID, to_dict=lambda: {"username": "User1"}
+                    exists=True,
+                    id=MOCK_USER_ID,
+                    to_dict=lambda: {"username": "User1"},
                 ),
                 MagicMock(
                     exists=True,
@@ -123,11 +129,13 @@ class TournamentMatchIntegrationTestCase(unittest.TestCase):
         ]
 
         formatted = UserService.format_matches_for_dashboard(
-            mock_db, cast("list[Any]", [mock_match_doc]), MOCK_USER_ID
+            mock_db,
+            cast("list[Any]", [mock_match_doc]),
+            MOCK_USER_ID,
         )
 
-        self.assertEqual(len(formatted), 1)
-        self.assertEqual(formatted[0]["tournament_name"], "Summer Slam")
+        assert len(formatted) == 1
+        assert formatted[0]["tournament_name"] == "Summer Slam"
 
 
 if __name__ == "__main__":

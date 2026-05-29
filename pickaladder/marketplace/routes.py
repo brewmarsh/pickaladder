@@ -26,7 +26,9 @@ def view_marketplace() -> str:
 
     # In a real app, search_marketplace would handle search_type
     results = MarketplaceRepository.search_marketplace(
-        db, query_text=search_term, filters={"sort": sort, "type": search_type}
+        db,
+        query_text=search_term,
+        filters={"sort": sort, "type": search_type},
     )
 
     return render_template(

@@ -32,7 +32,8 @@ def _map_owner_docs_to_data(owner_docs: list[Any]) -> dict[str, dict[str, Any]]:
 
 
 def _fetch_owners_data(
-    db: Client, public_group_docs: list[Any]
+    db: Client,
+    public_group_docs: list[Any],
 ) -> dict[str, dict[str, Any]]:
     """Fetch sanitized data for all unique owners in a list of group documents."""
     unique_owner_refs = _extract_unique_owner_refs(public_group_docs)
@@ -44,7 +45,9 @@ def _fetch_owners_data(
 
 
 def _enrich_group_with_owner(
-    data: dict[str, Any], doc_id: str, owners_data: dict[str, dict[str, Any]]
+    data: dict[str, Any],
+    doc_id: str,
+    owners_data: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
     """Enrich group data with owner information."""
     guest_user = {"username": "Guest", "id": "unknown"}
@@ -79,12 +82,15 @@ def _build_ranking_data(
 
 
 def _enrich_with_player_above(
-    ranking_data: dict[str, Any], player: dict[str, Any], player_above: dict[str, Any]
+    ranking_data: dict[str, Any],
+    player: dict[str, Any],
+    player_above: dict[str, Any],
 ) -> None:
     """Add details about the player ranked immediately above."""
     ranking_data["player_above"] = player_above.get("name")
     ranking_data["points_to_overtake"] = player_above.get("avg_score", 0) - player.get(
-        "avg_score", 0
+        "avg_score",
+        0,
     )
 
 
@@ -171,13 +177,15 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
             continue
         leaderboard = get_group_leaderboard(group_doc.id)
         group_rankings.append(
-            _calculate_user_ranking(user_id, leaderboard, group_doc.id, group_data)
+            _calculate_user_ranking(user_id, leaderboard, group_doc.id, group_data),
         )
     return group_rankings
 
 
 def _fetch_profile_stats(
-    db: Client, target_user_id: str, profile_user_data: dict[str, Any]
+    db: Client,
+    target_user_id: str,
+    profile_user_data: dict[str, Any],
 ) -> tuple[dict[str, Any], list[Any]]:
     """Fetch matches and calculate statistics for user profile."""
     from .match_stats import calculate_stats, get_user_matches
@@ -192,7 +200,9 @@ def _fetch_profile_stats(
 
 
 def get_user_profile_data(
-    db: Client, current_user_id: str, target_user_id: str
+    db: Client,
+    current_user_id: str,
+    target_user_id: str,
 ) -> dict[str, Any] | None:
     """Fetch all data for a user's public profile."""
     from .core import get_user_by_id
@@ -226,14 +236,18 @@ def get_user_profile_data(
 
 
 def _matches_community_search(
-    item: dict[str, Any], term: str, fields: list[str]
+    item: dict[str, Any],
+    term: str,
+    fields: list[str],
 ) -> bool:
     """Helper to check if any of the specified fields match the search term."""
     return any(term in str(item.get(f, "")).lower() for f in fields)
 
 
 def _filter_community_list(
-    items: list[dict[str, Any]], term: str, fields: list[str]
+    items: list[dict[str, Any]],
+    term: str,
+    fields: list[str],
 ) -> list[dict[str, Any]]:
     """Filter a list of items based on a search term and fields."""
     if not term:

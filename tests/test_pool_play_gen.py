@@ -21,7 +21,7 @@ def mock_firestore():
         yield mock_db
 
 
-def test_generate_pool_play(mock_firestore):
+def test_generate_pool_play(mock_firestore) -> None:
     participant_ids = [f"p{i}" for i in range(12)]
     pool_count = 3
 
@@ -48,7 +48,7 @@ def test_generate_pool_play(mock_firestore):
         assert pool_matches[pid] == 6
 
 
-def test_generate_pool_play_uneven(mock_firestore):
+def test_generate_pool_play_uneven(mock_firestore) -> None:
     participant_ids = [f"p{i}" for i in range(10)]
     pool_count = 3
 

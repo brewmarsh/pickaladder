@@ -25,7 +25,8 @@ class StandingAggregator:
 
     @staticmethod
     def aggregate(
-        participant_ids: list[str], matches: list[dict[str, Any]]
+        participant_ids: list[str],
+        matches: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
         """
         Main entry point. Aggregates stats and resolves ties.
@@ -33,12 +34,13 @@ class StandingAggregator:
         """
         # 1. Calculate basic stats for all participants
         basic_stats = StandingAggregator._calculate_basic_stats(
-            participant_ids, list(matches)
+            participant_ids,
+            list(matches),
         )
 
         # 2. Group by matches won
         groups = collections.defaultdict(list)
-        for uid, stat in basic_stats.items():
+        for stat in basic_stats.values():
             groups[stat["wins"]].append(stat)
 
         # 3. Sort groups and resolve ties within each
@@ -56,7 +58,8 @@ class StandingAggregator:
 
     @staticmethod
     def _calculate_basic_stats(
-        participant_ids: list[str], matches: list[dict[str, Any]]
+        participant_ids: list[str],
+        matches: list[dict[str, Any]],
     ) -> dict[str, dict[str, Any]]:
         """Compute wins, losses, PF, PA, PD for each player."""
         stats = {
@@ -160,7 +163,9 @@ class StandingAggregator:
         # If this level didn't break ANY ties (everyone is still in one bucket)
         if len(groups) == 1:
             return StandingAggregator._resolve_ties(
-                list(groups.values())[0], matches, hierarchy_level=current_level + 1
+                next(iter(groups.values())),
+                matches,
+                hierarchy_level=current_level + 1,
             )
 
         sorted_result = []
@@ -179,8 +184,10 @@ class StandingAggregator:
                 # RESET to level 1 for the remaining tied sub-group
                 sorted_result.extend(
                     StandingAggregator._resolve_ties(
-                        sub_group, matches, hierarchy_level=H2H_LEVEL
-                    )
+                        sub_group,
+                        matches,
+                        hierarchy_level=H2H_LEVEL,
+                    ),
                 )
             else:
                 sorted_result.append(sub_group[0])
@@ -224,10 +231,11 @@ class StandingAggregator:
 
     @staticmethod
     def _calculate_h2h_wins(
-        players: list[dict[str, Any]], matches: list[dict[str, Any]]
+        players: list[dict[str, Any]],
+        matches: list[dict[str, Any]],
     ) -> dict[str, int]:
         uids = {p["uid"] for p in players}
-        wins = {uid: 0 for uid in uids}
+        wins = dict.fromkeys(uids, 0)
         for m in matches:
             if m.get("status") != "COMPLETED":
                 continue
@@ -240,17 +248,17 @@ class StandingAggregator:
             if (
                 match_parts.issubset(uids)
                 and len(match_parts) == SINGLES_PARTICIPANT_COUNT
-            ):
-                if w_id in wins:
-                    wins[w_id] += 1
+            ) and w_id in wins:
+                wins[w_id] += 1
         return wins
 
     @staticmethod
     def _calculate_h2h_pd(
-        players: list[dict[str, Any]], matches: list[dict[str, Any]]
+        players: list[dict[str, Any]],
+        matches: list[dict[str, Any]],
     ) -> dict[str, int]:
         uids = {p["uid"] for p in players}
-        pd = {uid: 0 for uid in uids}
+        pd = dict.fromkeys(uids, 0)
         for m in matches:
             if m.get("status") != "COMPLETED":
                 continue

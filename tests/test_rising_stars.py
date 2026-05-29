@@ -90,15 +90,16 @@ class TestRisingStars(unittest.TestCase):
         stars = MatchRecordService.get_rising_stars(mock_db, limit=2)
 
         # Assertions
-        self.assertEqual(len(stars), 2)
-        self.assertEqual(stars[0]["id"], "u1")
-        self.assertEqual(stars[0]["weekly_wins"], 2)
-        self.assertEqual(stars[1]["id"], "u2")
-        self.assertEqual(stars[1]["weekly_wins"], 1)
+        assert len(stars) == 2
+        assert stars[0]["id"] == "u1"
+        assert stars[0]["weekly_wins"] == 2
+        assert stars[1]["id"] == "u2"
+        assert stars[1]["weekly_wins"] == 1
 
     @patch("firebase_admin.firestore.FieldFilter")
     def test_get_rising_stars_type_error_prevention(
-        self, mock_field_filter: MagicMock
+        self,
+        mock_field_filter: MagicMock,
     ) -> None:
         """Test that the query is constructed with a datetime object."""
         mock_db = MagicMock()
@@ -107,10 +108,10 @@ class TestRisingStars(unittest.TestCase):
         MatchRecordService.get_rising_stars(mock_db)
 
         # Check that FieldFilter was called with a datetime object
-        args, kwargs = mock_field_filter.call_args
-        self.assertEqual(args[0], "matchDate")
-        self.assertEqual(args[1], ">=")
-        self.assertIsInstance(args[2], datetime.datetime)
+        args, _kwargs = mock_field_filter.call_args
+        assert args[0] == "matchDate"
+        assert args[1] == ">="
+        assert isinstance(args[2], datetime.datetime)
 
 
 if __name__ == "__main__":

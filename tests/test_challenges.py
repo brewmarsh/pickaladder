@@ -20,10 +20,11 @@ def mock_db() -> MagicMock:
 
 
 @patch(
-    "pickaladder.match.services.challenge_service.SocialCreditService.adjust_balance"
+    "pickaladder.match.services.challenge_service.SocialCreditService.adjust_balance",
 )
 def test_issue_challenge_success(
-    mock_adjust_balance: MagicMock, mock_db: MagicMock
+    mock_adjust_balance: MagicMock,
+    mock_db: MagicMock,
 ) -> None:
     """Test successful issuance of a challenge."""
     mock_db.collection.return_value.where.return_value.where.return_value.get.return_value = []
@@ -38,7 +39,10 @@ def test_issue_challenge_success(
 
     assert challenge_id == "challenge_123"
     mock_adjust_balance.assert_called_once_with(
-        mock_db, mock_db.transaction(), "userA", -10
+        mock_db,
+        mock_db.transaction(),
+        "userA",
+        -10,
     )
     mock_db.transaction().set.assert_called_once()
 
@@ -59,15 +63,19 @@ def test_issue_challenge_exceeds_max_wager(mock_db: MagicMock) -> None:
     """Test wager cannot exceed MAX_WAGER."""
     with pytest.raises(ValueError, match="exceed"):
         ChallengeService.issue_challenge(
-            mock_db, "userA", "userB", ChallengeService.MAX_WAGER + 1
+            mock_db,
+            "userA",
+            "userB",
+            ChallengeService.MAX_WAGER + 1,
         )
 
 
 @patch(
-    "pickaladder.match.services.challenge_service.SocialCreditService.adjust_balance"
+    "pickaladder.match.services.challenge_service.SocialCreditService.adjust_balance",
 )
 def test_accept_challenge_success(
-    mock_adjust_balance: MagicMock, mock_db: MagicMock
+    mock_adjust_balance: MagicMock,
+    mock_db: MagicMock,
 ) -> None:
     """Test successful acceptance of a challenge."""
     mock_doc = MagicMock()
@@ -84,7 +92,10 @@ def test_accept_challenge_success(
         ChallengeService.accept_challenge(mock_db, "challenge_123", "userB")
 
     mock_adjust_balance.assert_called_once_with(
-        mock_db, mock_db.transaction(), "userB", -10
+        mock_db,
+        mock_db.transaction(),
+        "userB",
+        -10,
     )
     mock_db.transaction().update.assert_called_once()
     update_call = mock_db.transaction().update.call_args[0][1]
@@ -104,10 +115,11 @@ def test_accept_challenge_wrong_user(mock_db: MagicMock) -> None:
 
 
 @patch(
-    "pickaladder.match.services.challenge_service.SocialCreditService.adjust_balance"
+    "pickaladder.match.services.challenge_service.SocialCreditService.adjust_balance",
 )
 def test_decline_challenge_success(
-    mock_adjust_balance: MagicMock, mock_db: MagicMock
+    mock_adjust_balance: MagicMock,
+    mock_db: MagicMock,
 ) -> None:
     """Test successful declining of a challenge."""
     mock_doc = MagicMock()
@@ -124,7 +136,10 @@ def test_decline_challenge_success(
         ChallengeService.decline_challenge(mock_db, "challenge_123", "userB")
 
     mock_adjust_balance.assert_called_once_with(
-        mock_db, mock_db.transaction(), "userA", 15
+        mock_db,
+        mock_db.transaction(),
+        "userA",
+        15,
     )
     mock_db.transaction().update.assert_called_once()
     update_call = mock_db.transaction().update.call_args[0][1]

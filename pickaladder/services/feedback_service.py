@@ -16,7 +16,10 @@ class FeedbackService:
 
     @staticmethod
     def submit_feedback(
-        db: firestore.client, user_id: str, feedback_type: str, message: str
+        db: firestore.client,
+        user_id: str,
+        feedback_type: str,
+        message: str,
     ) -> str:
         """Saves user feedback to the feedback collection."""
         # Sanitize message
@@ -48,7 +51,10 @@ class FeedbackService:
 
     @staticmethod
     def update_feedback_status(
-        db: firestore.client, feedback_id: str, status: str, admin_id: str
+        db: firestore.client,
+        feedback_id: str,
+        status: str,
+        admin_id: str,
     ) -> bool:
         """Updates feedback status and notifies the user."""
         feedback_ref = db.collection("feedback").document(feedback_id)
@@ -63,7 +69,7 @@ class FeedbackService:
                 "status": status,
                 "updatedAt": datetime.now(timezone.utc),
                 "updatedBy": admin_id,
-            }
+            },
         )
 
         # Notify the user

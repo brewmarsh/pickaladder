@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from firebase_admin import firestore
 from flask import (
     Response,
@@ -18,13 +16,9 @@ from flask import (
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, USER_MESSAGES
-
-from .. import bp
-from ..services import UserService
-from ..utils import CursorPagination
-
-if TYPE_CHECKING:
-    pass
+from pickaladder.user import bp
+from pickaladder.user.services import UserService
+from pickaladder.user.utils import CursorPagination
 
 
 @bp.route("/community")
@@ -65,7 +59,11 @@ def users() -> str:
     cursor = request.args.get("cursor")
 
     user_items, next_cursor = UserService.search_users(
-        firestore.client(), g.user.uid, search_term, limit=limit, cursor=cursor
+        firestore.client(),
+        g.user.uid,
+        search_term,
+        limit=limit,
+        cursor=cursor,
     )
     return render_template(
         "users.html",

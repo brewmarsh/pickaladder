@@ -30,25 +30,28 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
             ref.get.return_value = doc
             return ref, doc
 
-        u1_ref, u1_doc = create_mock_user("u1", "User 1")  # Avg 11, 6 wins
-        u2_ref, u2_doc = create_mock_user("u2", "User 2")  # Avg 11, 6 wins
-        u3_ref, u3_doc = create_mock_user("u3", "User 3")  # Avg 12, 0 wins
-        u4_ref, u4_doc = create_mock_user("u4", "Opponent")
+        u1_ref, _u1_doc = create_mock_user("u1", "User 1")  # Avg 11, 6 wins
+        u2_ref, _u2_doc = create_mock_user("u2", "User 2")  # Avg 11, 6 wins
+        u3_ref, _u3_doc = create_mock_user("u3", "User 3")  # Avg 12, 0 wins
+        u4_ref, _u4_doc = create_mock_user("u4", "Opponent")
 
         # Mock group data
         mock_group_doc = MagicMock()
         mock_group_doc.exists = True
         mock_group_doc.to_dict.return_value = {
-            "members": [u1_ref, u2_ref, u3_ref, u4_ref]
+            "members": [u1_ref, u2_ref, u3_ref, u4_ref],
         }
         mock_db.collection("groups").document(
-            "group1"
+            "group1",
         ).get.return_value = mock_group_doc
 
         matches = []
 
         def record_match(
-            p1_ref: MagicMock, p1_score: int, p2_ref: MagicMock, p2_score: int
+            p1_ref: MagicMock,
+            p1_score: int,
+            p2_ref: MagicMock,
+            p2_score: int,
         ) -> MagicMock:
             """Create a mock match document."""
             m = MagicMock()
@@ -86,23 +89,23 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
 
         # Assertions
         # Expect U3 to be first because Avg 12 > 11
-        self.assertEqual(
-            leaderboard[0]["id"], "u3", "Highest avg score (U3) should be first"
-        )
-        self.assertEqual(leaderboard[0]["avg_score"], 12.0)
+        assert leaderboard[0]["id"] == "u3", "Highest avg score (U3) should be first"
+        assert leaderboard[0]["avg_score"] == 12.0
 
         # U1 and U2 are tied at 11.0, and wins 6.
         # Order doesn't strictly matter between them, but they must be after U3.
-        self.assertIn(leaderboard[1]["id"], ["u1", "u2"])
-        self.assertIn(leaderboard[2]["id"], ["u1", "u2"])
-        self.assertEqual(leaderboard[1]["avg_score"], 11.0)
+        assert leaderboard[1]["id"] in ["u1", "u2"]
+        assert leaderboard[2]["id"] in ["u1", "u2"]
+        assert leaderboard[1]["avg_score"] == 11.0
 
     @patch("pickaladder.group.utils.firestore")
     def test_leaderboard_includes_avatar_fields(
-        self, mock_firestore: MagicMock
+        self,
+        mock_firestore: MagicMock,
     ) -> None:
         """Test the leaderboard entries include profilePictureUrl and
-        profilePictureThumbnailUrl."""
+        profilePictureThumbnailUrl.
+        """
         mock_db = mock_firestore.client.return_value
 
         # Mock user with avatar fields
@@ -124,7 +127,7 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
         mock_group_doc.exists = True
         mock_group_doc.to_dict.return_value = {"members": [u1_ref]}
         mock_db.collection("groups").document(
-            "group1"
+            "group1",
         ).get.return_value = mock_group_doc
 
         # Mock empty matches and invites
@@ -134,13 +137,12 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
 
         leaderboard = get_group_leaderboard("group1")
 
-        self.assertEqual(len(leaderboard), 1)
-        self.assertEqual(leaderboard[0]["id"], "u1")
-        self.assertEqual(
-            leaderboard[0]["profilePictureUrl"], "http://example.com/pic.jpg"
-        )
-        self.assertEqual(
-            leaderboard[0]["profilePictureThumbnailUrl"], "http://example.com/thumb.jpg"
+        assert len(leaderboard) == 1
+        assert leaderboard[0]["id"] == "u1"
+        assert leaderboard[0]["profilePictureUrl"] == "http://example.com/pic.jpg"
+        assert (
+            leaderboard[0]["profilePictureThumbnailUrl"]
+            == "http://example.com/thumb.jpg"
         )
 
 

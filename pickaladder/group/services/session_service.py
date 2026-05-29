@@ -16,7 +16,11 @@ class SessionService(BaseRepository):
 
     @classmethod
     def create_session(
-        cls, db: Client, group_id: str, creator_id: str, player_ids: list[str]
+        cls,
+        db: Client,
+        group_id: str,
+        creator_id: str,
+        player_ids: list[str],
     ) -> str:
         """Create a new session and return its ID."""
         from firebase_admin import firestore
@@ -49,7 +53,7 @@ class SessionService(BaseRepository):
             {
                 "matchIds": firestore.ArrayUnion([match_id]),
                 "updatedAt": firestore.SERVER_TIMESTAMP,
-            }
+            },
         )
 
     @classmethod
@@ -76,11 +80,11 @@ class SessionService(BaseRepository):
             {
                 "verifiedBy": firestore.ArrayUnion([user_id]),
                 "updatedAt": firestore.SERVER_TIMESTAMP,
-            }
+            },
         )
 
         # Check if we should complete the session (Threshold: 2 unique approvals)
-        updated_verified_by = list(set(verified_by + [user_id]))
+        updated_verified_by = list({*verified_by, user_id})
 
         if (
             len(updated_verified_by) >= cls.MIN_VERIFICATIONS_FOR_COMPLETION

@@ -146,11 +146,10 @@ class Match(UserDict):
             ]
             in_team1 = uid in p1_ids if uid else False
             return (s1, s2) if in_team1 else (s2, s1)
-        else:
-            p1_data = self.get("player_1_data") or {}
-            p1_uid = p1_data.get("uid") or getattr(self.get("player1", {}), "id", None)
-            is_p1 = uid == p1_uid
-            return (s1, s2) if is_p1 else (s2, s1)
+        p1_data = self.get("player_1_data") or {}
+        p1_uid = p1_data.get("uid") or getattr(self.get("player1", {}), "id", None)
+        is_p1 = uid == p1_uid
+        return (s1, s2) if is_p1 else (s2, s1)
 
 
 @dataclass
@@ -243,7 +242,7 @@ class Challenge(TypedDict, total=False):
 class MatchDict(FirestoreDocument, Score, total=False):
     """
     A match document in Firestore.
-    (Retained as a TypedDict for strict typing in backend services)
+    (Retained as a TypedDict for strict typing in backend services).
     """
 
     matchType: str

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from pickaladder.admin.services import AdminService
 
 
-def test_log_action():
+def test_log_action() -> None:
     db = MagicMock()
     collection = db.collection.return_value
     collection.add.return_value = (None, MagicMock(id="test_log_id"))
@@ -13,12 +13,10 @@ def test_log_action():
     action_type = "delete_user"
     metadata = {"reason": "violation"}
 
-    log_id = AdminService.log_action(db, admin_id, target_id, action_type, metadata)
-
-    print(f"Log ID returned: {log_id}")
+    AdminService.log_action(db, admin_id, target_id, action_type, metadata)
 
     db.collection.assert_called_with("audit_logs")
-    args, kwargs = collection.add.call_args
+    args, _kwargs = collection.add.call_args
     log_entry = args[0]
 
     assert log_entry["admin_id"] == admin_id
@@ -27,14 +25,11 @@ def test_log_action():
     assert log_entry["metadata"] == metadata
     assert "timestamp" in log_entry
 
-    print("Verification: SUCCESS")
-
 
 if __name__ == "__main__":
     try:
         test_log_action()
-    except Exception as e:
-        print(f"Verification: FAILED ({e})")
+    except Exception:
         import traceback
 
         traceback.print_exc()

@@ -1,6 +1,8 @@
 """Error handlers for the application."""
 
-from typing import Tuple, Union  # noqa: UP035
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Tuple  # noqa: UP035
 
 from flask import (
     Blueprint,
@@ -12,11 +14,13 @@ from flask import (
     url_for,
 )
 from flask_wtf.csrf import CSRFError
-from werkzeug.wrappers import Response
 
 from .constants.messages import COMMON_MESSAGES
 from .errors import AppError, DuplicateResourceError, NotFoundError, ValidationError
 from .services.error_service import ErrorService
+
+if TYPE_CHECKING:
+    from werkzeug.wrappers import Response
 
 error_handlers_bp = Blueprint("error_handlers", __name__)
 
@@ -62,12 +66,12 @@ def handle_500(e: Exception) -> Tuple[str, int]:  # noqa: UP006
     try:
         ErrorService.log_error(e)
     except Exception as log_e:
-        current_app.logger.error(f"Failed to log error to Firestore: {log_e}")
+        current_app.logger.exception(f"Failed to log error to Firestore: {log_e}")
     return render_template("500.html"), 500
 
 
 @error_handlers_bp.app_errorhandler(CSRFError)
-def handle_csrf_error(e: CSRFError) -> Union[Response, str]:
+def handle_csrf_error(e: CSRFError) -> Response | str:
     """Handle CSRF errors.
 
     Handle CSRF errors, which usually indicate a session timeout or invalid form

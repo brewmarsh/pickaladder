@@ -11,7 +11,11 @@ from pickaladder.group.services.match_parser import _extract_team_ids, _get_matc
 
 
 def _check_partnership_win(
-    data: dict[str, object], playerA_id: str, playerB_id: str, wins: int, losses: int
+    data: dict[str, object],
+    playerA_id: str,
+    playerB_id: str,
+    wins: int,
+    losses: int,
 ) -> tuple[int, int]:
     """Determine if a partnership won or lost a specific match."""
     team1_ids, team2_ids = _extract_team_ids(data)
@@ -28,7 +32,9 @@ def _check_partnership_win(
 
 
 def get_partnership_stats(
-    playerA_id: str, playerB_id: str, all_matches_in_group: list[Any]
+    playerA_id: str,
+    playerB_id: str,
+    all_matches_in_group: list[Any],
 ) -> dict[str, int]:
     """Calculates the win/loss record for two players when they are partners."""
     wins = 0
@@ -39,7 +45,11 @@ def get_partnership_stats(
         if data.get("matchType") != "doubles":
             continue
         wins, losses = _check_partnership_win(
-            data, playerA_id, playerB_id, wins, losses
+            data,
+            playerA_id,
+            playerB_id,
+            wins,
+            losses,
         )
 
     return {"wins": wins, "losses": losses}
@@ -88,12 +98,14 @@ def _process_h2h_match(
 
 
 def get_head_to_head_stats(
-    group_id: str, playerA_id: str, playerB_id: str
+    group_id: str,
+    playerA_id: str,
+    playerB_id: str,
 ) -> dict[str, object]:
     """Calculates head-to-head statistics for two players in doubles matches."""
     db = firestore.client()
     query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
+        filter=FieldFilter("groupId", "==", group_id),
     )
     all_matches_in_group = list(query.stream())
 
@@ -120,13 +132,18 @@ def get_head_to_head_stats(
         "point_diff": h2h_stats["point_diff"],
         "avg_points_scored": {"playerA": avg_A, "playerB": avg_B},
         "partnership_record": get_partnership_stats(
-            playerA_id, playerB_id, all_matches_in_group
+            playerA_id,
+            playerB_id,
+            all_matches_in_group,
         ),
     }
 
 
 def _update_all_time_streak(
-    data: dict[str, object], user_id: str, current: int, longest: int
+    data: dict[str, object],
+    user_id: str,
+    current: int,
+    longest: int,
 ) -> tuple[int, int]:
     """Update current and longest winning streaks based on a single match."""
     p1_score, p2_score = _get_match_scores(data)
@@ -152,7 +169,8 @@ def _update_all_time_streak(
 
 
 def _calculate_all_time_streaks(
-    matches: list[Any], user_ref: DocumentReference
+    matches: list[Any],
+    user_ref: DocumentReference,
 ) -> tuple[int, int]:
     """Calculate current and longest winning streaks for a user."""
     from datetime import datetime
@@ -189,7 +207,7 @@ def get_user_group_stats(group_id: str, user_id: str) -> dict[str, object]:
         stats["losses"] = user_data.get("losses", 0)
 
     matches_query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
+        filter=FieldFilter("groupId", "==", group_id),
     )
     all_matches = list(matches_query.stream())
     user_ref = db.collection("users").document(user_id)

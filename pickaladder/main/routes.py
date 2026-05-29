@@ -17,7 +17,8 @@ def service_worker() -> Response:
     """Serve the service worker file."""
     static_folder = current_app.static_folder
     if static_folder is None:
-        raise RuntimeError("Static folder is not configured.")
+        msg = "Static folder is not configured."
+        raise RuntimeError(msg)
     return send_from_directory(static_folder, "service-worker.js")
 
 
@@ -34,7 +35,8 @@ def robots() -> Response:
     """Serve the robots.txt file."""
     static_folder = current_app.static_folder
     if static_folder is None:
-        raise RuntimeError("Static folder is not configured.")
+        msg = "Static folder is not configured."
+        raise RuntimeError(msg)
     return send_from_directory(static_folder, "robots.txt")
 
 

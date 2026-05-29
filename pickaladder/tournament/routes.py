@@ -43,7 +43,7 @@ def _get_group_admin_error(group_id: str | None, user_uid: str) -> str | None:
     if not group_id:
         return None
     db = firestore.client()
-    doc = cast(Any, db.collection("groups").document(group_id).get())
+    doc = cast("Any", db.collection("groups").document(group_id).get())
     if doc.exists:
         from pickaladder.group.services.group_service import GroupService
 
@@ -56,7 +56,8 @@ def _handle_creation_payload(form: TournamentForm, user_uid: str) -> str:
     """Process tournament creation and return ID."""
     date_val = form.start_date.data
     if date_val is None:
-        raise ValueError("Date is required")
+        msg = "Date is required"
+        raise ValueError(msg)
     data = {
         "name": form.name.data,
         "date": datetime.datetime.combine(date_val, datetime.time.min),
@@ -104,14 +105,14 @@ def _resolve_claim_data(t_id: str, c_id: str | None) -> dict[str, Any] | None:
         return None
     db = firestore.client()
     ref = db.collection("tournaments").document(t_id).collection("teams").document(c_id)
-    doc = cast(Any, ref.get())
+    doc = cast("Any", ref.get())
     if not doc.exists:
         return None
-    d = cast(dict[str, Any], doc.to_dict() or {})
+    d = cast("dict[str, Any]", doc.to_dict() or {})
     d["id"] = doc.id
     p1_uid = d.get("p1_uid")
     if p1_uid:
-        p1 = cast(Any, db.collection("users").document(p1_uid).get())
+        p1 = cast("Any", db.collection("users").document(p1_uid).get())
         d["p1_name"] = (
             smart_display_name(p1.to_dict() or {}) if p1.exists else "Someone"
         )
@@ -123,7 +124,7 @@ def _resolve_claim_data(t_id: str, c_id: str | None) -> dict[str, Any] | None:
 def _handle_view_invite(tournament_id: str, form: InvitePlayerForm) -> bool:
     """Handle invitation form submission from view page."""
     if form.validate_on_submit() and "user_id" in request.form:
-        uid = cast(str, form.user_id.data)
+        uid = cast("str", form.user_id.data)
         if uid:
             TournamentService.invite_player(tournament_id, g.user.uid, uid)
             return True
@@ -140,7 +141,8 @@ def view_tournament(tournament_id: str) -> Response | str:
         return redirect(url_for(".list_tournaments"))
 
     details["claim_team_data"] = _resolve_claim_data(
-        tournament_id, request.args.get("claim_team")
+        tournament_id,
+        request.args.get("claim_team"),
     )
     form = InvitePlayerForm()
     invitables = details.get("invitable_users", [])
@@ -168,10 +170,13 @@ def view_tournament(tournament_id: str) -> Response | str:
         pool_standings = {}
         for pool_id, pool_matches in pools.items():
             raw = aggregate_match_data(
-                pool_matches, details["tournament"].get("matchType", "singles")
+                pool_matches,
+                details["tournament"].get("matchType", "singles"),
             )
             pool_standings[pool_id] = sort_and_format_standings(
-                db, raw, details["tournament"].get("matchType", "singles")
+                db,
+                raw,
+                details["tournament"].get("matchType", "singles"),
             )
 
         details["pool_standings"] = pool_standings
@@ -183,7 +188,10 @@ def _handle_tournament_update(tournament_id: str, form: TournamentForm) -> bool:
     """Process tournament update from form."""
     if form.validate_on_submit():
         TournamentService.update_tournament_from_form(
-            tournament_id, g.user.uid, form.data, request.files.get("banner")
+            tournament_id,
+            g.user.uid,
+            form.data,
+            request.files.get("banner"),
         )
         return True
     return False
@@ -195,7 +203,7 @@ def _populate_edit_form(form: TournamentForm, tournament_data: dict[str, Any]) -
     form.match_type.data = tournament_data.get("mode", "SINGLES")
     t_date = tournament_data.get("date")
     if hasattr(t_date, "to_datetime"):
-        form.start_date.data = cast(Any, t_date).to_datetime().date()
+        form.start_date.data = cast("Any", t_date).to_datetime().date()
 
 
 @bp.route("/<string:tournament_id>/edit", methods=["GET", "POST"])
@@ -213,7 +221,10 @@ def edit_tournament(tournament_id: str) -> Response | str:
             _populate_edit_form(form, t)
 
         return render_template(
-            "tournaments/create_edit.html", form=form, tournament=t, action="Edit"
+            "tournaments/create_edit.html",
+            form=form,
+            tournament=t,
+            action="Edit",
         )
     except (ValueError, PermissionError) as e:
         flash(str(e), "danger")
@@ -246,7 +257,7 @@ def invite_player(tournament_id: str) -> Response:
         form.user_id.choices = [(uid, "")]
     if form.validate_on_submit():
         try:
-            invited_uid = cast(str, form.user_id.data)
+            invited_uid = cast("str", form.user_id.data)
             TournamentService.invite_player(tournament_id, g.user.uid, invited_uid)
             flash(TOURNAMENT_MESSAGES["PLAYER_INVITE_SUCCESS"], "success")
         except Exception as e:
@@ -265,7 +276,8 @@ def invite_group(tournament_id: str) -> Response:
     try:
         count = TournamentService.invite_group(tournament_id, gid, g.user.uid)
         flash(
-            TOURNAMENT_MESSAGES["INVITE_COUNT_SUCCESS"].format(count=count), "success"
+            TOURNAMENT_MESSAGES["INVITE_COUNT_SUCCESS"].format(count=count),
+            "success",
         )
     except (ValueError, PermissionError) as e:
         flash(str(e), "danger")
@@ -331,9 +343,8 @@ def _extract_uid_from_participant(participant: dict[str, Any]) -> str | None:
 
 def _get_accepted_uids(data: dict[str, Any]) -> list[str]:
     """Extract list of UIDs for accepted participants."""
-    parts = cast(list[dict[str, Any]], data.get("participants", []))
-    uids = [uid for p in parts if (uid := _extract_uid_from_participant(p)) is not None]
-    return uids
+    parts = cast("list[dict[str, Any]]", data.get("participants", []))
+    return [uid for p in parts if (uid := _extract_uid_from_participant(p)) is not None]
 
 
 @bp.route("/<string:tournament_id>/generate", methods=["POST"])
@@ -360,7 +371,7 @@ def generate_bracket(tournament_id: str) -> Response:
             TOURNAMENT_MESSAGES["GEN_NOT_IMPLEMENTED"].format(format="selected"),
             "warning",
         )
-        logging.error(f"Bracket gen failed: {e}")
+        logging.exception(f"Bracket gen failed: {e}")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
@@ -385,7 +396,7 @@ def promote_pools(tournament_id: str) -> Response:
         flash(str(e), "danger")
     except Exception as e:
         flash(f"Unexpected error during promotion: {e}", "danger")
-        logging.error(f"Pool promotion failed: {e}")
+        logging.exception(f"Pool promotion failed: {e}")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
@@ -398,13 +409,19 @@ def join_tournament(tournament_id: str) -> Response:
 
 
 def _handle_registration(
-    t_id: str, p_id: str | None, name: str, is_json: bool
+    t_id: str,
+    p_id: str | None,
+    name: str,
+    is_json: bool,
 ) -> Response | str:
     """Perform team registration and return response."""
     tid = TournamentService.register_team(t_id, g.user.uid, p_id, name)
     if is_json:
         url = url_for(
-            ".view_tournament", tournament_id=t_id, claim_team=tid, _external=True
+            ".view_tournament",
+            tournament_id=t_id,
+            claim_team=tid,
+            _external=True,
         )
         return jsonify({"success": True, "team_id": tid, "link": url})
 
@@ -420,12 +437,15 @@ def _handle_registration(
 def register_team(tournament_id: str) -> Response | str:
     """Register a doubles team for the tournament."""
     is_json = request.is_json
-    data = cast(dict[str, Any], request.get_json() if is_json else request.form)
+    data = cast("dict[str, Any]", request.get_json() if is_json else request.form)
     try:
         p_id = data.get("partner_id")
-        t_name = cast(str, data.get("team_name") or "")
+        t_name = cast("str", data.get("team_name") or "")
         return _handle_registration(
-            tournament_id, cast(str, p_id) if p_id else None, t_name, is_json
+            tournament_id,
+            cast("str", p_id) if p_id else None,
+            t_name,
+            is_json,
         )
     except Exception as e:
         if is_json:

@@ -36,10 +36,10 @@ class MatchFormatter:
         team2_refs = match_data.get("team2", [])
 
         t1_names = " & ".join(
-            [players.get(getattr(ref, "id", ""), "N/A") for ref in team1_refs]
+            [players.get(getattr(ref, "id", ""), "N/A") for ref in team1_refs],
         )
         t2_names = " & ".join(
-            [players.get(getattr(ref, "id", ""), "N/A") for ref in team2_refs]
+            [players.get(getattr(ref, "id", ""), "N/A") for ref in team2_refs],
         )
 
         s1, s2 = match_data.get("player1Score", 0), match_data.get("player2Score", 0)
@@ -50,7 +50,7 @@ class MatchFormatter:
                     "loser_name": t2_names,
                     "winner_score": s1,
                     "loser_score": s2,
-                }
+                },
             )
         else:
             match_data.update(
@@ -59,7 +59,7 @@ class MatchFormatter:
                     "loser_name": t1_names,
                     "winner_score": s2,
                     "loser_score": s1,
-                }
+                },
             )
 
     @staticmethod
@@ -82,7 +82,7 @@ class MatchFormatter:
                     "loser_name": p2_name,
                     "winner_score": s1,
                     "loser_score": s2,
-                }
+                },
             )
         else:
             match_data.update(
@@ -91,5 +91,5 @@ class MatchFormatter:
                     "loser_name": p1_name,
                     "winner_score": s2,
                     "loser_score": s1,
-                }
+                },
             )

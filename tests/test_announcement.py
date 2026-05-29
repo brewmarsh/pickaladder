@@ -22,14 +22,16 @@ class AnnouncementTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore_routes": patch(
-                "pickaladder.admin.routes.firestore", new=self.mock_firestore_service
+                "pickaladder.admin.routes.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_cp": patch(
                 "pickaladder.context_processors.firestore",
                 new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
+                "pickaladder.firestore",
+                new=self.mock_firestore_service,
             ),
         }
 
@@ -38,7 +40,7 @@ class AnnouncementTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"},
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -79,8 +81,8 @@ class AnnouncementTestCase(unittest.TestCase):
             follow_redirects=True,
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Global announcement updated successfully.", response.data)
+        assert response.status_code == 200
+        assert b"Global announcement updated successfully." in response.data
 
         mock_settings_doc.set.assert_called_with(
             {
@@ -108,11 +110,11 @@ class AnnouncementTestCase(unittest.TestCase):
 
         with self.app.test_request_context():
             context = inject_global_context()
-            self.assertEqual(
-                context["global_announcement"]["announcement_text"], "Global Message"
+            assert (
+                context["global_announcement"]["announcement_text"] == "Global Message"
             )
-            self.assertTrue(context["global_announcement"]["is_active"])
-            self.assertEqual(context["global_announcement"]["level"], "danger")
+            assert context["global_announcement"]["is_active"]
+            assert context["global_announcement"]["level"] == "danger"
 
 
 if __name__ == "__main__":

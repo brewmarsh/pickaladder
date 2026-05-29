@@ -17,12 +17,15 @@ class TeamRepository(BaseRepository):
 
     @classmethod
     def get_team_by_members(
-        cls, db: Client, member_ids: list[str], team_type: str = "pairing"
+        cls,
+        db: Client,
+        member_ids: list[str],
+        team_type: str = "pairing",
     ) -> dict[str, Any] | None:
         """Query for an existing team with the exact same member IDs and type."""
         sorted_ids = sorted(member_ids)
         query = db.collection(cls.COLLECTION_NAME).where(
-            filter=firestore.FieldFilter("member_ids", "==", sorted_ids)
+            filter=firestore.FieldFilter("member_ids", "==", sorted_ids),
         )
 
         # For pairing, we handle legacy data where 'type' might be missing
@@ -36,7 +39,7 @@ class TeamRepository(BaseRepository):
     def get_teams_by_member(cls, db: Client, member_id: str) -> list[dict[str, Any]]:
         """Fetch all teams that a specific member belongs to."""
         query = db.collection(cls.COLLECTION_NAME).where(
-            filter=firestore.FieldFilter("member_ids", "array_contains", member_id)
+            filter=firestore.FieldFilter("member_ids", "array_contains", member_id),
         )
         return [
             enriched
@@ -78,7 +81,11 @@ class TeamRepository(BaseRepository):
 
     @classmethod
     def create_named_team(
-        cls, db: Client, name: str, creator_id: str, member_ids: list[str]
+        cls,
+        db: Client,
+        name: str,
+        creator_id: str,
+        member_ids: list[str],
     ) -> str:
         """Create a named team with a roster."""
         sorted_ids = sorted(member_ids)
@@ -102,7 +109,7 @@ class TeamRepository(BaseRepository):
             db.collection(cls.COLLECTION_NAME)
             .where(filter=firestore.FieldFilter("type", "==", "named"))
             .where(
-                filter=firestore.FieldFilter("member_ids", "array_contains", user_id)
+                filter=firestore.FieldFilter("member_ids", "array_contains", user_id),
             )
         )
         return [

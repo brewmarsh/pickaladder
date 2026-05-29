@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
 
 def _is_user_participant_with_status(
-    participants: list[dict[str, Any]], user_id: str, status: str
+    participants: list[dict[str, Any]],
+    user_id: str,
+    status: str,
 ) -> bool:
     """Check if a user is in the participants list with a specific status."""
     for p in participants:
@@ -53,21 +55,24 @@ def _fetch_member_tournaments(db: Client, user_id: str) -> list[DocumentSnapshot
         return list(
             db.collection("tournaments")
             .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
-            .stream()
+            .stream(),
         )
     except Exception:
         return []
 
 
 def _filter_pending_invites(
-    tournaments: list[DocumentSnapshot], user_id: str
+    tournaments: list[DocumentSnapshot],
+    user_id: str,
 ) -> list[dict[str, Any]]:
     """Filter tournament documents for pending invites for the user."""
     pending = []
     for doc in tournaments:
         data = doc.to_dict()
         if data and _is_user_participant_with_status(
-            data.get("participants") or [], user_id, "pending"
+            data.get("participants") or [],
+            user_id,
+            "pending",
         ):
             data["id"] = doc.id
             pending.append(data)
@@ -87,7 +92,7 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     tournaments_query = (
         db.collection("tournaments")
         .where(
-            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id)
+            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id),
         )
         .stream()
     )
@@ -96,14 +101,16 @@ def get_active_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
         data = doc.to_dict()
         if data and data.get("status") != "Completed":
             if _is_user_participant_with_status(
-                data.get("participants") or [], user_id, "accepted"
+                data.get("participants") or [],
+                user_id,
+                "accepted",
             ):
                 data["id"] = doc.id
                 _format_date_display(data)
                 active_tournaments.append(data)
 
     active_tournaments.sort(
-        key=lambda x: x.get("start_date") or x.get("date") or datetime.datetime.max
+        key=lambda x: x.get("start_date") or x.get("date") or datetime.datetime.max,
     )
     return active_tournaments
 
@@ -113,7 +120,7 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
     tournaments_query = (
         db.collection("tournaments")
         .where(
-            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id)
+            filter=firestore.FieldFilter("participant_ids", "array_contains", user_id),
         )
         .stream()
     )
@@ -122,11 +129,15 @@ def get_past_tournaments(db: Client, user_id: str) -> list[dict[str, Any]]:
         data = doc.to_dict()
         if data and data.get("status") == "Completed":
             if _is_user_participant_with_status(
-                data.get("participants") or [], user_id, "accepted"
+                data.get("participants") or [],
+                user_id,
+                "accepted",
             ):
                 data["id"] = doc.id
                 data["winner_name"] = _get_tournament_winner(
-                    db, doc.id, data.get("matchType", "singles")
+                    db,
+                    doc.id,
+                    data.get("matchType", "singles"),
                 )
                 _format_date_display(data)
                 past_tournaments.append(data)

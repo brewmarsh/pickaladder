@@ -33,7 +33,10 @@ class MessagingService:
 
     @staticmethod
     def get_or_create_group_announcement(
-        db: Client, group_id: str, owner_id: str, member_ids: list[str]
+        db: Client,
+        group_id: str,
+        owner_id: str,
+        member_ids: list[str],
     ) -> str:
         """Finds or initializes a group announcement channel."""
         query = (
@@ -55,13 +58,16 @@ class MessagingService:
             "groupId": group_id,
             "lastMessage": "",
             "updatedAt": firestore.SERVER_TIMESTAMP,
-            "unreadCount": {uid: 0 for uid in member_ids},
+            "unreadCount": dict.fromkeys(member_ids, 0),
         }
         return MessagingRepository.create(db, payload)
 
     @staticmethod
     def send_message(
-        db: Client, conversation_id: str, sender_id: str, content: str
+        db: Client,
+        conversation_id: str,
+        sender_id: str,
+        content: str,
     ) -> str:
         """Sends a message in a conversation."""
         # Note: In a production app, we would use Firestore Security Rules
@@ -94,7 +100,8 @@ class MessagingService:
             else:
                 # Find the OTHER participant
                 other_uid = next(
-                    (p for p in conv["participants"] if p != user_id), user_id
+                    (p for p in conv["participants"] if p != user_id),
+                    user_id,
                 )
                 other_user = UserService.get_user_by_id(db, other_uid)
                 conv["display_name"] = (

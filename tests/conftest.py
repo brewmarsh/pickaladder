@@ -33,14 +33,13 @@ def apply_global_patches(mock_db: MockFirestore) -> Iterator[None]:
 def app() -> Iterator[Any]:
     """Create and configure a new app instance for each test."""
     # Global patches from apply_global_patches are already active
-    app = create_app(
+    return create_app(
         {
             "TESTING": True,
             "WTF_CSRF_ENABLED": False,
             "SERVER_NAME": "localhost",
-        }
+        },
     )
-    yield app
 
 
 @pytest.fixture

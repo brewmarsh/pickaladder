@@ -21,7 +21,7 @@ class TournamentGenerator:
         for _ in range(n - 1):
             for i in range(n // 2):
                 pairs.append((temp_ids[i], temp_ids[n - 1 - i]))
-            temp_ids = [temp_ids[0]] + [temp_ids[-1]] + temp_ids[1:-1]
+            temp_ids = [temp_ids[0], temp_ids[-1], *temp_ids[1:-1]]
         return pairs
 
     @staticmethod
@@ -42,13 +42,14 @@ class TournamentGenerator:
                         "status": "DRAFT",
                         "createdAt": firestore.SERVER_TIMESTAMP,
                         "participants": [p1, p2],
-                    }
+                    },
                 )
         return pairings
 
     @staticmethod
     def generate_pool_play(
-        participant_ids: list[str], pool_count: int
+        participant_ids: list[str],
+        pool_count: int,
     ) -> list[dict[str, Any]]:
         """Divide participants into pools and generate Round Robin matches for each."""
         import random
@@ -147,7 +148,7 @@ class TournamentGenerator:
                         "bracketType": "WINNERS",
                         "createdAt": firestore.SERVER_TIMESTAMP,
                         "participants": [],
-                    }
+                    },
                 )
 
         return pairings
@@ -183,7 +184,7 @@ class TournamentGenerator:
                         "bracketType": "LOSERS",
                         "createdAt": firestore.SERVER_TIMESTAMP,
                         "participants": [],
-                    }
+                    },
                 )
 
         # 3. Grand Finals
@@ -199,7 +200,7 @@ class TournamentGenerator:
                 "isGrandFinal": True,
                 "createdAt": firestore.SERVER_TIMESTAMP,
                 "participants": [],
-            }
+            },
         )
 
         return pairings

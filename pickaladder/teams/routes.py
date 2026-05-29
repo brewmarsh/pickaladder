@@ -37,7 +37,10 @@ def create_team() -> Response | str:
                 member_ids.append(g.user.uid)
 
             team_id = TeamService.create_named_team(
-                db, form.name.data, g.user.uid, member_ids
+                db,
+                form.name.data,
+                g.user.uid,
+                member_ids,
             )
             flash("Team created successfully!", "success")
             return redirect(url_for(".view_team", team_id=team_id))
@@ -108,7 +111,7 @@ def get_user_teams() -> dict[str, list[dict[str, Any]]]:
                 "id": team["id"],
                 "name": team.get("name", "Unnamed Team"),
                 "member_ids": team.get("member_ids", []),
-            }
+            },
         )
     return {"teams": result}
 
@@ -134,7 +137,7 @@ def get_team_roster(team_id: str) -> tuple[dict[str, Any], int] | dict[str, Any]
             {
                 "id": member["id"],
                 "name": member.get("name", member["id"]),
-            }
+            },
         )
     return {"members": result}
 

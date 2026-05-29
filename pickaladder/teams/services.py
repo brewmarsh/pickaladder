@@ -25,7 +25,10 @@ class TeamService:
 
     @staticmethod
     def create_named_team(
-        db: Client, name: str, creator_id: str, member_ids: list[str]
+        db: Client,
+        name: str,
+        creator_id: str,
+        member_ids: list[str],
     ) -> str:
         """Create a named team with a roster."""
         return TeamRepository.create_named_team(db, name, creator_id, member_ids)
@@ -37,7 +40,10 @@ class TeamService:
 
     @staticmethod
     def migrate_user_teams(
-        db: Client, batch: firestore.WriteBatch, source_id: str, target_id: str
+        db: Client,
+        batch: firestore.WriteBatch,
+        source_id: str,
+        target_id: str,
     ) -> None:
         """Migrate all teams from source user to target user."""
         teams = TeamRepository.get_teams_by_member(db, source_id)
@@ -45,7 +51,7 @@ class TeamService:
         for team_data in teams:
             member_ids = team_data.get("member_ids", [])
             new_member_ids = sorted(
-                [target_id if mid == source_id else mid for mid in member_ids]
+                [target_id if mid == source_id else mid for mid in member_ids],
             )
 
             # Check if a team with the new member combination already exists
@@ -60,7 +66,7 @@ class TeamService:
                 new_losses = e_stats.get("losses", 0) + t_stats.get("losses", 0)
 
                 existing_ref = db.collection(TeamRepository.COLLECTION_NAME).document(
-                    existing_team["id"]
+                    existing_team["id"],
                 )
                 batch.update(
                     existing_ref,
@@ -70,7 +76,7 @@ class TeamService:
                 # Update matches to point to the existing team
                 # This will be handled by match migration, but mark team for deletion
                 team_ref = db.collection(TeamRepository.COLLECTION_NAME).document(
-                    team_data["id"]
+                    team_data["id"],
                 )
                 batch.delete(team_ref)
             else:
@@ -82,7 +88,7 @@ class TeamService:
                 ]
 
                 team_ref = db.collection(TeamRepository.COLLECTION_NAME).document(
-                    team_data["id"]
+                    team_data["id"],
                 )
                 batch.update(
                     team_ref,
@@ -129,7 +135,8 @@ class TeamService:
 
     @staticmethod
     def _fetch_team_members(
-        db: Client, team_data: dict[str, Any]
+        db: Client,
+        team_data: dict[str, Any],
     ) -> list[dict[str, Any]]:
         """Fetch member data from team references."""
         member_refs = team_data.get("members", [])
@@ -162,7 +169,7 @@ class TeamService:
         for i in range(0, len(id_list), 30):
             chunk = id_list[i : i + 30]
             query = db.collection("teams").where(
-                filter=firestore.FieldFilter(FieldPath.document_id(), "in", chunk)
+                filter=firestore.FieldFilter(FieldPath.document_id(), "in", chunk),
             )
             for doc in query.stream():
                 teams_map[doc.id] = doc.to_dict()
@@ -170,7 +177,9 @@ class TeamService:
 
     @staticmethod
     def _enrich_team_match_data(
-        match_doc: Any, team_id: str, teams_map: dict[str, Any]
+        match_doc: Any,
+        team_id: str,
+        teams_map: dict[str, Any],
     ) -> dict[str, Any]:
         """Attach opponent details to a single match data dictionary."""
         data = match_doc.to_dict() or {}
@@ -181,7 +190,7 @@ class TeamService:
             if data.get("team1Id") == team_id
             else data.get("team1Id")
         )
-        opp_raw = teams_map.get(cast(str, opp_id)) or {"name": "Unknown Team"}
+        opp_raw = teams_map.get(cast("str", opp_id)) or {"name": "Unknown Team"}
 
         opponent = dict(opp_raw)
         opponent["id"] = opp_id
@@ -212,7 +221,9 @@ class TeamService:
 
     @staticmethod
     def _calculate_team_stats(
-        team_id: str, team_data: dict[str, Any], matches: list[dict[str, Any]]
+        team_id: str,
+        team_data: dict[str, Any],
+        matches: list[dict[str, Any]],
     ) -> dict[str, Any]:
         """Calculate win percentage and streak information."""
         stats = team_data.get("stats", {})

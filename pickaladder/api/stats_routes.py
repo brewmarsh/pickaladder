@@ -61,5 +61,5 @@ def react_to_activity(activity_id: str) -> Response:
             "status": "success",
             "count": len(reactions),
             "user_reacted": any(r["userId"] == user_id for r in reactions),
-        }
+        },
     )

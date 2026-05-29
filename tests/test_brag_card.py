@@ -25,7 +25,8 @@ class BragCardTestCase(unittest.TestCase):
                 new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
+                "pickaladder.firestore",
+                new=self.mock_firestore_service,
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
@@ -35,7 +36,7 @@ class BragCardTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"},
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -81,7 +82,7 @@ class BragCardTestCase(unittest.TestCase):
                     "label": "Test User",
                     "data": [10.5, 12.0],
                     "profilePictureUrl": None,
-                }
+                },
             ],
         }
 
@@ -94,11 +95,11 @@ class BragCardTestCase(unittest.TestCase):
                 headers=self._get_auth_headers(),
             )
 
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
         data = response.get_json()
-        self.assertEqual(data["labels"], ["2023-01-01", "2023-01-02"])
-        self.assertEqual(data["dataset"]["id"], user_id)
-        self.assertEqual(data["dataset"]["data"], [10.5, 12.0])
+        assert data["labels"] == ["2023-01-01", "2023-01-02"]
+        assert data["dataset"]["id"] == user_id
+        assert data["dataset"]["data"] == [10.5, 12.0]
 
     def test_get_user_group_trend_not_found(self) -> None:
         """Test fetching trend data for a user not in the group."""
@@ -115,7 +116,7 @@ class BragCardTestCase(unittest.TestCase):
                     "label": "Different User",
                     "data": [10.5],
                     "profilePictureUrl": None,
-                }
+                },
             ],
         }
 
@@ -128,10 +129,8 @@ class BragCardTestCase(unittest.TestCase):
                 headers=self._get_auth_headers(),
             )
 
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(
-            response.get_json()["error"], "User data not found for this group"
-        )
+        assert response.status_code == 404
+        assert response.get_json()["error"] == "User data not found for this group"
 
 
 if __name__ == "__main__":

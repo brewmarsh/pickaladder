@@ -13,7 +13,7 @@ def mock_db():
         yield db
 
 
-def test_promote_pools_to_bracket(mock_db):
+def test_promote_pools_to_bracket(mock_db) -> None:
     t_id = "t1"
     uid = "owner"
 
@@ -52,17 +52,20 @@ def test_promote_pools_to_bracket(mock_db):
         # Seeding logic sorts by rank_in_pool: [p1, p5, p2, p6]
 
         with patch(
-            "pickaladder.tournament.services.generator.TournamentGenerator.generate_single_elimination"
+            "pickaladder.tournament.services.generator.TournamentGenerator.generate_single_elimination",
         ) as mock_gen:
             mock_gen.return_value = [{"match": 1}]
 
             with patch(
-                "pickaladder.tournament.services.tournament_service.TournamentService.save_pairings"
+                "pickaladder.tournament.services.tournament_service.TournamentService.save_pairings",
             ) as mock_save:
                 mock_save.return_value = 1
 
                 res = TournamentService.promote_pools_to_bracket(
-                    t_id, uid, 2, db=mock_db
+                    t_id,
+                    uid,
+                    2,
+                    db=mock_db,
                 )
 
                 assert res == 1

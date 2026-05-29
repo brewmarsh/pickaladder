@@ -5,7 +5,7 @@ import datetime
 from pickaladder.match.models import MatchDict, MatchResult, MatchSubmission
 
 
-def test_match_submission_with_named_teams():
+def test_match_submission_with_named_teams() -> None:
     """Verify MatchSubmission supports namedTeamId fields."""
     submission = MatchSubmission(
         match_type="doubles",
@@ -26,7 +26,7 @@ def test_match_submission_with_named_teams():
     assert submission.get("namedTeam2Id") == "team_beta"
 
 
-def test_match_result_with_named_teams():
+def test_match_result_with_named_teams() -> None:
     """Verify MatchResult supports namedTeamId fields."""
     result = MatchResult(
         id="match_123",
@@ -47,7 +47,7 @@ def test_match_result_with_named_teams():
     assert result.namedTeam2Id == "team_beta"
 
 
-def test_match_dict_typing():
+def test_match_dict_typing() -> None:
     """Verify MatchDict TypedDict includes namedTeamId fields."""
     # This is more of a static typing check, but we can verify it at runtime
     match_data: MatchDict = {

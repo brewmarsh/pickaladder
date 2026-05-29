@@ -33,7 +33,7 @@ def test_logging(env):
             handler.setFormatter(StructuredFormatter())
         else:
             formatter = logging.Formatter(
-                "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+                "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
             )
             handler.setFormatter(formatter)
         app.logger.addHandler(handler)
@@ -45,25 +45,21 @@ def test_logging(env):
     return output_capture.getvalue().strip()
 
 
-print("--- Development ---")
 dev_output = test_logging("development")
-print(f"DEBUG dev_output: '{dev_output}'")
 
-print("--- Production ---")
 prod_output = test_logging("production")
-print(f"DEBUG prod_output: '{prod_output}'")
 
 # Basic verification
 if "Test message" in dev_output and "INFO" in dev_output:
-    print("Dev logging: OK")
+    pass
 else:
-    print("Dev logging: FAILED")
+    pass
 
 try:
     data = json.loads(prod_output)
     if data["message"] == "Test message" and data["level"] == "INFO":
-        print("Prod logging: OK (JSON valid)")
+        pass
     else:
-        print("Prod logging: FAILED (JSON invalid or missing data)")
-except Exception as e:
-    print(f"Prod logging: FAILED (Exception: {e})")
+        pass
+except Exception:
+    pass

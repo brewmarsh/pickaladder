@@ -36,7 +36,7 @@ class SeasonRepository(BaseRepository):
     def get_season_matches(cls, db: Client, season_id: str) -> list[dict[str, Any]]:
         """Fetch all matches linked to a specific season."""
         query = db.collection("matches").where(
-            filter=firestore.FieldFilter("seasonId", "==", season_id)
+            filter=firestore.FieldFilter("seasonId", "==", season_id),
         )
         return [doc.to_dict() | {"id": doc.id} for doc in query.stream()]
 

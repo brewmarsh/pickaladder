@@ -66,7 +66,7 @@ def _get_global_announcement() -> dict[str, Any] | None:
         announcement_doc = db.collection("system").document("settings").get()
         return announcement_doc.to_dict() if announcement_doc.exists else None
     except Exception as e:
-        current_app.logger.error(f"Error fetching global announcement: {e}")
+        current_app.logger.exception(f"Error fetching global announcement: {e}")
         return None
 
 
@@ -94,10 +94,10 @@ def _fetch_pending_requests(user_id: str) -> dict[str, Any]:
     """Fetch pending friend requests for a user."""
     db = firestore.client()
     pending_requests = UserService.get_user_pending_requests(db, user_id)
-    return dict(
-        incoming_requests_count=len(pending_requests),
-        pending_friend_requests=pending_requests,
-    )
+    return {
+        "incoming_requests_count": len(pending_requests),
+        "pending_friend_requests": pending_requests,
+    }
 
 
 def _log_context_error(domain: str, e: Exception) -> None:
@@ -112,14 +112,14 @@ def _try_fetch_requests(uid: str) -> dict[str, Any]:
         return _fetch_pending_requests(uid)
     except Exception as e:
         _log_context_error("friend requests", e)
-        return dict(incoming_requests_count=0, pending_friend_requests=[])
+        return {"incoming_requests_count": 0, "pending_friend_requests": []}
 
 
 def inject_incoming_requests_count() -> dict[str, Any]:
     """Injects incoming friend requests count into the template context."""
     uid = _get_user_uid()
     if not uid:
-        return dict(incoming_requests_count=0, pending_friend_requests=[])
+        return {"incoming_requests_count": 0, "pending_friend_requests": []}
     return _try_fetch_requests(uid)
 
 
@@ -127,7 +127,7 @@ def _fetch_pending_invites(user_id: str) -> dict[str, Any]:
     """Fetch pending tournament invites for a user."""
     db = firestore.client()
     pending_invites = UserService.get_pending_tournament_invites(db, user_id)
-    return dict(pending_tournament_invites=pending_invites)
+    return {"pending_tournament_invites": pending_invites}
 
 
 def _try_fetch_invites(uid: str) -> dict[str, Any]:
@@ -136,14 +136,14 @@ def _try_fetch_invites(uid: str) -> dict[str, Any]:
         return _fetch_pending_invites(uid)
     except Exception as e:
         _log_context_error("tournament invites", e)
-        return dict(pending_tournament_invites=[])
+        return {"pending_tournament_invites": []}
 
 
 def inject_pending_tournament_invites() -> dict[str, Any]:
     """Injects pending tournament invites into the template context."""
     uid = _get_user_uid()
     if not uid:
-        return dict(pending_tournament_invites=[])
+        return {"pending_tournament_invites": []}
     return _try_fetch_invites(uid)
 
 
@@ -153,20 +153,20 @@ def inject_unread_messages_count() -> dict[str, Any]:
 
     uid = _get_user_uid()
     if not uid:
-        return dict(unread_messages_count=0)
+        return {"unread_messages_count": 0}
 
     try:
         db = firestore.client()
         count = MessagingService.get_total_unread_count(db, uid)
-        return dict(unread_messages_count=count)
+        return {"unread_messages_count": count}
     except Exception as e:
         _log_context_error("unread messages count", e)
-        return dict(unread_messages_count=0)
+        return {"unread_messages_count": 0}
 
 
 def inject_firebase_api_key() -> dict[str, Any]:
     """Injects the Firebase API key into the template context."""
     firebase_api_key = current_app.config.get(
-        "FIREBASE_API_KEY"
+        "FIREBASE_API_KEY",
     ) or current_app.config.get("GOOGLE_API_KEY")
-    return dict(firebase_api_key=firebase_api_key)
+    return {"firebase_api_key": firebase_api_key}

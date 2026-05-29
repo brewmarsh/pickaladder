@@ -23,19 +23,19 @@ class MatchCandidateService:
         candidate_ids: set[str] = {user_id}
         if session_id:
             candidate_ids.update(
-                MatchCandidateService._get_session_participants(db, session_id)
+                MatchCandidateService._get_session_participants(db, session_id),
             )
         elif tournament_id:
             candidate_ids.update(
-                MatchCandidateService._get_tournament_participants(db, tournament_id)
+                MatchCandidateService._get_tournament_participants(db, tournament_id),
             )
         elif group_id:
             candidate_ids.update(
-                MatchCandidateService._get_group_candidates(db, group_id)
+                MatchCandidateService._get_group_candidates(db, group_id),
             )
         else:
             candidate_ids.update(
-                MatchCandidateService._get_default_candidates(db, user_id)
+                MatchCandidateService._get_default_candidates(db, user_id),
             )
 
         if not include_user:
@@ -71,7 +71,7 @@ class MatchCandidateService:
         emails = MatchCandidateService._get_pending_invite_emails(db, group_id)
         if emails:
             candidates.update(
-                MatchCandidateService._resolve_user_ids_by_emails(db, emails)
+                MatchCandidateService._resolve_user_ids_by_emails(db, emails),
             )
         return candidates
 
@@ -81,7 +81,8 @@ class MatchCandidateService:
         from typing import cast
 
         group_doc = cast(
-            "DocumentSnapshot", db.collection("groups").document(group_id).get()
+            "DocumentSnapshot",
+            db.collection("groups").document(group_id).get(),
         )
         if not group_doc.exists:
             return set()
@@ -139,14 +140,14 @@ class MatchCandidateService:
                 (doc.to_dict() or {}).get("email")
                 for doc in invites
                 if (doc.to_dict() or {}).get("email")
-            }
+            },
         )
         if emails:
             for i in range(0, len(emails), 10):
                 users = (
                     db.collection("users")
                     .where(
-                        filter=firestore.FieldFilter("email", "in", emails[i : i + 10])
+                        filter=firestore.FieldFilter("email", "in", emails[i : i + 10]),
                     )
                     .stream()
                 )

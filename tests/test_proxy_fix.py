@@ -26,6 +26,7 @@ class TestProxyFix(unittest.TestCase):
             return request.scheme
 
         response = self.client.get(
-            "/test_scheme", headers={"X-Forwarded-Proto": "https"}
+            "/test_scheme",
+            headers={"X-Forwarded-Proto": "https"},
         )
-        self.assertEqual(response.data.decode(), "https")
+        assert response.data.decode() == "https"

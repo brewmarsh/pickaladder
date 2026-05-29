@@ -1,8 +1,10 @@
 """Admin routes for the application."""
 
+from __future__ import annotations
+
 import datetime
 import random
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any
 
 from faker import Faker
 from firebase_admin import auth, firestore
@@ -16,7 +18,6 @@ from flask import (
     session,
     url_for,
 )
-from werkzeug.wrappers import Response
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import (
@@ -33,19 +34,22 @@ from pickaladder.user.models import UserSession
 from . import bp
 from .services import AdminService
 
+if TYPE_CHECKING:
+    from werkzeug.wrappers import Response
+
 MIN_USERS_FOR_MATCH_GENERATION = 2
 
 
 @bp.route("/")
 @login_required(admin_required=True)
-def admin() -> Union[str, Response]:
+def admin() -> str | Response:
     """Render the main admin users list (legacy /)."""
     return redirect(url_for(".dashboard"))
 
 
 @bp.route("/dashboard")
 @login_required(admin_required=True)
-def dashboard() -> Union[str, Response]:
+def dashboard() -> str | Response:
     """Render the operational admin dashboard."""
     if not g.user or (not g.user.is_admin and not g.get("is_impersonating")):
         flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
@@ -80,7 +84,7 @@ def dashboard() -> Union[str, Response]:
 
 @bp.route("/users")
 @login_required(admin_required=True)
-def view_users() -> Union[str, Response]:
+def view_users() -> str | Response:
     """Render the user management page."""
     if not g.user or (not g.user.is_admin and not g.get("is_impersonating")):
         flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
@@ -206,7 +210,7 @@ def admin_delete_match(match_id: str) -> Response:
 
 @bp.route("/friend_graph_data")
 @login_required(admin_required=True)
-def friend_graph_data() -> Union[Response, tuple[Response, int]]:
+def friend_graph_data() -> Response | tuple[Response, int]:
     """Provide data for a network graph of users and their friendships."""
     try:
         return jsonify(AdminService.build_friend_graph(firestore.client()))
@@ -215,7 +219,8 @@ def friend_graph_data() -> Union[Response, tuple[Response, int]]:
 
 
 def _lookup_user_by_identifier(
-    db: "firestore.Client", identifier: str
+    db: firestore.Client,
+    identifier: str,
 ) -> tuple[str | None, str | None]:
     """Look up a user UID and email by their identifier (ID or Email)."""
     user_doc = db.collection("users").document(identifier).get()
@@ -226,14 +231,14 @@ def _lookup_user_by_identifier(
         db.collection("users")
         .where(filter=firestore.FieldFilter("email", "==", identifier))
         .limit(1)
-        .stream()
+        .stream(),
     )
     if users:
         return users[0].id, users[0].to_dict().get("email")
     return None, None
 
 
-def _perform_user_deletion(db: "firestore.Client", uid: str, email: str | None) -> None:
+def _perform_user_deletion(db: firestore.Client, uid: str, email: str | None) -> None:
     """Orchestrate the deletion of a user and flash results."""
     try:
         AdminService.delete_user(db, uid)
@@ -336,14 +341,15 @@ def generate_users() -> str:
             db.collection("users").document(user_record.uid).set(user_doc)
             new_users.append({"uid": user_record.uid, **user_doc})
         flash(
-            ADMIN_MESSAGES["USERS_GEN_SUCCESS"].format(count=len(new_users)), "success"
+            ADMIN_MESSAGES["USERS_GEN_SUCCESS"].format(count=len(new_users)),
+            "success",
         )
     except Exception as e:
         flash(ADMIN_MESSAGES["USERS_GEN_ERROR"].format(error=e), "danger")
     return render_template("generated_users.html", users=new_users)
 
 
-def _generate_single_random_match(db: "firestore.Client", users: list[Any]) -> bool:
+def _generate_single_random_match(db: firestore.Client, users: list[Any]) -> bool:
     """Generate a single random match between users."""
     p1, p2 = random.sample(users, 2)  # nosec B311
     s1, s2 = 11, random.randint(0, 9)  # nosec B311
@@ -367,7 +373,9 @@ def _generate_single_random_match(db: "firestore.Client", users: list[Any]) -> b
 
 
 def _batch_generate_random_matches(
-    db: "firestore.Client", users: list[Any], count: int = 10
+    db: firestore.Client,
+    users: list[Any],
+    count: int = 10,
 ) -> int:
     """Generate multiple random matches and return success count."""
     return sum(1 for _ in range(count) if _generate_single_random_match(db, users))
@@ -392,7 +400,7 @@ def generate_matches() -> Response:
 
 @bp.route("/merge_players", methods=["GET", "POST"])
 @login_required(admin_required=True)
-def merge_players() -> Union[str, Response]:
+def merge_players() -> str | Response:
     """Merge two player accounts (Source -> Target)."""
     db = firestore.client()
     if request.method == "POST":
@@ -450,7 +458,11 @@ def update_feedback_status() -> Response:
     db = firestore.client()
     if FeedbackService.update_feedback_status(db, feedback_id, status, g.user.uid):
         AdminService.log_action(
-            db, g.user.uid, feedback_id, "update_feedback_status", {"status": status}
+            db,
+            g.user.uid,
+            feedback_id,
+            "update_feedback_status",
+            {"status": status},
         )
         flash("Feedback status updated", "success")
     else:

@@ -47,7 +47,9 @@ def start_chat(other_user_id: str) -> Response:
     """Redirect to or create a conversation with another user."""
     db = firestore.client()
     conversation_id = MessagingService.get_or_create_conversation(
-        db, g.user.uid, other_user_id
+        db,
+        g.user.uid,
+        other_user_id,
     )
     return redirect(url_for(".chat", conversation_id=conversation_id))
 
@@ -92,7 +94,10 @@ def broadcast(group_id: str) -> Response:
 
         # Get or create announcement conversation
         conversation_id = MessagingService.get_or_create_group_announcement(
-            db, group_id, owner_id, member_ids
+            db,
+            group_id,
+            owner_id,
+            member_ids,
         )
 
         # Send the message

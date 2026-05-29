@@ -29,7 +29,11 @@ class SocialCreditService:
 
     @classmethod
     def adjust_balance(
-        cls, db: Client, transaction: Transaction, user_id: str, delta: int
+        cls,
+        db: Client,
+        transaction: Transaction,
+        user_id: str,
+        delta: int,
     ) -> int:
         """Adjust a user's balance within a transaction.
 
@@ -55,9 +59,12 @@ class SocialCreditService:
 
         new_balance = current_balance + delta
         if new_balance < 0:
-            raise ValueError(
+            msg = (
                 f"User {user_id} has insufficient funds for adjustment {delta} "
                 f"(current: {current_balance})"
+            )
+            raise ValueError(
+                msg,
             )
 
         transaction.update(user_ref, {"social_credits": new_balance})
@@ -65,11 +72,17 @@ class SocialCreditService:
 
     @classmethod
     def transfer(
-        cls, db: Client, transaction: Transaction, from_id: str, to_id: str, amount: int
+        cls,
+        db: Client,
+        transaction: Transaction,
+        from_id: str,
+        to_id: str,
+        amount: int,
     ) -> None:
         """Transfer social credits between users within a transaction."""
         if amount <= 0:
-            raise ValueError("Transfer amount must be positive")
+            msg = "Transfer amount must be positive"
+            raise ValueError(msg)
 
         cls.adjust_balance(db, transaction, from_id, -amount)
         cls.adjust_balance(db, transaction, to_id, amount)

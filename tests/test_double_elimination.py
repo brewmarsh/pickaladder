@@ -11,7 +11,7 @@ from pickaladder.tournament.services.tournament_service import TournamentService
 class DoubleEliminationTestCase(unittest.TestCase):
     """Test case for DE mapping and finals logic."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.mock_db = MagicMock()
         self.docs = {}
 
@@ -42,10 +42,10 @@ class DoubleEliminationTestCase(unittest.TestCase):
         self.mock_query.document.side_effect = mock_doc
 
     @patch(
-        "pickaladder.tournament.services.tournament_service.TournamentService.get_tournament"
+        "pickaladder.tournament.services.tournament_service.TournamentService.get_tournament",
     )
     @patch("firebase_admin.firestore.ArrayUnion", return_value=["val"])
-    def test_loser_drop_wr1_to_lr1(self, mock_union, mock_get_t):
+    def test_loser_drop_wr1_to_lr1(self, mock_union, mock_get_t) -> None:
         """Test WR1 loser drops to LR1 with crossover."""
         t_id = "de_tourney"
         match_data = {
@@ -72,19 +72,22 @@ class DoubleEliminationTestCase(unittest.TestCase):
         self.mock_query.stream.side_effect = [[], [], [mock_target]]
 
         TournamentService.handle_match_completion(
-            self.mock_db, t_id, match_data, "winner_1"
+            self.mock_db,
+            t_id,
+            match_data,
+            "winner_1",
         )
 
         # Verify update call on the LOSER match
         self.mock_query.document("lr1_match_pos3").update.assert_called()
         args = self.mock_query.document("lr1_match_pos3").update.call_args[0][0]
-        self.assertEqual(args["player2Ref"].id, "loser_v1")
+        assert args["player2Ref"].id == "loser_v1"
 
     @patch(
-        "pickaladder.tournament.services.tournament_service.TournamentService.get_tournament"
+        "pickaladder.tournament.services.tournament_service.TournamentService.get_tournament",
     )
     @patch("firebase_admin.firestore.ArrayUnion", return_value=["val"])
-    def test_push_to_finals(self, mock_union, mock_get_t):
+    def test_push_to_finals(self, mock_union, mock_get_t) -> None:
         """Test bracket winners populate Finals correctly."""
         t_id = "de_tourney"
         match_data = {
@@ -108,12 +111,15 @@ class DoubleEliminationTestCase(unittest.TestCase):
         self.mock_query.stream.side_effect = [[], [finals_match], []]
 
         TournamentService.handle_match_completion(
-            self.mock_db, t_id, match_data, "w_final"
+            self.mock_db,
+            t_id,
+            match_data,
+            "w_final",
         )
 
         self.mock_query.document("finals_match").update.assert_called()
         args = self.mock_query.document("finals_match").update.call_args[0][0]
-        self.assertEqual(args["player1Ref"].id, "w_final")
+        assert args["player1Ref"].id == "w_final"
 
 
 if __name__ == "__main__":

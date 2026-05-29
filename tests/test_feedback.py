@@ -17,7 +17,7 @@ def mock_user():
     return user
 
 
-def test_submit_feedback(mock_db):
+def test_submit_feedback(mock_db) -> None:
     user_id = "user123"
     feedback_type = "Bug"
     message = "Test message <script>alert('xss')</script>"
@@ -25,7 +25,10 @@ def test_submit_feedback(mock_db):
     with patch("pickaladder.services.feedback_service.datetime") as mock_datetime:
         mock_datetime.now.return_value = MagicMock()
         feedback_id = FeedbackService.submit_feedback(
-            mock_db, user_id, feedback_type, message
+            mock_db,
+            user_id,
+            feedback_type,
+            message,
         )
 
     assert feedback_id is not None
@@ -34,12 +37,12 @@ def test_submit_feedback(mock_db):
     # Verify sanitization
     call_args = mock_db.collection().document().set.call_args[0][0]
     assert "&lt;script&gt;" in call_args["message"]
-    assert "user123" == call_args["userId"]
-    assert "Bug" == call_args["type"]
-    assert "New" == call_args["status"]
+    assert call_args["userId"] == "user123"
+    assert call_args["type"] == "Bug"
+    assert call_args["status"] == "New"
 
 
-def test_update_feedback_status(mock_db):
+def test_update_feedback_status(mock_db) -> None:
     feedback_id = "fb123"
     status = "In Progress"
     admin_id = "admin456"
@@ -50,10 +53,13 @@ def test_update_feedback_status(mock_db):
     mock_db.collection().document().get.return_value = mock_doc
 
     with patch(
-        "pickaladder.services.notification_service.NotificationService.send_to_user"
+        "pickaladder.services.notification_service.NotificationService.send_to_user",
     ) as mock_notify:
         success = FeedbackService.update_feedback_status(
-            mock_db, feedback_id, status, admin_id
+            mock_db,
+            feedback_id,
+            status,
+            admin_id,
         )
 
     assert success is True

@@ -2,7 +2,7 @@ import os
 import re
 
 
-def process_file(filepath):
+def process_file(filepath) -> None:
     with open(filepath, encoding="utf-8") as f:
         content = f.read()
 
@@ -15,7 +15,9 @@ def process_file(filepath):
     new_content = re.sub(r"\*\*kwargs: Any", "**kwargs: object", new_content)
     # Replace user_doc: Any -> user_doc: "firestore.DocumentSnapshot"
     new_content = re.sub(
-        r"user_doc: Any", 'user_doc: "firestore.DocumentSnapshot"', new_content
+        r"user_doc: Any",
+        'user_doc: "firestore.DocumentSnapshot"',
+        new_content,
     )
     # Replace e: Exception) -> Any -> e: Exception) -> None
     new_content = re.sub(r"e: Exception\) -> Any", "e: Exception) -> None", new_content)
@@ -23,7 +25,6 @@ def process_file(filepath):
     if content != new_content:
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(new_content)
-        print(f"Updated {filepath}")
 
 
 for root, _, files in os.walk("pickaladder"):

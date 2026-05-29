@@ -41,7 +41,9 @@ def manage_group(group_id: str) -> Response | str | dict[str, object]:
 
     # 1. Invite Email form
     invite_email_form, resp = _handle_invite_email_form(
-        db, group_id, context["group"].get("name", "Unknown Group")
+        db,
+        group_id,
+        context["group"].get("name", "Unknown Group"),
     )
     if resp:
         return resp
@@ -79,13 +81,19 @@ def manage_group(group_id: str) -> Response | str | dict[str, object]:
 )
 @login_required
 def handle_membership_request(
-    group_id: str, request_id: str, action: str
+    group_id: str,
+    request_id: str,
+    action: str,
 ) -> Response | str | dict[str, object]:
     """Approve or decline a join request."""
     db = firestore.client()
     try:
         GroupService.handle_membership_request(
-            db, group_id, request_id, g.user.uid, action
+            db,
+            group_id,
+            request_id,
+            g.user.uid,
+            action,
         )
         flash(f"Request {action}d successfully.", "success")
     except AccessDenied:
@@ -105,7 +113,10 @@ def create_group() -> Response | str | dict[str, object]:
         db = firestore.client()
         try:
             group_id = GroupService.create_group(
-                db, g.user.uid, form.data, form.profile_picture.data
+                db,
+                g.user.uid,
+                form.data,
+                form.profile_picture.data,
             )
             flash(GROUP_MESSAGES["CREATE_SUCCESS"], "success")
             return redirect(url_for(".view_group", group_id=group_id))
@@ -119,26 +130,34 @@ def _get_group_for_edit(db: Client, group_id: str) -> dict[str, object]:
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
     if not group.exists:
-        raise GroupNotFound("Group not found.")
+        msg = "Group not found."
+        raise GroupNotFound(msg)
 
     group_data = group.to_dict() or {}
     group_data["id"] = group.id
 
     if not GroupService.is_group_admin(group_data, g.user.uid):
-        raise AccessDenied("You do not have permission to edit this group.")
+        msg = "You do not have permission to edit this group."
+        raise AccessDenied(msg)
 
     return group_data
 
 
 def _handle_edit_group_form(
-    db: Client, group_id: str, group_data: dict[str, object]
+    db: Client,
+    group_id: str,
+    group_data: dict[str, object],
 ) -> tuple[GroupForm, Any | None]:
     """Process GroupForm submission for editing."""
     form = GroupForm(data=group_data)
     if form.validate_on_submit():
         try:
             GroupService.update_group(
-                db, group_id, g.user.uid, form.data, form.profile_picture.data
+                db,
+                group_id,
+                g.user.uid,
+                form.data,
+                form.profile_picture.data,
             )
             flash(GROUP_MESSAGES["UPDATE_SUCCESS"], "success")
             return form, redirect(url_for(".view_group", group_id=group_id))
@@ -169,7 +188,10 @@ def edit_group(group_id: str) -> Response | str | dict[str, object]:
         return resp
 
     return render_template(
-        "edit_group.html", form=form, group=group_data, group_id=group_id
+        "edit_group.html",
+        form=form,
+        group=group_data,
+        group_id=group_id,
     )
 
 

@@ -63,14 +63,16 @@ def get_rivalry_stats(group_id: str) -> Response | str | dict[str, object]:
 @bp.route("/<string:group_id>/user-trend/<string:user_id>")
 @login_required
 def get_user_group_trend(
-    group_id: str, user_id: str
+    group_id: str,
+    user_id: str,
 ) -> Response | str | dict[str, object]:
     """Return trend data for a specific user in a group."""
     trend_data = get_leaderboard_trend_data(group_id)
 
     # Filter for the specific user
     user_dataset = next(
-        (ds for ds in trend_data["datasets"] if ds.get("id") == user_id), None
+        (ds for ds in trend_data["datasets"] if ds.get("id") == user_id),
+        None,
     )
 
     if not user_dataset:

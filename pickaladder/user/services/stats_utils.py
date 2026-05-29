@@ -12,24 +12,30 @@ def _get_ids_from_refs(refs: list[Any]) -> set[str]:
 
 
 def _extract_id_from_match_slot(
-    slot_ref: DocumentReference | None, slot_data: dict[str, Any], slot_id: str | None
+    slot_ref: DocumentReference | None,
+    slot_data: dict[str, Any],
+    slot_id: str | None,
 ) -> str:
     """Extract ID from reference, dictionary data, or direct ID string."""
     return str(
         (slot_ref.id if slot_ref and hasattr(slot_ref, "id") else "")
         or slot_data.get("uid")
         or slot_id
-        or ""
+        or "",
     )
 
 
 def _get_singles_ids(data: dict[str, Any]) -> tuple[set[str], set[str]]:
     """Extract member IDs from a singles match."""
     id1 = _extract_id_from_match_slot(
-        data.get("player1Ref"), data.get("player_1_data", {}), data.get("player1Id")
+        data.get("player1Ref"),
+        data.get("player_1_data", {}),
+        data.get("player1Id"),
     )
     id2 = _extract_id_from_match_slot(
-        data.get("player2Ref"), data.get("player_2_data", {}), data.get("player2Id")
+        data.get("player2Ref"),
+        data.get("player_2_data", {}),
+        data.get("player2Id"),
     )
     return {id1}, {id2}
 
@@ -38,7 +44,7 @@ def _get_team_ids_from_match(data: dict[str, Any]) -> tuple[set[str], set[str]]:
     """Extract team 1 and team 2 member IDs from a match."""
     if data.get("matchType") == "doubles":
         return _get_ids_from_refs(data.get("team1", [])), _get_ids_from_refs(
-            data.get("team2", [])
+            data.get("team2", []),
         )
 
     return _get_singles_ids(data)
@@ -50,7 +56,8 @@ def _evaluate_win_loss(score_a: int, score_b: int) -> tuple[bool, bool]:
 
 
 def _get_user_match_won_lost(
-    match_data: dict[str, Any], user_id: str
+    match_data: dict[str, Any],
+    user_id: str,
 ) -> tuple[bool, bool]:
     """Determine if the user won or lost the match, including handling of draws."""
     winners = match_data.get("winners")
@@ -75,7 +82,9 @@ def _get_user_match_won_lost(
 
 
 def _get_user_match_result(
-    match_dict: dict[str, Any], user_id: str, winner_slot: str
+    match_dict: dict[str, Any],
+    user_id: str,
+    winner_slot: str,
 ) -> str:
     """Determine if the user won or lost the match."""
     won, lost = _get_user_match_won_lost(match_dict, user_id)

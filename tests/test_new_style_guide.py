@@ -23,7 +23,7 @@ class StyleGuideTestCase(unittest.TestCase):
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore_client": patch("firebase_admin.firestore.client"),
             "match_service_record": patch(
-                "pickaladder.match.services.MatchService.record_match"
+                "pickaladder.match.services.MatchService.record_match",
             ),
             "user_service_get_all": patch("pickaladder.user.UserService.get_all_users"),
         }
@@ -33,7 +33,7 @@ class StyleGuideTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"},
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -71,13 +71,13 @@ class StyleGuideTestCase(unittest.TestCase):
             # but usually session is enough for the actual request.
             response = self.client.get("/admin/style-guide")
 
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b"Design System Style Guide", response.data)
-            self.assertIn(b"Colors", response.data)
-            self.assertIn(b"Volt", response.data)
-            self.assertIn(b"Tournament Card", response.data)
-            self.assertIn(b"Match Row", response.data)
-            self.assertIn(b"style-guide-wrapper", response.data)
+            assert response.status_code == 200
+            assert b"Design System Style Guide" in response.data
+            assert b"Colors" in response.data
+            assert b"Volt" in response.data
+            assert b"Tournament Card" in response.data
+            assert b"Match Row" in response.data
+            assert b"style-guide-wrapper" in response.data
 
 
 if __name__ == "__main__":

@@ -3,11 +3,12 @@
 from pickaladder.group.services.shootout_service import ShootoutService
 
 
-def test_initial_court_grouping():
+def test_initial_court_grouping() -> None:
     """Verify that players are initially grouped into courts by rank."""
     player_uids = ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"]
     assignments = ShootoutService.group_players_to_courts(
-        player_uids, players_per_court=4
+        player_uids,
+        players_per_court=4,
     )
 
     EXPECTED_PLAYERS = 8
@@ -18,7 +19,7 @@ def test_initial_court_grouping():
     assert assignments[7] == {"uid": "p8", "court": 2}
 
 
-def test_shootout_movement_up_and_down():
+def test_shootout_movement_up_and_down() -> None:
     """Verify court movement: winners up, losers down."""
     # Court 1: p1, p2 (won) | p3, p4 (lost)
     # Court 2: p5, p6 (won) | p7, p8 (lost)
@@ -54,6 +55,6 @@ def test_shootout_movement_up_and_down():
     assert next_map["p8"] == COURT_TWO
 
 
-def test_shootout_empty_results():
+def test_shootout_empty_results() -> None:
     """Verify shootout logic handles empty input."""
     assert ShootoutService.calculate_next_assignments([]) == []

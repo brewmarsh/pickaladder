@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from firebase_admin import firestore
 from flask import (
     Response,
@@ -14,12 +12,8 @@ from flask import (
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.services.feedback_service import FeedbackService
-
-from .. import bp
-from ..services import UserService
-
-if TYPE_CHECKING:
-    pass
+from pickaladder.user import bp
+from pickaladder.user.services import UserService
 
 
 @bp.route("/api/feedback", methods=["POST"])
@@ -41,7 +35,10 @@ def submit_feedback() -> Response | tuple[Response, int]:
         return jsonify({"success": False, "error": "Invalid feedback type"}), 400
 
     FeedbackService.submit_feedback(
-        firestore.client(), g.user.uid, feedback_type, message
+        firestore.client(),
+        g.user.uid,
+        feedback_type,
+        message,
     )
     return jsonify({"success": True, "message": "Feedback submitted successfully"})
 
@@ -54,7 +51,9 @@ def api_dashboard() -> Response:
     # The JSON API should probably still include everything for backwards compatibility
     # and because it's usually used by clients that expect a full payload.
     data = UserService.get_dashboard_data(
-        firestore.client(), user_id, include_activity=True
+        firestore.client(),
+        user_id,
+        include_activity=True,
     )
     streak = data["stats"]["current_streak"]
     s_type = data["stats"]["streak_type"]
@@ -73,7 +72,7 @@ def api_dashboard() -> Response:
                 "win_percentage": data["stats"]["win_rate"],
                 "current_streak": f"{streak}{s_type}" if data["matches"] else "N/A",
             },
-        }
+        },
     )
 
 

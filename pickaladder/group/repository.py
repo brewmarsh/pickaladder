@@ -20,7 +20,7 @@ class GroupRepository(BaseRepository):
         """Fetch all groups the user belongs to."""
         user_ref = db.collection("users").document(user_id)
         query = db.collection(cls.COLLECTION_NAME).where(
-            filter=firestore.FieldFilter("members", "array_contains", user_ref)
+            filter=firestore.FieldFilter("members", "array_contains", user_ref),
         )
         return [
             enriched
@@ -30,12 +30,16 @@ class GroupRepository(BaseRepository):
 
     @classmethod
     def validate(
-        cls, db: Client, data: dict[str, object], group_id: str | None = None
+        cls,
+        db: Client,
+        data: dict[str, object],
+        group_id: str | None = None,
     ) -> None:
         """Validate group data for consistency and business rules."""
         name = data.get("name")
         if not name:
-            raise ValueError("Group name is required.")
+            msg = "Group name is required."
+            raise ValueError(msg)
 
         # Check for unique name among public groups
         if data.get("is_public"):
@@ -47,7 +51,8 @@ class GroupRepository(BaseRepository):
             for doc in query.stream():
                 if group_id and doc.id == group_id:
                     continue
-                raise ValueError(f"A public group named '{name}' already exists.")
+                msg = f"A public group named '{name}' already exists."
+                raise ValueError(msg)
 
     @classmethod
     def create(cls, db: Client, data: dict[str, object]) -> str:
@@ -62,7 +67,8 @@ class GroupRepository(BaseRepository):
         # so we fetch the full doc to validate
         existing = cls.get_by_id(db, doc_id)
         if not existing:
-            raise ValueError(f"Group {doc_id} not found.")
+            msg = f"Group {doc_id} not found."
+            raise ValueError(msg)
 
         # Merge existing and update data for validation
         merged = {**existing, **data}
@@ -74,7 +80,7 @@ class GroupRepository(BaseRepository):
         """Fetch all pending invitations for a specific group."""
         invites_ref = db.collection("group_invites")
         query = invites_ref.where(
-            filter=firestore.FieldFilter("group_id", "==", group_id)
+            filter=firestore.FieldFilter("group_id", "==", group_id),
         ).where(filter=firestore.FieldFilter("used", "==", False))
 
         pending = []

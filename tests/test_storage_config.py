@@ -32,7 +32,7 @@ class TestStorageConfig(unittest.TestCase):
             del os.environ["FIREBASE_STORAGE_BUCKET"]
 
         app = create_app(
-            {"TESTING": False}
+            {"TESTING": False},
         )  # TESTING=False to trigger _initialize_firebase
 
         # Verify initialize_app was called with the expected storage bucket
@@ -40,11 +40,10 @@ class TestStorageConfig(unittest.TestCase):
         args, kwargs = self.mock_initialize_app.call_args
         options = args[1] if len(args) > 1 else kwargs.get("options", {})
 
-        self.assertEqual(
-            options.get("storageBucket"), "pickaladder.firebasestorage.app"
-        )
-        self.assertEqual(
-            app.config.get("FIREBASE_STORAGE_BUCKET"), "pickaladder.firebasestorage.app"
+        assert options.get("storageBucket") == "pickaladder.firebasestorage.app"
+        assert (
+            app.config.get("FIREBASE_STORAGE_BUCKET")
+            == "pickaladder.firebasestorage.app"
         )
 
     def test_override_storage_bucket_via_env(self) -> None:
@@ -57,10 +56,8 @@ class TestStorageConfig(unittest.TestCase):
         args, kwargs = self.mock_initialize_app.call_args
         options = args[1] if len(args) > 1 else kwargs.get("options", {})
 
-        self.assertEqual(options.get("storageBucket"), "custom-bucket.appspot.com")
-        self.assertEqual(
-            app.config.get("FIREBASE_STORAGE_BUCKET"), "custom-bucket.appspot.com"
-        )
+        assert options.get("storageBucket") == "custom-bucket.appspot.com"
+        assert app.config.get("FIREBASE_STORAGE_BUCKET") == "custom-bucket.appspot.com"
 
 
 if __name__ == "__main__":

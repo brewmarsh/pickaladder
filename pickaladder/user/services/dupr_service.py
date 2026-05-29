@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 import requests
@@ -49,10 +51,10 @@ class DUPRService:
                 return float(rating_val)
 
             logger.error(
-                f"DUPR API returned error {response.status_code}: {response.text}"
+                f"DUPR API returned error {response.status_code}: {response.text}",
             )
             return None
 
         except Exception as e:
-            logger.error(f"Failed to fetch DUPR rating for ID {dupr_id}: {e}")
+            logger.exception(f"Failed to fetch DUPR rating for ID {dupr_id}: {e}")
             return None

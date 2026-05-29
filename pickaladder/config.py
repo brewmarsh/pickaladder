@@ -1,5 +1,7 @@
 """Central configuration management for the application."""
 
+from __future__ import annotations
+
 import os
 from datetime import timedelta
 
@@ -45,7 +47,8 @@ class Config:
         self.FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY")
         self.FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID")
         self.FIREBASE_STORAGE_BUCKET = get_env_str(
-            "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+            "FIREBASE_STORAGE_BUCKET",
+            "pickaladder.firebasestorage.app",
         )
 
         # External APIs
@@ -61,7 +64,8 @@ class Config:
         self.MAIL_USERNAME = sanitize_cred(os.environ.get("MAIL_USERNAME"))
         self.MAIL_PASSWORD = sanitize_cred(os.environ.get("MAIL_PASSWORD"))
         self.MAIL_DEFAULT_SENDER = get_env_str(
-            "MAIL_DEFAULT_SENDER", "noreply@pickaladder.com"
+            "MAIL_DEFAULT_SENDER",
+            "noreply@pickaladder.com",
         )
 
         # Session
@@ -70,7 +74,8 @@ class Config:
         self.SESSION_COOKIE_HTTPONLY = get_env_bool("SESSION_COOKIE_HTTPONLY", "true")
         self.SESSION_COOKIE_SAMESITE = get_env_str("SESSION_COOKIE_SAMESITE", "Lax")
         self.SESSION_COOKIE_SECURE = get_env_bool(
-            "SESSION_COOKIE_SECURE", str(self.FLASK_ENV != "development")
+            "SESSION_COOKIE_SECURE",
+            str(self.FLASK_ENV != "development"),
         )
         self.REMEMBER_COOKIE_SECURE = self.SESSION_COOKIE_SECURE
         self.REMEMBER_COOKIE_HTTPONLY = True

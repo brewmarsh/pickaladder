@@ -1,7 +1,9 @@
 """Decorators for the auth blueprint."""
 
+from __future__ import annotations
+
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from flask import flash, g, redirect, session, url_for
 
@@ -10,7 +12,8 @@ from pickaladder.constants.messages import AUTH_MESSAGES
 
 # TODO: Add type hints for Agent clarity
 def login_required(
-    f: Optional[Callable[..., Any]] = None, admin_required: bool = False
+    f: Callable[..., Any] | None = None,
+    admin_required: bool = False,
 ) -> Callable[..., Any]:
     """Redirect to the login page if the user is not logged in.
 
@@ -28,7 +31,7 @@ def login_required(
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         # TODO: Add type hints for Agent clarity
         @wraps(func)
-        def decorated_function(*args: object, **kwargs: object) -> "Response":
+        def decorated_function(*args: object, **kwargs: object) -> Response:
             """Ensure user is logged in before accessing the view."""
             if not g.get("user"):
                 return redirect(url_for("auth.login"))
@@ -52,7 +55,7 @@ def admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """
 
     @wraps(f)
-    def decorated_function(*args: object, **kwargs: object) -> "Response":
+    def decorated_function(*args: object, **kwargs: object) -> Response:
         if not g.get("user"):
             return redirect(url_for("auth.login"))
         if not session.get("is_admin"):

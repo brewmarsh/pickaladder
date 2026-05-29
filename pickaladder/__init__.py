@@ -10,7 +10,7 @@ import sys
 import uuid
 from contextlib import suppress
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -41,7 +41,9 @@ from .context_processors import (
 from .core.logging import setup_logging
 from .extensions import cache, csrf, executor, login_manager, mail
 from .user.helpers import smart_display_name, wrap_user
-from .user.models import UserSession
+
+if TYPE_CHECKING:
+    from .user.models import UserSession
 
 APP_PASSWORD_LENGTH = 16
 
@@ -63,7 +65,7 @@ def _configure_mail_logging(app: Flask) -> None:
     if not app.config.get("TESTING"):
         app.logger.debug(f"Mail User loaded: {bool(app.config.get('MAIL_USERNAME'))}")
         app.logger.debug(
-            f"Mail Password loaded: {bool(app.config.get('MAIL_PASSWORD'))}"
+            f"Mail Password loaded: {bool(app.config.get('MAIL_PASSWORD'))}",
         )
         app.logger.debug(f"Mail Config - Server: {app.config.get('MAIL_SERVER')}")
         app.logger.debug(f"Mail Config - Port: {app.config.get('MAIL_PORT')}")
@@ -74,11 +76,11 @@ def _configure_mail_logging(app: Flask) -> None:
             app.logger.debug(f"Mail Config - Password Length: {len(pwd)}")
             if len(pwd) == APP_PASSWORD_LENGTH:
                 app.logger.debug(
-                    f"Password length matches standard App Password length ({APP_PASSWORD_LENGTH})."
+                    f"Password length matches standard App Password length ({APP_PASSWORD_LENGTH}).",
                 )
             else:
                 app.logger.debug(
-                    f"Password length DOES NOT match standard App Password length ({APP_PASSWORD_LENGTH}). Possible regular password used?"
+                    f"Password length DOES NOT match standard App Password length ({APP_PASSWORD_LENGTH}). Possible regular password used?",
                 )
         else:
             app.logger.debug("Mail Config - No Password set!")
@@ -146,7 +148,8 @@ def _initialize_firebase(app: Flask) -> None:
             firebase_options = {
                 "projectId": project_id or app.config.get("FIREBASE_PROJECT_ID"),
                 "storageBucket": app.config.get(
-                    "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+                    "FIREBASE_STORAGE_BUCKET",
+                    "pickaladder.firebasestorage.app",
                 ),
             }
 
@@ -212,7 +215,7 @@ def _register_extensions(app: Flask) -> None:
             if user_doc.exists:
                 return wrap_user(user_doc.to_dict(), uid=id_to_load)
         except Exception as e:
-            current_app.logger.error(f"Error in user_loader: {e}")
+            current_app.logger.exception(f"Error in user_loader: {e}")
         return None
 
 
@@ -231,7 +234,8 @@ def _register_template_utilities(app: Flask) -> None:
 
     @app.template_filter("avatar_url")
     def avatar_url_filter(
-        user: dict[str, Any] | UserSession | None, _external: bool = False
+        user: dict[str, Any] | UserSession | None,
+        _external: bool = False,
     ) -> str:
         """Return the avatar URL for a user."""
         if not user:
@@ -251,7 +255,9 @@ def _register_template_utilities(app: Flask) -> None:
 
     @app.template_filter("pluralize")
     def pluralize_filter(
-        number: int, singular: str = "", plural: str | None = None
+        number: int,
+        singular: str = "",
+        plural: str | None = None,
     ) -> str:
         """Pluralize a word based on a number."""
         if number == 1:

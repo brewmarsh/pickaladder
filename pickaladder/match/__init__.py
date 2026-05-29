@@ -11,9 +11,9 @@ from . import routes  # noqa: E402
 
 __all__ = [
     "Match",
-    "MatchService",
-    "MatchQueryService",
     "MatchCommandService",
+    "MatchQueryService",
+    "MatchService",
     "Score",
     "routes",
 ]

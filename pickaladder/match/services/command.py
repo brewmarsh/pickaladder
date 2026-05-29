@@ -53,7 +53,8 @@ class MatchCommandService(BaseRepository):
         side1_ref, side2_ref = cls._resolve_match_participants(db, sub, match_doc_data)
 
         new_match_ref = cast(
-            "DocumentReference", db.collection(cls.COLLECTION_NAME).document()
+            "DocumentReference",
+            db.collection(cls.COLLECTION_NAME).document(),
         )
         batch = db.batch()
         cls._record_match_batch(
@@ -102,7 +103,10 @@ class MatchCommandService(BaseRepository):
 
             match_doc_data["id"] = new_match_ref.id
             TournamentService.handle_match_completion(
-                db, t_id, match_doc_data, match_doc_data["winnerId"]
+                db,
+                t_id,
+                match_doc_data,
+                match_doc_data["winnerId"],
             )
 
         # Invalidate leaderboards cache
@@ -121,13 +125,14 @@ class MatchCommandService(BaseRepository):
         """Parse match date input into a timezone-aware datetime."""
         if isinstance(date_input, str) and date_input:
             return datetime.datetime.strptime(date_input, "%Y-%m-%d").replace(
-                tzinfo=datetime.timezone.utc
+                tzinfo=datetime.timezone.utc,
             )
         if isinstance(date_input, datetime.date) and not isinstance(
-            date_input, datetime.datetime
+            date_input,
+            datetime.datetime,
         ):
             return datetime.datetime.combine(date_input, datetime.time.min).replace(
-                tzinfo=datetime.timezone.utc
+                tzinfo=datetime.timezone.utc,
             )
         if isinstance(date_input, datetime.datetime):
             return date_input.replace(tzinfo=datetime.timezone.utc)
@@ -135,7 +140,9 @@ class MatchCommandService(BaseRepository):
 
     @staticmethod
     def _prepare_match_doc_base(
-        sub: MatchSubmission, user_id: str, date: datetime.datetime
+        sub: MatchSubmission,
+        user_id: str,
+        date: datetime.datetime,
     ) -> dict[str, Any]:
         """Prepare the base data dictionary for the match document."""
         from firebase_admin import firestore
@@ -164,31 +171,36 @@ class MatchCommandService(BaseRepository):
 
     @classmethod
     def _resolve_match_participants(
-        cls, db: Client, sub: MatchSubmission, data: dict[str, Any]
+        cls,
+        db: Client,
+        sub: MatchSubmission,
+        data: dict[str, Any],
     ) -> tuple[DocumentReference, DocumentReference]:
         """Resolve player/team references based on match type."""
         if sub.match_type == "singles":
             p1_ref = cast(
-                "DocumentReference", db.collection("users").document(sub.player_1_id)
+                "DocumentReference",
+                db.collection("users").document(sub.player_1_id),
             )
             p2_ref = cast(
-                "DocumentReference", db.collection("users").document(sub.player_2_id)
+                "DocumentReference",
+                db.collection("users").document(sub.player_2_id),
             )
             data.update(
                 {
                     "player1Ref": p1_ref,
                     "player2Ref": p2_ref,
                     "participants": [sub.player_1_id, sub.player_2_id],
-                }
+                },
             )
             return p1_ref, p2_ref
 
         res = cls._resolve_teams(
             db,
             sub.player_1_id,
-            cast(str, sub.partner_id),
-            cast(str, sub.player_2_id),
-            cast(str, sub.opponent_2_id),
+            cast("str", sub.partner_id),
+            cast("str", sub.player_2_id),
+            cast("str", sub.opponent_2_id),
         )
         data.update(res)
         data["participants"] = [
@@ -198,7 +210,8 @@ class MatchCommandService(BaseRepository):
             sub.opponent_2_id,
         ]
         return cast("DocumentReference", res["team1Ref"]), cast(
-            "DocumentReference", res["team2Ref"]
+            "DocumentReference",
+            res["team2Ref"],
         )
 
     @classmethod
@@ -234,7 +247,7 @@ class MatchCommandService(BaseRepository):
         # We also need p1_ref and p2_ref snaps for ELO calculation
         # (they might be teams for doubles)
         # To avoid extra calls, we'll fetch all needed refs at once.
-        all_refs = list(set([p1_ref, p2_ref] + participant_refs + nt_refs))
+        all_refs = list({p1_ref, p2_ref, *participant_refs, *nt_refs})
         snaps_list = db.get_all(all_refs)
         snaps = {s.id: s for s in snaps_list if s.exists}
 
@@ -256,7 +269,11 @@ class MatchCommandService(BaseRepository):
 
         if match_type == "singles":
             cls._denormalize_singles_players(
-                match_data, p1_ref, p1_data or {}, p2_ref, p2_data or {}
+                match_data,
+                p1_ref,
+                p1_data or {},
+                p2_ref,
+                p2_data or {},
             )
 
         side1_ids, side2_ids = cls._get_side_ids(match_data, match_type)
@@ -271,10 +288,14 @@ class MatchCommandService(BaseRepository):
         match_data.update(outcome)
 
         p1_upd, p2_upd = MatchStatsCalculator.calculate_elo_updates(
-            outcome["winner"], p1_data, p2_data
+            outcome["winner"],
+            p1_data,
+            p2_data,
         )
         if match_type == "singles" and MatchStatsCalculator.check_upset(
-            outcome["winner"], p1_data, p2_data
+            outcome["winner"],
+            p1_data,
+            p2_data,
         ):
             match_data["is_upset"] = True
 
@@ -290,7 +311,9 @@ class MatchCommandService(BaseRepository):
             nt2_data = nt2_snap.to_dict() if nt2_snap else {}
 
             nt1_upd, nt2_upd = MatchStatsCalculator.calculate_elo_updates(
-                outcome["winner"], nt1_data, nt2_data
+                outcome["winner"],
+                nt1_data,
+                nt2_data,
             )
             if nt1_id and nt1_snap:
                 batch.update(db.collection("teams").document(nt1_id), nt1_upd)
@@ -337,7 +360,7 @@ class MatchCommandService(BaseRepository):
                 "display_name": smart_display_name(d),
                 "avatar_url": get_avatar_url(d),
                 "dupr_at_match_time": float(
-                    d.get("duprRating") or d.get("dupr_rating") or 0.0
+                    d.get("duprRating") or d.get("dupr_rating") or 0.0,
                 ),
             }
 
@@ -380,7 +403,11 @@ class MatchCommandService(BaseRepository):
 
     @staticmethod
     def _resolve_teams(
-        db: Client, t1p1: str, t1p2: str, t2p1: str, t2p2: str
+        db: Client,
+        t1p1: str,
+        t1p2: str,
+        t2p1: str,
+        t2p2: str,
     ) -> dict[str, Any]:
         """Resolve and create/fetch teams for doubles matches."""
         id1 = TeamService.get_or_create_team(db, t1p1, t1p2)
@@ -402,7 +429,11 @@ class MatchCommandService(BaseRepository):
 
     @classmethod
     def update_match_score(
-        cls, match_id: str, s1_raw: str | int, s2_raw: str | int, editor_uid: str
+        cls,
+        match_id: str,
+        s1_raw: str | int,
+        s2_raw: str | int,
+        editor_uid: str,
     ) -> None:
         """Update a match score with permission checks and stats rollback."""
         from firebase_admin import firestore
@@ -411,11 +442,13 @@ class MatchCommandService(BaseRepository):
         try:
             s1, s2 = int(s1_raw or 0), int(s2_raw or 0)
         except (ValueError, TypeError):
-            raise ValueError("Scores must be valid integers.")
+            msg = "Scores must be valid integers."
+            raise ValueError(msg)
 
         data = cls.get_by_id(db, match_id)
         if not data:
-            raise ValueError("Match not found.")
+            msg = "Match not found."
+            raise ValueError(msg)
 
         cls._check_match_edit_permissions(data, editor_uid, db)
         cls._perform_stats_update(data, s1, s2)
@@ -432,15 +465,19 @@ class MatchCommandService(BaseRepository):
 
     @staticmethod
     def _check_match_edit_permissions(
-        data: dict[str, Any], uid: str, db: Client
+        data: dict[str, Any],
+        uid: str,
+        db: Client,
     ) -> None:
         """Check if the user has permission to edit the match."""
         u_doc = cast("DocumentSnapshot", db.collection("users").document(uid).get())
         is_admin = u_doc.exists and (u_doc.to_dict() or {}).get("isAdmin", False)
         if data.get("tournamentId") and not is_admin:
-            raise PermissionError("Only Admins can edit tournament matches.")
+            msg = "Only Admins can edit tournament matches."
+            raise PermissionError(msg)
         if not is_admin and data.get("createdBy") != uid:
-            raise PermissionError("You do not have permission to edit this match.")
+            msg = "You do not have permission to edit this match."
+            raise PermissionError(msg)
 
     @staticmethod
     def _perform_stats_update(data: dict[str, Any], s1: int, s2: int) -> None:
@@ -453,7 +490,10 @@ class MatchCommandService(BaseRepository):
 
     @classmethod
     def _get_match_updates(
-        cls, data: dict[str, Any], s1: int, s2: int
+        cls,
+        data: dict[str, Any],
+        s1: int,
+        s2: int,
     ) -> dict[str, Any]:
         """Calculate the updates for the match document."""
         m_type = data.get("matchType", "singles")
@@ -468,10 +508,15 @@ class MatchCommandService(BaseRepository):
             s2_id = p2_ref.id if p2_ref else None
 
         outcome = MatchStatsCalculator.calculate_match_outcome(
-            s1, s2, side1_ids, side2_ids, s1_id, s2_id
+            s1,
+            s2,
+            side1_ids,
+            side2_ids,
+            s1_id,
+            s2_id,
         )
 
-        upd = {
+        return {
             "player1Score": s1,
             "player2Score": s2,
             "winner": outcome["winner"],
@@ -482,7 +527,6 @@ class MatchCommandService(BaseRepository):
             "participants": outcome["participants"],
             "status": "COMPLETED",
         }
-        return upd
 
     @staticmethod
     def _get_side_ids(data: dict[str, Any], m_type: str) -> tuple[list[str], list[str]]:

@@ -11,7 +11,7 @@ from pickaladder.core.ranking.aggregator import StandingAggregator
 class StandingAggregatorTestCase(unittest.TestCase):
     """Test cases for hierarchical standing aggregation."""
 
-    def test_basic_aggregation(self):
+    def test_basic_aggregation(self) -> None:
         """Test simple win/loss and point diff aggregation."""
         p1_ref = MagicMock(id="p1")
         p2_ref = MagicMock(id="p2")
@@ -25,21 +25,21 @@ class StandingAggregatorTestCase(unittest.TestCase):
                 "player2Ref": p2_ref,
                 "player1Score": 11,
                 "player2Score": 5,
-            }
+            },
         ]
 
         standings = StandingAggregator.aggregate(["p1", "p2"], matches)
 
-        self.assertEqual(len(standings), 2)
-        self.assertEqual(standings[0]["uid"], "p1")
-        self.assertEqual(standings[0]["wins"], 1)
-        self.assertEqual(standings[0]["point_diff"], 6)
+        assert len(standings) == 2
+        assert standings[0]["uid"] == "p1"
+        assert standings[0]["wins"] == 1
+        assert standings[0]["point_diff"] == 6
 
-        self.assertEqual(standings[1]["uid"], "p2")
-        self.assertEqual(standings[1]["losses"], 1)
-        self.assertEqual(standings[1]["point_diff"], -6)
+        assert standings[1]["uid"] == "p2"
+        assert standings[1]["losses"] == 1
+        assert standings[1]["point_diff"] == -6
 
-    def test_h2h_tie_breaker(self):
+    def test_h2h_tie_breaker(self) -> None:
         """Test that H2H breaks a tie when wins are equal."""
         matches = [
             # p1 beat p2 (H2H)
@@ -81,14 +81,14 @@ class StandingAggregatorTestCase(unittest.TestCase):
         # PD: p1: -4, p2: +4, p3: 0
 
         standings = StandingAggregator.aggregate(["p1", "p2", "p3"], matches)
-        self.assertEqual(standings[0]["uid"], "p2")
-        self.assertEqual(standings[0]["tie_break_reason"], "PD")
-        self.assertEqual(standings[1]["uid"], "p3")
-        self.assertEqual(standings[1]["tie_break_reason"], "PD")
-        self.assertEqual(standings[2]["uid"], "p1")
-        self.assertEqual(standings[2]["tie_break_reason"], "PD")
+        assert standings[0]["uid"] == "p2"
+        assert standings[0]["tie_break_reason"] == "PD"
+        assert standings[1]["uid"] == "p3"
+        assert standings[1]["tie_break_reason"] == "PD"
+        assert standings[2]["uid"] == "p1"
+        assert standings[2]["tie_break_reason"] == "PD"
 
-    def test_2way_tie_broken_by_h2h(self):
+    def test_2way_tie_broken_by_h2h(self) -> None:
         """Test simple 2-way tie resolved by H2H."""
         # Setup:
         # P3: 2 wins, 0 losses (vs P1, P2)
@@ -147,16 +147,16 @@ class StandingAggregatorTestCase(unittest.TestCase):
         # 3. P2 (1-1) - H2H loser to P1
         # 4. P4 (0-1)
 
-        self.assertEqual(standings[0]["uid"], "p3")
-        self.assertIsNone(standings[0]["tie_break_reason"])
+        assert standings[0]["uid"] == "p3"
+        assert standings[0]["tie_break_reason"] is None
 
-        self.assertEqual(standings[1]["uid"], "p1")
-        self.assertEqual(standings[1]["tie_break_reason"], "H2H")
+        assert standings[1]["uid"] == "p1"
+        assert standings[1]["tie_break_reason"] == "H2H"
 
-        self.assertEqual(standings[2]["uid"], "p2")
-        self.assertEqual(standings[2]["tie_break_reason"], "H2H")
+        assert standings[2]["uid"] == "p2"
+        assert standings[2]["tie_break_reason"] == "H2H"
 
-        self.assertEqual(standings[3]["uid"], "p4")
+        assert standings[3]["uid"] == "p4"
 
 
 if __name__ == "__main__":

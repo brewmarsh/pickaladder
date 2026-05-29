@@ -1,10 +1,13 @@
 """Background task execution module."""
 
+from __future__ import annotations
+
 import logging
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
-from flask import Flask
+if TYPE_CHECKING:
+    from flask import Flask
 
 T = TypeVar("T")
 
@@ -25,7 +28,8 @@ class TaskExecutor:
         self.app = app
         max_workers = app.config.get("TASK_EXECUTOR_MAX_WORKERS", 4)
         self._executor = ThreadPoolExecutor(
-            max_workers=max_workers, thread_name_prefix="task_executor"
+            max_workers=max_workers,
+            thread_name_prefix="task_executor",
         )
         app.extensions["task_executor"] = self
         app.logger.info(f"Initialized TaskExecutor with {max_workers} workers")
@@ -37,7 +41,8 @@ class TaskExecutor:
         Ensures the Flask application context is available during execution.
         """
         if self._executor is None or self.app is None:
-            raise RuntimeError("TaskExecutor not initialized with a Flask app")
+            msg = "TaskExecutor not initialized with a Flask app"
+            raise RuntimeError(msg)
 
         def wrapper() -> T:
             assert self.app is not None
@@ -49,7 +54,7 @@ class TaskExecutor:
                     return result
                 except Exception as e:
                     self.app.logger.error(
-                        f"Error in background task {func.__name__}: {str(e)}",
+                        f"Error in background task {func.__name__}: {e!s}",
                         exc_info=True,
                     )
                     raise

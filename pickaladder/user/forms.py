@@ -11,7 +11,8 @@ class SettingsForm(FlaskForm):
 
     name = StringField("Full Name", validators=[DataRequired(), Length(min=2, max=50)])
     username = StringField(
-        "Username", validators=[DataRequired(), Length(min=2, max=20)]
+        "Username",
+        validators=[DataRequired(), Length(min=2, max=20)],
     )
     email = StringField("Email", validators=[DataRequired(), Email()])
     dupr_id = StringField("DUPR ID", validators=[Optional()])
@@ -40,7 +41,8 @@ class UpdateUserForm(FlaskForm):
 
     name = StringField("Full Name", validators=[DataRequired(), Length(min=2, max=50)])
     username = StringField(
-        "Username", validators=[DataRequired(), Length(min=2, max=20)]
+        "Username",
+        validators=[DataRequired(), Length(min=2, max=20)],
     )
     email = StringField("Email", validators=[DataRequired(), Email()])
     dupr_id = StringField("DUPR ID", validators=[Optional()])
@@ -56,7 +58,8 @@ class EditProfileForm(FlaskForm):
     """Form for updating a user profile."""
 
     username = StringField(
-        "Username", validators=[DataRequired(), Length(min=2, max=20)]
+        "Username",
+        validators=[DataRequired(), Length(min=2, max=20)],
     )
     dupr_rating = DecimalField(
         "DUPR Rating",

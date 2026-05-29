@@ -1,6 +1,4 @@
-"""
-Database synchronization script to mirror Production data to the Beta environment.
-"""
+"""Database synchronization script to mirror Production data to the Beta environment."""
 
 from __future__ import annotations
 
@@ -21,7 +19,7 @@ if TYPE_CHECKING:
 class BatchProcessor:
     """Handles batched Firestore operations to respect the 500-limit."""
 
-    def __init__(self, db: Client):
+    def __init__(self, db: Client) -> None:
         self.db = db
         self.batch = db.batch()
         self.count = 0
@@ -49,16 +47,11 @@ class BatchProcessor:
 
 
 def initialize_apps() -> tuple[firebase_admin.App, firebase_admin.App]:
-    """
-    Initializes the two Firebase apps for Production (Source) and Beta (Destination).
-    """
+    """Initializes the two Firebase apps for Production (Source) and Beta (Destination)."""
     prod_key_path = os.environ.get("PROD_KEY_PATH")
     beta_key_path = os.environ.get("BETA_KEY_PATH")
 
     if not prod_key_path or not beta_key_path:
-        print(
-            "Error: PROD_KEY_PATH and BETA_KEY_PATH environment variables must be set."
-        )
         sys.exit(1)
 
     # Initialize Prod App (Source)
@@ -73,7 +66,8 @@ def initialize_apps() -> tuple[firebase_admin.App, firebase_admin.App]:
 
 
 def delete_collection_recursive(
-    coll_ref: CollectionReference, batch_processor: BatchProcessor
+    coll_ref: CollectionReference,
+    batch_processor: BatchProcessor,
 ) -> None:
     """
     Recursively adds all documents in a collection and its subcollections
@@ -108,44 +102,34 @@ def copy_collection_recursive(
         # Recurse for subcollections
         for sub_coll in doc_snap.reference.collections():
             count += copy_collection_recursive(
-                sub_coll, dest_doc.collection(sub_coll.id), batch_processor
+                sub_coll,
+                dest_doc.collection(sub_coll.id),
+                batch_processor,
             )
     return count
 
 
 def sync_collection(collection_name: str, prod_db: Client, beta_db: Client) -> None:
     """Syncs a single collection from production to beta."""
-    print(f"Syncing collection: {collection_name}...")
-
     # Safety Check: Ensure destination project ID contains 'beta' or 'sandbox'
     project_id = beta_db.project
     if not project_id or (
         "beta" not in project_id.lower() and "sandbox" not in project_id.lower()
     ):
-        print(
-            f"CRITICAL ERROR: Destination project ID '{project_id}' does not "
-            "contain 'beta' or 'sandbox'."
-        )
-        print(
-            "Delete operations are restricted to beta/sandbox environments for safety."
-        )
         sys.exit(1)
 
     prod_coll = prod_db.collection(collection_name)
     beta_coll = beta_db.collection(collection_name)
 
     # 1. Cleanup beta (Delete all existing documents in this collection)
-    print(f"  Cleaning up beta collection '{collection_name}'...")
     batch_del = BatchProcessor(beta_db)
     delete_collection_recursive(beta_coll, batch_del)
     batch_del.commit()
 
     # 2. Read from prod and write to beta
-    print(f"  Copying data from production collection '{collection_name}'...")
     batch_set = BatchProcessor(beta_db)
-    total_copied = copy_collection_recursive(prod_coll, beta_coll, batch_set)
+    copy_collection_recursive(prod_coll, beta_coll, batch_set)
     batch_set.commit()
-    print(f"  Done. Copied {total_copied} documents (including subcollections).")
 
 
 def main() -> None:
@@ -161,9 +145,7 @@ def main() -> None:
         for coll in collections_to_sync:
             sync_collection(coll, prod_db, beta_db)
 
-        print("\nDatabase sync completed successfully.")
-    except Exception as e:
-        print(f"\nAn error occurred during sync: {e}")
+    except Exception:
         sys.exit(1)
 
 

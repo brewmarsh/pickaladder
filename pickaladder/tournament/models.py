@@ -83,7 +83,7 @@ class TournamentTeam(TypedDict, total=False):
 class TournamentDict(FirestoreDocument, total=False):
     """
     A tournament document in Firestore.
-    (Retained as a TypedDict for strict typing in backend services)
+    (Retained as a TypedDict for strict typing in backend services).
     """
 
     name: str

@@ -26,7 +26,9 @@ from pickaladder.user import UserService
 
 
 def _handle_invite_friend_form(
-    db: Client, group_id: str, context: dict[str, object]
+    db: Client,
+    group_id: str,
+    context: dict[str, object],
 ) -> tuple[InviteFriendForm, Any | None]:
     """Process InviteFriendForm submission."""
     form = InviteFriendForm()
@@ -46,7 +48,9 @@ def _handle_invite_friend_form(
 
 
 def _handle_invite_email_form(
-    db: Client, group_id: str, group_name: str
+    db: Client,
+    group_id: str,
+    group_name: str,
 ) -> tuple[InviteByEmailForm, Any | None]:
     """Process InviteByEmailForm submission."""
     invite_email_form = InviteByEmailForm()
@@ -56,14 +60,19 @@ def _handle_invite_email_form(
             email = invite_email_form.email.data
             if email:
                 GroupService.invite_by_email(
-                    db, group_id, group_name, email, name, g.user.uid
+                    db,
+                    group_id,
+                    group_name,
+                    email,
+                    name,
+                    g.user.uid,
                 )
                 flash(
                     GROUP_MESSAGES["INVITATION_SENDING"].format(email=email.lower()),
                     "success",
                 )
                 return invite_email_form, redirect(
-                    url_for(".view_group", group_id=group_id)
+                    url_for(".view_group", group_id=group_id),
                 )
         except Exception as e:
             flash(GROUP_MESSAGES["INVITE_CREATE_ERROR"].format(error=e), "danger")
@@ -82,7 +91,11 @@ def view_group(group_id: str) -> Response | str | dict[str, object]:
 
     try:
         context = GroupService.get_group_details(
-            db, group_id, g.user.uid, player_a_id, player_b_id
+            db,
+            group_id,
+            g.user.uid,
+            player_a_id,
+            player_b_id,
         )
     except GroupNotFound:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
@@ -96,7 +109,9 @@ def view_group(group_id: str) -> Response | str | dict[str, object]:
         return resp
 
     invite_email_form, resp = _handle_invite_email_form(
-        db, group_id, context["group"].get("name", "Unknown Group")
+        db,
+        group_id,
+        context["group"].get("name", "Unknown Group"),
     )
     if resp:
         return resp
@@ -107,7 +122,10 @@ def view_group(group_id: str) -> Response | str | dict[str, object]:
     context["seasons"] = SeasonService.get_seasons_for_group(db, group_id)
 
     return render_template(
-        "group.html", form=form, invite_email_form=invite_email_form, **context
+        "group.html",
+        form=form,
+        invite_email_form=invite_email_form,
+        **context,
     )
 
 

@@ -1,5 +1,5 @@
 """Tests for FirestorePaginator.
-# ruff: noqa: PLR2004
+# ruff: noqa: PLR2004.
 """
 
 from __future__ import annotations
@@ -25,7 +25,8 @@ def test_paginate_first_page_no_cursor(mock_query: MagicMock) -> None:
 
     limit_val = 4
     paged_results, next_cursor = FirestorePaginator.paginate(
-        mock_query, limit=limit_val
+        mock_query,
+        limit=limit_val,
     )
 
     expected_len = 4
@@ -41,7 +42,8 @@ def test_paginate_last_page(mock_query: MagicMock) -> None:
 
     limit_val = 4
     paged_results, next_cursor = FirestorePaginator.paginate(
-        mock_query, limit=limit_val
+        mock_query,
+        limit=limit_val,
     )
 
     expected_len = 3
@@ -76,7 +78,9 @@ def test_paginate_with_cursor(mock_query: MagicMock) -> None:
     mock_query_started.limit.return_value.stream.return_value = results
 
     paged_results, next_cursor = FirestorePaginator.paginate(
-        mock_query, limit=2, cursor_id="cursor_123"
+        mock_query,
+        limit=2,
+        cursor_id="cursor_123",
     )
 
     mock_collection.document.assert_called_once_with("cursor_123")
@@ -97,7 +101,9 @@ def test_paginate_invalid_cursor(mock_query: MagicMock) -> None:
     mock_collection.document.return_value.get.return_value = mock_cursor_doc
 
     paged_results, next_cursor = FirestorePaginator.paginate(
-        mock_query, limit=2, cursor_id="invalid_cursor"
+        mock_query,
+        limit=2,
+        cursor_id="invalid_cursor",
     )
 
     assert paged_results == []

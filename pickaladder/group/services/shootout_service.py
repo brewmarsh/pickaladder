@@ -58,7 +58,8 @@ class ShootoutService:
 
     @staticmethod
     def group_players_to_courts(
-        player_uids: list[str], players_per_court: int = 4
+        player_uids: list[str],
+        players_per_court: int = 4,
     ) -> list[dict[str, object]]:
         """
         Initially group players into courts based on current ranking.

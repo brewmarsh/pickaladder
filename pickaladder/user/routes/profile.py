@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from firebase_admin import firestore
 from flask import (
     Response,
@@ -22,13 +20,9 @@ from pickaladder.core.constants import DUPR_PROFILE_BASE_URL
 from pickaladder.group.services.group_service import GroupService
 from pickaladder.group.services.leaderboard import get_leaderboard_trend_data
 from pickaladder.season.analytics import AnalyticsService
-
-from .. import bp
-from ..forms import SettingsForm, UpdateUserForm
-from ..services import UserService
-
-if TYPE_CHECKING:
-    pass
+from pickaladder.user import bp
+from pickaladder.user.forms import SettingsForm, UpdateUserForm
+from pickaladder.user.services import UserService
 
 
 @bp.route("/settings", methods=["GET", "POST"])
@@ -50,7 +44,11 @@ def settings() -> Response | str:
     if form.validate_on_submit():
         # Use the consolidated service call
         res = UserService.process_profile_update(
-            db, user_id, form, g.user, form.profile_picture.data
+            db,
+            user_id,
+            form,
+            g.user,
+            form.profile_picture.data,
         )
 
         if res["success"]:
@@ -83,7 +81,10 @@ def edit_profile() -> Response | str:
     form = UpdateUserForm(data=g.user)
     if form.validate_on_submit():
         res = UserService.process_profile_update(
-            firestore.client(), g.user.uid, form, g.user
+            firestore.client(),
+            g.user.uid,
+            form,
+            g.user,
         )
         if res["success"]:
             if "info" in res:

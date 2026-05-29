@@ -28,10 +28,10 @@ class TestGroupUtils(unittest.TestCase):
             "members": [
                 mock_db.collection("users").document("user1"),
                 mock_db.collection("users").document("user2"),
-            ]
+            ],
         }
         mock_db.collection("groups").document(
-            "group1"
+            "group1",
         ).get.return_value = mock_group_doc
 
         # Mock user data
@@ -79,15 +79,15 @@ class TestGroupUtils(unittest.TestCase):
         leaderboard = get_group_leaderboard("group1")
 
         # Assert the results
-        self.assertEqual(len(leaderboard), 2)
-        self.assertEqual(leaderboard[0]["name"], "User 1")
-        self.assertEqual(leaderboard[0]["wins"], 1)
-        self.assertEqual(leaderboard[0]["losses"], 0)
-        self.assertEqual(leaderboard[0]["avg_score"], 11.0)
-        self.assertEqual(leaderboard[1]["name"], "User 2")
-        self.assertEqual(leaderboard[1]["wins"], 0)
-        self.assertEqual(leaderboard[1]["losses"], 1)
-        self.assertEqual(leaderboard[1]["avg_score"], 5.0)
+        assert len(leaderboard) == 2
+        assert leaderboard[0]["name"] == "User 1"
+        assert leaderboard[0]["wins"] == 1
+        assert leaderboard[0]["losses"] == 0
+        assert leaderboard[0]["avg_score"] == 11.0
+        assert leaderboard[1]["name"] == "User 2"
+        assert leaderboard[1]["wins"] == 0
+        assert leaderboard[1]["losses"] == 1
+        assert leaderboard[1]["avg_score"] == 5.0
 
     def test_get_partnership_stats(self) -> None:
         """Test the get_partnership_stats function with old and new formats."""
@@ -129,8 +129,8 @@ class TestGroupUtils(unittest.TestCase):
         # Test partnership user1 and user2
         stats = get_partnership_stats("user1", "user2", matches)
         # match1: win, match2: loss
-        self.assertEqual(stats["wins"], 1)
-        self.assertEqual(stats["losses"], 1)
+        assert stats["wins"] == 1
+        assert stats["losses"] == 1
 
     @patch("pickaladder.group.utils.firestore")
     def test_get_head_to_head_stats(self, mock_firestore: MagicMock) -> None:
@@ -191,16 +191,16 @@ class TestGroupUtils(unittest.TestCase):
 
         # match1: user1 wins against user2
         # match2: user1 loses against user2
-        self.assertEqual(stats["wins"], 1)
-        self.assertEqual(stats["losses"], 1)
-        self.assertEqual(len(stats["matches"]), 2)
+        assert stats["wins"] == 1
+        assert stats["losses"] == 1
+        assert len(stats["matches"]) == 2
         # match1 diff: 11-5=6, match2 diff: 5-11=-6
-        self.assertEqual(stats["point_diff"], 0)
+        assert stats["point_diff"] == 0
 
         # Chemistry (Partnership)
         # match3: user1 & user2 win together
-        self.assertEqual(stats["partnership_record"]["wins"], 1)
-        self.assertEqual(stats["partnership_record"]["losses"], 0)
+        assert stats["partnership_record"]["wins"] == 1
+        assert stats["partnership_record"]["losses"] == 0
 
 
 if __name__ == "__main__":

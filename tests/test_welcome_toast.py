@@ -43,7 +43,7 @@ class WelcomeToastTestCase(unittest.TestCase):
         ) = []
 
         self.app = create_app(
-            {"TESTING": True, "SERVER_NAME": "localhost", "WTF_CSRF_ENABLED": False}
+            {"TESTING": True, "SERVER_NAME": "localhost", "WTF_CSRF_ENABLED": False},
         )
         self.client = self.app.test_client()
 
@@ -54,7 +54,8 @@ class WelcomeToastTestCase(unittest.TestCase):
 
     @patch("pickaladder.auth.routes.UserService.get_pending_tournament_invites")
     def test_welcome_toast_triggered_on_merge(
-        self, mock_get_invites: MagicMock
+        self,
+        mock_get_invites: MagicMock,
     ) -> None:
         """Test welcome toast session flag is set when a ghost user is merged."""
         # 1. Mock verify_id_token to return a user payload
@@ -84,15 +85,16 @@ class WelcomeToastTestCase(unittest.TestCase):
             headers={"X-Requested-With": "XMLHttpRequest"},
         )
 
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
 
         # 6. Verify session flag
         with self.client.session_transaction() as sess:
-            self.assertEqual(sess.get("show_welcome_invites"), 2)
+            assert sess.get("show_welcome_invites") == 2
 
     @patch("pickaladder.auth.routes.UserService.get_pending_tournament_invites")
     def test_welcome_toast_not_triggered_on_no_merge(
-        self, mock_get_invites: MagicMock
+        self,
+        mock_get_invites: MagicMock,
     ) -> None:
         """Test welcome toast flag is NOT set when no merge occurred."""
         self.mock_auth_service.verify_id_token.return_value = {"uid": MOCK_USER_ID}
@@ -114,17 +116,19 @@ class WelcomeToastTestCase(unittest.TestCase):
             headers={"X-Requested-With": "XMLHttpRequest"},
         )
 
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
 
         with self.client.session_transaction() as sess:
-            self.assertIsNone(sess.get("show_welcome_invites"))
+            assert sess.get("show_welcome_invites") is None
 
         mock_get_invites.assert_not_called()
 
     @patch("pickaladder.auth.routes.send_email")
     @patch("pickaladder.auth.routes.UserService.get_pending_tournament_invites")
     def test_welcome_toast_triggered_on_register(
-        self, mock_get_invites: MagicMock, mock_send_email: MagicMock
+        self,
+        mock_get_invites: MagicMock,
+        mock_send_email: MagicMock,
     ) -> None:
         """Test welcome toast flag is set when a user registers and is merged."""
         # Mock auth create_user
@@ -153,11 +157,11 @@ class WelcomeToastTestCase(unittest.TestCase):
             follow_redirects=False,
         )
 
-        self.assertEqual(response.status_code, 302)
+        assert response.status_code == 302
 
         # 6. Verify session flag
         with self.client.session_transaction() as sess:
-            self.assertEqual(sess.get("show_welcome_invites"), 1)
+            assert sess.get("show_welcome_invites") == 1
 
 
 if __name__ == "__main__":

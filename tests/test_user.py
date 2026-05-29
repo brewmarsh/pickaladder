@@ -41,7 +41,9 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.mock_firestore_service = MagicMock()
         self.mock_auth_service = MagicMock()
         self.mock_auth_service.EmailAlreadyExistsError = type(
-            "EmailAlreadyExistsError", (Exception,), {}
+            "EmailAlreadyExistsError",
+            (Exception,),
+            {},
         )
         self.mock_storage_service = MagicMock()
 
@@ -52,7 +54,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 return_value=self.mock_db,
             ),
             "auth_profile": patch(
-                "pickaladder.user.services.profile.auth", new=self.mock_auth_service
+                "pickaladder.user.services.profile.auth",
+                new=self.mock_auth_service,
             ),
             "storage_profile": patch(
                 "pickaladder.user.services.profile.storage",
@@ -60,10 +63,10 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
             "send_email_profile": patch(
-                "pickaladder.services.mail_service.MailService.send_email"
+                "pickaladder.services.mail_service.MailService.send_email",
             ),
         }
-        for name, p in self.patchers_dict.items():
+        for p in self.patchers_dict.values():
             p.start()
 
         # Patch FieldFilter
@@ -130,8 +133,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         }
 
         response = self.client.get("/user/settings")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"testuser", response.data)
+        assert response.status_code == 200
+        assert b"testuser" in response.data
 
     def test_settings_post_success(self) -> None:
         """Test updating user settings via POST."""
@@ -148,8 +151,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             },
             follow_redirects=True,
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated!", response.data)
+        assert response.status_code == 200
+        assert b"Settings updated!" in response.data
         self.mock_user_doc.update.assert_called()
 
     def test_update_profile_picture_upload(self) -> None:
@@ -172,8 +175,8 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             content_type="multipart/form-data",
             follow_redirects=True,
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated!", response.data)
+        assert response.status_code == 200
+        assert b"Settings updated!" in response.data
         self.mock_storage_service.bucket.assert_called()
         mock_bucket.blob.assert_called_with(f"profile_pictures/{MOCK_USER_ID}/test.png")
         mock_blob.upload_from_file.assert_called()
@@ -194,11 +197,11 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
             },
             follow_redirects=True,
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Settings updated!", response.data)
+        assert response.status_code == 200
+        assert b"Settings updated!" in response.data
         update_call_args = self.mock_user_doc.update.call_args[0][0]
-        self.assertEqual(update_call_args["dark_mode"], True)
-        self.assertEqual(update_call_args["duprRating"], 5.5)
+        assert update_call_args["dark_mode"]
+        assert update_call_args["duprRating"] == 5.5
 
     def _setup_dashboard_mocks(self, mock_db: MagicMock) -> None:
         """Set up specific mocks for the dashboard API tests."""
@@ -240,19 +243,21 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user()
         # Mock UserService.reset_profile_picture through the route's dependency
         with patch(
-            "pickaladder.user.routes.profile.UserService.reset_profile_picture"
+            "pickaladder.user.routes.profile.UserService.reset_profile_picture",
         ) as mock_reset:
             mock_reset.return_value = True
             response = self.client.post(
-                "/user/settings/reset_avatar", follow_redirects=True
+                "/user/settings/reset_avatar",
+                follow_redirects=True,
             )
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b"Profile picture removed.", response.data)
+            assert response.status_code == 200
+            assert b"Profile picture removed." in response.data
             mock_reset.assert_called_once()
 
     @patch("pickaladder.user.services.dashboard.get_user_matches")
     def test_api_dashboard_fetches_matches_with_limit(
-        self, mock_get_matches: MagicMock
+        self,
+        mock_get_matches: MagicMock,
     ) -> None:
         """Test that matches are fetched with limit."""
         self._set_session_user()
@@ -263,7 +268,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.client.get("/user/api/dashboard")
 
         # Verify get_user_matches was called
-        self.assertTrue(mock_get_matches.called)
+        assert mock_get_matches.called
 
     def test_api_dashboard_returns_group_match_flag(self) -> None:
         """Test that the response includes an indicator for group matches."""
@@ -296,15 +301,16 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         response = self.client.get("/user/api/dashboard")
 
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
         data = response.get_json()
         matches = data["matches"]
-        self.assertEqual(len(matches), 1)
-        self.assertTrue(matches[0]["is_group_match"])
+        assert len(matches) == 1
+        assert matches[0]["is_group_match"]
 
     @patch("pickaladder.user.routes.profile.render_template")
     def test_view_user_includes_doubles_and_processes_matches(
-        self, mock_render_template: MagicMock
+        self,
+        mock_render_template: MagicMock,
     ) -> None:
         """Test that view_user fetches and processes matches."""
         self._set_session_user()
@@ -368,10 +374,10 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
 
         self.client.get(f"/user/{MOCK_PROFILE_USER_ID}")
 
-        args, kwargs = mock_render_template.call_args
+        _args, kwargs = mock_render_template.call_args
         matches = kwargs.get("matches")
-        self.assertTrue(matches)
-        self.assertEqual(len(matches), 1)
+        assert matches
+        assert len(matches) == 1
 
 
 if __name__ == "__main__":

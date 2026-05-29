@@ -71,7 +71,8 @@ def _update_player_stats(
 
 
 def _process_single_match(
-    stats: dict[str, dict[str, object]], match: DocumentSnapshot
+    stats: dict[str, dict[str, object]],
+    match: DocumentSnapshot,
 ) -> None:
     """Update raw stats and records match outcomes for players in a single match."""
     data = match.to_dict()
@@ -99,12 +100,14 @@ def _calculate_derived_stats(stats: dict[str, dict[str, object]]) -> None:
 def _is_ghost(user_data: dict[str, object]) -> bool:
     """Determine if a user is a ghost."""
     return bool(
-        user_data.get("is_ghost") or user_data.get("username", "").startswith("ghost_")
+        user_data.get("is_ghost") or user_data.get("username", "").startswith("ghost_"),
     )
 
 
 def _build_leaderboard_entry(
-    user_id: str, user_data: dict[str, object], s: dict[str, object]
+    user_id: str,
+    user_data: dict[str, object],
+    s: dict[str, object],
 ) -> dict[str, object]:
     """Build a single leaderboard entry."""
     return {
@@ -136,17 +139,20 @@ def _sort_leaderboard(stats: dict[str, dict[str, object]]) -> list[dict[str, obj
         leaderboard.append(_build_leaderboard_entry(user_id, user_data, s))
 
     leaderboard.sort(
-        key=operator.itemgetter("avg_score", "wins", "games_played"), reverse=True
+        key=operator.itemgetter("avg_score", "wins", "games_played"),
+        reverse=True,
     )
     return leaderboard
 
 
 def _calculate_leaderboard_from_matches(
-    matches: list[DocumentSnapshot], players: list[DocumentSnapshot]
+    matches: list[DocumentSnapshot],
+    players: list[DocumentSnapshot],
 ) -> list[dict[str, object]]:
     """Calculate the leaderboard from a list of matches using a pipeline of helpers."""
     matches.sort(
-        key=lambda m: m.to_dict().get("matchDate") or datetime.min, reverse=True
+        key=lambda m: m.to_dict().get("matchDate") or datetime.min,
+        reverse=True,
     )
 
     stats = _initialize_stats(players)
@@ -176,7 +182,8 @@ def _calculate_rank_changes(
 
 
 def _add_match_to_user_map(
-    user_matches_map: dict[str, list[dict[str, object]]], data: dict[str, object]
+    user_matches_map: dict[str, list[dict[str, object]]],
+    data: dict[str, object],
 ) -> None:
     """Helper to add a match to all involved users in the map."""
     team1_ids, team2_ids = _extract_team_ids(data)
@@ -186,7 +193,8 @@ def _add_match_to_user_map(
 
 
 def _map_matches_to_users(
-    matches: list[DocumentSnapshot], member_refs: list[DocumentSnapshot]
+    matches: list[DocumentSnapshot],
+    member_refs: list[DocumentSnapshot],
 ) -> dict[str, list[dict[str, object]]]:
     """Map matches to each user for efficient lookup."""
     user_matches_map: dict[str, list[dict[str, object]]] = {
@@ -217,7 +225,8 @@ def _update_streak(streak: int, user_id: str, data: dict[str, object]) -> int:
 
 
 def _calculate_player_winning_streak(
-    user_id: str, matches_data: list[dict[str, object]]
+    user_id: str,
+    matches_data: list[dict[str, object]],
 ) -> int:
     """Calculate the current winning streak for a single player."""
     streak = 0
@@ -272,12 +281,14 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, object]]:
         if m.to_dict().get("matchDate") and m.to_dict().get("matchDate") < one_week_ago
     ]
     last_week_leaderboard = _calculate_leaderboard_from_matches(
-        matches_last_week, member_refs
+        matches_last_week,
+        member_refs,
     )
 
     _calculate_rank_changes(current_leaderboard, last_week_leaderboard)
     all_matches.sort(
-        key=lambda m: m.to_dict().get("matchDate") or datetime.min, reverse=True
+        key=lambda m: m.to_dict().get("matchDate") or datetime.min,
+        reverse=True,
     )
     _calculate_winning_streaks(current_leaderboard, all_matches, member_refs)
 
@@ -304,7 +315,8 @@ def _extract_basic_player_data(doc: DocumentSnapshot) -> dict[str, object]:
 
 
 def _get_involved_player_data(
-    db: Client, matches: list[DocumentSnapshot]
+    db: Client,
+    matches: list[DocumentSnapshot],
 ) -> dict[str, dict[str, object]]:
     """Get profile data for all players involved in matches."""
     all_player_refs: set[DocumentReference] = set()
@@ -318,7 +330,8 @@ def _get_involved_player_data(
 
 
 def _record_trend_averages(
-    player_stats: dict[str, object], datasets: dict[str, object]
+    player_stats: dict[str, object],
+    datasets: dict[str, object],
 ) -> None:
     """Calculate and record current average scores for all players in trend datasets."""
     for pid, stats in player_stats.items():
@@ -363,7 +376,11 @@ def _calculate_trend_points(
         data = match.to_dict()
         match_date = data.get("matchDate").strftime("%Y-%m-%d")
         date_idx = _process_trend_date_change(
-            unique_dates, date_idx, match_date, player_stats, datasets
+            unique_dates,
+            date_idx,
+            match_date,
+            player_stats,
+            datasets,
         )
         _update_trend_player_stats(player_stats, data)
 
@@ -380,7 +397,9 @@ def _calculate_trend_points(
 
 
 def _update_player_trend_stats(
-    player_stats: dict[str, object], uid: str, score: int
+    player_stats: dict[str, object],
+    uid: str,
+    score: int,
 ) -> None:
     """Update running totals for a single player in trend calculation."""
     if uid in player_stats:
@@ -389,7 +408,8 @@ def _update_player_trend_stats(
 
 
 def _update_trend_player_stats(
-    player_stats: dict[str, object], match_data: dict[str, object]
+    player_stats: dict[str, object],
+    match_data: dict[str, object],
 ) -> None:
     """Update running totals for trend calculation from a single match."""
     p1_score, p2_score = _get_match_scores(match_data)
@@ -402,7 +422,8 @@ def _update_trend_player_stats(
 
 
 def _pad_trend_datasets(
-    datasets_dict: dict[str, object], unique_dates: list[str]
+    datasets_dict: dict[str, object],
+    unique_dates: list[str],
 ) -> None:
     """Pad trend datasets with last value until current date."""
     for ds in datasets_dict.values():
@@ -414,7 +435,7 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, object]:
     """Generate data for a leaderboard trend chart."""
     db = firestore.client()
     query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
+        filter=FieldFilter("groupId", "==", group_id),
     )
     matches = [m for m in query.stream() if m.to_dict().get("matchDate")]
     matches.sort(key=lambda x: x.to_dict().get("matchDate"))
@@ -423,7 +444,7 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, object]:
 
     players_data = _get_involved_player_data(db, matches)
     unique_dates = sorted(
-        list({m.to_dict().get("matchDate").strftime("%Y-%m-%d") for m in matches})
+        {m.to_dict().get("matchDate").strftime("%Y-%m-%d") for m in matches},
     )
     datasets_dict = _calculate_trend_points(matches, players_data, unique_dates)
     _pad_trend_datasets(datasets_dict, unique_dates)
@@ -432,7 +453,11 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, object]:
 
 
 def _check_partnership_win(
-    data: dict[str, object], playerA_id: str, playerB_id: str, wins: int, losses: int
+    data: dict[str, object],
+    playerA_id: str,
+    playerB_id: str,
+    wins: int,
+    losses: int,
 ) -> tuple[int, int]:
     """Determine if a partnership won or lost a specific match."""
     team1_ids, team2_ids = _extract_team_ids(data)
@@ -449,7 +474,9 @@ def _check_partnership_win(
 
 
 def get_partnership_stats(
-    playerA_id: str, playerB_id: str, all_matches_in_group: list[DocumentSnapshot]
+    playerA_id: str,
+    playerB_id: str,
+    all_matches_in_group: list[DocumentSnapshot],
 ) -> dict[str, int]:
     """Calculates the win/loss record for two players when they are partners."""
     wins = losses = 0
@@ -458,7 +485,11 @@ def get_partnership_stats(
         data = match_doc.to_dict()
         if data.get("matchType") == "doubles":
             wins, losses = _check_partnership_win(
-                data, playerA_id, playerB_id, wins, losses
+                data,
+                playerA_id,
+                playerB_id,
+                wins,
+                losses,
             )
 
     return {"wins": wins, "losses": losses}
@@ -473,7 +504,10 @@ def _update_h2h_win_loss(stats: dict[str, object], won: bool, lost: bool) -> Non
 
 
 def _update_h2h_stats(
-    stats: dict[str, object], p1_score: int, p2_score: int, player_a_is_t1: bool
+    stats: dict[str, object],
+    p1_score: int,
+    p2_score: int,
+    player_a_is_t1: bool,
 ) -> None:
     """Update the running head-to-head statistics."""
     if player_a_is_t1:
@@ -518,12 +552,14 @@ def _process_h2h_match(
 
 
 def get_head_to_head_stats(
-    group_id: str, playerA_id: str, playerB_id: str
+    group_id: str,
+    playerA_id: str,
+    playerB_id: str,
 ) -> dict[str, object]:
     """Calculates head-to-head statistics for two players in doubles matches."""
     db = firestore.client()
     query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
+        filter=FieldFilter("groupId", "==", group_id),
     )
     all_matches_in_group = list(query.stream())
 
@@ -550,13 +586,19 @@ def get_head_to_head_stats(
         "point_diff": h2h_stats["point_diff"],
         "avg_points_scored": {"playerA": avg_A, "playerB": avg_B},
         "partnership_record": get_partnership_stats(
-            playerA_id, playerB_id, all_matches_in_group
+            playerA_id,
+            playerB_id,
+            all_matches_in_group,
         ),
     }
 
 
 def _get_user_win(
-    user_id: str, team1_ids: set, team2_ids: set, p1_score: int, p2_score: int
+    user_id: str,
+    team1_ids: set,
+    team2_ids: set,
+    p1_score: int,
+    p2_score: int,
 ) -> bool | None:
     """Determine if a user won, lost, or didn't participate."""
     if user_id in team1_ids:
@@ -567,7 +609,10 @@ def _get_user_win(
 
 
 def _update_all_time_streak(
-    data: dict[str, object], user_id: str, current: int, longest: int
+    data: dict[str, object],
+    user_id: str,
+    current: int,
+    longest: int,
 ) -> tuple[int, int]:
     """Update current and longest winning streaks based on a single match."""
     p1_score, p2_score = _get_match_scores(data)
@@ -585,7 +630,8 @@ def _update_all_time_streak(
 
 
 def _calculate_all_time_streaks(
-    matches: list[DocumentSnapshot], user_ref: DocumentReference
+    matches: list[DocumentSnapshot],
+    user_ref: DocumentReference,
 ) -> tuple[int, int]:
     """Calculate current and longest winning streaks for a user."""
     matches.sort(key=lambda x: x.to_dict().get("matchDate") or datetime.min)
@@ -593,7 +639,10 @@ def _calculate_all_time_streaks(
 
     for match in matches:
         current, longest = _update_all_time_streak(
-            match.to_dict(), user_ref.id, current, longest
+            match.to_dict(),
+            user_ref.id,
+            current,
+            longest,
         )
 
     return current, max(longest, current)
@@ -621,12 +670,13 @@ def get_user_group_stats(group_id: str, user_id: str) -> dict[str, object]:
 
     db = firestore.client()
     query = db.collection("matches").where(
-        filter=FieldFilter("groupId", "==", group_id)
+        filter=FieldFilter("groupId", "==", group_id),
     )
     all_matches = list(query.stream())
 
     curr, long = _calculate_all_time_streaks(
-        all_matches, db.collection("users").document(user_id)
+        all_matches,
+        db.collection("users").document(user_id),
     )
     stats["win_streak"], stats["longest_streak"] = curr, long
 
@@ -646,7 +696,9 @@ def _perform_invite_email_task(invite_token: str, email_data: dict[str, Any]) ->
 
 
 def send_invite_email_background(
-    app: Flask, invite_token: str, email_data: dict[str, Any]
+    app: Flask,
+    invite_token: str,
+    email_data: dict[str, Any],
 ) -> None:
     """Send an invite email using the centralized TaskExecutor."""
     from pickaladder.extensions import executor
@@ -655,16 +707,20 @@ def send_invite_email_background(
 
 
 def _add_friend_pair(
-    batch: WriteBatch, member_ref: DocumentReference, new_member_ref: DocumentReference
+    batch: WriteBatch,
+    member_ref: DocumentReference,
+    new_member_ref: DocumentReference,
 ) -> int:
     """Add a bidirectional friendship between two members in a Firestore batch."""
     new_member_friend_ref = new_member_ref.collection("friends").document(member_ref.id)
     existing_member_friend_ref = member_ref.collection("friends").document(
-        new_member_ref.id
+        new_member_ref.id,
     )
 
     batch.set(
-        new_member_friend_ref, {"status": "accepted", "initiator": True}, merge=True
+        new_member_friend_ref,
+        {"status": "accepted", "initiator": True},
+        merge=True,
     )
     batch.set(
         existing_member_friend_ref,
@@ -690,7 +746,9 @@ def _commit_batch(db: Client, batch: WriteBatch) -> Response | str | dict[str, o
 
 
 def _process_friend_ref(
-    batch: WriteBatch, member_ref: DocumentReference, new_member_ref: DocumentReference
+    batch: WriteBatch,
+    member_ref: DocumentReference,
+    new_member_ref: DocumentReference,
 ) -> int:
     """Helper to process a single friend ref and return number of operations."""
     if member_ref.id == new_member_ref.id:
@@ -713,7 +771,9 @@ def _batch_step(
 
 
 def _process_friendship_batch(
-    db: Client, member_refs: list[DocumentSnapshot], new_member_ref: DocumentReference
+    db: Client,
+    member_refs: list[DocumentSnapshot],
+    new_member_ref: DocumentReference,
 ) -> None:
     """Process friendship additions in batches."""
     batch, count = db.batch(), 0
@@ -724,7 +784,9 @@ def _process_friendship_batch(
 
 
 def friend_group_members(
-    db: Client, group_id: str, new_member_ref: DocumentReference
+    db: Client,
+    group_id: str,
+    new_member_ref: DocumentReference,
 ) -> None:
     """Automatically create friend relationships between group members."""
     member_refs = _get_group_member_refs(db, group_id)

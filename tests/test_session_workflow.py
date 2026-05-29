@@ -10,7 +10,7 @@ from pickaladder.match.models import MatchSubmission
 from pickaladder.match.services.command import MatchCommandService
 
 
-def test_complete_session_lifecycle(mock_db, mock_db_write):
+def test_complete_session_lifecycle(mock_db, mock_db_write) -> None:
     """Test session creation, match recording, and batch verification."""
     from pickaladder import create_app
 
@@ -21,16 +21,16 @@ def test_complete_session_lifecycle(mock_db, mock_db_write):
 
         # Simple manual batch mock
         class MockBatch:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.ops = []
 
-            def set(self, ref, data):
+            def set(self, ref, data) -> None:
                 self.ops.append(("set", ref, data))
 
-            def update(self, ref, data):
+            def update(self, ref, data) -> None:
                 self.ops.append(("update", ref, data))
 
-            def commit(self):
+            def commit(self) -> None:
                 for op, ref, data in self.ops:
                     if op == "set":
                         ref.set(data)
@@ -46,7 +46,7 @@ def test_complete_session_lifecycle(mock_db, mock_db_write):
         player_refs = [db.collection("users").document(pid) for pid in player_ids]
 
         db.collection("groups").document(group_id).set(
-            {"name": "Test Group", "members": player_refs}
+            {"name": "Test Group", "members": player_refs},
         )
 
         BASE_ELO = 1200
@@ -56,7 +56,7 @@ def test_complete_session_lifecycle(mock_db, mock_db_write):
                     "username": f"user_{pid}",
                     "email": f"{pid}@test.com",
                     "stats": {"wins": 0, "losses": 0, "elo": BASE_ELO},
-                }
+                },
             )
 
         # 1. Create a session
@@ -71,7 +71,7 @@ def test_complete_session_lifecycle(mock_db, mock_db_write):
 
         # Mock build match result to avoid url_for
         with patch(
-            "pickaladder.match.services.command.MatchCommandService._build_match_result"
+            "pickaladder.match.services.command.MatchCommandService._build_match_result",
         ) as mock_build:
             mock_build.side_effect = lambda mid, data: MagicMock(id=mid)
 
@@ -89,7 +89,10 @@ def test_complete_session_lifecycle(mock_db, mock_db_write):
                     created_by=creator_id,
                 )
                 res = MatchCommandService.record_match(
-                    db, sub, current_user={"uid": creator_id}, session_id=session_id
+                    db,
+                    sub,
+                    current_user={"uid": creator_id},
+                    session_id=session_id,
                 )
                 match_ids.append(res.id)
                 SessionService.add_match_to_session(db, session_id, res.id)

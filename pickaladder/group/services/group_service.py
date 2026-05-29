@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import logging
 import secrets
+from typing import TYPE_CHECKING
 
 from firebase_admin import firestore, storage
 from flask import current_app, url_for
-from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from pickaladder.group.membership_repository import MembershipRequestRepository
@@ -22,6 +22,9 @@ from pickaladder.group.services.stats import (
 )
 from pickaladder.teams.repository import TeamRepository
 
+if TYPE_CHECKING:
+    from werkzeug.datastructures import FileStorage
+
 logger = logging.getLogger(__name__)
 
 UPSET_THRESHOLD = 0.25
@@ -31,13 +34,9 @@ GUEST_USER = {"username": "Guest", "id": "unknown"}
 class GroupNotFound(Exception):
     """Exception raised when a group is not found."""
 
-    pass
-
 
 class AccessDenied(Exception):
     """Exception raised when a user does not have permission to access a group."""
-
-    pass
 
 
 class GroupService:
@@ -123,53 +122,73 @@ class GroupService:
 
     @staticmethod
     def promote_member(
-        db: Client, group_id: str, target_uid: str, requester_uid: str
+        db: Client,
+        group_id: str,
+        target_uid: str,
+        requester_uid: str,
     ) -> None:
         """Promote a member to admin. Only the owner can do this."""
         group_data = GroupRepository.get_by_id(db, group_id)
         if not group_data:
-            raise GroupNotFound("Group not found")
+            msg = "Group not found"
+            raise GroupNotFound(msg)
 
         owner_ref = group_data.get("ownerRef")
         if not owner_ref or owner_ref.id != requester_uid:
-            raise AccessDenied("Only the group owner can promote members")
+            msg = "Only the group owner can promote members"
+            raise AccessDenied(msg)
 
         GroupRepository.update(
-            db, group_id, {"admins": firestore.ArrayUnion([target_uid])}
+            db,
+            group_id,
+            {"admins": firestore.ArrayUnion([target_uid])},
         )
 
     @staticmethod
     def demote_member(
-        db: Client, group_id: str, target_uid: str, requester_uid: str
+        db: Client,
+        group_id: str,
+        target_uid: str,
+        requester_uid: str,
     ) -> None:
         """Demote an admin to a regular member. Only the owner can do this."""
         group_data = GroupRepository.get_by_id(db, group_id)
         if not group_data:
-            raise GroupNotFound("Group not found")
+            msg = "Group not found"
+            raise GroupNotFound(msg)
 
         owner_ref = group_data.get("ownerRef")
         if not owner_ref or owner_ref.id != requester_uid:
-            raise AccessDenied("Only the group owner can demote members")
+            msg = "Only the group owner can demote members"
+            raise AccessDenied(msg)
 
         GroupRepository.update(
-            db, group_id, {"admins": firestore.ArrayRemove([target_uid])}
+            db,
+            group_id,
+            {"admins": firestore.ArrayRemove([target_uid])},
         )
 
     @staticmethod
     def remove_member(
-        db: Client, group_id: str, target_uid: str, requester_uid: str
+        db: Client,
+        group_id: str,
+        target_uid: str,
+        requester_uid: str,
     ) -> None:
         """Remove a member from the group. Only admins can do this."""
         group_data = GroupRepository.get_by_id(db, group_id)
         if not group_data:
-            raise GroupNotFound("Group not found")
+            msg = "Group not found"
+            raise GroupNotFound(msg)
 
         if not GroupService.is_group_admin(group_data, requester_uid):
-            raise AccessDenied("Only admins can remove members")
+            msg = "Only admins can remove members"
+            raise AccessDenied(msg)
 
         owner_ref = group_data.get("ownerRef")
         if owner_ref and owner_ref.id == target_uid:
-            raise AccessDenied("Cannot remove the owner of the group")
+            msg = "Cannot remove the owner of the group"
+            raise AccessDenied(msg)
 
         target_ref = db.collection("users").document(target_uid)
         GroupRepository.update(
@@ -192,10 +211,12 @@ class GroupService:
         """Update an existing group's details."""
         group_data = GroupRepository.get_by_id(db, group_id)
         if not group_data:
-            raise GroupNotFound("Group not found")
+            msg = "Group not found"
+            raise GroupNotFound(msg)
 
         if not GroupService.is_group_admin(group_data, user_id):
-            raise AccessDenied("You do not have permission to edit this group")
+            msg = "You do not have permission to edit this group"
+            raise AccessDenied(msg)
 
         update_data = {
             "name": form_data.get("name"),
@@ -218,7 +239,8 @@ class GroupService:
             filename = secure_filename(file.filename or "group_profile.jpg")
             try:
                 bucket_name = current_app.config.get(
-                    "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+                    "FIREBASE_STORAGE_BUCKET",
+                    "pickaladder.firebasestorage.app",
                 )
             except RuntimeError:
                 bucket_name = "pickaladder.firebasestorage.app"
@@ -229,7 +251,7 @@ class GroupService:
             blob.make_public()
             return blob.public_url
         except Exception as e:
-            logger.error(f"Error uploading group image: {e}")
+            logger.exception(f"Error uploading group image: {e}")
             return None
 
     @staticmethod
@@ -243,7 +265,8 @@ class GroupService:
         """Fetch all details for a group view."""
         group_data = GroupRepository.get_by_id(db, group_id)
         if not group_data:
-            raise GroupNotFound("Group not found.")
+            msg = "Group not found."
+            raise GroupNotFound(msg)
 
         user_ref = db.collection("users").document(user_id)
 
@@ -278,10 +301,14 @@ class GroupService:
         # Fetch leaderboard and matches
         leaderboard = get_group_leaderboard(group_id, member_docs=member_snaps)
         recent_matches_docs, recent_matches = GroupService._fetch_recent_matches(
-            db, group_id
+            db,
+            group_id,
         )
         team_leaderboard, best_buds = GroupService._fetch_group_teams(
-            db, group_id, member_ids, recent_matches_docs
+            db,
+            group_id,
+            member_ids,
+            recent_matches_docs,
         )
 
         # Fetch Pending Invites using Repository
@@ -322,7 +349,9 @@ class GroupService:
 
     @staticmethod
     def _get_eligible_friends(
-        db: Client, user_ref: DocumentReference, member_ids: set[str]
+        db: Client,
+        user_ref: DocumentReference,
+        member_ids: set[str],
     ) -> list[DocumentSnapshot]:
         """Fetch friends of the user who are not already in the group."""
         friends_query = (
@@ -344,7 +373,8 @@ class GroupService:
 
     @staticmethod
     def _fetch_recent_matches(
-        db: Client, group_id: str
+        db: Client,
+        group_id: str,
     ) -> tuple[list[DocumentSnapshot], list[dict[str, object]]]:
         """Fetch and enrich recent matches for a group."""
         matches_ref = db.collection("matches")
@@ -357,7 +387,7 @@ class GroupService:
 
         # Collect and fetch associated entities
         team_refs, player_refs = GroupService._collect_refs_from_matches(
-            recent_matches_docs
+            recent_matches_docs,
         )
         teams_map = GroupService._batch_fetch_entities(db, team_refs)
         players_map = GroupService._batch_fetch_entities(db, player_refs)
@@ -366,7 +396,9 @@ class GroupService:
         recent_matches = []
         for match_doc in recent_matches_docs:
             match_data = GroupService._enrich_single_match(
-                match_doc, teams_map, players_map
+                match_doc,
+                teams_map,
+                players_map,
             )
             recent_matches.append(match_data)
 
@@ -395,7 +427,8 @@ class GroupService:
         ]
         for field in ["team1Ref", "team2Ref"]:
             if (ref := data.get(field)) and isinstance(
-                ref, firestore.DocumentReference
+                ref,
+                firestore.DocumentReference,
             ):
                 team_refs.append(ref)
 
@@ -413,21 +446,24 @@ class GroupService:
 
         for doc in matches_docs:
             GroupService._extract_single_match_refs(
-                doc.to_dict(), team_refs, player_refs
+                doc.to_dict(),
+                team_refs,
+                player_refs,
             )
 
         return team_refs, player_refs
 
     @staticmethod
     def _batch_fetch_entities(
-        db: Client, refs: list[DocumentSnapshot]
+        db: Client,
+        refs: list[DocumentSnapshot],
     ) -> dict[str, object]:
         """Batch fetch multiple Firestore documents and return a map by ID."""
         if not refs:
             return {}
 
         unique_refs = list(
-            {ref.path: ref for ref in refs if hasattr(ref, "path")}.values()
+            {ref.path: ref for ref in refs if hasattr(ref, "path")}.values(),
         )
         if not unique_refs:
             return {}
@@ -448,7 +484,8 @@ class GroupService:
         # Attach Teams
         for field in ["team1", "team2"]:
             if (ref := match_data.get(f"{field}Ref")) and isinstance(
-                ref, firestore.DocumentReference
+                ref,
+                firestore.DocumentReference,
             ):
                 match_data[field] = teams_map.get(ref.id)
 
@@ -545,7 +582,8 @@ class GroupService:
 
     @staticmethod
     def _process_team_match_outcome(
-        data: dict[str, object], stats: dict[str, object]
+        data: dict[str, object],
+        stats: dict[str, object],
     ) -> None:
         """Update wins/losses for teams based on a single match outcome."""
         t1_id, t2_id = _resolve_team_document_ids(data)
@@ -595,7 +633,8 @@ class GroupService:
 
     @staticmethod
     def _enrich_invite_with_user_data(
-        invite: dict[str, object], user_docs: dict[str, object]
+        invite: dict[str, object],
+        user_docs: dict[str, object],
     ) -> None:
         """Enrich a single invite dictionary with user profile information."""
         user_data = user_docs.get(invite.get("email", ""))
@@ -605,14 +644,15 @@ class GroupService:
 
     @staticmethod
     def _fetch_user_docs_by_email(
-        db: Client, emails: list[str]
+        db: Client,
+        emails: list[str],
     ) -> dict[str, dict[str, object]]:
         """Batch fetch user documents by email."""
         user_docs = {}
         for i in range(0, len(emails), 30):
             chunk = emails[i : i + 30]
             query = db.collection("users").where(
-                filter=firestore.FieldFilter("email", "in", chunk)
+                filter=firestore.FieldFilter("email", "in", chunk),
             )
             for doc in query.stream():
                 data = doc.to_dict()
@@ -628,7 +668,9 @@ class GroupService:
 
     @staticmethod
     def send_invite_email_background(
-        app: Flask, token: str, email_data: dict[str, object]
+        app: Flask,
+        token: str,
+        email_data: dict[str, object],
     ) -> None:
         """Send an invite email in the background."""
         from pickaladder.group.utils import send_invite_email_background
@@ -637,7 +679,9 @@ class GroupService:
 
     @staticmethod
     def friend_group_members(
-        db: Client, group_id: str, new_member_ref: DocumentReference
+        db: Client,
+        group_id: str,
+        new_member_ref: DocumentReference,
     ) -> None:
         """Automatically create friend relationships between group members."""
         from pickaladder.group.utils import friend_group_members
@@ -649,7 +693,9 @@ class GroupService:
         """Add a friend to a group."""
         friend_ref = db.collection("users").document(friend_id)
         GroupRepository.update(
-            db, group_id, {"members": firestore.ArrayUnion([friend_ref])}
+            db,
+            group_id,
+            {"members": firestore.ArrayUnion([friend_ref])},
         )
 
     @staticmethod
@@ -669,7 +715,7 @@ class GroupService:
         existing_user = None
 
         query_lower = users_ref.where(
-            filter=firestore.FieldFilter("email", "==", email)
+            filter=firestore.FieldFilter("email", "==", email),
         ).limit(1)
         docs = list(query_lower.stream())
 
@@ -677,7 +723,7 @@ class GroupService:
             existing_user = docs[0]
         elif original_email != email:
             query_orig = users_ref.where(
-                filter=firestore.FieldFilter("email", "==", original_email)
+                filter=firestore.FieldFilter("email", "==", original_email),
             ).limit(1)
             docs = list(query_orig.stream())
             if docs:
@@ -727,36 +773,49 @@ class GroupService:
 
     @staticmethod
     def create_membership_request(
-        db: Client, group_id: str, user_id: str, message: str | None = None
+        db: Client,
+        group_id: str,
+        user_id: str,
+        message: str | None = None,
     ) -> str:
         """Create a membership request for a group."""
         group_data = GroupRepository.get_by_id(db, group_id)
         if not group_data:
-            raise GroupNotFound("Group not found")
+            msg = "Group not found"
+            raise GroupNotFound(msg)
 
         # Check if already a member
         member_refs = group_data.get("members", [])
         if any(ref.id == user_id for ref in member_refs):
-            raise ValueError("You are already a member of this group")
+            msg = "You are already a member of this group"
+            raise ValueError(msg)
 
         # Check for existing pending request
         existing = MembershipRequestRepository.get_user_request_for_group(
-            db, group_id, user_id
+            db,
+            group_id,
+            user_id,
         )
         if existing and existing.get("status") == "PENDING":
-            raise ValueError("You already have a pending request for this group")
+            msg = "You already have a pending request for this group"
+            raise ValueError(msg)
 
         if existing:
             # Re-open the request if it was declined before
             MembershipRequestRepository.update_status(db, existing["id"], "PENDING")
             if message:
                 MembershipRequestRepository.update(
-                    db, existing["id"], {"message": message}
+                    db,
+                    existing["id"],
+                    {"message": message},
                 )
             return existing["id"]
 
         return MembershipRequestRepository.create_request(
-            db, group_id, user_id, message
+            db,
+            group_id,
+            user_id,
+            message,
         )
 
     @staticmethod
@@ -777,19 +836,26 @@ class GroupService:
 
     @staticmethod
     def handle_membership_request(
-        db: Client, group_id: str, request_id: str, requester_uid: str, action: str
+        db: Client,
+        group_id: str,
+        request_id: str,
+        requester_uid: str,
+        action: str,
     ) -> None:
         """Approve or decline a membership request."""
         group_data = GroupRepository.get_by_id(db, group_id)
         if not group_data:
-            raise GroupNotFound("Group not found")
+            msg = "Group not found"
+            raise GroupNotFound(msg)
 
         if not GroupService.is_group_admin(group_data, requester_uid):
-            raise AccessDenied("Only admins can handle membership requests")
+            msg = "Only admins can handle membership requests"
+            raise AccessDenied(msg)
 
         request_data = MembershipRequestRepository.get_by_id(db, request_id)
         if not request_data or request_data.get("groupId") != group_id:
-            raise ValueError("Request not found")
+            msg = "Request not found"
+            raise ValueError(msg)
 
         if action == "approve":
             target_uid = request_data["userId"]
@@ -797,7 +863,9 @@ class GroupService:
 
             # Update group members
             GroupRepository.update(
-                db, group_id, {"members": firestore.ArrayUnion([target_ref])}
+                db,
+                group_id,
+                {"members": firestore.ArrayUnion([target_ref])},
             )
 
             # Mark request as approved
@@ -809,4 +877,5 @@ class GroupService:
         elif action == "decline":
             MembershipRequestRepository.update_status(db, request_id, "DECLINED")
         else:
-            raise ValueError("Invalid action")
+            msg = "Invalid action"
+            raise ValueError(msg)

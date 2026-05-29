@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import tempfile
-from collections import UserDict
 from typing import TYPE_CHECKING, Any, cast
 
 from flask import current_app
@@ -11,6 +10,8 @@ from werkzeug.utils import secure_filename
 from pickaladder.user.helpers import smart_display_name
 
 if TYPE_CHECKING:
+    from collections import UserDict
+
     from google.cloud.firestore_v1.client import Client
     from google.cloud.firestore_v1.document import DocumentReference
 
@@ -25,7 +26,7 @@ class TournamentBase:
         """Format tournament data for display."""
         from pickaladder.tournament.models import Tournament
 
-        data = cast(dict[str, Any], doc.to_dict() or {})
+        data = cast("dict[str, Any]", doc.to_dict() or {})
         data["id"] = doc.id
         raw_date = data.get("start_date") or data.get("date")
         if raw_date and hasattr(raw_date, "to_datetime"):
@@ -42,13 +43,14 @@ class TournamentBase:
         """Resolve organizer/owner ID from tournament data."""
         o_id = data.get("organizer_id")
         if o_id:
-            return cast(str, o_id)
+            return cast("str", o_id)
         owner_ref = data.get("ownerRef")
         return getattr(owner_ref, "id", None) if owner_ref else None
 
     @staticmethod
     def _get_tournament_metadata(
-        data: dict[str, Any] | UserDict, user_uid: str
+        data: dict[str, Any] | UserDict,
+        user_uid: str,
     ) -> dict[str, Any]:
         """Extract metadata like date display and ownership for details view."""
         raw_date = data.get("date")
@@ -66,7 +68,7 @@ class TournamentBase:
             str(
                 getattr(p.get("userRef"), "id", p.get("user_id"))
                 if p.get("userRef")
-                else p.get("user_id")
+                else p.get("user_id"),
             )
             for p in participants
             if p
@@ -80,7 +82,7 @@ class TournamentBase:
         return list(
             db.collection("tournaments")
             .where(filter=firestore.FieldFilter("ownerRef", "==", user_ref))
-            .stream()
+            .stream(),
         )
 
     @staticmethod
@@ -92,15 +94,18 @@ class TournamentBase:
             db.collection("tournaments")
             .where(
                 filter=firestore.FieldFilter(
-                    "participant_ids", "array_contains", user_uid
-                )
+                    "participant_ids",
+                    "array_contains",
+                    user_uid,
+                ),
             )
-            .stream()
+            .stream(),
         )
 
     @staticmethod
     def _process_participating_tournaments(
-        results: dict[str, Tournament], participating: list[Any]
+        results: dict[str, Tournament],
+        participating: list[Any],
     ) -> dict[str, Tournament]:
         """Add participating tournaments to the results if not already present."""
         for d in participating:
@@ -110,14 +115,16 @@ class TournamentBase:
 
     @staticmethod
     def _merge_tournament_results(
-        owned: list[Any], participating: list[Any]
+        owned: list[Any],
+        participating: list[Any],
     ) -> list[Tournament]:
         """Merge owned and participating tournaments into a single list."""
         results: dict[str, Tournament] = {
             d.id: TournamentBase._enrich_tournament(d) for d in owned
         }
         results = TournamentBase._process_participating_tournaments(
-            results, participating
+            results,
+            participating,
         )
         return list(results.values())
 
@@ -138,7 +145,8 @@ class TournamentBase:
         """Resolve the Firebase storage bucket name."""
         try:
             return current_app.config.get(
-                "FIREBASE_STORAGE_BUCKET", "pickaladder.firebasestorage.app"
+                "FIREBASE_STORAGE_BUCKET",
+                "pickaladder.firebasestorage.app",
             )
         except RuntimeError:
             return "pickaladder.firebasestorage.app"
@@ -162,7 +170,8 @@ class TournamentBase:
 
     @staticmethod
     def _map_single_participant_ref(
-        db: Client, obj: dict[str, Any]
+        db: Client,
+        obj: dict[str, Any],
     ) -> DocumentReference | None:
         """Map a single participant object to a user reference."""
         if not obj:
@@ -172,13 +181,14 @@ class TournamentBase:
         if obj.get("user_id"):
             return cast(
                 "DocumentReference",
-                db.collection("users").document(cast(str, obj["user_id"])),
+                db.collection("users").document(cast("str", obj["user_id"])),
             )
         return None
 
     @staticmethod
     def _get_participant_refs(
-        db: Client, participant_objs: list[dict[str, Any]]
+        db: Client,
+        participant_objs: list[dict[str, Any]],
     ) -> list[DocumentReference]:
         """Extract user references from participant objects."""
         return [
@@ -189,7 +199,8 @@ class TournamentBase:
 
     @staticmethod
     def _resolve_single_participant(
-        obj: dict[str, Any], users_map: dict[str, dict[str, Any]]
+        obj: dict[str, Any],
+        users_map: dict[str, dict[str, Any]],
     ) -> dict[str, Any] | None:
         """Format a single participant with user data."""
         u_ref = obj.get("userRef")
@@ -206,10 +217,11 @@ class TournamentBase:
 
     @staticmethod
     def _build_user_map(
-        db: Client, refs: list[DocumentReference]
+        db: Client,
+        refs: list[DocumentReference],
     ) -> dict[str, dict[str, Any]]:
         """Fetch users and build a map by ID."""
-        u_docs = cast(list[Any], db.get_all(refs))
+        u_docs = cast("list[Any]", db.get_all(refs))
         return {
             doc.id: {**(doc.to_dict() or {}), "id": doc.id}
             for doc in u_docs
@@ -218,7 +230,8 @@ class TournamentBase:
 
     @staticmethod
     def _resolve_participants(
-        db: Client, participant_objs: list[dict[str, Any]]
+        db: Client,
+        participant_objs: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
         """Internal helper to resolve participant user data."""
         if not participant_objs:
@@ -252,18 +265,20 @@ class TournamentBase:
     def _validate_tournament_ownership(data: dict[str, Any], user_uid: str) -> None:
         """Raise PermissionError if user is not the tournament owner."""
         if TournamentBase._get_tournament_owner_id(data) != user_uid:
-            raise PermissionError("Unauthorized access to tournament.")
+            msg = "Unauthorized access to tournament."
+            raise PermissionError(msg)
 
     @staticmethod
     def get_tournament_matches(
-        t_id: str, db: Client | None = None
+        t_id: str,
+        db: Client | None = None,
     ) -> list[dict[str, Any]]:
         """Fetch all matches for a specific tournament."""
         from firebase_admin import firestore
 
         db = db or firestore.client()
         query = db.collection("matches").where(
-            filter=firestore.FieldFilter("tournamentId", "==", t_id)
+            filter=firestore.FieldFilter("tournamentId", "==", t_id),
         )
         matches = []
         for doc in query.stream():

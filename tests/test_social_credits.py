@@ -1,5 +1,5 @@
 """Tests for the SocialCreditService.
-# ruff: noqa: PLR2004
+# ruff: noqa: PLR2004.
 """
 
 from __future__ import annotations
@@ -64,7 +64,8 @@ def test_get_balance_user_not_found(mock_db: MagicMock) -> None:
 
 
 def test_adjust_balance_success(
-    mock_db: MagicMock, mock_transaction: MagicMock
+    mock_db: MagicMock,
+    mock_transaction: MagicMock,
 ) -> None:
     """Test adjust_balance adds and returns correct balance."""
     mock_doc = MagicMock()
@@ -78,16 +79,21 @@ def test_adjust_balance_success(
     adjust_amount = 50
     expected_balance = 150
     new_balance = SocialCreditService.adjust_balance(
-        mock_db, mock_transaction, "user1", adjust_amount
+        mock_db,
+        mock_transaction,
+        "user1",
+        adjust_amount,
     )
     assert new_balance == expected_balance
     mock_transaction.update.assert_called_once_with(
-        user_ref_mock, {"social_credits": expected_balance}
+        user_ref_mock,
+        {"social_credits": expected_balance},
     )
 
 
 def test_adjust_balance_insufficient_funds(
-    mock_db: MagicMock, mock_transaction: MagicMock
+    mock_db: MagicMock,
+    mock_transaction: MagicMock,
 ) -> None:
     """Test adjust_balance raises ValueError when delta results in negative balance."""
     mock_doc = MagicMock()
@@ -111,19 +117,27 @@ def test_transfer_success(mock_db: MagicMock, mock_transaction: MagicMock) -> No
 
         transfer_amount = 25
         SocialCreditService.transfer(
-            mock_db, mock_transaction, "userA", "userB", transfer_amount
+            mock_db,
+            mock_transaction,
+            "userA",
+            "userB",
+            transfer_amount,
         )
 
         expected_calls = 2
         assert adjust_mock.call_count == expected_calls
         adjust_mock.assert_any_call(
-            mock_db, mock_transaction, "userA", -transfer_amount
+            mock_db,
+            mock_transaction,
+            "userA",
+            -transfer_amount,
         )
         adjust_mock.assert_any_call(mock_db, mock_transaction, "userB", transfer_amount)
 
 
 def test_transfer_invalid_amount(
-    mock_db: MagicMock, mock_transaction: MagicMock
+    mock_db: MagicMock,
+    mock_transaction: MagicMock,
 ) -> None:
     """Test transfer raises ValueError when amount is non-positive."""
     with pytest.raises(ValueError, match="must be positive"):

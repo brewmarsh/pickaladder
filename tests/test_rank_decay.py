@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from pickaladder.match.services.record_service import MatchRecordService
 
 
-def test_calculate_rank_decay_active_user():
+def test_calculate_rank_decay_active_user() -> None:
     """Active users (played within 30 days) should have 0 decay."""
     last_match = datetime.now(timezone.utc) - timedelta(days=10)
     user_data = {"last_match_date": last_match}
@@ -13,7 +13,7 @@ def test_calculate_rank_decay_active_user():
     assert decay == 0
 
 
-def test_calculate_rank_decay_inactive_user():
+def test_calculate_rank_decay_inactive_user() -> None:
     """Inactive users should have positive decay."""
     # 40 days inactive -> (40-30) * decay_per_day
     last_match = datetime.now(timezone.utc) - timedelta(days=40)
@@ -22,7 +22,7 @@ def test_calculate_rank_decay_inactive_user():
     assert decay > 0
 
 
-def test_leaderboard_applies_decay(mock_db):
+def test_leaderboard_applies_decay(mock_db) -> None:
     """Verify that get_leaderboard_data applies decay to ELO."""
     # User 1: Active, 1200 ELO
     STARTING_ELO = 1200
@@ -31,7 +31,7 @@ def test_leaderboard_applies_decay(mock_db):
             "username": "active",
             "stats": {"elo": STARTING_ELO, "wins": 5, "losses": 0},
             "last_match_date": datetime.now(timezone.utc),
-        }
+        },
     )
 
     # User 2: Inactive (60 days), 1250 ELO
@@ -41,7 +41,7 @@ def test_leaderboard_applies_decay(mock_db):
             "username": "inactive",
             "stats": {"elo": INACTIVE_ELO, "wins": 5, "losses": 0},
             "last_match_date": datetime.now(timezone.utc) - timedelta(days=60),
-        }
+        },
     )
 
     leaderboard = MatchRecordService.get_leaderboard_data(mock_db, min_games=0)

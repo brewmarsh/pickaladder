@@ -20,7 +20,7 @@ def _fetch_users_by_ids(db: Client, user_ids: list[str]) -> list[dict[str, Any]]
         return []
     refs = [db.collection("users").document(uid) for uid in user_ids]
     results = []
-    for doc in cast(list["DocumentSnapshot"], db.get_all(refs)):
+    for doc in cast("list[DocumentSnapshot]", db.get_all(refs)):
         if doc.exists and (data := doc.to_dict()) is not None:
             data["id"] = doc.id
             results.append(_sanitize_user_data(data))
@@ -28,11 +28,12 @@ def _fetch_users_by_ids(db: Client, user_ids: list[str]) -> list[dict[str, Any]]
 
 
 def _get_accepted_friends_query(
-    user_ref: DocumentReference, limit: int | None = None
+    user_ref: DocumentReference,
+    limit: int | None = None,
 ) -> Query:
     """Construct a query for accepted friends."""
     query = user_ref.collection("friends").where(
-        filter=firestore.FieldFilter("status", "==", "accepted")
+        filter=firestore.FieldFilter("status", "==", "accepted"),
     )
     if limit:
         query = query.limit(limit)
@@ -40,7 +41,9 @@ def _get_accepted_friends_query(
 
 
 def get_user_friends(
-    db: Client, user_id: str, limit: int | None = None
+    db: Client,
+    user_id: str,
+    limit: int | None = None,
 ) -> list[dict[str, Any]]:
     """Fetch a user's friends."""
     user_ref = db.collection("users").document(user_id)
@@ -68,7 +71,9 @@ def _parse_friendship_status(doc_data: dict[str, Any] | None) -> tuple[bool, boo
 
 
 def get_friendship_info(
-    db: Client, current_user_id: str, target_user_id: str
+    db: Client,
+    current_user_id: str,
+    target_user_id: str,
 ) -> tuple[bool, bool]:
     """Check friendship status between two users."""
     if current_user_id == target_user_id:
@@ -121,7 +126,7 @@ def accept_friend_request(db: Client, user_id: str, requester_id: str) -> bool:
         batch.commit()
         return True
     except Exception as e:
-        current_app.logger.error(f"Error accepting friend request: {e}")
+        current_app.logger.exception(f"Error accepting friend request: {e}")
         return False
 
 
@@ -137,7 +142,7 @@ def cancel_friend_request(db: Client, user_id: str, target_user_id: str) -> bool
         batch.commit()
         return True
     except Exception as e:
-        current_app.logger.error(f"Error cancelling friend request: {e}")
+        current_app.logger.exception(f"Error cancelling friend request: {e}")
         return False
 
 
@@ -164,7 +169,7 @@ def send_friend_request(db: Client, user_id: str, friend_id: str) -> bool:
         batch.commit()
         return True
     except Exception as e:
-        current_app.logger.error(f"Error sending friend request: {e}")
+        current_app.logger.exception(f"Error sending friend request: {e}")
         return False
 
 

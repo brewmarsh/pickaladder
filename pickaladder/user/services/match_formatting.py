@@ -16,7 +16,8 @@ def _format_match_date(match_date: datetime.datetime | str | None) -> str:
 
 
 def _resolve_team_names(
-    match_dict: dict[str, Any], teams_map: dict[str, Any]
+    match_dict: dict[str, Any],
+    teams_map: dict[str, Any],
 ) -> tuple[str, str]:
     """Resolve team names from team references and the teams map."""
     t1_name = "Team 1"
@@ -29,7 +30,8 @@ def _resolve_team_names(
 
 
 def _get_match_tournament_info(
-    m_data: dict[str, Any], entity_maps: dict[str, dict[str, Any]]
+    m_data: dict[str, Any],
+    entity_maps: dict[str, dict[str, Any]],
 ) -> tuple[str | None, str | None]:
     """Extract tournament ID and name from match data and maps."""
     tid = m_data.get("tournamentId")
@@ -119,14 +121,18 @@ def _collect_match_refs(
 
 
 def _prepare_entity_maps(
-    db: Client, matches: list[DocumentSnapshot]
+    db: Client,
+    matches: list[DocumentSnapshot],
 ) -> dict[str, dict[str, Any]]:
     """Prepare entity maps for users, teams, and tournaments from matches."""
     from .match_entity_service import fetch_match_entities
 
     user_refs, team_refs, tournament_ids = _collect_match_refs(matches)
     u_map, t_map, tr_map = fetch_match_entities(
-        db, user_refs, team_refs, tournament_ids
+        db,
+        user_refs,
+        team_refs,
+        tournament_ids,
     )
     return {
         "users": u_map,
@@ -145,13 +151,15 @@ def _build_dashboard_match_list(
     for match_doc in matches:
         if m_data := match_doc.to_dict():
             matches_data.append(
-                _build_match_dashboard_item(match_doc, m_data, user_id, entity_maps)
+                _build_match_dashboard_item(match_doc, m_data, user_id, entity_maps),
             )
     return matches_data
 
 
 def format_matches_for_dashboard(
-    db: Client, matches: list[DocumentSnapshot], user_id: str
+    db: Client,
+    matches: list[DocumentSnapshot],
+    user_id: str,
 ) -> list[dict[str, Any]]:
     """Format match documents for the dashboard UI."""
     if not matches:
@@ -162,7 +170,9 @@ def format_matches_for_dashboard(
 
 
 def format_matches_for_profile(
-    db: Client, matches: list[DocumentSnapshot], user_id: str
+    db: Client,
+    matches: list[DocumentSnapshot],
+    user_id: str,
 ) -> list[dict[str, Any]]:
     """Format matches for profile using dashboard formatter as fallback."""
     return format_matches_for_dashboard(db, matches, user_id)

@@ -11,7 +11,7 @@ from pickaladder.tournament.services.tournament_service import TournamentService
 class TournamentProgressionTestCase(unittest.TestCase):
     """Test cases for bracket advancement logic."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.mock_db = MagicMock()
         self.docs = {}
 
@@ -43,10 +43,10 @@ class TournamentProgressionTestCase(unittest.TestCase):
         self.mock_query.document.side_effect = mock_doc
 
     @patch(
-        "pickaladder.tournament.services.tournament_service.TournamentService.get_tournament"
+        "pickaladder.tournament.services.tournament_service.TournamentService.get_tournament",
     )
     @patch("firebase_admin.firestore.ArrayUnion", return_value=["val"])
-    def test_winner_advancement_p1(self, mock_union, mock_get_t):
+    def test_winner_advancement_p1(self, mock_union, mock_get_t) -> None:
         """Test that winner of match 0 in round 1 moves to next match as player 1."""
         t_id = "test_tourney"
         match_data = {
@@ -66,14 +66,17 @@ class TournamentProgressionTestCase(unittest.TestCase):
         self.mock_query.stream.return_value = [mock_next_match]
 
         TournamentService.handle_match_completion(
-            self.mock_db, t_id, match_data, winner_uid
+            self.mock_db,
+            t_id,
+            match_data,
+            winner_uid,
         )
 
         # Verify update call on the NEXT match
         self.mock_query.document("next_match_id").update.assert_called()
         args = self.mock_query.document("next_match_id").update.call_args[0][0]
-        self.assertIn("player1Ref", args)
-        self.assertEqual(args["player1Ref"].id, winner_uid)
+        assert "player1Ref" in args
+        assert args["player1Ref"].id == winner_uid
 
 
 if __name__ == "__main__":

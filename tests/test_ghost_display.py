@@ -9,13 +9,13 @@ from pickaladder.utils import mask_email
 
 class TestGhostDisplay(unittest.TestCase):
     def test_mask_email(self) -> None:
-        self.assertEqual(mask_email("march@gmail.com"), "m...h@gmail.com")
-        self.assertEqual(mask_email("a@gmail.com"), "a...@gmail.com")
-        self.assertEqual(mask_email("me@gmail.com"), "m...e@gmail.com")
-        self.assertEqual(mask_email(""), "")
+        assert mask_email("march@gmail.com") == "m...h@gmail.com"
+        assert mask_email("a@gmail.com") == "a...@gmail.com"
+        assert mask_email("me@gmail.com") == "m...e@gmail.com"
+        assert mask_email("") == ""
         # Using cast to test None handling without violating mask_email's str type hint
-        self.assertEqual(mask_email(cast(str, None)), None)
-        self.assertEqual(mask_email("invalid-email"), "invalid-email")
+        assert mask_email(cast("str", None)) is None
+        assert mask_email("invalid-email") == "invalid-email"
 
     def test_smart_display_name_ghost_with_email(self) -> None:
         user = {
@@ -24,21 +24,21 @@ class TestGhostDisplay(unittest.TestCase):
             "name": "John Doe",
         }
         # implementation prioritizes name
-        self.assertEqual(smart_display_name(user), "John Doe")
+        assert smart_display_name(user) == "John Doe"
 
     def test_smart_display_name_ghost_no_email_no_name(self) -> None:
         user = {"username": "ghost_ceec6a"}
-        self.assertEqual(smart_display_name(user), "Guest Player")
+        assert smart_display_name(user) == "Guest Player"
 
     def test_smart_display_name_ghost_no_email_with_name(self) -> None:
         user = {"username": "ghost_ceec6a", "name": "John Doe"}
         # implementation prioritizes name
-        self.assertEqual(smart_display_name(user), "John Doe")
+        assert smart_display_name(user) == "John Doe"
 
     def test_smart_display_name_regular_user(self) -> None:
         user = {"username": "jdoe", "email": "jdoe@example.com", "name": "John Doe"}
         # Now prioritizes name over username
-        self.assertEqual(smart_display_name(user), "John Doe")
+        assert smart_display_name(user) == "John Doe"
 
 
 if __name__ == "__main__":

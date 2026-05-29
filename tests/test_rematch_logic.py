@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import unittest
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
-from flask import Flask
-from flask.testing import FlaskClient
-
 from pickaladder import create_app
+
+if TYPE_CHECKING:
+    from flask import Flask
+    from flask.testing import FlaskClient
 
 
 class RematchLogicTestCase(unittest.TestCase):
@@ -23,7 +24,7 @@ class RematchLogicTestCase(unittest.TestCase):
                 "TESTING": True,
                 "WTF_CSRF_ENABLED": False,
                 "SERVER_NAME": "localhost",
-            }
+            },
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -35,7 +36,9 @@ class RematchLogicTestCase(unittest.TestCase):
     @patch("pickaladder.match.routes.firestore.client")
     @patch("pickaladder.match.routes.MatchQueryService.get_candidate_player_ids")
     def test_record_match_prepopulation(
-        self, mock_get_candidates: MagicMock, mock_firestore_client: MagicMock
+        self,
+        mock_get_candidates: MagicMock,
+        mock_firestore_client: MagicMock,
     ) -> None:
         # Mocking necessary parts for the record_match route
         mock_get_candidates.return_value = {"user1", "user2", "user3", "user4"}
@@ -71,22 +74,23 @@ class RematchLogicTestCase(unittest.TestCase):
                 headers={"Authorization": "Bearer mock-token"},
             )
 
-            self.assertEqual(response.status_code, 200)
+            assert response.status_code == 200
             data: str = response.data.decode("utf-8")
 
             # Use more flexible checks
-            self.assertTrue('value="doubles"' in data and "selected" in data)
-            self.assertIn('value="user1"', data)
-            self.assertIn('value="user2"', data)
-            self.assertIn('value="user3"', data)
-            self.assertIn('value="user4"', data)
+            assert 'value="doubles"' in data
+            assert "selected" in data
+            assert 'value="user1"' in data
+            assert 'value="user2"' in data
+            assert 'value="user3"' in data
+            assert 'value="user4"' in data
 
             # Check for selected attribute specifically in the options we expect
-            self.assertIn('<option selected value="doubles">', data)
-            self.assertIn('<option selected value="user1">', data)
-            self.assertIn('<option selected value="user2">', data)
-            self.assertIn('<option selected value="user3">', data)
-            self.assertIn('<option selected value="user4">', data)
+            assert '<option selected value="doubles">' in data
+            assert '<option selected value="user1">' in data
+            assert '<option selected value="user2">' in data
+            assert '<option selected value="user3">' in data
+            assert '<option selected value="user4">' in data
 
 
 if __name__ == "__main__":

@@ -13,7 +13,11 @@ class TournamentTeams(TournamentBase):
 
     @staticmethod
     def register_team(
-        t_id: str, p1: str, p2: str | None, name: str, db: Client | None = None
+        t_id: str,
+        p1: str,
+        p2: str | None,
+        name: str,
+        db: Client | None = None,
     ) -> str:
         """Register a team in the tournament teams sub-collection."""
         from pickaladder.tournament.services import TeamService, firestore
@@ -54,20 +58,28 @@ class TournamentTeams(TournamentBase):
             team_id = TeamService.get_or_create_team(db, d["p1_uid"], uid)
             doc.reference.update({"status": "CONFIRMED", "team_id": team_id})
             TournamentTeams._sync_team_participants(
-                db, t_id, d["p1_uid"], uid, d.get("team_name")
+                db,
+                t_id,
+                d["p1_uid"],
+                uid,
+                d.get("team_name"),
             )
             updated = True
         return updated
 
     @staticmethod
     def _sync_team_participants(
-        db: Client, t_id: str, p1: str, p2: str, name: str | None
+        db: Client,
+        t_id: str,
+        p1: str,
+        p2: str,
+        name: str | None,
     ) -> None:
         """Ensure both team members are in the tournament participants."""
         from pickaladder.tournament.services import firestore
 
         ref = db.collection("tournaments").document(t_id)
-        snap = cast(Any, ref.get())
+        snap = cast("Any", ref.get())
         ids = (snap.to_dict() or {}).get("participant_ids", [])
         new_ids, new_ps = [], []
         for u in [p1, p2]:
@@ -78,19 +90,22 @@ class TournamentTeams(TournamentBase):
                         "userRef": db.collection("users").document(u),
                         "status": "accepted",
                         "team_name": name,
-                    }
+                    },
                 )
         if new_ps:
             ref.update(
                 {
                     "participants": firestore.ArrayUnion(new_ps),
                     "participant_ids": firestore.ArrayUnion(new_ids),
-                }
+                },
             )
 
     @staticmethod
     def claim_team_partnership(
-        t_id: str, team_id: str, uid: str, db: Client | None = None
+        t_id: str,
+        team_id: str,
+        uid: str,
+        db: Client | None = None,
     ) -> bool:
         """Join a placeholder team via an invite link."""
         from pickaladder.tournament.services import TeamService, firestore
@@ -103,7 +118,7 @@ class TournamentTeams(TournamentBase):
             .collection("teams")
             .document(team_id)
         )
-        snap = cast(Any, ref.get())
+        snap = cast("Any", ref.get())
         if (
             not snap.exists
             or (d := snap.to_dict()).get("p2_uid")
@@ -113,6 +128,10 @@ class TournamentTeams(TournamentBase):
         team_id_global = TeamService.get_or_create_team(db, d["p1_uid"], uid)
         ref.update({"p2_uid": uid, "status": "CONFIRMED", "team_id": team_id_global})
         TournamentTeams._sync_team_participants(
-            db, t_id, d["p1_uid"], uid, d.get("team_name")
+            db,
+            t_id,
+            d["p1_uid"],
+            uid,
+            d.get("team_name"),
         )
         return True

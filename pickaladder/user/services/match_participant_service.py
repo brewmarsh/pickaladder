@@ -7,7 +7,8 @@ if TYPE_CHECKING:
 
 
 def get_player_info(
-    player_ref: DocumentReference | None, users_map: dict[str, Any]
+    player_ref: DocumentReference | None,
+    users_map: dict[str, Any],
 ) -> dict[str, Any]:
     """Extract player info from a reference or dictionary."""
     if hasattr(player_ref, "id"):
@@ -17,7 +18,8 @@ def get_player_info(
 
 
 def get_doubles_participants(
-    match_dict: dict[str, Any], users_map: dict[str, Any]
+    match_dict: dict[str, Any],
+    users_map: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Extract participant info for doubles."""
     p1 = [get_player_info(r, users_map) for r in match_dict.get("team1", [])]
@@ -42,7 +44,8 @@ def get_denormalized_participants(match_dict: dict[str, Any]) -> tuple[dict, dic
 
 
 def get_match_participants_info(
-    match_dict: dict[str, Any], users_map: dict[str, Any]
+    match_dict: dict[str, Any],
+    users_map: dict[str, Any],
 ) -> tuple[Any, Any]:
     """Extract participant info for singles or doubles."""
     if match_dict.get("matchType") == "doubles":

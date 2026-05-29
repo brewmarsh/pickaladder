@@ -1,6 +1,8 @@
 """Core data types for the pickaladder application."""
 
-from typing import Any, Dict, Optional, TypedDict  # noqa: UP035
+from __future__ import annotations
+
+from typing import Any, Dict, TypedDict  # noqa: UP035
 
 
 class _FirestoreDocumentBase(TypedDict):
@@ -20,4 +22,4 @@ class APIResponse(TypedDict):
 
     success: bool
     message: str
-    data: Optional[Dict[str, Any]]  # noqa: UP006
+    data: Dict[str, Any] | None  # noqa: UP006

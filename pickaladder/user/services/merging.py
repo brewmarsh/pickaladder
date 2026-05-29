@@ -26,12 +26,12 @@ def merge_ghost_user(db: Client, real_user_ref: DocumentReference, email: str) -
 
         ghost_doc = ghost_docs[0]
         current_app.logger.info(
-            f"Merging ghost user {ghost_doc.id} to {real_user_ref.id}"
+            f"Merging ghost user {ghost_doc.id} to {real_user_ref.id}",
         )
         merge_users(db, ghost_doc.id, real_user_ref.id)
         return True
     except Exception as e:
-        current_app.logger.error(f"Error merging ghost user: {e}")
+        current_app.logger.exception(f"Error merging ghost user: {e}")
         return False
 
 
@@ -101,7 +101,9 @@ def _update_doubles_match_team(
     partner_ref = next((r for r in current_team if r != ghost_ref), None)
     if partner_ref:
         new_team_id = TeamService.get_or_create_team(
-            db, real_user_ref.id, partner_ref.id
+            db,
+            real_user_ref.id,
+            partner_ref.id,
         )
         id_f, ref_f = (
             ("team1Id", "team1Ref") if field == "team1" else ("team2Id", "team2Ref")
@@ -111,11 +113,13 @@ def _update_doubles_match_team(
 
 
 def _fetch_doubles_matches_to_migrate(
-    db: Client, field: str, ghost_ref: DocumentReference
+    db: Client,
+    field: str,
+    ghost_ref: DocumentReference,
 ) -> list[DocumentSnapshot]:
     """Fetch doubles matches for a specific team field containing the ghost user."""
     return list(
-        db.collection("matches").where(field, "array_contains", ghost_ref).stream()
+        db.collection("matches").where(field, "array_contains", ghost_ref).stream(),
     )
 
 
@@ -132,7 +136,11 @@ def _apply_doubles_migration_batch(
         if match.id not in match_updates:
             match_updates[match.id] = {"ref": match.reference, "updates": {}}
         _update_doubles_match_team(
-            db, match, field, refs, match_updates[match.id]["updates"]
+            db,
+            match,
+            field,
+            refs,
+            match_updates[match.id]["updates"],
         )
 
     for update in match_updates.values():
@@ -172,7 +180,9 @@ def _migrate_groups(
 
 
 def _update_tournament_participant(
-    p: dict[str, Any], ghost_ref_id: str, real_user_ref: DocumentReference
+    p: dict[str, Any],
+    ghost_ref_id: str,
+    real_user_ref: DocumentReference,
 ) -> bool:
     """Update a single tournament participant entry."""
     if not p:
@@ -190,7 +200,9 @@ def _update_tournament_participant(
 
 
 def _rebuild_participant_ids(
-    p_ids: list[str], ghost_ref_id: str, real_user_ref_id: str
+    p_ids: list[str],
+    ghost_ref_id: str,
+    real_user_ref_id: str,
 ) -> list[str]:
     """Rebuild the simple participant ID list."""
     return [real_user_ref_id if pid == ghost_ref_id else pid for pid in p_ids]
@@ -199,7 +211,9 @@ def _rebuild_participant_ids(
 def _fetch_tournaments_to_migrate(db: Client, ghost_id: str) -> list[DocumentSnapshot]:
     """Fetch tournaments where the ghost user is a participant."""
     query = db.collection("tournaments").where(
-        "participant_ids", "array_contains", ghost_id
+        "participant_ids",
+        "array_contains",
+        ghost_id,
     )
     return list(query.stream())
 
@@ -222,7 +236,9 @@ def _migrate_single_tournament(
     )
     if updated:
         new_p_ids = _rebuild_participant_ids(
-            data.get("participant_ids", []), ghost_ref.id, real_user_ref.id
+            data.get("participant_ids", []),
+            ghost_ref.id,
+            real_user_ref.id,
         )
         batch.update(
             tournament_doc.reference,

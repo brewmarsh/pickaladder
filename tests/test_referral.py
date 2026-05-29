@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from mockfirestore import MockFirestore
+
+if TYPE_CHECKING:
+    from mockfirestore import MockFirestore
 
 # Mock user payloads
 REFERRER_ID = "referrer_uid"
@@ -18,7 +20,7 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
     """Test that the view_group route captures the referrer ID in the session."""
     # Setup user in mock firestore for before_request
     mock_db.collection("users").document("test_user_id").set(
-        {"uid": "test_user_id", "username": "testuser"}
+        {"uid": "test_user_id", "username": "testuser"},
     )
 
     # Mock login
@@ -27,7 +29,7 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
 
     # Mock group details
     with patch(
-        "pickaladder.group.routes.membership.GroupService.get_group_details"
+        "pickaladder.group.routes.membership.GroupService.get_group_details",
     ) as mock_get:
         from pickaladder.group.models import Group
 
@@ -43,7 +45,7 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
                     "name": "Group 1",
                     "ownerRef": mock_owner_ref,
                     "createdAt": firestore.SERVER_TIMESTAMP,
-                }
+                },
             ),
             "owner": {"username": "admin"},
             "eligible_friends": [],
@@ -67,7 +69,7 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
     """Test that referral is attributed during registration."""
     # Setup referrer in Firestore
     mock_db.collection("users").document(REFERRER_ID).set(
-        {"username": "referrer", "social_credits": 100}
+        {"username": "referrer", "social_credits": 100},
     )
 
     # Set referrer in session
@@ -80,7 +82,8 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
         patch("firebase_admin.auth.generate_email_verification_link") as mock_gen,
         patch("pickaladder.auth.routes.MailService.send_email"),
         patch(
-            "pickaladder.auth.routes.UserService.merge_ghost_user", return_value=False
+            "pickaladder.auth.routes.UserService.merge_ghost_user",
+            return_value=False,
         ),
     ):
         mock_create.return_value = MagicMock(uid="new_user_uid")
@@ -103,14 +106,13 @@ def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> Non
 
         # If it failed, print the flash messages
         if b"Registration successful" not in response.data:
-            print("DEBUG: Registration failed. Response data contains:")
             # Look for alert-danger
             import re
 
-            errors = re.findall(
-                r'class="alert alert-danger">(.*?)<', response.data.decode()
+            re.findall(
+                r'class="alert alert-danger">(.*?)<',
+                response.data.decode(),
             )
-            print(f"DEBUG: Errors: {errors}")
 
         assert b"Registration successful" in response.data  # nosec B101
 

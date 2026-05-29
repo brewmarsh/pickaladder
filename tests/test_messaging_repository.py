@@ -5,13 +5,13 @@ from pickaladder.messaging.repository import MessagingRepository
 
 
 class TestMessagingRepository(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.mock_db = MagicMock()
         self.mock_batch = MagicMock()
         self.mock_db.batch.return_value = self.mock_batch
 
     @patch("pickaladder.messaging.repository.MessagingRepository.get_by_id")
-    def test_add_message_updates_metadata(self, mock_get_by_id):
+    def test_add_message_updates_metadata(self, mock_get_by_id) -> None:
         # Setup
         conv_id = "conv123"
         sender_id = "user1"
@@ -34,25 +34,25 @@ class TestMessagingRepository(unittest.TestCase):
         msg_id = MessagingRepository.add_message(self.mock_db, conv_id, message_data)
 
         # Verify
-        self.assertEqual(msg_id, "msg789")
+        assert msg_id == "msg789"
 
         # Verify batch set for message
         self.mock_batch.set.assert_called_once()
         set_args = self.mock_batch.set.call_args[0]
-        self.assertEqual(set_args[0], mock_msg_ref)
-        self.assertEqual(set_args[1]["senderId"], sender_id)
-        self.assertEqual(set_args[1]["content"], "Hello")
+        assert set_args[0] == mock_msg_ref
+        assert set_args[1]["senderId"] == sender_id
+        assert set_args[1]["content"] == "Hello"
 
         # Verify batch update for conversation
         self.mock_batch.update.assert_called_once()
         update_args = self.mock_batch.update.call_args[0]
-        self.assertEqual(update_args[0], mock_conv_ref)
+        assert update_args[0] == mock_conv_ref
         updates = update_args[1]
-        self.assertEqual(updates["lastMessage"], "Hello")
-        self.assertEqual(updates["lastMessageSenderId"], sender_id)
-        self.assertIn(f"unreadCount.{recipient_id}", updates)
+        assert updates["lastMessage"] == "Hello"
+        assert updates["lastMessageSenderId"] == sender_id
+        assert f"unreadCount.{recipient_id}" in updates
 
-    def test_mark_as_read(self):
+    def test_mark_as_read(self) -> None:
         conv_id = "conv123"
         user_id = "user1"
 

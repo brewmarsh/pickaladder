@@ -10,11 +10,13 @@ from pickaladder.user.helpers import smart_display_name
 
 
 def fetch_tournament_matches(
-    db: firestore.Client, tournament_id: str, pool_id: str | None = None
+    db: firestore.Client,
+    tournament_id: str,
+    pool_id: str | None = None,
 ) -> Any:
     """Fetch all match documents associated with the tournament_id, optionally filtered by pool_id."""
     query = db.collection("matches").where(
-        filter=firestore.FieldFilter("tournamentId", "==", tournament_id)
+        filter=firestore.FieldFilter("tournamentId", "==", tournament_id),
     )
     if pool_id:
         query = query.where(filter=firestore.FieldFilter("pool_id", "==", pool_id))
@@ -22,7 +24,8 @@ def fetch_tournament_matches(
 
 
 def _get_match_participant_ids(
-    data: dict[str, Any], match_type: str
+    data: dict[str, Any],
+    match_type: str,
 ) -> tuple[str | None, str | None]:
     """Resolve player/team IDs from match data."""
     if match_type == "doubles":
@@ -65,7 +68,7 @@ def aggregate_match_data(matches: Any, match_type: str) -> dict[str, dict[str, A
     """Iterate once through matches to build raw map of wins, losses, and point_diff."""
     standings: dict[str, dict[str, Any]] = {}
     for match in matches:
-        data = cast(dict[str, Any], match.to_dict())
+        data = cast("dict[str, Any]", match.to_dict())
         if not data:
             continue
         id1, id2 = _get_match_participant_ids(data, match_type)
@@ -76,11 +79,12 @@ def aggregate_match_data(matches: Any, match_type: str) -> dict[str, dict[str, A
 
 
 def _enrich_doubles_names(
-    db: firestore.Client, standings: list[dict[str, Any]]
+    db: firestore.Client,
+    standings: list[dict[str, Any]],
 ) -> None:
     """Fetch and set team names for doubles standings."""
     for s in standings:
-        doc = cast(Any, db.collection("teams").document(s["id"]).get())
+        doc = cast("Any", db.collection("teams").document(s["id"]).get())
         name = "Unknown Team"
         if doc.exists and (d := doc.to_dict()):
             name = d.get("name", "Unknown Team")
@@ -88,11 +92,12 @@ def _enrich_doubles_names(
 
 
 def _enrich_singles_names(
-    db: firestore.Client, standings: list[dict[str, Any]]
+    db: firestore.Client,
+    standings: list[dict[str, Any]],
 ) -> None:
     """Fetch and set user names for singles standings."""
     u_refs = [db.collection("users").document(s["id"]) for s in standings]
-    u_docs = cast(list[Any], db.get_all(u_refs))
+    u_docs = cast("list[Any]", db.get_all(u_refs))
     u_map = {doc.id: doc.to_dict() for doc in u_docs if doc.exists}
     for s in standings:
         u_data = u_map.get(s["id"], {})
@@ -103,7 +108,9 @@ def _enrich_singles_names(
 
 
 def sort_and_format_standings(
-    db: firestore.Client, raw_standings: dict[str, dict[str, Any]], match_type: str
+    db: firestore.Client,
+    raw_standings: dict[str, dict[str, Any]],
+    match_type: str,
 ) -> list[dict[str, Any]]:
     """Convert the map to a list, enrich with names, and sort with H2H tie-breaks."""
     standings_list = list(raw_standings.values())

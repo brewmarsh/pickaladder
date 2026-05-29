@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING, Any, cast
 
 from firebase_admin import firestore
 
-from ...core.pagination import FirestorePaginator
-from ..helpers import smart_display_name as _smart_display_name
+from pickaladder.core.pagination import FirestorePaginator
+from pickaladder.user.helpers import smart_display_name as _smart_display_name
+
 from .profile import (
     check_username_availability,
     update_email_address,
@@ -21,7 +22,8 @@ if TYPE_CHECKING:
 
 
 def _sanitize_user_data(
-    user_data: dict[str, Any], public_only: bool = True
+    user_data: dict[str, Any],
+    public_only: bool = True,
 ) -> dict[str, Any]:
     """Filter user data to include only standard public fields."""
     if not user_data:
@@ -79,7 +81,9 @@ def get_user_by_id(db: Client, user_id: str) -> dict[str, Any] | None:
 
 
 def _process_user_doc(
-    doc: DocumentSnapshot, exclude_ids: list[str], public_only: bool
+    doc: DocumentSnapshot,
+    exclude_ids: list[str],
+    public_only: bool,
 ) -> dict[str, Any] | None:
     """Process a user document snapshot into sanitized data."""
     if doc.id in exclude_ids:
@@ -91,11 +95,10 @@ def _process_user_doc(
     return None
 
 
-from flask_wtf import FlaskForm
-
-
 def _get_users_base_query(
-    db: Client, exclude_ids: list[str], limit: int
+    db: Client,
+    exclude_ids: list[str],
+    limit: int,
 ) -> firestore.Query:
     """Construct the base query for fetching users with ordering and limit."""
     try:
@@ -118,11 +121,14 @@ def get_all_users(
     """Fetch a list of users, excluding given IDs, sorted by date."""
     exclude_ids = exclude_ids or []
     query = db.collection("users").order_by(
-        "createdAt", direction=firestore.Query.DESCENDING
+        "createdAt",
+        direction=firestore.Query.DESCENDING,
     )
 
     all_users_docs, next_cursor = FirestorePaginator.paginate(
-        query, limit + len(exclude_ids), cursor
+        query,
+        limit + len(exclude_ids),
+        cursor,
     )
 
     users = []
@@ -152,7 +158,9 @@ def _map_dupr_data(form_data: FlaskForm) -> tuple[str | None, float | None]:
 
 
 def _handle_profile_picture(
-    user_id: str, update_data: dict[str, Any], profile_picture_file: FileStorage | None
+    user_id: str,
+    update_data: dict[str, Any],
+    profile_picture_file: FileStorage | None,
 ) -> None:
     """Handle profile picture upload and update the update_data dictionary."""
     if not profile_picture_file:
@@ -165,7 +173,9 @@ def _handle_profile_picture(
 
 
 def _validate_username_change(
-    db: Client, new_username: str, current_username: str | None
+    db: Client,
+    new_username: str,
+    current_username: str | None,
 ) -> dict[str, Any] | None:
     """Check if the new username is available if it has changed."""
     if new_username != current_username:
@@ -186,9 +196,15 @@ def _handle_email_change(
 ) -> dict[str, Any] | None:
     """Handle email change logic and verification."""
     if new_email != current_user_data.get("email"):
-        user_id = cast(str, current_user_data.get("id") or current_user_data.get("uid"))
+        user_id = cast(
+            "str", current_user_data.get("id") or current_user_data.get("uid")
+        )
         success, message = update_email_address(
-            db, user_id, new_email, username, update_data
+            db,
+            user_id,
+            new_email,
+            username,
+            update_data,
         )
         if success:
             if current_user_data is not None and hasattr(current_user_data, "update"):
@@ -201,17 +217,15 @@ def _handle_email_change(
 def _extract_profile_update_data(form_data: FlaskForm) -> dict[str, Any]:
     """Extract and map profile form data into a Firestore-ready dictionary."""
     update_data: dict[str, Any] = {
-        "name": getattr(form_data, "name").data if hasattr(form_data, "name") else "",
-        "username": getattr(form_data, "username").data
-        if hasattr(form_data, "username")
-        else "",
+        "name": form_data.name.data if hasattr(form_data, "name") else "",
+        "username": form_data.username.data if hasattr(form_data, "username") else "",
     }
     if hasattr(form_data, "dark_mode") and form_data.dark_mode:
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
 
     dupr_id, rating = _map_dupr_data(form_data)
     update_data.update(
-        {"dupr_id": dupr_id, "dupr_rating": rating, "duprRating": rating}
+        {"dupr_id": dupr_id, "dupr_rating": rating, "duprRating": rating},
     )
     return update_data
 
@@ -237,18 +251,20 @@ def process_profile_update(
 ) -> dict[str, Any]:
     """Handle complex profile updates, including email change and verification."""
     update_data = _extract_profile_update_data(form_data)
-    new_username = cast(str, update_data["username"])
+    new_username = cast("str", update_data["username"])
 
     _handle_profile_picture(user_id, update_data, profile_picture_file)
 
     if err := _validate_username_change(
-        db, new_username, current_user_data.get("username")
+        db,
+        new_username,
+        current_user_data.get("username"),
     ):
         return err
 
     email_res = _handle_email_change(
         db,
-        getattr(form_data, "email").data if hasattr(form_data, "email") else "",
+        form_data.email.data if hasattr(form_data, "email") else "",
         new_username,
         update_data,
         current_user_data,
@@ -270,9 +286,7 @@ def _get_current_user_data(db: Client, user_id: str) -> dict[str, Any]:
 def _map_settings_update_data(form_data: FlaskForm) -> dict[str, Any]:
     """Map form data to Firestore update dictionary."""
     update_data: dict[str, Any] = {
-        "username": getattr(form_data, "username").data
-        if hasattr(form_data, "username")
-        else ""
+        "username": form_data.username.data if hasattr(form_data, "username") else "",
     }
     if hasattr(form_data, "dark_mode") and form_data.dark_mode:
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
@@ -299,11 +313,11 @@ def update_settings(
     if current_user_data is None:
         current_user_data = _get_current_user_data(db, user_id)
 
-    username = (
-        getattr(form_data, "username").data if hasattr(form_data, "username") else ""
-    )
+    username = form_data.username.data if hasattr(form_data, "username") else ""
     if err := _validate_username_change(
-        db, username, current_user_data.get("username")
+        db,
+        username,
+        current_user_data.get("username"),
     ):
         return err
 
@@ -376,7 +390,7 @@ def create_invite_token(db: Client, user_id: str) -> str:
             "userId": user_id,
             "createdAt": firestore.SERVER_TIMESTAMP,
             "used": False,
-        }
+        },
     )
     return token
 
@@ -390,7 +404,7 @@ def update_dashboard_profile(
 ) -> None:
     """Update user profile from dashboard form, including image upload."""
     update_data: dict[str, Any] = {
-        "dark_mode": bool(getattr(form_data, "dark_mode").data)
+        "dark_mode": bool(form_data.dark_mode.data),
     }
     if hasattr(form_data, "dupr_rating") and form_data.dupr_rating.data is not None:
         rating = float(form_data.dupr_rating.data)
@@ -404,12 +418,14 @@ def update_dashboard_profile(
 def update_fcm_token(db: Client, user_id: str, token: str) -> None:
     """Update the user's FCM token for push notifications."""
     db.collection("users").document(user_id).update(
-        {"fcmToken": token, "updatedAt": firestore.SERVER_TIMESTAMP}
+        {"fcmToken": token, "updatedAt": firestore.SERVER_TIMESTAMP},
     )
 
 
 def search_users_json(
-    db: Client, current_user_id: str, search_term: str
+    db: Client,
+    current_user_id: str,
+    search_term: str,
 ) -> list[dict[str, Any]]:
     """Search for users and return in JSON-friendly format for API."""
     from flask import url_for
@@ -423,6 +439,6 @@ def search_users_json(
                 "name": smart_display_name(user_data),
                 "avatar": user_data.get("profilePictureUrl")
                 or url_for("static", filename="user_icon.png"),
-            }
+            },
         )
     return results

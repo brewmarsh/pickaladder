@@ -15,14 +15,16 @@ class AppFirebaseTestCase(unittest.TestCase):
     @patch("firebase_admin.initialize_app")
     @patch("firebase_admin.firestore.client")
     def test_404_error_handler(
-        self, mock_firestore_client: MagicMock, mock_init_app: MagicMock
+        self,
+        mock_firestore_client: MagicMock,
+        mock_init_app: MagicMock,
     ) -> None:
         """Test the custom 404 error handler."""
         app = create_app({"TESTING": True, "WTF_CSRF_ENABLED": False})
         with app.test_client() as client:
             response = client.get("/non_existent_page")
-            self.assertEqual(response.status_code, 404)
-            self.assertIn(b"Page Not Found", response.data)
+            assert response.status_code == 404
+            assert b"Page Not Found" in response.data
 
     def test_mail_config_sanitization(self) -> None:
         """Test that MAIL_USERNAME and MAIL_PASSWORD are sanitized correctly."""
@@ -34,8 +36,8 @@ class AppFirebaseTestCase(unittest.TestCase):
         }
         with patch.dict(os.environ, env_vars):
             app = create_app({"TESTING": True})
-            self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
-            self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
+            assert app.config["MAIL_USERNAME"] == "user@example.com"
+            assert app.config["MAIL_PASSWORD"] == "xxxxxxxxxxxx"
 
     def test_mail_config_sanitization_single_quotes(self) -> None:
         """Test sanitization with single quotes."""
@@ -47,8 +49,8 @@ class AppFirebaseTestCase(unittest.TestCase):
         }
         with patch.dict(os.environ, env_vars):
             app = create_app({"TESTING": True})
-            self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
-            self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
+            assert app.config["MAIL_USERNAME"] == "user@example.com"
+            assert app.config["MAIL_PASSWORD"] == "xxxxxxxxxxxx"
 
     def test_mail_config_sanitization_no_quotes(self) -> None:
         """Test sanitization without quotes."""
@@ -60,8 +62,8 @@ class AppFirebaseTestCase(unittest.TestCase):
         }
         with patch.dict(os.environ, env_vars):
             app = create_app({"TESTING": True})
-            self.assertEqual(app.config["MAIL_USERNAME"], "user@example.com")
-            self.assertEqual(app.config["MAIL_PASSWORD"], "xxxxxxxxxxxx")
+            assert app.config["MAIL_USERNAME"] == "user@example.com"
+            assert app.config["MAIL_PASSWORD"] == "xxxxxxxxxxxx"
 
     def test_mail_config_empty_env_vars(self) -> None:
         """Test that empty environment variables fall back to default values."""
@@ -75,10 +77,10 @@ class AppFirebaseTestCase(unittest.TestCase):
         }
         with patch.dict(os.environ, env_vars):
             app = create_app({"TESTING": True})
-            self.assertEqual(app.config["MAIL_SERVER"], "smtp.gmail.com")
-            self.assertEqual(app.config["MAIL_PORT"], 587)
-            self.assertTrue(app.config["MAIL_USE_TLS"])
-            self.assertFalse(app.config["MAIL_USE_SSL"])
+            assert app.config["MAIL_SERVER"] == "smtp.gmail.com"
+            assert app.config["MAIL_PORT"] == 587
+            assert app.config["MAIL_USE_TLS"]
+            assert not app.config["MAIL_USE_SSL"]
 
 
 if __name__ == "__main__":

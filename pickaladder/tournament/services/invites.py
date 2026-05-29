@@ -30,7 +30,7 @@ class TournamentInvites(TournamentBase):
             .stream()
         )
         for doc in groups:
-            members = cast(dict[str, Any], doc.to_dict() or {}).get("members")
+            members = cast("dict[str, Any]", doc.to_dict() or {}).get("members")
             if members:
                 for m_ref in members:
                     g_ids.add(m_ref.id)
@@ -38,14 +38,16 @@ class TournamentInvites(TournamentBase):
 
     @staticmethod
     def _get_invitable_players(
-        db: Client, user_uid: str, current_ids: set[str]
+        db: Client,
+        user_uid: str,
+        current_ids: set[str],
     ) -> list[dict[str, Any]]:
         """Internal helper to find invite candidates."""
         final_ids = TournamentInvites._get_invitable_ids(db, user_uid) - current_ids
         invitable = []
         if final_ids:
             u_refs = [db.collection("users").document(uid) for uid in final_ids]
-            u_docs = cast(list[Any], db.get_all(u_refs))
+            u_docs = cast("list[Any]", db.get_all(u_refs))
             for doc in u_docs:
                 if doc.exists and (data := doc.to_dict()):
                     data["id"] = doc.id
@@ -55,7 +57,10 @@ class TournamentInvites(TournamentBase):
 
     @staticmethod
     def invite_player(
-        t_id: str, uid: str, invited_uid: str, db: Client | None = None
+        t_id: str,
+        uid: str,
+        invited_uid: str,
+        db: Client | None = None,
     ) -> None:
         """Invite a single player."""
         from pickaladder.tournament.services import firestore
@@ -71,33 +76,40 @@ class TournamentInvites(TournamentBase):
                             "userRef": invited_ref,
                             "status": "pending",
                             "team_name": None,
-                        }
-                    ]
+                        },
+                    ],
                 ),
                 "participant_ids": firestore.ArrayUnion([invited_uid]),
-            }
+            },
         )
 
     @staticmethod
     def _validate_group_invite(
-        db: Client, t_data: dict[str, Any], g_id: str, uid: str
+        db: Client,
+        t_data: dict[str, Any],
+        g_id: str,
+        uid: str,
     ) -> list[Any]:
         """Validate permissions and return group member references."""
         if TournamentInvites._get_tournament_owner_id(t_data) != uid:
-            raise PermissionError("Unauthorized.")
-        doc = cast(Any, db.collection("groups").document(g_id).get())
+            msg = "Unauthorized."
+            raise PermissionError(msg)
+        doc = cast("Any", db.collection("groups").document(g_id).get())
         if not doc.exists:
-            raise ValueError("Group not found")
+            msg = "Group not found"
+            raise ValueError(msg)
         refs = (doc.to_dict() or {}).get("members", [])
         if not any(m.id == uid for m in refs):
+            msg = "You can only invite members from groups you belong to."
             raise PermissionError(
-                "You can only invite members from groups you belong to."
+                msg,
             )
-        return cast(list[Any], refs)
+        return cast("list[Any]", refs)
 
     @staticmethod
     def _prepare_group_invites(
-        m_docs: list[DocumentSnapshot], current_ids: set[str]
+        m_docs: list[DocumentSnapshot],
+        current_ids: set[str],
     ) -> tuple[list[dict[str, Any]], list[str]]:
         """Filter group members and prepare invite objects."""
         new_p, new_ids = [], []
@@ -120,13 +132,14 @@ class TournamentInvites(TournamentBase):
         if db is None:
             db = firestore.client()
         ref = db.collection("tournaments").document(t_id)
-        doc = cast(Any, ref.get())
+        doc = cast("Any", ref.get())
         if not doc.exists:
-            raise ValueError("Tournament not found")
-        t_data = cast(dict[str, Any], doc.to_dict())
+            msg = "Tournament not found"
+            raise ValueError(msg)
+        t_data = cast("dict[str, Any]", doc.to_dict())
         member_refs = TournamentInvites._validate_group_invite(db, t_data, g_id, uid)
         new_p, n_ids = TournamentInvites._prepare_group_invites(
-            cast(list[Any], db.get_all(member_refs)),
+            cast("list[Any]", db.get_all(member_refs)),
             set(t_data.get("participant_ids", [])),
         )
         if new_p:
@@ -168,7 +181,7 @@ class TournamentInvites(TournamentBase):
 
         @firestore.transactional
         def _tx(tx: Transaction, t_ref: DocumentReference) -> bool:
-            snap = cast(Any, t_ref.get(transaction=tx))
+            snap = cast("Any", t_ref.get(transaction=tx))
             if not snap.exists:
                 return False
             parts = snap.get("participants")
@@ -190,7 +203,7 @@ class TournamentInvites(TournamentBase):
 
         @firestore.transactional
         def _tx(tx: Transaction, t_ref: DocumentReference) -> bool:
-            snap = cast(Any, t_ref.get(transaction=tx))
+            snap = cast("Any", t_ref.get(transaction=tx))
             if not snap.exists:
                 return False
             parts, ids = snap.get("participants"), snap.get("participant_ids")

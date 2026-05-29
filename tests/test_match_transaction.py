@@ -27,14 +27,14 @@ class MatchTransactionTestCase(unittest.TestCase):
         p1_snap.id = "p1"
         p1_snap.exists = True
         p1_snap.to_dict.return_value = {
-            "stats": {"wins": 5, "losses": 2, "elo": 1200.0}
+            "stats": {"wins": 5, "losses": 2, "elo": 1200.0},
         }
 
         p2_snap = MagicMock()
         p2_snap.id = "p2"
         p2_snap.exists = True
         p2_snap.to_dict.return_value = {
-            "stats": {"wins": 3, "losses": 4, "elo": 1100.0}
+            "stats": {"wins": 3, "losses": 4, "elo": 1100.0},
         }
 
         db.get_all.return_value = [p1_snap, p2_snap]
@@ -45,7 +45,14 @@ class MatchTransactionTestCase(unittest.TestCase):
         }
 
         MatchService._record_match_batch(
-            db, batch, match_ref, p1_ref, p2_ref, user_ref, match_data, "singles"
+            db,
+            batch,
+            match_ref,
+            p1_ref,
+            p2_ref,
+            user_ref,
+            match_data,
+            "singles",
         )
 
         # Verify snapshots were read via db.get_all
@@ -53,31 +60,31 @@ class MatchTransactionTestCase(unittest.TestCase):
         self.assertCountEqual(actual_args, [p1_ref, p2_ref])
 
         # Verify match data updates
-        self.assertEqual(match_data["winner"], "team1")
+        assert match_data["winner"] == "team1"
 
         # Verify writes
         batch.set.assert_called_with(match_ref, match_data)
 
         # Verify p1 updates (win)
         p1_call_args = batch.update.call_args_list[0]
-        self.assertEqual(p1_call_args[0][0], p1_ref)
+        assert p1_call_args[0][0] == p1_ref
         p1_updates = p1_call_args[0][1]
-        self.assertEqual(p1_updates["stats.wins"], 6)
-        self.assertEqual(p1_updates["stats.losses"], 2)
+        assert p1_updates["stats.wins"] == 6
+        assert p1_updates["stats.losses"] == 2
         self.assertAlmostEqual(p1_updates["stats.elo"], 1211.52, places=2)
 
         # Verify p2 updates (loss)
         p2_call_args = batch.update.call_args_list[1]
-        self.assertEqual(p2_call_args[0][0], p2_ref)
+        assert p2_call_args[0][0] == p2_ref
         p2_updates = p2_call_args[0][1]
-        self.assertEqual(p2_updates["stats.wins"], 3)
-        self.assertEqual(p2_updates["stats.losses"], 5)
+        assert p2_updates["stats.wins"] == 3
+        assert p2_updates["stats.losses"] == 5
         self.assertAlmostEqual(p2_updates["stats.elo"], 1088.48, places=2)
 
         # Verify user update
         user_call_args = batch.update.call_args_list[2]
-        self.assertEqual(user_call_args[0][0], user_ref)
-        self.assertEqual(user_call_args[0][1], {"lastMatchRecordedType": "singles"})
+        assert user_call_args[0][0] == user_ref
+        assert user_call_args[0][1] == {"lastMatchRecordedType": "singles"}
 
     def test_record_match_batch_doubles(self) -> None:
         """Test that doubles match updates team stats and elo using batch."""
@@ -95,14 +102,14 @@ class MatchTransactionTestCase(unittest.TestCase):
         t1_snap.id = "t1"
         t1_snap.exists = True
         t1_snap.to_dict.return_value = {
-            "stats": {"wins": 10, "losses": 10, "elo": 1500.0}
+            "stats": {"wins": 10, "losses": 10, "elo": 1500.0},
         }
 
         t2_snap = MagicMock()
         t2_snap.id = "t2"
         t2_snap.exists = True
         t2_snap.to_dict.return_value = {
-            "stats": {"wins": 20, "losses": 5, "elo": 1500.0}
+            "stats": {"wins": 20, "losses": 5, "elo": 1500.0},
         }
 
         db.get_all.return_value = [t1_snap, t2_snap]
@@ -113,26 +120,33 @@ class MatchTransactionTestCase(unittest.TestCase):
         }
 
         MatchService._record_match_batch(
-            db, batch, match_ref, t1_ref, t2_ref, user_ref, match_data, "doubles"
+            db,
+            batch,
+            match_ref,
+            t1_ref,
+            t2_ref,
+            user_ref,
+            match_data,
+            "doubles",
         )
 
-        self.assertEqual(match_data["winner"], "team2")
+        assert match_data["winner"] == "team2"
 
         # Verify t1 updates (loss)
         t1_call_args = batch.update.call_args_list[0]
-        self.assertEqual(t1_call_args[0][0], t1_ref)
+        assert t1_call_args[0][0] == t1_ref
         t1_updates = t1_call_args[0][1]
-        self.assertEqual(t1_updates["stats.wins"], 10)
-        self.assertEqual(t1_updates["stats.losses"], 11)
-        self.assertEqual(t1_updates["stats.elo"], 1484.0)
+        assert t1_updates["stats.wins"] == 10
+        assert t1_updates["stats.losses"] == 11
+        assert t1_updates["stats.elo"] == 1484.0
 
         # Verify t2 updates (win)
         t2_call_args = batch.update.call_args_list[1]
-        self.assertEqual(t2_call_args[0][0], t2_ref)
+        assert t2_call_args[0][0] == t2_ref
         t2_updates = t2_call_args[0][1]
-        self.assertEqual(t2_updates["stats.wins"], 21)
-        self.assertEqual(t2_updates["stats.losses"], 5)
-        self.assertEqual(t2_updates["stats.elo"], 1516.0)
+        assert t2_updates["stats.wins"] == 21
+        assert t2_updates["stats.losses"] == 5
+        assert t2_updates["stats.elo"] == 1516.0
 
     def test_record_match_batch_with_named_teams(self) -> None:
         """Test that named teams also get updated if present."""
@@ -183,7 +197,14 @@ class MatchTransactionTestCase(unittest.TestCase):
         }
 
         MatchService._record_match_batch(
-            db, batch, match_ref, t1_ref, t2_ref, user_ref, match_data, "doubles"
+            db,
+            batch,
+            match_ref,
+            t1_ref,
+            t2_ref,
+            user_ref,
+            match_data,
+            "doubles",
         )
 
         # We expect 7 updates:
@@ -200,24 +221,24 @@ class MatchTransactionTestCase(unittest.TestCase):
         # They should be at indices 2 and 3 if they follow p1/p2
 
         # Pairing 1 update (win)
-        self.assertEqual(batch.update.call_args_list[0][0][0], t1_ref)
-        self.assertEqual(batch.update.call_args_list[0][0][1]["stats.wins"], 1)
-        self.assertEqual(batch.update.call_args_list[0][0][1]["stats.elo"], 1216.0)
+        assert batch.update.call_args_list[0][0][0] == t1_ref
+        assert batch.update.call_args_list[0][0][1]["stats.wins"] == 1
+        assert batch.update.call_args_list[0][0][1]["stats.elo"] == 1216.0
 
         # Pairing 2 update (loss)
-        self.assertEqual(batch.update.call_args_list[1][0][0], t2_ref)
-        self.assertEqual(batch.update.call_args_list[1][0][1]["stats.losses"], 1)
-        self.assertEqual(batch.update.call_args_list[1][0][1]["stats.elo"], 1184.0)
+        assert batch.update.call_args_list[1][0][0] == t2_ref
+        assert batch.update.call_args_list[1][0][1]["stats.losses"] == 1
+        assert batch.update.call_args_list[1][0][1]["stats.elo"] == 1184.0
 
         # Named Team 1 update (win)
-        self.assertEqual(batch.update.call_args_list[2][0][0], nt1_ref)
-        self.assertEqual(batch.update.call_args_list[2][0][1]["stats.wins"], 1)
-        self.assertEqual(batch.update.call_args_list[2][0][1]["stats.elo"], 1016.0)
+        assert batch.update.call_args_list[2][0][0] == nt1_ref
+        assert batch.update.call_args_list[2][0][1]["stats.wins"] == 1
+        assert batch.update.call_args_list[2][0][1]["stats.elo"] == 1016.0
 
         # Named Team 2 update (loss)
-        self.assertEqual(batch.update.call_args_list[3][0][0], nt2_ref)
-        self.assertEqual(batch.update.call_args_list[3][0][1]["stats.losses"], 1)
-        self.assertEqual(batch.update.call_args_list[3][0][1]["stats.elo"], 984.0)
+        assert batch.update.call_args_list[3][0][0] == nt2_ref
+        assert batch.update.call_args_list[3][0][1]["stats.losses"] == 1
+        assert batch.update.call_args_list[3][0][1]["stats.elo"] == 984.0
 
 
 if __name__ == "__main__":

@@ -25,15 +25,22 @@ class ChallengeService:
 
     @classmethod
     def issue_challenge(
-        cls, db: Client, challenger_id: str, challenged_id: str, wager: int
+        cls,
+        db: Client,
+        challenger_id: str,
+        challenged_id: str,
+        wager: int,
     ) -> str:
         """Issue a new challenge to another player."""
         if challenger_id == challenged_id:
-            raise ValueError("You cannot challenge yourself")
+            msg = "You cannot challenge yourself"
+            raise ValueError(msg)
         if wager < 0:
-            raise ValueError("Wager must be non-negative")
+            msg = "Wager must be non-negative"
+            raise ValueError(msg)
         if wager > cls.MAX_WAGER:
-            raise ValueError(f"Wager cannot exceed {cls.MAX_WAGER} credits")
+            msg = f"Wager cannot exceed {cls.MAX_WAGER} credits"
+            raise ValueError(msg)
 
         # Check for active challenge limit
         active_challenges = (
@@ -43,8 +50,9 @@ class ChallengeService:
             .get()
         )
         if len(active_challenges) >= cls.MAX_ACTIVE_CHALLENGES:
+            msg = f"You already have {cls.MAX_ACTIVE_CHALLENGES} active challenges"
             raise ValueError(
-                f"You already have {cls.MAX_ACTIVE_CHALLENGES} active challenges"
+                msg,
             )
 
         @firestore.transactional
@@ -85,21 +93,25 @@ class ChallengeService:
             challenge_ref = db.collection(cls.COLLECTION_NAME).document(challenge_id)
             doc = challenge_ref.get(transaction=transaction)
             if not doc.exists:
-                raise ValueError("Challenge not found")
+                msg = "Challenge not found"
+                raise ValueError(msg)
 
             data = doc.to_dict() or {}
             if data.get("challenged_id") != user_id:
-                raise ValueError("Only the challenged user can accept")
+                msg = "Only the challenged user can accept"
+                raise ValueError(msg)
             if data.get("status") != "pending":
+                msg = f"Challenge cannot be accepted in status: {data.get('status')}"
                 raise ValueError(
-                    f"Challenge cannot be accepted in status: {data.get('status')}"
+                    msg,
                 )
 
             # Check for expiration
             expires_at = data.get("expires_at")
             if expires_at and expires_at < datetime.now(timezone.utc):
                 transaction.update(challenge_ref, {"status": "expired"})
-                raise ValueError("Challenge has expired")
+                msg = "Challenge has expired"
+                raise ValueError(msg)
 
             wager = data.get("wager_amount", 0)
             # Deduct wager from challenged user (escrow)
@@ -133,20 +145,26 @@ class ChallengeService:
             challenge_ref = db.collection(cls.COLLECTION_NAME).document(challenge_id)
             doc = challenge_ref.get(transaction=transaction)
             if not doc.exists:
-                raise ValueError("Challenge not found")
+                msg = "Challenge not found"
+                raise ValueError(msg)
 
             data = doc.to_dict() or {}
             if data.get("challenged_id") != user_id:
-                raise ValueError("Only the challenged user can decline")
+                msg = "Only the challenged user can decline"
+                raise ValueError(msg)
             if data.get("status") != "pending":
+                msg = f"Challenge cannot be declined in status: {data.get('status')}"
                 raise ValueError(
-                    f"Challenge cannot be declined in status: {data.get('status')}"
+                    msg,
                 )
 
             wager = data.get("wager_amount", 0)
             # Refund wager to challenger
             SocialCreditService.adjust_balance(
-                db, transaction, data.get("challenger_id"), wager
+                db,
+                transaction,
+                data.get("challenger_id"),
+                wager,
             )
 
             transaction.update(
@@ -170,7 +188,11 @@ class ChallengeService:
 
     @classmethod
     def resolve_challenge(
-        cls, db: Client, challenge_id: str, match_id: str, winner_id: str
+        cls,
+        db: Client,
+        challenge_id: str,
+        match_id: str,
+        winner_id: str,
     ) -> None:
         """Resolve an accepted challenge based on a match result."""
 
@@ -179,7 +201,8 @@ class ChallengeService:
             challenge_ref = db.collection(cls.COLLECTION_NAME).document(challenge_id)
             doc = challenge_ref.get(transaction=transaction)
             if not doc.exists:
-                raise ValueError("Challenge not found")
+                msg = "Challenge not found"
+                raise ValueError(msg)
 
             data = doc.to_dict() or {}
             if data.get("status") != "accepted":
@@ -232,7 +255,12 @@ class ChallengeService:
 
     @classmethod
     def find_and_resolve_challenge(
-        cls, db: Client, p1_id: str, p2_id: str, match_id: str, winner_id: str
+        cls,
+        db: Client,
+        p1_id: str,
+        p2_id: str,
+        match_id: str,
+        winner_id: str,
     ) -> None:
         """Find and resolve an accepted challenge between two players."""
         # Find 'accepted' challenge between these two users
@@ -248,7 +276,7 @@ class ChallengeService:
             data = doc.to_dict()
             challenged_id = data.get("challenged_id")
             if challenged_id in [p1_id, p2_id] and challenged_id != data.get(
-                "challenger_id"
+                "challenger_id",
             ):
                 cls.resolve_challenge(db, doc.id, match_id, winner_id)
                 break  # Resolve only one for now (there shouldn't be multiple)
@@ -306,7 +334,8 @@ class ChallengeService:
         pending.sort(key=lambda x: x.get("created_at") or 0, reverse=True)
         active.sort(key=lambda x: x.get("accepted_at") or 0, reverse=True)
         history.sort(
-            key=lambda x: x.get("resolved_at") or x.get("created_at") or 0, reverse=True
+            key=lambda x: x.get("resolved_at") or x.get("created_at") or 0,
+            reverse=True,
         )
 
         return {"pending": pending, "active": active, "history": history}
@@ -320,14 +349,17 @@ class ChallengeService:
             challenge_ref = db.collection(cls.COLLECTION_NAME).document(challenge_id)
             doc = challenge_ref.get(transaction=transaction)
             if not doc.exists:
-                raise ValueError("Challenge not found")
+                msg = "Challenge not found"
+                raise ValueError(msg)
 
             data = doc.to_dict() or {}
             if data.get("challenger_id") != user_id:
-                raise ValueError("Only the challenger can cancel")
+                msg = "Only the challenger can cancel"
+                raise ValueError(msg)
             if data.get("status") != "pending":
+                msg = f"Challenge cannot be cancelled in status: {data.get('status')}"
                 raise ValueError(
-                    f"Challenge cannot be cancelled in status: {data.get('status')}"
+                    msg,
                 )
 
             wager = data.get("wager_amount", 0)

@@ -53,7 +53,8 @@ class TournamentBlastTestCase(unittest.TestCase):
                 new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
+                "pickaladder.firestore",
+                new=self.mock_firestore_service,
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
@@ -63,7 +64,7 @@ class TournamentBlastTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"},
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -93,7 +94,7 @@ class TournamentBlastTestCase(unittest.TestCase):
         member1_ref.set({"username": "real_user", "is_ghost": False})
         member2_ref = self.mock_db.collection("users").document("user_ghost")
         member2_ref.set(
-            {"username": "ghost_123", "is_ghost": True, "email": "ghost@example.com"}
+            {"username": "ghost_123", "is_ghost": True, "email": "ghost@example.com"},
         )
 
         # Setup group
@@ -102,7 +103,7 @@ class TournamentBlastTestCase(unittest.TestCase):
             {
                 "name": "Cool Group",
                 "members": [owner_ref, member1_ref, member2_ref],
-            }
+            },
         )
 
         # Setup tournament
@@ -116,12 +117,12 @@ class TournamentBlastTestCase(unittest.TestCase):
                     {"userRef": owner_ref, "status": "accepted"},
                     {"userRef": member1_ref, "status": "pending"},
                 ],
-            }
+            },
         )
 
         # Mock standings for the view redirect
         with patch(
-            "pickaladder.tournament.services.get_tournament_standings"
+            "pickaladder.tournament.services.get_tournament_standings",
         ) as mock_standings:
             mock_standings.return_value = []
             response = self.client.post(
@@ -130,7 +131,7 @@ class TournamentBlastTestCase(unittest.TestCase):
                 follow_redirects=False,
             )
 
-        self.assertEqual(response.status_code, 302)
+        assert response.status_code == 302
 
         # Verify batch updates via our MockBatch
         self.mock_db.batch.assert_called()
@@ -143,16 +144,16 @@ class TournamentBlastTestCase(unittest.TestCase):
             .get()
             .to_dict()
         )
-        self.assertIn("user_ghost", t_data["participant_ids"])
+        assert "user_ghost" in t_data["participant_ids"]
         # Should have 3 participants now: owner, user_real, user_ghost
-        self.assertEqual(len(t_data["participants"]), 3)
+        assert len(t_data["participants"]) == 3
 
         # Find ghost participant
         ghost_p = next(
             p for p in t_data["participants"] if p.get("userRef").id == "user_ghost"
         )
-        self.assertEqual(ghost_p["status"], "pending")
-        self.assertEqual(ghost_p["email"], "ghost@example.com")
+        assert ghost_p["status"] == "pending"
+        assert ghost_p["email"] == "ghost@example.com"
 
     def test_migrate_ghost_references_tournaments(self) -> None:
         """Test that _migrate_ghost_references correctly updates tournaments."""
@@ -162,12 +163,17 @@ class TournamentBlastTestCase(unittest.TestCase):
 
         # Act
         UserService._migrate_ghost_references(
-            mock_db, mock_batch, ghost_ref, real_user_ref
+            mock_db,
+            mock_batch,
+            ghost_ref,
+            real_user_ref,
         )
 
         # Assert
         self._verify_tournament_migration_success(
-            mock_batch, mock_tournament_doc, real_user_ref
+            mock_batch,
+            mock_tournament_doc,
+            real_user_ref,
         )
 
     def _setup_migration_mocks(
@@ -220,22 +226,22 @@ class TournamentBlastTestCase(unittest.TestCase):
             None,
         )
 
-        self.assertIsNotNone(tourney_update_call)
-        update_data = cast(Any, tourney_update_call)[0][1]
+        assert tourney_update_call is not None
+        update_data = cast("Any", tourney_update_call)[0][1]
 
         # Check participant_ids
-        self.assertIn("real_id", update_data["participant_ids"])
-        self.assertNotIn("ghost_id", update_data["participant_ids"])
+        assert "real_id" in update_data["participant_ids"]
+        assert "ghost_id" not in update_data["participant_ids"]
 
         # Check participants
         new_participants = update_data["participants"]
-        self.assertEqual(len(new_participants), 2)
+        assert len(new_participants) == 2
         # One should be the real user now
         found_real = any(
             p.get("userRef") == real_user_ref and p.get("user_id") == "real_id"
             for p in new_participants
         )
-        self.assertTrue(found_real)
+        assert found_real
 
 
 if __name__ == "__main__":

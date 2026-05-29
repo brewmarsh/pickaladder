@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from firebase_admin import firestore
 
@@ -17,10 +17,11 @@ class MembershipRequestRepository(BaseRepository):
 
     @classmethod
     def get_pending_for_group(
-        cls, db: Client, group_id: str
+        cls,
+        db: Client,
+        group_id: str,
     ) -> list[dict[str, object]]:
         """Fetch all pending requests for a specific group."""
-
         query = (
             db.collection(cls.COLLECTION_NAME)
             .where(filter=firestore.FieldFilter("groupId", "==", group_id))
@@ -34,7 +35,10 @@ class MembershipRequestRepository(BaseRepository):
 
     @classmethod
     def get_user_request_for_group(
-        cls, db: Client, group_id: str, user_id: str
+        cls,
+        db: Client,
+        group_id: str,
+        user_id: str,
     ) -> dict[str, object] | None:
         """Fetch a specific user's request for a group."""
         query = (
@@ -50,7 +54,11 @@ class MembershipRequestRepository(BaseRepository):
 
     @classmethod
     def create_request(
-        cls, db: Client, group_id: str, user_id: str, message: str | None = None
+        cls,
+        db: Client,
+        group_id: str,
+        user_id: str,
+        message: str | None = None,
     ) -> str:
         """Create a new membership request."""
         data = {

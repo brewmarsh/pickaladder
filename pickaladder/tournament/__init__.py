@@ -7,6 +7,6 @@ from .services import TournamentService
 
 bp = Blueprint("tournament", __name__, url_prefix="/tournaments")
 
-from . import routes  # noqa: E402, F401
+from . import routes  # noqa: E402
 
 __all__ = ["Participant", "Tournament", "TournamentService", "routes"]

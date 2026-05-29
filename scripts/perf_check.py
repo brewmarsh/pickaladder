@@ -28,7 +28,7 @@ def benchmark_get_all_users(db):
     logger.info("  Adding 100 users to mock db...")
     for i in range(100):
         db.collection("users").document(f"user_{i}").set(
-            {"username": f"user_{i}", "createdAt": time.time()}
+            {"username": f"user_{i}", "createdAt": time.time()},
         )
 
     start_time = time.time()
@@ -53,7 +53,7 @@ def benchmark_record_match(db):
 
     # Ensure players exist
     db.collection("users").document("perf_test_user").set(
-        {"username": "perf_tester", "dupr_id": "D1"}
+        {"username": "perf_tester", "dupr_id": "D1"},
     )
     db.collection("users").document("player1").set({"username": "p1", "dupr_id": "D2"})
     db.collection("users").document("player2").set({"username": "p2", "dupr_id": "D3"})
@@ -67,7 +67,7 @@ def benchmark_record_match(db):
                 db.collection("users").document("player1"),
                 db.collection("users").document("player2"),
             ],
-        }
+        },
     )
 
     start_time = time.time()
@@ -101,7 +101,7 @@ def benchmark_leaderboards(db):
     return hit_global, hit_group
 
 
-def main():
+def main() -> None:
     # Patch mockfirestore to support FieldFilter etc.
     patch_mockfirestore()
 
@@ -121,7 +121,7 @@ def main():
         # We need to make sure create_app doesn't fail due to missing config
         # and that it uses our mocked firebase
         app = create_app(
-            {"TESTING": True, "SECRET_KEY": "test", "WTF_CSRF_ENABLED": False}
+            {"TESTING": True, "SECRET_KEY": "test", "WTF_CSRF_ENABLED": False},
         )
         with app.app_context():
             results = {}
@@ -142,7 +142,7 @@ def main():
                 threshold = THRESHOLDS.get(name)
                 status = "PASS" if duration <= threshold else "FAIL"
                 logger.info(
-                    f"{name}: {duration:.4f}s (Threshold: {threshold}s) -> {status}"
+                    f"{name}: {duration:.4f}s (Threshold: {threshold}s) -> {status}",
                 )
                 if duration > threshold:
                     failed = True

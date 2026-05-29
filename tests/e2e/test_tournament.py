@@ -9,7 +9,9 @@ from playwright.sync_api import Page, expect
 
 
 def test_tournament_flow(
-    app_server: str, page_with_firebase: Page, mock_db: Any
+    app_server: str,
+    page_with_firebase: Page,
+    mock_db: Any,
 ) -> None:
     """Test the complete tournament flow: creation and completion."""
     page = page_with_firebase
@@ -60,10 +62,10 @@ def test_tournament_flow(
             "email": "friend@example.com",
             "name": "Friend User",
             "createdAt": datetime.datetime(2023, 1, 1),
-        }
+        },
     )
     mock_db.collection("users").document("admin").collection("friends").document(
-        friend_id
+        friend_id,
     ).set({"status": "accepted"})
 
     page.reload()
@@ -73,14 +75,15 @@ def test_tournament_flow(
     directions_btn = page.locator("text=Directions")
     expect(directions_btn).to_be_visible()
     expect(directions_btn).to_have_attribute(
-        "href", "https://www.google.com/maps/search/?api=1&query=Central%20Park"
+        "href",
+        "https://www.google.com/maps/search/?api=1&query=Central%20Park",
     )
 
     # 4. Record a Match (Verify Summary Redirect)
     # First, ensure friend_user is a participant for the match recording to work easily
     tournament_id = page.url.split("/")[-1]
     mock_db.collection("tournaments").document(tournament_id).update(
-        {"participant_ids": ["admin", "friend_user"]}
+        {"participant_ids": ["admin", "friend_user"]},
     )
     page.reload()
 

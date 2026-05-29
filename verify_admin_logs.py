@@ -10,12 +10,13 @@ from pickaladder.admin.routes import (
 )
 
 
-def test_admin_logs():
+def test_admin_logs() -> None:
     app = Flask(__name__)
     app.config["SECRET_KEY"] = "test"
 
     with app.test_request_context(
-        method="POST", data={"announcement_text": "test", "level": "info"}
+        method="POST",
+        data={"announcement_text": "test", "level": "info"},
     ):
         g.user = MagicMock(uid="admin_uid")
         from flask import session
@@ -36,7 +37,6 @@ def test_admin_logs():
                 "update_announcement",
                 {"text": "test", "active": False, "level": "info"},
             )
-            print("Announcement log: OK")
 
     with app.test_request_context(method="POST"):
         g.user = MagicMock(uid="admin_uid")
@@ -50,9 +50,11 @@ def test_admin_logs():
             # Test delete match
             admin_delete_match("match_123")
             mock_log.assert_any_call(
-                mock_firestore(), "admin_uid", "match_123", "delete_match"
+                mock_firestore(),
+                "admin_uid",
+                "match_123",
+                "delete_match",
             )
-            print("Delete match log: OK")
 
     with app.test_request_context(method="POST", data={"user_identifier": "user_123"}):
         g.user = MagicMock(uid="admin_uid")
@@ -77,7 +79,6 @@ def test_admin_logs():
                 "delete_user",
                 {"email": "test@example.com"},
             )
-            print("Delete user log: OK")
 
     with app.test_request_context(method="POST"):
         g.user = MagicMock(uid="admin_uid")
@@ -95,17 +96,17 @@ def test_admin_logs():
             # Test promote user
             promote_user("user_123")
             mock_log.assert_any_call(
-                mock_firestore(), "admin_uid", "user_123", "promote_user"
+                mock_firestore(),
+                "admin_uid",
+                "user_123",
+                "promote_user",
             )
-            print("Promote user log: OK")
 
 
 if __name__ == "__main__":
     try:
         test_admin_logs()
-        print("Verification: SUCCESS")
-    except Exception as e:
-        print(f"Verification: FAILED ({e})")
+    except Exception:
         import traceback
 
         traceback.print_exc()

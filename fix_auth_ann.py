@@ -1,7 +1,7 @@
 import re
 
 
-def process_file(filepath):
+def process_file(filepath) -> None:
     with open(filepath, encoding="utf-8") as f:
         content = f.read()
 
@@ -12,7 +12,6 @@ def process_file(filepath):
     if content != new_content:
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(new_content)
-        print(f"Updated {filepath}")
 
 
 process_file("pickaladder/auth/routes.py")

@@ -26,10 +26,12 @@ class StyleguideTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore": patch(
-                "pickaladder.admin.routes.firestore", new=self.mock_firestore_service
+                "pickaladder.admin.routes.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
+                "pickaladder.firestore",
+                new=self.mock_firestore_service,
             ),
             "user_firestore": patch(
                 "pickaladder.user.routes.profile.firestore",
@@ -42,7 +44,7 @@ class StyleguideTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"},
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -53,7 +55,10 @@ class StyleguideTestCase(unittest.TestCase):
         self.app_context.pop()
 
     def _login_user(
-        self, user_id: str, user_data: dict[str, Any], is_admin: bool
+        self,
+        user_id: str,
+        user_data: dict[str, Any],
+        is_admin: bool,
     ) -> None:
         """Simulate a user login by setting the session and mocking Firestore."""
         with self.client.session_transaction() as sess:
@@ -81,13 +86,13 @@ class StyleguideTestCase(unittest.TestCase):
         self._login_user(MOCK_ADMIN_ID, MOCK_ADMIN_DATA, is_admin=True)
 
         response = self.client.get("/admin/styleguide")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Design System Styleguide", response.data)
-        self.assertIn(b"Typography", response.data)
-        self.assertIn(b"Buttons", response.data)
-        self.assertIn(b"Badges", response.data)
-        self.assertIn(b"Cards", response.data)
-        self.assertIn(b"Hero Stats Card", response.data)
+        assert response.status_code == 200
+        assert b"Design System Styleguide" in response.data
+        assert b"Typography" in response.data
+        assert b"Buttons" in response.data
+        assert b"Badges" in response.data
+        assert b"Cards" in response.data
+        assert b"Hero Stats Card" in response.data
 
     def test_styleguide_inaccessible_to_non_admin(self) -> None:
         """Ensure a non-admin user is redirected from the styleguide."""
@@ -103,7 +108,7 @@ class StyleguideTestCase(unittest.TestCase):
         # Wait, the @login_required(admin_required=True) decorator should handle it.
 
         # Let's check auth/decorators.py
-        self.assertIn(b"You are not authorized to view this page.", response.data)
+        assert b"You are not authorized to view this page." in response.data
 
 
 if __name__ == "__main__":

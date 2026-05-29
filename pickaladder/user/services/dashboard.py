@@ -33,7 +33,9 @@ if TYPE_CHECKING:
 
 
 def get_dashboard_data(
-    db: Client, user_id: str, include_activity: bool = False
+    db: Client,
+    user_id: str,
+    include_activity: bool = False,
 ) -> dict[str, Any]:
     """Aggregate all data required for the user dashboard."""
     from pickaladder.user.helpers import calculate_onboarding_progress
@@ -90,7 +92,8 @@ def get_dashboard_data(
 
 
 def _fetch_vanity_stats(
-    db: Client, user_id: str
+    db: Client,
+    user_id: str,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Fetch user document and calculate vanity metrics."""
     from pickaladder.user.services.match_stats import calculate_stats, get_user_matches

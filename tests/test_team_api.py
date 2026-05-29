@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 
-def test_api_user_teams(client, mock_db):
+def test_api_user_teams(client, mock_db) -> None:
     """Test the /team/api/user-teams endpoint."""
     uid = "test_user"
     with client.session_transaction() as sess:
@@ -14,7 +14,7 @@ def test_api_user_teams(client, mock_db):
             "type": "named",
             "member_ids": [uid, "other_user"],
             "isActive": True,
-        }
+        },
     )
 
     # Create a pairing team (should be ignored)
@@ -24,11 +24,12 @@ def test_api_user_teams(client, mock_db):
             "type": "pairing",
             "member_ids": [uid, "other_user"],
             "isActive": True,
-        }
+        },
     )
 
     with patch(
-        "pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}
+        "pickaladder.auth.routes.auth.verify_id_token",
+        return_value={"uid": uid},
     ):
         response = client.get("/team/api/user-teams")
         SUCCESS_CODE = 200
@@ -40,7 +41,7 @@ def test_api_user_teams(client, mock_db):
         assert data["teams"][0]["name"] == "Team A"
 
 
-def test_api_team_roster(client, mock_db):
+def test_api_team_roster(client, mock_db) -> None:
     """Test the /team/api/<team_id>/roster endpoint."""
     uid = "test_user"
     with client.session_transaction() as sess:
@@ -61,11 +62,12 @@ def test_api_team_roster(client, mock_db):
                 mock_db.collection("users").document("u2"),
             ],
             "isActive": True,
-        }
+        },
     )
 
     with patch(
-        "pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}
+        "pickaladder.auth.routes.auth.verify_id_token",
+        return_value={"uid": uid},
     ):
         response = client.get("/team/api/team_a/roster")
         SUCCESS_CODE = 200
@@ -80,7 +82,7 @@ def test_api_team_roster(client, mock_db):
         assert "u2" in member_ids
 
 
-def test_api_team_roster_unauthorized(client, mock_db):
+def test_api_team_roster_unauthorized(client, mock_db) -> None:
     """Test that unauthorized users cannot view roster."""
     uid = "test_user"
     with client.session_transaction() as sess:
@@ -93,11 +95,12 @@ def test_api_team_roster_unauthorized(client, mock_db):
             "type": "named",
             "member_ids": ["u2", "u3"],
             "isActive": True,
-        }
+        },
     )
 
     with patch(
-        "pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}
+        "pickaladder.auth.routes.auth.verify_id_token",
+        return_value={"uid": uid},
     ):
         response = client.get("/team/api/team_b/roster")
         FORBIDDEN_CODE = 403

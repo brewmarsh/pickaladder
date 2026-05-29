@@ -47,15 +47,15 @@ class MarketplaceRepository(BaseRepository):
         # 1. Search Groups
         if search_type in ["all", "group"]:
             group_query = db.collection("groups").where(
-                filter=firestore.FieldFilter("visibility", "==", Visibility.PUBLIC)
+                filter=firestore.FieldFilter("visibility", "==", Visibility.PUBLIC),
             )
 
             # Simple text search (starts with) if provided
             if query_text:
                 group_query = group_query.where(
-                    filter=firestore.FieldFilter("name", ">=", query_text)
+                    filter=firestore.FieldFilter("name", ">=", query_text),
                 ).where(
-                    filter=firestore.FieldFilter("name", "<=", query_text + "\uf8ff")
+                    filter=firestore.FieldFilter("name", "<=", query_text + "\uf8ff"),
                 )
 
             for doc in group_query.stream():
@@ -67,7 +67,7 @@ class MarketplaceRepository(BaseRepository):
         if search_type in ["all", "division"]:
             # Query active seasons
             season_query = db.collection("seasons").where(
-                filter=firestore.FieldFilter("status", "==", "ACTIVE")
+                filter=firestore.FieldFilter("status", "==", "ACTIVE"),
             )
 
             group_cache: dict[str, str] = {}
@@ -110,7 +110,7 @@ class MarketplaceRepository(BaseRepository):
                                 "is_featured": div.get("is_featured", False),
                                 "member_count": len(div.get("participant_ids", [])),
                                 "createdAt": season_data.get("createdAt"),
-                            }
+                            },
                         )
 
         # In-memory sorting

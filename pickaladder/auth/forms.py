@@ -1,7 +1,8 @@
 """Forms for the auth blueprint."""
 
+from __future__ import annotations
+
 import re
-from typing import Optional
 
 from flask_wtf import FlaskForm  # type: ignore
 from wtforms import (
@@ -71,18 +72,21 @@ class RegisterForm(FlaskForm):
     submit = SubmitField("Register")
 
     # TODO: Add type hints for Agent clarity
-    def validate_password(self, field: Field, form: Optional[FlaskForm] = None) -> None:
+    def validate_password(self, field: Field, form: FlaskForm | None = None) -> None:
         """Validate password complexity."""
         if not re.search(r"[A-Z]", field.data):
+            msg = "Password must contain at least one uppercase letter."
             raise ValidationError(
-                "Password must contain at least one uppercase letter."
+                msg,
             )
         if not re.search(r"[a-z]", field.data):
+            msg = "Password must contain at least one lowercase letter."
             raise ValidationError(
-                "Password must contain at least one lowercase letter."
+                msg,
             )
         if not re.search(r"\d", field.data):
-            raise ValidationError("Password must contain at least one number.")
+            msg = "Password must contain at least one number."
+            raise ValidationError(msg)
 
 
 class ChangePasswordForm(FlaskForm):
@@ -105,15 +109,18 @@ class ChangePasswordForm(FlaskForm):
     submit = SubmitField("Change Password")
 
     # TODO: Add type hints for Agent clarity
-    def validate_password(self, field: Field, form: Optional[FlaskForm] = None) -> None:
+    def validate_password(self, field: Field, form: FlaskForm | None = None) -> None:
         """Validate password complexity."""
         if not re.search(r"[A-Z]", field.data):
+            msg = "Password must contain at least one uppercase letter."
             raise ValidationError(
-                "Password must contain at least one uppercase letter."
+                msg,
             )
         if not re.search(r"[a-z]", field.data):
+            msg = "Password must contain at least one lowercase letter."
             raise ValidationError(
-                "Password must contain at least one lowercase letter."
+                msg,
             )
         if not re.search(r"\d", field.data):
-            raise ValidationError("Password must contain at least one number.")
+            msg = "Password must contain at least one number."
+            raise ValidationError(msg)

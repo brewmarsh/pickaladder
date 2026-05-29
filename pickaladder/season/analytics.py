@@ -52,12 +52,14 @@ class AnalyticsService:
                         "pointsFor": user_entry.get("points_for", 0),
                         "pointsAgainst": user_entry.get("points_against", 0),
                         "endDate": season.get("endDate"),
-                    }
+                    },
                 )
 
         # Sort by date descending
         return sorted(
-            history, key=lambda x: x["endDate"] if x["endDate"] else "", reverse=True
+            history,
+            key=lambda x: x["endDate"] or "",
+            reverse=True,
         )
 
     @staticmethod
@@ -76,7 +78,7 @@ class AnalyticsService:
                 "label": "Career High",
                 "value": f"#{best_rank}",
                 "icon": "fa-crown",
-            }
+            },
         )
 
         # 2. Total Wins
@@ -88,7 +90,7 @@ class AnalyticsService:
                     "label": "Total Wins",
                     "value": total_wins,
                     "icon": "fa-trophy",
-                }
+                },
             )
 
         # 3. Best Win %
@@ -106,7 +108,7 @@ class AnalyticsService:
                     "label": "Best Win %",
                     "value": f"{int(best_rate)}%",
                     "icon": "fa-fire",
-                }
+                },
             )
 
         return achievements

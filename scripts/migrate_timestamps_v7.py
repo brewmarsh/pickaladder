@@ -51,7 +51,6 @@ def initialize_firebase() -> bool:
         if os.environ.get("FIRESTORE_EMULATOR_HOST"):
             firebase_admin.initialize_app()
             return True
-        print("Error: No credentials found and FIRESTORE_EMULATOR_HOST not set.")
         return False
 
     firebase_admin.initialize_app(cred)
@@ -65,7 +64,6 @@ def migrate_collection(
     batch_size: int = 500,
 ) -> None:
     """Rename created_at to createdAt in the specified collection."""
-    print(f"Migrating collection: {collection_name}")
     # Detect if we're using mockfirestore
     is_mock = hasattr(db, "reset") or "MockFirestore" in str(type(db))
     batch: WriteBatch | None = db.batch() if not dry_run and not is_mock else None
@@ -80,7 +78,6 @@ def migrate_collection(
                 "created_at": firestore.DELETE_FIELD,
             }
             if dry_run:
-                print(f"[DRY] {doc.id}: {updates}")
                 count += 1
             elif is_mock:
                 doc.reference.update(updates)
@@ -94,7 +91,6 @@ def migrate_collection(
 
     if batch and count % batch_size != 0:
         batch.commit()
-    print(f"Done {collection_name}. Processed: {total}, Migrated: {count}\n")
 
 
 def main() -> None:

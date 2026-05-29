@@ -17,7 +17,10 @@ class ActivityService:
 
     @staticmethod
     def log_activity(
-        db: Client, user_id: str, activity_type: str, data: dict[str, Any]
+        db: Client,
+        user_id: str,
+        activity_type: str,
+        data: dict[str, Any],
     ) -> str:
         """Records a new event in the global activity collection."""
         activity_ref = db.collection(ActivityService.COLLECTION_NAME).document()
@@ -49,9 +52,7 @@ class ActivityService:
 
             # Enrich with user profile
             user = UserService.get_user_by_id(db, data["userId"])
-            data["user"] = (
-                user if user else {"username": "Unknown", "id": data["userId"]}
-            )
+            data["user"] = user or {"username": "Unknown", "id": data["userId"]}
 
             activities.append(data)
 
@@ -59,11 +60,14 @@ class ActivityService:
 
     @staticmethod
     def toggle_reaction(
-        db: Client, activity_id: str, user_id: str, reaction_type: str = "CHEER"
+        db: Client,
+        activity_id: str,
+        user_id: str,
+        reaction_type: str = "CHEER",
     ) -> list[dict[str, Any]]:
         """Adds or removes a user's reaction from an activity."""
         activity_ref = db.collection(ActivityService.COLLECTION_NAME).document(
-            activity_id
+            activity_id,
         )
         doc = activity_ref.get()
         if not doc.exists:

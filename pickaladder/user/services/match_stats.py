@@ -12,18 +12,20 @@ if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
 
-    from ..models import User
+    from pickaladder.user.models import User
 
 
 def get_user_matches(
-    db: Client, user_id: str, limit: int | None = None
+    db: Client,
+    user_id: str,
+    limit: int | None = None,
 ) -> list[DocumentSnapshot]:
     """Fetch matches involving a user."""
     from firebase_admin import firestore
 
     matches_ref = db.collection("matches")
     query = matches_ref.where(
-        filter=firestore.FieldFilter("participants", "array_contains", user_id)
+        filter=firestore.FieldFilter("participants", "array_contains", user_id),
     ).order_by("matchDate", direction=firestore.Query.DESCENDING)
 
     if limit:
@@ -33,7 +35,8 @@ def get_user_matches(
 
 
 def _process_match_for_streak(
-    m: DocumentSnapshot | dict[str, Any], user_id: str
+    m: DocumentSnapshot | dict[str, Any],
+    user_id: str,
 ) -> dict[str, Any] | None:
     """Extract result and date information from a match object."""
     if hasattr(m, "to_dict"):
@@ -53,7 +56,8 @@ def _process_match_for_streak(
 
 
 def _get_processed_streak_items(
-    user_id: str, matches: list[Any]
+    user_id: str,
+    matches: list[Any],
 ) -> list[dict[str, Any]]:
     """Helper to process matches for streak calculation."""
     processed = []
@@ -117,7 +121,8 @@ def _get_opponent_ids(matches: list[Any], user_id: str, limit: int) -> list[str]
 
 
 def _fetch_opponents_map(
-    db: Client, opponent_ids: list[str]
+    db: Client,
+    opponent_ids: list[str],
 ) -> dict[str, dict[str, Any]]:
     """Fetch user data for multiple opponent IDs."""
     if not opponent_ids:
@@ -132,7 +137,10 @@ def _fetch_opponents_map(
 
 
 def get_recent_opponents(
-    db: Client, user_id: str, matches: list[Any], limit: int = 4
+    db: Client,
+    user_id: str,
+    matches: list[Any],
+    limit: int = 4,
 ) -> list[User]:
     """Identify recent unique 1v1 opponents."""
     opponent_ids = _get_opponent_ids(matches, user_id, limit)
@@ -172,7 +180,8 @@ def _process_match_stats_item(match_doc: DocumentSnapshot, user_id: str) -> dict
 
 
 def _process_stats_batch(
-    matches: list[DocumentSnapshot], user_id: str
+    matches: list[DocumentSnapshot],
+    user_id: str,
 ) -> tuple[int, int, list[dict[str, Any]]]:
     """Process a list of match documents and count wins/losses."""
     wins = losses = 0
@@ -187,13 +196,15 @@ def _process_stats_batch(
                     "data": item["data"],
                     "user_won": item["won"],
                     "date": item["date"],
-                }
+                },
             )
     return wins, losses, processed
 
 
 def _format_stats_response(
-    wins: int, losses: int, processed: list[dict[str, Any]]
+    wins: int,
+    losses: int,
+    processed: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Format the final statistics dictionary."""
     total = wins + losses
@@ -227,7 +238,10 @@ def _get_h2h_match_data(
 
 
 def _calculate_h2h_delta(
-    u1: str, u2: str, teams: tuple[set[str], set[str]], scores: tuple[int, int]
+    u1: str,
+    u2: str,
+    teams: tuple[set[str], set[str]],
+    scores: tuple[int, int],
 ) -> tuple[int, int, int]:
     """Calculate win, loss, and point delta for user 1 in a specific matchup."""
     t1, t2 = teams
@@ -240,7 +254,9 @@ def _calculate_h2h_delta(
 
 
 def _process_h2h_match(
-    data: dict[str, Any] | None, user_id_1: str, user_id_2: str
+    data: dict[str, Any] | None,
+    user_id_1: str,
+    user_id_2: str,
 ) -> tuple[int, int, int]:
     """Process a single match for H2H stats."""
     if not data or user_id_2 not in data.get("participants", []):
@@ -259,7 +275,7 @@ def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] 
 
     wins = losses = points = 0
     query = db.collection("matches").where(
-        filter=firestore.FieldFilter("participants", "array_contains", user_id_1)
+        filter=firestore.FieldFilter("participants", "array_contains", user_id_1),
     )
 
     for match in query.stream():
@@ -274,7 +290,8 @@ def get_h2h_stats(db: Client, user_id_1: str, user_id_2: str) -> dict[str, Any] 
 
 
 def _get_profile_match_alignment(
-    match_dict: dict[str, Any], user_id: str
+    match_dict: dict[str, Any],
+    user_id: str,
 ) -> dict[str, Any]:
     """Stub for missing function."""
     return {}

@@ -32,10 +32,12 @@ class AuthFirebaseTestCase(unittest.TestCase):
             "init_app": patch("firebase_admin.initialize_app"),
             "auth": patch("pickaladder.auth.routes.auth", new=self.mock_auth_service),
             "firestore": patch(
-                "pickaladder.auth.routes.firestore", new=self.mock_firestore_service
+                "pickaladder.auth.routes.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
+                "pickaladder.firestore",
+                new=self.mock_firestore_service,
             ),
         }
 
@@ -66,7 +68,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             r'<input id="csrf_token" name="csrf_token" type="hidden" value="([^"]+)">',
             register_page_response.data.decode(),
         )
-        self.assertIsNotNone(csrf_token_match)
+        assert csrf_token_match is not None
         csrf_token = cast("Match[str]", csrf_token_match).group(1)
 
         response = self.client.post(
@@ -82,11 +84,11 @@ class AuthFirebaseTestCase(unittest.TestCase):
             },
             follow_redirects=True,
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Registration successful!", response.data)
+        assert response.status_code == 200
+        assert b"Registration successful!" in response.data
         self.mock_auth_service.create_user.assert_called_once()
         self.mock_firestore_service.client.return_value.collection("users").document(
-            "new_user_uid"
+            "new_user_uid",
         ).set.assert_called_once()
         mock_send_email.assert_called_once()
 
@@ -95,12 +97,12 @@ class AuthFirebaseTestCase(unittest.TestCase):
         # Mock the admin check to prevent a redirect to /install.
         mock_db = self.mock_firestore_service.client.return_value
         mock_db.collection(
-            "users"
+            "users",
         ).where.return_value.limit.return_value.get.return_value = [MagicMock()]
 
         response = self.client.get("/auth/login")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Login", response.data)
+        assert response.status_code == 200
+        assert b"Login" in response.data
 
     def test_session_login(self) -> None:
         """Test the session login endpoint."""
@@ -122,7 +124,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             r'<input id="csrf_token" name="csrf_token" type="hidden" value="([^"]+)">',
             login_page_response.data.decode(),
         )
-        self.assertIsNotNone(csrf_token_match)
+        assert csrf_token_match is not None
         csrf_token = cast("Match[str]", csrf_token_match).group(1)
 
         response = self.client.post(
@@ -130,11 +132,11 @@ class AuthFirebaseTestCase(unittest.TestCase):
             json={"idToken": "test_token"},
             headers={"X-CSRFToken": csrf_token},
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, {"status": "success"})
+        assert response.status_code == 200
+        assert response.json == {"status": "success"}
         with self.client.session_transaction() as sess:
-            self.assertEqual(sess["user_id"], MOCK_USER_ID)
-            self.assertEqual(sess["is_admin"], False)
+            assert sess["user_id"] == MOCK_USER_ID
+            assert not sess["is_admin"]
 
     def test_install_admin_user(self) -> None:
         """Test the creation of the initial admin user."""
@@ -147,7 +149,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
 
         # Mock the return value of create_user
         self.mock_auth_service.create_user.return_value = MagicMock(
-            uid="admin_user_uid"
+            uid="admin_user_uid",
         )
 
         # More specific mocking for document calls
@@ -158,7 +160,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             """Firestore document side effect mock."""
             if doc_id == "admin_user_uid":
                 return mock_user_doc
-            elif doc_id == "enforceEmailVerification":
+            if doc_id == "enforceEmailVerification":
                 return mock_settings_doc
             return MagicMock()
 
@@ -169,9 +171,10 @@ class AuthFirebaseTestCase(unittest.TestCase):
         # First, get the install page to get a valid CSRF token
         install_page_response = self.client.get("/auth/install")
         csrf_token_match = re.search(
-            r'name="csrf_token" value="([^"]+)"', install_page_response.data.decode()
+            r'name="csrf_token" value="([^"]+)"',
+            install_page_response.data.decode(),
         )
-        self.assertIsNotNone(csrf_token_match)
+        assert csrf_token_match is not None
         csrf_token = cast("Match[str]", csrf_token_match).group(1)
 
         response = self.client.post(
@@ -186,8 +189,8 @@ class AuthFirebaseTestCase(unittest.TestCase):
             },
             follow_redirects=True,
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Admin user created successfully.", response.data)
+        assert response.status_code == 200
+        assert b"Admin user created successfully." in response.data
         self.mock_auth_service.create_user.assert_called_once_with(
             email="admin@example.com",
             password=MOCK_PASSWORD,
@@ -223,13 +226,13 @@ class AuthFirebaseTestCase(unittest.TestCase):
         with self.client.session_transaction() as sess:
             sess["invite_token"] = "test_invite_token"  # nosec
         register_page_response = self.client.get(
-            "/auth/register?invite_token=test_invite_token"
+            "/auth/register?invite_token=test_invite_token",
         )
         csrf_token_match = re.search(
             r'<input id="csrf_token" name="csrf_token" type="hidden" value="([^"]+)">',
             register_page_response.data.decode(),
         )
-        self.assertIsNotNone(csrf_token_match)
+        assert csrf_token_match is not None
         csrf_token = cast("Match[str]", csrf_token_match).group(1)
 
         response = self.client.post(
@@ -245,13 +248,13 @@ class AuthFirebaseTestCase(unittest.TestCase):
             },
             follow_redirects=True,
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Registration successful!", response.data)
+        assert response.status_code == 200
+        assert b"Registration successful!" in response.data
 
         # Check that the friendship was created
         mock_db.batch.assert_called_once()
         mock_db.collection("invites").document(
-            "test_invite_token"
+            "test_invite_token",
         ).update.assert_called_once_with({"used": True})
 
     def test_google_signin_new_user(self) -> None:
@@ -289,7 +292,7 @@ class AuthFirebaseTestCase(unittest.TestCase):
             r'<input id="csrf_token" name="csrf_token" type="hidden" value="([^"]+)">',
             login_page_response.data.decode(),
         )
-        self.assertIsNotNone(csrf_token_match)
+        assert csrf_token_match is not None
         csrf_token = cast("Match[str]", csrf_token_match).group(1)
 
         response = self.client.post(
@@ -297,8 +300,8 @@ class AuthFirebaseTestCase(unittest.TestCase):
             json={"idToken": "test_token"},
             headers={"X-CSRFToken": csrf_token},
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json, {"status": "success"})
+        assert response.status_code == 200
+        assert response.json == {"status": "success"}
         mock_user_doc.set.assert_called_once()
 
 

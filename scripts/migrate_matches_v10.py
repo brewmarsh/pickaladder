@@ -1,6 +1,4 @@
-"""
-Migration script to normalize historical match data to the new unified schema.
-"""
+"""Migration script to normalize historical match data to the new unified schema."""
 
 from __future__ import annotations
 
@@ -77,7 +75,7 @@ def _extract_uids(data: dict[str, Any]) -> list[str]:
 
     if "participants" in data:
         uids.update(_get_ids_from_refs(data["participants"]))
-    return sorted(list(uids))
+    return sorted(uids)
 
 
 def _normalize_scores(data: dict[str, Any]) -> tuple[int, int]:
@@ -102,7 +100,7 @@ def _get_sides(data: dict[str, Any]) -> tuple[list[str], list[str]]:
     """Determine UIDs for side 1 and side 2."""
     if data.get("matchType") == "doubles" or data.get("match_type") == "doubles":
         return _get_ids_from_refs(data.get("team1")), _get_ids_from_refs(
-            data.get("team2")
+            data.get("team2"),
         )
 
     def get_id(ref_key: str, data_key: str) -> str:
@@ -175,7 +173,7 @@ def _apply_update(
     if not updates:
         return False
     if dry_run:
-        print(f"[DRY] {doc.id}: {updates}")
+        pass
     elif is_mock:
         doc.reference.update(updates)
     elif batch:
@@ -192,7 +190,11 @@ def migrate_matches(db: Any, dry_run: bool = False, batch_size: int = 100) -> No
     for doc in db.collection("matches").stream():
         total += 1
         if _apply_update(
-            doc, _get_match_updates(doc.to_dict()), dry_run, is_mock, batch
+            doc,
+            _get_match_updates(doc.to_dict()),
+            dry_run,
+            is_mock,
+            batch,
         ):
             count += 1
             if batch and count % batch_size == 0:
@@ -200,7 +202,6 @@ def migrate_matches(db: Any, dry_run: bool = False, batch_size: int = 100) -> No
                 batch = db.batch()
     if batch and count % batch_size != 0:
         batch.commit()
-    print(f"\nDone. Processed: {total}, Migrated: {count}")
 
 
 def _setup_mock_db() -> Any:
@@ -221,7 +222,7 @@ def _setup_mock_db() -> Any:
             "player2Ref": users[1],
             "player1_score": 11,
             "player2_score": 5,
-        }
+        },
     )
     m.document("m2").set(
         {
@@ -230,7 +231,7 @@ def _setup_mock_db() -> Any:
             "team2": [users[2], users[3]],
             "player1Score": 8,
             "player2Score": 11,
-        }
+        },
     )
     return db
 

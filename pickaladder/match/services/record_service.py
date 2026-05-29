@@ -55,7 +55,8 @@ class MatchRecordService:
 
     @staticmethod
     def get_player_record(
-        db: Client, player_ref: firestore.DocumentReference
+        db: Client,
+        player_ref: firestore.DocumentReference,
     ) -> dict[str, int]:
         """Calculate win/loss record for a player by doc reference."""
         wins, losses = 0, 0
@@ -66,7 +67,7 @@ class MatchRecordService:
         )
 
         query = db.collection("matches").where(
-            filter=firestore.FieldFilter("participants", "array_contains", uid)
+            filter=firestore.FieldFilter("participants", "array_contains", uid),
         )
 
         for match in query.stream():
@@ -107,11 +108,12 @@ class MatchRecordService:
 
     @staticmethod
     def _calculate_performance_metrics(
-        db: Client, start_date: datetime
+        db: Client,
+        start_date: datetime,
     ) -> dict[str, int]:
         """Aggregate win counts for players since the given start date."""
         query = db.collection("matches").where(
-            filter=firestore.FieldFilter("matchDate", ">=", start_date)
+            filter=firestore.FieldFilter("matchDate", ">=", start_date),
         )
         win_counts: dict[str, int] = {}
         for snap in query.stream():
@@ -152,7 +154,7 @@ class MatchRecordService:
                         "username": u_data.get("username", "Unknown"),
                         "profilePictureUrl": u_data.get("profilePictureUrl"),
                         "weekly_wins": top_counts.get(uid, 0),
-                    }
+                    },
                 )
 
         results.sort(key=lambda x: x["weekly_wins"], reverse=True)
@@ -160,14 +162,16 @@ class MatchRecordService:
 
     @staticmethod
     def get_leaderboard_data(
-        db: Client, limit: int = 50, min_games: int = GLOBAL_LEADERBOARD_MIN_GAMES
+        db: Client,
+        limit: int = 50,
+        min_games: int = GLOBAL_LEADERBOARD_MIN_GAMES,
     ) -> list[User]:
         """Fetch data for the global leaderboard using denormalized stats."""
         players: list[User] = []
         # Optimization: Fetch users and use their denormalized stats
         # This avoids the O(U*M) bottleneck of streaming matches for every user
         for u_snap in db.collection("users").stream():
-            user_data = cast(dict[str, Any], u_snap.to_dict() or {})
+            user_data = cast("dict[str, Any]", u_snap.to_dict() or {})
             user_data["id"] = u_snap.id
 
             stats = user_data.get("stats", {})
@@ -198,7 +202,7 @@ class MatchRecordService:
                         "win_percentage": float((wins / games) * 100)
                         if games > 0
                         else 0.0,
-                    }
+                    },
                 )
                 players.append(cast("User", user_data))
 

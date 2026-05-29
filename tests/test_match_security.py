@@ -28,7 +28,9 @@ class MatchSecurityTestCase(unittest.TestCase):
     @patch("pickaladder.match.services.MatchQueryService.get_candidate_player_ids")
     @patch("pickaladder.match.services.MatchCommandService._record_match_batch")
     def test_injected_fields_ignored(
-        self, mock_record_batch: MagicMock, mock_get_candidates: MagicMock
+        self,
+        mock_record_batch: MagicMock,
+        mock_get_candidates: MagicMock,
     ) -> None:
         """Test that injected fields like is_winner are ignored."""
         mock_db = MagicMock()
@@ -53,17 +55,17 @@ class MatchSecurityTestCase(unittest.TestCase):
         current_user = {"uid": "player1"}
 
         submission = MatchSubmission(
-            match_type=cast(str, form_data["match_type"]),
-            player_1_id=cast(str, form_data["player1"]),
-            player_2_id=cast(str, form_data["player2"]),
-            score_p1=cast(int, form_data["player1_score"]),
-            score_p2=cast(int, form_data["player2_score"]),
+            match_type=cast("str", form_data["match_type"]),
+            player_1_id=cast("str", form_data["player1"]),
+            player_2_id=cast("str", form_data["player2"]),
+            score_p1=cast("int", form_data["player1_score"]),
+            score_p2=cast("int", form_data["player2_score"]),
             match_date=None,
         )
 
         # Mock the building of match result to avoid url_for issues
         with patch(
-            "pickaladder.match.services.command.MatchCommandService._build_match_result"
+            "pickaladder.match.services.command.MatchCommandService._build_match_result",
         ) as mock_build:
             mock_res = MagicMock()
             mock_res.id = "match_123"
@@ -74,11 +76,11 @@ class MatchSecurityTestCase(unittest.TestCase):
         # Verify that the data passed to _record_match_batch does NOT include injected fields
         # match_data is the 7th argument (index 6)
         match_data = mock_record_batch.call_args[0][6]
-        self.assertNotIn("is_winner", match_data)
-        self.assertNotIn("rating", match_data)
+        assert "is_winner" not in match_data
+        assert "rating" not in match_data
         # is_upset might be added by the service itself, but we check if it was overwritten
         # By default check_upset returns False in mock
-        self.assertFalse(match_data.get("is_upset", False))
+        assert not match_data.get("is_upset", False)
 
 
 if __name__ == "__main__":

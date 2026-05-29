@@ -17,8 +17,8 @@ from pickaladder.group.utils import (
 class TestUtilsCoverage(unittest.TestCase):
     def test_get_random_joke(self) -> None:
         joke = get_random_joke()
-        self.assertIsInstance(joke, str)
-        self.assertGreater(len(joke), 0)
+        assert isinstance(joke, str)
+        assert len(joke) > 0
 
     @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_doubles(self, mock_firestore: MagicMock) -> None:
@@ -44,7 +44,7 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document(
-            "group1"
+            "group1",
         ).get.return_value = mock_group_doc
 
         mock_match = MagicMock()
@@ -57,29 +57,29 @@ class TestUtilsCoverage(unittest.TestCase):
             "matchDate": datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         }
         mock_db.collection("matches").where.return_value.stream.return_value = [
-            mock_match
+            mock_match,
         ]
 
         leaderboard = get_group_leaderboard("group1")
 
-        self.assertEqual(len(leaderboard), 4)
+        assert len(leaderboard) == 4
         player1_stats = next(p for p in leaderboard if p["id"] == "user1")
         player2_stats = next(p for p in leaderboard if p["id"] == "user2")
         player3_stats = next(p for p in leaderboard if p["id"] == "user3")
         player4_stats = next(p for p in leaderboard if p["id"] == "user4")
 
-        self.assertEqual(player1_stats["wins"], 1)
-        self.assertEqual(player1_stats["losses"], 0)
-        self.assertEqual(player1_stats["avg_score"], 11)
-        self.assertEqual(player2_stats["wins"], 1)
-        self.assertEqual(player2_stats["losses"], 0)
-        self.assertEqual(player2_stats["avg_score"], 11)
-        self.assertEqual(player3_stats["wins"], 0)
-        self.assertEqual(player3_stats["losses"], 1)
-        self.assertEqual(player3_stats["avg_score"], 5)
-        self.assertEqual(player4_stats["wins"], 0)
-        self.assertEqual(player4_stats["losses"], 1)
-        self.assertEqual(player4_stats["avg_score"], 5)
+        assert player1_stats["wins"] == 1
+        assert player1_stats["losses"] == 0
+        assert player1_stats["avg_score"] == 11
+        assert player2_stats["wins"] == 1
+        assert player2_stats["losses"] == 0
+        assert player2_stats["avg_score"] == 11
+        assert player3_stats["wins"] == 0
+        assert player3_stats["losses"] == 1
+        assert player3_stats["avg_score"] == 5
+        assert player4_stats["wins"] == 0
+        assert player4_stats["losses"] == 1
+        assert player4_stats["avg_score"] == 5
 
     @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_draw(self, mock_firestore: MagicMock) -> None:
@@ -101,7 +101,7 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document(
-            "group1"
+            "group1",
         ).get.return_value = mock_group_doc
 
         mock_match = MagicMock()
@@ -114,21 +114,21 @@ class TestUtilsCoverage(unittest.TestCase):
             "matchDate": datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         }
         mock_db.collection("matches").where.return_value.stream.return_value = [
-            mock_match
+            mock_match,
         ]
 
         leaderboard = get_group_leaderboard("group1")
 
-        self.assertEqual(len(leaderboard), 2)
+        assert len(leaderboard) == 2
         player1_stats = next(p for p in leaderboard if p["id"] == "user1")
         player2_stats = next(p for p in leaderboard if p["id"] == "user2")
 
-        self.assertEqual(player1_stats["wins"], 0)
-        self.assertEqual(player1_stats["losses"], 0)
-        self.assertEqual(player1_stats["games_played"], 1)
-        self.assertEqual(player2_stats["wins"], 0)
-        self.assertEqual(player2_stats["losses"], 0)
-        self.assertEqual(player2_stats["games_played"], 1)
+        assert player1_stats["wins"] == 0
+        assert player1_stats["losses"] == 0
+        assert player1_stats["games_played"] == 1
+        assert player2_stats["wins"] == 0
+        assert player2_stats["losses"] == 0
+        assert player2_stats["games_played"] == 1
 
     @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_no_members(self, mock_firestore: MagicMock) -> None:
@@ -137,11 +137,11 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_group_doc.exists = True
         mock_group_doc.to_dict.return_value = {"members": []}
         mock_db.collection("groups").document(
-            "group1"
+            "group1",
         ).get.return_value = mock_group_doc
 
         leaderboard = get_group_leaderboard("group1")
-        self.assertEqual(leaderboard, [])
+        assert leaderboard == []
 
     @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_no_matches(self, mock_firestore: MagicMock) -> None:
@@ -163,27 +163,29 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document(
-            "group1"
+            "group1",
         ).get.return_value = mock_group_doc
         mock_db.collection("matches").where.return_value.stream.return_value = []
 
         leaderboard = get_group_leaderboard("group1")
 
-        self.assertEqual(len(leaderboard), 2)
+        assert len(leaderboard) == 2
         player1_stats = next(p for p in leaderboard if p["id"] == "user1")
         player2_stats = next(p for p in leaderboard if p["id"] == "user2")
 
-        self.assertEqual(player1_stats["wins"], 0)
-        self.assertEqual(player1_stats["losses"], 0)
-        self.assertEqual(player1_stats["games_played"], 0)
-        self.assertEqual(player2_stats["wins"], 0)
-        self.assertEqual(player2_stats["losses"], 0)
-        self.assertEqual(player2_stats["games_played"], 0)
+        assert player1_stats["wins"] == 0
+        assert player1_stats["losses"] == 0
+        assert player1_stats["games_played"] == 0
+        assert player2_stats["wins"] == 0
+        assert player2_stats["losses"] == 0
+        assert player2_stats["games_played"] == 0
 
     @patch("pickaladder.group.utils.datetime")
     @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_rank_change(
-        self, mock_firestore: MagicMock, mock_datetime: MagicMock
+        self,
+        mock_firestore: MagicMock,
+        mock_datetime: MagicMock,
     ) -> None:
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -203,7 +205,7 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document(
-            "group1"
+            "group1",
         ).get.return_value = mock_group_doc
 
         now = datetime.now(timezone.utc)
@@ -236,16 +238,17 @@ class TestUtilsCoverage(unittest.TestCase):
 
         leaderboard = get_group_leaderboard("group1")
 
-        self.assertEqual(len(leaderboard), 2)
+        assert len(leaderboard) == 2
         player1_stats = next(p for p in leaderboard if p["id"] == "user1")
         player2_stats = next(p for p in leaderboard if p["id"] == "user2")
 
-        self.assertEqual(player1_stats["rank_change"], 1)  # Was 2nd, now 1st
-        self.assertEqual(player2_stats["rank_change"], -1)  # Was 1st, now 2nd
+        assert player1_stats["rank_change"] == 1  # Was 2nd, now 1st
+        assert player2_stats["rank_change"] == -1  # Was 1st, now 2nd
 
     @patch("pickaladder.group.utils.firestore")
     def test_get_group_leaderboard_winning_streak(
-        self, mock_firestore: MagicMock
+        self,
+        mock_firestore: MagicMock,
     ) -> None:
         mock_db = mock_firestore.client.return_value
         mock_group_doc = MagicMock()
@@ -265,7 +268,7 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document(
-            "group1"
+            "group1",
         ).get.return_value = mock_group_doc
 
         now = datetime.now(timezone.utc)
@@ -286,24 +289,26 @@ class TestUtilsCoverage(unittest.TestCase):
 
         leaderboard = get_group_leaderboard("group1")
         player1_stats = next(p for p in leaderboard if p["id"] == "user1")
-        self.assertEqual(player1_stats["streak"], 5)
-        self.assertTrue(player1_stats["is_on_fire"])
+        assert player1_stats["streak"] == 5
+        assert player1_stats["is_on_fire"]
 
     @patch("pickaladder.group.utils.firestore")
     def test_get_leaderboard_trend_data_no_matches(
-        self, mock_firestore: MagicMock
+        self,
+        mock_firestore: MagicMock,
     ) -> None:
         mock_db = mock_firestore.client.return_value
         mock_db.collection("matches").where.return_value.stream.return_value = []
 
         trend_data = get_leaderboard_trend_data("group1")
 
-        self.assertEqual(trend_data["labels"], [])
-        self.assertEqual(trend_data["datasets"], [])
+        assert trend_data["labels"] == []
+        assert trend_data["datasets"] == []
 
     @patch("pickaladder.group.utils.firestore")
     def test_get_leaderboard_trend_data_with_matches(
-        self, mock_firestore: MagicMock
+        self,
+        mock_firestore: MagicMock,
     ) -> None:
         mock_db = mock_firestore.client.return_value
 
@@ -350,8 +355,8 @@ class TestUtilsCoverage(unittest.TestCase):
 
         trend_data = get_leaderboard_trend_data("group1")
 
-        self.assertEqual(trend_data["labels"], ["2023-01-01", "2023-01-02"])
-        self.assertEqual(len(trend_data["datasets"]), 2)
+        assert trend_data["labels"] == ["2023-01-01", "2023-01-02"]
+        assert len(trend_data["datasets"]) == 2
 
         user1_data = next(
             ds for ds in trend_data["datasets"] if ds["label"] == "User 1"
@@ -360,13 +365,15 @@ class TestUtilsCoverage(unittest.TestCase):
             ds for ds in trend_data["datasets"] if ds["label"] == "User 2"
         )
 
-        self.assertEqual(user1_data["data"], [11.0, 8.0])
-        self.assertEqual(user2_data["data"], [5.0, 8.0])
+        assert user1_data["data"] == [11.0, 8.0]
+        assert user2_data["data"] == [5.0, 8.0]
 
     @patch("pickaladder.group.utils.get_group_leaderboard")
     @patch("pickaladder.group.utils.firestore")
     def test_get_user_group_stats(
-        self, mock_firestore: MagicMock, mock_get_group_leaderboard: MagicMock
+        self,
+        mock_firestore: MagicMock,
+        mock_get_group_leaderboard: MagicMock,
     ) -> None:
         mock_db = mock_firestore.client.return_value
         mock_get_group_leaderboard.return_value = [
@@ -395,30 +402,32 @@ class TestUtilsCoverage(unittest.TestCase):
 
         stats = get_user_group_stats("group1", "user1")
 
-        self.assertEqual(stats["rank"], 1)
-        self.assertEqual(stats["wins"], 10)
-        self.assertEqual(stats["losses"], 5)
-        self.assertEqual(stats["win_streak"], 3)
-        self.assertEqual(stats["longest_streak"], 3)
+        assert stats["rank"] == 1
+        assert stats["wins"] == 10
+        assert stats["losses"] == 5
+        assert stats["win_streak"] == 3
+        assert stats["longest_streak"] == 3
 
     @patch("pickaladder.group.utils.get_group_leaderboard")
     @patch("pickaladder.group.utils.firestore")
     def test_get_user_group_stats_invalid_user(
-        self, mock_firestore: MagicMock, mock_get_group_leaderboard: MagicMock
+        self,
+        mock_firestore: MagicMock,
+        mock_get_group_leaderboard: MagicMock,
     ) -> None:
         mock_get_group_leaderboard.return_value = [
-            {"id": "user1", "wins": 10, "losses": 5}
+            {"id": "user1", "wins": 10, "losses": 5},
         ]
         mock_db = mock_firestore.client.return_value
         mock_db.collection("matches").where.return_value.stream.return_value = []
 
         stats = get_user_group_stats("group1", "invalid_user")
 
-        self.assertEqual(stats["rank"], "N/A")
-        self.assertEqual(stats["wins"], 0)
-        self.assertEqual(stats["losses"], 0)
-        self.assertEqual(stats["win_streak"], 0)
-        self.assertEqual(stats["longest_streak"], 0)
+        assert stats["rank"] == "N/A"
+        assert stats["wins"] == 0
+        assert stats["losses"] == 0
+        assert stats["win_streak"] == 0
+        assert stats["longest_streak"] == 0
 
     def test_friend_group_members(self) -> None:
         mock_db = MagicMock()
@@ -435,7 +444,7 @@ class TestUtilsCoverage(unittest.TestCase):
         member_refs = [mock_user1_ref, mock_user2_ref, new_member_ref]
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document(
-            "group1"
+            "group1",
         ).get.return_value = mock_group_doc
 
         mock_batch = MagicMock()
@@ -443,7 +452,7 @@ class TestUtilsCoverage(unittest.TestCase):
 
         friend_group_members(mock_db, "group1", new_member_ref)
 
-        self.assertEqual(mock_batch.set.call_count, 4)
+        assert mock_batch.set.call_count == 4
         mock_batch.commit.assert_called_once()
 
     @patch("flask.render_template")
@@ -474,9 +483,9 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_send_email.assert_called_once_with(**email_data)
         mock_firestore.client.return_value.collection(
-            "group_invites"
+            "group_invites",
         ).document.return_value.update.assert_called_once_with(
-            {"status": "sent", "last_error": mock_firestore.DELETE_FIELD}
+            {"status": "sent", "last_error": mock_firestore.DELETE_FIELD},
         )
 
     @patch("flask.render_template")
@@ -507,9 +516,9 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_send_email.assert_called_once_with(**email_data)
         mock_firestore.client.return_value.collection(
-            "group_invites"
+            "group_invites",
         ).document.return_value.update.assert_called_once_with(
-            {"status": "failed", "last_error": "Email failed"}
+            {"status": "failed", "last_error": "Email failed"},
         )
 
 

@@ -11,17 +11,17 @@ from pickaladder.user.services.profile import sync_dupr_rating
 def mock_dupr_api():
     # Use fetch_rating instead of get_rating
     with patch(
-        "pickaladder.user.services.dupr_service.DUPRService.fetch_rating"
+        "pickaladder.user.services.dupr_service.DUPRService.fetch_rating",
     ) as mock:
         yield mock
 
 
-def test_sync_dupr_rating_updates_user(mock_db, mock_dupr_api):
+def test_sync_dupr_rating_updates_user(mock_db, mock_dupr_api) -> None:
     """Verify that sync_dupr_rating fetches from API and updates Firestore."""
     user_id = "test_user"
     dupr_id = "DUPR123"
     mock_db.collection("users").document(user_id).set(
-        {"dupr_id": dupr_id, "dupr_rating": 3.5}
+        {"dupr_id": dupr_id, "dupr_rating": 3.5},
     )
 
     EXPECTED_RATING = 4.2
@@ -35,7 +35,7 @@ def test_sync_dupr_rating_updates_user(mock_db, mock_dupr_api):
     assert updated_user["duprRating"] == EXPECTED_RATING
 
 
-def test_sync_dupr_rating_no_id(mock_db, mock_dupr_api):
+def test_sync_dupr_rating_no_id(mock_db, mock_dupr_api) -> None:
     """Verify that sync fails if user has no DUPR ID."""
     user_id = "no_id_user"
     mock_db.collection("users").document(user_id).set({"email": "test@test.com"})

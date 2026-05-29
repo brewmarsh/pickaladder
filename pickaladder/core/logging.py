@@ -16,7 +16,8 @@ class StructuredFormatter(logging.Formatter):
         """Format the log record as JSON."""
         log_data: dict[str, Any] = {
             "timestamp": datetime.fromtimestamp(
-                record.created, tz=timezone.utc
+                record.created,
+                tz=timezone.utc,
             ).isoformat(),
             "level": record.levelname,
             "message": record.getMessage(),
@@ -62,7 +63,7 @@ def setup_logging(app: Flask) -> None:
     else:
         # Clearer format for local development
         formatter = logging.Formatter(
-            "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+            "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
         )
         handler.setFormatter(formatter)
 

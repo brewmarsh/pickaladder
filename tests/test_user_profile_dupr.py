@@ -18,7 +18,8 @@ class UserProfileDuprTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore_client": patch(
-                "firebase_admin.firestore.client", return_value=self.mock_db
+                "firebase_admin.firestore.client",
+                return_value=self.mock_db,
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
@@ -27,7 +28,7 @@ class UserProfileDuprTestCase(unittest.TestCase):
             self.addCleanup(p.stop)
 
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"}
+            {"TESTING": True, "WTF_CSRF_ENABLED": False, "SERVER_NAME": "localhost"},
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -38,7 +39,10 @@ class UserProfileDuprTestCase(unittest.TestCase):
         self.app_context.pop()
 
     def _setup_profile_mocks(
-        self, viewer_id: str, target_user_id: str, target_user_data: dict[str, Any]
+        self,
+        viewer_id: str,
+        target_user_id: str,
+        target_user_data: dict[str, Any],
     ) -> None:
         """Helper to setup all necessary Firestore mocks for the profile view."""
         # Mock viewer profile
@@ -75,12 +79,13 @@ class UserProfileDuprTestCase(unittest.TestCase):
         # Mock matches queries
         self.mock_db.collection("matches").where.return_value.stream.return_value = []
         self.mock_db.collection(
-            "matches"
+            "matches",
         ).where.return_value.where.return_value.stream.return_value = []
 
     def test_profile_dupr_display(self) -> None:
         """Test that the DUPR rating and badge are correctly displayed
-        on the profile page."""
+        on the profile page.
+        """
         # Setup logged-in user
         viewer_id = "viewer_id"
         with self.client.session_transaction() as sess:
@@ -103,14 +108,14 @@ class UserProfileDuprTestCase(unittest.TestCase):
         response = self.client.get(f"/user/{target_user_id}")
 
         # Check response
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
 
         # Verify new UI label "Rating" is present instead of "DUPR Rating"
-        self.assertIn(b"Rating", response.data)
+        assert b"Rating" in response.data
         # Verify mock DUPR rating value "4.5" is present
-        self.assertIn(b"4.5", response.data)
+        assert b"4.5" in response.data
         # Verify DUPR badge "DUPR" is present because dupr_id exists
-        self.assertIn(b"DUPR", response.data)
+        assert b"DUPR" in response.data
 
     def test_profile_no_dupr_id_no_badge(self) -> None:
         """Test that the DUPR badge is NOT displayed when dupr_id is missing."""
@@ -134,6 +139,6 @@ class UserProfileDuprTestCase(unittest.TestCase):
         response = self.client.get(f"/user/{target_user_id}")
 
         # Verify "DUPR" badge is NOT present
-        self.assertNotIn(b"DUPR", response.data)
-        self.assertIn(b"Rating", response.data)
-        self.assertIn(b"3.5", response.data)
+        assert b"DUPR" not in response.data
+        assert b"Rating" in response.data
+        assert b"3.5" in response.data

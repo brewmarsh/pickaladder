@@ -8,20 +8,24 @@ from pickaladder import create_app
 class SecurityTestCase(unittest.TestCase):
     """Test case for security-related features."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up a test client with CSRF enabled."""
         self.app = create_app(
-            {"TESTING": True, "WTF_CSRF_ENABLED": True, "SECRET_KEY": "test-secret-key"}
+            {
+                "TESTING": True,
+                "WTF_CSRF_ENABLED": True,
+                "SECRET_KEY": "test-secret-key",
+            },
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down the application context."""
         self.app_context.pop()
 
-    def test_csrf_protection_on_ajax(self):
+    def test_csrf_protection_on_ajax(self) -> None:
         """Verify that POST requests without a CSRF token are rejected."""
         # Log in the user by setting session['user_id']
         # This bypasses the login_required redirect (302)
@@ -43,15 +47,16 @@ class SecurityTestCase(unittest.TestCase):
             },
         )
         # The app redirects on CSRF error
-        self.assertEqual(response.status_code, 302)
+        assert response.status_code == 302
 
         # 2. Test /match/challenge/create
         response = self.client.post(
-            "/match/challenge/create", json={"challenged_id": "other-user", "wager": 10}
+            "/match/challenge/create",
+            json={"challenged_id": "other-user", "wager": 10},
         )
-        self.assertEqual(response.status_code, 302)
+        assert response.status_code == 302
 
-    def test_rate_limiting(self):
+    def test_rate_limiting(self) -> None:
         """Verify that rate limiting blocks excessive requests."""
         from pickaladder.core.security import _rate_limit_storage
 
@@ -70,12 +75,12 @@ class SecurityTestCase(unittest.TestCase):
             # However, since we haven't mocked firestore, it might 500.
             # But the rate limiter is BEFORE the view logic.
             # If it's NOT 429, then rate limiting didn't block it yet.
-            self.assertNotEqual(response.status_code, 429)
+            assert response.status_code != 429
 
         # 6th request should fail with 429
         response = self.client.get("/match/record")
-        self.assertEqual(response.status_code, 429)
-        self.assertIn(b"Too many requests", response.data)
+        assert response.status_code == 429
+        assert b"Too many requests" in response.data
 
 
 if __name__ == "__main__":

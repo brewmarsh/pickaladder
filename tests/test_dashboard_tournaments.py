@@ -56,10 +56,10 @@ class DashboardTournamentsTestCase(unittest.TestCase):
 
         active = UserService.get_active_tournaments(mock_db, user_id)
 
-        self.assertEqual(len(active), 2)
-        self.assertEqual(active[0]["name"], "Active Tournament")
-        self.assertEqual(active[1]["name"], "Scheduled Tournament")
-        self.assertIn("date_display", active[0])
+        assert len(active) == 2
+        assert active[0]["name"] == "Active Tournament"
+        assert active[1]["name"] == "Scheduled Tournament"
+        assert "date_display" in active[0]
 
     def test_get_active_tournaments_sorting(self) -> None:
         """Test that active tournaments are sorted by date ascending."""
@@ -93,9 +93,9 @@ class DashboardTournamentsTestCase(unittest.TestCase):
 
         active = UserService.get_active_tournaments(mock_db, user_id)
 
-        self.assertEqual(len(active), 2)
-        self.assertEqual(active[0]["name"], "Earlier Tournament")
-        self.assertEqual(active[1]["name"], "Later Tournament")
+        assert len(active) == 2
+        assert active[0]["name"] == "Earlier Tournament"
+        assert active[1]["name"] == "Later Tournament"
 
     def test_get_past_tournaments(self) -> None:
         """Test getting past tournaments."""
@@ -115,19 +115,19 @@ class DashboardTournamentsTestCase(unittest.TestCase):
         }
 
         mock_db.collection.return_value.where.return_value.stream.return_value = [
-            mock_doc
+            mock_doc,
         ]
 
         # Mock get_tournament_standings
         mock_standings = [{"name": "Winner Name", "wins": 5}]
         with patch(
-            "pickaladder.tournament.utils.get_tournament_standings"
+            "pickaladder.tournament.utils.get_tournament_standings",
         ) as mock_get_standings:
             mock_get_standings.return_value = mock_standings
 
             past = UserService.get_past_tournaments(mock_db, user_id)
 
-            self.assertEqual(len(past), 1)
-            self.assertEqual(past[0]["name"], "Past Tournament")
-            self.assertEqual(past[0]["winner_name"], "Winner Name")
-            self.assertIn("date_display", past[0])
+            assert len(past) == 1
+            assert past[0]["name"] == "Past Tournament"
+            assert past[0]["winner_name"] == "Winner Name"
+            assert "date_display" in past[0]

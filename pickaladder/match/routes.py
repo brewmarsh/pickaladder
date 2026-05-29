@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 from firebase_admin import firestore
 from flask import flash, g, jsonify, redirect, render_template, request, url_for
@@ -20,9 +20,6 @@ from . import bp
 from .forms import MatchForm
 from .models import MatchSubmission
 from .services import MatchCommandService, MatchQueryService
-
-if TYPE_CHECKING:
-    pass
 
 
 @bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
@@ -80,10 +77,19 @@ def _populate_match_form_choices(  # noqa: PLR0913
 ) -> None:
     """Populate player choices for the match form."""
     p1_cands = MatchQueryService.get_candidate_player_ids(
-        db, user_id, group_id, t_id, session_id, True
+        db,
+        user_id,
+        group_id,
+        t_id,
+        session_id,
+        True,
     )
     other_cands = MatchQueryService.get_candidate_player_ids(
-        db, user_id, group_id, t_id, session_id
+        db,
+        user_id,
+        group_id,
+        t_id,
+        session_id,
     )
     all_uids = p1_cands | other_cands
     all_names = {}
@@ -93,10 +99,13 @@ def _populate_match_form_choices(  # noqa: PLR0913
             if doc.exists:
                 all_names[doc.id] = doc.to_dict().get("name", doc.id)
 
-    form.player1.choices = cast(Any, [(u, str(all_names.get(u, u))) for u in p1_cands])
+    form.player1.choices = cast(
+        "Any", [(u, str(all_names.get(u, u))) for u in p1_cands]
+    )
     others = [(u, str(all_names.get(u, u))) for u in other_cands]
     form.player2.choices = form.partner.choices = form.opponent2.choices = cast(
-        Any, others
+        "Any",
+        others,
     )
 
 
@@ -167,7 +176,10 @@ def record_match() -> Response:
 
 
 def _handle_match_submission(
-    db: firestore.Client, form: MatchForm, group_id: str | None, t_id: str | None
+    db: firestore.Client,
+    form: MatchForm,
+    group_id: str | None,
+    t_id: str | None,
 ) -> Response:
     """Process form data and record the match."""
     data = form.data
@@ -231,7 +243,10 @@ def get_match_history() -> Response:
     uid = g.user.uid
 
     matches, next_cursor = MatchQueryService.get_matches_for_user(
-        db, uid, limit, cursor
+        db,
+        uid,
+        limit,
+        cursor,
     )
 
     return jsonify({"matches": matches, "next_cursor": next_cursor})
@@ -314,7 +329,10 @@ def create_challenge() -> Response:
         from .services.challenge_service import ChallengeService
 
         challenge_id = ChallengeService.issue_challenge(
-            db, g.user.uid, challenged_id, int(wager)
+            db,
+            g.user.uid,
+            challenged_id,
+            int(wager),
         )
         return jsonify({"status": "success", "challenge_id": challenge_id}), 201
     except Exception as e:

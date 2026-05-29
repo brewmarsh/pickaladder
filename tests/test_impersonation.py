@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import unittest
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
-from flask import Flask
-from flask.testing import FlaskClient
-
 from pickaladder import create_app
+
+if TYPE_CHECKING:
+    from flask import Flask
+    from flask.testing import FlaskClient
 
 
 class ImpersonationTestCase(unittest.TestCase):
@@ -34,7 +35,7 @@ class ImpersonationTestCase(unittest.TestCase):
                 "TESTING": True,
                 "WTF_CSRF_ENABLED": False,
                 "SECRET_KEY": "test",  # nosec B105
-            }
+            },
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -74,7 +75,6 @@ class ImpersonationTestCase(unittest.TestCase):
 
     def test_impersonation_flow(self) -> None:
         """Test the full impersonation flow: start, verify, stop."""
-
         # 1. Login as Admin
         with self.client.session_transaction() as sess:
             sess["user_id"] = "admin1"
@@ -87,8 +87,8 @@ class ImpersonationTestCase(unittest.TestCase):
         with patch("pickaladder.user.services.UserService.search_users") as mock_search:
             mock_search.return_value = ([(self.user_data, "none", "none")], None)
             response = self.client.get("/user/users")
-            self.assertIn("fa-user-secret", response.data.decode("utf-8"))
-            self.assertIn("/admin/impersonate/user1", response.data.decode("utf-8"))
+            assert "fa-user-secret" in response.data.decode("utf-8")
+            assert "/admin/impersonate/user1" in response.data.decode("utf-8")
 
         # 2. Start Impersonation of user1
         # Mock getting user1 data for the redirect flash message
@@ -114,27 +114,27 @@ class ImpersonationTestCase(unittest.TestCase):
         self.db.collection.return_value.document.side_effect = document_side_effect
 
         response = self.client.get("/admin/impersonate/user1", follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
 
         with self.client.session_transaction() as sess:
-            self.assertEqual(sess["impersonate_id"], "user1")
+            assert sess["impersonate_id"] == "user1"
 
         # 3. Verify g.user is now the impersonated user.
         # This is hard to check directly via client.get as it clears g between requests
         # but we can check if the response contains the impersonated user's name
         # or the banner.
         data: str = response.data.decode("utf-8")
-        self.assertIn("You are now impersonating User", data)
-        self.assertIn("You are impersonating <strong>User</strong>", data)
+        assert "You are now impersonating User" in data
+        assert "You are impersonating <strong>User</strong>" in data
 
         # 4. Stop Impersonation
         response = self.client.get("/admin/stop_impersonating", follow_redirects=True)
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
 
         with self.client.session_transaction() as sess:
-            self.assertNotIn("impersonate_id", sess)
+            assert "impersonate_id" not in sess
 
-        self.assertIn(b"Welcome back, Admin", response.data)
+        assert b"Welcome back, Admin" in response.data
 
     def test_non_admin_cannot_impersonate(self) -> None:
         """Ensure non-admins cannot start impersonation."""
@@ -144,10 +144,10 @@ class ImpersonationTestCase(unittest.TestCase):
 
         response = self.client.get("/admin/impersonate/user1", follow_redirects=True)
         # Should be redirected to dashboard or similar due to admin_required=True
-        self.assertIn(b"You are not authorized to view this page", response.data)
+        assert b"You are not authorized to view this page" in response.data
 
         with self.client.session_transaction() as sess:
-            self.assertNotIn("impersonate_id", sess)
+            assert "impersonate_id" not in sess
 
 
 if __name__ == "__main__":

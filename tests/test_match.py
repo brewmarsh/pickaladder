@@ -35,16 +35,20 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore": patch(
-                "pickaladder.match.routes.firestore", new=self.mock_firestore_service
+                "pickaladder.match.routes.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_services": patch(
-                "pickaladder.match.services.firestore", new=self.mock_firestore_service
+                "pickaladder.match.services.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
-                "pickaladder.firestore", new=self.mock_firestore_service
+                "pickaladder.firestore",
+                new=self.mock_firestore_service,
             ),
             "user_firestore": patch(
-                "pickaladder.user.routes.api.firestore", new=self.mock_firestore_service
+                "pickaladder.user.routes.api.firestore",
+                new=self.mock_firestore_service,
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
@@ -59,7 +63,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
                 "WTF_CSRF_ENABLED": False,
                 "SERVER_NAME": "localhost",
                 "FIREBASE_API_KEY": "dummy-test-key",
-            }
+            },
         )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
@@ -110,8 +114,8 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_db.collection.side_effect = collection_side_effect
 
         response = self.client.get("/match/record", headers=self._get_auth_headers())
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b'apiKey: "dummy-test-key"', response.data)
+        assert response.status_code == 200
+        assert b'apiKey: "dummy-test-key"' in response.data
 
     @patch("pickaladder.match.routes.MatchCommandService.record_match")
     @patch("pickaladder.match.routes.MatchQueryService.get_match_by_id")
@@ -125,7 +129,12 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         """Test recording a new match."""
 
         def get_candidates_side_effect(  # noqa: PLR0913
-            db, user_id, group_id, tournament_id, session_id=None, include_user=False
+            db,
+            user_id,
+            group_id,
+            tournament_id,
+            session_id=None,
+            include_user=False,
         ):
             if include_user:
                 return {user_id, MOCK_OPPONENT_ID}
@@ -179,16 +188,16 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             },
             follow_redirects=False,
         )
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("/match/summary/", response.location)
+        assert response.status_code == 302
+        assert "/match/summary/" in response.location
         # Check that the match was saved (using either add or document().set())
-        self.assertTrue(
+        assert (
             mock_matches_collection.add.called
             or mock_matches_collection.document.called
         )
 
     @patch(
-        "pickaladder.match.services.base_query.MatchBaseQueryService.get_match_by_id"
+        "pickaladder.match.services.base_query.MatchBaseQueryService.get_match_by_id",
     )
     def test_view_match_summary(self, mock_get_match: MagicMock) -> None:
         """Test viewing the match summary page."""
@@ -214,17 +223,18 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_user_doc.get.return_value = mock_user_snapshot
 
         response = self.client.get(
-            f"/match/summary/{mock_match_id}", headers=self._get_auth_headers()
+            f"/match/summary/{mock_match_id}",
+            headers=self._get_auth_headers(),
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Match Summary", response.data)
-        self.assertIn(b"11", response.data)
-        self.assertIn(b"5", response.data)
-        user_name = cast(str, MOCK_USER_DATA["name"])
-        self.assertIn(user_name.encode(), response.data)
+        assert response.status_code == 200
+        assert b"Match Summary" in response.data
+        assert b"11" in response.data
+        assert b"5" in response.data
+        user_name = cast("str", MOCK_USER_DATA["name"])
+        assert user_name.encode() in response.data
 
     @patch(
-        "pickaladder.match.services.base_query.MatchBaseQueryService.get_match_by_id"
+        "pickaladder.match.services.base_query.MatchBaseQueryService.get_match_by_id",
     )
     def test_view_match_summary_doubles(self, mock_get_match: MagicMock) -> None:
         """Test viewing the match summary page for a doubles match."""
@@ -256,14 +266,15 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_db.get_all.return_value = [user_doc, user_doc]
 
         response = self.client.get(
-            f"/match/summary/{mock_match_id}", headers=self._get_auth_headers()
+            f"/match/summary/{mock_match_id}",
+            headers=self._get_auth_headers(),
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Match Summary", response.data)
-        self.assertIn(b"11", response.data)
-        self.assertIn(b"5", response.data)
-        self.assertIn(b"Winners", response.data)
-        self.assertIn(b"Losers", response.data)
+        assert response.status_code == 200
+        assert b"Match Summary" in response.data
+        assert b"11" in response.data
+        assert b"5" in response.data
+        assert b"Winners" in response.data
+        assert b"Losers" in response.data
 
     def test_record_match_rematch_param(self) -> None:
         """Test that player2 param pre-fills the form."""
@@ -274,12 +285,12 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_user_snapshot = MagicMock(exists=True)
         mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
         mock_db.collection("users").document(
-            MOCK_USER_ID
+            MOCK_USER_ID,
         ).get.return_value = mock_user_snapshot
 
         # Mock get_candidate_player_ids
         with patch(
-            "pickaladder.match.routes.MatchQueryService.get_candidate_player_ids"
+            "pickaladder.match.routes.MatchQueryService.get_candidate_player_ids",
         ) as mock_get_candidates:
             mock_get_candidates.return_value = {MOCK_OPPONENT_ID}
             # Mock get_all for choices
@@ -291,8 +302,8 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
                 f"/match/record?player2={MOCK_OPPONENT_ID}",
                 headers=self._get_auth_headers(),
             )
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(MOCK_OPPONENT_ID.encode(), response.data)
+            assert response.status_code == 200
+            assert MOCK_OPPONENT_ID.encode() in response.data
 
     def test_pending_invites_query_uses_correct_field(self) -> None:
         """Test that pending invites are queried using 'inviter_id'."""
@@ -334,7 +345,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         return mock_group_invites_col, mock_query1
 
     def _verify_inviter_id_query(
-        self, invites_col: MagicMock, query1: MagicMock
+        self,
+        invites_col: MagicMock,
+        query1: MagicMock,
     ) -> None:
         """Verify that we queried for 'inviter_id' (not 'invited_by')."""
         calls = []
@@ -344,9 +357,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             calls.append(query1.where.call_args)
 
         found = any(self._is_inviter_id_filter(call) for call in calls)
-        self.assertTrue(
-            found, "Did not find query filtering by 'inviter_id' == user_id"
-        )
+        assert found, "Did not find query filtering by 'inviter_id' == user_id"
 
     def test_get_match_history(self) -> None:
         """Test fetching paginated match history."""
@@ -372,12 +383,12 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_query.limit.return_value.stream.return_value = [mock_doc]
 
         response = self.client.get("/match/history", headers=self._get_auth_headers())
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
         data = response.get_json()
-        self.assertIn("matches", data)
-        self.assertIn("next_cursor", data)
-        self.assertEqual(len(data["matches"]), 1)
-        self.assertEqual(data["matches"][0]["id"], "match_1")
+        assert "matches" in data
+        assert "next_cursor" in data
+        assert len(data["matches"]) == 1
+        assert data["matches"][0]["id"] == "match_1"
 
     def _is_inviter_id_filter(self, call: Any) -> bool:
         """Check if a mock call contains the inviter_id filter."""

@@ -28,7 +28,8 @@ class BaseRepository:
     def get_by_id(cls, db: Client, doc_id: str) -> dict[str, Any] | None:
         """Fetch a single document by its ID."""
         if not cls.COLLECTION_NAME:
-            raise NotImplementedError("COLLECTION_NAME must be defined in subclasses.")
+            msg = "COLLECTION_NAME must be defined in subclasses."
+            raise NotImplementedError(msg)
 
         doc_ref = db.collection(cls.COLLECTION_NAME).document(doc_id)
         doc_snap = cast("DocumentSnapshot", doc_ref.get())
@@ -49,7 +50,8 @@ class BaseRepository:
     def create(cls, db: Client, data: dict[str, Any]) -> str:
         """Create a new document and return its ID."""
         if not cls.COLLECTION_NAME:
-            raise NotImplementedError("COLLECTION_NAME must be defined in subclasses.")
+            msg = "COLLECTION_NAME must be defined in subclasses."
+            raise NotImplementedError(msg)
 
         data["createdAt"] = firestore.SERVER_TIMESTAMP
         doc_ref = db.collection(cls.COLLECTION_NAME).document()
@@ -60,19 +62,22 @@ class BaseRepository:
     def update(cls, db: Client, doc_id: str, data: dict[str, Any]) -> None:
         """Update an existing document."""
         if not cls.COLLECTION_NAME:
-            raise NotImplementedError("COLLECTION_NAME must be defined in subclasses.")
+            msg = "COLLECTION_NAME must be defined in subclasses."
+            raise NotImplementedError(msg)
 
         data["updatedAt"] = firestore.SERVER_TIMESTAMP
         doc_ref = db.collection(cls.COLLECTION_NAME).document(doc_id)
         doc_snap = cast("DocumentSnapshot", doc_ref.get())
         if not doc_snap.exists:
-            raise ValueError(f"Document not found in {cls.COLLECTION_NAME}: {doc_id}")
+            msg = f"Document not found in {cls.COLLECTION_NAME}: {doc_id}"
+            raise ValueError(msg)
         doc_ref.update(data)
 
     @classmethod
     def delete(cls, db: Client, doc_id: str) -> None:
         """Delete a document by its ID."""
         if not cls.COLLECTION_NAME:
-            raise NotImplementedError("COLLECTION_NAME must be defined in subclasses.")
+            msg = "COLLECTION_NAME must be defined in subclasses."
+            raise NotImplementedError(msg)
 
         db.collection(cls.COLLECTION_NAME).document(doc_id).delete()
