@@ -257,7 +257,7 @@ def get_community_data(db: Client, user_id: str, search_term: str) -> dict[str, 
 
     exclude = [user_id] + [f["id"] for f in friends] + [r["id"] for r in inc + out]
 
-    users = get_all_users(db, exclude, limit=20)
+    users, _ = get_all_users(db, exclude, limit=20)
     groups = get_public_groups(db, limit=10)
     invites = get_pending_tournament_invites(db, user_id)
 

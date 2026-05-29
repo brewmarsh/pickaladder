@@ -23,22 +23,26 @@ class MessagingRepository(BaseRepository):
     @classmethod
     def get_user_conversations(cls, db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch all conversations where the user is a participant."""
-        query = db.collection(cls.COLLECTION_NAME)\
-                  .where(filter=firestore.FieldFilter("participants", "array_contains", user_id))\
-                  .order_by("updatedAt", direction=firestore.Query.DESCENDING)
+        query = (
+            db.collection(cls.COLLECTION_NAME)
+            .where(
+                filter=firestore.FieldFilter("participants", "array_contains", user_id)
+            )
+            .order_by("updatedAt", direction=firestore.Query.DESCENDING)
+        )
 
-        return [
-            doc.to_dict() | {"id": doc.id}
-            for doc in query.stream()
-        ]
+        return [doc.to_dict() | {"id": doc.id} for doc in query.stream()]
 
     @classmethod
-    def find_direct_conversation(cls, db: Client, user_id1: str, user_id2: str) -> dict[str, Any] | None:
+    def find_direct_conversation(
+        cls, db: Client, user_id1: str, user_id2: str
+    ) -> dict[str, Any] | None:
         """Find an existing 1-on-1 conversation between two users."""
         # Note: Firestore doesn't support array-equals with order-independence easily.
         # We query for conversations where user1 is a participant and filter in-memory for user2.
-        query = db.collection(cls.COLLECTION_NAME)\
-                  .where(filter=firestore.FieldFilter("participants", "array_contains", user_id1))
+        query = db.collection(cls.COLLECTION_NAME).where(
+            filter=firestore.FieldFilter("participants", "array_contains", user_id1)
+        )
 
         for doc in query.stream():
             data = doc.to_dict()
@@ -47,27 +51,34 @@ class MessagingRepository(BaseRepository):
                 return data | {"id": doc.id}
 
         return None
+
     @classmethod
-    def get_messages(cls, db: Client, conversation_id: str, limit: int = 50) -> list[dict[str, Any]]:
+    def get_messages(
+        cls, db: Client, conversation_id: str, limit: int = 50
+    ) -> list[dict[str, Any]]:
         """Fetch message history for a conversation."""
-        query = db.collection(cls.COLLECTION_NAME).document(conversation_id)\
-                  .collection("messages")\
-                  .order_by("timestamp", direction=firestore.Query.ASCENDING)\
-                  .limit(limit)
+        query = (
+            db.collection(cls.COLLECTION_NAME)
+            .document(conversation_id)
+            .collection("messages")
+            .order_by("timestamp", direction=firestore.Query.ASCENDING)
+            .limit(limit)
+        )
 
-        return [
-            doc.to_dict() | {"id": doc.id}
-            for doc in query.stream()
-        ]
+        return [doc.to_dict() | {"id": doc.id} for doc in query.stream()]
 
     @classmethod
-    def add_message(cls, db: Client, conversation_id: str, message_data: dict[str, Any]) -> str:
+    def add_message(
+        cls, db: Client, conversation_id: str, message_data: dict[str, Any]
+    ) -> str:
         """Append a message to a conversation and update metadata."""
         conv_ref = db.collection(cls.COLLECTION_NAME).document(conversation_id)
 
         # Fetch participants to handle unread counts
         conv_doc = conv_ref.get()
-        participants = conv_doc.to_dict().get("participants", []) if conv_doc.exists else []
+        participants = (
+            conv_doc.to_dict().get("participants", []) if conv_doc.exists else []
+        )
 
         sender_id = message_data.get("senderId")
 
@@ -79,7 +90,7 @@ class MessagingRepository(BaseRepository):
         updates = {
             "lastMessage": message_data.get("content", "")[:100],
             "lastMessageSenderId": sender_id,
-            "updatedAt": firestore.SERVER_TIMESTAMP
+            "updatedAt": firestore.SERVER_TIMESTAMP,
         }
 
         for participant_id in participants:
@@ -95,6 +106,4 @@ class MessagingRepository(BaseRepository):
     def mark_as_read(cls, db: Client, conversation_id: str, user_id: str) -> None:
         """Reset unread count for a user in a conversation."""
         conv_ref = db.collection(cls.COLLECTION_NAME).document(conversation_id)
-        conv_ref.update({
-            f"unreadCount.{user_id}": 0
-        })
+        conv_ref.update({f"unreadCount.{user_id}": 0})

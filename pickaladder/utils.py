@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pickaladder.services.mail_service import EmailError, MailService
+from pickaladder.services.mail_service import MailService
 
 
 def send_email(to: str | list[str], subject: str, template: str, **kwargs: Any) -> None:

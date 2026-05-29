@@ -26,7 +26,9 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
         sess["user_id"] = "test_user_id"
 
     # Mock group details
-    with patch("pickaladder.group.routes.membership.GroupService.get_group_details") as mock_get:
+    with patch(
+        "pickaladder.group.routes.membership.GroupService.get_group_details"
+    ) as mock_get:
         from pickaladder.group.models import Group
 
         mock_owner_ref = MagicMock()
@@ -64,10 +66,9 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
 def test_attribution_on_registration(client: Any, mock_db: MockFirestore) -> None:
     """Test that referral is attributed during registration."""
     # Setup referrer in Firestore
-    mock_db.collection("users").document(REFERRER_ID).set({
-        "username": "referrer",
-        "social_credits": 100
-    })
+    mock_db.collection("users").document(REFERRER_ID).set(
+        {"username": "referrer", "social_credits": 100}
+    )
 
     # Set referrer in session
     with client.session_transaction() as sess:

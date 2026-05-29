@@ -14,14 +14,10 @@ class SeasonForm(FlaskForm):
     start_date = DateField("Start Date", format="%Y-%m-%d", validators=[DataRequired()])
     end_date = DateField("End Date", format="%Y-%m-%d", validators=[DataRequired()])
     promotion_count = IntegerField(
-        "Promotion Count",
-        default=0,
-        validators=[NumberRange(min=0)]
+        "Promotion Count", default=0, validators=[NumberRange(min=0)]
     )
     relegation_count = IntegerField(
-        "Relegation Count",
-        default=0,
-        validators=[NumberRange(min=0)]
+        "Relegation Count", default=0, validators=[NumberRange(min=0)]
     )
     status = SelectField(
         "Status",

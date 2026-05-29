@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from firebase_admin import firestore
 from flask import flash, g, redirect, render_template, url_for
 
@@ -14,7 +12,7 @@ from pickaladder.group.services.session_service import SessionService
 
 @bp.route("/session/<string:session_id>/quick-log", methods=["GET"])
 @login_required
-def quick_log(session_id: str) -> 'Response' | str | dict[str, object]:
+def quick_log(session_id: str) -> Response | str | dict[str, object]:
     """Display the mobile-optimized quick log for a session."""
     db = firestore.client()
     session_data = SessionService.get_session(db, session_id)
@@ -47,7 +45,7 @@ def quick_log(session_id: str) -> 'Response' | str | dict[str, object]:
 
 @bp.route("/session/<string:session_id>", methods=["GET"])
 @login_required
-def view_session(session_id: str) -> 'Response' | str | dict[str, object]:
+def view_session(session_id: str) -> Response | str | dict[str, object]:
     """Display session summary and matches."""
     db = firestore.client()
     session_data = SessionService.get_session(db, session_id)
@@ -91,7 +89,7 @@ def view_session(session_id: str) -> 'Response' | str | dict[str, object]:
 
 @bp.route("/session/<string:session_id>/verify", methods=["POST"])
 @login_required
-def verify_session(session_id: str) -> 'Response' | str | dict[str, object]:
+def verify_session(session_id: str) -> Response | str | dict[str, object]:
     """Trigger batch verification for a session."""
     db = firestore.client()
     success = SessionService.verify_session(db, session_id, g.user.uid)

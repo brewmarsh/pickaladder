@@ -40,21 +40,25 @@ class AnalyticsService:
                     break
 
             if user_entry:
-                history.append({
-                    "seasonId": season["id"],
-                    "seasonName": season["name"],
-                    "rank": rank,
-                    "totalParticipants": len(standings),
-                    "wins": user_entry.get("wins", 0),
-                    "losses": user_entry.get("losses", 0),
-                    "pointDiff": user_entry.get("point_diff", 0),
-                    "pointsFor": user_entry.get("points_for", 0),
-                    "pointsAgainst": user_entry.get("points_against", 0),
-                    "endDate": season.get("endDate")
-                })
+                history.append(
+                    {
+                        "seasonId": season["id"],
+                        "seasonName": season["name"],
+                        "rank": rank,
+                        "totalParticipants": len(standings),
+                        "wins": user_entry.get("wins", 0),
+                        "losses": user_entry.get("losses", 0),
+                        "pointDiff": user_entry.get("point_diff", 0),
+                        "pointsFor": user_entry.get("points_for", 0),
+                        "pointsAgainst": user_entry.get("points_against", 0),
+                        "endDate": season.get("endDate"),
+                    }
+                )
 
         # Sort by date descending
-        return sorted(history, key=lambda x: x["endDate"] if x["endDate"] else "", reverse=True)
+        return sorted(
+            history, key=lambda x: x["endDate"] if x["endDate"] else "", reverse=True
+        )
 
     @staticmethod
     def get_user_achievements(history: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -66,22 +70,26 @@ class AnalyticsService:
 
         # 1. Career High Rank
         best_rank = min(h["rank"] for h in history)
-        achievements.append({
-            "type": "rank",
-            "label": "Career High",
-            "value": f"#{best_rank}",
-            "icon": "fa-crown"
-        })
+        achievements.append(
+            {
+                "type": "rank",
+                "label": "Career High",
+                "value": f"#{best_rank}",
+                "icon": "fa-crown",
+            }
+        )
 
         # 2. Total Wins
         total_wins = sum(h["wins"] for h in history)
         if total_wins > 0:
-            achievements.append({
-                "type": "wins",
-                "label": "Total Wins",
-                "value": total_wins,
-                "icon": "fa-trophy"
-            })
+            achievements.append(
+                {
+                    "type": "wins",
+                    "label": "Total Wins",
+                    "value": total_wins,
+                    "icon": "fa-trophy",
+                }
+            )
 
         # 3. Best Win %
         win_rates = []
@@ -92,11 +100,13 @@ class AnalyticsService:
 
         if win_rates:
             best_rate = max(win_rates)
-            achievements.append({
-                "type": "win_rate",
-                "label": "Best Win %",
-                "value": f"{int(best_rate)}%",
-                "icon": "fa-fire"
-            })
+            achievements.append(
+                {
+                    "type": "win_rate",
+                    "label": "Best Win %",
+                    "value": f"{int(best_rate)}%",
+                    "icon": "fa-fire",
+                }
+            )
 
         return achievements

@@ -28,8 +28,8 @@
 - [x] **Phase 24: Asynchronous Processing & Reliability**
 - [x] **Phase 25: High-Performance Data Access (Caching)**
 - [x] **Phase 26: Viral Growth & Launch Prep** (completed 2026-04-28)
-- [ ] **Phase 27: Operational Dashboard**
-- [ ] **Phase 28: Advanced Tournament Formats**
+- [x] **Phase 27: Operational Dashboard** (completed 2026-04-28)
+- [x] **Phase 28: Advanced Tournament Formats**
 - [ ] **Phase 29: In-app Feedback & Support**
 
 ---
@@ -59,7 +59,7 @@
   2. Integrated Dashboard in Admin panel with Audit Logs, Errors, and Growth charts.
   3. Expanded `/health` check with cache and DB status.
 **Plans**:
-- [ ] 27-01-PLAN.md — Error Persistence & Admin Dashboard Foundation
+- [x] 27-01-PLAN.md — Error Persistence & Admin Dashboard Foundation
 
 ### Phase 28: Advanced Tournament Formats
 **Goal**: Support competitive pickleball structures like Round Robin and Pool Play.
@@ -70,18 +70,20 @@
   2. Pool Play (Pools -> Bracket) generation logic implemented.
   3. Standings engine with tie-break support.
 **Plans**:
-- [To be planned]
+- [x] 28-01-PLAN.md — Foundation & Standings Refactor
+- [x] 28-02-PLAN.md — Advanced Format Generation Logic
+- [x] 28-03-PLAN.md — UI Enhancements & Pool Orchestration
 
 ### Phase 29: In-app Feedback & Support
 **Goal**: Establish a direct feedback loop between users and the team.
-**Depends on**: Phase 26
+**Depends on**: Phase 27
 **Requirements**: [ENG-01]
 **Success Criteria**:
   1. Feedback submission UI accessible to all authenticated users.
   2. Admin interface to review and triage feedback.
-  3. Feedback status tracking and notifications.
+  3. Feedback status tracking and user notifications.
 **Plans**:
-- [To be planned]
+- [x] 29-01-PLAN.md — Feedback System Implementation
 
 ---
 
@@ -94,6 +96,6 @@
 | 24. Asynchronous Processing | 2/2 | Completed | 2026-04-28 |
 | 25. Caching & Performance | 1/1 | Completed | 2026-04-28 |
 | 26. Viral Growth & Launch Prep | 2/2 | Complete   | 2026-04-28 |
-| 27. Operational Dashboard | 0/1 | Planned    | - |
-| 28. Advanced Formats | 0/0 | Planned    | - |
-| 29. Feedback & Support | 0/0 | Planned    | - |
+| 27. Operational Dashboard | 1/1 | Completed | 2026-04-28 |
+| 28. Advanced Formats | 3/3 | Completed | 2026-04-28 |
+| 29. Feedback & Support | 1/1 | Completed | 2026-04-29 |

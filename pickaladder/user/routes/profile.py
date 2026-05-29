@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from firebase_admin import firestore
 from flask import (
@@ -108,6 +108,7 @@ def dashboard() -> str:
 
     # Check for first login to show welcome modal
     from flask import session
+
     show_welcome = session.pop("first_login", False)
 
     # Remove user from data to avoid conflict with g.user passed to template

@@ -26,6 +26,7 @@ from pickaladder.constants.messages import (
 )
 from pickaladder.match.models import MatchSubmission
 from pickaladder.match.services import MatchService
+from pickaladder.services.feedback_service import FeedbackService
 from pickaladder.user import UserService
 from pickaladder.user.models import UserSession
 
@@ -38,7 +39,49 @@ MIN_USERS_FOR_MATCH_GENERATION = 2
 @bp.route("/")
 @login_required(admin_required=True)
 def admin() -> Union[str, Response]:
-    """Render the main admin dashboard."""
+    """Render the main admin users list (legacy /)."""
+    return redirect(url_for(".dashboard"))
+
+
+@bp.route("/dashboard")
+@login_required(admin_required=True)
+def dashboard() -> Union[str, Response]:
+    """Render the operational admin dashboard."""
+    if not g.user or (not g.user.is_admin and not g.get("is_impersonating")):
+        flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
+        return redirect(url_for("auth.login"))
+
+    db = firestore.client()
+    from pickaladder.services.error_service import ErrorService
+
+    growth_data = AdminService.get_growth_metrics(db)
+    recent_errors = ErrorService.get_recent_errors(db, limit=5)
+    audit_logs = AdminService.get_recent_audit_logs(db, limit=5)
+
+    # Optional: Resolve admin names for audit logs
+    admin_ids = list({log["admin_id"] for log in audit_logs if log.get("admin_id")})
+    admin_names = {}
+    if admin_ids:
+        # Simple fetch, in production use batch get
+        for aid in admin_ids:
+            u = UserService.get_user_by_id(db, aid)
+            admin_names[aid] = UserService.smart_display_name(u) if u else aid
+
+    for log in audit_logs:
+        log["admin_name"] = admin_names.get(log.get("admin_id"))
+
+    return render_template(
+        "admin/dashboard.html",
+        growth_data=growth_data,
+        recent_errors=recent_errors,
+        audit_logs=audit_logs,
+    )
+
+
+@bp.route("/users")
+@login_required(admin_required=True)
+def view_users() -> Union[str, Response]:
+    """Render the user management page."""
     if not g.user or (not g.user.is_admin and not g.get("is_impersonating")):
         flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
         return redirect(url_for("auth.login"))
@@ -47,7 +90,7 @@ def admin() -> Union[str, Response]:
     admin_stats = AdminService.get_admin_stats(db)
     setting_ref = db.collection("settings").document("enforceEmailVerification")
     email_verification_setting = setting_ref.get()
-    users, _ = UserService.get_all_users(db, limit=50, public_only=False)
+    users, _ = UserService.get_all_users(db, limit=100, public_only=False)
 
     return render_template(
         "admin/admin.html",
@@ -55,7 +98,7 @@ def admin() -> Union[str, Response]:
         users=users,
         email_verification_setting=email_verification_setting.to_dict()
         if email_verification_setting.exists
-        else {"value": False},
+        else {"value": "false"},
     )
 
 
@@ -68,7 +111,7 @@ def merge_ghost() -> Response:
 
     if not target_user_id or not ghost_email:
         flash(ADMIN_MESSAGES["MERGE_REQUIRED_FIELDS"], "danger")
-        return redirect(url_for(".admin"))
+        return redirect(url_for(".view_users"))
 
     db = firestore.client()
     real_user_ref = db.collection("users").document(target_user_id)
@@ -80,7 +123,7 @@ def merge_ghost() -> Response:
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
 
-    return redirect(url_for(".admin"))
+    return redirect(url_for(".view_users"))
 
 
 @bp.route("/announcement", methods=["POST"])
@@ -110,7 +153,7 @@ def announcement() -> Response:
         flash(ADMIN_MESSAGES["ANNOUNCEMENT_UPDATED"], "success")
     except Exception as e:
         flash(ADMIN_MESSAGES["ANNOUNCEMENT_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".admin"))
+    return redirect(url_for(".view_users"))
 
 
 @bp.route("/toggle_email_verification", methods=["POST"])
@@ -127,7 +170,7 @@ def toggle_email_verification() -> Response:
         )
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".admin"))
+    return redirect(url_for(".view_users"))
 
 
 @bp.route("/matches")
@@ -210,7 +253,7 @@ def admin_delete_user() -> Response:
     user_identifier = request.form.get("user_identifier")
     if not user_identifier:
         flash(ADMIN_MESSAGES["USER_ID_EMAIL_REQUIRED"], "danger")
-        return redirect(url_for(".admin"))
+        return redirect(url_for(".view_users"))
 
     db = firestore.client()
     uid, email = _lookup_user_by_identifier(db, user_identifier)
@@ -221,7 +264,7 @@ def admin_delete_user() -> Response:
             ADMIN_MESSAGES["USER_NOT_FOUND"].format(identifier=user_identifier),
             "danger",
         )
-    return redirect(url_for(".admin"))
+    return redirect(url_for(".view_users"))
 
 
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])
@@ -235,7 +278,7 @@ def delete_user(user_id: str) -> Response:
         flash(ADMIN_MESSAGES["USER_DELETE_SUCCESS"], "success")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".admin"))
+    return redirect(url_for(".view_users"))
 
 
 @bp.route("/promote_user/<string:user_id>", methods=["POST"])
@@ -249,7 +292,7 @@ def promote_user(user_id: str) -> Response:
         flash(ADMIN_MESSAGES["ADMIN_PROMOTION"].format(name=name), "success")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".admin"))
+    return redirect(url_for(".view_users"))
 
 
 @bp.route("/verify_user/<string:user_id>", methods=["POST"])
@@ -261,7 +304,7 @@ def verify_user(user_id: str) -> Response:
         flash(ADMIN_MESSAGES["EMAIL_VERIFIED_SUCCESS"], "success")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".admin"))
+    return redirect(url_for(".view_users"))
 
 
 @bp.route("/generate_users", methods=["POST"])
@@ -323,7 +366,9 @@ def _generate_single_random_match(db: "firestore.Client", users: list[Any]) -> b
         return False
 
 
-def _batch_generate_random_matches(db: "firestore.Client", users: list[Any], count: int = 10) -> int:
+def _batch_generate_random_matches(
+    db: "firestore.Client", users: list[Any], count: int = 10
+) -> int:
     """Generate multiple random matches and return success count."""
     return sum(1 for _ in range(count) if _generate_single_random_match(db, users))
 
@@ -342,7 +387,7 @@ def generate_matches() -> Response:
             flash(ADMIN_MESSAGES["RANDOM_MATCHES_GEN"].format(count=count), "success")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".admin"))
+    return redirect(url_for(".view_users"))
 
 
 @bp.route("/merge_players", methods=["GET", "POST"])
@@ -368,6 +413,50 @@ def merge_players() -> Union[str, Response]:
         key=lambda u: (u.get("is_ghost", False), u.get("name", "").lower()),
     )
     return render_template("admin/merge_players.html", users=users)
+
+
+@bp.route("/feedback")
+@login_required(admin_required=True)
+def view_feedback() -> str:
+    """Render the feedback management page."""
+    db = firestore.client()
+    feedback_list = FeedbackService.get_all_feedback(db)
+
+    # Resolve user names
+    for item in feedback_list:
+        user_id = item.get("userId")
+        if user_id:
+            user = UserService.get_user_by_id(db, user_id)
+            item["user_name"] = (
+                UserService.smart_display_name(user) if user else "Unknown User"
+            )
+        else:
+            item["user_name"] = "Anonymous"
+
+    return render_template("admin/feedback.html", feedback_list=feedback_list)
+
+
+@bp.route("/feedback/status", methods=["POST"])
+@login_required(admin_required=True)
+def update_feedback_status() -> Response:
+    """Update feedback status."""
+    feedback_id = request.form.get("feedback_id")
+    status = request.form.get("status")
+
+    if not feedback_id or not status:
+        flash("Missing feedback ID or status", "danger")
+        return redirect(url_for(".view_feedback"))
+
+    db = firestore.client()
+    if FeedbackService.update_feedback_status(db, feedback_id, status, g.user.uid):
+        AdminService.log_action(
+            db, g.user.uid, feedback_id, "update_feedback_status", {"status": status}
+        )
+        flash("Feedback status updated", "success")
+    else:
+        flash("Failed to update feedback status", "danger")
+
+    return redirect(url_for(".view_feedback"))
 
 
 @bp.route("/style-guide")

@@ -16,7 +16,7 @@ class GroupRepository(BaseRepository):
     COLLECTION_NAME = "groups"
 
     @classmethod
-    def get_user_groups(cls, db: Client, user_id: str) -> list[dict[str, Any]]:
+    def get_user_groups(cls, db: Client, user_id: str) -> list[dict[str, object]]:
         """Fetch all groups the user belongs to."""
         user_ref = db.collection("users").document(user_id)
         query = db.collection(cls.COLLECTION_NAME).where(
@@ -30,7 +30,7 @@ class GroupRepository(BaseRepository):
 
     @classmethod
     def validate(
-        cls, db: Client, data: dict[str, Any], group_id: str | None = None
+        cls, db: Client, data: dict[str, object], group_id: str | None = None
     ) -> None:
         """Validate group data for consistency and business rules."""
         name = data.get("name")
@@ -39,10 +39,10 @@ class GroupRepository(BaseRepository):
 
         # Check for unique name among public groups
         if data.get("is_public"):
-            query = db.collection(cls.COLLECTION_NAME).where(
-                filter=firestore.FieldFilter("name", "==", name)
-            ).where(
-                filter=firestore.FieldFilter("is_public", "==", True)
+            query = (
+                db.collection(cls.COLLECTION_NAME)
+                .where(filter=firestore.FieldFilter("name", "==", name))
+                .where(filter=firestore.FieldFilter("is_public", "==", True))
             )
             for doc in query.stream():
                 if group_id and doc.id == group_id:
@@ -50,13 +50,13 @@ class GroupRepository(BaseRepository):
                 raise ValueError(f"A public group named '{name}' already exists.")
 
     @classmethod
-    def create(cls, db: Client, data: dict[str, Any]) -> str:
+    def create(cls, db: Client, data: dict[str, object]) -> str:
         """Create a group with validation."""
         cls.validate(db, data)
         return super().create(db, data)
 
     @classmethod
-    def update(cls, db: Client, doc_id: str, data: dict[str, Any]) -> None:
+    def update(cls, db: Client, doc_id: str, data: dict[str, object]) -> None:
         """Update a group with validation."""
         # For updates, we might only have partial data,
         # so we fetch the full doc to validate
@@ -70,7 +70,7 @@ class GroupRepository(BaseRepository):
         super().update(db, doc_id, data)
 
     @classmethod
-    def get_pending_invites(cls, db: Client, group_id: str) -> list[dict[str, Any]]:
+    def get_pending_invites(cls, db: Client, group_id: str) -> list[dict[str, object]]:
         """Fetch all pending invitations for a specific group."""
         invites_ref = db.collection("group_invites")
         query = invites_ref.where(
@@ -88,7 +88,11 @@ class GroupRepository(BaseRepository):
 
     @classmethod
     def get_group_members_raw(
-        cls, db: Client, member_refs: list[Any], offset: int = 0, limit: int | None = None
+        cls,
+        db: Client,
+        member_refs: list[Any],
+        offset: int = 0,
+        limit: int | None = None,
     ) -> list[Any]:
         """Fetch full profile data for group members as snapshots."""
         if not member_refs:
@@ -106,8 +110,12 @@ class GroupRepository(BaseRepository):
 
     @classmethod
     def get_group_members(
-        cls, db: Client, member_refs: list[Any], offset: int = 0, limit: int | None = None
-    ) -> list[dict[str, Any]]:
+        cls,
+        db: Client,
+        member_refs: list[Any],
+        offset: int = 0,
+        limit: int | None = None,
+    ) -> list[dict[str, object]]:
         """Fetch full profile data for group members, with optional slicing."""
         snaps = cls.get_group_members_raw(db, member_refs, offset, limit)
         members = []

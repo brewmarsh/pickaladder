@@ -31,9 +31,13 @@
                     <div class="discovery-actions mt-3">
                         {% if player.id != current_user_id %}
                         <a href="{{ url_for('match.record_match', opponent_id=player.id) }}"
-                           class="btn-discovery btn-volt" title="Challenge">
+                           class="btn-discovery btn-outline-light" title="Record Match">
                             <i class="fas fa-swords"></i>
                         </a>
+                        <button type="button" class="btn-discovery btn-volt" title="Issue Formal Challenge"
+                           onclick="ChallengeUI.openIssueModal('{{ player.id }}', '{{ player.name or player.username }}', '{{ player | avatar_url }}')">
+                            <i class="fas fa-fist-raised"></i>
+                        </button>
                         {% if not friend_statuses.get(player.id) %}
                         <form action="{{ url_for('user.send_friend_request', friend_id=player.id) }}" method="post" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -88,9 +92,13 @@
                                 <div class="discovery-actions">
                                     {% if player.id != current_user_id %}
                                     <a href="{{ url_for('match.record_match', opponent_id=player.id) }}"
-                                       class="btn-discovery btn-volt" title="Challenge">
+                                       class="btn-discovery btn-outline-light" title="Record Match">
                                         <i class="fas fa-swords"></i>
                                     </a>
+                                    <button type="button" class="btn-discovery btn-volt" title="Issue Formal Challenge"
+                                       onclick="ChallengeUI.openIssueModal('{{ player.id }}', '{{ player.name or player.username }}', '{{ player | avatar_url }}')">
+                                        <i class="fas fa-fist-raised"></i>
+                                    </button>
                                     {% if not friend_statuses.get(player.id) %}
                                     <form action="{{ url_for('user.send_friend_request', friend_id=player.id) }}" method="post" class="d-inline">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

@@ -62,7 +62,9 @@ def _configure_mail_logging(app: Flask) -> None:
     """Configure detailed mail configuration logging."""
     if not app.config.get("TESTING"):
         app.logger.debug(f"Mail User loaded: {bool(app.config.get('MAIL_USERNAME'))}")
-        app.logger.debug(f"Mail Password loaded: {bool(app.config.get('MAIL_PASSWORD'))}")
+        app.logger.debug(
+            f"Mail Password loaded: {bool(app.config.get('MAIL_PASSWORD'))}"
+        )
         app.logger.debug(f"Mail Config - Server: {app.config.get('MAIL_SERVER')}")
         app.logger.debug(f"Mail Config - Port: {app.config.get('MAIL_PORT')}")
         app.logger.debug(f"Mail Config - TLS: {app.config.get('MAIL_USE_TLS')}")

@@ -210,3 +210,12 @@ body {
     margin-bottom: 24px;
     line-height: 1.1;
 }
+
+/* Page Specific Overrides */
+.hero {
+    text-align: center;
+    padding: 80px 20px;
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}

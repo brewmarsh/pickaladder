@@ -1,0 +1,177 @@
+{% extends "layout.html" %}
+{% from "components/_empty_state.html" import empty_state %}
+{% block title %}Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/marketplace.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-3 mb-4">
+    <h1 class="mb-0">Discovery Marketplace</h1>
+    <a href="{{ url_for('group.create_group') }}" class="btn btn-volt w-100 w-md-auto">
+        <i class="fas fa-plus me-1"></i> Create Group
+    </a>
+</div>
+
+{# 1. FEATURED CAROUSEL #}
+{% if featured_groups %}
+<div id="featuredMarketplaceCarousel" class="carousel slide mb-5 shadow-sm rounded-3 overflow-hidden" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+        {% for group in featured_groups %}
+        <button type="button" data-bs-target="#featuredMarketplaceCarousel" data-bs-slide-to="{{ loop.index0 }}" 
+            class="{{ 'active' if loop.first else '' }}" aria-current="{{ 'true' if loop.first else 'false' }}" aria-label="Slide {{ loop.index }}"></button>
+        {% endfor %}
+    </div>
+    <div class="carousel-inner">
+        {% for group in featured_groups %}
+        <div class="carousel-item {{ 'active' if loop.first else '' }}" style="height: 350px;">
+            <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-dark position-relative">
+                {% if group.bannerUrl %}
+                <img src="{{ group.bannerUrl }}" class="d-block w-100 h-100 object-fit-cover opacity-50" alt="{{ group.name }}">
+                {% else %}
+                <div class="w-100 h-100 bg-gradient-volt opacity-25"></div>
+                {% endif %}
+                <div class="carousel-caption d-none d-md-block text-start" style="left: 10%; right: 10%; bottom: 20%;">
+                    <span class="badge bg-volt text-dark mb-2">FEATURED GROUP</span>
+                    <h2 class="display-5 fw-bold text-white mb-2">{{ group.name }}</h2>
+                    <p class="lead text-white-50 mb-4">{{ group.description | truncate(150) }}</p>
+                    <a href="{{ url_for('group.view_group', group_id=group.id) }}" class="btn btn-volt btn-lg px-4 me-md-2">Explore Group</a>
+                </div>
+                <div class="d-md-none text-center px-3">
+                     <h2 class="fw-bold text-white mb-2">{{ group.name }}</h2>
+                     <a href="{{ url_for('group.view_group', group_id=group.id) }}" class="btn btn-volt btn-sm">Explore</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#featuredMarketplaceCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#featuredMarketplaceCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+    </button>
+</div>
+{% endif %}
+
+{# 2. SEARCH & FILTER #}
+<div class="marketplace-search-container">
+    <div class="card mb-5 border-0 bg-dark-soft shadow-sm">
+        <div class="card-body p-4">
+            <form method="get" action="{{ url_for('marketplace.view_marketplace') }}" class="row g-3">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" name="search" class="form-control border-start-0 ps-0" 
+                            placeholder="Search groups, divisions, or locations..." value="{{ search_term }}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select name="type" class="form-select">
+                        <option value="all" {{ 'selected' if search_type == 'all' }}>All Types</option>
+                        <option value="group" {{ 'selected' if search_type == 'group' }}>Groups</option>
+                        <option value="division" {{ 'selected' if search_type == 'division' }}>Divisions</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                        {% if search_term or search_type != 'all' %}
+                        <a href="{{ url_for('marketplace.view_marketplace') }}" class="btn btn-secondary"><i class="fas fa-times"></i></a>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# 3. RESULTS GRID #}
+<div class="marketplace-results mb-5">
+    <div class="d-flex align-items-center justify-content-between mb-4 border-bottom border-dark pb-2">
+        <h3 class="mb-0">{% if search_term %}Search Results{% else %}Browse Groups{% endif %}</h3>
+        <span class="text-muted small">{{ results | length }} found</span>
+    </div>
+
+    {% if results %}
+    <div class="friend-grid">
+        {% for item in results %}
+        <div class="friend-card card-action position-relative" data-testid="marketplace-item-{{ item.id }}">
+            {% if item.is_featured %}
+            <div class="featured-ribbon">Featured</div>
+            {% endif %}
+            
+            <a href="{{ url_for('group.view_group', group_id=item.id) if item.type == 'group' else url_for('season.view_season', season_id=item.seasonId) }}" class="friend-card-link">
+                <div class="friend-card-content p-4">
+                    <div class="position-absolute top-0 end-0 m-3 d-flex flex-column align-items-end gap-1">
+                        {% if item.visibility == 'PUBLIC' %}
+                        <span class="badge bg-success-soft text-success small fw-normal"><i class="fas fa-globe me-1"></i> Public</span>
+                        {% elif item.visibility == 'UNLISTED' %}
+                        <span class="badge bg-warning-soft text-warning small fw-normal"><i class="fas fa-link me-1"></i> Unlisted</span>
+                        {% endif %}
+                        <span class="badge {{ 'bg-info-soft text-info' if item.type == 'division' else 'bg-primary-soft text-primary' }} small fw-normal">
+                            <i class="fas {{ 'fa-trophy' if item.type == 'division' else 'fa-users' }} me-1"></i> {{ item.type | capitalize }}
+                        </span>
+                    </div>
+                    
+                    <img src="{{ item.profilePictureUrl if item.profilePictureUrl else url_for('static', filename='user_icon.png') }}" 
+                        alt="{{ item.name }}" class="avatar avatar-xl mb-3 shadow-sm">
+                    
+                    <h4 class="friend-name mb-1">{{ item.name }}</h4>
+                    {% if item.type == 'division' %}
+                    <p class="text-volt small mb-2"><i class="fas fa-layer-group me-1"></i> {{ item.groupName }}</p>
+                    {% endif %}
+                    
+                    <p class="text-muted small mb-3 text-truncate-2">{{ item.description or 'No description provided.' }}</p>
+                    
+                    <div class="d-flex align-items-center justify-content-center gap-3 mt-auto">
+                        <div class="text-center">
+                            <div class="fw-bold text-white">{{ item.member_count or 0 }}</div>
+                            <div class="text-muted smallest text-uppercase">{{ 'Participants' if item.type == 'division' else 'Members' }}</div>
+                        </div>
+                        <div class="vr h-100 opacity-25"></div>
+                        <div class="text-center">
+                            <div class="fw-bold text-white">{{ item.activity_score or 'N/A' }}</div>
+                            <div class="text-muted smallest text-uppercase">Activity</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            <div class="friend-card-actions p-3 pt-0">
+                {% if item.type == 'group' %}
+                    {% if item.join_policy == 'OPEN' %}
+                    <form action="{{ url_for('group.join_group', group_id=item.id) }}" method="post" class="w-100">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-volt w-100">Join Instantly</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('group.view_group', group_id=item.id) }}" class="btn btn-outline-volt w-100">Request Access</a>
+                    {% endif %}
+                {% else %}
+                    {# DIVISION JOIN LOGIC #}
+                    {% if item.join_policy == 'OPEN' %}
+                    <form action="{{ url_for('marketplace.join_division', season_id=item.seasonId, division_index=item.divisionIndex) }}" method="post" class="w-100">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-volt w-100">Join Division</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('season.view_season', season_id=item.seasonId) }}" class="btn btn-outline-volt w-100">Request to Join</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    {{ empty_state(
+        icon="🔍",
+        title="No Results Found",
+        message="Try adjusting your search or filters to find what you're looking for."
+    ) }}
+    {% endif %}
+</div>
+
+{% endblock %}

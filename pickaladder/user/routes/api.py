@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from firebase_admin import firestore
 from flask import (
@@ -10,7 +10,6 @@ from flask import (
     g,
     jsonify,
     request,
-    url_for,
 )
 
 from pickaladder.auth.decorators import login_required
@@ -103,7 +102,5 @@ def save_fcm_token() -> Response | tuple[Response, int]:
 def api_search_users() -> Response:
     """Search for users and return JSON."""
     search_term = request.args.get("q", "")
-    results = UserService.search_users_json(
-        firestore.client(), g.user.uid, search_term
-    )
+    results = UserService.search_users_json(firestore.client(), g.user.uid, search_term)
     return jsonify(results)

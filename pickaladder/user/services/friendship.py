@@ -27,7 +27,9 @@ def _fetch_users_by_ids(db: Client, user_ids: list[str]) -> list[dict[str, Any]]
     return results
 
 
-def _get_accepted_friends_query(user_ref: DocumentReference, limit: int | None = None) -> Query:
+def _get_accepted_friends_query(
+    user_ref: DocumentReference, limit: int | None = None
+) -> Query:
     """Construct a query for accepted friends."""
     query = user_ref.collection("friends").where(
         filter=firestore.FieldFilter("status", "==", "accepted")

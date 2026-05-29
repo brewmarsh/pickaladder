@@ -155,7 +155,7 @@ class MatchTransactionTestCase(unittest.TestCase):
             "pairing2": t2_ref,
             "named_team1": nt1_ref,
             "named_team2": nt2_ref,
-            "user1": MagicMock()
+            "user1": MagicMock(),
         }.get(x, MagicMock())
 
         # Mock snapshots
@@ -170,7 +170,7 @@ class MatchTransactionTestCase(unittest.TestCase):
             mock_snap("pairing1", 1200.0),
             mock_snap("pairing2", 1200.0),
             mock_snap("named_team1", 1000.0),
-            mock_snap("named_team2", 1000.0)
+            mock_snap("named_team2", 1000.0),
         ]
         db.get_all.return_value = snaps
 
@@ -179,7 +179,7 @@ class MatchTransactionTestCase(unittest.TestCase):
             "player2Score": 0,
             "namedTeam1Id": "named_team1",
             "namedTeam2Id": "named_team2",
-            "participants": ["user1"] # To avoid empty list issues
+            "participants": ["user1"],  # To avoid empty list issues
         }
 
         MatchService._record_match_batch(

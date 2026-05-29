@@ -26,6 +26,7 @@ MOCK_SESSION_DATA = {
     "matchTypeDefault": "singles",
 }
 
+
 class SessionMatchRecordingTestCase(unittest.TestCase):
     """Test case for recording matches within a session."""
 
@@ -39,24 +40,20 @@ class SessionMatchRecordingTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore_match_routes": patch(
-                "pickaladder.match.routes.firestore",
-                new=self.mock_firestore_service
+                "pickaladder.match.routes.firestore", new=self.mock_firestore_service
             ),
             "firestore_auth_routes": patch(
-                "pickaladder.auth.routes.firestore",
-                new=self.mock_firestore_service
+                "pickaladder.auth.routes.firestore", new=self.mock_firestore_service
             ),
             "firestore_candidate": patch(
                 "pickaladder.match.services.candidate_service.firestore",
-                new=self.mock_firestore_service
+                new=self.mock_firestore_service,
             ),
             "firestore_admin": patch(
-                "firebase_admin.firestore",
-                new=self.mock_firestore_service
+                "firebase_admin.firestore", new=self.mock_firestore_service
             ),
             "firestore_app": patch(
-                "pickaladder.firestore",
-                new=self.mock_firestore_service
+                "pickaladder.firestore", new=self.mock_firestore_service
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
@@ -65,12 +62,14 @@ class SessionMatchRecordingTestCase(unittest.TestCase):
         for p in patchers.values():
             self.addCleanup(p.stop)
 
-        self.app = create_app({
-            "TESTING": True,
-            "WTF_CSRF_ENABLED": False,
-            "SERVER_NAME": "localhost",
-            "FIREBASE_API_KEY": "dummy-test-key",
-        })
+        self.app = create_app(
+            {
+                "TESTING": True,
+                "WTF_CSRF_ENABLED": False,
+                "SERVER_NAME": "localhost",
+                "FIREBASE_API_KEY": "dummy-test-key",
+            }
+        )
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()
@@ -89,9 +88,9 @@ class SessionMatchRecordingTestCase(unittest.TestCase):
         mock_user_snap = MagicMock()
         mock_user_snap.exists = True
         mock_user_snap.to_dict.return_value = MOCK_USER_DATA
-        self.mock_db.collection("users").document(MOCK_USER_ID).get.return_value = (
-            mock_user_snap
-        )
+        self.mock_db.collection("users").document(
+            MOCK_USER_ID
+        ).get.return_value = mock_user_snap
 
     def _get_auth_headers(self) -> dict[str, str]:
         return {"Authorization": "Bearer mock-token"}
@@ -107,9 +106,7 @@ class SessionMatchRecordingTestCase(unittest.TestCase):
         mock_session_snap.to_dict.return_value = MOCK_SESSION_DATA
         self.mock_db.collection("sessions").document(
             MOCK_SESSION_ID
-        ).get.return_value = (
-            mock_session_snap
-        )
+        ).get.return_value = mock_session_snap
 
         # Mock users for SelectField choices
         # (MatchQueryService.get_player_names equivalent)
@@ -134,9 +131,9 @@ class SessionMatchRecordingTestCase(unittest.TestCase):
                 "player2_score": 5,
                 "match_date": datetime.date.today().isoformat(),
                 "match_type": "singles",
-                "session_id": MOCK_SESSION_ID
+                "session_id": MOCK_SESSION_ID,
             },
-            follow_redirects=False
+            follow_redirects=False,
         )
 
         self.assertEqual(response.status_code, 302)
@@ -160,15 +157,14 @@ class SessionMatchRecordingTestCase(unittest.TestCase):
         mock_session_snap.to_dict.return_value = {"playerIds": SESSION_PLAYERS}
         self.mock_db.collection("sessions").document(
             MOCK_SESSION_ID
-        ).get.return_value = (
-            mock_session_snap
-        )
+        ).get.return_value = mock_session_snap
 
         candidates = MatchCandidateService.get_candidate_player_ids(
             self.mock_db, "p1", session_id=MOCK_SESSION_ID, include_user=True
         )
 
         self.assertEqual(candidates, set(SESSION_PLAYERS))
+
 
 if __name__ == "__main__":
     unittest.main()

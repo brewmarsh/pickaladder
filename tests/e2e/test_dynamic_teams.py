@@ -14,11 +14,12 @@ def test_create_team_page_loads(client, mock_db):
     with patch(
         "pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}
     ):
-        response = client.get('/team/create')
+        response = client.get("/team/create")
         SUCCESS_CODE = 200
         assert response.status_code == SUCCESS_CODE
         assert b"Create Team" in response.data
         assert b"Team Name" in response.data
+
 
 def test_create_team_submission(client, mock_db):
     """Test creating a team via form submission."""
@@ -30,15 +31,12 @@ def test_create_team_submission(client, mock_db):
     mock_db.collection("users").document(uid).set({"name": "Creator"})
     mock_db.collection("users").document("u2").set({"name": "Member 2"})
 
-    form_data = {
-        "name": "The Smashers",
-        "members": [uid, "u2"]
-    }
+    form_data = {"name": "The Smashers", "members": [uid, "u2"]}
 
     with patch(
         "pickaladder.auth.routes.auth.verify_id_token", return_value={"uid": uid}
     ):
-        response = client.post('/team/create', data=form_data, follow_redirects=True)
+        response = client.post("/team/create", data=form_data, follow_redirects=True)
         SUCCESS_CODE = 200
         assert response.status_code == SUCCESS_CODE
 

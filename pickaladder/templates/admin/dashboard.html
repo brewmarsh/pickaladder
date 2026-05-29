@@ -1,0 +1,196 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Operational Dashboard{% endblock %}
+
+{% block admin_content %}
+<div class="row">
+    <!-- Growth Chart -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">User Growth (Last 7 Days)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="growthChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="card-title mb-0">System Health</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="health-icon bg-success-subtle text-success mr-3">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Database Status</div>
+                        <div class="font-weight-bold">Healthy</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mb-4">
+                    <div class="health-icon bg-{{ 'danger' if recent_errors else 'success' }}-subtle text-{{ 'danger' if recent_errors else 'success' }} mr-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Error Rate</div>
+                        <div class="font-weight-bold">{{ recent_errors|length }} Recent Errors</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="health-icon bg-info-subtle text-info mr-3">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Background Jobs</div>
+                        <div class="font-weight-bold">Active</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Errors -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent System Errors</h5>
+                <span class="badge badge-pill badge-danger-subtle text-danger">{{ recent_errors|length }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Time</th>
+                            <th>Error</th>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for error in recent_errors %}
+                        <tr>
+                            <td class="small">{{ error.timestamp.strftime('%H:%M:%S') if hasattr(error.timestamp, 'strftime') else 'Just now' }}</td>
+                            <td class="font-weight-medium text-danger">{{ error.type }}</td>
+                            <td class="small text-muted">{{ error.url|truncate(30) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">No recent errors! 🎉</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Logs -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Admin Actions</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Time</th>
+                            <th>Admin</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in audit_logs %}
+                        <tr>
+                            <td class="small">{{ log.timestamp.strftime('%b %d, %H:%M') if hasattr(log.timestamp, 'strftime') else 'Just now' }}</td>
+                            <td class="small">{{ log.admin_name or log.admin_id|truncate(8) }}</td>
+                            <td class="small">{{ log.action_type }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">No recent actions recorded.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('growthChart').getContext('2d');
+        const growthData = {{ growth_data|tojson }};
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: growthData.labels,
+                datasets: [{
+                    label: 'New Users',
+                    data: growthData.values,
+                    borderColor: '#2563EB',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#2563EB'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#6B7280' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#F3F4F6' },
+                        ticks: { stepSize: 1, color: '#6B7280' }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+{{ super() }}
+<style>
+    .health-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    .badge-danger-subtle {
+        background-color: #FEE2E2;
+        color: #B91C1C;
+    }
+    .bg-success-subtle { background-color: #DCFCE7; }
+    .bg-danger-subtle { background-color: #FEE2E2; }
+    .bg-info-subtle { background-color: #E0F2FE; }
+    .text-success { color: #15803D !important; }
+    .text-danger { color: #B91C1C !important; }
+    .text-info { color: #0369A1 !important; }
+</style>
+{% endblock %}

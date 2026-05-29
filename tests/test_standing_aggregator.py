@@ -24,7 +24,7 @@ class StandingAggregatorTestCase(unittest.TestCase):
                 "player1Ref": p1_ref,
                 "player2Ref": p2_ref,
                 "player1Score": 11,
-                "player2Score": 5
+                "player2Score": 5,
             }
         ]
 
@@ -43,11 +43,35 @@ class StandingAggregatorTestCase(unittest.TestCase):
         """Test that H2H breaks a tie when wins are equal."""
         matches = [
             # p1 beat p2 (H2H)
-            {"status": "COMPLETED", "winnerId": "p1", "participants": ["p1", "p2"], "player1Id": "p1", "player2Id": "p2", "player1Score": 11, "player2Score": 9},
+            {
+                "status": "COMPLETED",
+                "winnerId": "p1",
+                "participants": ["p1", "p2"],
+                "player1Id": "p1",
+                "player2Id": "p2",
+                "player1Score": 11,
+                "player2Score": 9,
+            },
             # p1 lost to p3
-            {"status": "COMPLETED", "winnerId": "p3", "participants": ["p1", "p3"], "player1Id": "p1", "player2Id": "p3", "player1Score": 5, "player2Score": 11},
+            {
+                "status": "COMPLETED",
+                "winnerId": "p3",
+                "participants": ["p1", "p3"],
+                "player1Id": "p1",
+                "player2Id": "p3",
+                "player1Score": 5,
+                "player2Score": 11,
+            },
             # p2 beat p3
-            {"status": "COMPLETED", "winnerId": "p2", "participants": ["p2", "p3"], "player1Id": "p2", "player2Id": "p3", "player1Score": 11, "player2Score": 5},
+            {
+                "status": "COMPLETED",
+                "winnerId": "p2",
+                "participants": ["p2", "p3"],
+                "player1Id": "p2",
+                "player2Id": "p3",
+                "player1Score": 11,
+                "player2Score": 5,
+            },
         ]
         # Results:
         # p1: 1-1, H2H over p2
@@ -74,13 +98,45 @@ class StandingAggregatorTestCase(unittest.TestCase):
 
         matches = [
             # P3 beats P1
-            {"status": "COMPLETED", "winnerId": "p3", "participants": ["p3", "p1"], "player1Id": "p3", "player2Id": "p1", "player1Score": 11, "player2Score": 0},
+            {
+                "status": "COMPLETED",
+                "winnerId": "p3",
+                "participants": ["p3", "p1"],
+                "player1Id": "p3",
+                "player2Id": "p1",
+                "player1Score": 11,
+                "player2Score": 0,
+            },
             # P3 beats P2
-            {"status": "COMPLETED", "winnerId": "p3", "participants": ["p3", "p2"], "player1Id": "p3", "player2Id": "p2", "player1Score": 11, "player2Score": 0},
+            {
+                "status": "COMPLETED",
+                "winnerId": "p3",
+                "participants": ["p3", "p2"],
+                "player1Id": "p3",
+                "player2Id": "p2",
+                "player1Score": 11,
+                "player2Score": 0,
+            },
             # P1 beats P2 (H2H)
-            {"status": "COMPLETED", "winnerId": "p1", "participants": ["p1", "p2"], "player1Id": "p1", "player2Id": "p2", "player1Score": 11, "player2Score": 10},
+            {
+                "status": "COMPLETED",
+                "winnerId": "p1",
+                "participants": ["p1", "p2"],
+                "player1Id": "p1",
+                "player2Id": "p2",
+                "player1Score": 11,
+                "player2Score": 10,
+            },
             # P2 beats P4
-            {"status": "COMPLETED", "winnerId": "p2", "participants": ["p2", "p4"], "player1Id": "p2", "player2Id": "p4", "player1Score": 11, "player2Score": 5},
+            {
+                "status": "COMPLETED",
+                "winnerId": "p2",
+                "participants": ["p2", "p4"],
+                "player1Id": "p2",
+                "player2Id": "p4",
+                "player1Score": 11,
+                "player2Score": 5,
+            },
         ]
 
         standings = StandingAggregator.aggregate(["p1", "p2", "p3", "p4"], matches)
@@ -101,6 +157,7 @@ class StandingAggregatorTestCase(unittest.TestCase):
         self.assertEqual(standings[2]["tie_break_reason"], "H2H")
 
         self.assertEqual(standings[3]["uid"], "p4")
+
 
 if __name__ == "__main__":
     unittest.main()

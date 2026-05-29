@@ -99,12 +99,32 @@
                 </div>
                 <div class="form-group">
                     {{ form.format.label(class="form-label") }}
-                    {{ form.format(class="form-input") }}
+                    {{ form.format(class="form-input", onchange="togglePoolSettings(this.value)") }}
                     {% if form.format.errors %}
                         {% for error in form.format.errors %}
                             <span class="text-danger">{{ error }}</span>
                         {% endfor %}
                     {% endif %}
+                </div>
+            </div>
+
+            <!-- Pool Play Settings (Conditional) -->
+            <div id="pool-settings" class="card bg-dark border-secondary mb-3" style="display: none;">
+                <div class="card-body">
+                    <h5 class="text-volt mb-3"><i class="fas fa-th-large me-2"></i>Pool Play Configuration</h5>
+                    <div class="responsive-form-grid">
+                        <div class="form-group">
+                            {{ form.pool_count.label(class="form-label") }}
+                            {{ form.pool_count(class="form-input") }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.promoted_per_pool.label(class="form-label") }}
+                            {{ form.promoted_per_pool(class="form-input") }}
+                        </div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        Participants will be randomized into pools. The top performers from each pool will advance to a single-elimination bracket.
+                    </small>
                 </div>
             </div>
 
@@ -138,5 +158,22 @@ function updateFileName(input) {
     const fileName = input.files[0] ? input.files[0].name : 'No file chosen';
     document.getElementById('file-name-display').textContent = fileName;
 }
+
+function togglePoolSettings(val) {
+    const poolSettings = document.getElementById('pool-settings');
+    if (val === 'POOL_PLAY') {
+        poolSettings.style.display = 'block';
+    } else {
+        poolSettings.style.display = 'none';
+    }
+}
+
+// Initial check on load
+document.addEventListener('DOMContentLoaded', () => {
+    const formatSelect = document.querySelector('select[name="format"]');
+    if (formatSelect) {
+        togglePoolSettings(formatSelect.value);
+    }
+});
 </script>
 {% endblock %}

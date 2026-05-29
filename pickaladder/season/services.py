@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from firebase_admin import firestore
+
 from .repository import SeasonRepository
 
 if TYPE_CHECKING:
@@ -34,12 +36,49 @@ class SeasonService:
         """Update a season."""
         SeasonRepository.update(db, season_id, data)
 
+    @staticmethod
+    def join_season_division(
+        db: Client, season_id: str, division_index: int, user_id: str
+    ) -> None:
+        """Add a user to a specific division within a season, and ensure they are in the parent group."""
+        from pickaladder.group.repository import GroupRepository
+
+        season = SeasonRepository.get_by_id(db, season_id)
+        if not season:
+            raise ValueError("Season not found")
+
+        group_id = season.get("groupId")
+        if not group_id:
+            raise ValueError("Season has no associated group")
+
+        divisions = season.get("divisions", [])
+        if division_index >= len(divisions):
+            raise ValueError("Invalid division index")
+
+        # 1. Add to parent group
+        user_ref = db.collection("users").document(user_id)
+        GroupRepository.update(
+            db, group_id, {"members": firestore.ArrayUnion([user_ref])}
+        )
+
+        # 2. Add to division participant_ids
+        # Firestore doesn't support updating a specific index in an array easily.
+        # We have to update the entire 'divisions' array.
+        if "participant_ids" not in divisions[division_index]:
+            divisions[division_index]["participant_ids"] = []
+
+        if user_id not in divisions[division_index]["participant_ids"]:
+            divisions[division_index]["participant_ids"].append(user_id)
+            SeasonRepository.update(db, season_id, {"divisions": divisions})
+
 
 class SeasonStandingsService:
     """Calculates and aggregates standings for a season."""
 
     @staticmethod
-    def get_season_standings(db: Client, season_id: str, division_index: int | None = None) -> list[dict[str, Any]]:
+    def get_season_standings(
+        db: Client, season_id: str, division_index: int | None = None
+    ) -> list[dict[str, Any]]:
         """Calculate aggregate standings for a specific season/division using USAP hierarchy."""
         from pickaladder.core.ranking.aggregator import StandingAggregator
         from pickaladder.group.services.group_service import GroupService
@@ -52,14 +91,22 @@ class SeasonStandingsService:
 
         # 1. Determine participant pool
         # If division_index is provided, only include those participants
-        if division_index is not None and "divisions" in season and len(season["divisions"]) > division_index:
-            participant_ids = season["divisions"][division_index].get("participant_ids", [])
+        if (
+            division_index is not None
+            and "divisions" in season
+            and len(season["divisions"]) > division_index
+        ):
+            participant_ids = season["divisions"][division_index].get(
+                "participant_ids", []
+            )
         else:
             # Fallback to all group members
             group_data = GroupService.get_group_details(db, season["groupId"], "")
             if not group_data:
                 return []
-            participant_ids = [p["user"]["id"] for p in group_data.get("participants", [])]
+            participant_ids = [
+                p["user"]["id"] for p in group_data.get("participants", [])
+            ]
 
         # 2. Use Aggregator
         standings = StandingAggregator.aggregate(participant_ids, matches)
@@ -67,8 +114,7 @@ class SeasonStandingsService:
         # 3. Enrich with user data (we fetch from group service for simplicity)
         group_data = GroupService.get_group_details(db, season["groupId"], "")
         user_map = {
-            p["user"]["id"]: p["user"]
-            for p in group_data.get("participants", [])
+            p["user"]["id"]: p["user"] for p in group_data.get("participants", [])
         }
 
         for s in standings:
@@ -108,15 +154,12 @@ class SeasonFinalizationService:
         relegated_uids = {p["uid"] for p in relegated}
 
         retained = [
-            p for p in standings
+            p
+            for p in standings
             if p["uid"] not in promoted_uids and p["uid"] not in relegated_uids
         ]
 
-        return {
-            "promoted": promoted,
-            "relegated": relegated,
-            "retained": retained
-        }
+        return {"promoted": promoted, "relegated": relegated, "retained": retained}
 
     @staticmethod
     def finalize_season(db: Client, season_id: str) -> None:
@@ -128,20 +171,19 @@ class SeasonFinalizationService:
         standings = SeasonStandingsService.get_season_standings(db, season_id)
 
         # Store snapshot directly on the season document for easy historical access
-        SeasonRepository.update(db, season_id, {
-            "status": "COMPLETED",
-            "finalStandings": standings
-        })
+        SeasonRepository.update(
+            db, season_id, {"status": "COMPLETED", "finalStandings": standings}
+        )
 
         # Log community activity
         ActivityService.log_activity(
             db,
-            "", # System level / generic actor if needed, but here we can use an empty string or omit
+            "",  # System level / generic actor if needed, but here we can use an empty string or omit
             ActivityType.SEASON_FINALIZED,
             {
                 "seasonId": season_id,
-                "seasonName": season.get("name") if season else "Unknown Season"
-            }
+                "seasonName": season.get("name") if season else "Unknown Season",
+            },
         )
 
     @staticmethod
@@ -169,6 +211,8 @@ class SeasonFinalizationService:
         # We'll return the flattened suggestions for the next creation form.
 
         return {
-            "suggested_participants": [p["uid"] for p in movements["promoted"] + movements["retained"]],
-            "relegated_participants": [p["uid"] for p in movements["relegated"]]
+            "suggested_participants": [
+                p["uid"] for p in movements["promoted"] + movements["retained"]
+            ],
+            "relegated_participants": [p["uid"] for p in movements["relegated"]],
         }

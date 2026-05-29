@@ -44,6 +44,12 @@ def app() -> Iterator[Any]:
 
 
 @pytest.fixture
+def client(app: Any) -> Any:
+    """Fixture to provide a test client."""
+    return app.test_client()
+
+
+@pytest.fixture
 def mock_db_read() -> None:
     """Fixture to apply database read patches."""
     MockFirestoreBuilder.patch_db_read()

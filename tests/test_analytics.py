@@ -26,8 +26,8 @@ class AnalyticsServiceTestCase(unittest.TestCase):
                 "endDate": "2026-01-01",
                 "finalStandings": [
                     {"uid": "user1", "wins": 10, "point_diff": 50},
-                    {"uid": "user2", "wins": 5, "point_diff": 0}
-                ]
+                    {"uid": "user2", "wins": 5, "point_diff": 0},
+                ],
             },
             {
                 "id": "s2",
@@ -36,16 +36,16 @@ class AnalyticsServiceTestCase(unittest.TestCase):
                 "endDate": "2026-04-01",
                 "finalStandings": [
                     {"uid": "user2", "wins": 8, "point_diff": 20},
-                    {"uid": "user1", "wins": 7, "point_diff": 10}
-                ]
+                    {"uid": "user1", "wins": 7, "point_diff": 10},
+                ],
             },
             {
                 "id": "s3",
                 "name": "Active Season",
                 "status": "ACTIVE",
                 "endDate": "2026-07-01",
-                "finalStandings": [] # No snapshot yet
-            }
+                "finalStandings": [],  # No snapshot yet
+            },
         ]
 
         history = AnalyticsService.get_user_season_history(self.mock_db, "user1")
@@ -53,12 +53,12 @@ class AnalyticsServiceTestCase(unittest.TestCase):
         self.assertEqual(len(history), 2)
         # Season 2 should be first (latest date)
         self.assertEqual(history[0]["seasonId"], "s2")
-        self.assertEqual(history[0]["rank"], 2) # Ranked 2nd in S2
+        self.assertEqual(history[0]["rank"], 2)  # Ranked 2nd in S2
         self.assertEqual(history[0]["wins"], 7)
 
         # Season 1 should be second
         self.assertEqual(history[1]["seasonId"], "s1")
-        self.assertEqual(history[1]["rank"], 1) # Ranked 1st in S1
+        self.assertEqual(history[1]["rank"], 1)  # Ranked 1st in S1
         self.assertEqual(history[1]["wins"], 10)
         self.assertEqual(history[1]["pointDiff"], 50)
 
@@ -70,12 +70,13 @@ class AnalyticsServiceTestCase(unittest.TestCase):
                 "id": "s1",
                 "name": "Season 1",
                 "status": "COMPLETED",
-                "finalStandings": [{"uid": "other_user"}]
+                "finalStandings": [{"uid": "other_user"}],
             }
         ]
 
         history = AnalyticsService.get_user_season_history(self.mock_db, "user1")
         self.assertEqual(len(history), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

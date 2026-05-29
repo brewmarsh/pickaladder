@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (hamburger && mobileNav) {
         hamburger.addEventListener('click', function () {
-            // Toggle Menu: Toggle the d-none class on #myLinks
-            mobileNav.classList.toggle('d-none');
+            // Toggle Menu
+            mobileNav.classList.toggle('show');
 
             // Animate Icon: Toggle active class on the hamburger button
             hamburger.classList.toggle('active');

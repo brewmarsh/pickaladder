@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from firebase_admin import firestore
 
@@ -16,7 +16,9 @@ class MembershipRequestRepository(BaseRepository):
     COLLECTION_NAME = "membership_requests"
 
     @classmethod
-    def get_pending_for_group(cls, db: Client, group_id: str) -> list[dict[str, object]]:
+    def get_pending_for_group(
+        cls, db: Client, group_id: str
+    ) -> list[dict[str, object]]:
         """Fetch all pending requests for a specific group."""
         query = (
             db.collection(cls.COLLECTION_NAME)

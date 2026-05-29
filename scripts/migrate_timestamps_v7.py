@@ -31,6 +31,7 @@ def _load_credentials() -> credentials.Certificate | None:
             return credentials.Certificate(str(cred_path))
 
     import json
+
     cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
     if cred_json:
         try:
@@ -48,8 +49,8 @@ def initialize_firebase() -> bool:
     if not cred:
         # If no creds, we might be in emulator mode if FIRESTORE_EMULATOR_HOST is set
         if os.environ.get("FIRESTORE_EMULATOR_HOST"):
-             firebase_admin.initialize_app()
-             return True
+            firebase_admin.initialize_app()
+            return True
         print("Error: No credentials found and FIRESTORE_EMULATOR_HOST not set.")
         return False
 
@@ -76,7 +77,7 @@ def migrate_collection(
         if "created_at" in data:
             updates = {
                 "createdAt": data["created_at"],
-                "created_at": firestore.DELETE_FIELD
+                "created_at": firestore.DELETE_FIELD,
             }
             if dry_run:
                 print(f"[DRY] {doc.id}: {updates}")

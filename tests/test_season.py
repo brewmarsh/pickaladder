@@ -57,7 +57,7 @@ class SeasonServiceTestCase(unittest.TestCase):
                 "player2Ref": p2_ref,
                 "player1Score": 11,
                 "player2Score": 5,
-                "seasonId": "s1"
+                "seasonId": "s1",
             },
             {
                 "status": "COMPLETED",
@@ -67,8 +67,8 @@ class SeasonServiceTestCase(unittest.TestCase):
                 "player2Ref": p2_ref,
                 "player1Score": 11,
                 "player2Score": 9,
-                "seasonId": "s1"
-            }
+                "seasonId": "s1",
+            },
         ]
         mock_repo.get_season_matches.return_value = matches
         mock_repo.get_by_id.return_value = {"id": "s1", "groupId": "g1"}
@@ -77,7 +77,7 @@ class SeasonServiceTestCase(unittest.TestCase):
         mock_group_service.return_value = {
             "participants": [
                 {"user": {"id": "p1", "username": "Player 1"}},
-                {"user": {"id": "p2", "username": "Player 2"}}
+                {"user": {"id": "p2", "username": "Player 2"}},
             ]
         }
 
@@ -87,7 +87,7 @@ class SeasonServiceTestCase(unittest.TestCase):
         # p1 should be first
         self.assertEqual(standings[0]["uid"], "p1")
         self.assertEqual(standings[0]["wins"], 2)
-        self.assertEqual(standings[0]["point_diff"], 8) # (11-5) + (11-9) = 6 + 2 = 8
+        self.assertEqual(standings[0]["point_diff"], 8)  # (11-5) + (11-9) = 6 + 2 = 8
 
         # p2 should be second
         self.assertEqual(standings[1]["uid"], "p2")
@@ -102,13 +102,13 @@ class SeasonServiceTestCase(unittest.TestCase):
         # Rules: Top 1 promote, Bottom 1 relegate
         mock_repo.get_by_id.return_value = {
             "id": "s1",
-            "movementRules": {"promotionCount": 1, "relegationCount": 1}
+            "movementRules": {"promotionCount": 1, "relegationCount": 1},
         }
         mock_standings.return_value = [
             {"uid": "p1", "wins": 3},
             {"uid": "p2", "wins": 2},
             {"uid": "p3", "wins": 1},
-            {"uid": "p4", "wins": 0}
+            {"uid": "p4", "wins": 0},
         ]
 
         movements = SeasonFinalizationService.calculate_movements(self.mock_db, "s1")
@@ -131,7 +131,7 @@ class SeasonServiceTestCase(unittest.TestCase):
         mock_calc.return_value = {
             "promoted": [{"uid": "p1"}],
             "relegated": [{"uid": "p4"}],
-            "retained": [{"uid": "p2"}, {"uid": "p3"}]
+            "retained": [{"uid": "p2"}, {"uid": "p3"}],
         }
 
         result = SeasonFinalizationService.apply_movements(self.mock_db, "old_s")
@@ -141,6 +141,7 @@ class SeasonServiceTestCase(unittest.TestCase):
         self.assertIn("p3", result["suggested_participants"])
         self.assertIn("p4", result["relegated_participants"])
         self.assertEqual(len(result["suggested_participants"]), 3)
+
 
 if __name__ == "__main__":
     unittest.main()

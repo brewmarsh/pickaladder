@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 
 def _extract_id(val: object) -> str | None:
     """Extract an ID from a Firestore reference, dictionary, or string."""
@@ -81,7 +79,9 @@ def _get_match_scores(data: dict[str, object]) -> tuple[int, int]:
     return int(p1_score or 0), int(p2_score or 0)
 
 
-def _resolve_team_document_ids(data: dict[str, object]) -> tuple[str | None, str | None]:
+def _resolve_team_document_ids(
+    data: dict[str, object],
+) -> tuple[str | None, str | None]:
     """Extract Team document IDs if available."""
     t1_id = _extract_id(data.get("team1Ref")) or data.get("team1Id")
     t2_id = _extract_id(data.get("team2Ref")) or data.get("team2Id")

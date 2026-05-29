@@ -5,7 +5,10 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.document import DocumentReference
 
-def get_player_info(player_ref: DocumentReference | None, users_map: dict[str, Any]) -> dict[str, Any]:
+
+def get_player_info(
+    player_ref: DocumentReference | None, users_map: dict[str, Any]
+) -> dict[str, Any]:
     """Extract player info from a reference or dictionary."""
     if hasattr(player_ref, "id"):
         uid = player_ref.id

@@ -1,11 +1,18 @@
 {% extends "layout.html" %}
 {% block title %}{{ tournament.name }}{% endblock %}
+
+{% block extra_meta %}
+<meta property="og:title" content="{{ tournament.name }} - pickaladder Tournament">
+<meta property="og:description" content="Check out the standings and bracket for {{ tournament.name }} on pickaladder!">
+<meta property="og:image" content="{{ tournament.banner_url if tournament.banner_url else url_for('static', filename='pickaladder_logo_256.png', _external=True) }}">
+{% endblock %}
+
 {% block content %}
 {% if claim_team_data %}
 <div class="alert alert-info border-info shadow-sm mb-4" style="margin: 20px; padding: 20px; border-left: 5px solid var(--accent-color);">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
-            <h4 class="alert-heading mb-1" style="color: var(--text-color);">👥 Team Invitation</h4>
+            <h4 class="alert-heading mb-1" style="color: var(--text-primary);">👥 Team Invitation</h4>
             <p class="mb-0"><strong>{{ claim_team_data.p1_name }}</strong> has invited you to join team <strong>"{{ claim_team_data.team_name }}"</strong> for this tournament!</p>
         </div>
         <form action="{{ url_for('.claim_team', tournament_id=tournament.id, team_id=claim_team_data.id) }}" method="POST">
@@ -54,6 +61,9 @@
         <!-- Tabs -->
         <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
             <button class="tab-btn active" onclick="openTab(event, 'overview')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid var(--accent-color); font-weight: bold;">Overview</button>
+            {% if tournament.format == 'POOL_PLAY' %}
+                <button class="tab-btn" onclick="openTab(event, 'pools')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Pools</button>
+            {% endif %}
             <button class="tab-btn" onclick="openTab(event, 'bracket')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Bracket</button>
             <button class="tab-btn" onclick="openTab(event, 'players')" style="background: none; border: none; padding: 10px 20px; color: var(--text-primary); cursor: pointer; border-bottom: 3px solid transparent;">Players</button>
         </div>
@@ -114,6 +124,71 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div id="pools" class="tab-content" style="display: none;">
+            {% if tournament.format == 'POOL_PLAY' and pool_standings %}
+                {% if is_owner and g.user.is_admin and not matches|selectattr('bracketType', 'defined')|list %}
+                <div class="card mb-4 border-volt">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="text-volt mb-1">Pool Play in Progress</h5>
+                            <p class="text-muted small mb-0">Once all pool matches are complete, you can promote the top players to the bracket.</p>
+                        </div>
+                        <form action="{{ url_for('.promote_pools', tournament_id=tournament.id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-primary">Promote to Bracket</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% for pool_id, standings in pool_standings.items() %}
+                <div class="card mb-4">
+                    <h3 class="card-header d-flex justify-content-between align-items-center">
+                        Pool {{ pool_id }}
+                        <span class="badge badge-info">{{ standings|length }} Players</span>
+                    </h3>
+                    <div class="table-container">
+                        <div class="table-responsive">
+                            <table class="table-standard responsive-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Player</th>
+                                        <th class="text-center">W-L</th>
+                                        <th class="text-center">Diff</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for s in standings %}
+                                    <tr class="{{ 'bg-volt-subtle' if loop.index <= tournament.promoted_per_pool else '' }}">
+                                        <td data-label="Rank" class="text-center fw-bold">#{{ loop.index }}</td>
+                                        <td data-label="Player">
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <img src="{{ s.user | avatar_url }}" alt="Avatar" class="friend-avatar" style="width: 24px; height: 24px;">
+                                                <span>{{ s.name }}</span>
+                                                {% if loop.index <= tournament.promoted_per_pool %}
+                                                    <span class="badge badge-success small ms-2" title="Qualifies for Bracket">Q</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td data-label="W-L" class="text-center">{{ s.wins }}-{{ s.losses }}</td>
+                                        <td data-label="Diff" class="text-center">{{ '%+d' % s.point_diff }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card p-5 text-center text-muted">
+                    <i class="fas fa-th-large fa-3x mb-3 opacity-20"></i>
+                    <p>No pools generated yet. Add participants and publish the tournament.</p>
+                </div>
+            {% endif %}
         </div>
 
         <div id="bracket" class="tab-content" style="display: none;">

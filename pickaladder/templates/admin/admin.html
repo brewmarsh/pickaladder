@@ -1,23 +1,25 @@
-{% extends "layout.html" %}
-{% block title %}Admin Panel{% endblock %}
-{% block content %}
-<div class="page-header">
-    <h1>Admin Panel</h1>
-</div>
+{% extends "admin/layout.html" %}
 
-<!-- KPI Stats Row -->
-<div class="vanity-stats-container mb-4">
-    <div class="vanity-stat">
-        <div class="stat-value text-volt">{{ admin_stats.total_users }}</div>
-        <div class="stat-label text-muted">Total Users</div>
-    </div>
-    <div class="vanity-stat">
-        <div class="stat-value text-volt">{{ admin_stats.active_tournaments }}</div>
-        <div class="stat-label text-muted">Active Tournaments</div>
-    </div>
-    <div class="vanity-stat">
-        <div class="stat-value text-volt">{{ admin_stats.recent_matches }}</div>
-        <div class="stat-label text-muted">Recent Matches (24h)</div>
+{% block title %}User Management{% endblock %}
+
+{% block admin_content %}
+<div class="row">
+    <!-- KPI Stats Row -->
+    <div class="col-12 mb-4">
+        <div class="vanity-stats-container">
+            <div class="vanity-stat">
+                <div class="stat-value text-volt">{{ admin_stats.total_users }}</div>
+                <div class="stat-label text-muted">Total Users</div>
+            </div>
+            <div class="vanity-stat">
+                <div class="stat-value text-volt">{{ admin_stats.active_tournaments }}</div>
+                <div class="stat-label text-muted">Active Tournaments</div>
+            </div>
+            <div class="vanity-stat">
+                <div class="stat-value text-volt">{{ admin_stats.recent_matches }}</div>
+                <div class="stat-label text-muted">Recent Matches (24h)</div>
+            </div>
+        </div>
     </div>
 </div>
 

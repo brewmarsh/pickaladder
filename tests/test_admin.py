@@ -34,7 +34,8 @@ class AdminRoutesTestCase(unittest.TestCase):
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
             "user_firestore": patch(
-                "pickaladder.user.routes.firestore", new=self.mock_firestore_service
+                "pickaladder.user.routes.profile.firestore",
+                new=self.mock_firestore_service,
             ),
         }
 
@@ -82,14 +83,17 @@ class AdminRoutesTestCase(unittest.TestCase):
         self._login_user(MOCK_ADMIN_ID, MOCK_ADMIN_DATA, is_admin=True)
 
         # The admin route checks for the email verification setting, so we mock it.
-        mock_settings_doc = self.mock_firestore_service.client.return_value.collection(
-            "settings"
-        ).document("enforceEmailVerification")
-        mock_settings_doc.get.return_value.exists = False
+        mock_db = self.mock_firestore_service.client.return_value
 
-        response = self.client.get("/admin/")
+        # Mock growth metrics
+        mock_db.collection.return_value.where.return_value.where.return_value.count.return_value.get.return_value = [
+            [MagicMock(value=0)]
+        ]
+
+        response = self.client.get("/admin/", follow_redirects=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"Admin Panel", response.data)
+        self.assertIn(b"Operational Dashboard", response.data)
 
     def test_admin_panel_inaccessible_to_non_admin(self) -> None:
         """Ensure a non-admin user is redirected from the admin panel."""

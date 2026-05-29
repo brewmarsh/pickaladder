@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from firebase_admin import firestore
-from flask import flash, g, redirect, render_template, request, url_for
+from flask import Response, flash, g, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, MATCH_MESSAGES
@@ -18,7 +18,7 @@ from .services import TeamService
 
 @bp.route("/create", methods=["GET", "POST"])
 @login_required
-def create_team() -> Any:
+def create_team() -> Response | str:
     """Create a new named team."""
     db = firestore.client()
     form = TeamForm()
@@ -49,7 +49,7 @@ def create_team() -> Any:
 
 @bp.route("/<string:team_id>")
 @login_required
-def view_team(team_id: str) -> Any:
+def view_team(team_id: str) -> Response | str:
     """Display a single team's page."""
     db = firestore.client()
     data = TeamService.get_team_dashboard_data(db, team_id)
@@ -63,7 +63,7 @@ def view_team(team_id: str) -> Any:
 
 @bp.route("/<string:team_id>/edit", methods=["GET", "POST"])
 @login_required
-def rename_team(team_id: str) -> Any:
+def rename_team(team_id: str) -> Response | str:
     """Edit a team's name."""
     db = firestore.client()
     team_ref = db.collection("teams").document(team_id)
@@ -96,7 +96,7 @@ def rename_team(team_id: str) -> Any:
 
 @bp.route("/api/user-teams")
 @login_required
-def get_user_teams() -> Any:
+def get_user_teams() -> dict[str, list[dict[str, Any]]]:
     """Fetch named teams for the current user."""
     db = firestore.client()
     teams = TeamService.get_user_named_teams(db, g.user.uid)
@@ -115,7 +115,7 @@ def get_user_teams() -> Any:
 
 @bp.route("/api/<string:team_id>/roster")
 @login_required
-def get_team_roster(team_id: str) -> Any:
+def get_team_roster(team_id: str) -> tuple[dict[str, Any], int] | dict[str, Any]:
     """Fetch the roster for a specific team."""
     db = firestore.client()
     team_data = TeamRepository.get_by_id(db, team_id)
@@ -141,7 +141,7 @@ def get_team_roster(team_id: str) -> Any:
 
 @bp.route("/wizard", methods=["GET", "POST"])
 @login_required
-def team_wizard() -> Any:
+def team_wizard() -> Response | str | tuple[dict[str, Any], int] | dict[str, Any]:
     """Multi-step wizard for team creation."""
     db = firestore.client()
 
@@ -161,9 +161,7 @@ def team_wizard() -> Any:
             if g.user.uid not in member_ids:
                 member_ids.append(g.user.uid)
 
-            team_id = TeamService.create_named_team(
-                db, name, g.user.uid, member_ids
-            )
+            team_id = TeamService.create_named_team(db, name, g.user.uid, member_ids)
             return {
                 "success": True,
                 "team_id": team_id,

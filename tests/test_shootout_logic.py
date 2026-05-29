@@ -17,6 +17,7 @@ def test_initial_court_grouping():
     assert assignments[4] == {"uid": "p5", "court": 2}
     assert assignments[7] == {"uid": "p8", "court": 2}
 
+
 def test_shootout_movement_up_and_down():
     """Verify court movement: winners up, losers down."""
     # Court 1: p1, p2 (won) | p3, p4 (lost)
@@ -51,6 +52,7 @@ def test_shootout_movement_up_and_down():
     # Losers on Court 2 stay on Court 2
     assert next_map["p7"] == COURT_TWO
     assert next_map["p8"] == COURT_TWO
+
 
 def test_shootout_empty_results():
     """Verify shootout logic handles empty input."""

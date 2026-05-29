@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import logging
 import secrets
-from typing import Any
 
 from firebase_admin import firestore, storage
 from flask import current_app, url_for
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
-from pickaladder.group.repository import GroupRepository
 from pickaladder.group.membership_repository import MembershipRequestRepository
+from pickaladder.group.repository import GroupRepository
 from pickaladder.group.services.leaderboard import get_group_leaderboard
 from pickaladder.group.services.match_parser import (
     _get_match_scores,
@@ -45,15 +44,13 @@ class GroupService:
     """Service class for group-related operations."""
 
     @staticmethod
-    def get_user_groups(db: 'Client', user_id: str) -> list[dict[str, object]]:
+    def get_user_groups(db: Client, user_id: str) -> list[dict[str, object]]:
         """Fetch and enrich all groups the user belongs to."""
         my_groups = GroupRepository.get_user_groups(db, user_id)
 
         # Enrich groups with owner data
         owner_refs = [
-            group.get("ownerRef")
-            for group in my_groups
-            if group.get("ownerRef")
+            group.get("ownerRef") for group in my_groups if group.get("ownerRef")
         ]
         unique_owner_refs = list({ref for ref in owner_refs if ref})
 
@@ -90,7 +87,7 @@ class GroupService:
 
     @staticmethod
     def create_group(
-        db: 'Client',
+        db: Client,
         user_id: str,
         form_data: dict[str, object],
         profile_picture: FileStorage | None = None,
@@ -126,7 +123,7 @@ class GroupService:
 
     @staticmethod
     def promote_member(
-        db: 'Client', group_id: str, target_uid: str, requester_uid: str
+        db: Client, group_id: str, target_uid: str, requester_uid: str
     ) -> None:
         """Promote a member to admin. Only the owner can do this."""
         group_data = GroupRepository.get_by_id(db, group_id)
@@ -143,7 +140,7 @@ class GroupService:
 
     @staticmethod
     def demote_member(
-        db: 'Client', group_id: str, target_uid: str, requester_uid: str
+        db: Client, group_id: str, target_uid: str, requester_uid: str
     ) -> None:
         """Demote an admin to a regular member. Only the owner can do this."""
         group_data = GroupRepository.get_by_id(db, group_id)
@@ -160,7 +157,7 @@ class GroupService:
 
     @staticmethod
     def remove_member(
-        db: 'Client', group_id: str, target_uid: str, requester_uid: str
+        db: Client, group_id: str, target_uid: str, requester_uid: str
     ) -> None:
         """Remove a member from the group. Only admins can do this."""
         group_data = GroupRepository.get_by_id(db, group_id)
@@ -186,7 +183,7 @@ class GroupService:
 
     @staticmethod
     def update_group(
-        db: 'Client',
+        db: Client,
         group_id: str,
         user_id: str,
         form_data: dict[str, object],
@@ -237,7 +234,7 @@ class GroupService:
 
     @staticmethod
     def get_group_details(
-        db: 'Client',
+        db: Client,
         group_id: str,
         user_id: str,
         player_a_id: str | None = None,
@@ -325,8 +322,8 @@ class GroupService:
 
     @staticmethod
     def _get_eligible_friends(
-        db: 'Client', user_ref: 'DocumentReference', member_ids: set[str]
-    ) -> list['DocumentSnapshot']:
+        db: Client, user_ref: DocumentReference, member_ids: set[str]
+    ) -> list[DocumentSnapshot]:
         """Fetch friends of the user who are not already in the group."""
         friends_query = (
             user_ref.collection("friends")
@@ -347,8 +344,8 @@ class GroupService:
 
     @staticmethod
     def _fetch_recent_matches(
-        db: 'Client', group_id: str
-    ) -> tuple[list['DocumentSnapshot'], list[dict[str, object]]]:
+        db: Client, group_id: str
+    ) -> tuple[list[DocumentSnapshot], list[dict[str, object]]]:
         """Fetch and enrich recent matches for a group."""
         matches_ref = db.collection("matches")
         matches_query = (
@@ -379,7 +376,9 @@ class GroupService:
 
     @staticmethod
     def _extract_single_match_refs(
-        data: dict[str, object], team_refs: list['DocumentSnapshot'], player_refs: list['DocumentSnapshot']
+        data: dict[str, object],
+        team_refs: list[DocumentSnapshot],
+        player_refs: list[DocumentSnapshot],
     ) -> None:
         """Extract team and player references from a single match data dictionary."""
         player_keys = [
@@ -406,11 +405,11 @@ class GroupService:
 
     @staticmethod
     def _collect_refs_from_matches(
-        matches_docs: list['DocumentSnapshot'],
-    ) -> tuple[list['DocumentSnapshot'], list['DocumentSnapshot']]:
+        matches_docs: list[DocumentSnapshot],
+    ) -> tuple[list[DocumentSnapshot], list[DocumentSnapshot]]:
         """Extract team and player references from match documents."""
-        team_refs: list['DocumentSnapshot'] = []
-        player_refs: list['DocumentSnapshot'] = []
+        team_refs: list[DocumentSnapshot] = []
+        player_refs: list[DocumentSnapshot] = []
 
         for doc in matches_docs:
             GroupService._extract_single_match_refs(
@@ -420,7 +419,9 @@ class GroupService:
         return team_refs, player_refs
 
     @staticmethod
-    def _batch_fetch_entities(db: 'Client', refs: list['DocumentSnapshot']) -> dict[str, object]:
+    def _batch_fetch_entities(
+        db: Client, refs: list[DocumentSnapshot]
+    ) -> dict[str, object]:
         """Batch fetch multiple Firestore documents and return a map by ID."""
         if not refs:
             return {}
@@ -436,7 +437,9 @@ class GroupService:
 
     @staticmethod
     def _enrich_single_match(
-        match_doc: 'DocumentSnapshot', teams_map: dict[str, object], players_map: dict[str, object]
+        match_doc: DocumentSnapshot,
+        teams_map: dict[str, object],
+        players_map: dict[str, object],
     ) -> dict[str, object]:
         """Attach team and player data to a single match dictionary."""
         match_data = match_doc.to_dict()
@@ -501,7 +504,10 @@ class GroupService:
 
     @staticmethod
     def _fetch_group_teams(
-        db: 'Client', group_id: str, member_ids: set[str], recent_matches_docs: list['DocumentSnapshot']
+        db: Client,
+        group_id: str,
+        member_ids: set[str],
+        recent_matches_docs: list[DocumentSnapshot],
     ) -> tuple[list[dict[str, object]], dict[str, object] | None]:
         """Calculate team leaderboard and best buds for a group."""
         team_stats = GroupService._calculate_team_stats(recent_matches_docs)
@@ -562,7 +568,9 @@ class GroupService:
             stats[t1_id]["losses"] += 1
 
     @staticmethod
-    def _calculate_team_stats(recent_matches_docs: list['DocumentSnapshot']) -> dict[str, object]:
+    def _calculate_team_stats(
+        recent_matches_docs: list[DocumentSnapshot],
+    ) -> dict[str, object]:
         """Aggregate wins/losses per team from match history."""
         stats: dict[str, object] = {}
         for doc in recent_matches_docs:
@@ -597,7 +605,7 @@ class GroupService:
 
     @staticmethod
     def _fetch_user_docs_by_email(
-        db: 'Client', emails: list[str]
+        db: Client, emails: list[str]
     ) -> dict[str, dict[str, object]]:
         """Batch fetch user documents by email."""
         user_docs = {}
@@ -620,7 +628,7 @@ class GroupService:
 
     @staticmethod
     def send_invite_email_background(
-        app: "Flask", token: str, email_data: dict[str, object]
+        app: Flask, token: str, email_data: dict[str, object]
     ) -> None:
         """Send an invite email in the background."""
         from pickaladder.group.utils import send_invite_email_background
@@ -628,14 +636,16 @@ class GroupService:
         send_invite_email_background(app, token, email_data)
 
     @staticmethod
-    def friend_group_members(db: 'Client', group_id: str, new_member_ref: 'DocumentReference') -> None:
+    def friend_group_members(
+        db: Client, group_id: str, new_member_ref: DocumentReference
+    ) -> None:
         """Automatically create friend relationships between group members."""
         from pickaladder.group.utils import friend_group_members
 
         friend_group_members(db, group_id, new_member_ref)
 
     @staticmethod
-    def invite_friend(db: 'Client', group_id: str, friend_id: str) -> None:
+    def invite_friend(db: Client, group_id: str, friend_id: str) -> None:
         """Add a friend to a group."""
         friend_ref = db.collection("users").document(friend_id)
         GroupRepository.update(
@@ -644,7 +654,7 @@ class GroupService:
 
     @staticmethod
     def invite_by_email(  # noqa: PLR0913
-        db: 'Client',
+        db: Client,
         group_id: str,
         group_name: str,
         email: str,
@@ -717,7 +727,7 @@ class GroupService:
 
     @staticmethod
     def create_membership_request(
-        db: 'Client', group_id: str, user_id: str, message: str | None = None
+        db: Client, group_id: str, user_id: str, message: str | None = None
     ) -> str:
         """Create a membership request for a group."""
         group_data = GroupRepository.get_by_id(db, group_id)
@@ -740,13 +750,17 @@ class GroupService:
             # Re-open the request if it was declined before
             MembershipRequestRepository.update_status(db, existing["id"], "PENDING")
             if message:
-                MembershipRequestRepository.update(db, existing["id"], {"message": message})
+                MembershipRequestRepository.update(
+                    db, existing["id"], {"message": message}
+                )
             return existing["id"]
 
-        return MembershipRequestRepository.create_request(db, group_id, user_id, message)
+        return MembershipRequestRepository.create_request(
+            db, group_id, user_id, message
+        )
 
     @staticmethod
-    def get_pending_requests(db: 'Client', group_id: str) -> list[dict[str, object]]:
+    def get_pending_requests(db: Client, group_id: str) -> list[dict[str, object]]:
         """Fetch and enrich pending requests for a group."""
         requests = MembershipRequestRepository.get_pending_for_group(db, group_id)
         if not requests:
@@ -763,7 +777,7 @@ class GroupService:
 
     @staticmethod
     def handle_membership_request(
-        db: 'Client', group_id: str, request_id: str, requester_uid: str, action: str
+        db: Client, group_id: str, request_id: str, requester_uid: str, action: str
     ) -> None:
         """Approve or decline a membership request."""
         group_data = GroupRepository.get_by_id(db, group_id)
@@ -780,18 +794,18 @@ class GroupService:
         if action == "approve":
             target_uid = request_data["userId"]
             target_ref = db.collection("users").document(target_uid)
-            
+
             # Update group members
             GroupRepository.update(
                 db, group_id, {"members": firestore.ArrayUnion([target_ref])}
             )
-            
+
             # Mark request as approved
             MembershipRequestRepository.update_status(db, request_id, "APPROVED")
-            
+
             # Auto-friend logic
             GroupService.friend_group_members(db, group_id, target_ref)
-            
+
         elif action == "decline":
             MembershipRequestRepository.update_status(db, request_id, "DECLINED")
         else:

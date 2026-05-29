@@ -61,5 +61,6 @@ class ActivityServiceTestCase(unittest.TestCase):
         self.assertEqual(len(reactions), 0)
         mock_ref.update.assert_called_once()
 
+
 if __name__ == "__main__":
     unittest.main()

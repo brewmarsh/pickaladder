@@ -32,7 +32,8 @@ class StyleguideTestCase(unittest.TestCase):
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
             "user_firestore": patch(
-                "pickaladder.user.routes.firestore", new=self.mock_firestore_service
+                "pickaladder.user.routes.profile.firestore",
+                new=self.mock_firestore_service,
             ),
         }
 

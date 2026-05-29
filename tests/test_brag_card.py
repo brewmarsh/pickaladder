@@ -20,8 +20,9 @@ class BragCardTestCase(unittest.TestCase):
 
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
-            "firestore_routes": patch(
-                "pickaladder.group.routes.firestore", new=self.mock_firestore_service
+            "firestore": patch(
+                "pickaladder.group.routes.stats.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_app": patch(
                 "pickaladder.firestore", new=self.mock_firestore_service
@@ -85,7 +86,7 @@ class BragCardTestCase(unittest.TestCase):
         }
 
         with patch(
-            "pickaladder.group.routes.get_leaderboard_trend_data",
+            "pickaladder.group.routes.stats.get_leaderboard_trend_data",
             return_value=mock_trend_data,
         ):
             response = self.client.get(
@@ -119,7 +120,7 @@ class BragCardTestCase(unittest.TestCase):
         }
 
         with patch(
-            "pickaladder.group.routes.get_leaderboard_trend_data",
+            "pickaladder.group.routes.stats.get_leaderboard_trend_data",
             return_value=mock_trend_data,
         ):
             response = self.client.get(

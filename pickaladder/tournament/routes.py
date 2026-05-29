@@ -8,6 +8,7 @@ from typing import Any, cast
 
 from firebase_admin import firestore
 from flask import (
+    Response,
     flash,
     g,
     jsonify,
@@ -19,6 +20,7 @@ from flask import (
 
 from pickaladder.auth.decorators import admin_required, login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, TOURNAMENT_MESSAGES
+from pickaladder.tournament.utils import aggregate_match_data, sort_and_format_standings
 from pickaladder.user.helpers import smart_display_name
 
 from . import bp
@@ -30,7 +32,7 @@ MIN_PARTICIPANTS_FOR_GENERATION = 2
 
 @bp.route("/", methods=["GET"])
 @login_required
-def list_tournaments() -> Any:
+def list_tournaments() -> str:
     """List all tournaments."""
     tourneys = TournamentService.list_tournaments(g.user.uid)
     return render_template("tournaments.html", tournaments=tourneys)
@@ -62,6 +64,9 @@ def _handle_creation_payload(form: TournamentForm, user_uid: str) -> str:
         "address": form.address.data,
         "mode": form.match_type.data,
         "matchType": (form.match_type.data or "SINGLES").lower(),
+        "format": form.format.data,
+        "pool_count": int(form.pool_count.data or 0),
+        "promoted_per_pool": int(form.promoted_per_pool.data or 0),
     }
     t_id = TournamentService.create_tournament(data, user_uid)
     banner = request.files.get("banner")
@@ -74,7 +79,7 @@ def _handle_creation_payload(form: TournamentForm, user_uid: str) -> str:
 
 @bp.route("/create", methods=["GET", "POST"])
 @admin_required
-def create_tournament() -> Any:
+def create_tournament() -> Response | str:
     """Create a new tournament."""
     gid = request.args.get("group_id")
     error = _get_group_admin_error(gid, g.user.uid)
@@ -127,7 +132,7 @@ def _handle_view_invite(tournament_id: str, form: InvitePlayerForm) -> bool:
 
 @bp.route("/<string:tournament_id>", methods=["GET", "POST"])
 @login_required
-def view_tournament(tournament_id: str) -> Any:
+def view_tournament(tournament_id: str) -> Response | str:
     """View a single tournament lobby."""
     details = TournamentService.get_tournament_details(tournament_id, g.user.uid)
     if not details:
@@ -149,6 +154,28 @@ def view_tournament(tournament_id: str) -> Any:
         flash(TOURNAMENT_MESSAGES["INVITE_ERROR"].format(error=e), "danger")
 
     details["matches"] = TournamentService.get_tournament_matches(tournament_id)
+
+    # Phase 28: Support for Pool Play Standings
+    if details["tournament"].get("format") == "POOL_PLAY":
+        pools = {}
+        for m in details["matches"]:
+            pool_id = m.get("pool_id")
+            if pool_id:
+                if pool_id not in pools:
+                    pools[pool_id] = []
+                pools[pool_id].append(m)
+
+        pool_standings = {}
+        for pool_id, pool_matches in pools.items():
+            raw = aggregate_match_data(
+                pool_matches, details["tournament"].get("matchType", "singles")
+            )
+            pool_standings[pool_id] = sort_and_format_standings(
+                db, raw, details["tournament"].get("matchType", "singles")
+            )
+
+        details["pool_standings"] = pool_standings
+
     return render_template("tournament/view.html", invite_form=form, **details)
 
 
@@ -173,7 +200,7 @@ def _populate_edit_form(form: TournamentForm, tournament_data: dict[str, Any]) -
 
 @bp.route("/<string:tournament_id>/edit", methods=["GET", "POST"])
 @admin_required
-def edit_tournament(tournament_id: str) -> Any:
+def edit_tournament(tournament_id: str) -> Response | str:
     """Edit tournament details."""
     form = TournamentForm()
     try:
@@ -197,7 +224,7 @@ def edit_tournament(tournament_id: str) -> Any:
 
 @bp.route("/<string:tournament_id>/delete", methods=["POST"])
 @admin_required
-def delete_tournament(tournament_id: str) -> Any:
+def delete_tournament(tournament_id: str) -> Response:
     """Delete a tournament."""
     try:
         TournamentService.delete_tournament(tournament_id, g.user.uid)
@@ -211,7 +238,7 @@ def delete_tournament(tournament_id: str) -> Any:
 
 @bp.route("/<string:tournament_id>/invite", methods=["POST"])
 @login_required
-def invite_player(tournament_id: str) -> Any:
+def invite_player(tournament_id: str) -> Response:
     """Invite a player to a tournament."""
     form = InvitePlayerForm()
     uid = request.form.get("user_id")
@@ -229,7 +256,7 @@ def invite_player(tournament_id: str) -> Any:
 
 @bp.route("/<string:tournament_id>/invite_group", methods=["POST"])
 @login_required
-def invite_group(tournament_id: str) -> Any:
+def invite_group(tournament_id: str) -> Response:
     """Invite an entire group."""
     gid = request.form.get("group_id")
     if not gid:
@@ -249,7 +276,7 @@ def invite_group(tournament_id: str) -> Any:
 
 @bp.route("/<string:tournament_id>/accept", methods=["POST"])
 @login_required
-def accept_invite(tournament_id: str) -> Any:
+def accept_invite(tournament_id: str) -> Response:
     """Accept an invite to a tournament."""
     try:
         if TournamentService.accept_invite(tournament_id, g.user.uid):
@@ -263,7 +290,7 @@ def accept_invite(tournament_id: str) -> Any:
 
 @bp.route("/<string:tournament_id>/decline", methods=["POST"])
 @login_required
-def decline_invite(tournament_id: str) -> Any:
+def decline_invite(tournament_id: str) -> Response:
     """Decline an invite to a tournament."""
     try:
         if TournamentService.decline_invite(tournament_id, g.user.uid):
@@ -277,7 +304,7 @@ def decline_invite(tournament_id: str) -> Any:
 
 @bp.route("/<string:tournament_id>/complete", methods=["POST"])
 @login_required
-def complete_tournament(tournament_id: str) -> Any:
+def complete_tournament(tournament_id: str) -> Response:
     """Close tournament and send results."""
     try:
         TournamentService.complete_tournament(tournament_id, g.user.uid)
@@ -311,7 +338,7 @@ def _get_accepted_uids(data: dict[str, Any]) -> list[str]:
 
 @bp.route("/<string:tournament_id>/generate", methods=["POST"])
 @login_required
-def generate_bracket(tournament_id: str) -> Any:
+def generate_bracket(tournament_id: str) -> Response:
     """Generate the tournament bracket/pairings."""
     if not g.user.is_admin:
         flash(TOURNAMENT_MESSAGES["ADMIN_ONLY_BRACKET"], "danger")
@@ -320,26 +347,59 @@ def generate_bracket(tournament_id: str) -> Any:
     try:
         count = TournamentService.publish_bracket(tournament_id, g.user.uid)
         if count > 0:
-            flash(TOURNAMENT_MESSAGES["BRACKET_GEN_SUCCESS"].format(count=count), "success")
+            flash(
+                TOURNAMENT_MESSAGES["BRACKET_GEN_SUCCESS"].format(count=count),
+                "success",
+            )
         else:
             flash(TOURNAMENT_MESSAGES["MIN_PARTICIPANTS"], "warning")
     except (ValueError, PermissionError) as e:
         flash(str(e), "danger")
     except Exception as e:
-        flash(TOURNAMENT_MESSAGES["GEN_NOT_IMPLEMENTED"].format(format="selected"), "warning")
+        flash(
+            TOURNAMENT_MESSAGES["GEN_NOT_IMPLEMENTED"].format(format="selected"),
+            "warning",
+        )
         logging.error(f"Bracket gen failed: {e}")
+
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+
+
+@bp.route("/<string:tournament_id>/promote_pools", methods=["POST"])
+@login_required
+def promote_pools(tournament_id: str) -> Response:
+    """Calculate pool standings and promote top performers to a single-elimination bracket."""
+    try:
+        count = TournamentService.promote_pools_to_bracket(tournament_id, g.user.uid)
+        if count > 0:
+            flash(
+                f"Success! {count} players promoted to a single-elimination bracket.",
+                "success",
+            )
+        else:
+            flash(
+                "Unable to generate bracket. Ensure all pool matches are completed.",
+                "warning",
+            )
+    except (ValueError, PermissionError) as e:
+        flash(str(e), "danger")
+    except Exception as e:
+        flash(f"Unexpected error during promotion: {e}", "danger")
+        logging.error(f"Pool promotion failed: {e}")
 
     return redirect(url_for(".view_tournament", tournament_id=tournament_id))
 
 
 @bp.route("/<string:tournament_id>/join", methods=["POST"])
 @login_required
-def join_tournament(tournament_id: str) -> Any:
+def join_tournament(tournament_id: str) -> Response:
     """Accept tournament invitation (legacy alias)."""
     return accept_invite(tournament_id)
 
 
-def _handle_registration(t_id: str, p_id: str | None, name: str, is_json: bool) -> Any:
+def _handle_registration(
+    t_id: str, p_id: str | None, name: str, is_json: bool
+) -> Response | str:
     """Perform team registration and return response."""
     tid = TournamentService.register_team(t_id, g.user.uid, p_id, name)
     if is_json:
@@ -357,7 +417,7 @@ def _handle_registration(t_id: str, p_id: str | None, name: str, is_json: bool) 
 
 @bp.route("/<string:tournament_id>/register_team", methods=["POST"])
 @login_required
-def register_team(tournament_id: str) -> Any:
+def register_team(tournament_id: str) -> Response | str:
     """Register a doubles team for the tournament."""
     is_json = request.is_json
     data = cast(dict[str, Any], request.get_json() if is_json else request.form)
@@ -376,12 +436,10 @@ def register_team(tournament_id: str) -> Any:
 
 @bp.route("/<string:tournament_id>/claim_team/<string:team_id>", methods=["POST"])
 @login_required
-def claim_team(tournament_id: str, team_id: str) -> Any:
+def claim_team(tournament_id: str, team_id: str) -> Response:
     """Claim a placeholder team partnership."""
     try:
-        if TournamentService.claim_team_partnership(
-            tournament_id, team_id, g.user.uid
-        ):
+        if TournamentService.claim_team_partnership(tournament_id, team_id, g.user.uid):
             flash(TOURNAMENT_MESSAGES["JOIN_TEAM_SUCCESS"], "success")
         else:
             flash(TOURNAMENT_MESSAGES["JOIN_TEAM_FAILED"], "danger")
@@ -392,7 +450,7 @@ def claim_team(tournament_id: str, team_id: str) -> Any:
 
 @bp.route("/<string:tournament_id>/accept_team", methods=["POST"])
 @login_required
-def accept_team(tournament_id: str) -> Any:
+def accept_team(tournament_id: str) -> Response:
     """Accept a team partnership invitation."""
     try:
         if TournamentService.accept_team_partnership(tournament_id, g.user.uid):

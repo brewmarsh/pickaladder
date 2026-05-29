@@ -82,12 +82,18 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
         page.click("button:has-text('Add Friend')")
 
     # [CHANGE] Manually mark as accepted in mock_db to skip dual-acceptance complexity
-    admin_friend_ref = mock_db.collection("users").document("admin").collection(
-        "friends"
-    ).document("user2")
-    user2_friend_ref = mock_db.collection("users").document("user2").collection(
-        "friends"
-    ).document("admin")
+    admin_friend_ref = (
+        mock_db.collection("users")
+        .document("admin")
+        .collection("friends")
+        .document("user2")
+    )
+    user2_friend_ref = (
+        mock_db.collection("users")
+        .document("user2")
+        .collection("friends")
+        .document("admin")
+    )
     admin_friend_ref.set({"status": "accepted", "id": "user2"})
     user2_friend_ref.set({"status": "accepted", "id": "admin"})
 
@@ -143,10 +149,10 @@ def test_user_journey(app_server: str, page_with_firebase: Page, mock_db: Any) -
     page.get_by_test_id("dashboard__record-match__button").click()
     # Wait for the form to be fully interactive
     page.wait_for_selector("select[name='player2']", state="visible")
-    page.wait_for_timeout(2000) # Safety wait
+    page.wait_for_timeout(2000)  # Safety wait
 
     page.select_option("select[name='match_type']", value="singles")
-    page.wait_for_timeout(1000) # Wait for JS refresh
+    page.wait_for_timeout(1000)  # Wait for JS refresh
 
     # Select by value for maximum reliability in mock environment
     page.select_option("select[name='player1']", value="user2")

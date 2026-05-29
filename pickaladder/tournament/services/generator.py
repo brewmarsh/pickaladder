@@ -52,7 +52,6 @@ class TournamentGenerator:
     ) -> list[dict[str, Any]]:
         """Divide participants into pools and generate Round Robin matches for each."""
         import random
-        from firebase_admin import firestore
 
         if not participant_ids or pool_count < 1:
             return []
@@ -67,15 +66,15 @@ class TournamentGenerator:
             pools[i % pool_count].append(uid)
 
         all_pairings = []
-        pool_labels = [chr(65 + i) for i in range(pool_count)] # A, B, C...
+        pool_labels = [chr(65 + i) for i in range(pool_count)]  # A, B, C...
 
         for i, pool_participants in enumerate(pools):
             if len(pool_participants) < MIN_PARTICIPANTS:
                 continue
-                
+
             pool_id = pool_labels[i]
             pool_pairings = TournamentGenerator.generate_round_robin(pool_participants)
-            
+
             # Tag matches with pool_id
             for match in pool_pairings:
                 match["pool_id"] = pool_id
@@ -98,6 +97,7 @@ class TournamentGenerator:
         seeded_ids: List of participant UIDs sorted by seed (strongest first).
         """
         from firebase_admin import firestore
+
         db = firestore.client()
 
         n = len(seeded_ids)
@@ -134,19 +134,21 @@ class TournamentGenerator:
         # Winners move from P in round R to P//2 in round R+1
         num_rounds = int(math.log2(bracket_size))
         for r in range(2, num_rounds + 1):
-            num_matches = bracket_size // (2 ** r)
+            num_matches = bracket_size // (2**r)
             for i in range(num_matches):
-                pairings.append({
-                    "player1Ref": None,
-                    "player2Ref": None,
-                    "matchType": "singles",
-                    "status": "WAITING",
-                    "round": r,
-                    "bracketPosition": i,
-                    "bracketType": "WINNERS",
-                    "createdAt": firestore.SERVER_TIMESTAMP,
-                    "participants": [],
-                })
+                pairings.append(
+                    {
+                        "player1Ref": None,
+                        "player2Ref": None,
+                        "matchType": "singles",
+                        "status": "WAITING",
+                        "round": r,
+                        "bracketPosition": i,
+                        "bracketType": "WINNERS",
+                        "createdAt": firestore.SERVER_TIMESTAMP,
+                        "participants": [],
+                    }
+                )
 
         return pairings
 
@@ -167,33 +169,37 @@ class TournamentGenerator:
         # 2. Losers Bracket structure
         for r in range(1, (2 * num_winners_rounds) - 1):
             num_matches = bracket_size // (2 ** (math.ceil((r + 1) / 2) + 1))
-            num_matches = max(num_matches, 1) # Semi-final of losers
+            num_matches = max(num_matches, 1)  # Semi-final of losers
 
             for i in range(num_matches):
-                pairings.append({
-                    "player1Ref": None,
-                    "player2Ref": None,
-                    "matchType": "singles",
-                    "status": "WAITING",
-                    "round": r,
-                    "bracketPosition": i,
-                    "bracketType": "LOSERS",
-                    "createdAt": firestore.SERVER_TIMESTAMP,
-                    "participants": [],
-                })
+                pairings.append(
+                    {
+                        "player1Ref": None,
+                        "player2Ref": None,
+                        "matchType": "singles",
+                        "status": "WAITING",
+                        "round": r,
+                        "bracketPosition": i,
+                        "bracketType": "LOSERS",
+                        "createdAt": firestore.SERVER_TIMESTAMP,
+                        "participants": [],
+                    }
+                )
 
         # 3. Grand Finals
-        pairings.append({
-            "player1Ref": None,
-            "player2Ref": None,
-            "matchType": "singles",
-            "status": "WAITING",
-            "round": num_winners_rounds + 1,
-            "bracketPosition": 0,
-            "bracketType": "FINALS",
-            "isGrandFinal": True,
-            "createdAt": firestore.SERVER_TIMESTAMP,
-            "participants": [],
-        })
+        pairings.append(
+            {
+                "player1Ref": None,
+                "player2Ref": None,
+                "matchType": "singles",
+                "status": "WAITING",
+                "round": num_winners_rounds + 1,
+                "bracketPosition": 0,
+                "bracketType": "FINALS",
+                "isGrandFinal": True,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+                "participants": [],
+            }
+        )
 
         return pairings
