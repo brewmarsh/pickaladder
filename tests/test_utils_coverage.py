@@ -446,7 +446,7 @@ class TestUtilsCoverage(unittest.TestCase):
         self.assertEqual(mock_batch.set.call_count, 4)
         mock_batch.commit.assert_called_once()
 
-    @patch("pickaladder.group.utils.render_template")
+    @patch("flask.render_template")
     @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_success(
@@ -474,7 +474,7 @@ class TestUtilsCoverage(unittest.TestCase):
             {"status": "sent", "last_error": mock_firestore.DELETE_FIELD}
         )
 
-    @patch("pickaladder.group.utils.render_template")
+    @patch("flask.render_template")
     @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_failure(
