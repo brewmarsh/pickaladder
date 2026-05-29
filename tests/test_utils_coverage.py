@@ -465,12 +465,14 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_send_email: MagicMock,
         mock_executor: MagicMock,
     ) -> None:
+        from jinja2 import DictLoader
         def run_sync(func, *args, **kwargs):
             return func(*args, **kwargs)
         mock_executor.run_async.side_effect = run_sync
 
         from pickaladder import create_app
         app = create_app({"TESTING": True})
+        app.jinja_loader = DictLoader({"test.html": "<html></html>"})
         
         email_data = {
             "to": "test@example.com",
@@ -479,8 +481,7 @@ class TestUtilsCoverage(unittest.TestCase):
             "template": "test.html",
         }
 
-        with app.app_context(), \
-             patch("flask.render_template", return_value="<html></html>"):
+        with app.app_context():
             send_invite_email_background(app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
@@ -494,6 +495,7 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_send_email: MagicMock,
         mock_executor: MagicMock,
     ) -> None:
+        from jinja2 import DictLoader
         def run_sync(func, *args, **kwargs):
             return func(*args, **kwargs)
         mock_executor.run_async.side_effect = run_sync
@@ -504,6 +506,7 @@ class TestUtilsCoverage(unittest.TestCase):
 
         from pickaladder import create_app
         app = create_app({"TESTING": True})
+        app.jinja_loader = DictLoader({"test.html": "<html></html>"})
 
         email_data = {
             "to": "test@example.com",
@@ -513,8 +516,7 @@ class TestUtilsCoverage(unittest.TestCase):
         }
         mock_send_email.side_effect = Exception("Email failed")
         
-        with app.app_context(), \
-             patch("flask.render_template", return_value="<html></html>"):
+        with app.app_context():
             send_invite_email_background(app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
