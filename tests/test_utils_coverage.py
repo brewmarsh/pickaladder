@@ -456,11 +456,6 @@ class TestUtilsCoverage(unittest.TestCase):
         assert mock_batch.set.call_count == 4
         mock_batch.commit.assert_called_once()
 
-    @pytest.fixture
-    def app(self):
-        from pickaladder import create_app
-        return create_app({"TESTING": True})
-
     @patch("pickaladder.extensions.executor")
     @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.group.utils.firestore")
@@ -469,12 +464,14 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_firestore: MagicMock,
         mock_send_email: MagicMock,
         mock_executor: MagicMock,
-        app: Any,
     ) -> None:
         def run_sync(func, *args, **kwargs):
             return func(*args, **kwargs)
         mock_executor.run_async.side_effect = run_sync
 
+        from pickaladder import create_app
+        app = create_app({"TESTING": True})
+        
         email_data = {
             "to": "test@example.com",
             "subject": "Test",
@@ -496,7 +493,6 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_firestore: MagicMock,
         mock_send_email: MagicMock,
         mock_executor: MagicMock,
-        app: Any,
     ) -> None:
         def run_sync(func, *args, **kwargs):
             return func(*args, **kwargs)
@@ -505,6 +501,9 @@ class TestUtilsCoverage(unittest.TestCase):
         # Setup mock for invite document
         mock_invite_doc = MagicMock()
         mock_firestore.client.return_value.collection("group_invites").document.return_value = mock_invite_doc
+
+        from pickaladder import create_app
+        app = create_app({"TESTING": True})
 
         email_data = {
             "to": "test@example.com",
