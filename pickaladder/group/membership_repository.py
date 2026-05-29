@@ -19,7 +19,9 @@ class MembershipRequestRepository(BaseRepository):
     def get_pending_for_group(
         cls, db: Client, group_id: str
     ) -> list[dict[str, object]]:
-        """Fetch all pending requests for a specific group."""        query = (
+        """Fetch all pending requests for a specific group."""
+
+        query = (
             db.collection(cls.COLLECTION_NAME)
             .where(filter=firestore.FieldFilter("groupId", "==", group_id))
             .where(filter=firestore.FieldFilter("status", "==", "PENDING"))
