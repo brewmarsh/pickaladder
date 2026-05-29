@@ -455,7 +455,6 @@ class TestUtilsCoverage(unittest.TestCase):
         assert mock_batch.set.call_count == 4
         mock_batch.commit.assert_called_once()
 
-    @patch("pickaladder.group.utils.render_template")
     @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.extensions.executor")
     @patch("pickaladder.group.utils.firestore")
@@ -464,7 +463,6 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_firestore: MagicMock,
         mock_executor: MagicMock,
         mock_send_email: MagicMock,
-        mock_render: MagicMock,
     ) -> None:
         def run_sync(func, *args, **kwargs):
             return func(*args, **kwargs)
@@ -487,16 +485,14 @@ class TestUtilsCoverage(unittest.TestCase):
 
         mock_send_email.assert_called_once_with(**email_data)
         
-    @patch("pickaladder.group.utils.render_template")
     @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.extensions.executor")
     @patch("pickaladder.group.utils.firestore")
-    def test_send_invite_email_background_failure(
+    def test_send_invite_email_background_success(
         self,
         mock_firestore: MagicMock,
         mock_executor: MagicMock,
         mock_send_email: MagicMock,
-        mock_render: MagicMock,
     ) -> None:
         def run_sync(func, *args, **kwargs):
             return func(*args, **kwargs)
