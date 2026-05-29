@@ -455,14 +455,16 @@ class TestUtilsCoverage(unittest.TestCase):
         assert mock_batch.set.call_count == 4
         mock_batch.commit.assert_called_once()
 
-    @patch("pickaladder.extensions.executor")
+    @patch("pickaladder.group.utils.render_template")
     @patch("pickaladder.services.mail_service.MailService.send_email")
+    @patch("pickaladder.extensions.executor")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_success(
         self,
         mock_firestore: MagicMock,
-        mock_send_email: MagicMock,
         mock_executor: MagicMock,
+        mock_send_email: MagicMock,
+        mock_render: MagicMock,
     ) -> None:
         def run_sync(func, *args, **kwargs):
             return func(*args, **kwargs)
@@ -478,20 +480,23 @@ class TestUtilsCoverage(unittest.TestCase):
             "body": "Test",
             "template": "test.html",
         }
+        mock_render.return_value = "<html></html>"
 
-        with patch("flask.render_template", return_value="<html></html>"), \
-             mock_app.app_context():
+        with mock_app.app_context():
             send_invite_email_background(mock_app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
-    @patch("pickaladder.extensions.executor")
+        
+    @patch("pickaladder.group.utils.render_template")
     @patch("pickaladder.services.mail_service.MailService.send_email")
+    @patch("pickaladder.extensions.executor")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_failure(
         self,
         mock_firestore: MagicMock,
-        mock_send_email: MagicMock,
         mock_executor: MagicMock,
+        mock_send_email: MagicMock,
+        mock_render: MagicMock,
     ) -> None:
         def run_sync(func, *args, **kwargs):
             return func(*args, **kwargs)
@@ -512,8 +517,9 @@ class TestUtilsCoverage(unittest.TestCase):
             "template": "test.html",
         }
         mock_send_email.side_effect = Exception("Email failed")
+        mock_render.return_value = "<html></html>"
         
-        with patch("flask.render_template", return_value="<html></html>"):
+        with mock_app.app_context():
             send_invite_email_background(mock_app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
