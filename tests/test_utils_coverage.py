@@ -457,7 +457,7 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_app.app_context.return_value.__enter__.return_value = None
         mock_app.app_context.return_value.__exit__.return_value = None
 
-        email_data = {"to": "test@example.com", "subject": "Test", "body": "Test"}
+        email_data = {"to": "test@example.com", "subject": "Test", "body": "Test", "template": "test.html"}
 
         # Make the thread run synchronously
         mock_send_email.side_effect = None
@@ -482,7 +482,7 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_app.app_context.return_value.__enter__.return_value = None
         mock_app.app_context.return_value.__exit__.return_value = None
 
-        email_data = {"to": "test@example.com", "subject": "Test", "body": "Test"}
+        email_data = {"to": "test@example.com", "subject": "Test", "body": "Test", "template": "test.html"}
         mock_send_email.side_effect = Exception("Email failed")
 
         # Make the thread run synchronously
