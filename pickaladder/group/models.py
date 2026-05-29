@@ -32,4 +32,4 @@ class Group(FirestoreDocument, total=False):
     is_featured: bool
 
     # UI and calculated fields
-    owner: User | dict[str, Any]
+    owner: User | dict[str, object]

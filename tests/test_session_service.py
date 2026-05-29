@@ -105,5 +105,6 @@ class TestSessionService(unittest.TestCase):
             )
             self.assertFalse(success)
 
+
 if __name__ == "__main__":
     unittest.main()

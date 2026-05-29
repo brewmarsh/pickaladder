@@ -11,11 +11,18 @@
         <!-- Mobile Header -->
         <div class="d-flex justify-content-between align-items-center d-lg-none w-100">
             {{ brand_logo() }}
-            <button class="hamburger-menu">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+            <div class="d-flex align-items-center">
+                {% if g.user %}
+                <div class="credit-balance-nav me-3" title="Social Credits" style="font-size: 0.9rem;">
+                    🪙 <span>{{ g.user.social_credits or 100 }}</span>
+                </div>
+                {% endif %}
+                <button class="hamburger-menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
         </div>
 
         <!-- Desktop Navbar -->
@@ -32,6 +39,8 @@
                         {{ unread_messages_count if unread_messages_count > 0 else '' }}
                     </span>
                 </a>
+                <a href="{{ url_for('marketplace.view_marketplace') }}"
+                    class="nav-link {{ 'active' if request.endpoint == 'marketplace.view_marketplace' }}">🏬 Marketplace</a>
                 <a href="{{ url_for('user.view_community') }}"
                     class="nav-link {{ 'active' if request.endpoint == 'user.view_community' }}"
                     style="position: relative;" data-testid="navbar__community-link">
@@ -67,6 +76,9 @@
             </div>
             <div class="navbar-user-controls">
                 {% if g.user %}
+                <div class="credit-balance-nav d-none d-md-flex" title="Social Credits">
+                    🪙 <span class="ms-1">{{ g.user.social_credits or 100 }}</span>
+                </div>
                 <div class="dropdown">
                     <button class="dropbtn">
                         <img src="{{ g.user | avatar_url }}" alt="Profile Picture" class="avatar avatar-sm"
@@ -95,7 +107,7 @@
             </div>
         </nav>
         <!-- Mobile Menu -->
-        <div id="myLinks" class="mobile-nav d-none d-lg-none">
+        <div id="myLinks" class="mobile-nav d-lg-none">
             {% if g.user %}
             <a href="{{ url_for('user.dashboard') }}" class="mobile-nav-link"><i class="fas fa-home me-2"></i>
                 Dashboard</a>

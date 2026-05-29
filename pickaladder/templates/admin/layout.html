@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header mb-4">
+        <h1 class="h2"><i class="fas fa-user-shield me-2"></i>Admin Panel</h1>
+        <nav class="nav nav-pills admin-nav mt-3">
+            <a class="nav-link {{ 'active' if request.endpoint == 'admin.dashboard' }}" href="{{ url_for('admin.dashboard') }}">
+                <i class="fas fa-chart-line mr-1"></i> Dashboard
+            </a>
+            <a class="nav-link {{ 'active' if request.endpoint == 'admin.view_users' }}" href="{{ url_for('admin.view_users') }}">
+                <i class="fas fa-users mr-1"></i> Users
+            </a>
+            <a class="nav-link {{ 'active' if request.endpoint == 'admin.view_matches' }}" href="{{ url_for('admin.admin_matches') }}">
+                <i class="fas fa-history mr-1"></i> Matches
+            </a>
+            <a class="nav-link {{ 'active' if request.endpoint == 'admin.view_feedback' }}" href="{{ url_for('admin.view_feedback') }}">
+                <i class="fas fa-comment-alt mr-1"></i> Feedback
+            </a>
+            <a class="nav-link {{ 'active' if request.endpoint == 'admin.styleguide' }}" href="{{ url_for('admin.styleguide') }}">
+
+                <i class="fas fa-swatchbook mr-1"></i> Style Guide
+            </a>
+        </nav>
+    </div>
+
+    <div class="admin-body">
+        {% block admin_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-nav .nav-link {
+        color: var(--text-muted);
+        border-radius: var(--radius-md);
+        margin-right: var(--space-2);
+        font-weight: var(--fw-medium);
+        padding: var(--space-2) var(--space-4);
+        transition: all 0.2s;
+    }
+    .admin-nav .nav-link:hover {
+        background-color: var(--bg-surface-hover);
+        color: var(--text-main);
+    }
+    .admin-nav .nav-link.active {
+        background-color: var(--primary-color) !important;
+        color: white !important;
+    }
+    .admin-header h1 {
+        font-weight: var(--fw-bold);
+    }
+</style>
+{% endblock %}

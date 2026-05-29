@@ -168,10 +168,13 @@ class TestUserService(unittest.TestCase):
 
         # Exclude user1 and user3
         exclude_ids = ["user1", "user3"]
-        result = UserService.get_all_users(self.db, exclude_ids, limit=10)
+        result_users, next_cursor = UserService.get_all_users(
+            self.db, exclude_ids, limit=10
+        )
 
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], "user2")
+        self.assertEqual(len(result_users), 1)
+        self.assertEqual(result_users[0]["username"], "u2")
+        self.assertEqual(result_users[0]["id"], "user2")
 
     def test_update_settings_success(self) -> None:
         mock_user_doc = MagicMock()

@@ -54,7 +54,9 @@ class MatchRecordService:
         return 0.0
 
     @staticmethod
-    def get_player_record(db: Client, player_ref: "firestore.DocumentReference") -> dict[str, int]:
+    def get_player_record(
+        db: Client, player_ref: firestore.DocumentReference
+    ) -> dict[str, int]:
         """Calculate win/loss record for a player by doc reference."""
         wins, losses = 0, 0
         uid = (

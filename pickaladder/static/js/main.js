@@ -1,3 +1,33 @@
+/**
+ * Global fetch interceptor to add Auth and CSRF tokens to all requests.
+ */
+(function() {
+    const originalFetch = window.fetch;
+    window.fetch = function (url, options) {
+        options = options || {};
+        options.headers = options.headers || {};
+
+        // Add Auth Token if available
+        const token = localStorage.getItem('firebaseIdToken');
+        if (token && !options.headers['Authorization']) {
+            options.headers['Authorization'] = 'Bearer ' + token;
+        }
+
+        // Add CSRF Token for state-changing requests
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : null;
+        const method = (options.method || 'GET').toUpperCase();
+
+        if (csrfToken && !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method)) {
+            if (!options.headers['X-CSRFToken']) {
+                options.headers['X-CSRFToken'] = csrfToken;
+            }
+        }
+
+        return originalFetch(url, options);
+    };
+})();
+
 document.addEventListener('DOMContentLoaded', function () {
     // Handle form submissions with loading spinner
     const forms = document.querySelectorAll('form');

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class Tournament(UserDict):
     """A wrapper class for tournament data that provides methods for templates."""
 
-    def can_edit(self, user: Any) -> bool:
+    def can_edit(self, user: dict[str, Any] | object) -> bool:
         """Return True if the user has permission to edit the tournament."""
         if not user:
             return False
@@ -38,8 +38,8 @@ class Tournament(UserDict):
     def is_doubles(self) -> bool:
         """Return True if the tournament is doubles."""
         return (
-            str(self.get("matchType", "")).lower() == "doubles"
-            or self.get("mode") == "DOUBLES"
+            str(self.get("matchType", "")).upper() == "DOUBLES"
+            or str(self.get("mode", "")).upper() == "DOUBLES"
         )
 
     @property
@@ -88,7 +88,7 @@ class TournamentDict(FirestoreDocument, total=False):
 
     name: str
     status: str  # DRAFT, PUBLISHED, IN_PROGRESS, COMPLETED
-    format: str  # SINGLE_ELIMINATION, ROUND_ROBIN, DOUBLE_ELIMINATION
+    format: str  # SINGLE_ELIMINATION, ROUND_ROBIN, DOUBLE_ELIMINATION, POOL_PLAY
     date: Any
     location: str
     matchType: str
@@ -98,6 +98,8 @@ class TournamentDict(FirestoreDocument, total=False):
     participants: list[Participant]
     participant_ids: list[str]
     seasonId: str
+    pool_count: int
+    promoted_per_pool: int
 
     # UI and calculated fields
     date_display: str

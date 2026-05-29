@@ -54,5 +54,6 @@ class TournamentGeneratorTestCase(unittest.TestCase):
         self.assertEqual(pairings[3]["participants"], ["p4", "p5"])
         self.assertEqual(pairings[3]["status"], "DRAFT")
 
+
 if __name__ == "__main__":
     unittest.main()

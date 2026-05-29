@@ -16,7 +16,9 @@ class ActivityService:
     COLLECTION_NAME = "activities"
 
     @staticmethod
-    def log_activity(db: Client, user_id: str, activity_type: str, data: dict[str, Any]) -> str:
+    def log_activity(
+        db: Client, user_id: str, activity_type: str, data: dict[str, Any]
+    ) -> str:
         """Records a new event in the global activity collection."""
         activity_ref = db.collection(ActivityService.COLLECTION_NAME).document()
         payload = {
@@ -24,7 +26,7 @@ class ActivityService:
             "type": activity_type,
             "data": data,
             "timestamp": firestore.SERVER_TIMESTAMP,
-            "reactions": []
+            "reactions": [],
         }
         activity_ref.set(payload)
         return activity_ref.id
@@ -34,9 +36,11 @@ class ActivityService:
         """Retrieves recent activities enriched with user data."""
         from pickaladder.user.services import UserService
 
-        query = db.collection(ActivityService.COLLECTION_NAME)\
-                  .order_by("timestamp", direction=firestore.Query.DESCENDING)\
-                  .limit(limit)
+        query = (
+            db.collection(ActivityService.COLLECTION_NAME)
+            .order_by("timestamp", direction=firestore.Query.DESCENDING)
+            .limit(limit)
+        )
 
         activities = []
         for doc in query.stream():
@@ -45,16 +49,22 @@ class ActivityService:
 
             # Enrich with user profile
             user = UserService.get_user_by_id(db, data["userId"])
-            data["user"] = user if user else {"username": "Unknown", "id": data["userId"]}
+            data["user"] = (
+                user if user else {"username": "Unknown", "id": data["userId"]}
+            )
 
             activities.append(data)
 
         return activities
 
     @staticmethod
-    def toggle_reaction(db: Client, activity_id: str, user_id: str, reaction_type: str = "CHEER") -> list[dict[str, Any]]:
+    def toggle_reaction(
+        db: Client, activity_id: str, user_id: str, reaction_type: str = "CHEER"
+    ) -> list[dict[str, Any]]:
         """Adds or removes a user's reaction from an activity."""
-        activity_ref = db.collection(ActivityService.COLLECTION_NAME).document(activity_id)
+        activity_ref = db.collection(ActivityService.COLLECTION_NAME).document(
+            activity_id
+        )
         doc = activity_ref.get()
         if not doc.exists:
             return []
@@ -67,20 +77,16 @@ class ActivityService:
 
         if existing:
             # Remove it
-            activity_ref.update({
-                "reactions": firestore.ArrayRemove([existing])
-            })
+            activity_ref.update({"reactions": firestore.ArrayRemove([existing])})
             reactions.remove(existing)
         else:
             # Add it
             new_reaction = {
                 "userId": user_id,
                 "type": reaction_type,
-                "timestamp": firestore.SERVER_TIMESTAMP # This is tricky for local list return
+                "timestamp": firestore.SERVER_TIMESTAMP,  # This is tricky for local list return
             }
-            activity_ref.update({
-                "reactions": firestore.ArrayUnion([new_reaction])
-            })
+            activity_ref.update({"reactions": firestore.ArrayUnion([new_reaction])})
             reactions.append(new_reaction)
 
         return reactions

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from firebase_admin import firestore
 
+from pickaladder.services.notification_service import NotificationService
 from pickaladder.user.services.credits import SocialCreditService
 
 if TYPE_CHECKING:
@@ -64,7 +65,16 @@ class ChallengeService:
             transaction.set(challenge_ref, challenge_data)
             return str(challenge_ref.id)
 
-        return str(create_challenge_tx(db.transaction()))
+        challenge_id = str(create_challenge_tx(db.transaction()))
+
+        # Notify challenged user
+        NotificationService.send_to_user(
+            challenged_id,
+            title="New Challenge!",
+            body=f"Someone has challenged you for {wager} credits.",
+            data={"type": "CHALLENGE_RECEIVED", "challenge_id": challenge_id},
+        )
+        return challenge_id
 
     @classmethod
     def accept_challenge(cls, db: Client, challenge_id: str, user_id: str) -> None:
@@ -102,6 +112,18 @@ class ChallengeService:
 
         accept_tx(db.transaction())
 
+        # Fetch data for notification
+        data = (
+            db.collection(cls.COLLECTION_NAME).document(challenge_id).get().to_dict()
+            or {}
+        )
+        NotificationService.send_to_user(
+            data.get("challenger_id", ""),
+            title="Challenge Accepted!",
+            body="Your challenge has been accepted. Go play!",
+            data={"type": "CHALLENGE_ACCEPTED", "challenge_id": challenge_id},
+        )
+
     @classmethod
     def decline_challenge(cls, db: Client, challenge_id: str, user_id: str) -> None:
         """Decline a pending challenge."""
@@ -133,6 +155,18 @@ class ChallengeService:
             )
 
         decline_tx(db.transaction())
+
+        # Fetch data for notification
+        data = (
+            db.collection(cls.COLLECTION_NAME).document(challenge_id).get().to_dict()
+            or {}
+        )
+        NotificationService.send_to_user(
+            data.get("challenger_id", ""),
+            title="Challenge Declined",
+            body="Your challenge was declined and your wager has been refunded.",
+            data={"type": "CHALLENGE_DECLINED", "challenge_id": challenge_id},
+        )
 
     @classmethod
     def resolve_challenge(
@@ -168,6 +202,33 @@ class ChallengeService:
             )
 
         resolve_tx(db.transaction())
+
+        # Notify both players
+        data = (
+            db.collection(cls.COLLECTION_NAME).document(challenge_id).get().to_dict()
+            or {}
+        )
+        challenger_id = data.get("challenger_id", "")
+        challenged_id = data.get("challenged_id", "")
+        wager = data.get("wager_amount", 0)
+
+        for uid in [challenger_id, challenged_id]:
+            is_winner = uid == winner_id
+            msg = (
+                f"You won the challenge and earned {wager * 2} credits!"
+                if is_winner
+                else "You lost the challenge match."
+            )
+            NotificationService.send_to_user(
+                uid,
+                title="Challenge Resolved!",
+                body=msg,
+                data={
+                    "type": "CHALLENGE_RESOLVED",
+                    "challenge_id": challenge_id,
+                    "winner_id": winner_id,
+                },
+            )
 
     @classmethod
     def find_and_resolve_challenge(
@@ -279,3 +340,15 @@ class ChallengeService:
             )
 
         cancel_tx(db.transaction())
+
+        # Notify challenged user (if they saw it, it's now gone)
+        data = (
+            db.collection(cls.COLLECTION_NAME).document(challenge_id).get().to_dict()
+            or {}
+        )
+        NotificationService.send_to_user(
+            data.get("challenged_id", ""),
+            title="Challenge Cancelled",
+            body="A challenge sent to you has been cancelled by the challenger.",
+            data={"type": "CHALLENGE_CANCELLED", "challenge_id": challenge_id},
+        )

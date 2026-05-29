@@ -9,13 +9,13 @@ from flask import flash, g, jsonify, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, MATCH_MESSAGES
-from pickaladder.core.security import rate_limit
 from pickaladder.core.constants import (
     LEADERBOARD_GOLD_THRESHOLD,
     LEADERBOARD_SILVER_THRESHOLD,
 )
-
+from pickaladder.core.security import rate_limit
 from pickaladder.extensions import cache
+
 from . import bp
 from .forms import MatchForm
 from .models import MatchSubmission
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 @bp.route("/edit/<string:match_id>", methods=["GET", "POST"])
 @login_required
-def edit_match(match_id: str) -> "Response":
+def edit_match(match_id: str) -> Response:
     """Edit an existing match's scores."""
     if request.method == "POST":
         try:
@@ -59,7 +59,7 @@ def edit_match(match_id: str) -> "Response":
 @bp.route("/<string:match_id>")
 @bp.route("/summary/<string:match_id>")
 @login_required
-def view_match_summary(match_id: str) -> "Response":
+def view_match_summary(match_id: str) -> Response:
     """Display the summary of a single match."""
     db = firestore.client()
     context = MatchQueryService.get_match_summary_context(db, match_id)
@@ -71,7 +71,7 @@ def view_match_summary(match_id: str) -> "Response":
 
 
 def _populate_match_form_choices(  # noqa: PLR0913
-    db: "firestore.Client",
+    db: firestore.Client,
     form: MatchForm,
     user_id: str,
     group_id: str | None,
@@ -101,7 +101,7 @@ def _populate_match_form_choices(  # noqa: PLR0913
 
 
 def _handle_record_match_get(  # noqa: PLR0913
-    db: "firestore.Client",
+    db: firestore.Client,
     form: MatchForm,
     user_id: str,
     group_id: str | None,
@@ -140,7 +140,7 @@ def _prepopulate_players_from_args(form: MatchForm) -> None:
 @bp.route("/record", methods=["GET", "POST"])
 @login_required
 @rate_limit(limit=5, window=60)
-def record_match() -> "Response":
+def record_match() -> Response:
     """Handle match recording for both web form and optimistic JSON submission."""
     db, user_id = firestore.client(), g.user.uid
     group_id, t_id = request.args.get("group_id"), request.args.get("tournament_id")
@@ -167,8 +167,8 @@ def record_match() -> "Response":
 
 
 def _handle_match_submission(
-    db: "firestore.Client", form: MatchForm, group_id: str | None, t_id: str | None
-) -> "Response":
+    db: firestore.Client, form: MatchForm, group_id: str | None, t_id: str | None
+) -> Response:
     """Process form data and record the match."""
     data = form.data
     submission = MatchSubmission(
@@ -212,7 +212,7 @@ def _get_record_match_redirect(submission: MatchSubmission, match_id: str) -> st
     return url_for("match.view_match_summary", match_id=match_id)
 
 
-def _get_record_match_context(db: "firestore.Client", t_id: str | None) -> dict[str, Any]:
+def _get_record_match_context(db: firestore.Client, t_id: str | None) -> dict[str, Any]:
     """Build context for record match template."""
     t_name = None
     if t_id:
@@ -223,7 +223,7 @@ def _get_record_match_context(db: "firestore.Client", t_id: str | None) -> dict[
 
 @bp.route("/history")
 @login_required
-def get_match_history() -> "Response":
+def get_match_history() -> Response:
     """Fetch paginated match history for the current user."""
     db = firestore.client()
     cursor = request.args.get("cursor")
@@ -240,7 +240,7 @@ def get_match_history() -> "Response":
 @bp.route("/leaderboard")
 @login_required
 @cache.cached(timeout=600, key_prefix="global_leaderboard")
-def leaderboard() -> "Response":
+def leaderboard() -> Response:
     """Display a global leaderboard.
 
     Note: This is a simplified, non-scalable implementation. A production-ready
@@ -300,7 +300,7 @@ def leaderboard() -> "Response":
 
 @bp.route("/challenge/create", methods=["POST"])
 @login_required
-def create_challenge() -> "Response":
+def create_challenge() -> Response:
     """Create a new challenge."""
     db = firestore.client()
     data = request.get_json() or {}
@@ -323,7 +323,7 @@ def create_challenge() -> "Response":
 
 @bp.route("/challenge/<string:challenge_id>/accept", methods=["POST"])
 @login_required
-def accept_challenge(challenge_id: str) -> "Response":
+def accept_challenge(challenge_id: str) -> Response:
     """Accept a pending challenge."""
     db = firestore.client()
     try:
@@ -337,7 +337,7 @@ def accept_challenge(challenge_id: str) -> "Response":
 
 @bp.route("/challenge/<string:challenge_id>/decline", methods=["POST"])
 @login_required
-def decline_challenge(challenge_id: str) -> "Response":
+def decline_challenge(challenge_id: str) -> Response:
     """Decline a pending challenge."""
     db = firestore.client()
     try:
@@ -351,7 +351,7 @@ def decline_challenge(challenge_id: str) -> "Response":
 
 @bp.route("/challenge/<string:challenge_id>/cancel", methods=["POST"])
 @login_required
-def cancel_challenge(challenge_id: str) -> "Response":
+def cancel_challenge(challenge_id: str) -> Response:
     """Cancel a pending challenge."""
     db = firestore.client()
     try:
@@ -365,7 +365,7 @@ def cancel_challenge(challenge_id: str) -> "Response":
 
 @bp.route("/api/challenges")
 @login_required
-def get_challenges_api() -> "Response":
+def get_challenges_api() -> Response:
     """Fetch categorized challenges for the current user."""
     db = firestore.client()
     try:

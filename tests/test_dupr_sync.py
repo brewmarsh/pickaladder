@@ -15,14 +15,14 @@ def mock_dupr_api():
     ) as mock:
         yield mock
 
+
 def test_sync_dupr_rating_updates_user(mock_db, mock_dupr_api):
     """Verify that sync_dupr_rating fetches from API and updates Firestore."""
     user_id = "test_user"
     dupr_id = "DUPR123"
-    mock_db.collection("users").document(user_id).set({
-        "dupr_id": dupr_id,
-        "dupr_rating": 3.5
-    })
+    mock_db.collection("users").document(user_id).set(
+        {"dupr_id": dupr_id, "dupr_rating": 3.5}
+    )
 
     EXPECTED_RATING = 4.2
     mock_dupr_api.return_value = EXPECTED_RATING
@@ -33,6 +33,7 @@ def test_sync_dupr_rating_updates_user(mock_db, mock_dupr_api):
     updated_user = mock_db.collection("users").document(user_id).get().to_dict()
     assert updated_user["dupr_rating"] == EXPECTED_RATING
     assert updated_user["duprRating"] == EXPECTED_RATING
+
 
 def test_sync_dupr_rating_no_id(mock_db, mock_dupr_api):
     """Verify that sync fails if user has no DUPR ID."""

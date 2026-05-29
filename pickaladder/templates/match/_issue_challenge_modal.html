@@ -1,0 +1,38 @@
+<!-- Issue Challenge Modal -->
+<div class="modal fade" id="issueChallengeModal" tabindex="-1" aria-labelledby="issueChallengeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="issueChallengeModalLabel">⚔️ Issue Challenge</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <img id="challenge-target-avatar" src="" class="avatar avatar-xl mb-2" alt="Target Avatar">
+                    <h4 id="challenge-target-name">Loading...</h4>
+                </div>
+                
+                <form id="issueChallengeForm">
+                    <input type="hidden" id="challenge-target-id" name="challenged_id">
+                    
+                    <div class="mb-3">
+                        <label for="wagerAmount" class="form-label">Wager Amount (Social Credits)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-secondary text-white border-secondary">🪙</span>
+                            <input type="number" class="form-control bg-dark text-white border-secondary" id="wagerAmount" name="wager" value="20" min="0" max="50" step="5" required>
+                        </div>
+                        <div class="form-text text-muted">Your current balance: 🪙 <span id="current-balance-display">--</span>. Max wager: 🪙 50.</div>
+                    </div>
+                    
+                    <div class="alert alert-info py-2 fs-xs">
+                        <i class="fas fa-info-circle me-1"></i> Challenge expires in 48 hours. Wager held in escrow.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-volt" onclick="ChallengeUI.submitChallenge()">Send Challenge</button>
+            </div>
+        </div>
+    </div>
+</div>

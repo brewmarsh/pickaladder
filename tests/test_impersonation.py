@@ -85,7 +85,7 @@ class ImpersonationTestCase(unittest.TestCase):
         # 1b. Check if Impersonate button is present in users page
         # Mock search_users to return user1
         with patch("pickaladder.user.services.UserService.search_users") as mock_search:
-            mock_search.return_value = [(self.user_data, "none", "none")]
+            mock_search.return_value = ([(self.user_data, "none", "none")], None)
             response = self.client.get("/user/users")
             self.assertIn("fa-user-secret", response.data.decode("utf-8"))
             self.assertIn("/admin/impersonate/user1", response.data.decode("utf-8"))

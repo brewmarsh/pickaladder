@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from firebase_admin import firestore
-from flask import Blueprint, g, jsonify, render_template
+from flask import Blueprint, Response, g, jsonify, render_template
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.core.activity.services import ActivityService
@@ -19,7 +17,7 @@ bp = Blueprint("api_stats", __name__, url_prefix="/api/stats")
 
 @bp.route("/vanity_metrics")
 @login_required
-def vanity_metrics() -> Any:
+def vanity_metrics() -> str:
     """Return vanity metrics HTML fragment."""
     db = firestore.client()
     user_id = g.user.uid
@@ -35,7 +33,7 @@ def vanity_metrics() -> Any:
 
 @bp.route("/recent_matches")
 @login_required
-def recent_matches() -> Any:
+def recent_matches() -> str:
     """Return recent matches HTML fragment."""
     db = firestore.client()
     user_id = g.user.uid
@@ -51,15 +49,17 @@ def recent_matches() -> Any:
 
 @bp.route("/activity/<string:activity_id>/react", methods=["POST"])
 @login_required
-def react_to_activity(activity_id: str) -> Any:
+def react_to_activity(activity_id: str) -> Response:
     """Toggle reaction on an activity."""
     db = firestore.client()
     user_id = g.user.uid
 
     reactions = ActivityService.toggle_reaction(db, activity_id, user_id)
 
-    return jsonify({
-        "status": "success",
-        "count": len(reactions),
-        "user_reacted": any(r["userId"] == user_id for r in reactions)
-    })
+    return jsonify(
+        {
+            "status": "success",
+            "count": len(reactions),
+            "user_reacted": any(r["userId"] == user_id for r in reactions),
+        }
+    )

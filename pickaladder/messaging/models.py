@@ -7,6 +7,7 @@ from typing import Any, TypedDict
 
 class Message(TypedDict, total=False):
     """Represents a single message in a conversation."""
+
     id: str
     senderId: str
     content: str
@@ -16,6 +17,7 @@ class Message(TypedDict, total=False):
 
 class Conversation(TypedDict, total=False):
     """Represents a conversation between two or more participants."""
+
     id: str
     participants: list[str]  # Array of user UIDs
     lastMessage: str

@@ -1,4 +1,5 @@
 from __future__ import annotations
+<<<<<<< HEAD
 from typing import Any, TypeVar, cast
 
 from google.cloud.firestore_v1.query import Query
@@ -6,6 +7,17 @@ from google.cloud.firestore_v1.base_document import DocumentSnapshot
 
 T = TypeVar("T")
 
+=======
+
+from typing import TypeVar
+
+from google.cloud.firestore_v1.base_document import DocumentSnapshot
+from google.cloud.firestore_v1.query import Query
+
+T = TypeVar("T")
+
+
+>>>>>>> 52f8d25be2f6a56c0c1b05c49974577a8f47befd
 class FirestorePaginator:
     """Utility for cursor-based pagination in Firestore."""
 
@@ -19,12 +31,20 @@ class FirestorePaginator:
     ) -> tuple[list[DocumentSnapshot], str | None]:
         """
         Paginate a Firestore query.
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 52f8d25be2f6a56c0c1b05c49974577a8f47befd
         Args:
             query: The base Firestore query (including order_by).
             limit: Maximum number of items to return.
             cursor_id: Document ID to start after.
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> 52f8d25be2f6a56c0c1b05c49974577a8f47befd
         Returns:
             A tuple containing:
             - list of DocumentSnapshot
@@ -39,12 +59,20 @@ class FirestorePaginator:
             # Usually, the query's parent is the collection
             # query._parent gives us the collection reference in google-cloud-firestore
             # but we need to be careful with mockfirestore or different versions.
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> 52f8d25be2f6a56c0c1b05c49974577a8f47befd
             # For simplicity and compatibility, we can try to fetch the cursor document
             # using the collection associated with the query.
             # In google-cloud-firestore, query._parent is the collection.
             # In mockfirestore, query.parent might be it.
+<<<<<<< HEAD
             
+=======
+
+>>>>>>> 52f8d25be2f6a56c0c1b05c49974577a8f47befd
             try:
                 # Try to get collection from query
                 collection = getattr(query, "_parent", getattr(query, "parent", None))
@@ -61,13 +89,21 @@ class FirestorePaginator:
 
         # Fetch one extra to determine if there is a next page
         results = list(query.limit(actual_limit + 1).stream())
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 52f8d25be2f6a56c0c1b05c49974577a8f47befd
         if not results:
             return [], None
 
         has_next = len(results) > actual_limit
         paged_results = results[:actual_limit]
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 52f8d25be2f6a56c0c1b05c49974577a8f47befd
         next_cursor = paged_results[-1].id if has_next else None
 
         return paged_results, next_cursor

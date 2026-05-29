@@ -9,16 +9,24 @@ from flask import current_app, flash, g, redirect, render_template, request, url
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, GROUP_MESSAGES
-from pickaladder.user import UserService
 from pickaladder.group import bp
 from pickaladder.group.forms import InviteByEmailForm, InviteFriendForm
-from pickaladder.group.services.group_service import AccessDenied, GroupNotFound, GroupService
-from pickaladder.group.utils import friend_group_members, get_random_joke, send_invite_email_background
 from pickaladder.group.routes.discovery import _handle_referrer
+from pickaladder.group.services.group_service import (
+    AccessDenied,
+    GroupNotFound,
+    GroupService,
+)
+from pickaladder.group.utils import (
+    friend_group_members,
+    get_random_joke,
+    send_invite_email_background,
+)
+from pickaladder.user import UserService
 
 
 def _handle_invite_friend_form(
-    db: 'Client', group_id: str, context: dict[str, object]
+    db: Client, group_id: str, context: dict[str, object]
 ) -> tuple[InviteFriendForm, Any | None]:
     """Process InviteFriendForm submission."""
     form = InviteFriendForm()
@@ -38,7 +46,7 @@ def _handle_invite_friend_form(
 
 
 def _handle_invite_email_form(
-    db: 'Client', group_id: str, group_name: str
+    db: Client, group_id: str, group_name: str
 ) -> tuple[InviteByEmailForm, Any | None]:
     """Process InviteByEmailForm submission."""
     invite_email_form = InviteByEmailForm()
@@ -64,7 +72,7 @@ def _handle_invite_email_form(
 
 @bp.route("/<string:group_id>", methods=["GET", "POST"])
 @login_required
-def view_group(group_id: str) -> 'Response' | str | dict[str, object]:
+def view_group(group_id: str) -> Response | str | dict[str, object]:
     """Display a single group's page."""
     _handle_referrer()
 
@@ -95,19 +103,17 @@ def view_group(group_id: str) -> 'Response' | str | dict[str, object]:
 
     # 10. Fetch Seasons
     from pickaladder.season.services import SeasonService
+
     context["seasons"] = SeasonService.get_seasons_for_group(db, group_id)
 
     return render_template(
-        "group.html",
-        form=form,
-        invite_email_form=invite_email_form,
-        **context
+        "group.html", form=form, invite_email_form=invite_email_form, **context
     )
 
 
 @bp.route("/<string:group_id>/request_join", methods=["POST"])
 @login_required
-def request_membership(group_id: str) -> 'Response' | str | dict[str, object]:
+def request_membership(group_id: str) -> Response | str | dict[str, object]:
     """Request to join a group."""
     db = firestore.client()
     message = request.form.get("message")
@@ -124,7 +130,7 @@ def request_membership(group_id: str) -> 'Response' | str | dict[str, object]:
 
 @bp.route("/invite/<token>/resend", methods=["POST"])
 @login_required
-def resend_invite(token: str) -> 'Response' | str | dict[str, object]:
+def resend_invite(token: str) -> Response | str | dict[str, object]:
     """Resend a group invitation."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -158,10 +164,10 @@ def resend_invite(token: str) -> 'Response' | str | dict[str, object]:
     invite_url = url_for(".handle_invite", token=token, _external=True)
     email_data = {
         "to": data.get("email"),
-        "subject": f"Join {group.to_dict().get('name')} on pickaladder!", # type: ignore
+        "subject": f"Join {group.to_dict().get('name')} on pickaladder!",  # type: ignore
         "template": "email/group_invite.html",
         "name": data.get("name"),
-        "group_name": group.to_dict().get("name"), # type: ignore
+        "group_name": group.to_dict().get("name"),  # type: ignore
         "invite_url": invite_url,
         "joke": get_random_joke(),
     }
@@ -177,7 +183,7 @@ def resend_invite(token: str) -> 'Response' | str | dict[str, object]:
 
 @bp.route("/invite/<token>/delete", methods=["POST"])
 @login_required
-def delete_invite(token: str) -> 'Response' | str | dict[str, object]:
+def delete_invite(token: str) -> Response | str | dict[str, object]:
     """Delete a pending invitation."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -187,7 +193,7 @@ def delete_invite(token: str) -> 'Response' | str | dict[str, object]:
         flash(GROUP_MESSAGES["INVITE_NOT_FOUND"], "danger")
         return redirect(url_for("auth.login"))
 
-    group_id = invite.to_dict().get("group_id") # type: ignore
+    group_id = invite.to_dict().get("group_id")  # type: ignore
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
 
@@ -206,7 +212,7 @@ def delete_invite(token: str) -> 'Response' | str | dict[str, object]:
 
 @bp.route("/invite/<token>")
 @login_required
-def handle_invite(token: str) -> 'Response' | str | dict[str, object]:
+def handle_invite(token: str) -> Response | str | dict[str, object]:
     """Handle an invitation link."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -248,7 +254,7 @@ def handle_invite(token: str) -> 'Response' | str | dict[str, object]:
 
 @bp.route("/<string:group_id>/join", methods=["POST"])
 @login_required
-def join_group(group_id: str) -> 'Response' | str | dict[str, object]:
+def join_group(group_id: str) -> Response | str | dict[str, object]:
     """Join a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
@@ -266,7 +272,7 @@ def join_group(group_id: str) -> 'Response' | str | dict[str, object]:
 
 @bp.route("/<string:group_id>/leave", methods=["POST"])
 @login_required
-def leave_group(group_id: str) -> 'Response' | str | dict[str, object]:
+def leave_group(group_id: str) -> Response | str | dict[str, object]:
     """Leave a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)

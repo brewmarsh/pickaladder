@@ -34,6 +34,7 @@ class User(FirestoreDocument, total=False):
     dark_mode: bool
     email_verified: bool
     uid: str
+    social_credits: int
     # UI and calculated fields
     wins: int
     losses: int

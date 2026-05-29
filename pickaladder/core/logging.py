@@ -15,7 +15,9 @@ class StructuredFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """Format the log record as JSON."""
         log_data: dict[str, Any] = {
-            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(
+                record.created, tz=timezone.utc
+            ).isoformat(),
             "level": record.levelname,
             "message": record.getMessage(),
             "logger": record.name,
@@ -71,5 +73,5 @@ def setup_logging(app: Flask) -> None:
 
     # Ensure other loggers (like gunicorn) use our handler if needed
     # but for now, we focus on the app logger.
-    
+
     app._logging_setup_done = True  # type: ignore[attr-defined]

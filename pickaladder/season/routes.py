@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from firebase_admin import firestore
-from flask import flash, g, redirect, render_template, request, url_for
+from flask import Response, flash, g, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, GROUP_MESSAGES
@@ -20,7 +18,7 @@ from .services import SeasonFinalizationService, SeasonService, SeasonStandingsS
 
 @bp.route("/<string:season_id>")
 @login_required
-def view_season(season_id: str) -> Any:
+def view_season(season_id: str) -> Response | str:
     """Display season standings."""
     db = firestore.client()
     season = SeasonService.get_season(db, season_id)
@@ -52,7 +50,7 @@ def view_season(season_id: str) -> Any:
 
 @bp.route("/group/<string:group_id>")
 @login_required
-def list_seasons(group_id: str) -> Any:
+def list_seasons(group_id: str) -> Response | str:
     """List all seasons for a group."""
     db = firestore.client()
     try:
@@ -72,7 +70,7 @@ def list_seasons(group_id: str) -> Any:
 
 @bp.route("/group/<string:group_id>/create", methods=["GET", "POST"])
 @login_required
-def create_season(group_id: str) -> Any:
+def create_season(group_id: str) -> Response | str:
     """Create a new season for a group."""
     db = firestore.client()
     try:
@@ -115,7 +113,7 @@ def create_season(group_id: str) -> Any:
 
 @bp.route("/<string:season_id>/edit", methods=["GET", "POST"])
 @login_required
-def edit_season(season_id: str) -> Any:
+def edit_season(season_id: str) -> Response | str:
     """Edit an existing season."""
     db = firestore.client()
     season = SeasonService.get_season(db, season_id)
@@ -169,7 +167,7 @@ def edit_season(season_id: str) -> Any:
 
 @bp.route("/<string:season_id>/finalize", methods=["GET", "POST"])
 @login_required
-def finalize_season(season_id: str) -> Any:
+def finalize_season(season_id: str) -> Response | str:
     """Preview and apply season finalization."""
     db = firestore.client()
     season = SeasonService.get_season(db, season_id)
@@ -196,10 +194,7 @@ def finalize_season(season_id: str) -> Any:
                 db,
                 g.user.uid,
                 ActivityType.SEASON_FINALIZED,
-                {
-                    "seasonId": season_id,
-                    "seasonName": season.get("name")
-                }
+                {"seasonId": season_id, "seasonName": season.get("name")},
             )
 
             action = request.form.get("action", "finalize_only")

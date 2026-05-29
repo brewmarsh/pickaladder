@@ -239,6 +239,7 @@ class TournamentBase:
     def get_tournament(cls, t_id: str, db: Client | None = None) -> dict[str, Any]:
         """Fetch a single tournament document by ID."""
         from firebase_admin import firestore
+
         db = db or firestore.client()
         doc = db.collection("tournaments").document(t_id).get()
         if not doc.exists:
@@ -254,9 +255,12 @@ class TournamentBase:
             raise PermissionError("Unauthorized access to tournament.")
 
     @staticmethod
-    def get_tournament_matches(t_id: str, db: Client | None = None) -> list[dict[str, Any]]:
+    def get_tournament_matches(
+        t_id: str, db: Client | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch all matches for a specific tournament."""
         from firebase_admin import firestore
+
         db = db or firestore.client()
         query = db.collection("matches").where(
             filter=firestore.FieldFilter("tournamentId", "==", t_id)

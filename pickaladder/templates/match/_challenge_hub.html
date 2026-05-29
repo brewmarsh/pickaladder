@@ -1,0 +1,48 @@
+<div class="challenge-hub card shadow-sm mb-4">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-swords me-2"></i>Challenge Hub</h5>
+        <button class="btn btn-sm btn-outline-light" onclick="ChallengeUI.refreshHub()">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+    <div class="card-body">
+        <ul class="nav nav-pills mb-3" id="challengeTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="pending-tab" data-bs-toggle="pill" data-bs-target="#pending-challenges" type="button" role="tab">Pending</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="active-tab" data-bs-toggle="pill" data-bs-target="#active-challenges" type="button" role="tab">Active</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="history-tab" data-bs-toggle="pill" data-bs-target="#history-challenges" type="button" role="tab">History</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="challengeTabsContent">
+            <div class="tab-pane fade show active" id="pending-challenges" role="tabpanel">
+                <div id="pending-list" class="list-group">
+                    <div class="text-center py-3 text-muted">Loading challenges...</div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="active-challenges" role="tabpanel">
+                <div id="active-list" class="list-group">
+                    <div class="text-center py-3 text-muted">No active challenges.</div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="history-challenges" role="tabpanel">
+                <div id="history-list" class="list-group">
+                    <div class="text-center py-3 text-muted">No history yet.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initial load will be handled by challenges.js
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof ChallengeUI !== 'undefined') {
+            ChallengeUI.refreshHub();
+        }
+    });
+</script>

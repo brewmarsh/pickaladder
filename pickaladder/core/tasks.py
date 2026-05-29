@@ -1,7 +1,7 @@
 """Background task execution module."""
 
 import logging
-from concurrent.futures import ThreadPoolExecutor, Future
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any, Callable, TypeVar
 
 from flask import Flask
@@ -33,7 +33,7 @@ class TaskExecutor:
     def run_async(self, func: Callable[..., T], *args: Any, **kwargs: Any) -> Future[T]:
         """
         Run a function asynchronously in a background thread.
-        
+
         Ensures the Flask application context is available during execution.
         """
         if self._executor is None or self.app is None:
@@ -50,7 +50,7 @@ class TaskExecutor:
                 except Exception as e:
                     self.app.logger.error(
                         f"Error in background task {func.__name__}: {str(e)}",
-                        exc_info=True
+                        exc_info=True,
                     )
                     raise
 

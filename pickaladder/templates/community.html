@@ -120,7 +120,7 @@
 
 {# 3. TOURNAMENT INVITES #}
 {% if pending_tournament_invites %}
-<div class="card tournament-invites-section" style="margin-bottom: 40px; border-left: 6px solid var(--primary-brand);">
+<div class="card tournament-invites-section" style="margin-bottom: 40px; border-left: 6px solid var(--primary-color);">
     <h3>Tournament Invites</h3>
     <div class="table-container">
         <div class="table-responsive">
@@ -189,7 +189,11 @@
             </a>
             <div class="friend-card-actions">
                 <a href="{{ url_for('match.record_match', opponent=friend.id) }}"
-                    class="btn btn-volt challenge-btn">Challenge</a>
+                    class="btn btn-outline-light btn-sm w-100 mb-1">Record Match</a>
+                <button type="button" class="btn btn-volt btn-sm w-100"
+                    onclick="ChallengeUI.openIssueModal('{{ friend.id }}', '{{ friend.name or friend.username }}', '{{ friend | avatar_url }}')">
+                    ⚔️ Formal Challenge
+                </button>
             </div>
         </div>
         {% endfor %}

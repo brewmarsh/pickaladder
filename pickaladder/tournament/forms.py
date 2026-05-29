@@ -29,8 +29,21 @@ class TournamentForm(FlaskForm):
             ("ROUND_ROBIN", "Round Robin"),
             ("SINGLE_ELIMINATION", "Single Elimination"),
             ("DOUBLE_ELIMINATION", "Double Elimination"),
+            ("POOL_PLAY", "Pool Play (Pools -> Single Elim)"),
         ],
         validators=[DataRequired()],
+    )
+    pool_count = SelectField(
+        "Number of Pools",
+        choices=[("2", "2 Pools"), ("4", "4 Pools"), ("8", "8 Pools")],
+        validators=[Optional()],
+        default="2",
+    )
+    promoted_per_pool = SelectField(
+        "Players Promoted per Pool",
+        choices=[("1", "Top 1"), ("2", "Top 2"), ("4", "Top 4")],
+        validators=[Optional()],
+        default="2",
     )
     description = TextAreaField("Description", validators=[Optional()])
 

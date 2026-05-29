@@ -28,7 +28,7 @@ class DoubleEliminationTestCase(unittest.TestCase):
                     "round": 1,
                     "bracketPosition": 0,
                     "bracketType": "WINNERS",
-                    "tournamentId": "de_tourney"
+                    "tournamentId": "de_tourney",
                 }
                 doc.get.return_value = snap
                 self.docs[path] = doc
@@ -41,7 +41,9 @@ class DoubleEliminationTestCase(unittest.TestCase):
         self.mock_db.collection.return_value = self.mock_query
         self.mock_query.document.side_effect = mock_doc
 
-    @patch("pickaladder.tournament.services.tournament_service.TournamentService.get_tournament")
+    @patch(
+        "pickaladder.tournament.services.tournament_service.TournamentService.get_tournament"
+    )
     @patch("firebase_admin.firestore.ArrayUnion", return_value=["val"])
     def test_loser_drop_wr1_to_lr1(self, mock_union, mock_get_t):
         """Test WR1 loser drops to LR1 with crossover."""
@@ -51,12 +53,12 @@ class DoubleEliminationTestCase(unittest.TestCase):
             "bracketPosition": 0,
             "bracketType": "WINNERS",
             "tournamentId": t_id,
-            "loserId": "loser_v1"
+            "loserId": "loser_v1",
         }
 
         mock_get_t.return_value = {
             "format": "DOUBLE_ELIMINATION",
-            "participant_ids": ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"]
+            "participant_ids": ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"],
         }
 
         # Mock Loser match query result
@@ -69,27 +71,34 @@ class DoubleEliminationTestCase(unittest.TestCase):
         # 3. _drop_loser (Losers check)
         self.mock_query.stream.side_effect = [[], [], [mock_target]]
 
-        TournamentService.handle_match_completion(self.mock_db, t_id, match_data, "winner_1")
+        TournamentService.handle_match_completion(
+            self.mock_db, t_id, match_data, "winner_1"
+        )
 
         # Verify update call on the LOSER match
         self.mock_query.document("lr1_match_pos3").update.assert_called()
         args = self.mock_query.document("lr1_match_pos3").update.call_args[0][0]
         self.assertEqual(args["player2Ref"].id, "loser_v1")
 
-    @patch("pickaladder.tournament.services.tournament_service.TournamentService.get_tournament")
+    @patch(
+        "pickaladder.tournament.services.tournament_service.TournamentService.get_tournament"
+    )
     @patch("firebase_admin.firestore.ArrayUnion", return_value=["val"])
     def test_push_to_finals(self, mock_union, mock_get_t):
         """Test bracket winners populate Finals correctly."""
         t_id = "de_tourney"
         match_data = {
-            "round": 3, # Winners final
+            "round": 3,  # Winners final
             "bracketPosition": 0,
             "bracketType": "WINNERS",
             "tournamentId": t_id,
-            "loserId": "l"
+            "loserId": "l",
         }
 
-        mock_get_t.return_value = {"format": "DOUBLE_ELIMINATION", "participant_ids": ["p1", "p2", "p3", "p4"]}
+        mock_get_t.return_value = {
+            "format": "DOUBLE_ELIMINATION",
+            "participant_ids": ["p1", "p2", "p3", "p4"],
+        }
 
         # Stream side effect:
         # 1. _advance_winner (Winners next round) -> []
@@ -98,11 +107,14 @@ class DoubleEliminationTestCase(unittest.TestCase):
         finals_match.id = "finals_match"
         self.mock_query.stream.side_effect = [[], [finals_match], []]
 
-        TournamentService.handle_match_completion(self.mock_db, t_id, match_data, "w_final")
+        TournamentService.handle_match_completion(
+            self.mock_db, t_id, match_data, "w_final"
+        )
 
         self.mock_query.document("finals_match").update.assert_called()
         args = self.mock_query.document("finals_match").update.call_args[0][0]
         self.assertEqual(args["player1Ref"].id, "w_final")
+
 
 if __name__ == "__main__":
     unittest.main()

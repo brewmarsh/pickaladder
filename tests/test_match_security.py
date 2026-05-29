@@ -62,7 +62,9 @@ class MatchSecurityTestCase(unittest.TestCase):
         )
 
         # Mock the building of match result to avoid url_for issues
-        with patch("pickaladder.match.services.command.MatchCommandService._build_match_result") as mock_build:
+        with patch(
+            "pickaladder.match.services.command.MatchCommandService._build_match_result"
+        ) as mock_build:
             mock_res = MagicMock()
             mock_res.id = "match_123"
             mock_build.return_value = mock_res
@@ -77,6 +79,7 @@ class MatchSecurityTestCase(unittest.TestCase):
         # is_upset might be added by the service itself, but we check if it was overwritten
         # By default check_upset returns False in mock
         self.assertFalse(match_data.get("is_upset", False))
+
 
 if __name__ == "__main__":
     unittest.main()

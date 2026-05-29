@@ -39,18 +39,25 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         if fmt in ["SINGLE_ELIMINATION", "DOUBLE_ELIMINATION"]:
             # Handle Grand Final Reset
             if match_data.get("isGrandFinal") and fmt == "DOUBLE_ELIMINATION":
-                if TournamentService._check_grand_final_reset(db, t_id, match_data, winner_uid):
+                if TournamentService._check_grand_final_reset(
+                    db, t_id, match_data, winner_uid
+                ):
                     return
 
             # Advance Winner
             TournamentService._advance_winner(db, t_id, match_data, winner_uid)
 
             # Handle Loser for Double Elimination
-            if fmt == "DOUBLE_ELIMINATION" and match_data.get("bracketType") == "WINNERS":
+            if (
+                fmt == "DOUBLE_ELIMINATION"
+                and match_data.get("bracketType") == "WINNERS"
+            ):
                 TournamentService._drop_loser(db, t_id, match_data)
 
     @staticmethod
-    def _check_grand_final_reset(db: Client, t_id: str, match_data: dict[str, Any], winner_uid: str) -> bool:
+    def _check_grand_final_reset(
+        db: Client, t_id: str, match_data: dict[str, Any], winner_uid: str
+    ) -> bool:
         """Check if a bracket reset match is needed and create it if so."""
         p1_ref = match_data.get("player1Ref")
         p2_ref = match_data.get("player2Ref")
@@ -91,7 +98,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
 
         next_round = current_round + 1
         next_pos = math.floor(current_pos / 2)
-        is_player_1 = (current_pos % 2 == 0)
+        is_player_1 = current_pos % 2 == 0
 
         query = (
             db.collection("matches")
@@ -108,17 +115,18 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         if next_match_snap:
             match_id = next_match_snap[0].id
             field = "player1Ref" if is_player_1 else "player2Ref"
-            db.collection("matches").document(match_id).update({
-                field: winner_ref,
-                "participants": firestore.ArrayUnion([winner_uid])
-            })
+            db.collection("matches").document(match_id).update(
+                {field: winner_ref, "participants": firestore.ArrayUnion([winner_uid])}
+            )
         elif bracket_type == "WINNERS":
-             TournamentService._push_to_finals(db, t_id, winner_uid, is_winners=True)
+            TournamentService._push_to_finals(db, t_id, winner_uid, is_winners=True)
         elif bracket_type == "LOSERS":
-             TournamentService._push_to_finals(db, t_id, winner_uid, is_winners=False)
+            TournamentService._push_to_finals(db, t_id, winner_uid, is_winners=False)
 
     @staticmethod
-    def _push_to_finals(db: Client, t_id: str, winner_uid: str, is_winners: bool) -> None:
+    def _push_to_finals(
+        db: Client, t_id: str, winner_uid: str, is_winners: bool
+    ) -> None:
         """Push a bracket winner to the Grand Finals match."""
         query = (
             db.collection("matches")
@@ -130,10 +138,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         if finals_snap:
             winner_ref = db.collection("users").document(winner_uid)
             field = "player1Ref" if is_winners else "player2Ref"
-            db.collection("matches").document(finals_snap[0].id).update({
-                field: winner_ref,
-                "participants": firestore.ArrayUnion([winner_uid])
-            })
+            db.collection("matches").document(finals_snap[0].id).update(
+                {field: winner_ref, "participants": firestore.ArrayUnion([winner_uid])}
+            )
 
     @staticmethod
     def _drop_loser(db: Client, t_id: str, match_data: dict[str, Any]) -> None:
@@ -147,11 +154,12 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         next_round = 1 if current_round == 1 else (2 * current_round) - 2
 
         from pickaladder.tournament.services.generator import TournamentGenerator
+
         t_data = TournamentService.get_tournament(t_id, db=db)
         p_count = len(t_data.get("participant_ids", []))
         bracket_size = TournamentGenerator._next_power_of_2(p_count)
 
-        num_winners_matches = bracket_size // (2 ** current_round)
+        num_winners_matches = bracket_size // (2**current_round)
         next_pos = (num_winners_matches - 1) - current_pos
 
         query = (
@@ -169,10 +177,12 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             if not loser_uid:
                 return
             loser_ref = db.collection("users").document(loser_uid)
-            db.collection("matches").document(target_snap[0].id).update({
-                "player2Ref": loser_ref,
-                "participants": firestore.ArrayUnion([loser_uid])
-            })
+            db.collection("matches").document(target_snap[0].id).update(
+                {
+                    "player2Ref": loser_ref,
+                    "participants": firestore.ArrayUnion([loser_uid]),
+                }
+            )
 
     @staticmethod
     def _build_create_payload(
@@ -217,7 +227,10 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         """Check if any matches exist for a tournament."""
 
         query = (
-            db.collection("matches").where(filter=firestore.FieldFilter("tournamentId", "==", t_id)).limit(1).stream()
+            db.collection("matches")
+            .where(filter=firestore.FieldFilter("tournamentId", "==", t_id))
+            .limit(1)
+            .stream()
         )
         return any(query)
 
@@ -437,7 +450,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
                 data = snap.to_dict() or {}
                 # Use Glicko-2 mu, fallback to ELO, fallback to 1200
                 stats = data.get("stats", {})
-                rating = stats.get("glicko2", {}).get("mu") or stats.get("elo") or 1200.0
+                rating = (
+                    stats.get("glicko2", {}).get("mu") or stats.get("elo") or 1200.0
+                )
                 ratings.append((snap.id, rating))
             else:
                 ratings.append((snap.id, 0.0))
@@ -539,7 +554,9 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         elif fmt == "POOL_PLAY":
             participant_ids = t_data.get("participant_ids", [])
             pool_count = t_data.get("pool_count", 2)
-            pairings = TournamentGenerator.generate_pool_play(participant_ids, pool_count)
+            pairings = TournamentGenerator.generate_pool_play(
+                participant_ids, pool_count
+            )
         else:
             # Default to Round Robin
             participant_ids = t_data.get("participant_ids", [])
@@ -582,7 +599,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
             stands = get_tournament_standings(db, t_id, match_type, pool_id=pool_id)
             # Get top performers
             for i in range(min(promoted_per_pool, len(stands))):
-                promoted_items.append((stands[i]["id"], i)) # (uid, rank_in_pool)
+                promoted_items.append((stands[i]["id"], i))  # (uid, rank_in_pool)
 
         if not promoted_items:
             return 0
