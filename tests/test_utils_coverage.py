@@ -455,7 +455,7 @@ class TestUtilsCoverage(unittest.TestCase):
         assert mock_batch.set.call_count == 4
         mock_batch.commit.assert_called_once()
 
-    @patch("pickaladder.group.utils.executor")
+    @patch("pickaladder.extensions.executor")
     @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_success(
@@ -484,7 +484,7 @@ class TestUtilsCoverage(unittest.TestCase):
             send_invite_email_background(mock_app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
-    @patch("pickaladder.group.utils.executor")
+    @patch("pickaladder.extensions.executor")
     @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_failure(
