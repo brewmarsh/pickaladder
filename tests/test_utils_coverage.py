@@ -479,8 +479,8 @@ class TestUtilsCoverage(unittest.TestCase):
             "template": "test.html",
         }
 
-        # Patch render_template locally for this test
-        with patch("flask.render_template", return_value="<html></html>"):
+        with patch("flask.render_template", return_value="<html></html>"), \
+             mock_app.app_context():
             send_invite_email_background(mock_app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
