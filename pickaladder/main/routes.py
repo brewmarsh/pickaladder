@@ -50,14 +50,25 @@ def sitemap() -> Response:
             # Skip private/admin routes
             if any(
                 x in rule.rule
-                for x in ["/admin", "/settings", "/logout", "/api", "/impersonate", "/health", "/service-worker.js", "/offline"]
+                for x in [
+                    "/admin",
+                    "/settings",
+                    "/logout",
+                    "/api",
+                    "/impersonate",
+                    "/health",
+                    "/service-worker.js",
+                    "/offline",
+                ]
             ):
                 continue
             pages.append(url_for(rule.endpoint, _external=True))
 
     # Add specific public routes if not caught
     public_routes = [
-        url_for("main.index", _external=True) if "main.index" in current_app.view_functions else None,
+        url_for("main.index", _external=True)
+        if "main.index" in current_app.view_functions
+        else None,
         url_for("auth.login", _external=True),
         url_for("auth.register", _external=True),
         url_for("match.leaderboard", _external=True),

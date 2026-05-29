@@ -38,7 +38,8 @@ class MatchCommandService(BaseRepository):
     ) -> MatchResult:
         """Process and record a match submission."""
         user_id = (
-            current_user["uid"] if isinstance(current_user, dict)
+            current_user["uid"]
+            if isinstance(current_user, dict)
             else current_user.get("uid")
         )
         sub = data if isinstance(data, MatchSubmission) else MatchSubmission(**data)
@@ -87,8 +88,10 @@ class MatchCommandService(BaseRepository):
             {
                 "matchId": new_match_ref.id,
                 "score": f"{sub.score_p1}-{sub.score_p2}",
-                "player1Name": current_user.get("username", "Unknown") if hasattr(current_user, 'get') else "Unknown"
-            }
+                "player1Name": current_user.get("username", "Unknown")
+                if hasattr(current_user, "get")
+                else "Unknown",
+            },
         )
 
         # Phase 10: Tournament Progression
@@ -104,6 +107,7 @@ class MatchCommandService(BaseRepository):
 
         # Invalidate leaderboards cache
         from pickaladder.extensions import cache
+
         cache.delete("global_leaderboard")
         if sub.group_id:
             from pickaladder.group.services.leaderboard import get_group_leaderboard

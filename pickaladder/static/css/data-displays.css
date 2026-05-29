@@ -118,6 +118,23 @@
     gap: 12px;
 }
 
+.match-history-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.95rem;
+    gap: 12px;
+}
+
+.game-won {
+    border-left: 6px solid var(--accent-color) !important;
+}
+
+.game-lost {
+    border-left: 6px solid var(--danger-color) !important;
+}
+
 .match-info-compact {
     flex: 1;
     min-width: 0; /* Critical for text-overflow to work */

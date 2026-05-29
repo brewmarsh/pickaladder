@@ -92,7 +92,9 @@ def _fetch_user_doc(id_to_load: str) -> "Response":
     return db.collection("users").document(id_to_load).get()
 
 
-def _populate_g_user(user_doc: "firestore.DocumentSnapshot", id_to_load: str, is_impersonating: bool) -> None:
+def _populate_g_user(
+    user_doc: "firestore.DocumentSnapshot", id_to_load: str, is_impersonating: bool
+) -> None:
     """Populate g.user and sync session admin status."""
     g.user = wrap_user(user_doc.to_dict(), uid=id_to_load)
     if not is_impersonating:
@@ -116,7 +118,9 @@ def _load_user_document(id_to_load: str, is_impersonating: bool) -> None:
         _handle_load_user_error(id_to_load, is_impersonating, e)
 
 
-def _process_user_doc(user_doc: "firestore.DocumentSnapshot", id_to_load: str, is_impersonating: bool) -> None:
+def _process_user_doc(
+    user_doc: "firestore.DocumentSnapshot", id_to_load: str, is_impersonating: bool
+) -> None:
     """Process the fetched user document."""
     if not user_doc.exists:
         _handle_missing_user(id_to_load, is_impersonating)
@@ -357,7 +361,9 @@ def _generate_unique_username(db: "firestore.Client", base_username: str) -> str
 
 
 # TODO: Add type hints for Agent clarity
-def _prepare_new_user_info(db: "firestore.Client", uid: str) -> tuple[dict[str, Any], str]:
+def _prepare_new_user_info(
+    db: "firestore.Client", uid: str
+) -> tuple[dict[str, Any], str]:
     """Extract and prepare initial info for a new user from Firebase Auth."""
     user_record = auth.get_user(uid)
     email = user_record.email
@@ -376,7 +382,9 @@ def _prepare_new_user_info(db: "firestore.Client", uid: str) -> tuple[dict[str, 
     return user_info, email
 
 
-def _get_or_create_user_profile(db: "firestore.Client", uid: str) -> tuple[dict[str, Any], bool]:
+def _get_or_create_user_profile(
+    db: "firestore.Client", uid: str
+) -> tuple[dict[str, Any], bool]:
     """Retrieve existing user profile or create a new one from Firebase Auth."""
     user_doc_ref = db.collection("users").document(uid)
     user_doc = user_doc_ref.get()

@@ -17,13 +17,14 @@ def test_match_submission_with_named_teams():
         partner_id="p1_partner",
         opponent_2_id="p2_partner",
         namedTeam1Id="team_alpha",
-        namedTeam2Id="team_beta"
+        namedTeam2Id="team_beta",
     )
 
     assert submission.namedTeam1Id == "team_alpha"
     assert submission.namedTeam2Id == "team_beta"
     assert submission["namedTeam1Id"] == "team_alpha"
     assert submission.get("namedTeam2Id") == "team_beta"
+
 
 def test_match_result_with_named_teams():
     """Verify MatchResult supports namedTeamId fields."""
@@ -39,11 +40,12 @@ def test_match_result_with_named_teams():
         winnerId="team1_id",
         loserId="team2_id",
         namedTeam1Id="team_alpha",
-        namedTeam2Id="team_beta"
+        namedTeam2Id="team_beta",
     )
 
     assert result.namedTeam1Id == "team_alpha"
     assert result.namedTeam2Id == "team_beta"
+
 
 def test_match_dict_typing():
     """Verify MatchDict TypedDict includes namedTeamId fields."""
@@ -60,7 +62,7 @@ def test_match_dict_typing():
         "winnerId": "pairing_1",
         "winners": ["p1", "p1_p"],
         "losers": ["p2", "p2_p"],
-        "participants": ["p1", "p1_p", "p2", "p2_p"]
+        "participants": ["p1", "p1_p", "p2", "p2_p"],
     }
 
     assert match_data["namedTeam1Id"] == "team_alpha"

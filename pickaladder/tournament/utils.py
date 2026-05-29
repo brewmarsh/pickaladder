@@ -10,7 +10,7 @@ from pickaladder.user.helpers import smart_display_name
 
 
 def fetch_tournament_matches(
-    db: "firestore.Client", tournament_id: str, pool_id: str | None = None
+    db: firestore.Client, tournament_id: str, pool_id: str | None = None
 ) -> Any:
     """Fetch all match documents associated with the tournament_id, optionally filtered by pool_id."""
     query = db.collection("matches").where(
@@ -38,7 +38,13 @@ def _record_match_result(standings: dict, id1: str, id2: str, s1: int, s2: int) 
     """Update win/loss and point diff for two participants."""
     for pid in [id1, id2]:
         if pid not in standings:
-            standings[pid] = {"id": pid, "wins": 0, "losses": 0, "point_diff": 0, "h2h": {}}
+            standings[pid] = {
+                "id": pid,
+                "wins": 0,
+                "losses": 0,
+                "point_diff": 0,
+                "h2h": {},
+            }
 
     if s1 > s2:
         standings[id1]["wins"] += 1
@@ -69,7 +75,9 @@ def aggregate_match_data(matches: Any, match_type: str) -> dict[str, dict[str, A
     return standings
 
 
-def _enrich_doubles_names(db: "firestore.Client", standings: list[dict[str, Any]]) -> None:
+def _enrich_doubles_names(
+    db: firestore.Client, standings: list[dict[str, Any]]
+) -> None:
     """Fetch and set team names for doubles standings."""
     for s in standings:
         doc = cast(Any, db.collection("teams").document(s["id"]).get())
@@ -79,7 +87,9 @@ def _enrich_doubles_names(db: "firestore.Client", standings: list[dict[str, Any]
         s["name"] = name
 
 
-def _enrich_singles_names(db: "firestore.Client", standings: list[dict[str, Any]]) -> None:
+def _enrich_singles_names(
+    db: firestore.Client, standings: list[dict[str, Any]]
+) -> None:
     """Fetch and set user names for singles standings."""
     u_refs = [db.collection("users").document(s["id"]) for s in standings]
     u_docs = cast(list[Any], db.get_all(u_refs))
@@ -93,13 +103,13 @@ def _enrich_singles_names(db: "firestore.Client", standings: list[dict[str, Any]
 
 
 def sort_and_format_standings(
-    db: "firestore.Client", raw_standings: dict[str, dict[str, Any]], match_type: str
+    db: firestore.Client, raw_standings: dict[str, dict[str, Any]], match_type: str
 ) -> list[dict[str, Any]]:
     """Convert the map to a list, enrich with names, and sort with H2H tie-breaks."""
     standings_list = list(raw_standings.values())
     if not standings_list:
         return []
-    
+
     if match_type == "doubles":
         _enrich_doubles_names(db, standings_list)
     else:
@@ -109,30 +119,31 @@ def sort_and_format_standings(
         # 1. Wins
         if a["wins"] != b["wins"]:
             return a["wins"] - b["wins"]
-        
+
         # 2. Head-to-Head (if exactly 2 players tied on wins)
-        # Note: This is a simplified H2H check. 
+        # Note: This is a simplified H2H check.
         # In a real RR, we'd check if a beat b.
         a_beat_b = a.get("h2h", {}).get(b["id"], 0)
         b_beat_a = b.get("h2h", {}).get(a["id"], 0)
         if a_beat_b != b_beat_a:
             return a_beat_b - b_beat_a
-            
+
         # 3. Losses (fewer is better)
         if a["losses"] != b["losses"]:
             return b["losses"] - a["losses"]
-            
+
         # 4. Point Differential
         return a.get("point_diff", 0) - b.get("point_diff", 0)
 
     from functools import cmp_to_key
+
     standings_list.sort(key=cmp_to_key(compare_participants), reverse=True)
-    
+
     return standings_list
 
 
 def get_tournament_standings(
-    db: "firestore.Client",
+    db: firestore.Client,
     tournament_id: str,
     match_type: str,
     pool_id: str | None = None,

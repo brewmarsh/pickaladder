@@ -184,7 +184,7 @@
     }
 }
 
-.modal-header h5 { margin: 0; font-weight: 500; }
+.modal-header h5 { margin: 0; font-weight: var(--fw-bold); }
 .modal-content {
     background-color: var(--card-bg);
     margin: auto;

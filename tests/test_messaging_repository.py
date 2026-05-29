@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
-from firebase_admin import firestore
+
 from pickaladder.messaging.repository import MessagingRepository
+
 
 class TestMessagingRepository(unittest.TestCase):
     def setUp(self):
@@ -16,15 +17,15 @@ class TestMessagingRepository(unittest.TestCase):
         sender_id = "user1"
         recipient_id = "user2"
         message_data = {"senderId": sender_id, "content": "Hello"}
-        
+
         mock_conv_ref = MagicMock()
         self.mock_db.collection.return_value.document.return_value = mock_conv_ref
-        
+
         mock_conv_doc = MagicMock()
         mock_conv_doc.exists = True
         mock_conv_doc.to_dict.return_value = {"participants": [sender_id, recipient_id]}
         mock_conv_ref.get.return_value = mock_conv_doc
-        
+
         mock_msg_ref = MagicMock()
         mock_conv_ref.collection.return_value.document.return_value = mock_msg_ref
         mock_msg_ref.id = "msg789"
@@ -34,14 +35,14 @@ class TestMessagingRepository(unittest.TestCase):
 
         # Verify
         self.assertEqual(msg_id, "msg789")
-        
+
         # Verify batch set for message
         self.mock_batch.set.assert_called_once()
         set_args = self.mock_batch.set.call_args[0]
         self.assertEqual(set_args[0], mock_msg_ref)
         self.assertEqual(set_args[1]["senderId"], sender_id)
         self.assertEqual(set_args[1]["content"], "Hello")
-        
+
         # Verify batch update for conversation
         self.mock_batch.update.assert_called_once()
         update_args = self.mock_batch.update.call_args[0]
@@ -50,19 +51,18 @@ class TestMessagingRepository(unittest.TestCase):
         self.assertEqual(updates["lastMessage"], "Hello")
         self.assertEqual(updates["lastMessageSenderId"], sender_id)
         self.assertIn(f"unreadCount.{recipient_id}", updates)
-        
+
     def test_mark_as_read(self):
         conv_id = "conv123"
         user_id = "user1"
-        
+
         mock_conv_ref = MagicMock()
         self.mock_db.collection.return_value.document.return_value = mock_conv_ref
-        
+
         MessagingRepository.mark_as_read(self.mock_db, conv_id, user_id)
-        
-        mock_conv_ref.update.assert_called_once_with({
-            f"unreadCount.{user_id}": 0
-        })
+
+        mock_conv_ref.update.assert_called_once_with({f"unreadCount.{user_id}": 0})
+
 
 if __name__ == "__main__":
     unittest.main()

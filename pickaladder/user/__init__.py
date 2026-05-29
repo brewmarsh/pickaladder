@@ -8,5 +8,6 @@ from .services import UserService
 bp = Blueprint("user", __name__, url_prefix="/user", template_folder="templates")
 
 from . import routes  # noqa: E402
+from .routes import api, friends, profile  # noqa: F401, E402
 
 __all__ = ["FriendRequest", "User", "UserService", "routes"]

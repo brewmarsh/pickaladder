@@ -27,19 +27,24 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         patchers = {
             "init_app": patch("firebase_admin.initialize_app"),
             "firestore_discovery": patch(
-                "pickaladder.group.routes.discovery.firestore", new=self.mock_firestore_service
+                "pickaladder.group.routes.discovery.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_membership": patch(
-                "pickaladder.group.routes.membership.firestore", new=self.mock_firestore_service
+                "pickaladder.group.routes.membership.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_management": patch(
-                "pickaladder.group.routes.management.firestore", new=self.mock_firestore_service
+                "pickaladder.group.routes.management.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_stats_routes": patch(
-                "pickaladder.group.routes.stats.firestore", new=self.mock_firestore_service
+                "pickaladder.group.routes.stats.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_sessions": patch(
-                "pickaladder.group.routes.sessions.firestore", new=self.mock_firestore_service
+                "pickaladder.group.routes.sessions.firestore",
+                new=self.mock_firestore_service,
             ),
             "firestore_utils": patch(
                 "pickaladder.group.utils.firestore", new=self.mock_firestore_service
@@ -187,7 +192,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
 
         # Verify update called on doc_ref
         call_args = mock_doc_ref.update.call_args[0]
-        self.assertEqual(call_args[0]["profilePictureUrl"], "http://mock-storage-url/img.jpg")
+        self.assertEqual(
+            call_args[0]["profilePictureUrl"], "http://mock-storage-url/img.jpg"
+        )
         self.assertIn("updatedAt", call_args[0])
 
     def test_get_rivalry_stats(self) -> None:
@@ -421,9 +428,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             "members": [mock_user_doc],
             "admins": [],
         }
-        mock_db.collection("groups").document(group_id).get.return_value = (
-            mock_group_doc
-        )
+        mock_db.collection("groups").document(
+            group_id
+        ).get.return_value = mock_group_doc
 
         # Mock other necessary services called by get_group_details
         with (
@@ -485,9 +492,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
             ],
             "admins": [],
         }
-        mock_db.collection("groups").document(group_id).get.return_value = (
-            mock_group_doc
-        )
+        mock_db.collection("groups").document(
+            group_id
+        ).get.return_value = mock_group_doc
 
         # Mock other necessary services
         with (

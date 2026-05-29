@@ -18,6 +18,7 @@ def test_elo_calculation_winner_gains_loser_drops():
     assert p1_upd["stats.wins"] == 1
     assert p2_upd["stats.losses"] == 1
 
+
 def test_elo_calculation_upset_yields_larger_change():
     """Verify that an upset (lower ELO wins) results in a larger rating change."""
     # Scenario 1: Even match
@@ -35,6 +36,7 @@ def test_elo_calculation_upset_yields_larger_change():
     change_upset = upd1_upset["stats.elo"] - 1000.0
 
     assert change_upset > change_even
+
 
 def test_check_upset_logic():
     """Verify upset detection based on DUPR threshold."""

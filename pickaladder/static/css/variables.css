@@ -1,36 +1,63 @@
 :root {
-    /* --- NEW "COURT & VOLT" SYSTEM --- */
+    /* --- CORE TOKENS --- */
     --primary-color: #2563EB;       /* Royal Blue */
     --primary-hover: #1D4ED8;
+    --primary-active: #1E40AF;
+
     --accent-color: #84CC16;        /* Electric Lime */
     --accent-hover: #65A30D;
+    --accent-active: #4D7C0F;
     --color-volt: var(--accent-color);
 
     --success-color: #10B981;
-    --danger-color: #EF4444;
-    --warning-color: #F59E0B;
+    --success-hover: #059669;
+    --success-active: #047857;
 
-    --bg-primary: #F3F4F6;            /* Page background */
-    --bg-secondary: #FFFFFF;          /* Cards, Navbar, Dropdowns */
+    --danger-color: #EF4444;
+    --danger-hover: #DC2626;
+    --danger-active: #B91C1C;
+
+    --warning-color: #F59E0B;
+    --warning-hover: #D97706;
+    --warning-active: #B45309;
+
+    /* Surface & Backgrounds */
+    --bg-page: #F3F4F6;             /* Page background */
+    --bg-surface: #FFFFFF;          /* Cards, Navbar, Dropdowns */
+    --bg-surface-alt: #F9FAFB;      /* Secondary surface / subtle contrast */
+    --card-bg: var(--bg-surface);
+    
+    /* Legacy Mapping (Internal Semantic) */
+    --bg-primary: var(--bg-page);
+    --bg-secondary: var(--bg-surface);
+
+    /* Text */
     --text-primary: #111827;
     --text-secondary: #6B7280;
-    --border-color: #E5E7EB;
+    --text-muted: #9CA3AF;
+    --text-disabled: #D1D5DB;
+
+    /* Text on Colors */
     --text-on-primary: #FFFFFF;
-    --text-on-accent: #111827;      /* For Volt/Warning colors */
+    --text-on-accent: #111827;
+    --text-on-success: #FFFFFF;
+    --text-on-danger: #FFFFFF;
+    --text-on-warning: #111827;
 
-    /* Semantic Tokens Bridge */
-    --bg-color: var(--bg-primary);
-    --card-bg: var(--bg-secondary);
+    /* Borders & States */
+    --border-color: #E5E7EB;
+    --border-hover: #D1D5DB;
+    --disabled-bg: #E5E7EB;
+    --disabled-text: #9CA3AF;
 
-    /* --- BACKWARD COMPATIBILITY BRIDGE (Do Not Remove Yet) --- */
-    /* This maps old variable names to the new system so the UI doesn't break */
-    --primary-brand: var(--primary-color);
-    --primary-brand-dark: var(--primary-hover);
-    --surface-color: var(--bg-secondary);
-    --background-color: var(--bg-primary);
-    --text-color: var(--text-primary);
-    --text-secondary-color: var(--text-secondary);
-    --accent-highlight: var(--accent-color);
+    /* Spacing System */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-12: 3rem;
 
     /* Typography */
     --font-family: 'Inter', sans-serif;

@@ -49,7 +49,10 @@ def merge_users(db: Client, source_id: str, target_id: str) -> None:
 
 
 def _migrate_user_references(
-    db: Client, batch: _firestore.WriteBatch, ghost_ref: DocumentReference, real_user_ref: DocumentReference
+    db: Client,
+    batch: _firestore.WriteBatch,
+    ghost_ref: DocumentReference,
+    real_user_ref: DocumentReference,
 ) -> None:
     """Orchestrate the migration of all user references."""
     _migrate_singles_matches(db, batch, ghost_ref, real_user_ref)
@@ -59,7 +62,10 @@ def _migrate_user_references(
 
 
 def _migrate_singles_matches(
-    db: Client, batch: _firestore.WriteBatch, ghost_ref: DocumentReference, real_user_ref: DocumentReference
+    db: Client,
+    batch: _firestore.WriteBatch,
+    ghost_ref: DocumentReference,
+    real_user_ref: DocumentReference,
 ) -> None:
     """Update singles matches where the user is player 1 or 2."""
     match_updates: dict[str, dict[str, Any]] = {}
@@ -74,7 +80,11 @@ def _migrate_singles_matches(
 
 
 def _update_doubles_match_team(
-    db: Client, match: DocumentSnapshot, field: str, refs: tuple[DocumentReference, DocumentReference], updates: dict[str, Any]
+    db: Client,
+    match: DocumentSnapshot,
+    field: str,
+    refs: tuple[DocumentReference, DocumentReference],
+    updates: dict[str, Any],
 ) -> None:
     """Update team data for a doubles match if it contains the ghost user."""
     from pickaladder.teams.services import TeamService  # noqa: PLC0415
@@ -131,7 +141,10 @@ def _apply_doubles_migration_batch(
 
 
 def _migrate_doubles_matches(
-    db: Client, batch: _firestore.WriteBatch, ghost_ref: DocumentReference, real_user_ref: DocumentReference
+    db: Client,
+    batch: _firestore.WriteBatch,
+    ghost_ref: DocumentReference,
+    real_user_ref: DocumentReference,
 ) -> None:
     """Update doubles matches where the user is in a team array."""
     refs = (ghost_ref, real_user_ref)
@@ -141,7 +154,10 @@ def _migrate_doubles_matches(
 
 
 def _migrate_groups(
-    db: Client, batch: _firestore.WriteBatch, ghost_ref: DocumentReference, real_user_ref: DocumentReference
+    db: Client,
+    batch: _firestore.WriteBatch,
+    ghost_ref: DocumentReference,
+    real_user_ref: DocumentReference,
 ) -> None:
     """Update group memberships."""
     for group in (
@@ -215,7 +231,10 @@ def _migrate_single_tournament(
 
 
 def _migrate_tournaments(
-    db: Client, batch: _firestore.WriteBatch, ghost_ref: DocumentReference, real_user_ref: DocumentReference
+    db: Client,
+    batch: _firestore.WriteBatch,
+    ghost_ref: DocumentReference,
+    real_user_ref: DocumentReference,
 ) -> None:
     """Update tournament participant lists and IDs."""
     tournaments = _fetch_tournaments_to_migrate(db, ghost_ref.id)

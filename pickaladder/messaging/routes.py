@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from firebase_admin import firestore
-from flask import flash, g, redirect, render_template, request, url_for
+from flask import Response, flash, g, redirect, render_template, request, url_for
 
 from pickaladder.auth.decorators import login_required
 
@@ -16,20 +14,17 @@ from .services import MessagingService
 
 @bp.route("/")
 @login_required
-def inbox() -> Any:
+def inbox() -> str:
     """Display user's messaging inbox."""
     db = firestore.client()
     conversations = MessagingService.get_inbox(db, g.user.uid)
 
-    return render_template(
-        "messaging/inbox.html",
-        conversations=conversations
-    )
+    return render_template("messaging/inbox.html", conversations=conversations)
 
 
 @bp.route("/chat/<string:conversation_id>")
 @login_required
-def chat(conversation_id: str) -> Any:
+def chat(conversation_id: str) -> Response | str:
     """View individual conversation."""
     db = firestore.client()
     messages = MessagingRepository.get_messages(db, conversation_id)
@@ -43,25 +38,23 @@ def chat(conversation_id: str) -> Any:
     # Mark as read
     MessagingService.mark_as_read(db, conversation_id, g.user.uid)
 
-    return render_template(
-        "messaging/chat.html",
-        conversation=conv,
-        messages=messages
-    )
+    return render_template("messaging/chat.html", conversation=conv, messages=messages)
 
 
 @bp.route("/start/<string:other_user_id>")
 @login_required
-def start_chat(other_user_id: str) -> Any:
+def start_chat(other_user_id: str) -> Response:
     """Redirect to or create a conversation with another user."""
     db = firestore.client()
-    conversation_id = MessagingService.get_or_create_conversation(db, g.user.uid, other_user_id)
+    conversation_id = MessagingService.get_or_create_conversation(
+        db, g.user.uid, other_user_id
+    )
     return redirect(url_for(".chat", conversation_id=conversation_id))
 
 
 @bp.route("/send/<string:conversation_id>", methods=["POST"])
 @login_required
-def send(conversation_id: str) -> Any:
+def send(conversation_id: str) -> Response:
     """Send a message."""
     db = firestore.client()
     content = request.form.get("content")
@@ -73,10 +66,10 @@ def send(conversation_id: str) -> Any:
 
 @bp.route("/broadcast/<string:group_id>", methods=["POST"])
 @login_required
-def broadcast(group_id: str) -> Any:
+def broadcast(group_id: str) -> Response:
     """Broadcast an announcement to all group members."""
-    from pickaladder.group.services.group_service import GroupService
     from pickaladder.group.repository import GroupRepository
+    from pickaladder.group.services.group_service import GroupService
 
     db = firestore.client()
     group = GroupRepository.get_by_id(db, group_id)

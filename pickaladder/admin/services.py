@@ -129,6 +129,49 @@ class AdminService:
         user_ref.update({"email_verified": True})
 
     @staticmethod
+    def get_recent_audit_logs(
+        db: "firestore.Client", limit: int = 5
+    ) -> list[dict[str, Any]]:
+        """Fetch recent administrative actions."""
+        docs = (
+            db.collection("audit_logs")
+            .order_by("timestamp", direction=firestore.Query.DESCENDING)
+            .limit(limit)
+            .stream()
+        )
+        logs = []
+        for doc in docs:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            logs.append(data)
+        return logs
+
+    @staticmethod
+    def get_growth_metrics(db: "firestore.Client") -> dict[str, Any]:
+        """Calculate user signups per day for the last 7 days."""
+        now = datetime.datetime.now(datetime.timezone.utc)
+        labels = []
+        values = []
+
+        for i in range(6, -1, -1):
+            day = now - datetime.timedelta(days=i)
+            day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+            day_end = day_start + datetime.timedelta(days=1)
+
+            count = (
+                db.collection("users")
+                .where(filter=firestore.FieldFilter("createdAt", ">=", day_start))
+                .where(filter=firestore.FieldFilter("createdAt", "<", day_end))
+                .count()
+                .get()[0][0]
+                .value
+            )
+            labels.append(day.strftime("%b %d"))
+            values.append(count)
+
+        return {"labels": labels, "values": values}
+
+    @staticmethod
     def log_action(
         db: "firestore.Client",
         admin_id: str,

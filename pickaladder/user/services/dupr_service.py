@@ -5,6 +5,7 @@ from flask import current_app
 
 logger = logging.getLogger(__name__)
 
+
 class DUPRService:
     """Service for interacting with the DUPR API."""
 
@@ -35,10 +36,7 @@ class DUPRService:
             # The exact endpoint and header might need adjustment
             # based on real DUPR docs
             url = f"{base_url}/v1/player/{dupr_id}"
-            headers = {
-                "X-API-KEY": api_key,
-                "Content-Type": "application/json"
-            }
+            headers = {"X-API-KEY": api_key, "Content-Type": "application/json"}
 
             response = requests.get(url, headers=headers, timeout=10)
             success_code = 200
@@ -47,11 +45,7 @@ class DUPRService:
                 data = response.json()
                 # Typical response might have multiple ratings (doubles, singles)
                 # We'll default to doubles or a general rating field
-                rating_val = (
-                    data.get("rating")
-                    or data.get("doubles_rating")
-                    or 0.0
-                )
+                rating_val = data.get("rating") or data.get("doubles_rating") or 0.0
                 return float(rating_val)
 
             logger.error(

@@ -42,9 +42,7 @@ class BaseRepository:
 
         snaps = db.get_all(refs)
         return [
-            enriched
-            for snap in snaps
-            if (enriched := cls._enrich(snap)) is not None
+            enriched for snap in snaps if (enriched := cls._enrich(snap)) is not None
         ]
 
     @classmethod

@@ -1,0 +1,80 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Feedback Management{% endblock %}
+
+{% block admin_content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <h2>User Feedback & Support</h2>
+        <p class="text-muted">Manage and triage feedback submitted by users.</p>
+    </div>
+</div>
+
+<div class="card-grid">
+    <div class="card" style="grid-column: span 3;">
+        <div class="table-container">
+            <div class="table-responsive">
+                <table class="table-standard responsive-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Type</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in feedback_list %}
+                        <tr>
+                            <td data-label="User">
+                                <strong>{{ item.user_name }}</strong><br>
+                                <small class="text-muted">{{ item.userId }}</small>
+                            </td>
+                            <td data-label="Type">
+                                <span class="badge badge-info">{{ item.type }}</span>
+                            </td>
+                            <td data-label="Message" class="text-wrap" style="max-width: 300px;">
+                                {{ item.message }}
+                            </td>
+                            <td data-label="Status">
+                                {% if item.status == 'New' %}
+                                    <span class="badge badge-primary">New</span>
+                                {% elif item.status == 'In Progress' %}
+                                    <span class="badge badge-warning">In Progress</span>
+                                {% elif item.status == 'Resolved' %}
+                                    <span class="badge badge-success">Resolved</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">{{ item.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Date">
+                                <small>{{ item.createdAt.strftime('%Y-%m-%d %H:%M') if item.createdAt else 'N/A' }}</small>
+                            </td>
+                            <td data-label="Actions">
+                                <form action="{{ url_for('admin.update_feedback_status') }}" method="post" class="form-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="feedback_id" value="{{ item.id }}">
+                                    <select name="status" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                                        <option value="New" {% if item.status == 'New' %}selected{% endif %}>New</option>
+                                        <option value="In Progress" {% if item.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                        <option value="Resolved" {% if item.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                                        <option value="Closed" {% if item.status == 'Closed' %}selected{% endif %}>Closed</option>
+                                    </select>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not feedback_list %}
+                        <tr>
+                            <td colspan="6" class="text-center p-4">No feedback found.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

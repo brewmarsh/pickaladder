@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% from "components/_empty_state.html" import empty_state %}
 {% block title %}Manage {{ group.name }}{% endblock %}
 
 {% block content %}
@@ -36,6 +37,14 @@
                         <i class="fas fa-paper-plane"></i> Invites
                         {% if pending_members %}
                         <span class="badge badge-pill badge-primary ml-1">{{ pending_members|length }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link py-3" id="requests-tab" data-toggle="tab" href="#requests" role="tab" aria-controls="requests" aria-selected="false">
+                        <i class="fas fa-user-plus"></i> Requests
+                        {% if pending_requests %}
+                        <span class="badge badge-pill badge-warning ml-1">{{ pending_requests|length }}</span>
                         {% endif %}
                     </a>
                 </li>
@@ -123,6 +132,65 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- Requests Tab -->
+                <div class="tab-pane fade" id="requests" role="tabpanel" aria-labelledby="requests-tab">
+                    <h3 class="h5 mb-4">Pending Membership Requests</h3>
+                    {% if pending_requests %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>User</th>
+                                    <th>Message</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in pending_requests %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ req.user | avatar_url }}" alt="{{ req.user.username }}" class="avatar avatar-md mr-3"
+                                                onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
+                                            <div>
+                                                <div class="font-weight-bold">{{ req.user.username }}</div>
+                                                <small class="text-muted">Requested {{ req.createdAt.strftime('%b %d') if hasattr(req.createdAt, 'strftime') else 'recently' }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <p class="small mb-0 text-italic">"{{ req.message or 'No message provided.' }}"</p>
+                                    </td>
+                                    <td class="text-right">
+                                        <div class="btn-group btn-group-sm">
+                                            <form action="{{ url_for('group.handle_membership_request', group_id=group.id, request_id=req.id, action='approve') }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-success">
+                                                    <i class="fas fa-check"></i> Approve
+                                                </button>
+                                            </form>
+                                            <form action="{{ url_for('group.handle_membership_request', group_id=group.id, request_id=req.id, action='decline') }}" method="POST" class="ml-1">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-outline-danger">
+                                                    <i class="fas fa-times"></i> Decline
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    {{ empty_state(
+                        icon="📩",
+                        title="No Pending Requests",
+                        message="Any new membership requests from the marketplace will appear here."
+                    ) }}
+                    {% endif %}
                 </div>
 
                 <!-- Invites Tab -->

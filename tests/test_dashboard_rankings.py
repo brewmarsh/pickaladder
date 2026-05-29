@@ -37,5 +37,6 @@ class TestDashboardRankings(unittest.TestCase):
         self.assertEqual(result["top_groups"][0]["name"], "Top Group")
         self.assertEqual(result["top_teams"][0]["name"], "Top Team")
 
+
 if __name__ == "__main__":
     unittest.main()

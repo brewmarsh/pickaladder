@@ -44,7 +44,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
                 "pickaladder.firestore", new=self.mock_firestore_service
             ),
             "user_firestore": patch(
-                "pickaladder.user.routes.firestore", new=self.mock_firestore_service
+                "pickaladder.user.routes.api.firestore", new=self.mock_firestore_service
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
         }
@@ -117,8 +117,10 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
     @patch("pickaladder.match.routes.MatchQueryService.get_match_by_id")
     @patch("pickaladder.match.services.MatchQueryService.get_candidate_player_ids")
     def test_record_match(
-        self, mock_get_candidate_player_ids: MagicMock, mock_get_match: MagicMock,
-        mock_record_match: MagicMock
+        self,
+        mock_get_candidate_player_ids: MagicMock,
+        mock_get_match: MagicMock,
+        mock_record_match: MagicMock,
     ) -> None:
         """Test recording a new match."""
 
@@ -354,7 +356,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         # Mock matches query
         mock_matches_col = mock_db.collection("matches")
         mock_query = mock_matches_col.where.return_value.order_by.return_value
-        
+
         # Mock result of FirestorePaginator.paginate
         mock_doc = MagicMock()
         mock_doc.id = "match_1"
@@ -363,9 +365,9 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
             "participants": [MOCK_USER_ID, MOCK_OPPONENT_ID],
             "player1Ref": MagicMock(id=MOCK_USER_ID),
             "player2Ref": MagicMock(id=MOCK_OPPONENT_ID),
-            "matchDate": datetime.datetime.now()
+            "matchDate": datetime.datetime.now(),
         }
-        
+
         # FirestorePaginator uses .limit(limit + 1).stream()
         mock_query.limit.return_value.stream.return_value = [mock_doc]
 

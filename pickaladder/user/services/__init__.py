@@ -31,10 +31,16 @@ from .core import (
     search_users as _search_users,
 )
 from .core import (
+    search_users_json as _search_users_json,
+)
+from .core import (
     smart_display_name as _smart_display_name,
 )
 from .core import (
     update_dashboard_profile as _update_dashboard_profile,
+)
+from .core import (
+    update_fcm_token as _update_fcm_token,
 )
 from .core import (
     update_settings as _update_settings,
@@ -213,9 +219,11 @@ class UserService:
     get_user_profile_data = staticmethod(_get_user_profile_data)
     get_community_data = staticmethod(_get_community_data)
     search_users = staticmethod(_search_users)
+    search_users_json = staticmethod(_search_users_json)
     get_friends_page_data = staticmethod(_get_friends_page_data)
     send_friend_request = staticmethod(_send_friend_request)
     sync_dupr_rating = staticmethod(_sync_dupr_rating)
     create_invite_token = staticmethod(_create_invite_token)
     update_dashboard_profile = staticmethod(_update_dashboard_profile)
+    update_fcm_token = staticmethod(_update_fcm_token)
     update_settings = staticmethod(_update_settings)

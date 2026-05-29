@@ -3,6 +3,12 @@
 
 {% block title %}{{ profile_user | display_name }}'s Profile{% endblock %}
 
+{% block extra_meta %}
+<meta property="og:title" content="{{ profile_user | display_name }} (@{{ profile_user.username }}) on pickaladder">
+<meta property="og:description" content="Check out {{ profile_user | display_name }}'s pickleball stats and match history on pickaladder!">
+<meta property="og:image" content="{{ profile_user | avatar_url(_external=True) }}">
+{% endblock %}
+
 {% block content %}
 <div class="mt-4">
     <div class="dashboard-columns">
@@ -68,6 +74,13 @@
                             data-csrf="{{ csrf_token() }}">Add Friend</button>
                         {% elif friend_request_sent %}
                         <button class="btn btn-secondary btn-block mb-2" disabled>Request Sent</button>
+                        {% endif %}
+
+                        {% if g.user.uid != profile_user.id %}
+                        <button class="btn btn-outline-volt btn-block mb-2" 
+                            onclick="ChallengeUI.openIssueModal('{{ profile_user.id }}', '{{ profile_user | display_name }}', '{{ profile_user | avatar_url }}')">
+                            ⚔️ Challenge
+                        </button>
                         {% endif %}
                     </div>
 

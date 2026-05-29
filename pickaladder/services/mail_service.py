@@ -44,7 +44,9 @@ class MailService:
         )
         try:
             mail.send(msg)
-            current_app.logger.info(f"Email sent successfully: {subject} to {recipients}")
+            current_app.logger.info(
+                f"Email sent successfully: {subject} to {recipients}"
+            )
         except smtplib.SMTPAuthenticationError as e:
             if e.smtp_code == SMTP_AUTH_ERROR_CODE:
                 error_message = (
@@ -66,12 +68,18 @@ class MailService:
             raise EmailError(error_msg) from e
 
     @staticmethod
-    def send_email(to: str | list[str], subject: str, template: str, **kwargs: Any) -> None:
+    def send_email(
+        to: str | list[str], subject: str, template: str, **kwargs: Any
+    ) -> None:
         """Send an email asynchronously in a background thread.
 
         This is the preferred method for sending emails from route handlers
         to avoid blocking the HTTP response.
         """
         executor.run_async(
-            MailService.send_email_now, to=to, subject=subject, template=template, **kwargs
+            MailService.send_email_now,
+            to=to,
+            subject=subject,
+            template=template,
+            **kwargs,
         )

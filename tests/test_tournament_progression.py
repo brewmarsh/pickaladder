@@ -29,7 +29,7 @@ class TournamentProgressionTestCase(unittest.TestCase):
                     "round": 1,
                     "bracketPosition": 0,
                     "bracketType": "WINNERS",
-                    "tournamentId": "test_tourney"
+                    "tournamentId": "test_tourney",
                 }
                 doc.get.return_value = snap
                 self.docs[path] = doc
@@ -42,7 +42,9 @@ class TournamentProgressionTestCase(unittest.TestCase):
         self.mock_db.collection.return_value = self.mock_query
         self.mock_query.document.side_effect = mock_doc
 
-    @patch("pickaladder.tournament.services.tournament_service.TournamentService.get_tournament")
+    @patch(
+        "pickaladder.tournament.services.tournament_service.TournamentService.get_tournament"
+    )
     @patch("firebase_admin.firestore.ArrayUnion", return_value=["val"])
     def test_winner_advancement_p1(self, mock_union, mock_get_t):
         """Test that winner of match 0 in round 1 moves to next match as player 1."""
@@ -52,7 +54,7 @@ class TournamentProgressionTestCase(unittest.TestCase):
             "winnerId": "winner_1",
             "round": 1,
             "bracketPosition": 0,
-            "bracketType": "WINNERS"
+            "bracketType": "WINNERS",
         }
         winner_uid = "winner_1"
 
@@ -63,13 +65,16 @@ class TournamentProgressionTestCase(unittest.TestCase):
         mock_next_match.id = "next_match_id"
         self.mock_query.stream.return_value = [mock_next_match]
 
-        TournamentService.handle_match_completion(self.mock_db, t_id, match_data, winner_uid)
+        TournamentService.handle_match_completion(
+            self.mock_db, t_id, match_data, winner_uid
+        )
 
         # Verify update call on the NEXT match
         self.mock_query.document("next_match_id").update.assert_called()
         args = self.mock_query.document("next_match_id").update.call_args[0][0]
         self.assertIn("player1Ref", args)
         self.assertEqual(args["player1Ref"].id, winner_uid)
+
 
 if __name__ == "__main__":
     unittest.main()

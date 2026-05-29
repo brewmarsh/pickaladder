@@ -14,10 +14,10 @@ from .profile import (
 )
 
 if TYPE_CHECKING:
+    from flask_wtf import FlaskForm
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
     from werkzeug.datastructures import FileStorage
-    from flask_wtf import FlaskForm
 
 
 def _sanitize_user_data(
@@ -94,7 +94,9 @@ def _process_user_doc(
 from flask_wtf import FlaskForm
 
 
-def _get_users_base_query(db: Client, exclude_ids: list[str], limit: int) -> firestore.Query:
+def _get_users_base_query(
+    db: Client, exclude_ids: list[str], limit: int
+) -> firestore.Query:
     """Construct the base query for fetching users with ordering and limit."""
     try:
         return (
@@ -115,7 +117,9 @@ def get_all_users(
 ) -> tuple[list[dict[str, Any]], str | None]:
     """Fetch a list of users, excluding given IDs, sorted by date."""
     exclude_ids = exclude_ids or []
-    query = db.collection("users").order_by("createdAt", direction=firestore.Query.DESCENDING)
+    query = db.collection("users").order_by(
+        "createdAt", direction=firestore.Query.DESCENDING
+    )
 
     all_users_docs, next_cursor = FirestorePaginator.paginate(
         query, limit + len(exclude_ids), cursor
@@ -198,7 +202,9 @@ def _extract_profile_update_data(form_data: FlaskForm) -> dict[str, Any]:
     """Extract and map profile form data into a Firestore-ready dictionary."""
     update_data: dict[str, Any] = {
         "name": getattr(form_data, "name").data if hasattr(form_data, "name") else "",
-        "username": getattr(form_data, "username").data if hasattr(form_data, "username") else "",
+        "username": getattr(form_data, "username").data
+        if hasattr(form_data, "username")
+        else "",
     }
     if hasattr(form_data, "dark_mode") and form_data.dark_mode:
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
@@ -241,7 +247,11 @@ def process_profile_update(
         return err
 
     email_res = _handle_email_change(
-        db, getattr(form_data, "email").data if hasattr(form_data, "email") else "", new_username, update_data, current_user_data
+        db,
+        getattr(form_data, "email").data if hasattr(form_data, "email") else "",
+        new_username,
+        update_data,
+        current_user_data,
     )
     if email_res:
         return email_res
@@ -260,7 +270,9 @@ def _get_current_user_data(db: Client, user_id: str) -> dict[str, Any]:
 def _map_settings_update_data(form_data: FlaskForm) -> dict[str, Any]:
     """Map form data to Firestore update dictionary."""
     update_data: dict[str, Any] = {
-        "username": getattr(form_data, "username").data if hasattr(form_data, "username") else ""
+        "username": getattr(form_data, "username").data
+        if hasattr(form_data, "username")
+        else ""
     }
     if hasattr(form_data, "dark_mode") and form_data.dark_mode:
         update_data["dark_mode"] = bool(form_data.dark_mode.data)
@@ -287,7 +299,9 @@ def update_settings(
     if current_user_data is None:
         current_user_data = _get_current_user_data(db, user_id)
 
-    username = getattr(form_data, "username").data if hasattr(form_data, "username") else ""
+    username = (
+        getattr(form_data, "username").data if hasattr(form_data, "username") else ""
+    )
     if err := _validate_username_change(
         db, username, current_user_data.get("username")
     ):
@@ -375,7 +389,9 @@ def update_dashboard_profile(
     profile_picture_file: FileStorage | None = None,
 ) -> None:
     """Update user profile from dashboard form, including image upload."""
-    update_data: dict[str, Any] = {"dark_mode": bool(getattr(form_data, "dark_mode").data)}
+    update_data: dict[str, Any] = {
+        "dark_mode": bool(getattr(form_data, "dark_mode").data)
+    }
     if hasattr(form_data, "dupr_rating") and form_data.dupr_rating.data is not None:
         rating = float(form_data.dupr_rating.data)
         update_data.update({"duprRating": rating, "dupr_rating": rating})
@@ -397,6 +413,7 @@ def search_users_json(
 ) -> list[dict[str, Any]]:
     """Search for users and return in JSON-friendly format for API."""
     from flask import url_for
+
     users, _ = search_users(db, current_user_id, search_term)
     results = []
     for user_data, _, _ in users:

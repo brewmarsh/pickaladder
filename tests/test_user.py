@@ -59,7 +59,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
                 new=self.mock_storage_service,
             ),
             "verify_id_token": patch("firebase_admin.auth.verify_id_token"),
-            "send_email_profile": patch("pickaladder.user.services.profile.send_email"),
+            "send_email_profile": patch("pickaladder.services.mail_service.send_email"),
         }
         for name, p in self.patchers_dict.items():
             p.start()
@@ -238,7 +238,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self._set_session_user()
         # Mock UserService.reset_profile_picture through the route's dependency
         with patch(
-            "pickaladder.user.routes.UserService.reset_profile_picture"
+            "pickaladder.user.routes.profile.UserService.reset_profile_picture"
         ) as mock_reset:
             mock_reset.return_value = True
             response = self.client.post(
@@ -300,7 +300,7 @@ class UserRoutesFirebaseTestCase(unittest.TestCase):
         self.assertEqual(len(matches), 1)
         self.assertTrue(matches[0]["is_group_match"])
 
-    @patch("pickaladder.user.routes.render_template")
+    @patch("pickaladder.user.routes.profile.render_template")
     def test_view_user_includes_doubles_and_processes_matches(
         self, mock_render_template: MagicMock
     ) -> None:

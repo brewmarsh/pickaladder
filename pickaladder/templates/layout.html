@@ -116,6 +116,7 @@
 
     {% include 'footer.html' %}
     {% include 'match/_issue_challenge_modal.html' %}
+    {% include 'components/_feedback_modal.html' %}
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -123,6 +124,7 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/offline_store.js') }}"></script>
     <script src="{{ url_for('static', filename='js/navbar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/feedback.js') }}"></script>
 
     <script>
         if ('serviceWorker' in navigator && !{{ is_testing|tojson }}) {

@@ -24,13 +24,17 @@ class StandingAggregator:
     """Calculates rankings for a pool of players based on match results."""
 
     @staticmethod
-    def aggregate(participant_ids: list[str], matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def aggregate(
+        participant_ids: list[str], matches: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
         Main entry point. Aggregates stats and resolves ties.
         Returns a sorted list of stats dicts.
         """
         # 1. Calculate basic stats for all participants
-        basic_stats = StandingAggregator._calculate_basic_stats(participant_ids, list(matches))
+        basic_stats = StandingAggregator._calculate_basic_stats(
+            participant_ids, list(matches)
+        )
 
         # 2. Group by matches won
         groups = collections.defaultdict(list)
@@ -51,7 +55,9 @@ class StandingAggregator:
         return sorted_standings
 
     @staticmethod
-    def _calculate_basic_stats(participant_ids: list[str], matches: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    def _calculate_basic_stats(
+        participant_ids: list[str], matches: list[dict[str, Any]]
+    ) -> dict[str, dict[str, Any]]:
         """Compute wins, losses, PF, PA, PD for each player."""
         stats = {
             uid: {
@@ -61,7 +67,7 @@ class StandingAggregator:
                 "points_for": 0,
                 "points_against": 0,
                 "matches_played": 0,
-                "tie_break_reason": None
+                "tie_break_reason": None,
             }
             for uid in participant_ids
         }
@@ -103,7 +109,11 @@ class StandingAggregator:
         return stats
 
     @staticmethod
-    def _resolve_ties(tied_players: list[dict[str, Any]], matches: list[dict[str, Any]], hierarchy_level: int = H2H_LEVEL) -> list[dict[str, Any]]:
+    def _resolve_ties(
+        tied_players: list[dict[str, Any]],
+        matches: list[dict[str, Any]],
+        hierarchy_level: int = H2H_LEVEL,
+    ) -> list[dict[str, Any]]:
         """Recursive tie-breaker."""
         if len(tied_players) <= 1 or hierarchy_level > PF_LEVEL:
             return tied_players
@@ -141,11 +151,17 @@ class StandingAggregator:
         return tied_players
 
     @staticmethod
-    def _process_groups(groups: dict[Any, list[dict[str, Any]]], matches: list[dict[str, Any]], current_level: int) -> list[dict[str, Any]]:
+    def _process_groups(
+        groups: dict[Any, list[dict[str, Any]]],
+        matches: list[dict[str, Any]],
+        current_level: int,
+    ) -> list[dict[str, Any]]:
         """Helper to iterate through grouped ties and recurse or move to next level."""
         # If this level didn't break ANY ties (everyone is still in one bucket)
         if len(groups) == 1:
-            return StandingAggregator._resolve_ties(list(groups.values())[0], matches, hierarchy_level=current_level + 1)
+            return StandingAggregator._resolve_ties(
+                list(groups.values())[0], matches, hierarchy_level=current_level + 1
+            )
 
         sorted_result = []
         sorted_keys = sorted(groups.keys(), reverse=True)
@@ -161,7 +177,11 @@ class StandingAggregator:
 
             if len(sub_group) > 1:
                 # RESET to level 1 for the remaining tied sub-group
-                sorted_result.extend(StandingAggregator._resolve_ties(sub_group, matches, hierarchy_level=H2H_LEVEL))
+                sorted_result.extend(
+                    StandingAggregator._resolve_ties(
+                        sub_group, matches, hierarchy_level=H2H_LEVEL
+                    )
+                )
             else:
                 sorted_result.append(sub_group[0])
         return sorted_result
@@ -173,7 +193,7 @@ class StandingAggregator:
             return None
         if isinstance(w_id, str):
             return w_id
-        if hasattr(w_id, 'id'):
+        if hasattr(w_id, "id"):
             return w_id.id
         return None
 
@@ -182,10 +202,10 @@ class StandingAggregator:
         # Check Participants list (highest reliability in mocks/E2E)
         p_ids = m.get("participants") or []
         if len(p_ids) >= index:
-            val = p_ids[index-1]
+            val = p_ids[index - 1]
             if isinstance(val, str):
                 return val
-            if hasattr(val, 'id'):
+            if hasattr(val, "id"):
                 return val.id
 
         ref_key = f"player{index}Ref"
@@ -194,7 +214,7 @@ class StandingAggregator:
 
         if isinstance(ref, str):
             return ref
-        if ref and hasattr(ref, 'id') and isinstance(ref.id, str):
+        if ref and hasattr(ref, "id") and isinstance(ref.id, str):
             return ref.id
         uid = m.get(id_key)
         if uid and isinstance(uid, str):
@@ -203,7 +223,9 @@ class StandingAggregator:
         return None
 
     @staticmethod
-    def _calculate_h2h_wins(players: list[dict[str, Any]], matches: list[dict[str, Any]]) -> dict[str, int]:
+    def _calculate_h2h_wins(
+        players: list[dict[str, Any]], matches: list[dict[str, Any]]
+    ) -> dict[str, int]:
         uids = {p["uid"] for p in players}
         wins = {uid: 0 for uid in uids}
         for m in matches:
@@ -215,13 +237,18 @@ class StandingAggregator:
             p2 = StandingAggregator._get_p_id(m, 2)
 
             match_parts = {p1, p2}
-            if match_parts.issubset(uids) and len(match_parts) == SINGLES_PARTICIPANT_COUNT:
+            if (
+                match_parts.issubset(uids)
+                and len(match_parts) == SINGLES_PARTICIPANT_COUNT
+            ):
                 if w_id in wins:
                     wins[w_id] += 1
         return wins
 
     @staticmethod
-    def _calculate_h2h_pd(players: list[dict[str, Any]], matches: list[dict[str, Any]]) -> dict[str, int]:
+    def _calculate_h2h_pd(
+        players: list[dict[str, Any]], matches: list[dict[str, Any]]
+    ) -> dict[str, int]:
         uids = {p["uid"] for p in players}
         pd = {uid: 0 for uid in uids}
         for m in matches:
@@ -231,11 +258,14 @@ class StandingAggregator:
             p2 = StandingAggregator._get_p_id(m, 2)
 
             match_parts = {p1, p2}
-            if match_parts.issubset(uids) and len(match_parts) == SINGLES_PARTICIPANT_COUNT:
+            if (
+                match_parts.issubset(uids)
+                and len(match_parts) == SINGLES_PARTICIPANT_COUNT
+            ):
                 s1 = int(m.get("player1Score", 0))
                 s2 = int(m.get("player2Score", 0))
                 if p1 in pd:
-                    pd[p1] += (s1 - s2)
+                    pd[p1] += s1 - s2
                 if p2 in pd:
-                    pd[p2] += (s2 - s1)
+                    pd[p2] += s2 - s1
         return pd

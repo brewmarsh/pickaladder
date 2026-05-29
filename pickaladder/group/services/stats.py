@@ -46,7 +46,10 @@ def get_partnership_stats(
 
 
 def _process_h2h_match(
-    match_doc: 'DocumentSnapshot', playerA_id: str, playerB_id: str, stats: dict[str, object]
+    match_doc: DocumentSnapshot,
+    playerA_id: str,
+    playerB_id: str,
+    stats: dict[str, object],
 ) -> None:
     """Process a single match for head-to-head statistics."""
     data = match_doc.to_dict()
@@ -148,7 +151,9 @@ def _update_all_time_streak(
     return current, longest
 
 
-def _calculate_all_time_streaks(matches: list[Any], user_ref: 'DocumentReference') -> tuple[int, int]:
+def _calculate_all_time_streaks(
+    matches: list[Any], user_ref: DocumentReference
+) -> tuple[int, int]:
     """Calculate current and longest winning streaks for a user."""
     from datetime import datetime
 

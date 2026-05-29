@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
+from firebase_admin import firestore, messaging
 from flask import current_app
-from firebase_admin import messaging, firestore
 
 from pickaladder.extensions import executor
 
@@ -71,7 +69,9 @@ class NotificationService:
 
         token = user_data.get("fcmToken")
         if not token:
-            current_app.logger.debug(f"User {user_id} has no fcmToken, skipping notification")
+            current_app.logger.debug(
+                f"User {user_id} has no fcmToken, skipping notification"
+            )
             return
 
         NotificationService.send_push_notification_now(token, title, body, data)

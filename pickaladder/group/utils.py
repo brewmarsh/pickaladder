@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import operator
 import secrets
-import sys
-import threading
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -31,7 +29,7 @@ def get_random_joke() -> str:
     return secrets.choice(JOKES)
 
 
-def _initialize_stats(players: list['DocumentSnapshot']) -> dict[str, dict[str, object]]:
+def _initialize_stats(players: list[DocumentSnapshot]) -> dict[str, dict[str, object]]:
     """Initialize the stats dictionary for each player."""
     return {
         ref.id: {
@@ -72,7 +70,9 @@ def _update_player_stats(
     s["match_results"].append("win" if won else "loss")
 
 
-def _process_single_match(stats: dict[str, dict[str, object]], match: 'DocumentSnapshot') -> None:
+def _process_single_match(
+    stats: dict[str, dict[str, object]], match: DocumentSnapshot
+) -> None:
     """Update raw stats and records match outcomes for players in a single match."""
     data = match.to_dict()
     p1_score, p2_score = _get_match_scores(data)
@@ -142,7 +142,7 @@ def _sort_leaderboard(stats: dict[str, dict[str, object]]) -> list[dict[str, obj
 
 
 def _calculate_leaderboard_from_matches(
-    matches: list['DocumentSnapshot'], players: list['DocumentSnapshot']
+    matches: list[DocumentSnapshot], players: list[DocumentSnapshot]
 ) -> list[dict[str, object]]:
     """Calculate the leaderboard from a list of matches using a pipeline of helpers."""
     matches.sort(
@@ -186,7 +186,7 @@ def _add_match_to_user_map(
 
 
 def _map_matches_to_users(
-    matches: list['DocumentSnapshot'], member_refs: list['DocumentSnapshot']
+    matches: list[DocumentSnapshot], member_refs: list[DocumentSnapshot]
 ) -> dict[str, list[dict[str, object]]]:
     """Map matches to each user for efficient lookup."""
     user_matches_map: dict[str, list[dict[str, object]]] = {
@@ -230,7 +230,9 @@ def _calculate_player_winning_streak(
 
 
 def _calculate_winning_streaks(
-    leaderboard: list[dict[str, object]], matches: list['DocumentSnapshot'], member_refs: list['DocumentSnapshot']
+    leaderboard: list[dict[str, object]],
+    matches: list[DocumentSnapshot],
+    member_refs: list[DocumentSnapshot],
 ) -> None:
     """Calculate winning streaks for players in the leaderboard."""
     user_matches_map = _map_matches_to_users(matches, member_refs)
@@ -292,7 +294,7 @@ def _collect_match_player_refs(data: dict[str, object], all_player_refs: set) ->
         all_player_refs.update({r for r in refs if r})
 
 
-def _extract_basic_player_data(doc: 'DocumentSnapshot') -> dict[str, object]:
+def _extract_basic_player_data(doc: DocumentSnapshot) -> dict[str, object]:
     """Extract name and profile picture URL from a player document."""
     data = doc.to_dict()
     return {
@@ -301,9 +303,11 @@ def _extract_basic_player_data(doc: 'DocumentSnapshot') -> dict[str, object]:
     }
 
 
-def _get_involved_player_data(db: 'Client', matches: list['DocumentSnapshot']) -> dict[str, dict[str, object]]:
+def _get_involved_player_data(
+    db: Client, matches: list[DocumentSnapshot]
+) -> dict[str, dict[str, object]]:
     """Get profile data for all players involved in matches."""
-    all_player_refs: set['DocumentReference'] = set()
+    all_player_refs: set[DocumentReference] = set()
     for match in matches:
         _collect_match_player_refs(match.to_dict(), all_player_refs)
 
@@ -337,7 +341,9 @@ def _process_trend_date_change(
 
 
 def _calculate_trend_points(
-    matches: list['DocumentSnapshot'], players_data: dict[str, object], unique_dates: list[str]
+    matches: list[DocumentSnapshot],
+    players_data: dict[str, object],
+    unique_dates: list[str],
 ) -> dict[str, dict[str, object]]:
     """Calculate average score trend points for each player."""
     player_stats = {pid: {"total_score": 0, "games": 0} for pid in players_data}
@@ -395,7 +401,9 @@ def _update_trend_player_stats(
         _update_player_trend_stats(player_stats, uid, p2_score)
 
 
-def _pad_trend_datasets(datasets_dict: dict[str, object], unique_dates: list[str]) -> None:
+def _pad_trend_datasets(
+    datasets_dict: dict[str, object], unique_dates: list[str]
+) -> None:
     """Pad trend datasets with last value until current date."""
     for ds in datasets_dict.values():
         while len(ds["data"]) < len(unique_dates):
@@ -441,7 +449,7 @@ def _check_partnership_win(
 
 
 def get_partnership_stats(
-    playerA_id: str, playerB_id: str, all_matches_in_group: list['DocumentSnapshot']
+    playerA_id: str, playerB_id: str, all_matches_in_group: list[DocumentSnapshot]
 ) -> dict[str, int]:
     """Calculates the win/loss record for two players when they are partners."""
     wins = losses = 0
@@ -482,7 +490,10 @@ def _update_h2h_stats(
 
 
 def _process_h2h_match(
-    match_doc: 'DocumentSnapshot', playerA_id: str, playerB_id: str, stats: dict[str, object]
+    match_doc: DocumentSnapshot,
+    playerA_id: str,
+    playerB_id: str,
+    stats: dict[str, object],
 ) -> None:
     """Process a single match for head-to-head statistics."""
     data = match_doc.to_dict()
@@ -573,7 +584,9 @@ def _update_all_time_streak(
     return current, longest
 
 
-def _calculate_all_time_streaks(matches: list['DocumentSnapshot'], user_ref: 'DocumentReference') -> tuple[int, int]:
+def _calculate_all_time_streaks(
+    matches: list[DocumentSnapshot], user_ref: DocumentReference
+) -> tuple[int, int]:
     """Calculate current and longest winning streaks for a user."""
     matches.sort(key=lambda x: x.to_dict().get("matchDate") or datetime.min)
     current = longest = 0
@@ -641,7 +654,9 @@ def send_invite_email_background(
     executor.run_async(_perform_invite_email_task, invite_token, email_data)
 
 
-def _add_friend_pair(batch: 'WriteBatch', member_ref: 'DocumentReference', new_member_ref: 'DocumentReference') -> int:
+def _add_friend_pair(
+    batch: WriteBatch, member_ref: DocumentReference, new_member_ref: DocumentReference
+) -> int:
     """Add a bidirectional friendship between two members in a Firestore batch."""
     new_member_friend_ref = new_member_ref.collection("friends").document(member_ref.id)
     existing_member_friend_ref = member_ref.collection("friends").document(
@@ -659,7 +674,7 @@ def _add_friend_pair(batch: 'WriteBatch', member_ref: 'DocumentReference', new_m
     return 2
 
 
-def _get_group_member_refs(db: 'Client', group_id: str) -> list['DocumentSnapshot']:
+def _get_group_member_refs(db: Client, group_id: str) -> list[DocumentSnapshot]:
     """Retrieve member references for a group."""
     group_ref = db.collection("groups").document(group_id)
     group_doc = group_ref.get()
@@ -668,13 +683,15 @@ def _get_group_member_refs(db: 'Client', group_id: str) -> list['DocumentSnapsho
     return group_doc.to_dict().get("members", [])
 
 
-def _commit_batch(db: 'Client', batch: 'WriteBatch') -> 'Response' | str | dict[str, object]:
+def _commit_batch(db: Client, batch: WriteBatch) -> Response | str | dict[str, object]:
     """Commit current batch and return a new one."""
     batch.commit()
     return db.batch()
 
 
-def _process_friend_ref(batch: 'WriteBatch', member_ref: 'DocumentReference', new_member_ref: 'DocumentReference') -> int:
+def _process_friend_ref(
+    batch: WriteBatch, member_ref: DocumentReference, new_member_ref: DocumentReference
+) -> int:
     """Helper to process a single friend ref and return number of operations."""
     if member_ref.id == new_member_ref.id:
         return 0
@@ -682,8 +699,12 @@ def _process_friend_ref(batch: 'WriteBatch', member_ref: 'DocumentReference', ne
 
 
 def _batch_step(
-    db: 'Client', batch: 'WriteBatch', count: int, ref: 'DocumentReference', new_ref: 'DocumentReference'
-) -> tuple['WriteBatch', int]:
+    db: Client,
+    batch: WriteBatch,
+    count: int,
+    ref: DocumentReference,
+    new_ref: DocumentReference,
+) -> tuple[WriteBatch, int]:
     """Single step in friendship batch processing."""
     count += _process_friend_ref(batch, ref, new_ref)
     if count >= FIRESTORE_BATCH_LIMIT:
@@ -692,7 +713,7 @@ def _batch_step(
 
 
 def _process_friendship_batch(
-    db: 'Client', member_refs: list['DocumentSnapshot'], new_member_ref: 'DocumentReference'
+    db: Client, member_refs: list[DocumentSnapshot], new_member_ref: DocumentReference
 ) -> None:
     """Process friendship additions in batches."""
     batch, count = db.batch(), 0
@@ -702,7 +723,9 @@ def _process_friendship_batch(
         batch.commit()
 
 
-def friend_group_members(db: 'Client', group_id: str, new_member_ref: 'DocumentReference') -> None:
+def friend_group_members(
+    db: Client, group_id: str, new_member_ref: DocumentReference
+) -> None:
     """Automatically create friend relationships between group members."""
     member_refs = _get_group_member_refs(db, group_id)
     if member_refs:

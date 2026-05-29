@@ -59,9 +59,9 @@ class TeamService:
                 new_wins = e_stats.get("wins", 0) + t_stats.get("wins", 0)
                 new_losses = e_stats.get("losses", 0) + t_stats.get("losses", 0)
 
-                existing_ref = db.collection(
-                    TeamRepository.COLLECTION_NAME
-                ).document(existing_team["id"])
+                existing_ref = db.collection(TeamRepository.COLLECTION_NAME).document(
+                    existing_team["id"]
+                )
                 batch.update(
                     existing_ref,
                     {"stats.wins": new_wins, "stats.losses": new_losses},
@@ -69,9 +69,9 @@ class TeamService:
 
                 # Update matches to point to the existing team
                 # This will be handled by match migration, but mark team for deletion
-                team_ref = db.collection(
-                    TeamRepository.COLLECTION_NAME
-                ).document(team_data["id"])
+                team_ref = db.collection(TeamRepository.COLLECTION_NAME).document(
+                    team_data["id"]
+                )
                 batch.delete(team_ref)
             else:
                 # No existing team, just update the current team's members
@@ -81,9 +81,9 @@ class TeamService:
                     for m in team_data.get("members", [])
                 ]
 
-                team_ref = db.collection(
-                    TeamRepository.COLLECTION_NAME
-                ).document(team_data["id"])
+                team_ref = db.collection(TeamRepository.COLLECTION_NAME).document(
+                    team_data["id"]
+                )
                 batch.update(
                     team_ref,
                     {"member_ids": new_member_ids, "members": new_members},
