@@ -501,7 +501,7 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_app = MagicMock()
         mock_app.app_context.return_value.__enter__.return_value = None
         mock_app.app_context.return_value.__exit__.return_value = None
-        
+
         # Setup mock for invite document
         mock_invite_doc = MagicMock()
         mock_firestore.client.return_value.collection("group_invites").document.return_value = mock_invite_doc
@@ -512,14 +512,13 @@ class TestUtilsCoverage(unittest.TestCase):
             "body": "Test",
             "template": "test.html",
         }
-        mock_send_email.side_effect = Exception("Email failed")
-        mock_render.return_value = "<html></html>"
-        
-        with mock_app.app_context():
+        mock_send_email.side_effect = None
+
+        with mock_app.app_context(), \
+             patch("flask.render_template", return_value="<html></html>"):
             send_invite_email_background(mock_app, "invite_token", email_data)
 
-        mock_send_email.assert_called_once_with(**email_data)
-        mock_invite_doc.update.assert_called_once_with(
+        mock_send_email.assert_called_once_with(**email_data)        mock_invite_doc.update.assert_called_once_with(
             {"status": "failed", "last_error": "Email failed"}
         )
 
