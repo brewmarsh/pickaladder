@@ -230,7 +230,9 @@ def _register_template_utilities(app: Flask) -> None:
     app.template_filter("display_name")(smart_display_name)
 
     @app.template_filter("avatar_url")
-    def avatar_url_filter(user: dict[str, Any] | UserSession | None) -> str:
+    def avatar_url_filter(
+        user: dict[str, Any] | UserSession | None, _external: bool = False
+    ) -> str:
         """Return the avatar URL for a user."""
         if not user:
             return ""

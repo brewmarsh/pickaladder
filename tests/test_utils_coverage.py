@@ -447,7 +447,7 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_batch.commit.assert_called_once()
 
     @patch("pickaladder.group.utils.threading.Thread")
-    @patch("pickaladder.group.utils.send_email")
+    @patch("pickaladder.services.mail_service.send_email")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_success(
         self,
@@ -480,7 +480,7 @@ class TestUtilsCoverage(unittest.TestCase):
         )
 
     @patch("pickaladder.group.utils.threading.Thread")
-    @patch("pickaladder.group.utils.send_email")
+    @patch("pickaladder.services.mail_service.send_email")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_failure(
         self,
