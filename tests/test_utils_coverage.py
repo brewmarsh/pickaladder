@@ -480,7 +480,7 @@ class TestUtilsCoverage(unittest.TestCase):
         }
 
         # Patch render_template locally for this test
-        with patch("pickaladder.group.utils.render_template", return_value="<html></html>"):
+        with patch("flask.render_template", return_value="<html></html>"):
             send_invite_email_background(mock_app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
@@ -513,7 +513,7 @@ class TestUtilsCoverage(unittest.TestCase):
         }
         mock_send_email.side_effect = Exception("Email failed")
         
-        with patch("pickaladder.group.utils.render_template", return_value="<html></html>"):
+        with patch("flask.render_template", return_value="<html></html>"):
             send_invite_email_background(mock_app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
