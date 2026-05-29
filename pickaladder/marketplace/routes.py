@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-from flask import render_template
-from . import bp
-
-@bp.route("/", methods=["GET"])
-def index():
-    return render_template("marketplace/index.html")
-=======
 """Routes for the marketplace blueprint."""
 
 from __future__ import annotations
@@ -93,4 +85,3 @@ def join_division(season_id: str, division_index: int) -> Response:
     else:
         flash("This division is invite-only.", "warning")
         return redirect(url_for("marketplace.view_marketplace"))
->>>>>>> 395736a075685dfc196237a25821dffdb0346839
