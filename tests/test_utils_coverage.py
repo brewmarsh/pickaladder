@@ -455,22 +455,24 @@ class TestUtilsCoverage(unittest.TestCase):
         assert mock_batch.set.call_count == 4
         mock_batch.commit.assert_called_once()
 
-    @patch("pickaladder.services.mail_service.MailService.send_email")
+    @pytest.fixture
+    def app(self):
+        from pickaladder import create_app
+        return create_app({"TESTING": True})
+
     @patch("pickaladder.extensions.executor")
+    @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_success(
         self,
         mock_firestore: MagicMock,
-        mock_executor: MagicMock,
         mock_send_email: MagicMock,
+        mock_executor: MagicMock,
+        app: Any,
     ) -> None:
         def run_sync(func, *args, **kwargs):
             return func(*args, **kwargs)
         mock_executor.run_async.side_effect = run_sync
-
-        mock_app = MagicMock()
-        mock_app.app_context.return_value.__enter__.return_value = None
-        mock_app.app_context.return_value.__exit__.return_value = None
 
         email_data = {
             "to": "test@example.com",
@@ -478,30 +480,27 @@ class TestUtilsCoverage(unittest.TestCase):
             "body": "Test",
             "template": "test.html",
         }
-        mock_render.return_value = "<html></html>"
 
-        with mock_app.app_context():
-            send_invite_email_background(mock_app, "invite_token", email_data)
+        with app.app_context(), \
+             patch("flask.render_template", return_value="<html></html>"):
+            send_invite_email_background(app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
         
-    @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.extensions.executor")
+    @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.group.utils.firestore")
-    def test_send_invite_email_background_success(
+    def test_send_invite_email_background_failure(
         self,
         mock_firestore: MagicMock,
-        mock_executor: MagicMock,
         mock_send_email: MagicMock,
+        mock_executor: MagicMock,
+        app: Any,
     ) -> None:
         def run_sync(func, *args, **kwargs):
             return func(*args, **kwargs)
         mock_executor.run_async.side_effect = run_sync
-
-        mock_app = MagicMock()
-        mock_app.app_context.return_value.__enter__.return_value = None
-        mock_app.app_context.return_value.__exit__.return_value = None
-
+        
         # Setup mock for invite document
         mock_invite_doc = MagicMock()
         mock_firestore.client.return_value.collection("group_invites").document.return_value = mock_invite_doc
@@ -512,13 +511,14 @@ class TestUtilsCoverage(unittest.TestCase):
             "body": "Test",
             "template": "test.html",
         }
-        mock_send_email.side_effect = None
-
-        with mock_app.app_context(), \
+        mock_send_email.side_effect = Exception("Email failed")
+        
+        with app.app_context(), \
              patch("flask.render_template", return_value="<html></html>"):
-            send_invite_email_background(mock_app, "invite_token", email_data)
+            send_invite_email_background(app, "invite_token", email_data)
 
-        mock_send_email.assert_called_once_with(**email_data)        mock_invite_doc.update.assert_called_once_with(
+        mock_send_email.assert_called_once_with(**email_data)
+        mock_invite_doc.update.assert_called_once_with(
             {"status": "failed", "last_error": "Email failed"}
         )
 
