@@ -5,7 +5,7 @@ from typing import Any, TypeVar
 from google.cloud.firestore_v1.base_document import DocumentSnapshot
 from google.cloud.firestore_v1.query import Query
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class FirestorePaginator:
@@ -49,7 +49,7 @@ class FirestorePaginator:
 
             try:
                 # Try to get collection from query
-                collection = getattr(query, '_parent', getattr(query, 'parent', None))
+                collection = getattr(query, "_parent", getattr(query, "parent", None))
                 if collection:
                     cursor_doc = collection.document(cursor_id).get()
                     if cursor_doc.exists:
