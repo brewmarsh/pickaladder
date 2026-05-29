@@ -4,6 +4,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
+import pytest
 from pickaladder.group.utils import (
     friend_group_members,
     get_group_leaderboard,
