@@ -123,7 +123,7 @@ class WelcomeToastTestCase(unittest.TestCase):
 
         mock_get_invites.assert_not_called()
 
-    @patch("pickaladder.auth.routes.send_email")
+    @patch("pickaladder.services.mail_service.MailService.send_email")
     @patch("pickaladder.auth.routes.UserService.get_pending_tournament_invites")
     def test_welcome_toast_triggered_on_register(
         self,
