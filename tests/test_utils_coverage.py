@@ -460,14 +460,8 @@ class TestUtilsCoverage(unittest.TestCase):
         email_data = {"to": "test@example.com", "subject": "Test", "body": "Test"}
 
         # Make the thread run synchronously
-        thread = MagicMock()
-
-        def run_thread_success() -> None:
-            mock_thread.call_args[1]["target"]()
-
-        thread.start.side_effect = run_thread_success
-        mock_thread.return_value = thread
-
+        mock_send_email.side_effect = None
+        
         send_invite_email_background(mock_app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
@@ -492,14 +486,7 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_send_email.side_effect = Exception("Email failed")
 
         # Make the thread run synchronously
-        thread = MagicMock()
-
-        def run_thread_failure() -> None:
-            mock_thread.call_args[1]["target"]()
-
-        thread.start.side_effect = run_thread_failure
-        mock_thread.return_value = thread
-
+        
         send_invite_email_background(mock_app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
