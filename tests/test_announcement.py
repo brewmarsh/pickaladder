@@ -71,15 +71,19 @@ class AnnouncementTestCase(unittest.TestCase):
         mock_db = self.mock_firestore_service.client.return_value
         mock_settings_doc = mock_db.collection("system").document("settings")
 
-        response = self.client.post(
-            "/admin/announcement",
-            data={
-                "announcement_text": "Test Announcement",
-                "is_active": "on",
-                "level": "warning",
-            },
-            follow_redirects=True,
-        )
+        # Ensure log_action doesn't throw, which bypasses the cache.delete
+        with patch("pickaladder.admin.routes.AdminService.log_action"), \
+             patch("pickaladder.admin.routes.cache.delete") as mock_cache_delete:
+            response = self.client.post(
+                "/admin/announcement",
+                data={
+                    "announcement_text": "Test Announcement",
+                    "is_active": "on",
+                    "level": "warning",
+                },
+                follow_redirects=True,
+            )
+            mock_cache_delete.assert_called_once_with("global_announcement")
 
         assert response.status_code == 200
         assert b"Global announcement updated successfully." in response.data

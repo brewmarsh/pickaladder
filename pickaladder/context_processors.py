@@ -10,6 +10,7 @@ from typing import Any
 from firebase_admin import firestore
 from flask import current_app, g
 
+from .extensions import cache
 from .user import UserService
 
 VERSION_THRESHOLD = 10
@@ -59,6 +60,11 @@ def _get_app_version() -> str:
     return version
 
 
+# ⚡ Bolt Optimization:
+# Caching the global announcement saves a Firestore read on every single page load.
+# This significantly reduces database operations and latency across the app.
+# The cache is actively invalidated in `pickaladder/admin/routes.py` when updated.
+@cache.cached(timeout=300, key_prefix="global_announcement")
 def _get_global_announcement() -> dict[str, Any] | None:
     """Fetch global announcement from Firestore."""
     try:
