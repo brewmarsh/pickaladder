@@ -25,6 +25,7 @@ from pickaladder.constants.messages import (
     AUTH_MESSAGES,
     COMMON_MESSAGES,
 )
+from pickaladder.extensions import cache
 from pickaladder.match.models import MatchSubmission
 from pickaladder.match.services import MatchService
 from pickaladder.services.feedback_service import FeedbackService
@@ -154,6 +155,7 @@ def announcement() -> Response:
             "update_announcement",
             {"text": announcement_text, "active": is_active, "level": level},
         )
+        cache.delete("global_announcement")
         flash(ADMIN_MESSAGES["ANNOUNCEMENT_UPDATED"], "success")
     except Exception as e:
         flash(ADMIN_MESSAGES["ANNOUNCEMENT_ERROR"].format(error=e), "danger")
