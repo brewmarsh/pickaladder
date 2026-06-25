@@ -8,7 +8,7 @@
         <div class="col-md-8 d-flex flex-column" style="max-height: 80vh;">
             <div class="card bg-dark text-white border-0 shadow-sm flex-grow-1 overflow-hidden">
                 <div class="card-header border-bottom border-secondary bg-transparent d-flex align-items-center gap-3">
-                    <a href="{{ url_for('messaging.inbox') }}" class="text-white"><i class="fas fa-arrow-left"></i></a>
+                    <a href="{{ url_for('messaging.inbox') }}" class="text-white" aria-label="Back to inbox" title="Back to inbox"><i class="fas fa-arrow-left"></i></a>
                     <h2 class="mb-0 h5">
                         Chat
                         {% if conversation.type == 'group_announcement' %}
@@ -50,8 +50,8 @@
                         <form action="{{ url_for('messaging.send', conversation_id=conversation.id) }}" method="POST" class="d-flex gap-2">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="text" name="content" class="form-control bg-dark border-secondary text-white" 
-                                   placeholder="Type a message..." required autocomplete="off">
-                            <button type="submit" class="btn btn-volt">
+                                   placeholder="Type a message..." required autocomplete="off" aria-label="Message content">
+                            <button type="submit" class="btn btn-volt" aria-label="Send message" title="Send message">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </form>
