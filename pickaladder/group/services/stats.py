@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from google.cloud.firestore import DocumentReference, DocumentSnapshot
 
 from firebase_admin import firestore
 from google.cloud.firestore import FieldFilter

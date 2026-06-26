@@ -27,7 +27,8 @@ def test_issue_challenge_success(
     mock_db: MagicMock,
 ) -> None:
     """Test successful issuance of a challenge."""
-    mock_db.collection.return_value.where.return_value.where.return_value.get.return_value = []
+    coll = mock_db.collection.return_value
+    coll.where.return_value.where.return_value.get.return_value = []
 
     mock_doc_ref = MagicMock()
     mock_doc_ref.id = "challenge_123"

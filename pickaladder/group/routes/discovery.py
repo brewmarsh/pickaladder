@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from firebase_admin import firestore
-from flask import g, render_template, request, session
+from flask import Response, g, render_template, request, session
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.group import bp

@@ -7,6 +7,7 @@ from typing import Any, cast
 
 from firebase_admin import auth, firestore
 from flask import (
+    Response,
     current_app,
     flash,
     g,

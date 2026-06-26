@@ -6,7 +6,6 @@ __version__ = "0.10.0"
 
 import json
 import os
-import sys
 import uuid
 from contextlib import suppress
 from pathlib import Path
@@ -76,11 +75,13 @@ def _configure_mail_logging(app: Flask) -> None:
             app.logger.debug(f"Mail Config - Password Length: {len(pwd)}")
             if len(pwd) == APP_PASSWORD_LENGTH:
                 app.logger.debug(
-                    f"Password length matches standard App Password length ({APP_PASSWORD_LENGTH}).",
+                    "Password length matches standard App Password length "
+                    f"({APP_PASSWORD_LENGTH}).",
                 )
             else:
                 app.logger.debug(
-                    f"Password length DOES NOT match standard App Password length ({APP_PASSWORD_LENGTH}). Possible regular password used?",
+                    "Password length DOES NOT match standard App Password length "
+                    f"({APP_PASSWORD_LENGTH}). Possible regular password used?",
                 )
         else:
             app.logger.debug("Mail Config - No Password set!")

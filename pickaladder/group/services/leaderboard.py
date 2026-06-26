@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import operator
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from google.cloud.firestore import (
+        Client,
+        DocumentReference,
+        DocumentSnapshot,
+    )
 
 from firebase_admin import firestore
 from google.cloud.firestore import FieldFilter
@@ -258,8 +265,8 @@ def get_group_leaderboard(
         member_refs = group_data.get("members", [])
     else:
         # If member_docs are provided, they could be snapshots or dicts.
-        # _initialize_stats handles snapshots. If they are dicts, we might need refs.
-        # For leaderboard calculation, we primarily need the snapshots for _initialize_stats.
+        # _initialize_stats handles snapshots.
+        # For leaderboard calculation, we primarily need snapshots.
         member_refs = member_docs
 
     if not member_refs:

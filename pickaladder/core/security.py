@@ -40,7 +40,8 @@ def rate_limit(limit: int = 5, window: int = 60) -> Callable:
 
             if len(_rate_limit_storage[key]) >= limit:
                 current_app.logger.warning(
-                    f"Rate limit exceeded for {request.remote_addr} on {request.endpoint}",
+                    f"Rate limit exceeded for {request.remote_addr} "
+                    f"on {request.endpoint}",
                 )
                 abort(429, description="Too many requests. Please try again later.")
 

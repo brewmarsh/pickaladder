@@ -22,7 +22,7 @@ def test_rr_odd() -> None:
     ids = ["p1", "p2", "p3", "p4", "p5"]
     pairs = TournamentGenerator._get_RR_pair_ids(ids)
 
-    # 5 participants -> 6 slots (one is None) -> 5 rounds, 3 matches per round = 15 slots total
+    # 5 participants -> 6 slots (one is None) -> 5 rounds, 3 matches/round = 15 slots
     assert len(pairs) == 15
 
     # Real matches (no None)

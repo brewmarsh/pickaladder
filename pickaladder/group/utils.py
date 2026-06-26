@@ -10,7 +10,14 @@ from typing import TYPE_CHECKING, Any
 from firebase_admin import firestore
 
 if TYPE_CHECKING:
-    from flask import Flask
+    from google.cloud.firestore import (
+        Client,
+        DocumentReference,
+        DocumentSnapshot,
+        WriteBatch,
+    )
+
+from flask import Response
 from google.cloud.firestore import FieldFilter
 
 from pickaladder.core.constants import (
@@ -29,7 +36,9 @@ def get_random_joke() -> str:
     return secrets.choice(JOKES)
 
 
-def _initialize_stats(players: list[DocumentSnapshot]) -> dict[str, dict[str, object]]:
+def _initialize_stats(
+    players: list[DocumentSnapshot],
+) -> dict[str, dict[str, object]]:
     """Initialize the stats dictionary for each player."""
     return {
         ref.id: {
@@ -696,7 +705,7 @@ def _perform_invite_email_task(invite_token: str, email_data: dict[str, Any]) ->
 
 
 def send_invite_email_background(
-    app: Flask,
+    app: Any,
     invite_token: str,
     email_data: dict[str, Any],
 ) -> None:

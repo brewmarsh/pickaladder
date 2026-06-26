@@ -6,4 +6,4 @@ from flask import Blueprint
 
 bp = Blueprint("messaging", __name__, url_prefix="/messages")
 
-from . import routes as routes
+from . import routes as routes  # noqa: E402

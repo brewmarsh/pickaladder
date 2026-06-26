@@ -4,7 +4,6 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
-import pytest
 from pickaladder.group.utils import (
     friend_group_members,
     get_group_leaderboard,
@@ -502,7 +501,8 @@ class TestUtilsCoverage(unittest.TestCase):
         
         # Setup mock for invite document
         mock_invite_doc = MagicMock()
-        mock_firestore.client.return_value.collection("group_invites").document.return_value = mock_invite_doc
+        coll = mock_firestore.client.return_value.collection("group_invites")
+        coll.document.return_value = mock_invite_doc
 
         from pickaladder import create_app
         app = create_app({"TESTING": True})

@@ -200,7 +200,7 @@ def finalize_season(season_id: str) -> Response | str:
             action = request.form.get("action", "finalize_only")
             if action == "start_next":
                 # For now, we redirect to create page.
-                # In a more advanced version, we'd pass the suggested participants via session or URL.
+                # In more advanced version, pass participants via session or URL.
                 flash("Season finalized! Create the next one below.", "success")
                 return redirect(url_for(".create_season", group_id=group_id))
 

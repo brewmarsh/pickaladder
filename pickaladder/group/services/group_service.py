@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import logging
 import secrets
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from google.cloud.firestore import (
+        Client,
+        DocumentReference,
+        DocumentSnapshot,
+    )
 
 from firebase_admin import firestore, storage
 from flask import current_app, url_for
@@ -668,7 +675,7 @@ class GroupService:
 
     @staticmethod
     def send_invite_email_background(
-        app: Flask,
+        app: Any,
         token: str,
         email_data: dict[str, object],
     ) -> None:
