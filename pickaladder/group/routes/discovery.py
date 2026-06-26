@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+from typing import Any
+
 """Discovery routes for the group blueprint."""
 
-from __future__ import annotations
 
 from firebase_admin import firestore
 from flask import Response, g, render_template, request, session
@@ -12,7 +15,7 @@ from pickaladder.group.services.group_service import GroupService
 
 @bp.route("/", methods=["GET"])
 @login_required
-def view_groups() -> Response | str | dict[str, object]:
+def view_groups() -> Response | str | dict[str, Any]:
     """Display the user's groups."""
     db = firestore.client()
     enriched_my_groups = GroupService.get_user_groups(db, g.user.uid)

@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+from typing import Any
+
 """Stats routes for the group blueprint."""
 
-from __future__ import annotations
 
 from firebase_admin import firestore
 from flask import Response, flash, g, redirect, render_template, request, url_for
@@ -15,7 +18,7 @@ from pickaladder.group.utils import get_user_group_stats
 
 @bp.route("/<string:group_id>/leaderboard-trend")
 @login_required
-def view_leaderboard_trend(group_id: str) -> Response | str | dict[str, object]:
+def view_leaderboard_trend(group_id: str) -> Response | str | dict[str, Any]:
     """Display a trend chart of the group's leaderboard."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
@@ -40,7 +43,7 @@ def view_leaderboard_trend(group_id: str) -> Response | str | dict[str, object]:
 
 @bp.route("/<string:group_id>/stats/rivalry", methods=["GET"])
 @login_required
-def get_rivalry_stats(group_id: str) -> Response | str | dict[str, object]:
+def get_rivalry_stats(group_id: str) -> Response | str | dict[str, Any]:
     """Return head-to-head stats for two players in a group."""
     playerA_id = request.args.get("playerA_id")
     playerB_id = request.args.get("playerB_id")
@@ -65,7 +68,7 @@ def get_rivalry_stats(group_id: str) -> Response | str | dict[str, object]:
 def get_user_group_trend(
     group_id: str,
     user_id: str,
-) -> Response | str | dict[str, object]:
+) -> Response | str | dict[str, Any]:
     """Return trend data for a specific user in a group."""
     trend_data = get_leaderboard_trend_data(group_id)
 

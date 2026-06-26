@@ -72,8 +72,10 @@ class AnnouncementTestCase(unittest.TestCase):
         mock_settings_doc = mock_db.collection("system").document("settings")
 
         # Ensure log_action doesn't throw, which bypasses the cache.delete
-        with patch("pickaladder.admin.routes.AdminService.log_action"), \
-             patch("pickaladder.admin.routes.cache.delete") as mock_cache_delete:
+        with (
+            patch("pickaladder.admin.routes.AdminService.log_action"),
+            patch("pickaladder.admin.routes.cache.delete") as mock_cache_delete,
+        ):
             response = self.client.post(
                 "/admin/announcement",
                 data={

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from firebase_admin import firestore
 
@@ -20,7 +20,7 @@ class MembershipRequestRepository(BaseRepository):
         cls,
         db: Client,
         group_id: str,
-    ) -> list[dict[str, object]]:
+    ) -> list[dict[str, Any]]:
         """Fetch all pending requests for a specific group."""
         query = (
             db.collection(cls.COLLECTION_NAME)
@@ -39,7 +39,7 @@ class MembershipRequestRepository(BaseRepository):
         db: Client,
         group_id: str,
         user_id: str,
-    ) -> dict[str, object] | None:
+    ) -> dict[str, Any] | None:
         """Fetch a specific user's request for a group."""
         query = (
             db.collection(cls.COLLECTION_NAME)

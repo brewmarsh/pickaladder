@@ -27,7 +27,7 @@ from pickaladder.user.helpers import smart_display_name
 
 def _initialize_stats(
     players: list[DocumentSnapshot] | Any,
-) -> dict[str, dict[str, object]]:
+) -> dict[str, dict[str, Any]]:
     """Initialize the stats dictionary for each player using batch fetch."""
     # Handle generators or other iterables
     player_list = list(players) if players else []
@@ -59,7 +59,7 @@ def _initialize_stats(
 
 
 def _update_player_stats(
-    stats: dict[str, dict[str, object]],
+    stats: dict[str, dict[str, Any]],
     player_id: str,
     score: int,
     won: bool,
@@ -79,7 +79,7 @@ def _update_player_stats(
 
 
 def _process_single_match(
-    stats: dict[str, dict[str, object]],
+    stats: dict[str, dict[str, Any]],
     match: DocumentSnapshot,
 ) -> None:
     """Update raw stats and records match outcomes for players in a single match."""
@@ -97,7 +97,7 @@ def _process_single_match(
         _update_player_stats(stats, uid, p2_score, p2_wins, is_draw)
 
 
-def _calculate_derived_stats(stats: dict[str, dict[str, object]]) -> None:
+def _calculate_derived_stats(stats: dict[str, dict[str, Any]]) -> None:
     """Calculate 'Win Rate %', 'Average Score', and 'Form' (last 5 games)."""
     for s in stats.values():
         games = s["games"]
@@ -106,7 +106,7 @@ def _calculate_derived_stats(stats: dict[str, dict[str, object]]) -> None:
         s["form"] = s["match_results"][:RECENT_MATCHES_LIMIT]
 
 
-def _sort_leaderboard(stats: dict[str, dict[str, object]]) -> list[dict[str, object]]:
+def _sort_leaderboard(stats: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     """Enrich stats with user data, format into a list, and sort by ELO."""
     leaderboard = []
     for user_id, s in stats.items():
@@ -153,7 +153,7 @@ def _sort_leaderboard(stats: dict[str, dict[str, object]]) -> list[dict[str, obj
 def _calculate_leaderboard_from_matches(
     matches: list[DocumentSnapshot],
     players: list[DocumentSnapshot],
-) -> list[dict[str, object]]:
+) -> list[dict[str, Any]]:
     """Calculate the leaderboard from a list of matches using a pipeline of helpers."""
     matches.sort(
         key=lambda m: m.to_dict().get("matchDate") or datetime.min,
@@ -169,8 +169,8 @@ def _calculate_leaderboard_from_matches(
 
 
 def _calculate_rank_changes(
-    current_leaderboard: list[dict[str, object]],
-    previous_leaderboard: list[dict[str, object]],
+    current_leaderboard: list[dict[str, Any]],
+    previous_leaderboard: list[dict[str, Any]],
 ) -> None:
     """Calculate rank changes between current and previous leaderboard."""
     last_week_ranks = {
@@ -189,9 +189,9 @@ def _calculate_rank_changes(
 def _map_matches_to_users(
     matches: list[DocumentSnapshot],
     member_refs: list[DocumentSnapshot],
-) -> dict[str, list[dict[str, object]]]:
+) -> dict[str, list[dict[str, Any]]]:
     """Map matches to each user for efficient lookup."""
-    user_matches_map: dict[str, list[dict[str, object]]] = {
+    user_matches_map: dict[str, list[dict[str, Any]]] = {
         ref.id: [] for ref in member_refs
     }
     for match in matches:
@@ -203,7 +203,7 @@ def _map_matches_to_users(
     return user_matches_map
 
 
-def _is_match_won(user_id: str, data: dict[str, object]) -> bool:
+def _is_match_won(user_id: str, data: dict[str, Any]) -> bool:
     """Determine if a player won a specific match."""
     p1_score, p2_score = _get_match_scores(data)
     team1_ids, team2_ids = _extract_team_ids(data)
@@ -216,7 +216,7 @@ def _is_match_won(user_id: str, data: dict[str, object]) -> bool:
 
 def _calculate_player_winning_streak(
     user_id: str,
-    matches_data: list[dict[str, object]],
+    matches_data: list[dict[str, Any]],
 ) -> int:
     """Calculate the current winning streak for a single player."""
     streak = 0
@@ -233,7 +233,7 @@ def _calculate_player_winning_streak(
 
 
 def _calculate_winning_streaks(
-    leaderboard: list[dict[str, object]],
+    leaderboard: list[dict[str, Any]],
     matches: list[DocumentSnapshot],
     member_refs: list[DocumentSnapshot],
 ) -> None:
@@ -252,7 +252,7 @@ def get_group_leaderboard(
     group_id: str,
     member_docs: list[DocumentSnapshot] | None = None,
     all_matches: list[DocumentSnapshot] | None = None,
-) -> list[dict[str, object]]:
+) -> list[dict[str, Any]]:
     """Calculate the leaderboard for a specific group using Firestore."""
     db = firestore.client()
 
@@ -305,7 +305,7 @@ def get_group_leaderboard(
     return current_leaderboard
 
 
-def _collect_match_player_refs(data: dict[str, object], all_player_refs: set) -> None:
+def _collect_match_player_refs(data: dict[str, Any], all_player_refs: set) -> None:
     """Collect player references from a single match data dictionary."""
     if data.get("matchType", "singles") == "doubles":
         all_player_refs.update(data.get("team1", []))
@@ -320,7 +320,7 @@ def _collect_match_player_refs(data: dict[str, object], all_player_refs: set) ->
 def _get_involved_player_data(
     db: Client,
     matches: list[DocumentSnapshot],
-) -> dict[str, dict[str, object]]:
+) -> dict[str, dict[str, Any]]:
     """Get profile data for all players involved in matches."""
     all_player_refs: set[DocumentReference] = set()
     for match in matches:
@@ -339,8 +339,8 @@ def _get_involved_player_data(
 
 
 def _record_trend_averages(
-    player_stats: dict[str, object],
-    datasets: dict[str, object],
+    player_stats: dict[str, Any],
+    datasets: dict[str, Any],
 ) -> None:
     """Calculate and record current average scores for all players in trend datasets."""
     for pid, stats in player_stats.items():
@@ -350,9 +350,9 @@ def _record_trend_averages(
 
 def _calculate_trend_points(
     matches: list[DocumentSnapshot],
-    players_data: dict[str, object],
+    players_data: dict[str, Any],
     unique_dates: list[str],
-) -> dict[str, dict[str, object]]:
+) -> dict[str, dict[str, Any]]:
     """Calculate average score trend points for each player."""
     player_stats = {pid: {"total_score": 0, "games": 0} for pid in players_data}
     datasets = {
@@ -392,8 +392,8 @@ def _calculate_trend_points(
 
 
 def _update_trend_player_stats(
-    player_stats: dict[str, object],
-    match_data: dict[str, object],
+    player_stats: dict[str, Any],
+    match_data: dict[str, Any],
 ) -> None:
     """Update running totals for trend calculation from a single match."""
     p1_score, p2_score = _get_match_scores(match_data)
@@ -409,7 +409,7 @@ def _update_trend_player_stats(
             player_stats[uid]["games"] += 1
 
 
-def get_leaderboard_trend_data(group_id: str) -> dict[str, object]:
+def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
     """Generate data for a leaderboard trend chart."""
     db = firestore.client()
     matches_query = db.collection("matches").where(

@@ -1,6 +1,6 @@
-"""Service module for parsing match data."""
-
 from __future__ import annotations
+
+from typing import Any
 
 
 def _extract_id(val: object) -> str | None:
@@ -15,7 +15,7 @@ def _extract_id(val: object) -> str | None:
 
 
 def _resolve_team_ids(
-    data: dict[str, object],
+    data: dict[str, Any],
     team_key: str,
     player_prefix: str,
     partner_prefix: str,
@@ -35,7 +35,7 @@ def _resolve_team_ids(
     return team_ids
 
 
-def _resolve_from_team_key(data: dict[str, object], team_key: str) -> set[str]:
+def _resolve_from_team_key(data: dict[str, Any], team_key: str) -> set[str]:
     """Resolve IDs from the team_key field if it's a list."""
     team_ids = set()
     team_data = data.get(team_key)
@@ -47,7 +47,7 @@ def _resolve_from_team_key(data: dict[str, object], team_key: str) -> set[str]:
 
 
 def _resolve_from_individual_fields(
-    data: dict[str, object],
+    data: dict[str, Any],
     team_key: str,
     player_prefix: str,
     partner_prefix: str,
@@ -67,14 +67,14 @@ def _resolve_from_individual_fields(
     return team_ids
 
 
-def _extract_team_ids(data: dict[str, object]) -> tuple[set[str], set[str]]:
+def _extract_team_ids(data: dict[str, Any]) -> tuple[set[str], set[str]]:
     """Extract team member IDs, handling Refs, IDs, and legacy formats."""
     t1 = _resolve_team_ids(data, "team1", "player1", "partner")
     t2 = _resolve_team_ids(data, "team2", "player2", "opponent2")
     return t1, t2
 
 
-def _get_match_scores(data: dict[str, object]) -> tuple[int, int]:
+def _get_match_scores(data: dict[str, Any]) -> tuple[int, int]:
     """Get team 1 and team 2 scores, handling both singles and doubles fields."""
     p1_score = data.get("player1Score")
     if p1_score is None:
@@ -86,7 +86,7 @@ def _get_match_scores(data: dict[str, object]) -> tuple[int, int]:
 
 
 def _resolve_team_document_ids(
-    data: dict[str, object],
+    data: dict[str, Any],
 ) -> tuple[str | None, str | None]:
     """Extract Team document IDs if available."""
     t1_id = _extract_id(data.get("team1Ref")) or data.get("team1Id")

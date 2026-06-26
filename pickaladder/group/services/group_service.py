@@ -50,7 +50,7 @@ class GroupService:
     """Service class for group-related operations."""
 
     @staticmethod
-    def get_user_groups(db: Client, user_id: str) -> list[dict[str, object]]:
+    def get_user_groups(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch and enrich all groups the user belongs to."""
         my_groups = GroupRepository.get_user_groups(db, user_id)
 
@@ -65,7 +65,7 @@ class GroupService:
             owner_docs = db.get_all(unique_owner_refs)
             owners_data = {doc.id: doc.to_dict() for doc in owner_docs if doc.exists}
 
-        def enrich_group(group_data: dict[str, object]) -> dict[str, object]:
+        def enrich_group(group_data: dict[str, Any]) -> dict[str, Any]:
             group_id = group_data["id"]
             group_data["member_count"] = len(group_data.get("members", []))
 
@@ -95,7 +95,7 @@ class GroupService:
     def create_group(
         db: Client,
         user_id: str,
-        form_data: dict[str, object],
+        form_data: dict[str, Any],
         profile_picture: FileStorage | None = None,
     ) -> str:
         """Create a new group and return its ID."""
@@ -119,7 +119,7 @@ class GroupService:
         return group_id
 
     @staticmethod
-    def is_group_admin(group_data: dict[str, object], user_id: str) -> bool:
+    def is_group_admin(group_data: dict[str, Any], user_id: str) -> bool:
         """Check if a user is an admin of the group."""
         owner_ref = group_data.get("ownerRef")
         if owner_ref and owner_ref.id == user_id:
@@ -212,7 +212,7 @@ class GroupService:
         db: Client,
         group_id: str,
         user_id: str,
-        form_data: dict[str, object],
+        form_data: dict[str, Any],
         profile_picture: FileStorage | None = None,
     ) -> None:
         """Update an existing group's details."""
@@ -268,7 +268,7 @@ class GroupService:
         user_id: str,
         player_a_id: str | None = None,
         player_b_id: str | None = None,
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """Fetch all details for a group view."""
         group_data = GroupRepository.get_by_id(db, group_id)
         if not group_data:
@@ -382,7 +382,7 @@ class GroupService:
     def _fetch_recent_matches(
         db: Client,
         group_id: str,
-    ) -> tuple[list[DocumentSnapshot], list[dict[str, object]]]:
+    ) -> tuple[list[DocumentSnapshot], list[dict[str, Any]]]:
         """Fetch and enrich recent matches for a group."""
         matches_ref = db.collection("matches")
         matches_query = (
@@ -415,7 +415,7 @@ class GroupService:
 
     @staticmethod
     def _extract_single_match_refs(
-        data: dict[str, object],
+        data: dict[str, Any],
         team_refs: list[DocumentSnapshot],
         player_refs: list[DocumentSnapshot],
     ) -> None:
@@ -464,7 +464,7 @@ class GroupService:
     def _batch_fetch_entities(
         db: Client,
         refs: list[DocumentSnapshot],
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """Batch fetch multiple Firestore documents and return a map by ID."""
         if not refs:
             return {}
@@ -481,9 +481,9 @@ class GroupService:
     @staticmethod
     def _enrich_single_match(
         match_doc: DocumentSnapshot,
-        teams_map: dict[str, object],
-        players_map: dict[str, object],
-    ) -> dict[str, object]:
+        teams_map: dict[str, Any],
+        players_map: dict[str, Any],
+    ) -> dict[str, Any]:
         """Attach team and player data to a single match dictionary."""
         match_data = match_doc.to_dict()
         match_data["id"] = match_doc.id
@@ -525,7 +525,7 @@ class GroupService:
         return (loser_rating - winner_rating) >= UPSET_THRESHOLD
 
     @staticmethod
-    def _check_upset_condition(match_data: dict[str, object]) -> None:
+    def _check_upset_condition(match_data: dict[str, Any]) -> None:
         """Identify if a single match is a 'giant slayer' upset."""
         winner = match_data.get("winner")
         if winner not in ["team1", "team2"]:
@@ -541,7 +541,7 @@ class GroupService:
                 match_data["is_upset"] = True
 
     @staticmethod
-    def _calculate_giant_slayer_upsets(recent_matches: list[dict[str, object]]) -> None:
+    def _calculate_giant_slayer_upsets(recent_matches: list[dict[str, Any]]) -> None:
         """Identify 'giant slayer' upsets based on DUPR rating gaps."""
         for match_data in recent_matches:
             GroupService._check_upset_condition(match_data)
@@ -552,7 +552,7 @@ class GroupService:
         group_id: str,
         member_ids: set[str],
         recent_matches_docs: list[DocumentSnapshot],
-    ) -> tuple[list[dict[str, object]], dict[str, object] | None]:
+    ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
         """Calculate team leaderboard and best buds for a group."""
         team_stats = GroupService._calculate_team_stats(recent_matches_docs)
         if not team_stats:
@@ -589,8 +589,8 @@ class GroupService:
 
     @staticmethod
     def _process_team_match_outcome(
-        data: dict[str, object],
-        stats: dict[str, object],
+        data: dict[str, Any],
+        stats: dict[str, Any],
     ) -> None:
         """Update wins/losses for teams based on a single match outcome."""
         t1_id, t2_id = _resolve_team_document_ids(data)
@@ -615,9 +615,9 @@ class GroupService:
     @staticmethod
     def _calculate_team_stats(
         recent_matches_docs: list[DocumentSnapshot],
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """Aggregate wins/losses per team from match history."""
-        stats: dict[str, object] = {}
+        stats: dict[str, Any] = {}
         for doc in recent_matches_docs:
             data = doc.to_dict()
             if data.get("matchType") == "doubles":
@@ -626,8 +626,8 @@ class GroupService:
 
     @staticmethod
     def _extract_best_buds(
-        team_leaderboard: list[dict[str, object]],
-    ) -> dict[str, object] | None:
+        team_leaderboard: list[dict[str, Any]],
+    ) -> dict[str, Any] | None:
         """Identify the top-performing team for the 'Best Buds' feature."""
         if not team_leaderboard:
             return None
@@ -640,8 +640,8 @@ class GroupService:
 
     @staticmethod
     def _enrich_invite_with_user_data(
-        invite: dict[str, object],
-        user_docs: dict[str, object],
+        invite: dict[str, Any],
+        user_docs: dict[str, Any],
     ) -> None:
         """Enrich a single invite dictionary with user profile information."""
         user_data = user_docs.get(invite.get("email", ""))
@@ -653,7 +653,7 @@ class GroupService:
     def _fetch_user_docs_by_email(
         db: Client,
         emails: list[str],
-    ) -> dict[str, dict[str, object]]:
+    ) -> dict[str, dict[str, Any]]:
         """Batch fetch user documents by email."""
         user_docs = {}
         for i in range(0, len(emails), 30):
@@ -677,7 +677,7 @@ class GroupService:
     def send_invite_email_background(
         app: Any,
         token: str,
-        email_data: dict[str, object],
+        email_data: dict[str, Any],
     ) -> None:
         """Send an invite email in the background."""
         from pickaladder.group.utils import send_invite_email_background
@@ -826,7 +826,7 @@ class GroupService:
         )
 
     @staticmethod
-    def get_pending_requests(db: Client, group_id: str) -> list[dict[str, object]]:
+    def get_pending_requests(db: Client, group_id: str) -> list[dict[str, Any]]:
         """Fetch and enrich pending requests for a group."""
         requests = MembershipRequestRepository.get_pending_for_group(db, group_id)
         if not requests:

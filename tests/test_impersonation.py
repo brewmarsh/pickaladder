@@ -35,6 +35,7 @@ class ImpersonationTestCase(unittest.TestCase):
                 "TESTING": True,
                 "WTF_CSRF_ENABLED": False,
                 "SECRET_KEY": "test",  # nosec B105
+                "CACHE_TYPE": "NullCache",
             },
         )
         self.client = self.app.test_client()
@@ -73,8 +74,10 @@ class ImpersonationTestCase(unittest.TestCase):
             doc_ref if uid == user_id else MagicMock()
         )
 
-    def test_impersonation_flow(self) -> None:
+    @patch("pickaladder.admin.services.AdminService.get_growth_metrics")
+    def test_impersonation_flow(self, mock_growth: MagicMock) -> None:
         """Test the full impersonation flow: start, verify, stop."""
+        mock_growth.return_value = {"labels": [], "values": []}
         # 1. Login as Admin
         with self.client.session_transaction() as sess:
             sess["user_id"] = "admin1"

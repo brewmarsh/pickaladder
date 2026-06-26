@@ -27,7 +27,7 @@ from pickaladder.group.services.group_service import (
 
 @bp.route("/<string:group_id>/manage", methods=["GET", "POST"])
 @login_required
-def manage_group(group_id: str) -> Response | str | dict[str, object]:
+def manage_group(group_id: str) -> Response | str | dict[str, Any]:
     """Display the group management hub."""
     db = firestore.client()
     try:
@@ -87,7 +87,7 @@ def handle_membership_request(
     group_id: str,
     request_id: str,
     action: str,
-) -> Response | str | dict[str, object]:
+) -> Response | str | dict[str, Any]:
     """Approve or decline a join request."""
     db = firestore.client()
     try:
@@ -109,7 +109,7 @@ def handle_membership_request(
 
 @bp.route("/create", methods=["GET", "POST"])
 @login_required
-def create_group() -> Response | str | dict[str, object]:
+def create_group() -> Response | str | dict[str, Any]:
     """Create a new group."""
     form = GroupForm()
     if form.validate_on_submit():
@@ -128,7 +128,7 @@ def create_group() -> Response | str | dict[str, object]:
     return render_template("create_group.html", form=form)
 
 
-def _get_group_for_edit(db: Client, group_id: str) -> dict[str, object]:
+def _get_group_for_edit(db: Client, group_id: str) -> dict[str, Any]:
     """Fetch group and verify admin permissions."""
     group_ref = db.collection("groups").document(group_id)
     group = group_ref.get()
@@ -149,7 +149,7 @@ def _get_group_for_edit(db: Client, group_id: str) -> dict[str, object]:
 def _handle_edit_group_form(
     db: Client,
     group_id: str,
-    group_data: dict[str, object],
+    group_data: dict[str, Any],
 ) -> tuple[GroupForm, Any | None]:
     """Process GroupForm submission for editing."""
     form = GroupForm(data=group_data)
@@ -174,7 +174,7 @@ def _handle_edit_group_form(
 
 @bp.route("/<string:group_id>/edit", methods=["GET", "POST"])
 @login_required
-def edit_group(group_id: str) -> Response | str | dict[str, object]:
+def edit_group(group_id: str) -> Response | str | dict[str, Any]:
     """Edit a group."""
     db = firestore.client()
     try:
@@ -200,7 +200,7 @@ def edit_group(group_id: str) -> Response | str | dict[str, object]:
 
 @bp.route("/<string:group_id>/delete", methods=["POST"])
 @login_required
-def delete_group(group_id: str) -> Response | str | dict[str, object]:
+def delete_group(group_id: str) -> Response | str | dict[str, Any]:
     """Delete a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
@@ -226,7 +226,7 @@ def delete_group(group_id: str) -> Response | str | dict[str, object]:
 
 @bp.route("/<string:group_id>/promote/<string:user_id>", methods=["POST"])
 @login_required
-def promote_member(group_id: str, user_id: str) -> Response | str | dict[str, object]:
+def promote_member(group_id: str, user_id: str) -> Response | str | dict[str, Any]:
     """Promote a member to admin."""
     db = firestore.client()
     try:
@@ -241,7 +241,7 @@ def promote_member(group_id: str, user_id: str) -> Response | str | dict[str, ob
 
 @bp.route("/<string:group_id>/demote/<string:user_id>", methods=["POST"])
 @login_required
-def demote_member(group_id: str, user_id: str) -> Response | str | dict[str, object]:
+def demote_member(group_id: str, user_id: str) -> Response | str | dict[str, Any]:
     """Demote an admin to member."""
     db = firestore.client()
     try:
@@ -256,7 +256,7 @@ def demote_member(group_id: str, user_id: str) -> Response | str | dict[str, obj
 
 @bp.route("/<string:group_id>/remove/<string:user_id>", methods=["POST"])
 @login_required
-def remove_member(group_id: str, user_id: str) -> Response | str | dict[str, object]:
+def remove_member(group_id: str, user_id: str) -> Response | str | dict[str, Any]:
     """Remove a member from the group."""
     db = firestore.client()
     try:

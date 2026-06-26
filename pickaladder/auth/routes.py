@@ -212,7 +212,9 @@ def _handle_invite_token(db: firestore.Client, uid: str, invite_token: str) -> N
     invite_ref.update({"used": True})
 
 
-def _create_firebase_auth_user(email: str, password: str, username: str) -> auth.UserRecord:
+def _create_firebase_auth_user(
+    email: str, password: str, username: str
+) -> auth.UserRecord:
     """Create user in Firebase Auth and send verification email."""
     user_record = auth.create_user(email=email, password=password, email_verified=False)
     verification_link = auth.generate_email_verification_link(email)
@@ -508,7 +510,9 @@ def _is_user_non_admin(user_doc: firestore.DocumentSnapshot) -> bool:
     return not user_doc.to_dict().get("isAdmin")
 
 
-def _fetch_user_doc_ref_by_email(db: firestore.Client, email: str) -> firestore.DocumentReference:
+def _fetch_user_doc_ref_by_email(
+    db: firestore.Client, email: str
+) -> firestore.DocumentReference:
     """Fetch user document reference from Firestore using email via Firebase Auth."""
     user = auth.get_user_by_email(email)
     return db.collection("users").document(user.uid)

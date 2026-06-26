@@ -40,7 +40,7 @@ from pickaladder.user import UserService
 def _handle_invite_friend_form(
     db: Client,
     group_id: str,
-    context: dict[str, object],
+    context: dict[str, Any],
 ) -> tuple[InviteFriendForm, Any | None]:
     """Process InviteFriendForm submission."""
     form = InviteFriendForm()
@@ -93,7 +93,7 @@ def _handle_invite_email_form(
 
 @bp.route("/<string:group_id>", methods=["GET", "POST"])
 @login_required
-def view_group(group_id: str) -> Response | str | dict[str, object]:
+def view_group(group_id: str) -> Response | str | dict[str, Any]:
     """Display a single group's page."""
     _handle_referrer()
 
@@ -143,7 +143,7 @@ def view_group(group_id: str) -> Response | str | dict[str, object]:
 
 @bp.route("/<string:group_id>/request_join", methods=["POST"])
 @login_required
-def request_membership(group_id: str) -> Response | str | dict[str, object]:
+def request_membership(group_id: str) -> Response | str | dict[str, Any]:
     """Request to join a group."""
     db = firestore.client()
     message = request.form.get("message")
@@ -160,7 +160,7 @@ def request_membership(group_id: str) -> Response | str | dict[str, object]:
 
 @bp.route("/invite/<token>/resend", methods=["POST"])
 @login_required
-def resend_invite(token: str) -> Response | str | dict[str, object]:
+def resend_invite(token: str) -> Response | str | dict[str, Any]:
     """Resend a group invitation."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -213,7 +213,7 @@ def resend_invite(token: str) -> Response | str | dict[str, object]:
 
 @bp.route("/invite/<token>/delete", methods=["POST"])
 @login_required
-def delete_invite(token: str) -> Response | str | dict[str, object]:
+def delete_invite(token: str) -> Response | str | dict[str, Any]:
     """Delete a pending invitation."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -242,7 +242,7 @@ def delete_invite(token: str) -> Response | str | dict[str, object]:
 
 @bp.route("/invite/<token>")
 @login_required
-def handle_invite(token: str) -> Response | str | dict[str, object]:
+def handle_invite(token: str) -> Response | str | dict[str, Any]:
     """Handle an invitation link."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -284,7 +284,7 @@ def handle_invite(token: str) -> Response | str | dict[str, object]:
 
 @bp.route("/<string:group_id>/join", methods=["POST"])
 @login_required
-def join_group(group_id: str) -> Response | str | dict[str, object]:
+def join_group(group_id: str) -> Response | str | dict[str, Any]:
     """Join a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
@@ -302,7 +302,7 @@ def join_group(group_id: str) -> Response | str | dict[str, object]:
 
 @bp.route("/<string:group_id>/leave", methods=["POST"])
 @login_required
-def leave_group(group_id: str) -> Response | str | dict[str, object]:
+def leave_group(group_id: str) -> Response | str | dict[str, Any]:
     """Leave a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
