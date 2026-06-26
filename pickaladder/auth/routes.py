@@ -89,7 +89,7 @@ def _cleanup_missing_user_session(is_impersonating: bool) -> None:
     g.is_impersonating = False
 
 
-def _fetch_user_doc(id_to_load: str) -> Response:
+def _fetch_user_doc(id_to_load: str) -> firestore.DocumentSnapshot:
     """Fetch user document from Firestore."""
     db = firestore.client()
     return db.collection("users").document(id_to_load).get()
@@ -212,7 +212,7 @@ def _handle_invite_token(db: firestore.Client, uid: str, invite_token: str) -> N
     invite_ref.update({"used": True})
 
 
-def _create_firebase_auth_user(email: str, password: str, username: str) -> Response:
+def _create_firebase_auth_user(email: str, password: str, username: str) -> auth.UserRecord:
     """Create user in Firebase Auth and send verification email."""
     user_record = auth.create_user(email=email, password=password, email_verified=False)
     verification_link = auth.generate_email_verification_link(email)
@@ -283,7 +283,7 @@ def _process_registration(form: RegisterForm, username: str, email: str) -> None
     _handle_post_registration(db, user_record.uid, email)
 
 
-def _handle_registration_error(e: Exception) -> None:
+def _handle_registration_error(e: Exception) -> Response:
     """Handle different types of registration errors and flash messages."""
     if isinstance(e, auth.EmailAlreadyExistsError):
         flash(AUTH_MESSAGES["EMAIL_REGISTERED"], "danger")
@@ -508,7 +508,7 @@ def _is_user_non_admin(user_doc: firestore.DocumentSnapshot) -> bool:
     return not user_doc.to_dict().get("isAdmin")
 
 
-def _fetch_user_doc_ref_by_email(db: firestore.Client, email: str) -> Response:
+def _fetch_user_doc_ref_by_email(db: firestore.Client, email: str) -> firestore.DocumentReference:
     """Fetch user document reference from Firestore using email via Firebase Auth."""
     user = auth.get_user_by_email(email)
     return db.collection("users").document(user.uid)
@@ -538,7 +538,7 @@ def _check_admin_exists(db: firestore.Client) -> bool:
     return len(list(admin_query)) > 0
 
 
-def _handle_install_error(db: firestore.Client, email: str, e: Exception) -> None:
+def _handle_install_error(db: firestore.Client, email: str, e: Exception) -> Response:
     """Handle exceptions during installation."""
     if isinstance(e, auth.EmailAlreadyExistsError):
         if _promote_existing_user_to_admin(db, email):
