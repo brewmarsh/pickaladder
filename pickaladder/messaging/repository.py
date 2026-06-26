@@ -41,8 +41,8 @@ class MessagingRepository(BaseRepository):
         user_id2: str,
     ) -> dict[str, Any] | None:
         """Find an existing 1-on-1 conversation between two users."""
-        # Note: Firestore doesn't support array-equals with order-independence easily.
-        # We query for conversations where user1 is a participant and filter in-memory for user2.
+        # Note: Firestore doesn't support array-equals with order-independence.
+        # We query for user1 participant and filter in-memory for user2.
         query = db.collection(cls.COLLECTION_NAME).where(
             filter=firestore.FieldFilter("participants", "array_contains", user_id1),
         )

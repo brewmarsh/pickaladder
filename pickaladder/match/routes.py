@@ -5,7 +5,16 @@ from __future__ import annotations
 from typing import Any, cast
 
 from firebase_admin import firestore
-from flask import flash, g, jsonify, redirect, render_template, request, url_for
+from flask import (
+    Response,
+    flash,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, MATCH_MESSAGES

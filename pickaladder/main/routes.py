@@ -43,7 +43,7 @@ def robots() -> Response:
 @bp.route("/sitemap.xml")
 def sitemap() -> Response:
     """Generate and serve sitemap.xml."""
-    from flask import make_response, url_for
+    from flask import make_response, render_template, url_for
 
     pages = []
     # Static pages

@@ -47,7 +47,7 @@ class BatchProcessor:
 
 
 def initialize_apps() -> tuple[firebase_admin.App, firebase_admin.App]:
-    """Initializes the two Firebase apps for Production (Source) and Beta (Destination)."""
+    """Initializes Firebase apps for Production and Beta."""
     prod_key_path = os.environ.get("PROD_KEY_PATH")
     beta_key_path = os.environ.get("BETA_KEY_PATH")
 

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from google.cloud.firestore import Client
 
 from firebase_admin import firestore
-from flask import flash, g, redirect, render_template, url_for
+from flask import Response, flash, g, redirect, render_template, url_for
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, GROUP_MESSAGES

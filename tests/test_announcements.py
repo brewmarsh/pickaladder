@@ -21,11 +21,12 @@ class AnnouncementTestCase(unittest.TestCase):
     )  # Not exactly find_direct, but we'll see
     def test_get_or_create_group_announcement_new(self, mock_find, mock_create) -> None:
         """Test creating a new announcement channel."""
-        # We need a way to find group_announcements. The plan says update get_or_create_group_announcement.
-        # Let's assume we use a query for it.
+        # Assume we use a query to find group_announcements.
 
-        # Mocking the query in MessagingService.get_or_create_group_announcement
-        mock_query = self.mock_db.collection.return_value.where.return_value.where.return_value.limit.return_value.stream
+        # Mocking query in MessagingService.get_or_create_group_announcement
+        coll = self.mock_db.collection.return_value
+        q = coll.where.return_value.where.return_value
+        mock_query = q.limit.return_value.stream
         mock_query.return_value = []  # Not found
 
         mock_create.return_value = "ann_conv_id"

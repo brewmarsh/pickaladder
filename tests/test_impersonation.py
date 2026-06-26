@@ -35,6 +35,7 @@ class ImpersonationTestCase(unittest.TestCase):
                 "TESTING": True,
                 "WTF_CSRF_ENABLED": False,
                 "SECRET_KEY": "test",  # nosec B105
+                "CACHE_TYPE": "NullCache",
             },
         )
         self.client = self.app.test_client()
@@ -73,8 +74,11 @@ class ImpersonationTestCase(unittest.TestCase):
             doc_ref if uid == user_id else MagicMock()
         )
 
-    def test_impersonation_flow(self) -> None:
+    @patch("pickaladder.admin.routes.AdminService.get_growth_metrics")
+    def test_impersonation_flow(self, mock_growth: MagicMock) -> None:
         """Test the full impersonation flow: start, verify, stop."""
+        mock_growth.return_value = {"labels": [], "values": []}
+
         # 1. Login as Admin
         with self.client.session_transaction() as sess:
             sess["user_id"] = "admin1"
@@ -84,7 +88,9 @@ class ImpersonationTestCase(unittest.TestCase):
 
         # 1b. Check if Impersonate button is present in users page
         # Mock search_users to return user1
-        with patch("pickaladder.user.services.UserService.search_users") as mock_search:
+        with patch(
+            "pickaladder.user.services.UserService.search_users",
+        ) as mock_search:
             mock_search.return_value = ([(self.user_data, "none", "none")], None)
             response = self.client.get("/user/users")
             assert "fa-user-secret" in response.data.decode("utf-8")

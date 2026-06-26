@@ -73,12 +73,12 @@ class MatchSecurityTestCase(unittest.TestCase):
 
             MatchService.record_match(mock_db, submission, current_user)
 
-        # Verify that the data passed to _record_match_batch does NOT include injected fields
+        # Verify that data passed to _record_match_batch doesn't include injected fields
         # match_data is the 7th argument (index 6)
         match_data = mock_record_batch.call_args[0][6]
         assert "is_winner" not in match_data
         assert "rating" not in match_data
-        # is_upset might be added by the service itself, but we check if it was overwritten
+        # is_upset might be added by service itself, but we check if overwritten
         # By default check_upset returns False in mock
         assert not match_data.get("is_upset", False)
 

@@ -168,6 +168,7 @@ def view_tournament(tournament_id: str) -> Response | str:
                 pools[pool_id].append(m)
 
         pool_standings = {}
+        db = firestore.client()
         for pool_id, pool_matches in pools.items():
             raw = aggregate_match_data(
                 pool_matches,
@@ -379,7 +380,7 @@ def generate_bracket(tournament_id: str) -> Response:
 @bp.route("/<string:tournament_id>/promote_pools", methods=["POST"])
 @login_required
 def promote_pools(tournament_id: str) -> Response:
-    """Calculate pool standings and promote top performers to a single-elimination bracket."""
+    """Promote top performers to a single-elimination bracket."""
     try:
         count = TournamentService.promote_pools_to_bracket(tournament_id, g.user.uid)
         if count > 0:

@@ -43,7 +43,7 @@ class SeasonService:
         division_index: int,
         user_id: str,
     ) -> None:
-        """Add a user to a specific division within a season, and ensure they are in the parent group."""
+        """Add a user to a division, and ensure they are in the parent group."""
         from pickaladder.group.repository import GroupRepository
 
         season = SeasonRepository.get_by_id(db, season_id)
@@ -89,7 +89,7 @@ class SeasonStandingsService:
         season_id: str,
         division_index: int | None = None,
     ) -> list[dict[str, Any]]:
-        """Calculate aggregate standings for a specific season/division using USAP hierarchy."""
+        """Calculate standings for a specific season/division using USAP hierarchy."""
         from pickaladder.core.ranking.aggregator import StandingAggregator
         from pickaladder.group.services.group_service import GroupService
 
@@ -192,7 +192,7 @@ class SeasonFinalizationService:
         # Log community activity
         ActivityService.log_activity(
             db,
-            "",  # System level / generic actor if needed, but here we can use an empty string or omit
+            "",  # System level / generic actor if needed
             ActivityType.SEASON_FINALIZED,
             {
                 "seasonId": season_id,

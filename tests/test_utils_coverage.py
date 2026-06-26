@@ -4,7 +4,6 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
-import pytest
 from pickaladder.group.utils import (
     friend_group_members,
     get_group_leaderboard,
@@ -457,7 +456,7 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_batch.commit.assert_called_once()
 
     @patch("pickaladder.extensions.executor")
-    @patch("pickaladder.services.mail_service.MailService.send_email")
+    @patch("pickaladder.services.mail_service.MailService.send_email_now")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_success(
         self,
@@ -487,7 +486,7 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_send_email.assert_called_once_with(**email_data)
         
     @patch("pickaladder.extensions.executor")
-    @patch("pickaladder.services.mail_service.MailService.send_email")
+    @patch("pickaladder.services.mail_service.MailService.send_email_now")
     @patch("pickaladder.group.utils.firestore")
     def test_send_invite_email_background_failure(
         self,
@@ -502,7 +501,8 @@ class TestUtilsCoverage(unittest.TestCase):
         
         # Setup mock for invite document
         mock_invite_doc = MagicMock()
-        mock_firestore.client.return_value.collection("group_invites").document.return_value = mock_invite_doc
+        coll = mock_firestore.client.return_value.collection("group_invites")
+        coll.document.return_value = mock_invite_doc
 
         from pickaladder import create_app
         app = create_app({"TESTING": True})
@@ -517,7 +517,8 @@ class TestUtilsCoverage(unittest.TestCase):
         mock_send_email.side_effect = Exception("Email failed")
         
         with app.app_context():
-            send_invite_email_background(app, "invite_token", email_data)
+            with self.assertRaises(Exception):
+                send_invite_email_background(app, "invite_token", email_data)
 
         mock_send_email.assert_called_once_with(**email_data)
         mock_invite_doc.update.assert_called_once_with(

@@ -14,7 +14,7 @@ def fetch_tournament_matches(
     tournament_id: str,
     pool_id: str | None = None,
 ) -> Any:
-    """Fetch all match documents associated with the tournament_id, optionally filtered by pool_id."""
+    """Fetch match docs for the tournament, optionally filtered by pool_id."""
     query = db.collection("matches").where(
         filter=firestore.FieldFilter("tournamentId", "==", tournament_id),
     )
