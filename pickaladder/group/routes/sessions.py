@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from firebase_admin import firestore
-from flask import flash, g, redirect, render_template, url_for
+from flask import Response, flash, g, redirect, render_template, url_for
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.group import bp
@@ -22,12 +22,16 @@ def quick_log(session_id: str) -> Response | str | dict[str, object]:
 
     # Fetch player details for the pool
     players = []
-    for player_id in session_data.get("playerIds", []):
-        player_doc = db.collection("users").document(player_id).get()
-        if player_doc.exists:
-            p_data = player_doc.to_dict() or {}
-            p_data["id"] = player_id
-            players.append(p_data)
+    player_ids = session_data.get("playerIds", [])
+    if player_ids:
+        player_refs = [db.collection("users").document(pid) for pid in player_ids]
+        player_docs = {doc.id: doc for doc in db.get_all(player_refs)}
+        for pid in player_ids:
+            player_doc = player_docs.get(pid)
+            if player_doc and player_doc.exists:
+                p_data = player_doc.to_dict() or {}
+                p_data["id"] = player_doc.id
+                players.append(p_data)
 
     group_name = "Group"
     group_doc = db.collection("groups").document(session_data["groupId"]).get()
@@ -56,21 +60,26 @@ def view_session(session_id: str) -> Response | str | dict[str, object]:
     # Fetch matches
     match_ids = session_data.get("matchIds", [])
     matches = []
-    for m_id in match_ids:
-        match_doc = db.collection("matches").document(m_id).get()
-        if match_doc.exists:
-            m_data = match_doc.to_dict() or {}
-            m_data["id"] = m_id
-            matches.append(m_data)
+    if match_ids:
+        match_refs = [db.collection("matches").document(mid) for mid in match_ids]
+        match_docs = {doc.id: doc for doc in db.get_all(match_refs)}
+        for mid in match_ids:
+            match_doc = match_docs.get(mid)
+            if match_doc and match_doc.exists:
+                m_data = match_doc.to_dict() or {}
+                m_data["id"] = match_doc.id
+                matches.append(m_data)
 
     # Fetch player details for the pool
     players = {}
-    for player_id in session_data.get("playerIds", []):
-        player_doc = db.collection("users").document(player_id).get()
-        if player_doc.exists:
-            p_data = player_doc.to_dict() or {}
-            p_data["id"] = player_id
-            players[player_id] = p_data
+    player_ids = session_data.get("playerIds", [])
+    if player_ids:
+        player_refs = [db.collection("users").document(pid) for pid in player_ids]
+        for player_doc in db.get_all(player_refs):
+            if player_doc.exists:
+                p_data = player_doc.to_dict() or {}
+                p_data["id"] = player_doc.id
+                players[player_doc.id] = p_data
 
     group_name = "Group"
     group_doc = db.collection("groups").document(session_data["groupId"]).get()

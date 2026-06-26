@@ -83,12 +83,19 @@ def _enrich_doubles_names(
     standings: list[dict[str, Any]],
 ) -> None:
     """Fetch and set team names for doubles standings."""
-    for s in standings:
-        doc = cast("Any", db.collection("teams").document(s["id"]).get())
-        name = "Unknown Team"
+    if not standings:
+        return
+
+    t_refs = [db.collection("teams").document(s["id"]) for s in standings]
+    t_docs = cast("list[Any]", db.get_all(t_refs))
+
+    t_map = {}
+    for doc in t_docs:
         if doc.exists and (d := doc.to_dict()):
-            name = d.get("name", "Unknown Team")
-        s["name"] = name
+            t_map[doc.id] = d.get("name", "Unknown Team")
+
+    for s in standings:
+        s["name"] = t_map.get(s["id"], "Unknown Team")
 
 
 def _enrich_singles_names(
@@ -96,6 +103,9 @@ def _enrich_singles_names(
     standings: list[dict[str, Any]],
 ) -> None:
     """Fetch and set user names for singles standings."""
+    if not standings:
+        return
+
     u_refs = [db.collection("users").document(s["id"]) for s in standings]
     u_docs = cast("list[Any]", db.get_all(u_refs))
     u_map = {doc.id: doc.to_dict() for doc in u_docs if doc.exists}
