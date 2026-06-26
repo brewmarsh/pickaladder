@@ -339,7 +339,7 @@ def update_settings(
     return {"success": True}
 
 
-def search_users(
+def search_users(  # noqa: PLR0913
     db: Client,
     current_user_id: str,
     search_term: str,

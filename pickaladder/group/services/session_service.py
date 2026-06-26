@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pickaladder.base.repository import BaseRepository
 
@@ -39,7 +39,7 @@ class SessionService(BaseRepository):
         return cls.create(db, session_data)
 
     @classmethod
-    def get_session(cls, db: Client, session_id: str) -> dict[str, object] | None:
+    def get_session(cls, db: Client, session_id: str) -> dict[str, Any] | None:
         """Retrieve a session by its ID."""
         return cls.get_by_id(db, session_id)
 

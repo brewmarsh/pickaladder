@@ -16,7 +16,7 @@ class GroupRepository(BaseRepository):
     COLLECTION_NAME = "groups"
 
     @classmethod
-    def get_user_groups(cls, db: Client, user_id: str) -> list[dict[str, object]]:
+    def get_user_groups(cls, db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch all groups the user belongs to."""
         user_ref = db.collection("users").document(user_id)
         query = db.collection(cls.COLLECTION_NAME).where(
@@ -32,7 +32,7 @@ class GroupRepository(BaseRepository):
     def validate(
         cls,
         db: Client,
-        data: dict[str, object],
+        data: dict[str, Any],
         group_id: str | None = None,
     ) -> None:
         """Validate group data for consistency and business rules."""
@@ -55,13 +55,13 @@ class GroupRepository(BaseRepository):
                 raise ValueError(msg)
 
     @classmethod
-    def create(cls, db: Client, data: dict[str, object]) -> str:
+    def create(cls, db: Client, data: dict[str, Any]) -> str:
         """Create a group with validation."""
         cls.validate(db, data)
         return super().create(db, data)
 
     @classmethod
-    def update(cls, db: Client, doc_id: str, data: dict[str, object]) -> None:
+    def update(cls, db: Client, doc_id: str, data: dict[str, Any]) -> None:
         """Update a group with validation."""
         # For updates, we might only have partial data,
         # so we fetch the full doc to validate
@@ -76,7 +76,7 @@ class GroupRepository(BaseRepository):
         super().update(db, doc_id, data)
 
     @classmethod
-    def get_pending_invites(cls, db: Client, group_id: str) -> list[dict[str, object]]:
+    def get_pending_invites(cls, db: Client, group_id: str) -> list[dict[str, Any]]:
         """Fetch all pending invitations for a specific group."""
         invites_ref = db.collection("group_invites")
         query = invites_ref.where(
@@ -121,7 +121,7 @@ class GroupRepository(BaseRepository):
         member_refs: list[Any],
         offset: int = 0,
         limit: int | None = None,
-    ) -> list[dict[str, object]]:
+    ) -> list[dict[str, Any]]:
         """Fetch full profile data for group members, with optional slicing."""
         snaps = cls.get_group_members_raw(db, member_refs, offset, limit)
         members = []

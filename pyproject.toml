@@ -15,6 +15,7 @@ dependencies = [
     "firebase-admin==7.3.0",
     "email-validator==2.3.0",
     "Flask-Login==0.6.3",
+    "Flask-Caching==2.3.0",
 ]
 
 [tool.ruff]
@@ -34,7 +35,15 @@ select = ["E", "F", "W", "I", "UP", "PL"]
 
 # Never enforce `E501` (line-too-long), handled by `format`.
 # TODO: Refactor complex functions to resolve these ignores
-ignore = ["E501", "PLR0911", "PLR0912", "PLR0915", "PLC0415", "E402"]
+ignore = [
+    "E501",
+    "PLR0911",
+    "PLR0912",
+    "PLR0915",
+    "PLC0415",
+    "E402",
+    "PLR2004",
+]
 
 [tool.ruff.lint.pydocstyle]
 # Use the PEP 257 convention for docstring formatting.

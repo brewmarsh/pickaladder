@@ -42,7 +42,7 @@ class TournamentStandingsTestCase(unittest.TestCase):
             # For now this test will fail as expected.
             sorted_list = sort_and_format_standings(self.db, raw, "singles")
 
-            # Player A should be first because they beat B, even though B has better point_diff
+            # Player A should be first (beat B), even though B has better point_diff
             assert sorted_list[0]["id"] == "playerA"
 
 

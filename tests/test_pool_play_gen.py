@@ -44,8 +44,8 @@ def test_generate_pool_play(mock_firestore) -> None:
 
     assert len(pool_matches) == 3
     assert set(pool_matches.keys()) == {"A", "B", "C"}
-    for pid in pool_matches:
-        assert pool_matches[pid] == 6
+    for pid, value in pool_matches.items():
+        assert value == 6
 
 
 def test_generate_pool_play_uneven(mock_firestore) -> None:

@@ -48,7 +48,7 @@ def test_promote_pools_to_bracket(mock_db) -> None:
         ]
 
         # Promote top 2 from each pool
-        # Expected promoted: p1 (Rank 1 Pool A), p5 (Rank 1 Pool B), p2 (Rank 2 Pool A), p6 (Rank 2 Pool B)
+        # Expected promoted: p1 (R1 A), p5 (R1 B), p2 (R2 A), p6 (R2 B)
         # Seeding logic sorts by rank_in_pool: [p1, p5, p2, p6]
 
         with patch(

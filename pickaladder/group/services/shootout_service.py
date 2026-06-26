@@ -1,6 +1,6 @@
-"""Service for automated court movement (Shootout) logic."""
-
 from __future__ import annotations
+
+from typing import Any
 
 
 class ShootoutService:
@@ -8,8 +8,8 @@ class ShootoutService:
 
     @staticmethod
     def calculate_next_assignments(
-        player_results: list[dict[str, object]],
-    ) -> list[dict[str, object]]:
+        player_results: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """
         Calculate next court assignments based on current match results.
 
@@ -26,7 +26,7 @@ class ShootoutService:
             return []
 
         # Group by court
-        courts: dict[int, list[dict[str, object]]] = {}
+        courts: dict[int, list[dict[str, Any]]] = {}
         for res in player_results:
             c = res["court"]
             if c not in courts:
@@ -60,7 +60,7 @@ class ShootoutService:
     def group_players_to_courts(
         player_uids: list[str],
         players_per_court: int = 4,
-    ) -> list[dict[str, object]]:
+    ) -> list[dict[str, Any]]:
         """
         Initially group players into courts based on current ranking.
         Assumes player_uids are already sorted by rank (ELO).

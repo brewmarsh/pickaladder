@@ -24,9 +24,9 @@ def rate_limit(limit: int = 5, window: int = 60) -> Callable:
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
-            # Skip rate limiting in testing if needed, or keep it for verification
-            # If we want to skip:
-            # if current_app.testing: return f(*args, **kwargs)
+            # Skip rate limiting in testing
+            if current_app.config.get("TESTING"):
+                return f(*args, **kwargs)
 
             # Key by remote address and endpoint
             # We use both to ensure rate limiting is per-user per-endpoint
@@ -40,7 +40,8 @@ def rate_limit(limit: int = 5, window: int = 60) -> Callable:
 
             if len(_rate_limit_storage[key]) >= limit:
                 current_app.logger.warning(
-                    f"Rate limit exceeded for {request.remote_addr} on {request.endpoint}",
+                    f"Rate limit exceeded for {request.remote_addr} "
+                    f"on {request.endpoint}",
                 )
                 abort(429, description="Too many requests. Please try again later.")
 

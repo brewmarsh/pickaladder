@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import Any, Callable
 
-from flask import flash, g, redirect, session, url_for
+from flask import Response, flash, g, redirect, session, url_for
 
 from pickaladder.constants.messages import AUTH_MESSAGES
 

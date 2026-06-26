@@ -88,7 +88,7 @@ class ActivityService:
             new_reaction = {
                 "userId": user_id,
                 "type": reaction_type,
-                "timestamp": firestore.SERVER_TIMESTAMP,  # This is tricky for local list return
+                "timestamp": firestore.SERVER_TIMESTAMP,  # Tricky for local list return
             }
             activity_ref.update({"reactions": firestore.ArrayUnion([new_reaction])})
             reactions.append(new_reaction)

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from google.cloud.firestore import DocumentReference, DocumentSnapshot
 
 from firebase_admin import firestore
 from google.cloud.firestore import FieldFilter
@@ -11,7 +14,7 @@ from pickaladder.group.services.match_parser import _extract_team_ids, _get_matc
 
 
 def _check_partnership_win(
-    data: dict[str, object],
+    data: dict[str, Any],
     playerA_id: str,
     playerB_id: str,
     wins: int,
@@ -59,7 +62,7 @@ def _process_h2h_match(
     match_doc: DocumentSnapshot,
     playerA_id: str,
     playerB_id: str,
-    stats: dict[str, object],
+    stats: dict[str, Any],
 ) -> None:
     """Process a single match for head-to-head statistics."""
     data = match_doc.to_dict()
@@ -101,7 +104,7 @@ def get_head_to_head_stats(
     group_id: str,
     playerA_id: str,
     playerB_id: str,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Calculates head-to-head statistics for two players in doubles matches."""
     db = firestore.client()
     query = db.collection("matches").where(
@@ -109,7 +112,7 @@ def get_head_to_head_stats(
     )
     all_matches_in_group = list(query.stream())
 
-    h2h_stats: dict[str, object] = {
+    h2h_stats: dict[str, Any] = {
         "wins": 0,
         "losses": 0,
         "point_diff": 0,
@@ -140,7 +143,7 @@ def get_head_to_head_stats(
 
 
 def _update_all_time_streak(
-    data: dict[str, object],
+    data: dict[str, Any],
     user_id: str,
     current: int,
     longest: int,
@@ -185,7 +188,7 @@ def _calculate_all_time_streaks(
     return current, max(longest, current)
 
 
-def get_user_group_stats(group_id: str, user_id: str) -> dict[str, object]:
+def get_user_group_stats(group_id: str, user_id: str) -> dict[str, Any]:
     """Calculate detailed statistics for a specific user within a group."""
     from pickaladder.group.services.leaderboard import get_group_leaderboard
 

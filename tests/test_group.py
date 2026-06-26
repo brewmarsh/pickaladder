@@ -327,8 +327,9 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         assert response.status_code == 200
         assert b"Groups</h1>" in response.data
         assert (
-            b"d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-3 mb-4 page-header-actions"
-            in response.data
+            b"d-flex flex-column flex-md-row align-items-stretch "
+            b"align-items-md-center justify-content-between gap-3 "
+            b"mb-4 page-header-actions" in response.data
         )
         assert b"btn btn-primary" in response.data
         assert b"Create Group" in response.data
