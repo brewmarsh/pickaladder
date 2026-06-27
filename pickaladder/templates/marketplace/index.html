@@ -80,7 +80,7 @@
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary w-100">Filter</button>
                         {% if search_term or search_type != 'all' %}
-                        <a href="{{ url_for('marketplace.view_marketplace') }}" class="btn btn-secondary"><i class="fas fa-times"></i></a>
+                        <a href="{{ url_for('marketplace.view_marketplace') }}" class="btn btn-secondary" aria-label="Clear filters"><i class="fas fa-times"></i></a>
                         {% endif %}
                     </div>
                 </div>
