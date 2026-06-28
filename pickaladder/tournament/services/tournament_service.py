@@ -384,36 +384,49 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         )
 
     @staticmethod
-    def _notify_tournament_participant(
-        p_data: dict[str, Any],
-        t_data: dict[str, Any],
-        winner: str,
-        stands: list[dict[str, Any]],
-    ) -> None:
-        """Send result email to a single participant."""
-        try:
-            u_ref = p_data.get("userRef")
-            doc = cast("Any", u_ref.get() if u_ref else None)
-            if doc and doc.exists and (d := doc.to_dict()):
-                TournamentService._send_participant_email(d, t_data, winner, stands)
-        except Exception:
-            logging.exception("Email failed")
-
-    @staticmethod
     def _notify_all_participants(
         data: dict[str, Any],
         winner: str,
         stands: list[dict[str, Any]],
+        db: Client | None = None,
     ) -> None:
-        """Loop through participants and send result emails."""
+        """Loop through participants and send result emails using batched queries to prevent N+1."""
+        from firebase_admin import firestore
+
+        db = db or firestore.client()
+
+        # 1. Collect all accepted participants and their userRefs
+        accepted_participants = []
+        u_refs = []
+
         for p in data.get("participants", []):
             if p and p.get("status") == "accepted":
-                TournamentService._notify_tournament_participant(
-                    p,
-                    data,
-                    winner,
-                    stands,
-                )
+                u_ref = p.get("userRef")
+                if u_ref:
+                    accepted_participants.append((p, u_ref))
+                    u_refs.append(u_ref)
+
+        if not u_refs:
+            return
+
+        # 2. Batch fetch all users
+        try:
+            user_docs = cast("list[Any]", db.get_all(u_refs))
+            user_map = {doc.id: doc for doc in user_docs if doc.exists}
+        except Exception:
+            logging.exception(
+                "Failed to batch fetch users for tournament notifications"
+            )
+            return
+
+        # 3. Send emails
+        for p_data, u_ref in accepted_participants:
+            try:
+                doc = user_map.get(u_ref.id)
+                if doc and (d := doc.to_dict()):
+                    TournamentService._send_participant_email(d, data, winner, stands)
+            except Exception:
+                logging.exception("Email failed")
 
     @staticmethod
     def complete_tournament(t_id: str, uid: str, db: Client | None = None) -> None:
@@ -435,7 +448,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         ref.update({"status": "Completed"})
         stands = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
         winner = stands[0]["name"] if stands else "No one"
-        TournamentService._notify_all_participants(data, winner, stands)
+        TournamentService._notify_all_participants(data, winner, stands, db=db)
 
     @staticmethod
     def _prepare_match_pairing(

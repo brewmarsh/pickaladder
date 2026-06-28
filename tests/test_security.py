@@ -13,6 +13,7 @@ class SecurityTestCase(unittest.TestCase):
         self.app = create_app(
             {
                 "TESTING": True,
+                "TEST_RATE_LIMITING": True,
                 "WTF_CSRF_ENABLED": True,
                 "SECRET_KEY": "test-secret-key",
             },
