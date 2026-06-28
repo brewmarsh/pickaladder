@@ -411,7 +411,7 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
 
         # 2. Batch fetch all users
         try:
-            user_docs = db.get_all(u_refs)
+            user_docs = cast("list[Any]", db.get_all(u_refs))
             user_map = {doc.id: doc for doc in user_docs if doc.exists}
         except Exception:
             logging.exception(
