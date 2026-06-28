@@ -370,7 +370,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h3>Select Partner</h3>
-            <button type="button" class="btn-close" onclick="closePartnerModal()">×</button>
+            <button type="button" class="btn-close" aria-label="Close" onclick="closePartnerModal()">×</button>
         </div>
         <div class="modal-body">
             <form id="registerTeamForm" action="{{ url_for('tournament.register_team', tournament_id=tournament.id) }}" method="POST">
