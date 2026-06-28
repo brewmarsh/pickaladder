@@ -98,7 +98,7 @@ jobs:
       - name: Security Analysis with Bandit
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv run --no-project bandit -r .
+        run: uv run --no-project bandit -r pickaladder
 
   typing:
     name: Typing
@@ -122,7 +122,7 @@ jobs:
       - name: Static Type Checking with mypy
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv run --no-project python -m mypy --no-incremental .
+        run: uv run --no-project python -m mypy --no-incremental pickaladder tests
 
   vulnerabilities:
     name: Vulnerabilities

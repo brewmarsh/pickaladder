@@ -59,6 +59,7 @@ class SecurityTestCase(unittest.TestCase):
     def test_rate_limiting(self) -> None:
         """Verify that rate limiting blocks excessive requests."""
         from pickaladder.core.security import _rate_limit_storage
+
         self.app.config["TEST_RATE_LIMITING"] = True
 
         _rate_limit_storage.clear()
