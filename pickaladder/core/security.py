@@ -25,7 +25,7 @@ def rate_limit(limit: int = 5, window: int = 60) -> Callable:
         @wraps(f)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
             # Skip rate limiting in testing
-            if current_app.config.get("TESTING"):
+            if current_app.config.get("TESTING") and not current_app.config.get("TEST_RATE_LIMITING"):
                 return f(*args, **kwargs)
 
             # Key by remote address and endpoint
