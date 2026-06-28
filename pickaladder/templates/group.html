@@ -10,7 +10,7 @@
 {% block content %}
 <div class="card hero-stats-card responsive-card-stack">
     {% if is_admin %}
-    <a href="{{ url_for('group.manage_group', group_id=group.id) }}" title="Management Hub" class="btn-edit-gear"
+    <a href="{{ url_for('group.manage_group', group_id=group.id) }}" title="Management Hub" class="btn-edit-gear" aria-label="Management Hub"
         data-testid="manage-hub-btn">⚙️</a>
     {% endif %}
 

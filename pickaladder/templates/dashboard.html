@@ -19,7 +19,7 @@
         <main class="main-content">
             
             <div class="hero-stats-card">
-                <a href="{{ url_for('user.settings') }}" class="btn-edit-gear" title="Edit Profile">⚙️</a>
+                <a href="{{ url_for('user.settings') }}" class="btn-edit-gear" title="Edit Profile" aria-label="Edit Profile">⚙️</a>
                 <div class="hero-left-panel">
                     <div class="profile-picture-container avatar-xl">
                         {% if user.profile_picture %}
