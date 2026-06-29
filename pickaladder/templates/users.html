@@ -7,7 +7,7 @@
 </div>
 <form method="get" action="{{ url_for('user.users') }}">
     <div class="form-group">
-        <input type="text" name="search" placeholder="Search by username or name" value="{{ search_term }}">
+        <input type="text" name="search" placeholder="Search by username or name" value="{{ search_term }}" aria-label="Search players">
     </div>
     <input type="submit" value="Search" class="btn">
 </form>

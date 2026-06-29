@@ -63,7 +63,7 @@
 <div class="mx-auto mb-5" style="max-width: 600px;">
     <form method="get" action="{{ url_for('user.view_community') }}" class="search-form">
         <div class="input-group flex-column flex-md-row">
-            <input type="text" name="search" class="form-control w-100 w-md-auto flex-grow-1" placeholder="Search by username, name, or email" value="{{ search_term }}">
+            <input type="text" name="search" class="form-control w-100 w-md-auto flex-grow-1" placeholder="Search by username, name, or email" value="{{ search_term }}" aria-label="Search community">
             <div class="d-flex gap-2 w-100 w-md-auto">
                 <button type="submit" class="btn btn-primary flex-grow-1">Search</button>
                 {% if search_term %}
