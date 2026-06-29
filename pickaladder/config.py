@@ -41,7 +41,7 @@ class Config:
         # Security
         self.SECRET_KEY = os.environ.get("SECRET_KEY")
         if not self.SECRET_KEY and self.FLASK_ENV == "development":
-            self.SECRET_KEY = "dev"  # nosec B105
+            self.SECRET_KEY = "dev"
 
         # Firebase
         self.FIREBASE_API_KEY = os.environ.get("FIREBASE_API_KEY")
