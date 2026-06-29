@@ -6,7 +6,7 @@
 </div>
 <form method="get" action="{{ url_for('admin.admin_matches') }}">
     <div class="form-group">
-        <input type="text" name="search" placeholder="Search by player name..." value="{{ search_term }}">
+        <input type="text" name="search" placeholder="Search by player name..." value="{{ search_term }}" aria-label="Search matches">
     </div>
     <input type="submit" value="Search" class="btn">
 </form>
