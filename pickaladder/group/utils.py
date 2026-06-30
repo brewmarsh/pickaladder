@@ -37,14 +37,16 @@ def get_random_joke() -> str:
 
 
 def _initialize_stats(
-    players: list[DocumentReference],
+    players: list[DocumentSnapshot] | list[DocumentReference] | Any,
 ) -> dict[str, dict[str, Any]]:
     """Initialize the stats dictionary for each player."""
-    if not players:
-        return {}
+    player_list = list(players) if players else []
 
-    db = firestore.client()
-    player_docs = db.get_all(players)
+    if player_list and hasattr(player_list[0], "get") and callable(player_list[0].get) and not hasattr(player_list[0], "exists"):
+        db = firestore.client()
+        player_docs = db.get_all(player_list)
+    else:
+        player_docs = player_list
 
     return {
         doc.id: {
@@ -162,7 +164,7 @@ def _sort_leaderboard(stats: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
 
 def _calculate_leaderboard_from_matches(
     matches: list[DocumentSnapshot],
-    players: list[DocumentReference],
+    players: list[DocumentSnapshot] | list[DocumentReference] | Any,
 ) -> list[dict[str, Any]]:
     """Calculate the leaderboard from a list of matches using a pipeline of helpers."""
     matches.sort(

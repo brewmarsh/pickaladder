@@ -26,23 +26,23 @@ from pickaladder.user.helpers import smart_display_name
 
 
 def _initialize_stats(
-    players: list[DocumentSnapshot] | Any,
+    players: list[DocumentReference] | list[DocumentSnapshot] | Any,
 ) -> dict[str, dict[str, Any]]:
     """Initialize the stats dictionary for each player using batch fetch."""
     # Handle generators or other iterables
     player_list = list(players) if players else []
 
-    if (
-        player_list
-        and hasattr(player_list[0], "exists")
-        and not hasattr(player_list[0], "get_all")
-    ):
-        # Already snapshots
-        player_docs = player_list
-    else:
-        # Likely references, need to fetch
+    # Safely distinguish between DocumentReference and DocumentSnapshot
+    # In python firebase-admin, DocumentReference has a get() method that returns a DocumentSnapshot.
+    # DocumentSnapshot has an exists attribute, but not a get() method in the same way (it has get() to read fields).
+
+    if player_list and hasattr(player_list[0], "get") and callable(player_list[0].get) and not hasattr(player_list[0], "exists"):
+        # Likely references
         db = firestore.client()
         player_docs = db.get_all(player_list)
+    else:
+        # Already snapshots
+        player_docs = player_list
 
     return {
         doc.id: {
@@ -54,7 +54,6 @@ def _initialize_stats(
             "match_results": [],
         }
         for doc in player_docs
-        if doc.exists
     }
 
 
