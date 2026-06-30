@@ -35,6 +35,8 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
         u3_ref, _u3_doc = create_mock_user("u3", "User 3")  # Avg 12, 0 wins
         u4_ref, _u4_doc = create_mock_user("u4", "Opponent")
 
+        mock_db.get_all.return_value = [_u1_doc, _u2_doc, _u3_doc, _u4_doc]
+
         # Mock group data
         mock_group_doc = MagicMock()
         mock_group_doc.exists = True
@@ -129,6 +131,7 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
         mock_db.collection("groups").document(
             "group1",
         ).get.return_value = mock_group_doc
+        mock_db.get_all.return_value = [u1_doc]
 
         # Mock empty matches and invites
         mock_res = mock_db.collection.return_value.where.return_value

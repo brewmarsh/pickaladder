@@ -37,19 +37,25 @@ def get_random_joke() -> str:
 
 
 def _initialize_stats(
-    players: list[DocumentSnapshot],
+    players: list[DocumentReference],
 ) -> dict[str, dict[str, Any]]:
     """Initialize the stats dictionary for each player."""
+    if not players:
+        return {}
+
+    db = firestore.client()
+    player_docs = db.get_all(players)
+
     return {
-        ref.id: {
+        doc.id: {
             "wins": 0,
             "losses": 0,
             "games": 0,
             "total_score": 0,
-            "user_data": ref.get(),
+            "user_data": doc,
             "match_results": [],
         }
-        for ref in players
+        for doc in player_docs
     }
 
 
@@ -156,7 +162,7 @@ def _sort_leaderboard(stats: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
 
 def _calculate_leaderboard_from_matches(
     matches: list[DocumentSnapshot],
-    players: list[DocumentSnapshot],
+    players: list[DocumentReference],
 ) -> list[dict[str, Any]]:
     """Calculate the leaderboard from a list of matches using a pipeline of helpers."""
     matches.sort(

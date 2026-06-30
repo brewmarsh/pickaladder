@@ -37,11 +37,13 @@ class TestGroupUtils(unittest.TestCase):
         # Mock user data
         mock_user1_doc = MagicMock()
         mock_user1_doc.exists = True
+        mock_user1_doc.id = "user1"
         mock_user1_doc.to_dict.return_value = {"name": "User 1"}
         mock_db.collection("users").document("user1").get.return_value = mock_user1_doc
 
         mock_user2_doc = MagicMock()
         mock_user2_doc.exists = True
+        mock_user2_doc.id = "user2"
         mock_user2_doc.to_dict.return_value = {"name": "User 2"}
         mock_db.collection("users").document("user2").get.return_value = mock_user2_doc
 
@@ -74,6 +76,7 @@ class TestGroupUtils(unittest.TestCase):
             [mock_match1],
             [mock_match1],
         ]
+        mock_db.get_all.return_value = [mock_user1_doc, mock_user2_doc]
 
         # Call the function
         leaderboard = get_group_leaderboard("group1")
