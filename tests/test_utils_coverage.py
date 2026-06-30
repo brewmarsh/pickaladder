@@ -40,9 +40,12 @@ class TestUtilsCoverage(unittest.TestCase):
 
         for ref in member_refs:
             user_doc = MagicMock()
+            user_doc.id = ref.id
             user_doc.exists = True
             user_doc.to_dict.return_value = {"name": ref.id}
+            del ref.exists
             ref.get.return_value = user_doc
+        mock_db.get_all.return_value = [ref.get.return_value for ref in member_refs]
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document(
@@ -97,9 +100,12 @@ class TestUtilsCoverage(unittest.TestCase):
 
         for ref in member_refs:
             user_doc = MagicMock()
+            user_doc.id = ref.id
             user_doc.exists = True
             user_doc.to_dict.return_value = {"name": ref.id}
+            del ref.exists
             ref.get.return_value = user_doc
+        mock_db.get_all.return_value = [ref.get.return_value for ref in member_refs]
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document(
@@ -159,9 +165,12 @@ class TestUtilsCoverage(unittest.TestCase):
 
         for ref in member_refs:
             user_doc = MagicMock()
+            user_doc.id = ref.id
             user_doc.exists = True
             user_doc.to_dict.return_value = {"name": ref.id}
+            del ref.exists
             ref.get.return_value = user_doc
+        mock_db.get_all.return_value = [ref.get.return_value for ref in member_refs]
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document(
@@ -201,9 +210,12 @@ class TestUtilsCoverage(unittest.TestCase):
 
         for ref in member_refs:
             user_doc = MagicMock()
+            user_doc.id = ref.id
             user_doc.exists = True
             user_doc.to_dict.return_value = {"name": ref.id}
+            del ref.exists
             ref.get.return_value = user_doc
+        mock_db.get_all.return_value = [ref.get.return_value for ref in member_refs]
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document(
@@ -264,9 +276,12 @@ class TestUtilsCoverage(unittest.TestCase):
 
         for ref in member_refs:
             user_doc = MagicMock()
+            user_doc.id = ref.id
             user_doc.exists = True
             user_doc.to_dict.return_value = {"name": ref.id}
+            del ref.exists
             ref.get.return_value = user_doc
+        mock_db.get_all.return_value = [ref.get.return_value for ref in member_refs]
 
         mock_group_doc.to_dict.return_value = {"members": member_refs}
         mock_db.collection("groups").document(
