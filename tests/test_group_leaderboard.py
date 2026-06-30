@@ -122,6 +122,7 @@ class TestGroupLeaderboardSorting(unittest.TestCase):
         }
         u1_ref = MagicMock()
         u1_ref.id = "u1"
+        del u1_ref.exists
         u1_ref.get.return_value = u1_doc
 
         # Mock group data

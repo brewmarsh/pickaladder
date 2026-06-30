@@ -42,7 +42,12 @@ def _initialize_stats(
     """Initialize the stats dictionary for each player."""
     player_list = list(players) if players else []
 
-    if player_list and hasattr(player_list[0], "get") and callable(player_list[0].get) and not hasattr(player_list[0], "exists"):
+    if (
+        player_list
+        and hasattr(player_list[0], "get")
+        and callable(player_list[0].get)
+        and not hasattr(player_list[0], "exists")
+    ):
         db = firestore.client()
         player_docs = db.get_all(player_list)
     else:

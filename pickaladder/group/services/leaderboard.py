@@ -36,7 +36,12 @@ def _initialize_stats(
     # In python firebase-admin, DocumentReference has a get() method that returns a DocumentSnapshot.
     # DocumentSnapshot has an exists attribute, but not a get() method in the same way (it has get() to read fields).
 
-    if player_list and hasattr(player_list[0], "get") and callable(player_list[0].get) and not hasattr(player_list[0], "exists"):
+    if (
+        player_list
+        and hasattr(player_list[0], "get")
+        and callable(player_list[0].get)
+        and not hasattr(player_list[0], "exists")
+    ):
         # Likely references
         db = firestore.client()
         player_docs = db.get_all(player_list)
