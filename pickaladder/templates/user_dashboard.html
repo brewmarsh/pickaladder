@@ -118,7 +118,7 @@
             <div class="text-muted small mb-3">Recent Opponents</div>
             <div class="d-flex gap-3 mt-3">
                 {% for opponent in recent_opponents %}
-                <a href="{{ url_for('match.record_match', opponent_id=opponent.uid) }}" title="{{ opponent.name or opponent.username }}">
+                <a href="{{ url_for('match.record_match', opponent_id=opponent.uid) }}" title="{{ opponent.name or opponent.username }}" aria-label="Record match with {{ opponent.name or opponent.username }}">
                     <img src="{{ opponent | avatar_url }}" alt="{{ opponent.username }}" class="avatar avatar-lg">
                 </a>
                 {% endfor %}
@@ -312,7 +312,7 @@
                     <h4 class="fs-xs mb-2">Your Friends</h4>
                     <div class="d-flex flex-wrap gap-2">
                         {% for friend in friends[:10] %}
-                        <a href="{{ url_for('user.view_user', user_id=friend.id) }}" title="{{ friend.username }}">
+                        <a href="{{ url_for('user.view_user', user_id=friend.id) }}" title="{{ friend.username }}" aria-label="View {{ friend.username }}'s profile">
                             <img src="{{ friend | avatar_url }}" alt="{{ friend.username }}" class="avatar avatar-md">
                         </a>
                         {% else %}

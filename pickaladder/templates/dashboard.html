@@ -106,7 +106,7 @@
                             <div class="d-flex flex-wrap gap-2 mb-3">
                                 {% if friends %}
                                     {% for friend in friends %}
-                                        <a href="{{ url_for('user.view_profile', user_id=friend[0]) }}" title="{{ friend[1] }}">
+                                        <a href="{{ url_for('user.view_profile', user_id=friend[0]) }}" title="{{ friend[1] }}" aria-label="View {{ friend[1] }}'s profile">
                                             {% if friend[4] %}
                                                 <img src="{{ url_for('static', filename='uploads/' + friend[4]) }}" class="avatar avatar-md">
                                             {% else %}

@@ -85,14 +85,14 @@
             </div>
             <div class="d-flex gap-2 align-items-center">
                 {% if user and ((match.created_by == user.uid and not match.tournament_id) or user.isAdmin) %}
-                    <a href="{{ url_for('match.edit_match', match_id=match.id) }}" class="text-muted" title="Edit Match">
+                    <a href="{{ url_for('match.edit_match', match_id=match.id) }}" class="text-muted" title="Edit Match" aria-label="Edit Match">
                         ✏️
                     </a>
                 {% endif %}
                 {% if user and user.isAdmin %}
                     <form action="{{ url_for('admin.admin_delete_match', match_id=match.id) }}" method="post" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this match?');">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-sm text-danger p-0" style="background: none; border: none;" title="Delete Match">
+                        <button type="submit" class="btn btn-sm text-danger p-0" style="background: none; border: none;" title="Delete Match" aria-label="Delete Match">
                             🗑️
                         </button>
                     </form>
