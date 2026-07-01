@@ -4,3 +4,6 @@
 ## 2026-06-30 - Firestore N+1 Batch Optimization Needs Careful Mocking
 **Learning:** When optimizing an N+1 query pattern by replacing a loop of `ref.get()` with `db.get_all(refs)`, it's crucial to mock `mock_db.get_all.return_value = [...]` in the unit tests alongside adjusting the type hints. Otherwise, tests depending on individual `mock_ref.get.return_value` setups will fail since `get_all` bypasses them.
 **Action:** Always check the unit tests associated with the data fetching layer when changing from single fetches to batch fetches, and ensure `get_all` is mocked out with the combined list of expected snapshots.
+## 2026-07-01 - Optimizing Admin Friend Graph Query
+**Learning:** In the admin view, iterating over all users and making an individual query for their accepted friends creates an N+1 query problem, slowing down page loads considerably as user base grows.
+**Action:** Use a `collection_group` query for the `friends` subcollection to fetch all accepted relationships in a single operation, combined with a `status` index on the `friends` collection group, dramatically reducing latency and Firestore reads.
