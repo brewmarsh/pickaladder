@@ -98,19 +98,20 @@ class AdminService:
             user_ids.add(user_doc.id)
 
         edges = []
-        # Optimization: We only need to iterate over users once.
+        # Optimization: Use collection_group to fetch all accepted friendships
+        # in a single query instead of one query per user.
         # Friendships are reciprocal.
-        for uid in user_ids:
-            friends_stream = (
-                db.collection("users")
-                .document(uid)
-                .collection("friends")
-                .where(filter=firestore.FieldFilter("status", "==", "accepted"))
-                .stream()
-            )
-            for friend_doc in friends_stream:
-                if uid < friend_doc.id:  # Avoid duplicate edges
-                    edges.append({"from": uid, "to": friend_doc.id})
+        friends_stream = (
+            db.collection_group("friends")
+            .where(filter=firestore.FieldFilter("status", "==", "accepted"))
+            .stream()
+        )
+        for friend_doc in friends_stream:
+            # friend_doc.reference is users/{uid}/friends/{friend_id}
+            # so parent.parent gives us the user document.
+            uid = friend_doc.reference.parent.parent.id
+            if uid < friend_doc.id:  # Avoid duplicate edges
+                edges.append({"from": uid, "to": friend_doc.id})
 
         return {"nodes": nodes, "edges": edges}
 
