@@ -45,7 +45,8 @@ class TaskExecutor:
             raise RuntimeError(msg)
 
         def wrapper() -> T:
-            assert self.app is not None
+            # nosec B101
+            assert self.app is not None  # nosec B101
             with self.app.app_context():
                 try:
                     self.app.logger.debug(f"Starting background task: {func.__name__}")
