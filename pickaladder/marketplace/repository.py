@@ -75,40 +75,58 @@ class MarketplaceRepository(BaseRepository):
             group_ids = set()
 
             for season_doc in season_query.stream():
-                season_data = season_doc.to_dict()
+                season_data = season_doc.to_dict() or {}
 
                 # Filter divisions early
                 valid_divisions = []
-                for idx, div in enumerate(season_data.get("divisions", [])):
-                    if div.get("visibility") == Visibility.PUBLIC:
-                        if (
-                            query_text
-                            and query_text.lower() not in div.get("name", "").lower()
-                        ):
+                divisions = season_data.get("divisions") or []
+                for idx, div in enumerate(divisions):
+                    if (
+                        isinstance(div, dict)
+                        and div.get("visibility") == Visibility.PUBLIC
+                    ):
+                        div_name = str(div.get("name", ""))
+                        if query_text and query_text.lower() not in div_name.lower():
                             continue
                         valid_divisions.append((idx, div))
 
                 if valid_divisions:
-                    season_docs_data.append((season_doc.id, season_data, valid_divisions))
+                    season_docs_data.append(
+                        (season_doc.id, season_data, valid_divisions)
+                    )
                     if group_id := season_data.get("groupId"):
-                        group_ids.add(group_id)
+                        group_ids.add(str(group_id))
 
             # 2. Batch fetch only the required groups
+            from typing import cast
+
+            from google.cloud.firestore_v1.base_document import DocumentSnapshot
+
             group_cache: dict[str, str] = {}
             if group_ids:
-                group_refs = [db.collection("groups").document(gid) for gid in group_ids]
-                group_snaps = db.get_all(group_refs)
+                group_refs = [
+                    db.collection("groups").document(gid) for gid in group_ids
+                ]
+                group_snaps = cast("list[DocumentSnapshot]", db.get_all(group_refs))
                 for snap in group_snaps:
+                    snap_data = snap.to_dict() or {}
                     group_cache[snap.id] = (
-                        snap.to_dict().get("name") if snap.exists else "Unknown"
+                        str(snap_data.get("name", "Unknown"))
+                        if snap.exists
+                        else "Unknown"
                     )
 
             # 3. Assemble results
             for season_id, season_data, valid_divisions in season_docs_data:
-                group_id = season_data.get("groupId")
+                group_id = str(season_data.get("groupId", ""))
 
                 for idx, div in valid_divisions:
-                    group_name = group_cache.get(group_id, "Unknown") if group_id else "Unknown"
+                    group_name = (
+                        str(group_cache.get(group_id, "Unknown"))
+                        if group_id
+                        else "Unknown"
+                    )
+                    participant_ids = div.get("participant_ids") or []
                     results.append(
                         {
                             "id": f"{season_id}_{idx}",
@@ -122,7 +140,9 @@ class MarketplaceRepository(BaseRepository):
                             "visibility": div.get("visibility"),
                             "join_policy": div.get("join_policy"),
                             "is_featured": div.get("is_featured", False),
-                            "member_count": len(div.get("participant_ids", [])),
+                            "member_count": len(participant_ids)
+                            if isinstance(participant_ids, list)
+                            else 0,
                             "createdAt": season_data.get("createdAt"),
                         },
                     )
