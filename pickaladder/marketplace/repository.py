@@ -70,48 +70,62 @@ class MarketplaceRepository(BaseRepository):
                 filter=firestore.FieldFilter("status", "==", "ACTIVE"),
             )
 
-            group_cache: dict[str, str] = {}
+            # 1. Collect all valid divisions and their group IDs first to avoid over-fetching
+            season_docs_data = []
+            group_ids = set()
 
             for season_doc in season_query.stream():
                 season_data = season_doc.to_dict()
-                season_id = season_doc.id
-                group_id = season_data.get("groupId")
-                divisions = season_data.get("divisions", [])
 
-                for idx, div in enumerate(divisions):
+                # Filter divisions early
+                valid_divisions = []
+                for idx, div in enumerate(season_data.get("divisions", [])):
                     if div.get("visibility") == Visibility.PUBLIC:
-                        # Match query_text if provided (case-insensitive in memory)
                         if (
                             query_text
                             and query_text.lower() not in div.get("name", "").lower()
                         ):
                             continue
+                        valid_divisions.append((idx, div))
 
-                        if group_id not in group_cache:
-                            g_doc = db.collection("groups").document(group_id).get()
-                            group_cache[group_id] = (
-                                g_doc.to_dict().get("name")
-                                if g_doc.exists
-                                else "Unknown"
-                            )
+                if valid_divisions:
+                    season_docs_data.append((season_doc.id, season_data, valid_divisions))
+                    if group_id := season_data.get("groupId"):
+                        group_ids.add(group_id)
 
-                        results.append(
-                            {
-                                "id": f"{season_id}_{idx}",
-                                "name": div.get("name"),
-                                "type": "division",
-                                "groupId": group_id,
-                                "groupName": group_cache[group_id],
-                                "seasonId": season_id,
-                                "divisionIndex": idx,
-                                "description": f"Division in {group_cache[group_id]}",
-                                "visibility": div.get("visibility"),
-                                "join_policy": div.get("join_policy"),
-                                "is_featured": div.get("is_featured", False),
-                                "member_count": len(div.get("participant_ids", [])),
-                                "createdAt": season_data.get("createdAt"),
-                            },
-                        )
+            # 2. Batch fetch only the required groups
+            group_cache: dict[str, str] = {}
+            if group_ids:
+                group_refs = [db.collection("groups").document(gid) for gid in group_ids]
+                group_snaps = db.get_all(group_refs)
+                for snap in group_snaps:
+                    group_cache[snap.id] = (
+                        snap.to_dict().get("name") if snap.exists else "Unknown"
+                    )
+
+            # 3. Assemble results
+            for season_id, season_data, valid_divisions in season_docs_data:
+                group_id = season_data.get("groupId")
+
+                for idx, div in valid_divisions:
+                    group_name = group_cache.get(group_id, "Unknown") if group_id else "Unknown"
+                    results.append(
+                        {
+                            "id": f"{season_id}_{idx}",
+                            "name": div.get("name"),
+                            "type": "division",
+                            "groupId": group_id,
+                            "groupName": group_name,
+                            "seasonId": season_id,
+                            "divisionIndex": idx,
+                            "description": f"Division in {group_name}",
+                            "visibility": div.get("visibility"),
+                            "join_policy": div.get("join_policy"),
+                            "is_featured": div.get("is_featured", False),
+                            "member_count": len(div.get("participant_ids", [])),
+                            "createdAt": season_data.get("createdAt"),
+                        },
+                    )
 
         # In-memory sorting
         if filters:
