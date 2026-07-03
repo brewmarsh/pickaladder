@@ -88,11 +88,11 @@
                                     <div class="d-flex gap-1 flex-shrink-0 mt-1 mt-sm-0">
                                         <form action="{{ url_for('user.accept_friend_request', friend_id=request[0]) }}" method="post">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-sm btn-volt p-1 px-2">✓</button>
+                                            <button type="submit" class="btn btn-sm btn-volt p-1 px-2" title="Accept" aria-label="Accept">✓</button>
                                         </form>
                                         <form action="{{ url_for('user.decline_friend_request', friend_id=request[0]) }}" method="post">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger p-1 px-2">×</button>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger p-1 px-2" title="Decline" aria-label="Decline">×</button>
                                         </form>
                                     </div>
                                 </div>
