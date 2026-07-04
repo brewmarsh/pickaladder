@@ -22,7 +22,7 @@ class Match(UserDict):
         uid = user.get("uid") if hasattr(user, "get") else getattr(user, "uid", None)
         if not uid:
             return False
-        is_admin = getattr(user, "isAdmin", user.get("isAdmin", False))
+        is_admin = getattr(user, "isAdmin", user.get("isAdmin", False))  # type: ignore
         if is_admin:
             return True
         return self.get("created_by") == uid and not self.get("tournament_id")

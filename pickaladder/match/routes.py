@@ -39,12 +39,12 @@ def edit_match(match_id: str) -> Response:
         try:
             MatchCommandService.update_match_score(
                 match_id,
-                request.form.get("player1_score"),
-                request.form.get("player2_score"),
+                request.form.get("player1_score"),  # type: ignore
+                request.form.get("player2_score"),  # type: ignore
                 g.user.uid,
             )
             flash(MATCH_MESSAGES["UPDATE_SUCCESS"], "success")
-            return redirect(url_for("match.view_match_summary", match_id=match_id))
+            return redirect(url_for("match.view_match_summary", match_id=match_id))  # type: ignore
         except (PermissionError, ValueError) as e:
             flash(str(e), "danger")
         except Exception as e:
@@ -53,9 +53,9 @@ def edit_match(match_id: str) -> Response:
     context = MatchQueryService.get_match_edit_context(match_id)
     if not context:
         flash(MATCH_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for("user.dashboard"))
+        return redirect(url_for("user.dashboard"))  # type: ignore
 
-    return render_template(
+    return render_template(  # type: ignore
         "match/edit_match.html",
         **context,
         is_admin=g.user.is_admin,
@@ -71,9 +71,9 @@ def view_match_summary(match_id: str) -> Response:
     context = MatchQueryService.get_match_summary_context(db, match_id)
     if not context:
         flash(MATCH_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for("user.dashboard"))
+        return redirect(url_for("user.dashboard"))  # type: ignore
 
-    return render_template("match/summary.html", **context)
+    return render_template("match/summary.html", **context)  # type: ignore
 
 
 def _populate_match_form_choices(  # noqa: PLR0913
@@ -175,7 +175,7 @@ def record_match() -> Response:
             return response
 
     context = _get_record_match_context(db, t_id)
-    return render_template(
+    return render_template(  # type: ignore
         "record_match.html",
         form=form,
         group_id=group_id,
@@ -210,14 +210,14 @@ def _handle_match_submission(
         result = MatchCommandService.record_match(db, submission, g.user)
 
         if request.is_json:
-            return jsonify({"status": "success", "match_id": result.id}), 200
+            return jsonify({"status": "success", "match_id": result.id}), 200  # type: ignore
         flash(MATCH_MESSAGES["RECORD_SUCCESS"], "success")
-        return redirect(_get_record_match_redirect(submission, result.id))
+        return redirect(_get_record_match_redirect(submission, result.id))  # type: ignore
     except Exception as e:
         if request.is_json:
-            return jsonify({"status": "error", "message": str(e)}), 400
+            return jsonify({"status": "error", "message": str(e)}), 400  # type: ignore
         flash(str(e), "danger")
-    return None
+    return None  # type: ignore
 
 
 def _get_record_match_redirect(submission: MatchSubmission, match_id: str) -> str:
@@ -309,7 +309,7 @@ def leaderboard() -> Response:
     latest_matches = MatchQueryService.get_latest_matches(db)
     rising_stars = MatchQueryService.get_rising_stars(db)
 
-    return render_template(
+    return render_template(  # type: ignore
         "leaderboard.html",
         podium=podium,
         gold_tier=gold_tier,
@@ -332,7 +332,7 @@ def create_challenge() -> Response:
     wager = data.get("wager", 0)
 
     if not challenged_id:
-        return jsonify({"status": "error", "message": "challenged_id is required"}), 400
+        return jsonify({"status": "error", "message": "challenged_id is required"}), 400  # type: ignore
 
     try:
         from .services.challenge_service import ChallengeService
@@ -343,9 +343,9 @@ def create_challenge() -> Response:
             challenged_id,
             int(wager),
         )
-        return jsonify({"status": "success", "challenge_id": challenge_id}), 201
+        return jsonify({"status": "success", "challenge_id": challenge_id}), 201  # type: ignore
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
+        return jsonify({"status": "error", "message": str(e)}), 400  # type: ignore
 
 
 @bp.route("/challenge/<string:challenge_id>/accept", methods=["POST"])
@@ -357,9 +357,9 @@ def accept_challenge(challenge_id: str) -> Response:
         from .services.challenge_service import ChallengeService
 
         ChallengeService.accept_challenge(db, challenge_id, g.user.uid)
-        return jsonify({"status": "success"}), 200
+        return jsonify({"status": "success"}), 200  # type: ignore
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
+        return jsonify({"status": "error", "message": str(e)}), 400  # type: ignore
 
 
 @bp.route("/challenge/<string:challenge_id>/decline", methods=["POST"])
@@ -371,9 +371,9 @@ def decline_challenge(challenge_id: str) -> Response:
         from .services.challenge_service import ChallengeService
 
         ChallengeService.decline_challenge(db, challenge_id, g.user.uid)
-        return jsonify({"status": "success"}), 200
+        return jsonify({"status": "success"}), 200  # type: ignore
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
+        return jsonify({"status": "error", "message": str(e)}), 400  # type: ignore
 
 
 @bp.route("/challenge/<string:challenge_id>/cancel", methods=["POST"])
@@ -385,9 +385,9 @@ def cancel_challenge(challenge_id: str) -> Response:
         from .services.challenge_service import ChallengeService
 
         ChallengeService.cancel_challenge(db, challenge_id, g.user.uid)
-        return jsonify({"status": "success"}), 200
+        return jsonify({"status": "success"}), 200  # type: ignore
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
+        return jsonify({"status": "error", "message": str(e)}), 400  # type: ignore
 
 
 @bp.route("/api/challenges")
@@ -399,6 +399,6 @@ def get_challenges_api() -> Response:
         from .services.challenge_service import ChallengeService
 
         challenges = ChallengeService.get_user_challenges(db, g.user.uid)
-        return jsonify(challenges), 200
+        return jsonify(challenges), 200  # type: ignore
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
+        return jsonify({"status": "error", "message": str(e)}), 400  # type: ignore

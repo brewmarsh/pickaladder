@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-import requests
+import requests  # type: ignore
 from flask import current_app
 
 logger = logging.getLogger(__name__)

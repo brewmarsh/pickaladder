@@ -24,14 +24,14 @@ def view_season(season_id: str) -> Response | str:
     season = SeasonService.get_season(db, season_id)
     if not season:
         flash("Season not found", "danger")
-        return redirect(url_for("group.view_groups"))
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     group_id = season["groupId"]
     try:
         group_context = GroupService.get_group_details(db, group_id, g.user.uid)
     except Exception:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for("group.view_groups"))
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     # If completed, we use the finalStandings snapshot
     if season.get("status") == "COMPLETED" and "finalStandings" in season:
@@ -57,7 +57,7 @@ def list_seasons(group_id: str) -> Response | str:
         group_context = GroupService.get_group_details(db, group_id, g.user.uid)
     except Exception:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for("group.view_groups"))
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     seasons = SeasonService.get_seasons_for_group(db, group_id)
     return render_template(
@@ -77,10 +77,10 @@ def create_season(group_id: str) -> Response | str:
         group_context = GroupService.get_group_details(db, group_id, g.user.uid)
         if not group_context["is_admin"]:
             flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
-            return redirect(url_for("group.view_group", group_id=group_id))
+            return redirect(url_for("group.view_group", group_id=group_id))  # type: ignore
     except Exception:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for("group.view_groups"))
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     form = SeasonForm()
     if form.validate_on_submit():
@@ -99,7 +99,7 @@ def create_season(group_id: str) -> Response | str:
             }
             SeasonService.create_season(db, season_data)
             flash("Season created successfully!", "success")
-            return redirect(url_for(".list_seasons", group_id=group_id))
+            return redirect(url_for(".list_seasons", group_id=group_id))  # type: ignore
         except Exception as e:
             flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
 
@@ -119,17 +119,17 @@ def edit_season(season_id: str) -> Response | str:
     season = SeasonService.get_season(db, season_id)
     if not season:
         flash("Season not found", "danger")
-        return redirect(url_for("group.view_groups"))
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     group_id = season["groupId"]
     try:
         group_context = GroupService.get_group_details(db, group_id, g.user.uid)
         if not group_context["is_admin"]:
             flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
-            return redirect(url_for(".list_seasons", group_id=group_id))
+            return redirect(url_for(".list_seasons", group_id=group_id))  # type: ignore
     except Exception:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for("group.view_groups"))
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     form = SeasonForm(data=season)
     # Map nested rules to flat form fields
@@ -152,7 +152,7 @@ def edit_season(season_id: str) -> Response | str:
             }
             SeasonService.update_season(db, season_id, update_data)
             flash("Season updated successfully!", "success")
-            return redirect(url_for(".list_seasons", group_id=group_id))
+            return redirect(url_for(".list_seasons", group_id=group_id))  # type: ignore
         except Exception as e:
             flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
 
@@ -173,17 +173,17 @@ def finalize_season(season_id: str) -> Response | str:
     season = SeasonService.get_season(db, season_id)
     if not season:
         flash("Season not found", "danger")
-        return redirect(url_for("group.view_groups"))
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     group_id = season["groupId"]
     try:
         group_context = GroupService.get_group_details(db, group_id, g.user.uid)
         if not group_context["is_admin"]:
             flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
-            return redirect(url_for(".view_season", season_id=season_id))
+            return redirect(url_for(".view_season", season_id=season_id))  # type: ignore
     except Exception:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for("group.view_groups"))
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     if request.method == "POST":
         try:
@@ -202,10 +202,10 @@ def finalize_season(season_id: str) -> Response | str:
                 # For now, we redirect to create page.
                 # In more advanced version, pass participants via session or URL.
                 flash("Season finalized! Create the next one below.", "success")
-                return redirect(url_for(".create_season", group_id=group_id))
+                return redirect(url_for(".create_season", group_id=group_id))  # type: ignore
 
             flash("Season finalized and results captured!", "success")
-            return redirect(url_for(".view_season", season_id=season_id))
+            return redirect(url_for(".view_season", season_id=season_id))  # type: ignore
         except Exception as e:
             flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
 

@@ -5,3 +5,6 @@
 ## 2026-07-01 - ARIA Labels on Avatar Links and Icon Buttons
 **Learning:** Anchor tags that wrap only images (like user avatars on the dashboard) and icon-only buttons (like delete/edit match) often lack context for screen readers. The image's `alt` text or a `title` attribute is insufficient for interactive elements.
 **Action:** Always add descriptive `aria-label` attributes to anchor tags that only contain images, and to buttons that only contain icons (like emojis or FontAwesome icons) to clarify the action or destination.
+## 2026-07-04 - CSS Dropdown Keyboard Accessibility
+**Learning:** Pure CSS dropdowns that rely solely on `.dropdown:hover` are inaccessible to keyboard users because focusing on the trigger button with the `Tab` key does not trigger the `:hover` state, trapping the menu content.
+**Action:** Always pair `.dropdown:hover .dropdown-content` with `.dropdown:focus-within .dropdown-content` to ensure the menu opens and remains open when any element inside the dropdown structure receives keyboard focus. Also ensure child links have a defined `:focus` state.

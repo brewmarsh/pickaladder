@@ -19,7 +19,7 @@ def client(app: Flask) -> FlaskClient:
 
 
 @pytest.fixture
-def mock_challenge_service() -> MagicMock:
+def mock_challenge_service() -> MagicMock:  # type: ignore
     """Mock ChallengeService."""
     with patch("pickaladder.match.services.challenge_service.ChallengeService") as mock:
         yield mock

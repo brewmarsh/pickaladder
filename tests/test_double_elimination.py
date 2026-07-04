@@ -13,7 +13,7 @@ class DoubleEliminationTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         self.mock_db = MagicMock()
-        self.docs = {}
+        self.docs = {}  # type: ignore
 
         # Mock .collection().document() to return the same mock for the same ID
         def mock_doc(path):

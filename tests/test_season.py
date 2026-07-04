@@ -136,11 +136,11 @@ class SeasonServiceTestCase(unittest.TestCase):
 
         result = SeasonFinalizationService.apply_movements(self.mock_db, "old_s")
 
-        assert "p1" in result["suggested_participants"]
-        assert "p2" in result["suggested_participants"]
-        assert "p3" in result["suggested_participants"]
-        assert "p4" in result["relegated_participants"]
-        assert len(result["suggested_participants"]) == 3
+        assert "p1" in result["suggested_participants"]  # type: ignore
+        assert "p2" in result["suggested_participants"]  # type: ignore
+        assert "p3" in result["suggested_participants"]  # type: ignore
+        assert "p4" in result["relegated_participants"]  # type: ignore
+        assert len(result["suggested_participants"]) == 3  # type: ignore
 
 
 if __name__ == "__main__":

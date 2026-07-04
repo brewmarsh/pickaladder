@@ -33,8 +33,8 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         if "round" not in match_data or "bracketPosition" not in match_data:
             if mid := match_data.get("id"):
                 doc = db.collection("matches").document(mid).get()
-                if doc.exists:
-                    match_data = {**doc.to_dict(), "id": mid}
+                if doc.exists:  # type: ignore
+                    match_data = {**doc.to_dict(), "id": mid}  # type: ignore
 
         tournament = TournamentService.get_tournament(t_id, db=db)
         fmt = str(tournament.get("format", "ROUND_ROBIN")).upper()

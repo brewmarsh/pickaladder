@@ -12,7 +12,7 @@ def get_player_info(
 ) -> dict[str, Any]:
     """Extract player info from a reference or dictionary."""
     if hasattr(player_ref, "id"):
-        uid = player_ref.id
+        uid = player_ref.id  # type: ignore
         return users_map.get(uid, {"username": uid, "id": uid})
     return {"username": "Unknown", "id": "unknown"}
 

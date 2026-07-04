@@ -317,7 +317,8 @@ select:focus {
     font-size: 14px;
 }
 
-.dropdown-content a:hover {
+.dropdown-content a:hover,
+.dropdown-content a:focus {
     background-color: var(--bg-color);
 }
 
@@ -328,7 +329,8 @@ select:focus {
     background-color: var(--border-color);
 }
 
-.dropdown:hover .dropdown-content {
+.dropdown:hover .dropdown-content,
+.dropdown:focus-within .dropdown-content {
     display: block;
 }
 

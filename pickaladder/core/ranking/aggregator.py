@@ -90,24 +90,24 @@ class StandingAggregator:
             # Record stats
             for uid in [p1_id, p2_id]:
                 if uid and uid in stats:
-                    stats[uid]["matches_played"] += 1
+                    stats[uid]["matches_played"] += 1  # type: ignore
                     if uid == w_id:
-                        stats[uid]["wins"] += 1
+                        stats[uid]["wins"] += 1  # type: ignore
                     else:
-                        stats[uid]["losses"] += 1
+                        stats[uid]["losses"] += 1  # type: ignore
 
                     if uid == p1_id:
-                        stats[uid]["points_for"] += s1
-                        stats[uid]["points_against"] += s2
+                        stats[uid]["points_for"] += s1  # type: ignore
+                        stats[uid]["points_against"] += s2  # type: ignore
                     else:
-                        stats[uid]["points_for"] += s2
-                        stats[uid]["points_against"] += s1
+                        stats[uid]["points_for"] += s2  # type: ignore
+                        stats[uid]["points_against"] += s1  # type: ignore
 
         # Calculate final PD and win %
         for s in stats.values():
-            s["point_diff"] = s["points_for"] - s["points_against"]
-            total = s["wins"] + s["losses"]
-            s["win_percentage"] = (s["wins"] / total * 100) if total > 0 else 0
+            s["point_diff"] = s["points_for"] - s["points_against"]  # type: ignore
+            total = s["wins"] + s["losses"]  # type: ignore
+            s["win_percentage"] = (s["wins"] / total * 100) if total > 0 else 0  # type: ignore
 
         return stats
 

@@ -34,13 +34,13 @@ def manage_group(group_id: str) -> Response | str | dict[str, Any]:
         context = GroupService.get_group_details(db, group_id, g.user.uid)
         if not context["is_admin"]:
             flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
-            return redirect(url_for(".view_group", group_id=group_id))
+            return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
     except GroupNotFound:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for(".view_groups"))
+        return redirect(url_for(".view_groups"))  # type: ignore
     except AccessDenied:
         flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
-        return redirect(url_for(".view_groups"))
+        return redirect(url_for(".view_groups"))  # type: ignore
 
     # 1. Invite Email form
     invite_email_form, resp = _handle_invite_email_form(
@@ -104,7 +104,7 @@ def handle_membership_request(
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
 
-    return redirect(url_for(".manage_group", group_id=group_id))
+    return redirect(url_for(".manage_group", group_id=group_id))  # type: ignore
 
 
 @bp.route("/create", methods=["GET", "POST"])
@@ -122,7 +122,7 @@ def create_group() -> Response | str | dict[str, Any]:
                 form.profile_picture.data,
             )
             flash(GROUP_MESSAGES["CREATE_SUCCESS"], "success")
-            return redirect(url_for(".view_group", group_id=group_id))
+            return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
         except Exception as e:
             flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
     return render_template("create_group.html", form=form)
@@ -181,10 +181,10 @@ def edit_group(group_id: str) -> Response | str | dict[str, Any]:
         group_data = _get_group_for_edit(db, group_id)
     except GroupNotFound:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for(".view_groups"))
+        return redirect(url_for(".view_groups"))  # type: ignore
     except AccessDenied as e:
         flash(str(e), "danger")
-        return redirect(url_for(".view_group", group_id=group_id))
+        return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
 
     form, resp = _handle_edit_group_form(db, group_id, group_data)
     if resp:
@@ -207,21 +207,21 @@ def delete_group(group_id: str) -> Response | str | dict[str, Any]:
     group = group_ref.get()
     if not group.exists:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for(".view_groups"))
+        return redirect(url_for(".view_groups"))  # type: ignore
 
     group_data = group.to_dict() or {}
     owner_ref = group_data.get("ownerRef")
     if not owner_ref or owner_ref.id != g.user.uid:
         flash(GROUP_MESSAGES["DELETE_DENIED"], "danger")
-        return redirect(url_for(".view_group", group_id=group.id))
+        return redirect(url_for(".view_group", group_id=group.id))  # type: ignore
 
     try:
         group_ref.delete()
         flash(GROUP_MESSAGES["DELETE_SUCCESS"], "success")
-        return redirect(url_for(".view_groups"))
+        return redirect(url_for(".view_groups"))  # type: ignore
     except Exception as e:
         flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
-        return redirect(url_for(".view_group", group_id=group.id))
+        return redirect(url_for(".view_group", group_id=group.id))  # type: ignore
 
 
 @bp.route("/<string:group_id>/promote/<string:user_id>", methods=["POST"])
@@ -236,7 +236,7 @@ def promote_member(group_id: str, user_id: str) -> Response | str | dict[str, An
         flash(GROUP_MESSAGES["PROMOTE_DENIED"], "danger")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".view_group", group_id=group_id))
+    return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
 
 
 @bp.route("/<string:group_id>/demote/<string:user_id>", methods=["POST"])
@@ -251,7 +251,7 @@ def demote_member(group_id: str, user_id: str) -> Response | str | dict[str, Any
         flash(GROUP_MESSAGES["DEMOTE_DENIED"], "danger")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".view_group", group_id=group_id))
+    return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
 
 
 @bp.route("/<string:group_id>/remove/<string:user_id>", methods=["POST"])
@@ -266,4 +266,4 @@ def remove_member(group_id: str, user_id: str) -> Response | str | dict[str, Any
         flash(str(e), "danger")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".view_group", group_id=group_id))
+    return redirect(url_for(".view_group", group_id=group_id))  # type: ignore

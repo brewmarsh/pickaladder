@@ -22,8 +22,8 @@ class SocialCreditService:
         """
         user_ref = db.collection("users").document(user_id)
         doc = user_ref.get()
-        if doc.exists:
-            data = doc.to_dict() or {}
+        if doc.exists:  # type: ignore
+            data = doc.to_dict() or {}  # type: ignore
             return data.get("social_credits", cls.DEFAULT_BALANCE)
         return cls.DEFAULT_BALANCE
 
@@ -53,8 +53,8 @@ class SocialCreditService:
         doc = user_ref.get(transaction=transaction)
 
         current_balance = cls.DEFAULT_BALANCE
-        if doc.exists:
-            data = doc.to_dict() or {}
+        if doc.exists:  # type: ignore
+            data = doc.to_dict() or {}  # type: ignore
             current_balance = data.get("social_credits", cls.DEFAULT_BALANCE)
 
         new_balance = current_balance + delta

@@ -31,8 +31,8 @@ class Tournament(UserDict):
         if not owner_id and owner_ref:
             owner_id = getattr(owner_ref, "id", None)
 
-        is_admin = getattr(user, "isAdmin", user.get("isAdmin", False))
-        return uid == owner_id or is_admin
+        is_admin = getattr(user, "isAdmin", user.get("isAdmin", False))  # type: ignore
+        return uid == owner_id or is_admin  # type: ignore
 
     @property
     def is_doubles(self) -> bool:

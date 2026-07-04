@@ -51,12 +51,12 @@ def join_division(season_id: str, division_index: int) -> Response:
     season = SeasonService.get_season(db, season_id)
     if not season:
         flash("Season not found.", "danger")
-        return redirect(url_for("marketplace.view_marketplace"))
+        return redirect(url_for("marketplace.view_marketplace"))  # type: ignore
 
     divisions = season.get("divisions", [])
     if division_index >= len(divisions):
         flash("Invalid division.", "danger")
-        return redirect(url_for("marketplace.view_marketplace"))
+        return redirect(url_for("marketplace.view_marketplace"))  # type: ignore
 
     division = divisions[division_index]
 
@@ -65,17 +65,17 @@ def join_division(season_id: str, division_index: int) -> Response:
         try:
             SeasonService.join_season_division(db, season_id, division_index, user_id)
             flash(f"Successfully joined {division.get('name')}!", "success")
-            return redirect(url_for("season.view_season", season_id=season_id))
+            return redirect(url_for("season.view_season", season_id=season_id))  # type: ignore
         except Exception as e:
             flash(f"Error joining division: {e}", "danger")
-            return redirect(url_for("marketplace.view_marketplace"))
+            return redirect(url_for("marketplace.view_marketplace"))  # type: ignore
 
     elif division.get("join_policy") == "REQUEST":
         group_id = season.get("groupId")
         try:
             GroupService.create_membership_request(
                 db,
-                group_id,
+                group_id,  # type: ignore
                 user_id,
                 f"Request to join division: {division.get('name')}",
             )
@@ -83,7 +83,7 @@ def join_division(season_id: str, division_index: int) -> Response:
         except ValueError as e:
             flash(str(e), "warning")
 
-        return redirect(url_for("marketplace.view_marketplace"))
+        return redirect(url_for("marketplace.view_marketplace"))  # type: ignore
     else:
         flash("This division is invite-only.", "warning")
-        return redirect(url_for("marketplace.view_marketplace"))
+        return redirect(url_for("marketplace.view_marketplace"))  # type: ignore

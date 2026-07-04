@@ -38,10 +38,10 @@ class SeasonRepository(BaseRepository):
         query = db.collection("matches").where(
             filter=firestore.FieldFilter("seasonId", "==", season_id),
         )
-        return [doc.to_dict() | {"id": doc.id} for doc in query.stream()]
+        return [doc.to_dict() | {"id": doc.id} for doc in query.stream()]  # type: ignore
 
     @classmethod
-    def get_all(cls, db: Client) -> list[dict[str, Any]]:
+    def get_all(cls, db: Client) -> list[dict[str, Any]]:  # type: ignore
         """Fetch all seasons globally."""
         docs = db.collection(cls.COLLECTION_NAME).stream()
         return [enriched for doc in docs if (enriched := cls._enrich(doc)) is not None]

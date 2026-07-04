@@ -33,7 +33,7 @@ def apply_global_patches(mock_db: MockFirestore) -> Iterator[None]:
 def app() -> Iterator[Any]:
     """Create and configure a new app instance for each test."""
     # Global patches from apply_global_patches are already active
-    return create_app(
+    return create_app(  # type: ignore
         {
             "TESTING": True,
             "WTF_CSRF_ENABLED": False,

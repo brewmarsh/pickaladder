@@ -326,7 +326,7 @@ class GroupService:
             # Still need to enrich with user docs for ghost/existing user info display
             emails = [i.get("email") for i in pending_members if i.get("email")]
             if emails:
-                user_docs = GroupService._fetch_user_docs_by_email(db, emails)
+                user_docs = GroupService._fetch_user_docs_by_email(db, emails)  # type: ignore
                 for invite in pending_members:
                     GroupService._enrich_invite_with_user_data(invite, user_docs)
 

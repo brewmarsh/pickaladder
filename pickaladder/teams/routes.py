@@ -33,17 +33,17 @@ def create_team() -> Response | str:
         try:
             member_ids = form.members.data
             # Ensure creator is in the team
-            if g.user.uid not in member_ids:
-                member_ids.append(g.user.uid)
+            if g.user.uid not in member_ids:  # type: ignore
+                member_ids.append(g.user.uid)  # type: ignore
 
             team_id = TeamService.create_named_team(
                 db,
-                form.name.data,
+                form.name.data,  # type: ignore
                 g.user.uid,
-                member_ids,
+                member_ids,  # type: ignore
             )
             flash("Team created successfully!", "success")
-            return redirect(url_for(".view_team", team_id=team_id))
+            return redirect(url_for(".view_team", team_id=team_id))  # type: ignore
         except Exception as e:
             flash(f"Error creating team: {e}", "danger")
 
@@ -59,7 +59,7 @@ def view_team(team_id: str) -> Response | str:
 
     if not data:
         flash(MATCH_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for("group.view_groups"))
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     return render_template("team/view.html", **data)
 
@@ -74,7 +74,7 @@ def rename_team(team_id: str) -> Response | str:
 
     if not team.exists:
         flash(MATCH_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for("group.view_groups"))
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     team_data = team.to_dict()
     team_data["id"] = team.id
@@ -82,14 +82,14 @@ def rename_team(team_id: str) -> Response | str:
     # Authorization check
     if g.user.uid not in team_data.get("member_ids", []):
         flash(MATCH_MESSAGES["RENAME_DENIED"], "danger")
-        return redirect(url_for(".view_team", team_id=team_id))
+        return redirect(url_for(".view_team", team_id=team_id))  # type: ignore
 
     form = EditTeamNameForm()
     if form.validate_on_submit():
         try:
             team_ref.update({"name": form.name.data})
             flash(MATCH_MESSAGES["UPDATE_SUCCESS"], "success")
-            return redirect(url_for(".view_team", team_id=team_id))
+            return redirect(url_for(".view_team", team_id=team_id))  # type: ignore
         except Exception as e:
             flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
 

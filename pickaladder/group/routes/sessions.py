@@ -21,7 +21,7 @@ def quick_log(session_id: str) -> Response | str | dict[str, Any]:
     session_data = SessionService.get_session(db, session_id)
     if not session_data:
         flash("Session not found", "danger")
-        return redirect(url_for(".view_groups"))
+        return redirect(url_for(".view_groups"))  # type: ignore
 
     # Fetch player details for the pool
     players = []
@@ -58,7 +58,7 @@ def view_session(session_id: str) -> Response | str | dict[str, Any]:
     session_data = SessionService.get_session(db, session_id)
     if not session_data:
         flash("Session not found", "danger")
-        return redirect(url_for(".view_groups"))
+        return redirect(url_for(".view_groups"))  # type: ignore
 
     # Fetch matches
     match_ids = session_data.get("matchIds", [])
@@ -110,4 +110,4 @@ def verify_session(session_id: str) -> Response | str | dict[str, Any]:
     else:
         flash("Failed to verify session. You may not be a participant.", "danger")
 
-    return redirect(url_for(".view_session", session_id=session_id))
+    return redirect(url_for(".view_session", session_id=session_id))  # type: ignore

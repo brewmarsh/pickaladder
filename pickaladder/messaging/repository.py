@@ -31,7 +31,7 @@ class MessagingRepository(BaseRepository):
             .order_by("updatedAt", direction=firestore.Query.DESCENDING)
         )
 
-        return [doc.to_dict() | {"id": doc.id} for doc in query.stream()]
+        return [doc.to_dict() | {"id": doc.id} for doc in query.stream()]  # type: ignore
 
     @classmethod
     def find_direct_conversation(
@@ -49,9 +49,9 @@ class MessagingRepository(BaseRepository):
 
         for doc in query.stream():
             data = doc.to_dict()
-            parts = data.get("participants", [])
+            parts = data.get("participants", [])  # type: ignore
             if len(parts) == DIRECT_CONVERSATION_PARTICIPANTS and user_id2 in parts:
-                return data | {"id": doc.id}
+                return data | {"id": doc.id}  # type: ignore
 
         return None
 
@@ -86,7 +86,7 @@ class MessagingRepository(BaseRepository):
         # Fetch participants to handle unread counts
         conv_doc = conv_ref.get()
         participants = (
-            conv_doc.to_dict().get("participants", []) if conv_doc.exists else []
+            conv_doc.to_dict().get("participants", []) if conv_doc.exists else []  # type: ignore
         )
 
         sender_id = message_data.get("senderId")

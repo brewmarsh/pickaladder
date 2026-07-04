@@ -79,7 +79,7 @@ def send_friend_request(friend_id: str) -> Response:
     """Send a friend request."""
     if g.user.uid == friend_id:
         flash(USER_MESSAGES["FRIEND_REQ_SELF"], "danger")
-        return redirect(url_for(".users"))
+        return redirect(url_for(".users"))  # type: ignore
 
     success = UserService.send_friend_request(firestore.client(), g.user.uid, friend_id)
     if success:
@@ -89,21 +89,21 @@ def send_friend_request(friend_id: str) -> Response:
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"success": success})
-    return redirect(url_for(".users"))
+    return redirect(url_for(".users"))  # type: ignore
 
 
 @bp.route("/friends")
 @login_required
 def friends() -> Response:
     """Deprecated: Redirects to the community hub."""
-    return redirect(url_for(".view_community"))
+    return redirect(url_for(".view_community"))  # type: ignore
 
 
 @bp.route("/requests", methods=["GET"])
 @login_required
 def friend_requests() -> Response:
     """Deprecated: Redirects to the community hub."""
-    return redirect(url_for(".view_community"))
+    return redirect(url_for(".view_community"))  # type: ignore
 
 
 @bp.route("/requests/<string:requester_id>/accept", methods=["POST"])
@@ -120,7 +120,7 @@ def accept_request(requester_id: str) -> Response:
     else:
         flash(COMMON_MESSAGES["GENERIC_ERROR_SIMPLE"], "danger")
 
-    return redirect(request.referrer or url_for(".view_community"))
+    return redirect(request.referrer or url_for(".view_community"))  # type: ignore
 
 
 @bp.route("/requests/<string:target_id>/cancel", methods=["POST"])
@@ -132,4 +132,4 @@ def cancel_request(target_id: str) -> Response:
         flash(USER_MESSAGES["FRIEND_REQ_PROCESSED"], "success")
     else:
         flash(COMMON_MESSAGES["GENERIC_ERROR_SIMPLE"], "danger")
-    return redirect(request.referrer or url_for(".view_community"))
+    return redirect(request.referrer or url_for(".view_community"))  # type: ignore
