@@ -55,7 +55,7 @@ def settings() -> Response | str:
             if "info" in res:
                 flash(res["info"], "info")
             flash(USER_MESSAGES["SETTINGS_UPDATED"], "success")
-            return redirect(url_for(".settings"))
+            return redirect(url_for(".settings"))  # type: ignore
         flash(res["error"], "danger")
 
     return render_template("user/settings.html", form=form, user=g.user)
@@ -71,7 +71,7 @@ def reset_avatar() -> Response:
         flash(USER_MESSAGES["PROFILE_PIC_REMOVED"], "success")
     else:
         flash(USER_MESSAGES["PROFILE_PIC_REMOVE_ERROR"], "danger")
-    return redirect(url_for(".settings"))
+    return redirect(url_for(".settings"))  # type: ignore
 
 
 @bp.route("/edit_profile", methods=["GET", "POST"])
@@ -90,7 +90,7 @@ def edit_profile() -> Response | str:
             if "info" in res:
                 flash(res["info"], "info")
             flash(USER_MESSAGES["ACCOUNT_UPDATED"], "success")
-            return redirect(url_for(".edit_profile"))
+            return redirect(url_for(".edit_profile"))  # type: ignore
         flash(res["error"], "danger")
     return render_template("user/edit_profile.html", form=form, user=g.user)
 
@@ -132,7 +132,7 @@ def view_user(user_id: str) -> Response | str:
     data = UserService.get_user_profile_data(db, g.user.uid, user_id)
     if not data:
         flash(USER_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for(".users"))
+        return redirect(url_for(".users"))  # type: ignore
 
     stats = data.get("stats", {})
     total_games = stats.get("total_games", 0)
@@ -165,14 +165,14 @@ def share_brag(user_id: str, group_id: str) -> Response | str:
     user_doc = db.collection("users").document(user_id).get()
     if not user_doc.exists:
         flash(USER_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("main.index"))  # type: ignore
     user_data = user_doc.to_dict() or {}
 
     # Fetch group data
     group_doc = db.collection("groups").document(group_id).get()
     if not group_doc.exists:
         flash("Group not found", "danger")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("main.index"))  # type: ignore
     group_data = group_doc.to_dict() or {}
     group_data["id"] = group_id
 
@@ -184,14 +184,14 @@ def share_brag(user_id: str, group_id: str) -> Response | str:
     user_stats = next((p for p in leaderboard if p["id"] == user_id), None)
     if not user_stats:
         flash("User not part of this group", "danger")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("main.index"))  # type: ignore
 
     rank = next((i + 1 for i, p in enumerate(leaderboard) if p["id"] == user_id), 0)
     streak = user_stats.get("streak", 0)
 
     # Fetch trend data
     trend_data_all = get_leaderboard_trend_data(group_id)
-    user_dataset = next(
+    user_dataset = next(  # type: ignore
         (ds for ds in trend_data_all["datasets"] if ds.get("id") == user_id),
         {"data": []},
     )

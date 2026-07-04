@@ -48,15 +48,15 @@ class ActivityService:
         activities = []
         for doc in query.stream():
             data = doc.to_dict()
-            data["id"] = doc.id
+            data["id"] = doc.id  # type: ignore
 
             # Enrich with user profile
-            user = UserService.get_user_by_id(db, data["userId"])
-            data["user"] = user or {"username": "Unknown", "id": data["userId"]}
+            user = UserService.get_user_by_id(db, data["userId"])  # type: ignore
+            data["user"] = user or {"username": "Unknown", "id": data["userId"]}  # type: ignore
 
             activities.append(data)
 
-        return activities
+        return activities  # type: ignore
 
     @staticmethod
     def toggle_reaction(
@@ -70,11 +70,11 @@ class ActivityService:
             activity_id,
         )
         doc = activity_ref.get()
-        if not doc.exists:
+        if not doc.exists:  # type: ignore
             return []
 
-        data = doc.to_dict()
-        reactions = data.get("reactions", [])
+        data = doc.to_dict()  # type: ignore
+        reactions = data.get("reactions", [])  # type: ignore
 
         # Check if user already reacted
         existing = next((r for r in reactions if r["userId"] == user_id), None)

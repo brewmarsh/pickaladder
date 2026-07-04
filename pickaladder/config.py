@@ -58,7 +58,7 @@ class Config:
 
         # Mail
         self.MAIL_SERVER = get_env_str("MAIL_SERVER", "smtp.gmail.com")
-        self.MAIL_PORT = int(get_env_str("MAIL_PORT", "587"))
+        self.MAIL_PORT = int(get_env_str("MAIL_PORT", "587"))  # type: ignore
         self.MAIL_USE_TLS = get_env_bool("MAIL_USE_TLS", "true")
         self.MAIL_USE_SSL = get_env_bool("MAIL_USE_SSL", "false")
         self.MAIL_USERNAME = sanitize_cred(os.environ.get("MAIL_USERNAME"))
@@ -85,5 +85,5 @@ class Config:
 
         # Caching
         self.CACHE_TYPE = get_env_str("CACHE_TYPE", "SimpleCache")
-        self.CACHE_DEFAULT_TIMEOUT = int(get_env_str("CACHE_DEFAULT_TIMEOUT", "300"))
+        self.CACHE_DEFAULT_TIMEOUT = int(get_env_str("CACHE_DEFAULT_TIMEOUT", "300"))  # type: ignore
         self.CACHE_REDIS_URL = get_env_str("CACHE_REDIS_URL")

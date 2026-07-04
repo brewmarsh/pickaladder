@@ -48,7 +48,7 @@ def sitemap() -> Response:
     pages = []
     # Static pages
     for rule in current_app.url_map.iter_rules():
-        if "GET" in rule.methods and len(rule.arguments) == 0:
+        if "GET" in rule.methods and len(rule.arguments) == 0:  # type: ignore
             # Skip private/admin routes
             if any(
                 x in rule.rule

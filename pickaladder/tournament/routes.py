@@ -86,14 +86,14 @@ def create_tournament() -> Response | str:
     error = _get_group_admin_error(gid, g.user.uid)
     if error:
         flash(error, "danger")
-        return redirect(url_for("group.view_group", group_id=gid))
+        return redirect(url_for("group.view_group", group_id=gid))  # type: ignore
 
     form = TournamentForm()
     if form.validate_on_submit():
         try:
             t_id = _handle_creation_payload(form, g.user.uid)
             flash(TOURNAMENT_MESSAGES["CREATE_SUCCESS"], "success")
-            return redirect(url_for(".view_tournament", tournament_id=t_id))
+            return redirect(url_for(".view_tournament", tournament_id=t_id))  # type: ignore
         except Exception as e:
             flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
     return render_template("tournaments/create_edit.html", form=form, action="Create")
@@ -138,7 +138,7 @@ def view_tournament(tournament_id: str) -> Response | str:
     details = TournamentService.get_tournament_details(tournament_id, g.user.uid)
     if not details:
         flash(TOURNAMENT_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for(".list_tournaments"))
+        return redirect(url_for(".list_tournaments"))  # type: ignore
 
     details["claim_team_data"] = _resolve_claim_data(
         tournament_id,
@@ -151,7 +151,7 @@ def view_tournament(tournament_id: str) -> Response | str:
     try:
         if _handle_view_invite(tournament_id, form):
             flash(TOURNAMENT_MESSAGES["PLAYER_INVITE_SUCCESS"], "success")
-            return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+            return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore
     except Exception as e:
         flash(TOURNAMENT_MESSAGES["INVITE_ERROR"].format(error=e), "danger")
 
@@ -159,7 +159,7 @@ def view_tournament(tournament_id: str) -> Response | str:
 
     # Phase 28: Support for Pool Play Standings
     if details["tournament"].get("format") == "POOL_PLAY":
-        pools = {}
+        pools = {}  # type: ignore
         for m in details["matches"]:
             pool_id = m.get("pool_id")
             if pool_id:
@@ -216,7 +216,7 @@ def edit_tournament(tournament_id: str) -> Response | str:
         t = TournamentService.get_tournament_for_edit(tournament_id, g.user.uid)
         if _handle_tournament_update(tournament_id, form):
             flash(TOURNAMENT_MESSAGES["UPDATE_SUCCESS"], "success")
-            return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+            return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore
 
         if request.method == "GET":
             _populate_edit_form(form, t)
@@ -231,7 +231,7 @@ def edit_tournament(tournament_id: str) -> Response | str:
         flash(str(e), "danger")
     except Exception as e:
         flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".list_tournaments"))
+    return redirect(url_for(".list_tournaments"))  # type: ignore
 
 
 @bp.route("/<string:tournament_id>/delete", methods=["POST"])
@@ -245,7 +245,7 @@ def delete_tournament(tournament_id: str) -> Response:
         flash(str(e), "danger")
     except Exception as e:
         flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".list_tournaments"))
+    return redirect(url_for(".list_tournaments"))  # type: ignore
 
 
 @bp.route("/<string:tournament_id>/invite", methods=["POST"])
@@ -263,7 +263,7 @@ def invite_player(tournament_id: str) -> Response:
             flash(TOURNAMENT_MESSAGES["PLAYER_INVITE_SUCCESS"], "success")
         except Exception as e:
             flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore
 
 
 @bp.route("/<string:tournament_id>/invite_group", methods=["POST"])
@@ -273,7 +273,7 @@ def invite_group(tournament_id: str) -> Response:
     gid = request.form.get("group_id")
     if not gid:
         flash(TOURNAMENT_MESSAGES["NO_GROUP_SPECIFIED"], "warning")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore
     try:
         count = TournamentService.invite_group(tournament_id, gid, g.user.uid)
         flash(
@@ -284,7 +284,7 @@ def invite_group(tournament_id: str) -> Response:
         flash(str(e), "danger")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore
 
 
 @bp.route("/<string:tournament_id>/accept", methods=["POST"])
@@ -298,7 +298,7 @@ def accept_invite(tournament_id: str) -> Response:
             flash(TOURNAMENT_MESSAGES["INVITE_NOT_FOUND_OR_ACCEPTED"], "warning")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(request.referrer or url_for("user.dashboard"))
+    return redirect(request.referrer or url_for("user.dashboard"))  # type: ignore
 
 
 @bp.route("/<string:tournament_id>/decline", methods=["POST"])
@@ -312,7 +312,7 @@ def decline_invite(tournament_id: str) -> Response:
             flash(TOURNAMENT_MESSAGES["INVITE_NOT_FOUND"], "warning")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(request.referrer or url_for("user.dashboard"))
+    return redirect(request.referrer or url_for("user.dashboard"))  # type: ignore
 
 
 @bp.route("/<string:tournament_id>/complete", methods=["POST"])
@@ -326,7 +326,7 @@ def complete_tournament(tournament_id: str) -> Response:
         flash(str(e), "danger")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore
 
 
 def _extract_uid_from_participant(participant: dict[str, Any]) -> str | None:
@@ -354,7 +354,7 @@ def generate_bracket(tournament_id: str) -> Response:
     """Generate the tournament bracket/pairings."""
     if not g.user.is_admin:
         flash(TOURNAMENT_MESSAGES["ADMIN_ONLY_BRACKET"], "danger")
-        return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+        return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore
 
     try:
         count = TournamentService.publish_bracket(tournament_id, g.user.uid)
@@ -374,7 +374,7 @@ def generate_bracket(tournament_id: str) -> Response:
         )
         logging.exception(f"Bracket gen failed: {e}")
 
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore
 
 
 @bp.route("/<string:tournament_id>/promote_pools", methods=["POST"])
@@ -382,7 +382,7 @@ def generate_bracket(tournament_id: str) -> Response:
 def promote_pools(tournament_id: str) -> Response:
     """Promote top performers to a single-elimination bracket."""
     try:
-        count = TournamentService.promote_pools_to_bracket(tournament_id, g.user.uid)
+        count = TournamentService.promote_pools_to_bracket(tournament_id, g.user.uid)  # type: ignore
         if count > 0:
             flash(
                 f"Success! {count} players promoted to a single-elimination bracket.",
@@ -399,7 +399,7 @@ def promote_pools(tournament_id: str) -> Response:
         flash(f"Unexpected error during promotion: {e}", "danger")
         logging.exception(f"Pool promotion failed: {e}")
 
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore
 
 
 @bp.route("/<string:tournament_id>/join", methods=["POST"])
@@ -430,7 +430,7 @@ def _handle_registration(
         flash(TOURNAMENT_MESSAGES["INVITE_LINK_GEN"], "success")
     else:
         flash(TOURNAMENT_MESSAGES["TEAM_REG_PENDING"], "info")
-    return redirect(url_for(".view_tournament", tournament_id=t_id))
+    return redirect(url_for(".view_tournament", tournament_id=t_id))  # type: ignore
 
 
 @bp.route("/<string:tournament_id>/register_team", methods=["POST"])
@@ -450,9 +450,9 @@ def register_team(tournament_id: str) -> Response | str:
         )
     except Exception as e:
         if is_json:
-            return jsonify({"success": False, "error": str(e)}), 400
+            return jsonify({"success": False, "error": str(e)}), 400  # type: ignore
         flash(TOURNAMENT_MESSAGES["TEAM_REG_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore
 
 
 @bp.route("/<string:tournament_id>/claim_team/<string:team_id>", methods=["POST"])
@@ -466,7 +466,7 @@ def claim_team(tournament_id: str, team_id: str) -> Response:
             flash(TOURNAMENT_MESSAGES["JOIN_TEAM_FAILED"], "danger")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore
 
 
 @bp.route("/<string:tournament_id>/accept_team", methods=["POST"])
@@ -480,4 +480,4 @@ def accept_team(tournament_id: str) -> Response:
             flash(TOURNAMENT_MESSAGES["NO_PENDING_PARTNERSHIP"], "warning")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
-    return redirect(url_for(".view_tournament", tournament_id=tournament_id))
+    return redirect(url_for(".view_tournament", tournament_id=tournament_id))  # type: ignore

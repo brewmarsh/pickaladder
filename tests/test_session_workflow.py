@@ -22,7 +22,7 @@ def test_complete_session_lifecycle(mock_db, mock_db_write) -> None:
         # Simple manual batch mock
         class MockBatch:
             def __init__(self) -> None:
-                self.ops = []
+                self.ops = []  # type: ignore
 
             def set(self, ref, data) -> None:
                 self.ops.append(("set", ref, data))
@@ -98,14 +98,14 @@ def test_complete_session_lifecycle(mock_db, mock_db_write) -> None:
                 SessionService.add_match_to_session(db, session_id, res.id)
     # Verify matches are linked
     session_data = SessionService.get_session(db, session_id)
-    assert len(session_data["matchIds"]) == NUM_MATCHES
+    assert len(session_data["matchIds"]) == NUM_MATCHES  # type: ignore
 
     # 3. Perform batch verification (Threshold 2)
     # First approval
     success = SessionService.verify_session(db, session_id, "u1")
     assert success is True
     session_data = SessionService.get_session(db, session_id)
-    assert session_data["status"] == "ACTIVE"
+    assert session_data["status"] == "ACTIVE"  # type: ignore
 
     # Second approval (should trigger completion)
     success = SessionService.verify_session(db, session_id, "u2")
@@ -114,9 +114,9 @@ def test_complete_session_lifecycle(mock_db, mock_db_write) -> None:
     # 4. Verify results
     # Check session status
     session_final = SessionService.get_session(db, session_id)
-    assert session_final["status"] == "COMPLETED"
+    assert session_final["status"] == "COMPLETED"  # type: ignore
     NUM_VERIFICATIONS = 2
-    assert len(session_final["verifiedBy"]) == NUM_VERIFICATIONS
+    assert len(session_final["verifiedBy"]) == NUM_VERIFICATIONS  # type: ignore
     # Check match statuses
     for mid in match_ids:
         match_doc = db.collection("matches").document(mid).get().to_dict()

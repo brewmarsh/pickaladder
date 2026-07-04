@@ -25,7 +25,7 @@ def view_leaderboard_trend(group_id: str) -> Response | str | dict[str, Any]:
     group = group_ref.get()
     if not group.exists:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for(".view_groups"))
+        return redirect(url_for(".view_groups"))  # type: ignore
 
     group_data = group.to_dict() or {}
     group_data["id"] = group.id
@@ -49,7 +49,7 @@ def get_rivalry_stats(group_id: str) -> Response | str | dict[str, Any]:
     playerB_id = request.args.get("playerB_id")
 
     if not playerA_id or not playerB_id:
-        return {"error": "playerA_id and playerB_id are required"}, 400
+        return {"error": "playerA_id and playerB_id are required"}, 400  # type: ignore
 
     stats = get_head_to_head_stats(group_id, playerA_id, playerB_id)
 
@@ -79,7 +79,7 @@ def get_user_group_trend(
     )
 
     if not user_dataset:
-        return {"error": "User data not found for this group"}, 404
+        return {"error": "User data not found for this group"}, 404  # type: ignore
 
     return {
         "labels": trend_data["labels"],

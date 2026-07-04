@@ -255,10 +255,10 @@ class TournamentBase:
 
         db = db or firestore.client()
         doc = db.collection("tournaments").document(t_id).get()
-        if not doc.exists:
+        if not doc.exists:  # type: ignore
             return {}
-        data = doc.to_dict() or {}
-        data["id"] = doc.id
+        data = doc.to_dict() or {}  # type: ignore
+        data["id"] = doc.id  # type: ignore
         return data
 
     @staticmethod

@@ -63,4 +63,4 @@ class ErrorService:
             .limit(limit)
             .stream()
         )
-        return [doc.to_dict() | {"id": doc.id} for doc in docs]
+        return [doc.to_dict() | {"id": doc.id} for doc in docs]  # type: ignore

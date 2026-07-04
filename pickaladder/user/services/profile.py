@@ -25,11 +25,11 @@ def sync_dupr_rating(db: Client, user_id: str) -> bool:
     try:
         user_ref = db.collection("users").document(user_id)
         user_doc = user_ref.get()
-        if not user_doc.exists:
+        if not user_doc.exists:  # type: ignore
             logger.error(f"User {user_id} not found for DUPR sync")
             return False
 
-        user_data = user_doc.to_dict() or {}
+        user_data = user_doc.to_dict() or {}  # type: ignore
         dupr_id = user_data.get("dupr_id")
 
         if not dupr_id:

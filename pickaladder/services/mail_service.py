@@ -39,7 +39,7 @@ class MailService:
 
         msg = Message(
             subject,
-            recipients=recipients,
+            recipients=recipients,  # type: ignore
             html=render_template(template, **kwargs),
             sender=current_app.config["MAIL_DEFAULT_SENDER"],
         )

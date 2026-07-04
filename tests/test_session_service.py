@@ -39,7 +39,7 @@ class TestSessionService(unittest.TestCase):
 
             session = SessionService.get_session(self.db, "session_123")
 
-            assert session["id"] == "session_123"
+            assert session["id"] == "session_123"  # type: ignore
             mock_get.assert_called_once_with(self.db, "session_123")
 
     def test_add_match_to_session(self) -> None:

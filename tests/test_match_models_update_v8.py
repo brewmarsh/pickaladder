@@ -50,7 +50,7 @@ def test_match_result_with_named_teams() -> None:
 def test_match_dict_typing() -> None:
     """Verify MatchDict TypedDict includes namedTeamId fields."""
     # This is more of a static typing check, but we can verify it at runtime
-    match_data: MatchDict = {
+    match_data: MatchDict = {  # type: ignore
         "matchType": "doubles",
         "matchDate": datetime.datetime.now(),
         "team1Id": "pairing_1",

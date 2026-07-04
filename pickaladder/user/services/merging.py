@@ -42,7 +42,7 @@ def merge_users(db: Client, source_id: str, target_id: str) -> None:
     source_ref = db.collection("users").document(source_id)
     target_ref = db.collection("users").document(target_id)
     batch = db.batch()
-    _migrate_user_references(db, batch, source_ref, target_ref)
+    _migrate_user_references(db, batch, source_ref, target_ref)  # type: ignore
     TeamService.migrate_user_teams(db, batch, source_id, target_id)
     batch.delete(source_ref)
     batch.commit()

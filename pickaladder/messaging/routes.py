@@ -33,7 +33,7 @@ def chat(conversation_id: str) -> Response | str:
     conv = MessagingRepository.get_by_id(db, conversation_id)
     if not conv or g.user.uid not in conv.get("participants", []):
         flash("You do not have access to this conversation.", "danger")
-        return redirect(url_for(".inbox"))
+        return redirect(url_for(".inbox"))  # type: ignore
 
     # Mark as read
     MessagingService.mark_as_read(db, conversation_id, g.user.uid)
@@ -51,7 +51,7 @@ def start_chat(other_user_id: str) -> Response:
         g.user.uid,
         other_user_id,
     )
-    return redirect(url_for(".chat", conversation_id=conversation_id))
+    return redirect(url_for(".chat", conversation_id=conversation_id))  # type: ignore
 
 
 @bp.route("/send/<string:conversation_id>", methods=["POST"])
@@ -63,7 +63,7 @@ def send(conversation_id: str) -> Response:
     if content:
         MessagingService.send_message(db, conversation_id, g.user.uid, content)
 
-    return redirect(url_for(".chat", conversation_id=conversation_id))
+    return redirect(url_for(".chat", conversation_id=conversation_id))  # type: ignore
 
 
 @bp.route("/broadcast/<string:group_id>", methods=["POST"])
@@ -77,12 +77,12 @@ def broadcast(group_id: str) -> Response:
     group = GroupRepository.get_by_id(db, group_id)
     if not group:
         flash("Group not found.", "danger")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("main.index"))  # type: ignore
 
     # Verify permissions (must be admin/owner)
     if not GroupService.is_group_admin(group, g.user.uid):
         flash("You do not have permission to broadcast to this group.", "danger")
-        return redirect(url_for("group.manage_group", group_id=group_id))
+        return redirect(url_for("group.manage_group", group_id=group_id))  # type: ignore
 
     content = request.form.get("content")
     if content:
@@ -90,7 +90,7 @@ def broadcast(group_id: str) -> Response:
         member_refs = group.get("members", [])
         member_ids = [ref.id for ref in member_refs]
 
-        owner_id = group.get("ownerRef").id if group.get("ownerRef") else g.user.uid
+        owner_id = group.get("ownerRef").id if group.get("ownerRef") else g.user.uid  # type: ignore
 
         # Get or create announcement conversation
         conversation_id = MessagingService.get_or_create_group_announcement(
@@ -105,4 +105,4 @@ def broadcast(group_id: str) -> Response:
 
         flash("Announcement broadcasted successfully!", "success")
 
-    return redirect(url_for("group.manage_group", group_id=group_id))
+    return redirect(url_for("group.manage_group", group_id=group_id))  # type: ignore

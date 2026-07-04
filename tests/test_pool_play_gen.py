@@ -33,7 +33,7 @@ def test_generate_pool_play(mock_firestore) -> None:
     assert len(pairings) == 18
 
     # Check pool distribution
-    pool_matches = {}
+    pool_matches = {}  # type: ignore
     for match in pairings:
         pid = match["pool_id"]
         pool_matches[pid] = pool_matches.get(pid, 0) + 1
@@ -60,7 +60,7 @@ def test_generate_pool_play_uneven(mock_firestore) -> None:
     pairings = TournamentGenerator.generate_pool_play(participant_ids, pool_count)
     assert len(pairings) == 12
 
-    pool_matches = {}
+    pool_matches = {}  # type: ignore
     for match in pairings:
         pid = match["pool_id"]
         pool_matches[pid] = pool_matches.get(pid, 0) + 1

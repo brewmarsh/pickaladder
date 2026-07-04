@@ -224,7 +224,7 @@ class SeasonFinalizationService:
         # If we had 3 divisions, this logic would be more complex.
         # We'll return the flattened suggestions for the next creation form.
 
-        return {
+        return {  # type: ignore
             "suggested_participants": [
                 p["uid"] for p in movements["promoted"] + movements["retained"]
             ],

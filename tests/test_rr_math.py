@@ -9,7 +9,7 @@ def test_rr_even() -> None:
     assert len(pairs) == 6
 
     # Check for duplicates (regardless of order in tuple)
-    normalized_pairs = [tuple(sorted(p)) for p in pairs if p[0] and p[1]]
+    normalized_pairs = [tuple(sorted(p)) for p in pairs if p[0] and p[1]]  # type: ignore
     assert len(set(normalized_pairs)) == 6
 
     # Check everyone plays everyone
@@ -27,7 +27,7 @@ def test_rr_odd() -> None:
 
     # Real matches (no None)
     real_matches = [
-        tuple(sorted(p)) for p in pairs if p[0] is not None and p[1] is not None
+        tuple(sorted(p)) for p in pairs if p[0] is not None and p[1] is not None  # type: ignore
     ]
     assert len(real_matches) == 10  # 5 * 4 / 2
 
@@ -44,7 +44,7 @@ def test_rr_small() -> None:
     ids = ["p1", "p2"]
     pairs = TournamentGenerator._get_RR_pair_ids(ids)
     assert len(pairs) == 1
-    assert tuple(sorted(pairs[0])) == ("p1", "p2")
+    assert tuple(sorted(pairs[0])) == ("p1", "p2")  # type: ignore
 
 
 def test_rr_empty() -> None:

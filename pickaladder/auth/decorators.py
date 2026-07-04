@@ -34,10 +34,10 @@ def login_required(
         def decorated_function(*args: object, **kwargs: object) -> Response:
             """Ensure user is logged in before accessing the view."""
             if not g.get("user"):
-                return redirect(url_for("auth.login"))
+                return redirect(url_for("auth.login"))  # type: ignore
             if admin_required and not session.get("is_admin"):
                 flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
-                return redirect(url_for("user.dashboard"))
+                return redirect(url_for("user.dashboard"))  # type: ignore
             return func(*args, **kwargs)
 
         return decorated_function
@@ -57,10 +57,10 @@ def admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(f)
     def decorated_function(*args: object, **kwargs: object) -> Response:
         if not g.get("user"):
-            return redirect(url_for("auth.login"))
+            return redirect(url_for("auth.login"))  # type: ignore
         if not session.get("is_admin"):
             flash(AUTH_MESSAGES["ADMIN_ONLY_TOURNAMENT"], "danger")
-            return redirect(url_for("user.dashboard"))
+            return redirect(url_for("user.dashboard"))  # type: ignore
         return f(*args, **kwargs)
 
     return decorated_function

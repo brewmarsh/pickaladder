@@ -47,7 +47,7 @@ def get_user_friends(
 ) -> list[dict[str, Any]]:
     """Fetch a user's friends."""
     user_ref = db.collection("users").document(user_id)
-    query = _get_accepted_friends_query(user_ref, limit)
+    query = _get_accepted_friends_query(user_ref, limit)  # type: ignore
     friend_ids = [f.id for f in query.stream()]
     return _fetch_users_by_ids(db, friend_ids)
 

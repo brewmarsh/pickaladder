@@ -50,6 +50,6 @@ def test_leaderboard_applies_decay(mock_db) -> None:
     u2 = next(u for u in leaderboard if u["id"] == "u2")
 
     # MatchRecordService uses 'elo' as the field name in the returned dict
-    assert u1["elo"] == STARTING_ELO
-    assert u2["elo"] < INACTIVE_ELO
-    assert u2["is_inactive"] is True
+    assert u1["elo"] == STARTING_ELO  # type: ignore
+    assert u2["elo"] < INACTIVE_ELO  # type: ignore
+    assert u2["is_inactive"] is True  # type: ignore

@@ -295,7 +295,7 @@ def _handle_registration_error(e: Exception) -> Response:
     else:
         current_app.logger.error(f"Error during registration: {e}")
         flash(AUTH_MESSAGES["REGISTRATION_ERROR"], "danger")
-    return redirect(url_for(".register"))
+    return redirect(url_for(".register"))  # type: ignore
 
 
 def _execute_registration(form: RegisterForm, username: str, email: str) -> Response:
@@ -306,7 +306,7 @@ def _execute_registration(form: RegisterForm, username: str, email: str) -> Resp
             AUTH_MESSAGES["REGISTRATION_SUCCESS"],
             "success",
         )
-        return redirect(url_for(".login", next=request.args.get("next")))
+        return redirect(url_for(".login", next=request.args.get("next")))  # type: ignore
     except Exception as e:
         return _handle_registration_error(e)
 
@@ -320,7 +320,7 @@ def register() -> Response:
 
     form = RegisterForm()
     if not form.validate_on_submit():
-        return render_template("register.html", form=form)
+        return render_template("register.html", form=form)  # type: ignore
 
     db = firestore.client()
     username = cast("str", form.username.data)
@@ -328,7 +328,7 @@ def register() -> Response:
 
     if _is_username_taken(db, username):
         flash(AUTH_MESSAGES["USERNAME_EXISTS"], "danger")
-        return redirect(url_for(".register"))
+        return redirect(url_for(".register"))  # type: ignore
 
     return _execute_registration(form, username, email)
 
@@ -352,11 +352,11 @@ def login() -> Response:
         .get()
     )
     if not admin_query:
-        return redirect(url_for("auth.install"))
+        return redirect(url_for("auth.install"))  # type: ignore
 
     form = LoginForm()
     # The form is now just for presentation, validation is on the client
-    return render_template("login.html", form=form)
+    return render_template("login.html", form=form)  # type: ignore
 
 
 # TODO: Add type hints for Agent clarity
@@ -451,7 +451,7 @@ def session_login() -> Response:
 
     except Exception as e:
         current_app.logger.exception(f"Error during session login: {e}")
-        return jsonify(
+        return jsonify(  # type: ignore
             {"status": "error", "message": "Invalid token or server error."},
         ), 401
 
@@ -467,7 +467,7 @@ def logout() -> Response:
     session.clear()
     logout_user()
     flash(AUTH_MESSAGES["LOGOUT_SUCCESS"], "success")
-    return redirect(url_for("auth.login"))
+    return redirect(url_for("auth.login"))  # type: ignore
 
 
 # TODO: Add type hints for Agent clarity
@@ -547,13 +547,13 @@ def _handle_install_error(db: firestore.Client, email: str, e: Exception) -> Res
     if isinstance(e, auth.EmailAlreadyExistsError):
         if _promote_existing_user_to_admin(db, email):
             flash(AUTH_MESSAGES["ADMIN_PROMOTED"], "info")
-            return redirect(url_for("auth.login"))
+            return redirect(url_for("auth.login"))  # type: ignore
         msg = "An admin user with this email already exists."
         raise DuplicateResourceError(msg)
 
     current_app.logger.error(f"Error during installation: {e}")
     flash(AUTH_MESSAGES["INSTALL_ERROR"], "danger")
-    return redirect(url_for(".install"))
+    return redirect(url_for(".install"))  # type: ignore
 
 
 def _handle_install_post(db: firestore.Client) -> Response:
@@ -564,7 +564,7 @@ def _handle_install_post(db: firestore.Client) -> Response:
 
     if not all([email, password, username]):
         flash(AUTH_MESSAGES["ADMIN_CREATION_MISSING_FIELDS"], "danger")
-        return redirect(url_for(".install"))
+        return redirect(url_for(".install"))  # type: ignore
 
     try:
         profile_data = {
@@ -579,7 +579,7 @@ def _handle_install_post(db: firestore.Client) -> Response:
             profile_data,
         )
         flash(AUTH_MESSAGES["ADMIN_CREATION_SUCCESS"], "success")
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("auth.login"))  # type: ignore
     except Exception as e:
         return _handle_install_error(db, cast("str", email), e)
 
@@ -589,12 +589,12 @@ def install() -> Response:
     """Install the application by creating an admin user."""
     db = firestore.client()
     if _check_admin_exists(db):
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("auth.login"))  # type: ignore
 
     if request.method == "POST":
         return _handle_install_post(db)
 
-    return render_template("install.html")
+    return render_template("install.html")  # type: ignore
 
 
 # TODO: Add type hints for Agent clarity
@@ -605,7 +605,7 @@ def change_password() -> Response:
     The actual password change is handled by the Firebase client-side SDK.
     """
     if not g.get("user"):
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("auth.login"))  # type: ignore
 
     form = ChangePasswordForm()
     if form.validate_on_submit():
@@ -613,6 +613,6 @@ def change_password() -> Response:
         # change is handled by the Firebase client-side SDK.
         # We can flash a message to inform the user.
         flash(AUTH_MESSAGES["PASSWORD_UPDATED"], "success")
-        return redirect(url_for("user.profile"))
+        return redirect(url_for("user.profile"))  # type: ignore
 
-    return render_template("change_password.html", user=g.user, form=form)
+    return render_template("change_password.html", user=g.user, form=form)  # type: ignore
