@@ -1,3 +1,5 @@
+from typing import cast
+
 from pickaladder.tournament.services.generator import TournamentGenerator
 
 
@@ -27,9 +29,9 @@ def test_rr_odd() -> None:
 
     # Real matches (no None)
     real_matches = [
-        tuple(sorted(p))
+        tuple(sorted(cast(tuple[str, str], p)))
         for p in pairs
-        if p[0] is not None and p[1] is not None  # type: ignore
+        if p[0] is not None and p[1] is not None
     ]
     assert len(real_matches) == 10  # 5 * 4 / 2
 
