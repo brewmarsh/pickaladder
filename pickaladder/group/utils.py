@@ -97,7 +97,7 @@ def _process_single_match(
     match: DocumentSnapshot,
 ) -> None:
     """Update raw stats and records match outcomes for players in a single match."""
-    data = match.to_dict()
+    data = match.to_dict() or {}
     p1_score, p2_score = _get_match_scores(data)
 
     p1_wins, p2_wins = p1_score > p2_score, p2_score > p1_score

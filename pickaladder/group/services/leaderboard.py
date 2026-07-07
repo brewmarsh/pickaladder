@@ -87,7 +87,7 @@ def _process_single_match(
     match: DocumentSnapshot,
 ) -> None:
     """Update raw stats and records match outcomes for players in a single match."""
-    data = match.to_dict()
+    data = match.to_dict() or {}
     p1_score, p2_score = _get_match_scores(data)
 
     p1_wins = p1_score > p2_score
@@ -160,7 +160,7 @@ def _calculate_leaderboard_from_matches(
 ) -> list[dict[str, Any]]:
     """Calculate the leaderboard from a list of matches using a pipeline of helpers."""
     matches.sort(
-        key=lambda m: m.to_dict().get("matchDate") or datetime.min,
+        key=lambda m: (m.to_dict() or {}).get("matchDate") or datetime.min,
         reverse=True,
     )
 
@@ -199,7 +199,7 @@ def _map_matches_to_users(
         ref.id: [] for ref in member_refs
     }
     for match in matches:
-        data = match.to_dict()
+        data = match.to_dict() or {}
         team1_ids, team2_ids = _extract_team_ids(data)
         for uid in team1_ids.union(team2_ids):
             if uid in user_matches_map:
@@ -265,7 +265,7 @@ def get_group_leaderboard(
         group = group_ref.get()
         if not group.exists:
             return []
-        group_data = group.to_dict() or {}
+        group_data = group.to_dict() or {} or {}
         member_refs = group_data.get("members", [])
     else:
         # If member_docs are provided, they could be snapshots or dicts.
@@ -287,11 +287,12 @@ def get_group_leaderboard(
     current_leaderboard = _calculate_leaderboard_from_matches(all_matches, member_refs)
 
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-    matches_last_week = [
-        m
-        for m in all_matches
-        if m.to_dict().get("matchDate") and m.to_dict().get("matchDate") < one_week_ago
-    ]
+    matches_last_week = []
+    for m in all_matches:
+        d = m.to_dict() or {}
+        dt = d.get("matchDate")
+        if dt and dt < one_week_ago:
+            matches_last_week.append(m)
 
     last_week_leaderboard = _calculate_leaderboard_from_matches(
         matches_last_week,
@@ -301,7 +302,7 @@ def get_group_leaderboard(
     _calculate_rank_changes(current_leaderboard, last_week_leaderboard)
 
     all_matches.sort(
-        key=lambda m: m.to_dict().get("matchDate") or datetime.min,
+        key=lambda m: (m.to_dict() or {}).get("matchDate") or datetime.min,
         reverse=True,
     )
     _calculate_winning_streaks(current_leaderboard, all_matches, member_refs)
@@ -328,13 +329,13 @@ def _get_involved_player_data(
     """Get profile data for all players involved in matches."""
     all_player_refs: set[DocumentReference] = set()
     for match in matches:
-        _collect_match_player_refs(match.to_dict(), all_player_refs)
+        _collect_match_player_refs(match.to_dict() or {}, all_player_refs)
 
     player_docs = db.get_all(list(all_player_refs))
     players_data = {}
     for doc in player_docs:
         if doc.exists:
-            data = doc.to_dict()
+            data = doc.to_dict() or {}
             players_data[doc.id] = {
                 "name": data.get("name", "Unknown"),
                 "profilePictureUrl": data.get("profilePictureUrl"),
@@ -372,8 +373,11 @@ def _calculate_trend_points(
 
     date_idx = 0
     for i, match in enumerate(matches):
-        data = match.to_dict()
-        match_date = data.get("matchDate").strftime("%Y-%m-%d")
+        data = match.to_dict() or {}
+        dt = data.get("matchDate")
+        if not dt:
+            continue
+        match_date = dt.strftime("%Y-%m-%d")
 
         while date_idx < len(unique_dates) and unique_dates[date_idx] < match_date:
             _record_trend_averages(player_stats, datasets)
@@ -382,11 +386,12 @@ def _calculate_trend_points(
         _update_trend_player_stats(player_stats, data)
 
         is_last_match = i == len(matches) - 1
-        is_date_change = (
-            not is_last_match
-            and matches[i + 1].to_dict().get("matchDate").strftime("%Y-%m-%d")
-            != match_date
-        )
+        is_date_change = False
+        if not is_last_match:
+            next_data = matches[i + 1].to_dict() or {}
+            next_date_val = next_data.get("matchDate")
+            if next_date_val:
+                is_date_change = next_date_val.strftime("%Y-%m-%d") != match_date
 
         if is_last_match or is_date_change:
             _record_trend_averages(player_stats, datasets)
@@ -419,15 +424,20 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
     matches_query = db.collection("matches").where(
         filter=FieldFilter("groupId", "==", group_id),
     )
-    matches = [m for m in matches_query.stream() if m.to_dict().get("matchDate")]
+    matches = [m for m in matches_query.stream() if (m.to_dict() or {}).get("matchDate")]
     matches.sort(key=lambda x: x.to_dict().get("matchDate"))
     if not matches:
         return {"labels": [], "datasets": []}
 
     players_data = _get_involved_player_data(db, matches)
-    unique_dates = sorted(
-        {m.to_dict().get("matchDate").strftime("%Y-%m-%d") for m in matches},
-    )
+
+    unique_dates_set = set()
+    for m in matches:
+        d = m.to_dict() or {}
+        dt = d.get("matchDate")
+        if dt:
+            unique_dates_set.add(dt.strftime("%Y-%m-%d"))
+    unique_dates = sorted(unique_dates_set)
 
     datasets_dict = _calculate_trend_points(matches, players_data, unique_dates)
 

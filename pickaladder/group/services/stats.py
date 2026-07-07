@@ -44,7 +44,7 @@ def get_partnership_stats(
     losses = 0
 
     for match_doc in all_matches_in_group:
-        data = match_doc.to_dict()
+        data = match_doc.to_dict() or {}
         if data.get("matchType") != "doubles":
             continue
         wins, losses = _check_partnership_win(
@@ -65,7 +65,7 @@ def _process_h2h_match(
     stats: dict[str, Any],
 ) -> None:
     """Process a single match for head-to-head statistics."""
-    data = match_doc.to_dict()
+    data = match_doc.to_dict() or {}
     team1_ids, team2_ids = _extract_team_ids(data)
 
     player_a_is_t1 = playerA_id in team1_ids
@@ -178,11 +178,11 @@ def _calculate_all_time_streaks(
     """Calculate current and longest winning streaks for a user."""
     from datetime import datetime
 
-    matches.sort(key=lambda x: x.to_dict().get("matchDate") or datetime.min)
+    matches.sort(key=lambda x: (x.to_dict() or {}).get("matchDate") or datetime.min)
     current = longest = 0
 
     for match in matches:
-        data = match.to_dict()
+        data = match.to_dict() or {}
         current, longest = _update_all_time_streak(data, user_ref.id, current, longest)
 
     return current, max(longest, current)
