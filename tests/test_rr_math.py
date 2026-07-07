@@ -27,7 +27,9 @@ def test_rr_odd() -> None:
 
     # Real matches (no None)
     real_matches = [
-        tuple(sorted(p)) for p in pairs if p[0] is not None and p[1] is not None  # type: ignore
+        tuple(sorted(p))
+        for p in pairs
+        if p[0] is not None and p[1] is not None  # type: ignore
     ]
     assert len(real_matches) == 10  # 5 * 4 / 2
 
