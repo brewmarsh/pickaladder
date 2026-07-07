@@ -56,36 +56,23 @@ class MatchRecordService:
     @staticmethod
     def get_player_record(
         db: Client,
-        player_ref: firestore.DocumentReference,
+        player_ref: Any,
     ) -> dict[str, int]:
-        """Calculate win/loss record for a player by doc reference."""
-        wins, losses = 0, 0
-        uid = (
-            player_ref.id
-            if player_ref is not None and hasattr(player_ref, "id")
-            else str(player_ref)
-        )
+        """Calculate win/loss record for a player by doc reference using denormalized stats."""
+        if hasattr(player_ref, "get"):
+            doc = player_ref.get()
+        else:
+            doc = db.collection("users").document(str(player_ref)).get()
 
-        query = db.collection("matches").where(
-            filter=firestore.FieldFilter("participants", "array_contains", uid),
-        )
+        if doc.exists:
+            data = doc.to_dict() or {}
+            stats = data.get("stats", {})
+            return {
+                "wins": stats.get("wins", 0),
+                "losses": stats.get("losses", 0),
+            }
 
-        for match in query.stream():
-            data = match.to_dict()
-            if not data:
-                continue
-
-            s1, s2 = data.get("player1Score", 0), data.get("player2Score", 0)
-            if s1 == s2:
-                continue
-
-            is_team1 = MatchRecordService._is_user_on_team1(data, uid)
-            if (is_team1 and s1 > s2) or (not is_team1 and s2 > s1):
-                wins += 1
-            else:
-                losses += 1
-
-        return {"wins": wins, "losses": losses}
+        return {"wins": 0, "losses": 0}
 
     @staticmethod
     def _is_user_on_team1(data: dict[str, Any], uid: str) -> bool:
