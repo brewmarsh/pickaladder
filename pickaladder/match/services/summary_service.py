@@ -70,7 +70,11 @@ class MatchSummaryService:
                 refs_to_fetch.append(ref)
 
         # Batch fetch all references
-        snaps = {snap.id: snap for snap in db.get_all(refs_to_fetch)} if refs_to_fetch else {}
+        snaps = (
+            {snap.id: snap for snap in db.get_all(refs_to_fetch)}
+            if refs_to_fetch
+            else {}
+        )
 
         for key, ref in keys_and_refs:
             data: dict[str, Any] = {}
