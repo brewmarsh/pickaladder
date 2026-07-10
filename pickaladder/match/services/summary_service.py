@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from .record_service import MatchRecordService
-
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
@@ -60,16 +58,39 @@ class MatchSummaryService:
     def _get_singles_summary_context(db: Client, match_data: Match) -> dict[str, Any]:
         """Fetch singles-specific context for match summary."""
         res = {}
+        match_dict = cast("dict[str, Any]", match_data)
+
+        # Collect references to batch fetch
+        keys_and_refs: list[tuple[str, Any]] = []
+        refs_to_fetch = []
         for key, ref_key in [("player1", "player1Ref"), ("player2", "player2Ref")]:
-            ref = cast("dict[str, Any]", match_data).get(ref_key)
+            ref = match_dict.get(ref_key)
+            keys_and_refs.append((key, ref))
+            if ref:
+                refs_to_fetch.append(ref)
+
+        # Batch fetch all references
+        snaps = (
+            {snap.id: snap for snap in db.get_all(refs_to_fetch)}
+            if refs_to_fetch
+            else {}
+        )
+
+        for key, ref in keys_and_refs:
             data: dict[str, Any] = {}
             record = {"wins": 0, "losses": 0}
-            if ref:
-                snap = cast("DocumentSnapshot", ref.get())
+            if ref and hasattr(ref, "id") and ref.id in snaps:
+                snap = cast("DocumentSnapshot", snaps[ref.id])
                 if snap.exists:
                     data = snap.to_dict() or {}
                     data["id"] = snap.id
-                    record = MatchRecordService.get_player_record(db, ref)
+
+                    # Extract record directly from the pre-fetched data to avoid another DB call
+                    stats = data.get("stats", {})
+                    record = {
+                        "wins": stats.get("wins", 0),
+                        "losses": stats.get("losses", 0),
+                    }
             res[key] = data
             res[f"{key}_record"] = record
         return res
