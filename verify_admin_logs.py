@@ -12,7 +12,7 @@ from pickaladder.admin.routes import (
 
 def test_admin_logs() -> None:
     app = Flask(__name__)
-    app.config["SECRET_KEY"] = "test"
+    app.config["SECRET_KEY"] = "test"  # nosec
 
     with app.test_request_context(
         method="POST",
