@@ -424,7 +424,9 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
     matches_query = db.collection("matches").where(
         filter=FieldFilter("groupId", "==", group_id),
     )
-    matches = [m for m in matches_query.stream() if (m.to_dict() or {}).get("matchDate")]
+    matches = [
+        m for m in matches_query.stream() if (m.to_dict() or {}).get("matchDate")
+    ]
     matches.sort(key=lambda x: x.to_dict().get("matchDate"))
     if not matches:
         return {"labels": [], "datasets": []}

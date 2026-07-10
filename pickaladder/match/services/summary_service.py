@@ -57,7 +57,7 @@ class MatchSummaryService:
     @staticmethod
     def _get_singles_summary_context(db: Client, match_data: Match) -> dict[str, Any]:
         """Fetch singles-specific context for match summary."""
-        res = {}
+        res: dict[str, Any] = {}
         refs = []
         keys = []
 
