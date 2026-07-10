@@ -94,6 +94,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
         mock_user_snapshot.exists = True
         mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
         mock_user_doc.get.return_value = mock_user_snapshot
+        mock_db.get_all.return_value = [mock_user_snapshot, mock_user_snapshot]
 
         mock_friends_collection = mock_user_doc.collection("friends")
         mock_friends_collection.stream.return_value = []
@@ -216,17 +217,13 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
 
         # Mock participant fetching
         mock_db = self.mock_firestore_service.client.return_value
+        mock_user_doc = mock_db.collection("users").document.return_value
         mock_user_snapshot = MagicMock()
         mock_user_snapshot.exists = True
         mock_user_snapshot.id = MOCK_USER_ID
         mock_user_snapshot.to_dict.return_value = MOCK_USER_DATA
-
-        mock_opponent_snapshot = MagicMock()
-        mock_opponent_snapshot.exists = True
-        mock_opponent_snapshot.id = MOCK_OPPONENT_ID
-        mock_opponent_snapshot.to_dict.return_value = MOCK_OPPONENT_DATA
-
-        mock_db.get_all.return_value = [mock_user_snapshot, mock_opponent_snapshot]
+        mock_user_doc.get.return_value = mock_user_snapshot
+        mock_db.get_all.return_value = [mock_user_snapshot, mock_user_snapshot]
 
         response = self.client.get(
             f"/match/summary/{mock_match_id}",

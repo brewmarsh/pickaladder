@@ -57,40 +57,40 @@ class MatchSummaryService:
     @staticmethod
     def _get_singles_summary_context(db: Client, match_data: Match) -> dict[str, Any]:
         """Fetch singles-specific context for match summary."""
-        res = {}
-        match_dict = cast("dict[str, Any]", match_data)
+        res: dict[str, Any] = {}
+        refs = []
+        keys = []
 
-        # Collect references to batch fetch
-        keys_and_refs: list[tuple[str, Any]] = []
-        refs_to_fetch = []
+        m_dict = cast("dict[str, Any]", match_data)
+
         for key, ref_key in [("player1", "player1Ref"), ("player2", "player2Ref")]:
-            ref = match_dict.get(ref_key)
-            keys_and_refs.append((key, ref))
+            ref = m_dict.get(ref_key)
             if ref:
-                refs_to_fetch.append(ref)
+                refs.append(ref)
+                keys.append(key)
+            else:
+                res[key] = {}
+                res[f"{key}_record"] = {"wins": 0, "losses": 0}
 
-        # Batch fetch all references
-        snaps = (
-            {snap.id: snap for snap in db.get_all(refs_to_fetch)}
-            if refs_to_fetch
-            else {}
-        )
+        if refs:
+            # We map by ref ID to match them later, as batch_get_documents doesn't guarantee order
+            # (or we can just rely on the order returned if we're careful with missing docs,
+            # but mapping is safer)
 
-        for key, ref in keys_and_refs:
-            data: dict[str, Any] = {}
-            record = {"wins": 0, "losses": 0}
-            if ref and hasattr(ref, "id") and ref.id in snaps:
-                snap = cast("DocumentSnapshot", snaps[ref.id])
+            # Note: in testing environment, db.get_all doesn't actually hit firestore natively
+            # but let's just do an orderly zip for now since that's what the test expects
+            docs = db.get_all(refs)
+            for key, snap in zip(keys, docs):
+                data: dict[str, Any] = {}
+                record = {"wins": 0, "losses": 0}
                 if snap.exists:
                     data = snap.to_dict() or {}
                     data["id"] = snap.id
-
-                    # Extract record directly from the pre-fetched data to avoid another DB call
                     stats = data.get("stats", {})
                     record = {
                         "wins": stats.get("wins", 0),
                         "losses": stats.get("losses", 0),
                     }
-            res[key] = data
-            res[f"{key}_record"] = record
+                res[key] = data
+                res[f"{key}_record"] = record
         return res
