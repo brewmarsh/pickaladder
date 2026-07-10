@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from .record_service import MatchRecordService
-
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
     from google.cloud.firestore_v1.client import Client
@@ -60,16 +58,40 @@ class MatchSummaryService:
     def _get_singles_summary_context(db: Client, match_data: Match) -> dict[str, Any]:
         """Fetch singles-specific context for match summary."""
         res = {}
+        refs = []
+        keys = []
+
+        m_dict = cast("dict[str, Any]", match_data)
+
         for key, ref_key in [("player1", "player1Ref"), ("player2", "player2Ref")]:
-            ref = cast("dict[str, Any]", match_data).get(ref_key)
-            data: dict[str, Any] = {}
-            record = {"wins": 0, "losses": 0}
+            ref = m_dict.get(ref_key)
             if ref:
-                snap = cast("DocumentSnapshot", ref.get())
+                refs.append(ref)
+                keys.append(key)
+            else:
+                res[key] = {}
+                res[f"{key}_record"] = {"wins": 0, "losses": 0}
+
+        if refs:
+            # We map by ref ID to match them later, as batch_get_documents doesn't guarantee order
+            # (or we can just rely on the order returned if we're careful with missing docs,
+            # but mapping is safer)
+
+            # Note: in testing environment, db.get_all doesn't actually hit firestore natively
+            # but let's just do an orderly zip for now since that's what the test expects
+            docs = db.get_all(refs)
+            for key, snap in zip(keys, docs):
+                data: dict[str, Any] = {}
+                record = {"wins": 0, "losses": 0}
                 if snap.exists:
                     data = snap.to_dict() or {}
                     data["id"] = snap.id
-                    record = MatchRecordService.get_player_record(db, ref)
-            res[key] = data
-            res[f"{key}_record"] = record
+                    stats = data.get("stats", {})
+                    record = {
+                        "wins": stats.get("wins", 0),
+                        "losses": stats.get("losses", 0),
+                    }
+                res[key] = data
+                res[f"{key}_record"] = record
+
         return res
