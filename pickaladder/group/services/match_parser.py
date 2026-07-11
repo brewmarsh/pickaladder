@@ -67,14 +67,16 @@ def _resolve_from_individual_fields(
     return team_ids
 
 
-def _extract_team_ids(data: dict[str, Any]) -> tuple[set[str], set[str]]:
+def _extract_team_ids(data: dict[str, Any] | None) -> tuple[set[str], set[str]]:
+    data = data or {}
     """Extract team member IDs, handling Refs, IDs, and legacy formats."""
     t1 = _resolve_team_ids(data, "team1", "player1", "partner")
     t2 = _resolve_team_ids(data, "team2", "player2", "opponent2")
     return t1, t2
 
 
-def _get_match_scores(data: dict[str, Any]) -> tuple[int, int]:
+def _get_match_scores(data: dict[str, Any] | None) -> tuple[int, int]:
+    data = data or {}
     """Get team 1 and team 2 scores, handling both singles and doubles fields."""
     p1_score = data.get("player1Score")
     if p1_score is None:

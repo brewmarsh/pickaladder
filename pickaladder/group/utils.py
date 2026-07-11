@@ -173,7 +173,7 @@ def _calculate_leaderboard_from_matches(
 ) -> list[dict[str, Any]]:
     """Calculate the leaderboard from a list of matches using a pipeline of helpers."""
     matches.sort(
-        key=lambda m: (m.to_dict() or {}).get("matchDate") or datetime.min,
+        key=lambda m: m.to_dict().get("matchDate") or datetime.min,
         reverse=True,
     )
 
@@ -283,7 +283,7 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
     if not group.exists:
         return []
 
-    group_data = group.to_dict() or {}
+    group_data = group.to_dict()
     member_refs = group_data.get("members", [])
     if not member_refs:
         return []
@@ -300,7 +300,7 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
     matches_last_week = [
         m
         for m in all_matches
-        if (m.to_dict() or {}).get("matchDate") and (m.to_dict() or {}).get("matchDate") < one_week_ago  # type: ignore
+        if m.to_dict().get("matchDate") and m.to_dict().get("matchDate") < one_week_ago
     ]
     last_week_leaderboard = _calculate_leaderboard_from_matches(
         matches_last_week,
@@ -309,7 +309,7 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
 
     _calculate_rank_changes(current_leaderboard, last_week_leaderboard)
     all_matches.sort(
-        key=lambda m: (m.to_dict() or {}).get("matchDate") or datetime.min,
+        key=lambda m: m.to_dict().get("matchDate") or datetime.min,
         reverse=True,
     )
     _calculate_winning_streaks(current_leaderboard, all_matches, member_refs)
@@ -317,8 +317,9 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
     return current_leaderboard
 
 
-def _collect_match_player_refs(data: dict[str, Any], all_player_refs: set) -> None:
+def _collect_match_player_refs(data: dict[str, Any] | None, all_player_refs: set) -> None:
     """Collect player references from a single match data dictionary."""
+    data = data or {}
     if data.get("matchType", "singles") == "doubles":
         all_player_refs.update(data.get("team1", []))
         all_player_refs.update(data.get("team2", []))
@@ -329,7 +330,7 @@ def _collect_match_player_refs(data: dict[str, Any], all_player_refs: set) -> No
 
 def _extract_basic_player_data(doc: DocumentSnapshot) -> dict[str, Any]:
     """Extract name and profile picture URL from a player document."""
-    data = doc.to_dict() or {}
+    data = doc.to_dict()
     return {
         "name": data.get("name", "Unknown"),
         "profilePictureUrl": data.get("profilePictureUrl"),
@@ -343,7 +344,7 @@ def _get_involved_player_data(
     """Get profile data for all players involved in matches."""
     all_player_refs: set[DocumentReference] = set()
     for match in matches:
-        _collect_match_player_refs(match.to_dict() or {}, all_player_refs)
+        _collect_match_player_refs(match.to_dict(), all_player_refs)
 
     player_docs = db.get_all(list(all_player_refs))
     return {
@@ -431,7 +432,7 @@ def _update_player_trend_stats(
 
 def _update_trend_player_stats(
     player_stats: dict[str, Any],
-    match_data: dict[str, Any],
+    match_data: dict[str, Any] | None,
 ) -> None:
     """Update running totals for trend calculation from a single match."""
     p1_score, p2_score = _get_match_scores(match_data)
@@ -459,14 +460,14 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
     query = db.collection("matches").where(
         filter=FieldFilter("groupId", "==", group_id),
     )
-    matches = [m for m in query.stream() if (m.to_dict() or {}).get("matchDate")]
+    matches = [m for m in query.stream() if m.to_dict().get("matchDate")]
     matches.sort(key=lambda x: x.to_dict().get("matchDate"))
     if not matches:
         return {"labels": [], "datasets": []}
 
     players_data = _get_involved_player_data(db, matches)
     unique_dates = sorted(
-        {dt.strftime("%Y-%m-%d") for m in matches if (dt := (m.to_dict() or {}).get("matchDate"))},
+        {m.to_dict().get("matchDate").strftime("%Y-%m-%d") for m in matches},
     )
     datasets_dict = _calculate_trend_points(matches, players_data, unique_dates)
     _pad_trend_datasets(datasets_dict, unique_dates)
@@ -475,7 +476,7 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
 
 
 def _check_partnership_win(
-    data: dict[str, Any],
+    data: dict[str, Any] | None,
     playerA_id: str,
     playerB_id: str,
     wins: int,
@@ -505,6 +506,7 @@ def get_partnership_stats(
 
     for match_doc in all_matches_in_group:
         data = match_doc.to_dict()
+        data = data or {}
         if data.get("matchType") == "doubles":
             wins, losses = _check_partnership_win(
                 data,

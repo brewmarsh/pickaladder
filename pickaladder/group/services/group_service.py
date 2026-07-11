@@ -463,7 +463,7 @@ class GroupService:
     @staticmethod
     def _batch_fetch_entities(
         db: Client,
-        refs: list[DocumentSnapshot],
+        refs: list[Any],
     ) -> dict[str, Any]:
         """Batch fetch multiple Firestore documents and return a map by ID."""
         if not refs:
@@ -619,7 +619,7 @@ class GroupService:
         """Aggregate wins/losses per team from match history."""
         stats: dict[str, Any] = {}
         for doc in recent_matches_docs:
-            data = doc.to_dict() or {}
+            data = doc.to_dict()
             if data.get("matchType") == "doubles":
                 GroupService._process_team_match_outcome(data, stats)
         return stats
@@ -662,7 +662,7 @@ class GroupService:
                 filter=firestore.FieldFilter("email", "in", chunk),
             )
             for doc in query.stream():
-                data = doc.to_dict() or {}
+                data = doc.to_dict()
                 user_docs[data["email"]] = data
         return user_docs
 
