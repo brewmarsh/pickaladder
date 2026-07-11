@@ -619,7 +619,7 @@ class GroupService:
         """Aggregate wins/losses per team from match history."""
         stats: dict[str, Any] = {}
         for doc in recent_matches_docs:
-            data = doc.to_dict()
+            data = doc.to_dict() or {}
             if data.get("matchType") == "doubles":
                 GroupService._process_team_match_outcome(data, stats)
         return stats
@@ -662,7 +662,7 @@ class GroupService:
                 filter=firestore.FieldFilter("email", "in", chunk),
             )
             for doc in query.stream():
-                data = doc.to_dict()
+                data = doc.to_dict() or {}
                 user_docs[data["email"]] = data
         return user_docs
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 from unittest.mock import MagicMock, patch
+from google.cloud.firestore import DocumentSnapshot
 
 from pickaladder.group.utils import (
     get_group_leaderboard,
