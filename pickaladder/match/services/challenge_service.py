@@ -124,7 +124,7 @@ class ChallengeService:
 
             return data
 
-        data = accept_tx(db.transaction())
+        data = accept_tx(db.transaction())  # type: ignore
 
         # We already have data from the transaction
         NotificationService.send_to_user(
@@ -172,7 +172,7 @@ class ChallengeService:
 
             return data
 
-        data = decline_tx(db.transaction())
+        data = decline_tx(db.transaction())  # type: ignore
 
         # We already have data from the transaction
         NotificationService.send_to_user(
@@ -222,7 +222,7 @@ class ChallengeService:
 
             return data
 
-        data = resolve_tx(db.transaction())
+        data = resolve_tx(db.transaction())  # type: ignore
 
         # We already have data from the transaction, notify both players
         challenger_id = data.get("challenger_id", "")
@@ -367,7 +367,7 @@ class ChallengeService:
 
             return data
 
-        data = cancel_tx(db.transaction())
+        data = cancel_tx(db.transaction())  # type: ignore
 
         # Notify challenged user (if they saw it, it's now gone)
         NotificationService.send_to_user(

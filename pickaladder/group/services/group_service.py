@@ -463,7 +463,7 @@ class GroupService:
     @staticmethod
     def _batch_fetch_entities(
         db: Client,
-        refs: list[Any],
+        refs: list[DocumentSnapshot],
     ) -> dict[str, Any]:
         """Batch fetch multiple Firestore documents and return a map by ID."""
         if not refs:

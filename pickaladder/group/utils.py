@@ -317,9 +317,8 @@ def get_group_leaderboard(group_id: str) -> list[dict[str, Any]]:
     return current_leaderboard
 
 
-def _collect_match_player_refs(data: dict[str, Any] | None, all_player_refs: set) -> None:
+def _collect_match_player_refs(data: dict[str, Any], all_player_refs: set) -> None:
     """Collect player references from a single match data dictionary."""
-    data = data or {}
     if data.get("matchType", "singles") == "doubles":
         all_player_refs.update(data.get("team1", []))
         all_player_refs.update(data.get("team2", []))
@@ -432,7 +431,7 @@ def _update_player_trend_stats(
 
 def _update_trend_player_stats(
     player_stats: dict[str, Any],
-    match_data: dict[str, Any] | None,
+    match_data: dict[str, Any],
 ) -> None:
     """Update running totals for trend calculation from a single match."""
     p1_score, p2_score = _get_match_scores(match_data)
@@ -476,7 +475,7 @@ def get_leaderboard_trend_data(group_id: str) -> dict[str, Any]:
 
 
 def _check_partnership_win(
-    data: dict[str, Any] | None,
+    data: dict[str, Any],
     playerA_id: str,
     playerB_id: str,
     wins: int,
@@ -506,7 +505,6 @@ def get_partnership_stats(
 
     for match_doc in all_matches_in_group:
         data = match_doc.to_dict()
-        data = data or {}
         if data.get("matchType") == "doubles":
             wins, losses = _check_partnership_win(
                 data,
