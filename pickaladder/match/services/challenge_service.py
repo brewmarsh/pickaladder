@@ -89,7 +89,7 @@ class ChallengeService:
         """Accept a pending challenge."""
 
         @firestore.transactional
-        def accept_tx(transaction: Transaction) -> None:
+        def accept_tx(transaction: Transaction) -> dict:
             challenge_ref = db.collection(cls.COLLECTION_NAME).document(challenge_id)
             doc = challenge_ref.get(transaction=transaction)
             if not doc.exists:  # type: ignore
@@ -122,13 +122,11 @@ class ChallengeService:
                 {"status": "accepted", "accepted_at": firestore.SERVER_TIMESTAMP},
             )
 
-        accept_tx(db.transaction())
+            return data
 
-        # Fetch data for notification
-        data = (
-            db.collection(cls.COLLECTION_NAME).document(challenge_id).get().to_dict()  # type: ignore
-            or {}
-        )
+        data = accept_tx(db.transaction())
+
+        # We already have data from the transaction
         NotificationService.send_to_user(
             data.get("challenger_id", ""),
             title="Challenge Accepted!",
@@ -141,7 +139,7 @@ class ChallengeService:
         """Decline a pending challenge."""
 
         @firestore.transactional
-        def decline_tx(transaction: Transaction) -> None:
+        def decline_tx(transaction: Transaction) -> dict:
             challenge_ref = db.collection(cls.COLLECTION_NAME).document(challenge_id)
             doc = challenge_ref.get(transaction=transaction)
             if not doc.exists:  # type: ignore
@@ -172,13 +170,11 @@ class ChallengeService:
                 {"status": "declined", "declined_at": firestore.SERVER_TIMESTAMP},
             )
 
-        decline_tx(db.transaction())
+            return data
 
-        # Fetch data for notification
-        data = (
-            db.collection(cls.COLLECTION_NAME).document(challenge_id).get().to_dict()  # type: ignore
-            or {}
-        )
+        data = decline_tx(db.transaction())
+
+        # We already have data from the transaction
         NotificationService.send_to_user(
             data.get("challenger_id", ""),
             title="Challenge Declined",
@@ -197,7 +193,7 @@ class ChallengeService:
         """Resolve an accepted challenge based on a match result."""
 
         @firestore.transactional
-        def resolve_tx(transaction: Transaction) -> None:
+        def resolve_tx(transaction: Transaction) -> dict:
             challenge_ref = db.collection(cls.COLLECTION_NAME).document(challenge_id)
             doc = challenge_ref.get(transaction=transaction)
             if not doc.exists:  # type: ignore
@@ -206,7 +202,7 @@ class ChallengeService:
 
             data = doc.to_dict() or {}  # type: ignore
             if data.get("status") != "accepted":
-                return  # Already resolved or not in state to be resolved
+                return data  # Already resolved or not in state to be resolved
 
             wager = data.get("wager_amount", 0)
             pot = wager * 2
@@ -224,13 +220,11 @@ class ChallengeService:
                 },
             )
 
-        resolve_tx(db.transaction())
+            return data
 
-        # Notify both players
-        data = (
-            db.collection(cls.COLLECTION_NAME).document(challenge_id).get().to_dict()  # type: ignore
-            or {}
-        )
+        data = resolve_tx(db.transaction())
+
+        # We already have data from the transaction, notify both players
         challenger_id = data.get("challenger_id", "")
         challenged_id = data.get("challenged_id", "")
         wager = data.get("wager_amount", 0)
@@ -345,7 +339,7 @@ class ChallengeService:
         """Cancel a pending challenge (only by challenger)."""
 
         @firestore.transactional
-        def cancel_tx(transaction: Transaction) -> None:
+        def cancel_tx(transaction: Transaction) -> dict:
             challenge_ref = db.collection(cls.COLLECTION_NAME).document(challenge_id)
             doc = challenge_ref.get(transaction=transaction)
             if not doc.exists:  # type: ignore
@@ -371,13 +365,11 @@ class ChallengeService:
                 {"status": "cancelled", "cancelled_at": firestore.SERVER_TIMESTAMP},
             )
 
-        cancel_tx(db.transaction())
+            return data
+
+        data = cancel_tx(db.transaction())
 
         # Notify challenged user (if they saw it, it's now gone)
-        data = (
-            db.collection(cls.COLLECTION_NAME).document(challenge_id).get().to_dict()  # type: ignore
-            or {}
-        )
         NotificationService.send_to_user(
             data.get("challenged_id", ""),
             title="Challenge Cancelled",

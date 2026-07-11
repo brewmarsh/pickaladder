@@ -19,11 +19,13 @@ def mock_db() -> MagicMock:
     return db
 
 
+@patch("pickaladder.match.services.challenge_service.NotificationService.send_to_user")
 @patch(
     "pickaladder.match.services.challenge_service.SocialCreditService.adjust_balance",
 )
 def test_issue_challenge_success(
     mock_adjust_balance: MagicMock,
+    mock_send_to_user: MagicMock,
     mock_db: MagicMock,
 ) -> None:
     """Test successful issuance of a challenge."""
@@ -71,11 +73,13 @@ def test_issue_challenge_exceeds_max_wager(mock_db: MagicMock) -> None:
         )
 
 
+@patch("pickaladder.match.services.challenge_service.NotificationService.send_to_user")
 @patch(
     "pickaladder.match.services.challenge_service.SocialCreditService.adjust_balance",
 )
 def test_accept_challenge_success(
     mock_adjust_balance: MagicMock,
+    mock_send_to_user: MagicMock,
     mock_db: MagicMock,
 ) -> None:
     """Test successful acceptance of a challenge."""
@@ -115,11 +119,13 @@ def test_accept_challenge_wrong_user(mock_db: MagicMock) -> None:
             ChallengeService.accept_challenge(mock_db, "challenge_123", "userA")
 
 
+@patch("pickaladder.match.services.challenge_service.NotificationService.send_to_user")
 @patch(
     "pickaladder.match.services.challenge_service.SocialCreditService.adjust_balance",
 )
 def test_decline_challenge_success(
     mock_adjust_balance: MagicMock,
+    mock_send_to_user: MagicMock,
     mock_db: MagicMock,
 ) -> None:
     """Test successful declining of a challenge."""
