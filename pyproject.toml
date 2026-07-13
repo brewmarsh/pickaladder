@@ -72,7 +72,7 @@ dev = [
     "pytest-playwright>=0.7.2",
     "ruff==0.15.20",
     "bandit==1.9.4",
-    "mypy==2.1.0",
+    "mypy==2.3.0",
     "Faker==40.28.1",
     "coverage==7.14.3",
     "pytest-mock",
