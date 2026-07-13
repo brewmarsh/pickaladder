@@ -8,3 +8,7 @@
 ## 2026-07-04 - CSS Dropdown Keyboard Accessibility
 **Learning:** Pure CSS dropdowns that rely solely on `.dropdown:hover` are inaccessible to keyboard users because focusing on the trigger button with the `Tab` key does not trigger the `:hover` state, trapping the menu content.
 **Action:** Always pair `.dropdown:hover .dropdown-content` with `.dropdown:focus-within .dropdown-content` to ensure the menu opens and remains open when any element inside the dropdown structure receives keyboard focus. Also ensure child links have a defined `:focus` state.
+## 2026-07-13 - Form Label Associations
+
+**Learning:** Forms constructed using standard HTML inputs in `pickaladder/templates/tournament/view.html`, `pickaladder/templates/group.html`, and `pickaladder/templates/team/wizard.html` frequently omitted explicit associations between `<label>` elements and their corresponding `<input>` fields, or relied solely on visual `placeholder` text without `aria-label` alternatives for screen readers.
+**Action:** Form inputs must explicitly pair with `<label>` elements using the `for` attribute referencing the input's `id`. If an input element relies exclusively on `placeholder` text without a visible label (e.g. search bars), an `aria-label` must be applied to ensure accessibility.
