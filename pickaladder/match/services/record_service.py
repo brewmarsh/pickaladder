@@ -58,7 +58,8 @@ class MatchRecordService:
         db: Client,
         player_ref: Any,
     ) -> dict[str, int]:
-        """Calculate win/loss record for a player by doc reference using denormalized stats."""
+        """Calculate win/loss record for a player by doc reference using
+        denormalized stats."""
         if hasattr(player_ref, "get"):
             doc = player_ref.get()
         else:

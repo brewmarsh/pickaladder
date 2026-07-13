@@ -1,9 +1,8 @@
+"""Session routes for the group blueprint."""
+
 from __future__ import annotations
 
 from typing import Any
-
-"""Session routes for the group blueprint."""
-
 
 from firebase_admin import firestore
 from flask import Response, flash, g, redirect, render_template, url_for

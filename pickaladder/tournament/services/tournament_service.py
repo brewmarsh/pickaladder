@@ -390,7 +390,8 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         stands: list[dict[str, Any]],
         db: Client | None = None,
     ) -> None:
-        """Loop through participants and send result emails using batched queries to prevent N+1."""
+        """Loop through participants and send result emails using batched queries to
+        prevent N+1."""
         from firebase_admin import firestore
 
         db = db or firestore.client()

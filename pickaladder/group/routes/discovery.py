@@ -1,9 +1,8 @@
+"""Discovery routes for the group blueprint."""
+
 from __future__ import annotations
 
 from typing import Any
-
-"""Discovery routes for the group blueprint."""
-
 
 from firebase_admin import firestore
 from flask import Response, g, render_template, request, session

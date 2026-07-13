@@ -70,7 +70,8 @@ class MarketplaceRepository(BaseRepository):
                 filter=firestore.FieldFilter("status", "==", "ACTIVE"),
             )
 
-            # 1. Collect all valid divisions and their group IDs first to avoid over-fetching
+            # 1. Collect all valid divisions and their group IDs first
+            # to avoid over-fetching
             season_docs_data = []
             group_ids = set()
 

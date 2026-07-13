@@ -73,12 +73,14 @@ class MatchSummaryService:
                 res[f"{key}_record"] = {"wins": 0, "losses": 0}
 
         if refs:
-            # We map by ref ID to match them later, as batch_get_documents doesn't guarantee order
-            # (or we can just rely on the order returned if we're careful with missing docs,
-            # but mapping is safer)
+            # We map by ref ID to match them later, as batch_get_documents
+            # doesn't guarantee order (or we can just rely on the order
+            # returned if we're careful with missing docs, but mapping
+            # is safer)
 
-            # Note: in testing environment, db.get_all doesn't actually hit firestore natively
-            # but let's just do an orderly zip for now since that's what the test expects
+            # Note: in testing environment, db.get_all doesn't actually hit
+            # firestore natively but let's just do an orderly zip for now
+            # since that's what the test expects
             docs = db.get_all(refs)
             for key, snap in zip(keys, docs):
                 data: dict[str, Any] = {}

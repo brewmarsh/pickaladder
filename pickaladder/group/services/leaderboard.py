@@ -33,8 +33,10 @@ def _initialize_stats(
     player_list = list(players) if players else []
 
     # Safely distinguish between DocumentReference and DocumentSnapshot
-    # In python firebase-admin, DocumentReference has a get() method that returns a DocumentSnapshot.
-    # DocumentSnapshot has an exists attribute, but not a get() method in the same way (it has get() to read fields).
+    # In python firebase-admin, DocumentReference has a get() method
+    # that returns a DocumentSnapshot.
+    # DocumentSnapshot has an exists attribute, but not a get() method
+    # in the same way (it has get() to read fields).
 
     if (
         player_list

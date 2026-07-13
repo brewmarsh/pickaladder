@@ -1,9 +1,8 @@
+"""Stats routes for the group blueprint."""
+
 from __future__ import annotations
 
 from typing import Any
-
-"""Stats routes for the group blueprint."""
-
 
 from firebase_admin import firestore
 from flask import Response, flash, g, redirect, render_template, request, url_for
