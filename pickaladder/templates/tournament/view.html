@@ -377,12 +377,12 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <div class="form-group">
-                    <label class="form-label">Team Name (Optional)</label>
-                    <input type="text" name="team_name" class="form-input" placeholder="The Smashers">
+                    <label class="form-label" for="team_name">Team Name (Optional)</label>
+                    <input type="text" name="team_name" id="team_name" class="form-input" placeholder="The Smashers">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Search Partner</label>
+                    <label class="form-label" for="partnerSearch">Search Partner</label>
                     <input type="text" id="partnerSearch" class="form-input" placeholder="Type username..." autocomplete="off">
                     <div id="searchResults" class="search-results-dropdown" style="display:none; position:absolute; background: var(--card-bg); border: 1px solid var(--border-color); width: 100%; z-index: 100; max-height: 200px; overflow-y: auto;"></div>
                 </div>
