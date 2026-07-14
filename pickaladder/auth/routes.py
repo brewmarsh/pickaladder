@@ -520,6 +520,7 @@ def _fetch_user_doc_ref_by_email(
 
 
 def _promote_existing_user_to_admin(db: firestore.Client, email: str) -> bool:
+    """Attempt to promote an existing user to admin."""
     try:
         r = _fetch_user_doc_ref_by_email(db, email)
         doc = r.get()
