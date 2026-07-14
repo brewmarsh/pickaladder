@@ -435,6 +435,7 @@ def _finalize_session_login(
 
 
 @bp.route("/session_login", methods=["POST"])
+@rate_limit(limit=5, window=60)
 def session_login() -> Response:
     """Handle session login after Firebase client-side authentication."""
     id_token = request.json.get("idToken")
