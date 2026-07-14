@@ -520,16 +520,15 @@ def _fetch_user_doc_ref_by_email(
 
 
 def _promote_existing_user_to_admin(db: firestore.Client, email: str) -> bool:
-    """Attempt to promote an existing user to admin if they are not one."""
     try:
-        doc_ref = _fetch_user_doc_ref_by_email(db, email)
-        doc = doc_ref.get()
-        if not _is_user_non_admin(doc):
-            return False
-        doc_ref.update({"isAdmin": True})
-        return True
+        r = _fetch_user_doc_ref_by_email(db, email)
+        doc = r.get()
     except auth.UserNotFoundError:
         return False
+    if not _is_user_non_admin(doc):
+        return False
+    r.update({"isAdmin": True})
+    return True
 
 
 def _check_admin_exists(db: firestore.Client) -> bool:
