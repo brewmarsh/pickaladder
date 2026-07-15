@@ -1,3 +1,6 @@
 ## 2025-02-21 - Avoiding Redundant Database Reads Post-Transaction
 **Learning:** In the Python Firebase Admin SDK, `@firestore.transactional` decorated functions can return values. When updating a document in a transaction, if subsequent application logic (such as notifications) requires data from that document, it is a significant performance anti-pattern to perform a separate `document.get()` immediately after the transaction.
 **Action:** Always return the fetched `DocumentSnapshot` data (e.g., `doc.to_dict()`) directly from the transaction block so it can be reused in the synchronous control flow, eliminating an entire database round-trip.
+## 2025-02-21 - Resolving N+1 Query in `get_team_names`
+**Learning:** In `pickaladder/match/services/query.py`, the `get_team_names` method previously performed two sequential `db.collection("teams").document(id).get()` calls to fetch team names, resulting in an N+1 query bottleneck.
+**Action:** Replaced sequential queries with a single batch fetch using `db.get_all(refs)`. Mapped the result to a dictionary (`{doc.id: doc for doc in db.get_all(refs)}`) to ensure the correct team documents are assigned safely, regardless of the order they are returned, thus halving the database network overhead for this lookup.

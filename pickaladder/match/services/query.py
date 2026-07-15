@@ -173,11 +173,18 @@ class MatchQueryService(
     @staticmethod
     def get_team_names(db: Client, team1_id: str, team2_id: str) -> tuple[str, str]:
         """Fetch names for two teams."""
-        t1 = cast("DocumentSnapshot", db.collection("teams").document(team1_id).get())
-        t2 = cast("DocumentSnapshot", db.collection("teams").document(team2_id).get())
+        refs = [
+            db.collection("teams").document(team1_id),
+            db.collection("teams").document(team2_id),
+        ]
+        docs = {doc.id: doc for doc in db.get_all(refs)}
+
+        t1 = cast("DocumentSnapshot", docs.get(team1_id))
+        t2 = cast("DocumentSnapshot", docs.get(team2_id))
+
         return (
-            (t1.to_dict() or {}).get("name", "Team 1") if t1.exists else "Team 1",
-            (t2.to_dict() or {}).get("name", "Team 2") if t2.exists else "Team 2",
+            (t1.to_dict() or {}).get("name", "Team 1") if t1 and t1.exists else "Team 1",
+            (t2.to_dict() or {}).get("name", "Team 2") if t2 and t2.exists else "Team 2",
         )
 
     @staticmethod
