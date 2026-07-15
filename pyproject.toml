@@ -74,7 +74,7 @@ dev = [
     "bandit==1.9.4",
     "mypy==2.3.0",
     "Faker==40.28.1",
-    "coverage==7.14.3",
+    "coverage==7.15.1",
     "pytest-mock",
     "playwright",
 ]
