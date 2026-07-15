@@ -416,8 +416,8 @@ class GroupService:
     @staticmethod
     def _extract_single_match_refs(
         data: dict[str, Any],
-        team_refs: list[DocumentSnapshot],
-        player_refs: list[DocumentSnapshot],
+        team_refs: list[DocumentReference],
+        player_refs: list[DocumentReference],
     ) -> None:
         """Extract team and player references from a single match data dictionary."""
         player_keys = [
@@ -446,14 +446,14 @@ class GroupService:
     @staticmethod
     def _collect_refs_from_matches(
         matches_docs: list[DocumentSnapshot],
-    ) -> tuple[list[DocumentSnapshot], list[DocumentSnapshot]]:
+    ) -> tuple[list[DocumentReference], list[DocumentReference]]:
         """Extract team and player references from match documents."""
-        team_refs: list[DocumentSnapshot] = []
-        player_refs: list[DocumentSnapshot] = []
+        team_refs: list[DocumentReference] = []
+        player_refs: list[DocumentReference] = []
 
         for doc in matches_docs:
             GroupService._extract_single_match_refs(
-                doc.to_dict(),
+                doc.to_dict() or {},
                 team_refs,
                 player_refs,
             )
@@ -463,7 +463,7 @@ class GroupService:
     @staticmethod
     def _batch_fetch_entities(
         db: Client,
-        refs: list[DocumentSnapshot],
+        refs: list[DocumentReference],
     ) -> dict[str, Any]:
         """Batch fetch multiple Firestore documents and return a map by ID."""
         if not refs:
@@ -476,7 +476,11 @@ class GroupService:
             return {}
 
         docs = db.get_all(unique_refs)
-        return {doc.id: {**doc.to_dict(), "id": doc.id} for doc in docs if doc.exists}
+        return {
+            doc.id: {**(doc.to_dict() or {}), "id": doc.id}
+            for doc in docs
+            if doc.exists
+        }
 
     @staticmethod
     def _enrich_single_match(
@@ -485,7 +489,7 @@ class GroupService:
         players_map: dict[str, Any],
     ) -> dict[str, Any]:
         """Attach team and player data to a single match dictionary."""
-        match_data = match_doc.to_dict()
+        match_data = match_doc.to_dict() or {}
         match_data["id"] = match_doc.id
 
         # Attach Teams
@@ -619,7 +623,7 @@ class GroupService:
         """Aggregate wins/losses per team from match history."""
         stats: dict[str, Any] = {}
         for doc in recent_matches_docs:
-            data = doc.to_dict()
+            data = doc.to_dict() or {}
             if data.get("matchType") == "doubles":
                 GroupService._process_team_match_outcome(data, stats)
         return stats
@@ -662,8 +666,9 @@ class GroupService:
                 filter=firestore.FieldFilter("email", "in", chunk),
             )
             for doc in query.stream():
-                data = doc.to_dict()
-                user_docs[data["email"]] = data
+                data = doc.to_dict() or {}
+                if "email" in data:
+                    user_docs[data["email"]] = data
         return user_docs
 
     @staticmethod
@@ -737,7 +742,7 @@ class GroupService:
                 existing_user = docs[0]
 
         if existing_user:
-            invite_email = existing_user.to_dict().get("email")
+            invite_email = (existing_user.to_dict() or {}).get("email") or email
         else:
             invite_email = email
             ghost_user_data = {

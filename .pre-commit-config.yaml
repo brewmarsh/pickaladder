@@ -11,16 +11,6 @@ repos:
       # Run the formatter against all staged Python files.
       - id: ruff-format
 
-  # 2. MyPy: Static type checker for Python.
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.9.0 # Use the latest stable version
-    hooks:
-      - id: mypy
-        # You may need to specify paths or use a configuration file 
-        # (e.g., mypy.ini) for complex projects.
-        # This hook runs mypy against all staged files.
-        args: [] 
-
   # 3. Bandit (Optional but recommended for security)
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.7 # Use the latest stable version
@@ -34,9 +24,14 @@ repos:
               docs/.*
           )$
 
-  # 4. Local Hooks: Run unit tests
+  # 4. Local Hooks: Run mypy and unit tests
   - repo: local
     hooks:
+      - id: run-mypy
+        name: Run MyPy (Local)
+        entry: uv run python -m mypy
+        language: system
+        types: [python]
       - id: run-tests
         name: Run Unit Tests
         entry: uv run pytest --ignore=tests/e2e

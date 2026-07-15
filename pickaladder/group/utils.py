@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import operator
 import secrets
+from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -17,7 +18,6 @@ if TYPE_CHECKING:
         WriteBatch,
     )
 
-from flask import Response
 from google.cloud.firestore import FieldFilter
 
 from pickaladder.core.constants import (
@@ -173,7 +173,7 @@ def _calculate_leaderboard_from_matches(
 ) -> list[dict[str, Any]]:
     """Calculate the leaderboard from a list of matches using a pipeline of helpers."""
     matches.sort(
-        key=lambda m: m.to_dict().get("matchDate") or datetime.min,
+        key=lambda m: (m.to_dict() or {}).get("matchDate") or datetime.min,
         reverse=True,
     )
 
@@ -223,7 +223,7 @@ def _map_matches_to_users(
         ref.id: [] for ref in member_refs
     }
     for match in matches:
-        _add_match_to_user_map(user_matches_map, match.to_dict())
+        _add_match_to_user_map(user_matches_map, match.to_dict() or {})
     return user_matches_map
 
 
@@ -329,7 +329,7 @@ def _collect_match_player_refs(data: dict[str, Any], all_player_refs: set) -> No
 
 def _extract_basic_player_data(doc: DocumentSnapshot) -> dict[str, Any]:
     """Extract name and profile picture URL from a player document."""
-    data = doc.to_dict()
+    data = doc.to_dict() or {}
     return {
         "name": data.get("name", "Unknown"),
         "profilePictureUrl": data.get("profilePictureUrl"),
@@ -343,7 +343,7 @@ def _get_involved_player_data(
     """Get profile data for all players involved in matches."""
     all_player_refs: set[DocumentReference] = set()
     for match in matches:
-        _collect_match_player_refs(match.to_dict(), all_player_refs)
+        _collect_match_player_refs(match.to_dict() or {}, all_player_refs)
 
     player_docs = db.get_all(list(all_player_refs))
     return {
@@ -395,8 +395,9 @@ def _calculate_trend_points(
 
     date_idx = 0
     for i, match in enumerate(matches):
-        data = match.to_dict()
-        match_date = data.get("matchDate").strftime("%Y-%m-%d")
+        data = match.to_dict() or {}
+        match_date_val = data.get("matchDate")
+        match_date = match_date_val.strftime("%Y-%m-%d") if match_date_val else ""
         date_idx = _process_trend_date_change(
             unique_dates,
             date_idx,
@@ -407,11 +408,10 @@ def _calculate_trend_points(
         _update_trend_player_stats(player_stats, data)
 
         is_last = i == len(matches) - 1
-        if (
-            is_last
-            or matches[i + 1].to_dict().get("matchDate").strftime("%Y-%m-%d")
-            != match_date
-        ):
+        next_data = matches[i + 1].to_dict() or {} if not is_last else {}
+        next_date_val = next_data.get("matchDate")
+        next_date = next_date_val.strftime("%Y-%m-%d") if next_date_val else ""
+        if is_last or next_date != match_date:
             _record_trend_averages(player_stats, datasets)
             date_idx += 1
 
@@ -498,13 +498,13 @@ def _check_partnership_win(
 def get_partnership_stats(
     playerA_id: str,
     playerB_id: str,
-    all_matches_in_group: list[DocumentSnapshot],
+    all_matches_in_group: Sequence[DocumentSnapshot],
 ) -> dict[str, int]:
     """Calculates the win/loss record for two players when they are partners."""
     wins = losses = 0
 
     for match_doc in all_matches_in_group:
-        data = match_doc.to_dict()
+        data = match_doc.to_dict() or {}
         if data.get("matchType") == "doubles":
             wins, losses = _check_partnership_win(
                 data,
@@ -552,7 +552,7 @@ def _process_h2h_match(
     stats: dict[str, Any],
 ) -> None:
     """Process a single match for head-to-head statistics."""
-    data = match_doc.to_dict()
+    data = match_doc.to_dict() or {}
     team1_ids, team2_ids = _extract_team_ids(data)
 
     player_a_is_t1 = playerA_id in team1_ids
@@ -656,12 +656,12 @@ def _calculate_all_time_streaks(
     user_ref: DocumentReference,
 ) -> tuple[int, int]:
     """Calculate current and longest winning streaks for a user."""
-    matches.sort(key=lambda x: x.to_dict().get("matchDate") or datetime.min)
+    matches.sort(key=lambda x: (x.to_dict() or {}).get("matchDate") or datetime.min)
     current = longest = 0
 
     for match in matches:
         current, longest = _update_all_time_streak(
-            match.to_dict(),
+            match.to_dict() or {},
             user_ref.id,
             current,
             longest,
@@ -752,16 +752,16 @@ def _add_friend_pair(
     return 2
 
 
-def _get_group_member_refs(db: Client, group_id: str) -> list[DocumentSnapshot]:
+def _get_group_member_refs(db: Client, group_id: str) -> list[DocumentReference]:
     """Retrieve member references for a group."""
     group_ref = db.collection("groups").document(group_id)
     group_doc = group_ref.get()
     if not group_doc.exists:
         return []
-    return group_doc.to_dict().get("members", [])
+    return (group_doc.to_dict() or {}).get("members", [])
 
 
-def _commit_batch(db: Client, batch: WriteBatch) -> Response | str | dict[str, Any]:
+def _commit_batch(db: Client, batch: WriteBatch) -> WriteBatch:
     """Commit current batch and return a new one."""
     batch.commit()
     return db.batch()
@@ -794,7 +794,7 @@ def _batch_step(
 
 def _process_friendship_batch(
     db: Client,
-    member_refs: list[DocumentSnapshot],
+    member_refs: list[DocumentReference],
     new_member_ref: DocumentReference,
 ) -> None:
     """Process friendship additions in batches."""

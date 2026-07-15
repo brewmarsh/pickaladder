@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
 
@@ -9,6 +10,8 @@ from firebase_admin import firestore
 from google.cloud.firestore_v1.field_path import FieldPath
 
 from pickaladder.teams.repository import TeamRepository
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.base_document import DocumentSnapshot
@@ -98,18 +101,22 @@ class TeamService:
     @staticmethod
     def get_top_teams(db: Client, limit: int = 5) -> list[dict[str, Any]]:
         """Fetch the top teams globally based on ELO."""
-        query = (
-            db.collection(TeamRepository.COLLECTION_NAME)
-            .where(filter=firestore.FieldFilter("type", "==", "named"))
-            .order_by("stats.elo", direction=firestore.Query.DESCENDING)
-            .limit(limit)
-        )
-        teams = []
-        for doc in query.stream():
-            data = doc.to_dict() or {}
-            data["id"] = doc.id
-            teams.append(data)
-        return teams
+        try:
+            query = (
+                db.collection(TeamRepository.COLLECTION_NAME)
+                .where(filter=firestore.FieldFilter("type", "==", "named"))
+                .order_by("stats.elo", direction=firestore.Query.DESCENDING)
+                .limit(limit)
+            )
+            teams = []
+            for doc in query.stream():
+                data = doc.to_dict() or {}
+                data["id"] = doc.id
+                teams.append(data)
+            return teams
+        except Exception as e:
+            logger.error(f"Error fetching top teams: {e}")
+            return []
 
     @staticmethod
     def get_team_dashboard_data(db: Client, team_id: str) -> dict[str, Any] | None:

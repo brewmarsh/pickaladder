@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from firebase_admin import firestore
@@ -10,6 +11,8 @@ from pickaladder.base.repository import BaseRepository
 
 if TYPE_CHECKING:
     from google.cloud.firestore_v1.client import Client
+
+logger = logging.getLogger(__name__)
 
 
 DIRECT_CONVERSATION_PARTICIPANTS = 2
@@ -23,15 +26,21 @@ class MessagingRepository(BaseRepository):
     @classmethod
     def get_user_conversations(cls, db: Client, user_id: str) -> list[dict[str, Any]]:
         """Fetch all conversations where the user is a participant."""
-        query = (
-            db.collection(cls.COLLECTION_NAME)
-            .where(
-                filter=firestore.FieldFilter("participants", "array_contains", user_id),
+        try:
+            query = (
+                db.collection(cls.COLLECTION_NAME)
+                .where(
+                    filter=firestore.FieldFilter(
+                        "participants", "array_contains", user_id
+                    ),
+                )
+                .order_by("updatedAt", direction=firestore.Query.DESCENDING)
             )
-            .order_by("updatedAt", direction=firestore.Query.DESCENDING)
-        )
 
-        return [doc.to_dict() | {"id": doc.id} for doc in query.stream()]  # type: ignore
+            return [doc.to_dict() | {"id": doc.id} for doc in query.stream()]  # type: ignore
+        except Exception as e:
+            logger.error(f"Error fetching user conversations: {e}")
+            return []
 
     @classmethod
     def find_direct_conversation(
