@@ -1,0 +1,28 @@
+a44dc63c Merge pull request #1495 from brewmarsh/bolt-performance-improvement-query-n1-18256653713817889713
+fe14890e Merge pull request #1490 from brewmarsh/dependabot/pip/pytest-9.1.1
+73400d2b Merge pull request #1491 from brewmarsh/dependabot/pip/gunicorn-26.0.0
+ba306814 Merge pull request #1492 from brewmarsh/dependabot/pip/coverage-7.15.1
+44773637 Merge pull request #1493 from brewmarsh/dependabot/pip/mypy-2.3.0
+1495593a chore(ci): auto-deploy Firestore indexes and rules and add missing top teams index
+21e01a8e Merge pull request #1488 from brewmarsh/palette-fix-form-labels-10965149067743768989
+de2149ba fix(ci): Ignore bandit security false positives in config and tasks
+66aa42e2 Merge pull request #1360 from brewmarsh/fix-dupr-link-test-and-visibility-5714978526065369911
+ec77994d chore: update VERSION to 0.9.149 [skip ci]
+1149a40e Fix CI failures and Implement BaseRepository pattern
+571581cf Merge branch 'resolve-tournament-list-card-11498603944770983571' into main
+4045b042 Merge pull request #1256 from brewmarsh/refactor-test-suite-acl-13398721498831236821
+bbcc8674 Merge pull request #1149 from brewmarsh/dependabot/github_actions/astral-sh/setup-uv-7
+a9994753 Merge pull request #980 from brewmarsh/layout-standardization-15162149354395640548
+05c4ac67 Merge pull request #938 from brewmarsh/standardize-on-pytest-723614947560022592
+52cdac9a Merge pull request #925 from brewmarsh/consolidate-community-hub-14963861881311583304
+df71ef7c Merge branch 'main' into consolidate-community-hub-14963861881311583304
+e136e68f Merge pull request #884 from brewmarsh/fix-group-card-layout-grid-13501496568683202862
+68332e52 Merge branch 'main' into fix-group-card-layout-grid-13501496568683202862
+a21498f3 chore: update VERSION to 0.9.5 [skip ci]
+2bee2a61 Merge pull request #773 from brewmarsh/refactor-group-details-ux-17758214918857860259
+c0e0a5c8 Merge pull request #745 from brewmarsh/add-merge-user-ui-18405154673912814919
+25299402 Merge pull request #593 from brewmarsh/fix-guest-issue-connect-backend-5798871490761932632
+198b37a0 Merge pull request #548 from brewmarsh/fix-formatting-issues-4691271335730028149
+1492fffc Merge pull request #446 from brewmarsh/fix-test-record-match-4966929515985740510
+98c28cf6 Merge pull request #441 from brewmarsh/feat/design-system-refresh-14962338758958166495
+d1c4ce86 chore(version): update to 84e26301498402dc0c9f5d5b9c0da9bead646113 [skip ci]

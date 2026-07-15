@@ -1,0 +1,2 @@
+1496	🎨 Palette: [Accessibility] Improve ARIA expanded state on dropdown triggers	palette/a11y-dropdown-aria-expanded-8137249957763745201	OPEN	2026-07-15T08:35:31Z
+1494	🛡️ Sentinel: Add rate limiting to session_login endpoint	sentinel-rate-limit-session-login-7906078824368599757	OPEN	2026-07-14T08:33:43Z
