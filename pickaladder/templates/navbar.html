@@ -17,7 +17,7 @@
                     🪙 <span>{{ g.user.social_credits or 100 }}</span>
                 </div>
                 {% endif %}
-                <button class="hamburger-menu" aria-label="Toggle navigation menu" aria-expanded="false">
+                <button class="hamburger-menu" aria-label="Toggle navigation menu" title="Toggle navigation menu" aria-expanded="false">
                     <span></span>
                     <span></span>
                     <span></span>
@@ -80,7 +80,7 @@
                     🪙 <span class="ms-1">{{ g.user.social_credits or 100 }}</span>
                 </div>
                 <div class="dropdown">
-                    <button class="dropbtn" aria-label="Open user menu" aria-haspopup="true">
+                    <button class="dropbtn" aria-label="Open user menu" title="Open user menu" aria-haspopup="true">
                         <img src="{{ g.user | avatar_url }}" alt="Profile Picture" class="avatar avatar-sm"
                             onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                     </button>

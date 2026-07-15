@@ -8,7 +8,7 @@
 
     {% if g.user and (g.user.uid == tournament.organizer_id or g.user.isAdmin) %}
     <div class="dropdown kebab-menu" style="position: absolute; top: 10px; right: 10px; z-index: 10;" onclick="event.stopPropagation();">
-        <button class="dropbtn" type="button" aria-label="Tournament options" aria-haspopup="true" style="background: rgba(0,0,0,0.5); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
+        <button class="dropbtn" type="button" aria-label="Tournament options" title="Tournament options" aria-haspopup="true" style="background: rgba(0,0,0,0.5); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
             <i class="fas fa-ellipsis-v"></i>
         </button>
         <div class="dropdown-content">

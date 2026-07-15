@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Animate Icon: Toggle active class on the hamburger button
             hamburger.classList.toggle('active');
+
+            // Toggle aria-expanded for accessibility
+            const isExpanded = hamburger.getAttribute('aria-expanded') === 'true';
+            hamburger.setAttribute('aria-expanded', !isExpanded);
         });
     }
 });
