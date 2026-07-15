@@ -183,8 +183,12 @@ class MatchQueryService(
         t2 = cast("DocumentSnapshot", docs.get(team2_id))
 
         return (
-            (t1.to_dict() or {}).get("name", "Team 1") if t1 and t1.exists else "Team 1",
-            (t2.to_dict() or {}).get("name", "Team 2") if t2 and t2.exists else "Team 2",
+            (t1.to_dict() or {}).get("name", "Team 1")
+            if t1 and t1.exists
+            else "Team 1",
+            (t2.to_dict() or {}).get("name", "Team 2")
+            if t2 and t2.exists
+            else "Team 2",
         )
 
     @staticmethod
