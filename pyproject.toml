@@ -16,6 +16,7 @@ dependencies = [
     "email-validator==2.3.0",
     "Flask-Login==0.6.3",
     "Flask-Caching==2.4.0",
+    "setuptools==83.0.0",
 ]
 
 [tool.ruff]
