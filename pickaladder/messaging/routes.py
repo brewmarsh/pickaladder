@@ -63,7 +63,10 @@ def send(conversation_id: str) -> Response:
     # Verify participant to prevent IDOR
     conv = MessagingRepository.get_by_id(db, conversation_id)
     if not conv or g.user.uid not in conv.get("participants", []):
-        flash("You do not have permission to send messages in this conversation.", "danger")
+        flash(
+            "You do not have permission to send messages in this conversation.",
+            "danger",
+        )
         return redirect(url_for(".inbox"))  # type: ignore
 
     content = request.form.get("content")
