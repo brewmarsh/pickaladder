@@ -59,6 +59,16 @@ def start_chat(other_user_id: str) -> Response:
 def send(conversation_id: str) -> Response:
     """Send a message."""
     db = firestore.client()
+
+    # Verify participant has access
+    conv = MessagingRepository.get_by_id(db, conversation_id)
+    if not conv or g.user.uid not in conv.get("participants", []):
+        flash(
+            "You do not have permission to send messages to this conversation.",
+            "danger",
+        )
+        return redirect(url_for(".inbox"))  # type: ignore
+
     content = request.form.get("content")
     if content:
         MessagingService.send_message(db, conversation_id, g.user.uid, content)
