@@ -4,3 +4,6 @@
 ## 2025-02-21 - Resolving N+1 Query in `get_team_names`
 **Learning:** In `pickaladder/match/services/query.py`, the `get_team_names` method previously performed two sequential `db.collection("teams").document(id).get()` calls to fetch team names, resulting in an N+1 query bottleneck.
 **Action:** Replaced sequential queries with a single batch fetch using `db.get_all(refs)`. Mapped the result to a dictionary (`{doc.id: doc for doc in db.get_all(refs)}`) to ensure the correct team documents are assigned safely, regardless of the order they are returned, thus halving the database network overhead for this lookup.
+## 2025-02-21 - Avoiding Redundant Queries for Candidate Sets
+**Learning:** In `pickaladder/match/routes.py` and `pickaladder/match/services/match_validation.py`, `MatchQueryService.get_candidate_player_ids` was being called twice sequentially - once with `include_user=True` and once with `include_user=False`. This caused identical Firestore queries to execute twice, doubling the read overhead during match recording and validation.
+**Action:** Always perform the query once (with `include_user=True`) and derive the secondary set in memory using `.copy()` and `.discard(user_id)`.
