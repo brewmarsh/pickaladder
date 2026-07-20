@@ -148,7 +148,7 @@ jobs:
       - name: Scan for vulnerabilities
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv run --no-project pip-audit
+        run: uv run --no-project pip-audit -r requirements.txt
 
   refurb:
     name: Refurb
