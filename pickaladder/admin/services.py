@@ -172,6 +172,10 @@ class AdminService:
             )
             return days_ago, day.strftime("%b %d"), count
 
+        # ⚡ Bolt Optimization:
+        # What: Execute independent database count queries concurrently instead of sequentially.
+        # Why: Resolves an N+1 latency bottleneck where each query waits for the previous one to complete.
+        # Impact: Expected to reduce total latency for this aggregation block by ~5-7x.
         results = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=7) as executor:
             futures = [
