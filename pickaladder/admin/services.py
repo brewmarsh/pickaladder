@@ -153,12 +153,12 @@ class AdminService:
     @staticmethod
     def get_growth_metrics(db: firestore.Client) -> dict[str, Any]:
         """Calculate user signups per day for the last 7 days."""
-        now = datetime.datetime.now(datetime.timezone.utc)
-        labels = []
-        values = []
+        import concurrent.futures
 
-        for i in range(6, -1, -1):
-            day = now - datetime.timedelta(days=i)
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        def fetch_count_for_day(days_ago: int) -> tuple[int, str, int]:
+            day = now - datetime.timedelta(days=days_ago)
             day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
             day_end = day_start + datetime.timedelta(days=1)
 
@@ -170,8 +170,25 @@ class AdminService:
                 .get()[0][0]
                 .value
             )
-            labels.append(day.strftime("%b %d"))
-            values.append(count)
+            return days_ago, day.strftime("%b %d"), count
+
+        # ⚡ Bolt Optimization:
+        # What: Execute independent database count queries concurrently instead of sequentially.
+        # Why: Resolves an N+1 latency bottleneck where each query waits for the previous one to complete.
+        # Impact: Expected to reduce total latency for this aggregation block by ~5-7x.
+        results = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=7) as executor:
+            futures = [
+                executor.submit(fetch_count_for_day, i) for i in range(6, -1, -1)
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                results.append(future.result())
+
+        # Sort results by days_ago descending (which means oldest first, 6 to 0)
+        results.sort(key=lambda x: x[0], reverse=True)
+
+        labels = [res[1] for res in results]
+        values = [res[2] for res in results]
 
         return {"labels": labels, "values": values}
 

@@ -4,3 +4,6 @@
 ## 2025-02-21 - Resolving N+1 Query in `get_team_names`
 **Learning:** In `pickaladder/match/services/query.py`, the `get_team_names` method previously performed two sequential `db.collection("teams").document(id).get()` calls to fetch team names, resulting in an N+1 query bottleneck.
 **Action:** Replaced sequential queries with a single batch fetch using `db.get_all(refs)`. Mapped the result to a dictionary (`{doc.id: doc for doc in db.get_all(refs)}`) to ensure the correct team documents are assigned safely, regardless of the order they are returned, thus halving the database network overhead for this lookup.
+## 2025-02-21 - Optimizing Sequential Database Aggregations
+**Learning:** Replacing server-side `count()` aggregations with client-side document streaming to avoid sequential blocking I/O is a severe anti-pattern that drastically increases database cost and risks OOM crashes.
+**Action:** The correct approach to optimize multiple independent Firestore `count()` queries is to parallelize them using a thread pool (e.g., `concurrent.futures.ThreadPoolExecutor`), preserving the efficiency of server-side counting while minimizing overall latency.
