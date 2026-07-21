@@ -187,7 +187,9 @@ def _register_blueprints(app: Flask) -> None:
         if app.config.get("ENV") == "beta":
             response.headers["X-Robots-Tag"] = "noindex, nofollow"
 
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
         return response
