@@ -182,10 +182,16 @@ def _register_blueprints(app: Flask) -> None:
     app.add_url_rule("/", endpoint="auth.login", methods=["GET", "POST"])
 
     @app.after_request
-    def add_beta_headers(response: Response) -> Response:
-        """Add SEO safeguards if in beta environment."""
+    def add_security_headers(response: Response) -> Response:
+        """Add security headers and SEO safeguards if in beta environment."""
         if app.config.get("ENV") == "beta":
             response.headers["X-Robots-Tag"] = "noindex, nofollow"
+
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
         return response
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)  # type: ignore[method-assign]
