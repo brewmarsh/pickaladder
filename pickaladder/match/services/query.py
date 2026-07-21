@@ -42,17 +42,27 @@ class MatchQueryService(
             # Fallback for mockfirestore
             matches = list(db.collection("matches").limit(limit).stream())
 
-        return [MatchQueryService._process_match_document(m, db) for m in matches]
+        player_refs = MatchQueryService._get_player_refs_from_matches(matches)
+        players = MatchQueryService._fetch_player_names(db, player_refs)
+
+        return [
+            MatchQueryService._process_match_document(m, db, players) for m in matches
+        ]
 
     @staticmethod
-    def _process_match_document(match_doc: DocumentSnapshot, db: Client) -> Match:
+    def _process_match_document(
+        match_doc: DocumentSnapshot,
+        db: Client,
+        players: dict[str, str] | None = None,
+    ) -> Match:
         """Process a single match document into a formatted dictionary."""
         match_data = cast("Match", match_doc.to_dict() or {})
         match_data["id"] = match_doc.id
         MatchFormatter.apply_common_match_formatting(match_data)
 
-        player_refs = MatchQueryService._get_player_refs_from_matches([match_doc])
-        players = MatchQueryService._fetch_player_names(db, player_refs)
+        if players is None:
+            player_refs = MatchQueryService._get_player_refs_from_matches([match_doc])
+            players = MatchQueryService._fetch_player_names(db, player_refs)
 
         if match_data.get("matchType") == "doubles":
             MatchFormatter.format_doubles_match_names(match_data, players)
