@@ -7,3 +7,9 @@
 ## 2025-02-21 - Optimizing Sequential Database Aggregations
 **Learning:** Replacing server-side `count()` aggregations with client-side document streaming to avoid sequential blocking I/O is a severe anti-pattern that drastically increases database cost and risks OOM crashes.
 **Action:** The correct approach to optimize multiple independent Firestore `count()` queries is to parallelize them using a thread pool (e.g., `concurrent.futures.ThreadPoolExecutor`), preserving the efficiency of server-side counting while minimizing overall latency.
+## 2026-07-23 - Safe parallelization of I/O bound Firebase requests
+**Learning:** The `google-cloud-firestore` Python client is thread-safe, making it safe to reuse a single `db` client instance across threads in a `ThreadPoolExecutor`. This is extremely useful for parallelizing independent Firestore operations, such as sequential  queries.
+**Action:** When you identify sequential and independent Firestore operations (like aggregations or disjoint queries), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, drastically reducing the total latency from a sum of all request times to approximately the longest single request time.
+## 2026-07-23 - Safe parallelization of I/O bound Firebase requests
+**Learning:** The `google-cloud-firestore` Python client is thread-safe, making it safe to reuse a single `db` client instance across threads in a `ThreadPoolExecutor`. This is extremely useful for parallelizing independent Firestore operations, such as sequential `.count().get()` queries.
+**Action:** When you identify sequential and independent Firestore operations (like aggregations or disjoint queries), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, drastically reducing the total latency from a sum of all request times to approximately the longest single request time.
