@@ -415,6 +415,16 @@
             updateSyncAlert();
         };
 
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         function getDisplayName(user) {
             if (!user) return "Guest Player";
             // Extract name components safely
@@ -544,8 +554,8 @@
                     oppScore = match.player1_score || 0;
                 }
 
-                const partnerName = getDisplayName(partner);
-                matchupHtml = `<strong>You & ${partnerName}</strong> vs ${opponentName}`;
+                const partnerName = escapeHtml(getDisplayName(partner));
+                matchupHtml = `<strong>You & ${partnerName}</strong> vs ${escapeHtml(opponentName)}`;
             } else {
                 const isP1 = match.player1 && (match.player1.id || match.player1.uid) === currentUserId;
                 let opponent;
@@ -560,14 +570,14 @@
                     oppScore = match.player1_score || 0;
                 }
 
-                const opponentName = getDisplayName(opponent);
+                const opponentName = escapeHtml(getDisplayName(opponent));
                 matchupHtml = `<strong>You</strong> vs ${opponentName}`;
             }
 
             // Tournament label
             let tournamentHtml = '';
             if (match.tournament_name) {
-                tournamentHtml = `<div class="text-muted small" style="margin-top: 4px;">🏆 ${match.tournament_name}</div>`;
+                tournamentHtml = `<div class="text-muted small" style="margin-top: 4px;">🏆 ${escapeHtml(match.tournament_name)}</div>`;
             }
 
             // Date display (supports raw objects or strings)
