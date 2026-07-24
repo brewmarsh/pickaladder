@@ -7,3 +7,6 @@
 ## 2025-02-21 - Optimizing Sequential Database Aggregations
 **Learning:** Replacing server-side `count()` aggregations with client-side document streaming to avoid sequential blocking I/O is a severe anti-pattern that drastically increases database cost and risks OOM crashes.
 **Action:** The correct approach to optimize multiple independent Firestore `count()` queries is to parallelize them using a thread pool (e.g., `concurrent.futures.ThreadPoolExecutor`), preserving the efficiency of server-side counting while minimizing overall latency.
+## 2025-02-21 - Optimizing Sequential Database Aggregations
+**Learning:** Sequential, independent database aggregation queries (like multiple `count().get()` calls in Firestore) create an N+1 latency bottleneck where each query blocks the next, leading to poor performance.
+**Action:** Parallelize independent database aggregations using Python's `concurrent.futures.ThreadPoolExecutor`. This allows multiple database reads to occur concurrently, significantly reducing total method latency without changing the database schema.
