@@ -18,6 +18,7 @@ class AdminService:
 
         Uses efficient count aggregations.
         """
+
         def get_total_users() -> int:
             return db.collection("users").count().get()[0][0].value
 
@@ -31,7 +32,9 @@ class AdminService:
             )
 
         def get_recent_matches() -> int:
-            yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
+            yesterday = datetime.datetime.now(
+                datetime.timezone.utc
+            ) - datetime.timedelta(
                 days=1,
             )
             return (
