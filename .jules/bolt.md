@@ -7,3 +7,6 @@
 ## 2025-02-21 - Optimizing Sequential Database Aggregations
 **Learning:** Replacing server-side `count()` aggregations with client-side document streaming to avoid sequential blocking I/O is a severe anti-pattern that drastically increases database cost and risks OOM crashes.
 **Action:** The correct approach to optimize multiple independent Firestore `count()` queries is to parallelize them using a thread pool (e.g., `concurrent.futures.ThreadPoolExecutor`), preserving the efficiency of server-side counting while minimizing overall latency.
+## 2024-05-14 - Prevent Redundant Firestore Queries in Match Validation
+**Learning:** In scenarios where one candidate list is a subset of another (e.g., one including the user and one excluding the user), making two identical Firestore queries with slightly different filters is an anti-pattern that creates unnecessary N+1 query bottlenecks.
+**Action:** When fetching multiple candidate player sets, query the database once with `include_user=True` and derive the secondary set in-memory by creating a copy and removing the user ID using `.copy()` and `.discard(user_id)`. This prevents redundant reads and improves match recording performance.
