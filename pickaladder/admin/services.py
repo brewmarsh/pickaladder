@@ -15,7 +15,7 @@ class AdminService:
     def get_admin_stats(db: firestore.Client) -> dict[str, Any]:
         """Fetch high-level stats for the admin dashboard.
 
-        Uses efficient count aggregations.
+        Uses efficient count aggregations concurrently.
         """
         import concurrent.futures
 
@@ -47,7 +47,7 @@ class AdminService:
 
         # ⚡ Bolt Optimization:
         # What: Execute independent database count queries concurrently instead of sequentially.
-        # Why: Resolves a latency bottleneck where each query waits for the previous one to complete.
+        # Why: Resolves an N+1 latency bottleneck where each query waits for the previous one to complete.
         # Impact: Expected to reduce total latency for this aggregation block by ~2-3x.
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             total_users_future = executor.submit(get_total_users)
