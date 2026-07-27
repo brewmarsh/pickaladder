@@ -15,13 +15,7 @@ repos:
     rev: 1.7.7 # Use the latest stable version
     hooks:
       - id: bandit
-        args: ['-r', '.'] # Recursively check the entire project directory
-        # Exclude common non-source directories like tests and documentation
-        exclude: |
-          (?x)^(
-              tests/.*|
-              docs/.*
-          )$
+        args: ['-ll', '-x', 'tests']
 
   # 4. Local Hooks: Run mypy and unit tests
   - repo: local

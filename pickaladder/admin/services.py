@@ -18,6 +18,7 @@ class AdminService:
 
         Uses efficient count aggregations concurrently.
         """
+
         def get_total_users() -> int:
             return db.collection("users").count().get()[0][0].value
 
