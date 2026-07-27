@@ -7,3 +7,9 @@
 ## 2025-02-21 - Optimizing Sequential Database Aggregations
 **Learning:** Replacing server-side `count()` aggregations with client-side document streaming to avoid sequential blocking I/O is a severe anti-pattern that drastically increases database cost and risks OOM crashes.
 **Action:** The correct approach to optimize multiple independent Firestore `count()` queries is to parallelize them using a thread pool (e.g., `concurrent.futures.ThreadPoolExecutor`), preserving the efficiency of server-side counting while minimizing overall latency.
+## 2025-02-21 - Avoiding Redundant Database Queries for Complementary Sets
+**Learning:** When fetching sets of data that are complements of each other (like "all valid players" vs "all valid opponents" where the only difference is the current user), doing two separate database queries is a performance anti-pattern.
+**Action:** Fetch the inclusive set once, then derive the complementary set in-memory (e.g., using `copy()` and `discard()`) to eliminate a redundant database network request.
+## 2025-02-21 - Avoiding Redundant Database Queries in Match Validation
+**Learning:** In `MatchValidationService._check_player_validity`, the service fetched candidate player IDs twice: once with `include_user=False` and once with `include_user=True`.
+**Action:** Deriving the complement set (`cands`) from the inclusive set (`p1_cands`) via `copy()` and `discard(user_id)` eliminates a duplicate database query and optimizes the validation loop.
