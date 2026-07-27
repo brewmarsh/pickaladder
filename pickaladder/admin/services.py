@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import datetime
 from typing import Any
 
@@ -17,7 +18,10 @@ class AdminService:
 
         Uses efficient count aggregations concurrently.
         """
+<<<<<<< HEAD
         import concurrent.futures
+=======
+>>>>>>> origin/bolt/concurrent-admin-stats-4649319690176388584
 
         def get_total_users() -> int:
             return db.collection("users").count().get()[0][0].value

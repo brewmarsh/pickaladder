@@ -6,6 +6,7 @@
 **Action:** Replaced sequential queries with a single batch fetch using `db.get_all(refs)`. Mapped the result to a dictionary (`{doc.id: doc for doc in db.get_all(refs)}`) to ensure the correct team documents are assigned safely, regardless of the order they are returned, thus halving the database network overhead for this lookup.
 ## 2025-02-21 - Optimizing Sequential Database Aggregations
 **Learning:** Replacing server-side `count()` aggregations with client-side document streaming to avoid sequential blocking I/O is a severe anti-pattern that drastically increases database cost and risks OOM crashes.
+<<<<<<< HEAD
 
 ## 2025-02-21 - Parallelizing Sequential `.count().get()` Aggregations
 **Learning:** Sequential `.count().get()` aggregations in Firestore lead to severe N+1 latency problems because each query blocks the main thread waiting for network response.
@@ -29,3 +30,7 @@
 ## 2026-07-23 - Safe parallelization of I/O bound Firebase requests
 **Learning:** The `google-cloud-firestore` Python client is thread-safe, making it safe to reuse a single `db` client instance across threads in a `ThreadPoolExecutor`. This is extremely useful for parallelizing independent Firestore operations, such as sequential `.count().get()` queries.
 **Action:** When you identify sequential and independent Firestore operations (like aggregations or disjoint queries), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, drastically reducing the total latency from a sum of all request times to approximately the longest single request time.
+
+## 2025-02-21 - Optimizing Sequential Database Aggregations
+**Learning:** Sequential, independent database aggregation queries (like multiple `count().get()` calls in Firestore) create an N+1 latency bottleneck where each query blocks the next, leading to poor performance.
+**Action:** Parallelize independent database aggregations using Python's `concurrent.futures.ThreadPoolExecutor`. This allows multiple database reads to occur concurrently, significantly reducing total method latency without changing the database schema.
