@@ -93,14 +93,9 @@ def _populate_match_form_choices(  # noqa: PLR0913
         session_id,
         True,
     )
-    other_cands = MatchQueryService.get_candidate_player_ids(
-        db,
-        user_id,
-        group_id,
-        t_id,
-        session_id,
-    )
-    all_uids = p1_cands | other_cands
+    other_cands = p1_cands.copy()
+    other_cands.discard(user_id)
+    all_uids = p1_cands
     all_names = {}
     if all_uids:
         refs = [db.collection("users").document(uid) for uid in all_uids]

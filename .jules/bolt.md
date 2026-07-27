@@ -16,4 +16,6 @@
 ## 2025-02-21 - Batching sequential Firestore document updates in stats rollbacks
 **Learning:** `MatchCommandService.update_match_score` sequentially triggered up to 10 separate `DocumentReference.update` database writes for a doubles match (decrementing old scores and incrementing new scores for each team and individual user) due to `MatchStatsUpdater.apply_stats_delta` performing immediate writes. Sequential, unbatched writes create a significant network overhead and latency bottleneck in a cloud environment compared to atomic batched writes.
 **Action:** Introduced an optional `batch: WriteBatch` argument down the `MatchStatsUpdater.apply_stats_delta` stack. `MatchCommandService.update_match_score` now wraps the entire stats application in a single `WriteBatch`, drastically reducing database write latency by executing up to 10 updates as a single round-trip.
-
+## 2025-02-21 - Avoiding Redundant Queries for Candidate Sets
+**Learning:** In `pickaladder/match/routes.py` and `pickaladder/match/services/match_validation.py`, `MatchQueryService.get_candidate_player_ids` was being called twice sequentially - once with `include_user=True` and once with `include_user=False`. This caused identical Firestore queries to execute twice, doubling the read overhead during match recording and validation.
+**Action:** Always perform the query once (with `include_user=True`) and derive the secondary set in memory using `.copy()` and `.discard(user_id)`.
