@@ -37,7 +37,9 @@ class AdminService:
             )
 
         def fetch_recent_matches() -> int:
-            yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+            yesterday = datetime.datetime.now(
+                datetime.timezone.utc
+            ) - datetime.timedelta(days=1)
             return (
                 db.collection("matches")
                 .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))
