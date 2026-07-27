@@ -71,7 +71,7 @@ fleep==1.0.1
     # via
     #   -r requirements.txt
     #   imgur-python
-google-api-core==2.32.0
+google-api-core==2.33.0
     # via
     #   -r requirements.txt
     #   firebase-admin
