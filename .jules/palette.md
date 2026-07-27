@@ -13,3 +13,6 @@
 ## 2026-07-06 - ARIA Expanded State on Dropdown Triggers
 **Learning:** Script-driven toggles (like hamburger menus) often lack state indication for screen readers. While `aria-haspopup="true"` signals that a menu exists, screen reader users do not know whether the menu is currently open or closed without the `aria-expanded` attribute. Note that pure CSS dropdowns shouldn't have a static `aria-expanded="false"` because it won't update when the menu opens on hover/focus.
 **Action:** For script-driven menus, ensure the JavaScript toggles the `aria-expanded` attribute between "true" and "false" when the menu's visibility changes, as demonstrated in `navbar.js`. Do not add static `aria-expanded="false"` to pure CSS dropdowns.
+## 2026-07-24 - ARIA labels on Admin form inputs
+**Learning:** Found that form inputs within administrative panels (like the "Merge Ghost" or "Delete User" forms in `admin.html`) often lacked proper `<label>` elements and `aria-label` attributes, relying entirely on visual placeholders. Since these tools are destructive or highly privileged, accessibility and clarity are paramount.
+**Action:** Added explicit `aria-label` attributes to the inputs for "Real User ID", "Ghost Email", and "User ID or Email" to provide essential context for screen reader users and prevent reliance on transient placeholder text.

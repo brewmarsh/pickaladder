@@ -122,8 +122,8 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
                     <input type="text" name="target_user_id" class="form-control mb-2" placeholder="Real User ID"
-                        required>
-                    <input type="email" name="ghost_email" class="form-control mb-2" placeholder="Ghost Email" required>
+                        aria-label="Real User ID" required>
+                    <input type="email" name="ghost_email" class="form-control mb-2" placeholder="Ghost Email" aria-label="Ghost Email" required>
                 </div>
                 <button type="submit" class="btn btn-secondary w-100">Merge Ghost</button>
             </form>
@@ -190,7 +190,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group mb-2">
                     <input type="text" id="user_identifier" name="user_identifier" class="form-control form-control-sm"
-                        placeholder="User ID or Email" required>
+                        placeholder="User ID or Email" aria-label="User ID or Email" required>
                 </div>
                 <button type="submit" class="btn btn-danger btn-sm w-100">Delete User</button>
             </form>
