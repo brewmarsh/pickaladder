@@ -60,7 +60,7 @@ def send(conversation_id: str) -> Response:
     """Send a message."""
     db = firestore.client()
 
-    # Security: Verify user is a participant before allowing them to send
+    # Security: Verify user is a participant before allowing them to send (prevent IDOR)
     conv = MessagingRepository.get_by_id(db, conversation_id)
     if not conv or g.user.uid not in conv.get("participants", []):
         flash("You do not have access to this conversation.", "danger")
