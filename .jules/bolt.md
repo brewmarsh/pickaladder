@@ -13,3 +13,6 @@
 ## 2025-02-21 - Avoiding Redundant Database Queries in Match Validation
 **Learning:** In `MatchValidationService._check_player_validity`, the service fetched candidate player IDs twice: once with `include_user=False` and once with `include_user=True`.
 **Action:** Deriving the complement set (`cands`) from the inclusive set (`p1_cands`) via `copy()` and `discard(user_id)` eliminates a duplicate database query and optimizes the validation loop.
+## 2025-02-21 - Parallelizing Independent Database Aggregations
+**Learning:** Sequential `.count().get()` aggregations on distinct Firestore collections severely degrade performance due to cumulative network round-trips (N+1 query pattern).
+**Action:** Always wrap independent `.count()` or single-document `.get()` operations in a `concurrent.futures.ThreadPoolExecutor` when assembling combined dashboard stats to ensure they execute concurrently rather than blocking sequentially.
