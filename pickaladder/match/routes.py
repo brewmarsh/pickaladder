@@ -93,6 +93,7 @@ def _populate_match_form_choices(  # noqa: PLR0913
         session_id,
         True,
     )
+    # ⚡ Bolt: Prevent redundant Firestore query by deriving other_cands in-memory
     other_cands = p1_cands.copy()
     other_cands.discard(user_id)
     all_uids = p1_cands

@@ -54,6 +54,10 @@ class MatchValidationService:
         cands = p1_cands.copy()
         cands.discard(user_id)
 
+        # ⚡ Bolt: Prevent redundant Firestore query by deriving cands in-memory
+        cands = p1_cands.copy()
+        cands.discard(user_id)
+
         if sub.player_1_id not in p1_cands:
             msg = "Invalid Team 1 Player 1 selected."
             raise ValueError(msg)

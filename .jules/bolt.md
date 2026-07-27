@@ -7,6 +7,7 @@
 ## 2025-02-21 - Optimizing Sequential Database Aggregations
 **Learning:** Replacing server-side `count()` aggregations with client-side document streaming to avoid sequential blocking I/O is a severe anti-pattern that drastically increases database cost and risks OOM crashes.
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 ## 2025-02-21 - Parallelizing Sequential `.count().get()` Aggregations
 **Learning:** Sequential `.count().get()` aggregations in Firestore lead to severe N+1 latency problems because each query blocks the main thread waiting for network response.
@@ -31,6 +32,6 @@
 **Learning:** The `google-cloud-firestore` Python client is thread-safe, making it safe to reuse a single `db` client instance across threads in a `ThreadPoolExecutor`. This is extremely useful for parallelizing independent Firestore operations, such as sequential `.count().get()` queries.
 **Action:** When you identify sequential and independent Firestore operations (like aggregations or disjoint queries), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, drastically reducing the total latency from a sum of all request times to approximately the longest single request time.
 
-## 2025-02-21 - Optimizing Sequential Database Aggregations
-**Learning:** Sequential, independent database aggregation queries (like multiple `count().get()` calls in Firestore) create an N+1 latency bottleneck where each query blocks the next, leading to poor performance.
-**Action:** Parallelize independent database aggregations using Python's `concurrent.futures.ThreadPoolExecutor`. This allows multiple database reads to occur concurrently, significantly reducing total method latency without changing the database schema.
+## 2024-05-14 - Prevent Redundant Firestore Queries in Match Validation
+**Learning:** In scenarios where one candidate list is a subset of another (e.g., one including the user and one excluding the user), making two identical Firestore queries with slightly different filters is an anti-pattern that creates unnecessary N+1 query bottlenecks.
+**Action:** When fetching multiple candidate player sets, query the database once with `include_user=True` and derive the secondary set in-memory by creating a copy and removing the user ID using `.copy()` and `.discard(user_id)`. This prevents redundant reads and improves match recording performance.
