@@ -436,10 +436,12 @@
             const isGhost = (str) => typeof str === 'string' && str.startsWith('ghost_');
 
             if (isGhost(uid) || isGhost(username)) {
-                return (name && !isGhost(name)) ? name : "Guest Player";
+                const finalName = (name && !isGhost(name)) ? name : "Guest Player";
+                return escapeHtml(finalName);
             }
 
-            return name || username || "Anonymous";
+            const fallbackName = name || username || "Anonymous";
+            return escapeHtml(fallbackName);
         }
 
         window.toggleReaction = function(btn, activityId) {
@@ -544,12 +546,12 @@
 
                 if (inTeam1) {
                     partner = (team1[0].id || team1[0].uid) === currentUserId ? team1[1] : team1[0];
-                    opponentName = match.team2_name || "Opposing Team";
+                    opponentName = escapeHtml(match.team2_name || "Opposing Team");
                     userScore = match.player1_score || 0;
                     oppScore = match.player2_score || 0;
                 } else {
                     partner = (team2[0].id || team2[0].uid) === currentUserId ? team2[1] : team2[0];
-                    opponentName = match.team1_name || "Opposing Team";
+                    opponentName = escapeHtml(match.team1_name || "Opposing Team");
                     userScore = match.player2_score || 0;
                     oppScore = match.player1_score || 0;
                 }
