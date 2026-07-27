@@ -17,29 +17,46 @@ class AdminService:
 
         Uses efficient count aggregations.
         """
-        # Total Users
-        total_users = db.collection("users").count().get()[0][0].value
+        import concurrent.futures
 
-        # Active Tournaments (status != 'Completed')
-        active_tournaments = (
-            db.collection("tournaments")
-            .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
-            .count()
-            .get()[0][0]
-            .value
-        )
+        def get_total_users() -> int:
+            return db.collection("users").count().get()[0][0].value
 
-        # Recent Matches (last 24 hours)
-        yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(
-            days=1,
-        )
-        recent_matches = (
-            db.collection("matches")
-            .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))
-            .count()
-            .get()[0][0]
-            .value
-        )
+        def get_active_tournaments() -> int:
+            return (
+                db.collection("tournaments")
+                .where(filter=firestore.FieldFilter("status", "!=", "Completed"))
+                .count()
+                .get()[0][0]
+                .value
+            )
+
+        def get_recent_matches() -> int:
+            yesterday = datetime.datetime.now(
+                datetime.timezone.utc
+            ) - datetime.timedelta(
+                days=1,
+            )
+            return (
+                db.collection("matches")
+                .where(filter=firestore.FieldFilter("createdAt", ">=", yesterday))
+                .count()
+                .get()[0][0]
+                .value
+            )
+
+        # ⚡ Bolt Optimization:
+        # What: Execute independent database count queries concurrently instead of sequentially.
+        # Why: Resolves a latency bottleneck where each query waits for the previous one to complete.
+        # Impact: Expected to reduce total latency for this aggregation block by ~2-3x.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            total_users_future = executor.submit(get_total_users)
+            active_tournaments_future = executor.submit(get_active_tournaments)
+            recent_matches_future = executor.submit(get_recent_matches)
+
+            total_users = total_users_future.result()
+            active_tournaments = active_tournaments_future.result()
+            recent_matches = recent_matches_future.result()
 
         return {
             "total_users": total_users,
