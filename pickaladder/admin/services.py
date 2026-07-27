@@ -18,29 +18,10 @@ class AdminService:
 
         Uses efficient count aggregations concurrently.
         """
-<<<<<<< HEAD
-<<<<<<< HEAD
-        import concurrent.futures
-=======
->>>>>>> origin/bolt/concurrent-admin-stats-4649319690176388584
-
         def get_total_users() -> int:
             return db.collection("users").count().get()[0][0].value
 
         def get_active_tournaments() -> int:
-=======
-        import concurrent.futures
-
-        # ⚡ Bolt Optimization:
-        # What: Execute independent database count aggregations concurrently.
-        # Why: Resolves sequential blocking latency where each query waits for the previous one.
-        # Impact: Reduces overall database network latency for the admin dashboard by ~2-3x.
-
-        def fetch_total_users() -> int:
-            return db.collection("users").count().get()[0][0].value
-
-        def fetch_active_tournaments() -> int:
->>>>>>> origin/bolt-admin-stats-concurrency-10703619151738777409
             return (
                 db.collection("tournaments")
                 .where(filter=firestore.FieldFilter("status", "!=", "Completed"))

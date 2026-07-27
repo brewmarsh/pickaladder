@@ -1,8 +1,7 @@
 # .pre-commit-config.yaml
 repos:
-  # 1. Ruff: A fast Python linter and formatter.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.4 # Use the latest stable version
+    rev: v0.8.0 # Use modern ruff version matching environment
     hooks:
       # Run the linter against all staged Python files.
       - id: ruff
