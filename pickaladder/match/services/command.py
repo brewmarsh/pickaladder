@@ -451,7 +451,11 @@ class MatchCommandService(BaseRepository):
             raise ValueError(msg)
 
         cls._check_match_edit_permissions(data, editor_uid, db)
-        cls._perform_stats_update(data, s1, s2)
+
+        batch = db.batch()
+        cls._perform_stats_update(data, s1, s2, batch)
+        batch.commit()
+
         upd = cls._get_match_updates(data, s1, s2)
         cls.update(db, match_id, upd)
 
@@ -480,13 +484,18 @@ class MatchCommandService(BaseRepository):
             raise PermissionError(msg)
 
     @staticmethod
-    def _perform_stats_update(data: dict[str, Any], s1: int, s2: int) -> None:
+    def _perform_stats_update(
+        data: dict[str, Any],
+        s1: int,
+        s2: int,
+        batch: WriteBatch | None = None,
+    ) -> None:
         """Orchestrate the rollback and application of stats."""
         o1, o2 = data.get("player1Score", 0), data.get("player2Score", 0)
         if o1 != o2:
-            MatchStatsUpdater.apply_stats_delta(data, o1 > o2, -1)
+            MatchStatsUpdater.apply_stats_delta(data, o1 > o2, -1, batch)
         if s1 != s2:
-            MatchStatsUpdater.apply_stats_delta(data, s1 > s2, 1)
+            MatchStatsUpdater.apply_stats_delta(data, s1 > s2, 1, batch)
 
     @classmethod
     def _get_match_updates(
