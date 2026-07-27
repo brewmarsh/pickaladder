@@ -20,6 +20,7 @@
 ## 2025-02-21 - Avoiding Redundant Database Queries in Match Validation
 **Learning:** In `MatchValidationService._check_player_validity`, the service fetched candidate player IDs twice: once with `include_user=False` and once with `include_user=True`.
 **Action:** Deriving the complement set (`cands`) from the inclusive set (`p1_cands`) via `copy()` and `discard(user_id)` eliminates a duplicate database query and optimizes the validation loop.
+<<<<<<< HEAD
 
 ## 2025-02-21 - Batching sequential Firestore document updates in stats rollbacks
 **Learning:** `MatchCommandService.update_match_score` sequentially triggered up to 10 separate `DocumentReference.update` database writes for a doubles match (decrementing old scores and incrementing new scores for each team and individual user) due to `MatchStatsUpdater.apply_stats_delta` performing immediate writes. Sequential, unbatched writes create a significant network overhead and latency bottleneck in a cloud environment compared to atomic batched writes.
@@ -35,3 +36,6 @@
 ## 2024-05-14 - Prevent Redundant Firestore Queries in Match Validation
 **Learning:** In scenarios where one candidate list is a subset of another (e.g., one including the user and one excluding the user), making two identical Firestore queries with slightly different filters is an anti-pattern that creates unnecessary N+1 query bottlenecks.
 **Action:** When fetching multiple candidate player sets, query the database once with `include_user=True` and derive the secondary set in-memory by creating a copy and removing the user ID using `.copy()` and `.discard(user_id)`. This prevents redundant reads and improves match recording performance.
+## 2025-02-21 - Parallelizing Independent Database Aggregations
+**Learning:** Sequential `.count().get()` aggregations on distinct Firestore collections severely degrade performance due to cumulative network round-trips (N+1 query pattern).
+**Action:** Always wrap independent `.count()` or single-document `.get()` operations in a `concurrent.futures.ThreadPoolExecutor` when assembling combined dashboard stats to ensure they execute concurrently rather than blocking sequentially.
