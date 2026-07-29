@@ -1,0 +1,108 @@
+warning: No `requires-python` value found in the workspace. Defaulting to `>=3.12`.
+ * Tip: There are .env files present. Install python-dotenv to use them.
+[2026-07-29 08:40:17,038] DEBUG in __init__: Mail User loaded: False
+[2026-07-29 08:40:17,038] DEBUG in __init__: Mail Password loaded: False
+[2026-07-29 08:40:17,039] DEBUG in __init__: Mail Config - Server: smtp.gmail.com
+[2026-07-29 08:40:17,039] DEBUG in __init__: Mail Config - Port: 587
+[2026-07-29 08:40:17,039] DEBUG in __init__: Mail Config - TLS: True
+[2026-07-29 08:40:17,039] DEBUG in __init__: Mail Config - SSL: False
+[2026-07-29 08:40:17,039] DEBUG in __init__: Mail Config - No Password set!
+[2026-07-29 08:40:17,041] INFO in tasks: Initialized TaskExecutor with 4 workers
+ * Serving Flask app 'pickaladder'
+ * Debug mode: off
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+[33mPress CTRL+C to quit[0m
+[2026-07-29 08:40:34,405] ERROR in context_processors: Error fetching global announcement: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+Traceback (most recent call last):
+  File "/app/.venv/lib/python3.12/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/flask/app.py", line 891, in dispatch_request
+    self.raise_routing_exception(req)
+  File "/app/.venv/lib/python3.12/site-packages/flask/app.py", line 500, in raise_routing_exception
+    raise request.routing_exception  # type: ignore[misc]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/flask/ctx.py", line 362, in match_request
+    result = self.url_adapter.match(return_rule=True)  # type: ignore
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/werkzeug/routing/map.py", line 629, in match
+    raise NotFound() from None
+werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/pickaladder/context_processors.py", line 71, in _get_global_announcement
+    db = firestore.client()
+         ^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/firebase_admin/firestore.py", line 65, in client
+    return fs_service.get_client(database_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/firebase_admin/firestore.py", line 80, in get_client
+    credentials = self._app.credential.get_credential()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/firebase_admin/credentials.py", line 157, in get_credential
+    self._load_credential()
+  File "/app/.venv/lib/python3.12/site-packages/firebase_admin/credentials.py", line 174, in _load_credential
+    self._g_credential, self._project_id = google.auth.default(scopes=_scopes)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/google/auth/_default.py", line 752, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+127.0.0.1 - - [29/Jul/2026 08:40:34] "[33mGET /login HTTP/1.1[0m" 404 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/css/layout-utils.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/css/avatars.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/css/variables.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/css/buttons.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/css/data-displays.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/css/cards.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/css/layout.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/dark.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/mobile.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/css/challenges.css HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/pickaladder_logo_64.png HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/js/main.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/js/notifications.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/js/challenges.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/js/offline_store.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/js/feedback.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /static/js/navbar.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:34] "GET /service-worker.js HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/css/layout-utils.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/css/buttons.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/css/variables.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/css/avatars.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/css/cards.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/css/data-displays.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/css/layout.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/dark.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/mobile.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/js/navbar.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/pickaladder_logo_64.png HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "[36mGET /static/js/notifications.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "GET /static/img/pwa/icon-192.png HTTP/1.1" 200 -
+127.0.0.1 - - [29/Jul/2026 08:40:35] "GET /static/img/pwa/icon-512.png HTTP/1.1" 200 -
+[2026-07-29 08:40:37,872] ERROR in context_processors: Error fetching global announcement: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+Traceback (most recent call last):
+  File "/app/pickaladder/context_processors.py", line 71, in _get_global_announcement
+    db = firestore.client()
+         ^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/firebase_admin/firestore.py", line 65, in client
+    return fs_service.get_client(database_id)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/firebase_admin/firestore.py", line 80, in get_client
+    credentials = self._app.credential.get_credential()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/firebase_admin/credentials.py", line 157, in get_credential
+    self._load_credential()
+  File "/app/.venv/lib/python3.12/site-packages/firebase_admin/credentials.py", line 174, in _load_credential
+    self._g_credential, self._project_id = google.auth.default(scopes=_scopes)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.12/site-packages/google/auth/_default.py", line 752, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.
+127.0.0.1 - - [29/Jul/2026 08:40:37] "GET /offline HTTP/1.1" 200 -
