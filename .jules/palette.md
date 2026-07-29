@@ -19,3 +19,9 @@
 ## 2026-07-29 - Add loading states to login buttons
 **Learning:** Adding loading states to login buttons improves UX by preventing double submissions and providing immediate visual feedback. During implementation, I noted that it's important to also correctly handle error states by saving the original button text in the dataset and restoring it if the action fails (e.g., in a `.catch()` block).
 **Action:** Always ensure that when replacing button text with a loading spinner, the original state is preserved and can be fully restored upon failure, particularly for form submissions handled via JavaScript.
+## 2026-07-29 - Fix CI failures due to unmet dependencies
+**Learning:** Adding new features shouldn't ignore CI failures. The repository recently removed  from its  but left the import in , causing  to fail due to .
+**Action:** When a CI check like 'Performance Check' fails due to a missing module, verify if the module is actually needed or if it was accidentally left behind. If it's a small mock, a lightweight replacement is preferable to dragging in an external dependency.
+## $(date +%Y-%m-%d) - Fix CI failures due to unmet dependencies
+**Learning:** Adding new features shouldn't ignore CI failures. The repository recently removed `faker` from its `requirements.txt` but left the import in `pickaladder/admin/routes.py`, causing `perf_check.py` to fail due to `ModuleNotFoundError: No module named 'faker'`.
+**Action:** When a CI check like 'Performance Check' fails due to a missing module, verify if the module is actually needed or if it was accidentally left behind. If it's a small mock, a lightweight replacement is preferable to dragging in an external dependency.
