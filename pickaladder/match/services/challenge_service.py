@@ -283,14 +283,14 @@ class ChallengeService:
         def get_challenges() -> list:
             return list(
                 db.collection(cls.COLLECTION_NAME)
-                .where("challenger_id", "==", user_id)
+                .where(filter=firestore.FieldFilter("challenger_id", "==", user_id))
                 .get()
             )
 
         def get_received() -> list:
             return list(
                 db.collection(cls.COLLECTION_NAME)
-                .where("challenged_id", "==", user_id)
+                .where(filter=firestore.FieldFilter("challenged_id", "==", user_id))
                 .get()
             )
 
