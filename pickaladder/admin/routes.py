@@ -319,9 +319,12 @@ def generate_users() -> str:
     """Generate fake users for testing."""
     try:
         from faker import Faker
+
         fake = Faker()
     except ImportError:
-        flash("Faker module is not installed. This route is for testing only.", "danger")
+        flash(
+            "Faker module is not installed. This route is for testing only.", "danger"
+        )
         return redirect(url_for(".admin_dashboard"))
 
     db, new_users = firestore.client(), []

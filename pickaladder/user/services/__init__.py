@@ -159,6 +159,9 @@ from .stats_utils import (
 from .stats_utils import (
     _get_user_match_won_lost as _get_user_match_won_lost,
 )
+from .user_query_service import (
+    UserQueryService as _UserQueryService,
+)
 from .user_tournament_service import (
     get_active_tournaments as _get_active_tournaments,
 )
@@ -179,6 +182,7 @@ class UserService:
     update_user_profile = staticmethod(_update_user_profile)
     get_user_by_id = staticmethod(_get_user_by_id)
     get_users_by_ids = staticmethod(_get_users_by_ids)
+    get_users_by_ids = _UserQueryService.get_users_by_ids
     get_user_friends = staticmethod(_get_user_friends)
     get_user_matches = staticmethod(_get_user_matches)
     merge_ghost_user = staticmethod(_merge_ghost_user)
