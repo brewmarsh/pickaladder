@@ -37,23 +37,30 @@ class ActivityService:
     @staticmethod
     def get_global_feed(db: Client, limit: int = 20) -> list[dict[str, Any]]:
         """Retrieves recent activities enriched with user data."""
-        from pickaladder.user.services import UserService
-
         query = (
             db.collection(ActivityService.COLLECTION_NAME)
             .order_by("timestamp", direction=firestore.Query.DESCENDING)
             .limit(limit)
         )
 
-        activities = []
+        from pickaladder.user.services import UserService
+
+        activities_data = []
+        user_ids = set()
         for doc in query.stream():
             data = doc.to_dict()
             data["id"] = doc.id  # type: ignore
+            activities_data.append(data)
+            if "userId" in data:
+                user_ids.add(data["userId"])
 
+        user_map = UserService.get_users_by_ids(db, user_ids)
+
+        activities = []
+        for data in activities_data:
             # Enrich with user profile
-            user = UserService.get_user_by_id(db, data["userId"])  # type: ignore
-            data["user"] = user or {"username": "Unknown", "id": data["userId"]}  # type: ignore
-
+            user = user_map.get(data.get("userId"))
+            data["user"] = user or {"username": "Unknown", "id": data.get("userId")}  # type: ignore
             activities.append(data)
 
         return activities  # type: ignore
