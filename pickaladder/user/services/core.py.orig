@@ -141,24 +141,6 @@ def get_all_users(
     return users, next_cursor
 
 
-def get_users_by_ids(db: Client, user_ids: set[str]) -> dict[str, dict[str, Any]]:
-    """Batch fetch users by their IDs."""
-    if not user_ids:
-        return {}
-
-    user_refs = [db.collection("users").document(uid) for uid in user_ids]
-    user_map = {}
-    for u_snap in db.get_all(user_refs):
-        if u_snap.exists:
-            u_data = u_snap.to_dict() or {}
-            uid = u_snap.id
-            u_data["id"] = uid
-            u_data["uid"] = uid
-            user_map[uid] = u_data
-
-    return user_map
-
-
 def _map_dupr_data(form_data: FlaskForm) -> tuple[str | None, float | None]:
     """Extract DUPR ID and rating from form data."""
     dupr_id = None

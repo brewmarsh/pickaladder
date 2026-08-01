@@ -37,3 +37,6 @@
 ## 2025-02-21 - Parallelizing Independent Database Aggregations
 **Learning:** Sequential `.count().get()` aggregations on distinct Firestore collections severely degrade performance due to cumulative network round-trips (N+1 query pattern).
 **Action:** Always wrap independent `.count()` or single-document `.get()` operations in a `concurrent.futures.ThreadPoolExecutor` when assembling combined dashboard stats to ensure they execute concurrently rather than blocking sequentially.
+## 2025-02-21 - Resolving N+1 Query in Activity Feed
+**Learning:** In `pickaladder/core/activity/services.py`, the `get_global_feed` method previously called `UserService.get_user_by_id` iteratively for every activity to enrich it with user data. This created an N+1 query bottleneck because each user profile was fetched sequentially over the network.
+**Action:** Always batch fetch related documents when processing a stream of results. Extract unique IDs (like `userId`) into a set, fetch all required documents in a single round-trip using `db.get_all(refs)`, map them by ID, and then attach the fetched data to the original results.
