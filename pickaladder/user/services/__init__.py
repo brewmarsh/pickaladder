@@ -25,9 +25,6 @@ from .core import (
     get_user_by_id as _get_user_by_id,
 )
 from .core import (
-    get_users_by_ids as _get_users_by_ids,
-)
-from .core import (
     process_profile_update as _process_profile_update,
 )
 from .core import (
@@ -181,7 +178,6 @@ class UserService:
     smart_display_name = staticmethod(_smart_display_name)
     update_user_profile = staticmethod(_update_user_profile)
     get_user_by_id = staticmethod(_get_user_by_id)
-    get_users_by_ids = staticmethod(_get_users_by_ids)
     get_users_by_ids = _UserQueryService.get_users_by_ids
     get_user_friends = staticmethod(_get_user_friends)
     get_user_matches = staticmethod(_get_user_matches)
