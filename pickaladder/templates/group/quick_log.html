@@ -218,6 +218,16 @@
 </div>
 
 <script>
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     const players = {{ players|tojson }};
     const matchType = "{{ session.matchTypeDefault|default('doubles') }}";
     const winnerCountTarget = (matchType === 'singles') ? 1 : 2;
@@ -296,7 +306,7 @@
             card.id = `pc-l-${p.id}`;
             if (losers.includes(p.id)) card.classList.add('is-loser');
             card.onclick = () => handlePlayerTap(p.id);
-            card.innerHTML = `<div class="player-name">${p.username}</div>`;
+            card.innerHTML = `<div class="player-name">${escapeHtml(p.username)}</div>`;
             grid.appendChild(card);
         });
         document.getElementById('btn-next').disabled = (losers.length !== winnerCountTarget);
