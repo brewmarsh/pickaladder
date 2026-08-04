@@ -22,3 +22,7 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+## 2025-02-24 - [Fix DOM XSS in Group Quick Log]
+**Vulnerability:** XSS vulnerability in `pickaladder/templates/group/quick_log.html` where user-controlled input (`p.username`) was being directly interpolated into an HTML string assigned to `innerHTML` within the `setupStep2` function.
+**Learning:** Even internal toolings or specific workflows (like quick logging matches for a group) that dynamically generate HTML on the client-side are susceptible to DOM XSS if they don't properly escape data originating from user input.
+**Prevention:** Always use a robust HTML escaping function (like `escapeHtml`) to sanitize dynamic data before interpolating it into HTML strings on the client side, especially before assigning to `innerHTML`.
