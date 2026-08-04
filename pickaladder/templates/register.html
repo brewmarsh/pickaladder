@@ -88,9 +88,30 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const googleSignInButton = document.getElementById('google-signin-btn');
+    const form = document.querySelector('form');
+
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                // Not preventing default since we want normal server-side form submission
+                submitBtn.dataset.originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Registering...';
+                // Using styles to visually disable since full disabled attr may prevent form submission in some browsers
+                submitBtn.style.pointerEvents = 'none';
+                submitBtn.style.opacity = '0.7';
+            }
+        });
+    }
 
     googleSignInButton.addEventListener('click', function() {
         const provider = new firebase.auth.GoogleAuthProvider();
+
+        googleSignInButton.dataset.originalText = googleSignInButton.innerHTML;
+        googleSignInButton.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Signing up...';
+        googleSignInButton.style.pointerEvents = 'none';
+        googleSignInButton.style.opacity = '0.7';
+
         firebase.auth().signInWithPopup(provider)
             .then((result) => {
                 return result.user.getIdToken();
@@ -113,6 +134,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
+                googleSignInButton.style.pointerEvents = 'auto';
+                googleSignInButton.style.opacity = '1';
+                if (googleSignInButton.dataset.originalText) {
+                    googleSignInButton.innerHTML = googleSignInButton.dataset.originalText;
+                }
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
                 flashes.innerHTML = ''; // Clear previous messages
