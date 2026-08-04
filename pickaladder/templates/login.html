@@ -82,6 +82,12 @@ document.addEventListener('DOMContentLoaded', function () {
     googleSignInButton.addEventListener('click', function() {
         const provider = new firebase.auth.GoogleAuthProvider();
         const remember = document.getElementById('remember').checked;
+
+        googleSignInButton.dataset.originalText = googleSignInButton.innerHTML;
+        googleSignInButton.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Signing in...';
+        googleSignInButton.style.pointerEvents = 'none';
+        googleSignInButton.style.opacity = '0.7';
+
         firebase.auth().signInWithPopup(provider)
             .then((result) => {
                 return result.user.getIdToken();
@@ -105,6 +111,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
+                googleSignInButton.style.pointerEvents = 'auto';
+                googleSignInButton.style.opacity = '1';
+                if (googleSignInButton.dataset.originalText) {
+                    googleSignInButton.innerHTML = googleSignInButton.dataset.originalText;
+                }
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
                 flashes.innerHTML = ''; // Clear previous messages
@@ -117,6 +128,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.dataset.originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Logging in...';
+            submitBtn.style.pointerEvents = 'none';
+            submitBtn.style.opacity = '0.7';
+        }
+
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
@@ -149,7 +169,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Re-enable the submit button on failure
                 const submitBtn = form.querySelector('button[type="submit"]');
                 if (submitBtn) {
-                    submitBtn.disabled = false;
+                    submitBtn.style.pointerEvents = 'auto';
+                    submitBtn.style.opacity = '1';
                     if (submitBtn.dataset.originalText) {
                         submitBtn.innerHTML = submitBtn.dataset.originalText;
                     }
