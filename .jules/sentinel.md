@@ -22,3 +22,7 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+## 2025-02-24 - [Fix DOM XSS in Match Recording Roster Loading]
+**Vulnerability:** XSS vulnerability in `pickaladder/static/js/match_recording.js` where a user-controlled property (`member.name`) was being directly interpolated into an HTML string assigned to `div.innerHTML`.
+**Learning:** Client-side templating using `innerHTML` with unescaped user data is a severe XSS risk. While custom escaping functions can be used, constructing the elements using native DOM APIs is generally safer and less prone to edge-case errors.
+**Prevention:** Construct elements securely using `document.createElement` and set user-controlled text using the `textContent` property instead of injecting variables into `innerHTML`.
