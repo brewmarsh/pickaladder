@@ -39,7 +39,7 @@ click==8.4.2
     # via
     #   -r requirements.txt
     #   flask
-cryptography==49.0.0
+cryptography==50.0.0
     # via
     #   -r requirements.txt
     #   google-auth
@@ -128,7 +128,7 @@ h11==0.16.0
     # via
     #   -r requirements.txt
     #   httpcore
-h2==4.3.0
+h2==4.4.1
     # via
     #   -r requirements.txt
     #   httpx
@@ -182,7 +182,7 @@ packaging==26.2
     # via
     #   -r requirements.txt
     #   gunicorn
-pillow==12.1.1
+pillow==12.3.0
     # via -r requirements.txt
 proto-plus==1.28.1
     # via
@@ -255,4 +255,3 @@ wtforms==3.2.2
     # via
     #   -r requirements.txt
     #   flask-wtf
-
