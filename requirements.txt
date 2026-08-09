@@ -209,7 +209,7 @@ pycparser==3.0
     # via
     #   -r requirements.txt
     #   cffi
-pydantic==2.13.3
+pydantic==2.13.4
     # via -r requirements.txt
 pydantic-core==2.46.3
     # via
