@@ -85,7 +85,7 @@ dev = [
     "ruff==0.15.22",
     "bandit==1.9.4",
     "mypy==2.3.0",
-    "Faker==40.28.1",
+    "Faker==40.36.0",
     "coverage==7.15.2",
     "pytest-mock",
     "playwright",
