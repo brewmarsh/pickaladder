@@ -278,18 +278,34 @@ class ChallengeService:
     @classmethod
     def get_user_challenges(cls, db: Client, user_id: str) -> dict[str, list]:
         """Fetch all challenges involving the user, categorized by status."""
-        challenges = (
-            db.collection(cls.COLLECTION_NAME)
-            .where("challenger_id", "==", user_id)
-            .get()
-        )
-        received = (
-            db.collection(cls.COLLECTION_NAME)
-            .where("challenged_id", "==", user_id)
-            .get()
-        )
+        import concurrent.futures
 
-        all_docs = list(challenges) + list(received)
+        def get_challenges() -> list:
+            return list(
+                db.collection(cls.COLLECTION_NAME)
+                .where(filter=firestore.FieldFilter("challenger_id", "==", user_id))
+                .get()
+            )
+
+        def get_received() -> list:
+            return list(
+                db.collection(cls.COLLECTION_NAME)
+                .where(filter=firestore.FieldFilter("challenged_id", "==", user_id))
+                .get()
+            )
+
+        # ⚡ Bolt Optimization:
+        # What: Execute independent database queries for sent and received challenges concurrently.
+        # Why: Resolves a sequential latency bottleneck where fetching received challenges waited for sent challenges.
+        # Impact: Expected to reduce total latency for fetching user challenges by ~2x.
+        # Measurement: Measure latency of ChallengeService.get_user_challenges before and after this change.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            challenges_future = executor.submit(get_challenges)
+            received_future = executor.submit(get_received)
+            challenges = challenges_future.result()
+            received = received_future.result()
+
+        all_docs = challenges + received
 
         pending = []
         active = []

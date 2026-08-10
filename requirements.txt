@@ -71,7 +71,7 @@ fleep==1.0.1
     # via
     #   -r requirements.txt
     #   imgur-python
-google-api-core==2.32.0
+google-api-core==2.33.0
     # via
     #   -r requirements.txt
     #   firebase-admin
@@ -112,7 +112,7 @@ googleapis-common-protos==1.75.0
     #   -r requirements.txt
     #   google-api-core
     #   grpcio-status
-grpcio==1.82.1
+grpcio==1.83.0
     # via
     #   -r requirements.txt
     #   google-api-core
@@ -209,9 +209,9 @@ pycparser==3.0
     # via
     #   -r requirements.txt
     #   cffi
-pydantic==2.13.3
+pydantic==2.13.4
     # via -r requirements.txt
-pydantic-core==2.46.3
+pydantic-core==2.46.4
     # via
     #   -r requirements.txt
     #   pydantic
