@@ -182,7 +182,7 @@ packaging==26.2
     # via
     #   -r requirements.txt
     #   gunicorn
-pillow==12.1.1
+pillow==12.3.0
     # via -r requirements.txt
 proto-plus==1.28.1
     # via
