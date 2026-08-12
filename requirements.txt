@@ -78,7 +78,7 @@ google-api-core==2.33.0
     #   google-cloud-core
     #   google-cloud-firestore
     #   google-cloud-storage
-google-auth==2.56.0
+google-auth==2.56.3
     # via
     #   -r requirements.txt
     #   google-api-core
