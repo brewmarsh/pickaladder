@@ -21,7 +21,7 @@ cachelib==0.14.0
     # via
     #   -r requirements.txt
     #   flask-caching
-certifi==2026.6.17
+certifi==2026.7.22
     # via
     #   -r requirements.txt
     #   httpcore
