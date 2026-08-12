@@ -39,7 +39,7 @@ click==8.4.2
     # via
     #   -r requirements.txt
     #   flask
-cryptography==49.0.0
+cryptography==50.0.0
     # via
     #   -r requirements.txt
     #   google-auth
@@ -128,7 +128,7 @@ h11==0.16.0
     # via
     #   -r requirements.txt
     #   httpcore
-h2==4.4.0
+h2==4.4.1
     # via
     #   -r requirements.txt
     #   httpx
@@ -211,7 +211,7 @@ pycparser==3.0
     #   cffi
 pydantic==2.13.4
     # via -r requirements.txt
-pydantic-core==2.46.3
+pydantic-core==2.46.4
     # via
     #   -r requirements.txt
     #   pydantic
