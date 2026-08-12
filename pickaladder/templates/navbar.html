@@ -98,6 +98,9 @@
                 </div>
                 {% else %}
                 <div class="dropdown guest-mobile-menu">
+                    <button class="dropbtn" aria-label="Open guest menu" title="Open guest menu" aria-haspopup="true">
+                        <img src="{{ url_for('static', filename='user_icon.png') }}" alt="Guest User" class="avatar avatar-sm">
+                    </button>
                     <div class="dropdown-content">
                         <a href="{{ url_for('auth.login') }}">Login</a>
                         <a href="{{ url_for('auth.register') }}">Register</a>
