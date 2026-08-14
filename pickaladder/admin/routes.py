@@ -6,7 +6,6 @@ import datetime
 import random
 from typing import TYPE_CHECKING, Any
 
-from faker import Faker
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -18,6 +17,7 @@ from flask import (
     session,
     url_for,
 )
+from werkzeug.wrappers import Response
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import (
@@ -316,8 +316,15 @@ def verify_user(user_id: str) -> Response:
 
 @bp.route("/generate_users", methods=["POST"])
 @login_required(admin_required=True)
-def generate_users() -> str:
+def generate_users() -> str | Any:
     """Generate fake users for testing."""
+    try:
+        from faker import Faker
+    except ImportError:
+        flash("Faker module is not installed.", "danger")
+        from flask import redirect, url_for
+
+        return redirect(url_for("admin.dashboard"))
     db, fake, new_users = firestore.client(), Faker(), []
     try:
         for _ in range(10):
