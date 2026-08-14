@@ -28,6 +28,17 @@
     };
 })();
 
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     // Handle form submissions with loading spinner
     const forms = document.querySelectorAll('form');
@@ -277,6 +288,7 @@ function dismissToast(toast) {
 }
 
 function showToast(message, category = 'info', submissionId = null) {
+    message = escapeHtml(message);
     const toastContainer = document.querySelector('.toast-container');
     if (!toastContainer) return;
 
@@ -333,7 +345,7 @@ function updateToast(toastId, message, category) {
         progressBar.remove();
     }
 
-    toastBody.innerHTML = message;
+    toastBody.textContent = message;
 
     // Add a retry button for failed submissions
     if (category === 'danger') {
