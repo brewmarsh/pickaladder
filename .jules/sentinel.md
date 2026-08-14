@@ -22,3 +22,8 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+
+## 2024-08-14 - DOM-based XSS in Toast Notifications
+**Vulnerability:** The global `showToast` and `updateToast` functions in `pickaladder/static/js/main.js` were vulnerable to DOM-based XSS because they directly interpolated the `message` parameter into an HTML string and inserted it via `insertAdjacentHTML` and `innerHTML`. If an error message contained user-controlled data, it could lead to script execution.
+**Learning:** Common UI utility functions are prime targets for DOM XSS. Error messages and API responses passed to toast notifications should never be trusted or parsed as raw HTML.
+**Prevention:** Always sanitize messages passed to `showToast` using `escapeHtml()`, and assign plain text to `toastBody.textContent` instead of `toastBody.innerHTML` when updating toasts.
