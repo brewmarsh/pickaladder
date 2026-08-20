@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import concurrent.futures
 from typing import TYPE_CHECKING, Any
 
 from firebase_admin import firestore
@@ -171,14 +172,27 @@ def get_group_rankings(db: Client, user_id: str) -> list[dict[str, Any]]:
         .where(filter=firestore.FieldFilter("members", "array_contains", user_ref))
         .stream()
     )
-    for group_doc in my_groups_query:
+
+    group_docs = list(my_groups_query)
+
+    def fetch_and_calculate(group_doc: Any) -> dict[str, Any] | None:
         group_data = group_doc.to_dict()
         if group_data is None:
-            continue
+            return None
         leaderboard = get_group_leaderboard(group_doc.id)
-        group_rankings.append(
-            _calculate_user_ranking(user_id, leaderboard, group_doc.id, group_data),
-        )
+        return _calculate_user_ranking(user_id, leaderboard, group_doc.id, group_data)
+
+    # ⚡ Bolt Optimization:
+    # What: Execute independent get_group_leaderboard queries concurrently.
+    # Why: Resolves an N+1 latency bottleneck where fetching the leaderboard for each group
+    #      waits for the previous one to complete.
+    # Impact: Expected to reduce total latency for fetching group rankings proportionally to the number of groups.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        results = executor.map(fetch_and_calculate, group_docs)
+        for result in results:
+            if result is not None:
+                group_rankings.append(result)
+
     return group_rankings
 
 
