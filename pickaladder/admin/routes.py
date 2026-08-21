@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import datetime
-import random
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from firebase_admin import auth, firestore
+from firebase_admin import firestore
 from flask import (
     flash,
     g,
@@ -25,11 +24,8 @@ from pickaladder.constants.messages import (
     COMMON_MESSAGES,
 )
 from pickaladder.extensions import cache
-from pickaladder.match.models import MatchSubmission
-from pickaladder.match.services import MatchService
 from pickaladder.services.feedback_service import FeedbackService
 from pickaladder.user import UserService
-from pickaladder.user.models import UserSession
 
 from . import bp
 from .services import AdminService
@@ -317,71 +313,18 @@ def verify_user(user_id: str) -> Response:
 @login_required(admin_required=True)
 def generate_users() -> str:
     """Generate fake users for testing."""
-    from faker import Faker
-
-    db, fake, new_users = firestore.client(), Faker(), []
+    db = firestore.client()
     try:
-        for _ in range(10):
-            email, password = (
-                fake.email(),
-                fake.password(
-                    length=12,
-                    special_chars=True,
-                    digits=True,
-                    upper_case=True,
-                    lower_case=True,
-                ),
-            )
-            user_record = auth.create_user(email=email, password=password)
-            user_doc = {
-                "username": fake.user_name(),
-                "email": email,
-                "name": fake.name(),
-                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec B311
-                "isAdmin": False,
-                "createdAt": firestore.SERVER_TIMESTAMP,
-            }
-            db.collection("users").document(user_record.uid).set(user_doc)
-            new_users.append({"uid": user_record.uid, **user_doc})
+        new_users = AdminService.generate_random_users(db)
         flash(
             ADMIN_MESSAGES["USERS_GEN_SUCCESS"].format(count=len(new_users)),
             "success",
         )
+        return render_template("generated_users.html", users=new_users)
     except Exception as e:
         flash(ADMIN_MESSAGES["USERS_GEN_ERROR"].format(error=e), "danger")
-    return render_template("generated_users.html", users=new_users)
+        return render_template("generated_users.html", users=[])
 
-
-def _generate_single_random_match(db: firestore.Client, users: list[Any]) -> bool:
-    """Generate a single random match between users."""
-    p1, p2 = random.sample(users, 2)  # nosec B311
-    s1, s2 = 11, random.randint(0, 9)  # nosec B311
-    if random.choice([True, False]):  # nosec B311
-        s1, s2 = s2, s1
-
-    submission = MatchSubmission(
-        player_1_id=p1.id,
-        player_2_id=p2.id,
-        score_p1=s1,
-        score_p2=s2,
-        match_type="singles",
-        match_date=datetime.datetime.now(datetime.timezone.utc),
-        created_by=p1.id,
-    )
-    try:
-        MatchService.record_match(db, submission, UserSession({"uid": p1.id}))
-        return True
-    except Exception:
-        return False
-
-
-def _batch_generate_random_matches(
-    db: firestore.Client,
-    users: list[Any],
-    count: int = 10,
-) -> int:
-    """Generate multiple random matches and return success count."""
-    return sum(1 for _ in range(count) if _generate_single_random_match(db, users))
 
 
 @bp.route("/generate_matches", methods=["POST"])
@@ -394,7 +337,7 @@ def generate_matches() -> Response:
         if len(users) < MIN_USERS_FOR_MATCH_GENERATION:
             flash(ADMIN_MESSAGES["NOT_ENOUGH_USERS_MATCHES"], "warning")
         else:
-            count = _batch_generate_random_matches(db, users)
+            count = AdminService.batch_generate_random_matches(db, users)
             flash(ADMIN_MESSAGES["RANDOM_MATCHES_GEN"].format(count=count), "success")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")

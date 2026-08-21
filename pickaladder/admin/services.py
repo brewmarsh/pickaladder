@@ -10,6 +10,63 @@ from firebase_admin import firestore
 
 
 class AdminService:
+
+    @staticmethod
+    def generate_random_users(db: firestore.Client) -> list[dict[str, Any]]:
+        import random
+
+        from faker import Faker
+        from firebase_admin import auth
+        fake = Faker()
+        new_users = []
+        for _ in range(10):
+            email = fake.email()
+            password = fake.password(length=12, special_chars=True, digits=True, upper_case=True, lower_case=True)
+            user_record = auth.create_user(email=email, password=password)
+            user_doc = {
+                "username": fake.user_name(),
+                "email": email,
+                "name": fake.name(),
+                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec B311
+                "isAdmin": False,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
+            db.collection("users").document(user_record.uid).set(user_doc)
+            new_users.append({"uid": user_record.uid, **user_doc})
+        return new_users
+
+    @staticmethod
+    def _generate_single_random_match(db: firestore.Client, users: list[Any]) -> bool:
+        import datetime
+        import random
+
+        from pickaladder.match.models import MatchSubmission
+        from pickaladder.match.services import MatchService
+        from pickaladder.user.models import UserSession
+        p1, p2 = random.sample(users, 2)  # nosec B311
+        s1, s2 = 11, random.randint(0, 9)  # nosec B311
+        if random.choice([True, False]):  # nosec B311
+            s1, s2 = s2, s1
+
+        submission = MatchSubmission(
+            player_1_id=p1.id,
+            player_2_id=p2.id,
+            score_p1=s1,
+            score_p2=s2,
+            match_type="singles",
+            match_date=datetime.datetime.now(datetime.timezone.utc),
+            created_by=p1.id,
+        )
+        try:
+            MatchService.record_match(db, submission, UserSession({"uid": p1.id}))
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def batch_generate_random_matches(db: firestore.Client, users: list[Any], count: int = 10) -> int:
+        return sum(1 for _ in range(count) if AdminService._generate_single_random_match(db, users))
+
     """Service class for admin-related operations."""
 
     @staticmethod
