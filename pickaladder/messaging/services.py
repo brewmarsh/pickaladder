@@ -93,10 +93,13 @@ class MessagingService:
         # Why: Resolves an N+1 queries issue where a separate db.collection("users").document(uid).get()
         #      call was made for each direct conversation in the inbox list.
         # Impact: Reduces database reads to a single batched read for all participant users.
-        other_uids = list({
-            next((p for p in conv.get("participants", []) if p != user_id), user_id)
-            for conv in conversations if conv.get("type") != "group_announcement"
-        })
+        other_uids = list(
+            {
+                next((p for p in conv.get("participants", []) if p != user_id), user_id)
+                for conv in conversations
+                if conv.get("type") != "group_announcement"
+            }
+        )
 
         users_map = {}
         if other_uids:
