@@ -174,12 +174,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.members.forEach(member => {
                     const div = document.createElement('div');
                     div.className = 'form-check';
-                    div.innerHTML = `
-                        <input class="form-check-input roster-check-${side}" type="checkbox" value="${member.id}" id="side${side}_member_${member.id}" onchange="handleRosterSelection(${side})">
-                        <label class="form-check-label" for="side${side}_member_${member.id}">
-                            ${member.name}
-                        </label>
-                    `;
+
+                    const input = document.createElement('input');
+                    input.className = `form-check-input roster-check-${side}`;
+                    input.type = 'checkbox';
+                    input.value = member.id;
+                    input.id = `side${side}_member_${member.id}`;
+                    input.onchange = () => handleRosterSelection(side);
+
+                    const label = document.createElement('label');
+                    label.className = 'form-check-label';
+                    label.htmlFor = `side${side}_member_${member.id}`;
+                    label.textContent = member.name;
+
+                    div.appendChild(input);
+                    div.appendChild(label);
+
                     rosterList.appendChild(div);
                 });
                 rosterContainer.style.display = 'block';

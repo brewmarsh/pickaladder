@@ -127,9 +127,19 @@ const ChallengeUI = {
         container.innerHTML = challenges.map(c => this.renderChallengeCard(c, type)).join('');
     },
 
+    escapeHtml(text) {
+        if (!text) return '';
+        return text.toString()
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    },
+
     renderChallengeCard(c, type) {
         const isChallenger = c.challenger_id === currentUserId;
-        const otherName = isChallenger ? c.challenged_name : c.challenger_name;
+        const otherName = this.escapeHtml(isChallenger ? c.challenged_name : c.challenger_name);
         const direction = isChallenger ? "Sent to" : "Received from";
         
         let actions = '';

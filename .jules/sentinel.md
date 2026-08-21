@@ -22,3 +22,8 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+
+## 2024-10-27 - [Fix DOM XSS in UI Components]
+**Vulnerability:** Found multiple DOM-based Cross-Site Scripting (XSS) vulnerabilities in client-side Javascript generating HTML via `.innerHTML`. Specifically in `pickaladder/static/js/challenges.js` (challenge cards injecting unescaped names), `pickaladder/static/js/match_recording.js` (team roster list interpolating member names), and `pickaladder/templates/group/quick_log.html` (quick log grid inserting unescaped usernames).
+**Learning:** Client-side template generation using `innerHTML` or string interpolation is highly prone to XSS if the data source contains user input (like names).
+**Prevention:** For large template string generation, explicitly pass variables through an `escapeHtml` utility. For smaller dynamic DOM insertions (like lists or tags), strictly prefer `document.createElement()` and assign user variables directly to the `textContent` property, which inherently avoids parsing the input as HTML.

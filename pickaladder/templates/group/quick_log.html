@@ -296,7 +296,12 @@
             card.id = `pc-l-${p.id}`;
             if (losers.includes(p.id)) card.classList.add('is-loser');
             card.onclick = () => handlePlayerTap(p.id);
-            card.innerHTML = `<div class="player-name">${p.username}</div>`;
+
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'player-name';
+            nameDiv.textContent = p.username;
+            card.appendChild(nameDiv);
+
             grid.appendChild(card);
         });
         document.getElementById('btn-next').disabled = (losers.length !== winnerCountTarget);
