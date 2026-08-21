@@ -85,9 +85,31 @@ class MessagingService:
     def get_inbox(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Retrieves the user's conversation list with enriched participant names."""
         from pickaladder.group.repository import GroupRepository
-        from pickaladder.user.services import UserService
 
         conversations = MessagingRepository.get_user_conversations(db, user_id)
+
+        # ⚡ Bolt Optimization:
+        # What: Extract all unique other_uid references and batch fetch them using db.get_all.
+        # Why: Resolves an N+1 queries issue where a separate db.collection("users").document(uid).get()
+        #      call was made for each direct conversation in the inbox list.
+        # Impact: Reduces database reads to a single batched read for all participant users.
+        other_uids = list(
+            {
+                next((p for p in conv.get("participants", []) if p != user_id), user_id)
+                for conv in conversations
+                if conv.get("type") != "group_announcement"
+            }
+        )
+
+        users_map = {}
+        if other_uids:
+            # Batch fetch all other participants
+            user_refs = [db.collection("users").document(uid) for uid in other_uids]
+            for doc in db.get_all(user_refs):
+                if doc.exists:
+                    data = doc.to_dict() or {}
+                    data["id"] = doc.id
+                    users_map[doc.id] = data
 
         for conv in conversations:
             if conv.get("type") == "group_announcement":
@@ -103,7 +125,7 @@ class MessagingService:
                     (p for p in conv["participants"] if p != user_id),
                     user_id,
                 )
-                other_user = UserService.get_user_by_id(db, other_uid)
+                other_user = users_map.get(other_uid)
                 conv["display_name"] = (
                     other_user.get("username", "Unknown User")
                     if other_user
