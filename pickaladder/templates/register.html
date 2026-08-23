@@ -88,14 +88,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const googleSignInButton = document.getElementById('google-signin-btn');
-    const form = document.querySelector('form');
 
     googleSignInButton.addEventListener('click', function() {
-        // Set loading state
-        this.dataset.originalText = this.innerHTML;
-        this.disabled = true;
-        this.innerHTML = '<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span> Signing up...';
-
         const provider = new firebase.auth.GoogleAuthProvider();
         firebase.auth().signInWithPopup(provider)
             .then((result) => {
@@ -119,35 +113,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
-                // Revert loading state
-                this.disabled = false;
-                if (this.dataset.originalText) {
-                    this.innerHTML = this.dataset.originalText;
-                }
-
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
-                if (!flashes) {
-                    const flashesDiv = document.createElement('div');
-                    flashesDiv.className = 'flashes mb-3';
-                    document.querySelector('.form-container').insertBefore(flashesDiv, form);
-                }
-                const flashesContainer = document.querySelector('.flashes');
-                flashesContainer.innerHTML = ''; // Clear previous messages
+                flashes.innerHTML = ''; // Clear previous messages
                 const flash = document.createElement('div');
                 flash.className = 'alert alert-danger';
-                flash.textContent = `Google Sign-up failed: ${errorMessage}`;
-                flashesContainer.appendChild(flash);
+                flash.textContent = `Google Sign-in failed: ${errorMessage}`;
+                flashes.appendChild(flash);
             });
-    });
-
-    form.addEventListener('submit', function (event) {
-        const submitBtn = this.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.dataset.originalText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span> Registering...';
-        }
     });
 });
 </script>
