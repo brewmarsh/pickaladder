@@ -80,6 +80,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     googleSignInButton.addEventListener('click', function() {
+        // Set loading state
+        this.dataset.originalText = this.innerHTML;
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span> Signing in...';
+
         const provider = new firebase.auth.GoogleAuthProvider();
         const remember = document.getElementById('remember').checked;
         firebase.auth().signInWithPopup(provider)
@@ -105,6 +110,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
+                // Revert loading state
+                this.disabled = false;
+                if (this.dataset.originalText) {
+                    this.innerHTML = this.dataset.originalText;
+                }
+
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
                 flashes.innerHTML = ''; // Clear previous messages
@@ -117,6 +128,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
+
+        // Set loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.dataset.originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span> Logging in...';
+        }
+
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
