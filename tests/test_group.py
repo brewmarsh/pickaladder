@@ -470,6 +470,54 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
         assert b"Invites" in response.data
         assert b"Settings" in response.data
 
+    def test_join_group_policy(self) -> None:
+        """Test joining a group validates the join_policy properly."""
+        self._set_session_user()
+        mock_db = self.mock_firestore_service.client.return_value
+        group_id = "test_group_id"
+
+        # Mock owner user doc
+        mock_owner = mock_db.collection("users").document("owner1")
+        mock_owner.id = "owner1"
+
+        # Mock group doc/snapshot with REQUEST join_policy
+        mock_group_doc = mock_db.collection("groups").document(group_id)
+        mock_group_doc.id = group_id
+        mock_group_doc.get.return_value.exists = True
+        mock_group_doc.get.return_value.to_dict.return_value = {
+            "name": "Closed Group",
+            "join_policy": "REQUEST",
+            "ownerRef": mock_owner,
+            "members": [],
+        }
+
+        with self.client:
+            response = self.client.post(
+                f"/group/{group_id}/join",
+                follow_redirects=True,
+            )
+
+        assert response.status_code == 200
+        assert b"This group is not open to public joins." in response.data
+        mock_group_doc.update.assert_not_called()
+
+        # Mock group doc/snapshot with OPEN join_policy
+        mock_group_doc.get.return_value.to_dict.return_value = {
+            "name": "Open Group",
+            "join_policy": "OPEN",
+            "ownerRef": mock_owner,
+            "members": [],
+        }
+
+        with self.client:
+            response = self.client.post(
+                f"/group/{group_id}/join",
+                follow_redirects=True,
+            )
+
+        assert response.status_code == 200
+        mock_group_doc.update.assert_called_once()
+
     def test_manage_group_non_admin_denied(self) -> None:
         """Test the management hub route denies access to non-admins."""
         self._set_session_user()
