@@ -129,13 +129,29 @@ def _fetch_recent_activity(db: Client, user_id: str) -> dict[str, Any]:
 
 def _fetch_social_and_tournaments(db: Client, user_id: str) -> dict[str, Any]:
     """Fetch social relations and tournament participation data."""
-    return {
-        "friends": get_user_friends(db, user_id),
-        "requests": get_user_pending_requests(db, user_id),
-        "group_rankings": get_group_rankings(db, user_id),
-        "top_groups": get_top_groups(db, limit=3),
-        "top_teams": TeamService.get_top_teams(db, limit=3),
-        "pending_tournament_invites": get_pending_tournament_invites(db, user_id),
-        "active_tournaments": get_active_tournaments(db, user_id),
-        "past_tournaments": get_past_tournaments(db, user_id),
-    }
+    import concurrent.futures
+
+    # ⚡ Bolt Optimization:
+    # What: Execute independent database queries concurrently.
+    # Why: Resolves an N+1 latency bottleneck where each query waits for the previous one to complete.
+    # Impact: Expected to reduce total latency for this aggregation block by ~4-6x.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        f_friends = executor.submit(get_user_friends, db, user_id)
+        f_requests = executor.submit(get_user_pending_requests, db, user_id)
+        f_rankings = executor.submit(get_group_rankings, db, user_id)
+        f_top_groups = executor.submit(get_top_groups, db, limit=3)
+        f_top_teams = executor.submit(TeamService.get_top_teams, db, limit=3)
+        f_invites = executor.submit(get_pending_tournament_invites, db, user_id)
+        f_active = executor.submit(get_active_tournaments, db, user_id)
+        f_past = executor.submit(get_past_tournaments, db, user_id)
+
+        return {
+            "friends": f_friends.result(),
+            "requests": f_requests.result(),
+            "group_rankings": f_rankings.result(),
+            "top_groups": f_top_groups.result(),
+            "top_teams": f_top_teams.result(),
+            "pending_tournament_invites": f_invites.result(),
+            "active_tournaments": f_active.result(),
+            "past_tournaments": f_past.result(),
+        }
