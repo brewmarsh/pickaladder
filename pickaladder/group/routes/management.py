@@ -47,6 +47,7 @@ def manage_group(group_id: str) -> Response | str | dict[str, Any]:
         db,
         group_id,
         context["group"].get("name", "Unknown Group"),
+        g.user.uid,
     )
     if resp:
         return resp

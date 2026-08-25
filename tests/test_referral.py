@@ -29,7 +29,7 @@ def test_capture_referrer_in_session(client: Any, mock_db: MockFirestore) -> Non
 
     # Mock group details
     with patch(
-        "pickaladder.group.routes.membership.GroupService.get_group_details",
+        "pickaladder.group.routes.membership.view_routes.GroupService.get_group_details",
     ) as mock_get:
         from pickaladder.group.models import Group
 
