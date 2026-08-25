@@ -288,6 +288,18 @@ def join_group(group_id: str) -> Response | str | dict[str, Any]:
     """Join a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
+
+    # 🛡️ Sentinel: Security fix - Validate join_policy to prevent authorization bypass (IDOR)
+    group_snap = group_ref.get()
+    if not group_snap.exists:
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
+        return redirect(url_for(".view_groups"))  # type: ignore
+
+    group_data = group_snap.to_dict() or {}
+    if group_data.get("join_policy") != "OPEN":
+        flash(GROUP_MESSAGES["PERMISSION_DENIED"], "danger")
+        return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+
     user_ref = db.collection("users").document(g.user.uid)
 
     try:
