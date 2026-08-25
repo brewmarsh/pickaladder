@@ -14,7 +14,7 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, GROUP_MESSAGES
 from pickaladder.group import bp
 from pickaladder.group.forms import GroupForm
-from pickaladder.group.routes.membership import (
+from pickaladder.group.routes.membership_routes import (
     _handle_invite_email_form,
     _handle_invite_friend_form,
 )
@@ -47,6 +47,7 @@ def manage_group(group_id: str) -> Response | str | dict[str, Any]:
         db,
         group_id,
         context["group"].get("name", "Unknown Group"),
+        g.user.uid,
     )
     if resp:
         return resp
