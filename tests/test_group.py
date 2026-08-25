@@ -31,15 +31,15 @@ class GroupRoutesFirebaseTestCase(unittest.TestCase):
                 new=self.mock_firestore_service,
             ),
             "firestore_membership": patch(
-                "pickaladder.group.routes.membership.membership_routes.firestore",
+                "pickaladder.group.routes.membership_routes.membership_routes.firestore",
                 new=self.mock_firestore_service,
             ),
             "firestore_invite_routes": patch(
-                "pickaladder.group.routes.membership.invite_routes.firestore",
+                "pickaladder.group.routes.membership_routes.invite_routes.firestore",
                 new=self.mock_firestore_service,
             ),
             "firestore_view_routes": patch(
-                "pickaladder.group.routes.membership.view_routes.firestore",
+                "pickaladder.group.routes.membership_routes.view_routes.firestore",
                 new=self.mock_firestore_service,
             ),
             "firestore_management": patch(

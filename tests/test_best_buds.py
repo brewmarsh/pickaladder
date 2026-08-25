@@ -32,15 +32,15 @@ class BestBudsTestCase(unittest.TestCase):
         # Patch firestore in multiple places
         self.patchers = [
             patch(
-                "pickaladder.group.routes.membership.view_routes.firestore",
+                "pickaladder.group.routes.membership_routes.view_routes.firestore",
                 new=self.mock_firestore_service,
             ),
             patch(
-                "pickaladder.group.routes.membership.invite_routes.firestore",
+                "pickaladder.group.routes.membership_routes.invite_routes.firestore",
                 new=self.mock_firestore_service,
             ),
             patch(
-                "pickaladder.group.routes.membership.membership_routes.firestore",
+                "pickaladder.group.routes.membership_routes.membership_routes.firestore",
                 new=self.mock_firestore_service,
             ),
             patch(

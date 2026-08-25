@@ -1,20 +1,20 @@
 from firebase_admin import firestore
 
-from pickaladder.group.routes.membership.invite_forms import (
+from pickaladder.group.routes.membership_routes.invite_forms import (
     _handle_invite_email_form,
     _handle_invite_friend_form,
 )
-from pickaladder.group.routes.membership.invite_routes import (
+from pickaladder.group.routes.membership_routes.invite_routes import (
     delete_invite,
     handle_invite,
     resend_invite,
 )
-from pickaladder.group.routes.membership.membership_routes import (
+from pickaladder.group.routes.membership_routes.membership_routes import (
     join_group,
     leave_group,
     request_membership,
 )
-from pickaladder.group.routes.membership.view_routes import view_group
+from pickaladder.group.routes.membership_routes.view_routes import view_group
 from pickaladder.group.services.group_service import GroupService
 
 __all__ = [

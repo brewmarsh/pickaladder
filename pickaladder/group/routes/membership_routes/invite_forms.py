@@ -29,7 +29,6 @@ def _handle_invite_friend_form(
             flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
     return form, None
 
-
 def _handle_invite_email_form(
     db: Client,
     group_id: str,

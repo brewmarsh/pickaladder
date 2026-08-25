@@ -8,7 +8,7 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import GROUP_MESSAGES
 from pickaladder.group import bp
 from pickaladder.group.routes.discovery import _handle_referrer
-from pickaladder.group.routes.membership.invite_forms import (
+from pickaladder.group.routes.membership_routes.invite_forms import (
     _handle_invite_email_form,
     _handle_invite_friend_form,
 )
