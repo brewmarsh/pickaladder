@@ -44,3 +44,7 @@
 ## 2023-10-27 - Parallelizing Independent Database Fetching in Views
 **Learning:** Sequential `.get()` requests to fetch independent documents in view handlers (e.g. `user_doc` and `group_doc` in `share_brag`) create an N+1 query pattern that increases latency. The minor overhead of fetching the secondary document when the first might not exist is negligible compared to the latency savings on the happy path.
 **Action:** When a route handler requires multiple independent Firestore documents, use `concurrent.futures.ThreadPoolExecutor` to fetch them concurrently (or `db.get_all()` if appropriate) to minimize database wait times.
+
+## 2023-10-27 - Scoping Imports of Dev Dependencies
+**Learning:** Importing a development dependency (like `faker`) at the top level of a module (like `admin/routes.py`) causes scripts running in production-like environments (like `perf_check.py`) to crash with a `ModuleNotFoundError` because those dependencies are absent.
+**Action:** When using dev dependencies to generate mock data or test utilities in application code, always import them locally within the scope of the function that needs them, rather than globally at the top of the file.
