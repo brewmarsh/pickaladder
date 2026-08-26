@@ -298,7 +298,10 @@ def join_group(group_id: str) -> Response | str | dict[str, Any]:
 
         group_data = group_snapshot.to_dict() or {}
         if group_data.get("join_policy") != "OPEN":
-            flash("You cannot directly join this group. Please request access or ask for an invite.", "danger")
+            flash(
+                "You cannot directly join this group. Please request access or ask for an invite.",
+                "danger",
+            )
             return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
 
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
