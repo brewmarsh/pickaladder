@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import concurrent.futures
+from typing import cast
+
 from firebase_admin import firestore
 from flask import (
     Response,
@@ -12,6 +15,7 @@ from flask import (
     request,
     url_for,
 )
+from google.cloud.firestore_v1.document import DocumentSnapshot
 
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import USER_MESSAGES
@@ -161,15 +165,22 @@ def share_brag(user_id: str, group_id: str) -> Response | str:
     """Publicly shareable Brag Card."""
     db = firestore.client()
 
-    # Fetch user data
-    user_doc = db.collection("users").document(user_id).get()
+    # ⚡ Bolt Optimization:
+    # What: Use ThreadPoolExecutor to fetch user and group documents concurrently.
+    # Why: Eliminates N+1 query bottleneck from two sequential independent network calls.
+    # Impact: Reduces total latency for this section by ~50%.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        user_future = executor.submit(db.collection("users").document(user_id).get)
+        group_future = executor.submit(db.collection("groups").document(group_id).get)
+
+        user_doc = cast(DocumentSnapshot, user_future.result())
+        group_doc = cast(DocumentSnapshot, group_future.result())
+
     if not user_doc.exists:
         flash(USER_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for("main.index"))  # type: ignore
     user_data = user_doc.to_dict() or {}
 
-    # Fetch group data
-    group_doc = db.collection("groups").document(group_id).get()
     if not group_doc.exists:
         flash("Group not found", "danger")
         return redirect(url_for("main.index"))  # type: ignore

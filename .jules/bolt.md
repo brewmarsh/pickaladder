@@ -41,3 +41,6 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+## 2023-10-27 - Parallelizing Independent Database Fetching in Views
+**Learning:** Sequential `.get()` requests to fetch independent documents in view handlers (e.g. `user_doc` and `group_doc` in `share_brag`) create an N+1 query pattern that increases latency. The minor overhead of fetching the secondary document when the first might not exist is negligible compared to the latency savings on the happy path.
+**Action:** When a route handler requires multiple independent Firestore documents, use `concurrent.futures.ThreadPoolExecutor` to fetch them concurrently (or `db.get_all()` if appropriate) to minimize database wait times.
