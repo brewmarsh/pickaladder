@@ -291,6 +291,19 @@ def join_group(group_id: str) -> Response | str | dict[str, Any]:
     user_ref = db.collection("users").document(g.user.uid)
 
     try:
+        group_snapshot = group_ref.get()
+        if not group_snapshot.exists:
+            flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
+            return redirect(url_for(".view_groups"))  # type: ignore
+
+        group_data = group_snapshot.to_dict() or {}
+        if group_data.get("join_policy") != "OPEN":
+            flash(
+                "You cannot directly join this group. Please request access or ask for an invite.",
+                "danger",
+            )
+            return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
         friend_group_members(db, group_id, user_ref)
         flash(GROUP_MESSAGES["JOIN_SUCCESS"], "success")
