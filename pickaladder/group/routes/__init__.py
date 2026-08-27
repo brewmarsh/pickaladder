@@ -1,9 +1,10 @@
 """Routes for the group blueprint."""
 
-from . import discovery, management, membership, sessions, stats
+from . import discovery, invites, management, membership, sessions, stats
 
 __all__ = [
     "discovery",
+    "invites",
     "management",
     "membership",
     "sessions",
