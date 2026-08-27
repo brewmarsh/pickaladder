@@ -5,6 +5,9 @@ import unittest.mock
 
 from mockfirestore import MockFirestore
 
+# Mock faker so performance tests can run without dev dependencies
+sys.modules["faker"] = unittest.mock.MagicMock()
+
 from pickaladder import create_app
 from pickaladder.match.services import MatchService
 from pickaladder.user.services import UserService
