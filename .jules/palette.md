@@ -16,3 +16,6 @@
 ## 2026-07-24 - ARIA labels on Admin form inputs
 **Learning:** Found that form inputs within administrative panels (like the "Merge Ghost" or "Delete User" forms in `admin.html`) often lacked proper `<label>` elements and `aria-label` attributes, relying entirely on visual placeholders. Since these tools are destructive or highly privileged, accessibility and clarity are paramount.
 **Action:** Added explicit `aria-label` attributes to the inputs for "Real User ID", "Ghost Email", and "User ID or Email" to provide essential context for screen reader users and prevent reliance on transient placeholder text.
+## 2024-06-25 - [Added keyboard focus states to interactive elements]
+**Learning:** Found that this codebase lacked `:focus-visible` styles on interactive elements (inputs, buttons). Many modern UI kits provide this, but here it needed explicit rules to ensure keyboard accessibility without hindering mouse user experience.
+**Action:** When adding global interactive elements, ensure `:focus-visible` states are defined in the relevant core CSS (e.g., `buttons.css`, `dark.css`).

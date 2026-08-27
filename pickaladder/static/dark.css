@@ -196,6 +196,13 @@ select:focus {
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 /* Buttons */
 .btn {
     padding: 12px 24px;
@@ -737,6 +744,13 @@ body.dark-mode,
     border-color: var(--accent-color) !important;
     box-shadow: 0 0 0 2px rgba(132, 204, 22, 0.3) !important;
     background-color: #2a2a2a !important;
+}
+
+.dark-mode input:focus-visible,
+.dark-mode select:focus-visible,
+.dark-mode textarea:focus-visible {
+    outline: 2px solid var(--accent-color) !important;
+    outline-offset: 2px !important;
 }
 
 /* --- Custom Dark Scrollbars --- */
