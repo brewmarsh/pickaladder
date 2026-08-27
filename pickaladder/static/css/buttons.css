@@ -119,3 +119,9 @@
 .btn-action i {
     font-size: 0.9em;
 }
+
+.btn:focus-visible,
+.btn-edit-gear:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
