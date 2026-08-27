@@ -1,0 +1,11 @@
+--- pickaladder/group/routes/invites.py
++++ pickaladder/group/routes/invites.py
+@@ -17,7 +17,7 @@
+ )
+ from pickaladder.user import UserService
+
+-from . import bp
++from pickaladder.group import bp
+
+
+ @bp.route("/invite/<token>/resend", methods=["POST"])

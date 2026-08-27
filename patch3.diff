@@ -1,0 +1,14 @@
+--- pickaladder/group/routes/__init__.py
++++ pickaladder/group/routes/__init__.py
+@@ -1,10 +1,11 @@
+ """Routes for the group blueprint."""
+
+-from . import discovery, management, membership, sessions, stats
++from . import discovery, invites, management, membership, sessions, stats
+
+ __all__ = [
+     "discovery",
++    "invites",
+     "management",
+     "membership",
+     "sessions",

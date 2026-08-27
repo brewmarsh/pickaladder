@@ -154,8 +154,7 @@ def request_membership(group_id: str) -> Response | str | dict[str, Any]:
     return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
 
 
-@bp.route("/<string:group_id>/join", methods=["POST"])
-@login_required
+@bp.route("/invite/<token>/resend", methods=["POST"])
 def join_group(group_id: str) -> Response | str | dict[str, Any]:
     """Join a group."""
     db = firestore.client()
