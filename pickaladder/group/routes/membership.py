@@ -107,10 +107,10 @@ def view_group(group_id: str) -> Response | str | dict[str, Any]:
         )
     except GroupNotFound:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for(".view_groups"))  # type: ignore
+        return redirect(url_for("group.view_groups"))  # type: ignore
     except AccessDenied:
         flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
-        return redirect(url_for(".view_groups"))  # type: ignore
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     form, resp = _handle_invite_friend_form(db, group_id, context)
     if resp:
@@ -151,7 +151,7 @@ def request_membership(group_id: str) -> Response | str | dict[str, Any]:
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
 
-    return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+    return redirect(url_for("group.view_group", group_id=group_id))  # type: ignore
 
 
 @bp.route("/<string:group_id>/join", methods=["POST"])
@@ -165,11 +165,11 @@ def join_group(group_id: str) -> Response | str | dict[str, Any]:
     group_doc = group_ref.get()
     if not group_doc.exists:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
-        return redirect(url_for(".view_groups"))  # type: ignore
+        return redirect(url_for("group.view_groups"))  # type: ignore
 
     if (group_doc.to_dict() or {}).get("join_policy") != "OPEN":
         flash("This group is not open to join.", "danger")
-        return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+        return redirect(url_for("group.view_group", group_id=group_id))  # type: ignore
 
     try:
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
@@ -178,7 +178,7 @@ def join_group(group_id: str) -> Response | str | dict[str, Any]:
     except Exception as e:
         flash(GROUP_MESSAGES["JOIN_TRY_ERROR"].format(error=e), "danger")
 
-    return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+    return redirect(url_for("group.view_group", group_id=group_id))  # type: ignore
 
 
 @bp.route("/<string:group_id>/leave", methods=["POST"])
@@ -195,4 +195,4 @@ def leave_group(group_id: str) -> Response | str | dict[str, Any]:
     except Exception as e:
         flash(GROUP_MESSAGES["LEAVE_ERROR"].format(error=e), "danger")
 
-    return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+    return redirect(url_for("group.view_group", group_id=group_id))  # type: ignore

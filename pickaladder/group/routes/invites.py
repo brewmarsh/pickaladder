@@ -43,7 +43,7 @@ def resend_invite(token: str) -> Response | str | dict[str, Any]:
 
     if not GroupService.is_group_admin(group.to_dict() or {}, g.user.uid):
         flash(GROUP_MESSAGES["PERMISSION_DENIED"], "danger")
-        return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+        return redirect(url_for("group.view_group", group_id=group_id))  # type: ignore
 
     new_email = request.form.get("email")
     if new_email:
@@ -69,7 +69,7 @@ def resend_invite(token: str) -> Response | str | dict[str, Any]:
         email_data,
     )
     flash(GROUP_MESSAGES["INVITE_RESENDING"].format(email=data.get("email")), "toast")
-    return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+    return redirect(url_for("group.view_group", group_id=group_id))  # type: ignore
 
 
 @bp.route("/invite/<token>/delete", methods=["POST"])
@@ -94,11 +94,11 @@ def delete_invite(token: str) -> Response | str | dict[str, Any]:
 
     if not GroupService.is_group_admin(group.to_dict() or {}, g.user.uid):
         flash(GROUP_MESSAGES["PERMISSION_DENIED"], "danger")
-        return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+        return redirect(url_for("group.view_group", group_id=group_id))  # type: ignore
 
     invite_ref.delete()
     flash(GROUP_MESSAGES["INVITE_REMOVED"], "success")
-    return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+    return redirect(url_for("group.view_group", group_id=group_id))  # type: ignore
 
 
 @bp.route("/invite/<token>")
@@ -137,7 +137,7 @@ def handle_invite(token: str) -> Response | str | dict[str, Any]:
         friend_group_members(db, group_id, user_ref)
 
         flash(GROUP_MESSAGES["WELCOME"], "success")
-        return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+        return redirect(url_for("group.view_group", group_id=group_id))  # type: ignore
     except Exception as e:
         flash(GROUP_MESSAGES["JOIN_ERROR"].format(error=e), "danger")
         return redirect(url_for("auth.login"))  # type: ignore
