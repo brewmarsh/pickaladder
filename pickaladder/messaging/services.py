@@ -121,7 +121,7 @@ class MessagingService:
 
         for conv in conversations:
             if conv.get("type") == "group_announcement":
-                group_id = conv.get("groupId")
+                group_id = conv.get("groupId", "")
                 group = group_map.get(group_id)
 
                 group_name = (
