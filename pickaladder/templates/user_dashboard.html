@@ -174,7 +174,8 @@
                                     
                                     <button class="btn btn-sm btn-link p-0 text-decoration-none reaction-btn {% if user.uid in item.reactions|map(attribute='userId') %}text-volt{% else %}text-muted{% endif %}" 
                                             onclick="toggleReaction(this, '{{ item.id }}')"
-                                            style="font-size: 0.75rem;">
+                                            style="font-size: 0.75rem;"
+                                            aria-pressed="{% if user.uid in item.reactions|map(attribute='userId') %}true{% else %}false{% endif %}">
                                         <i class="fas fa-bolt mr-1"></i>
                                         <span class="reaction-count">{{ item.reactions|length }}</span> Cheers
                                     </button>
@@ -454,10 +455,12 @@
                 btn.classList.remove('text-volt');
                 btn.classList.add('text-muted');
                 countSpan.textContent = count - 1;
+                btn.setAttribute('aria-pressed', 'false');
             } else {
                 btn.classList.remove('text-muted');
                 btn.classList.add('text-volt');
                 countSpan.textContent = count + 1;
+                btn.setAttribute('aria-pressed', 'true');
             }
             
             fetch(`/api/stats/activity/${activityId}/react`, {
@@ -474,9 +477,11 @@
                     if (data.user_reacted) {
                         btn.classList.add('text-volt');
                         btn.classList.remove('text-muted');
+                        btn.setAttribute('aria-pressed', 'true');
                     } else {
                         btn.classList.remove('text-volt');
                         btn.classList.add('text-muted');
+                        btn.setAttribute('aria-pressed', 'false');
                     }
                 }
             })
@@ -487,10 +492,12 @@
                     btn.classList.add('text-volt');
                     btn.classList.remove('text-muted');
                     countSpan.textContent = count;
+                    btn.setAttribute('aria-pressed', 'true');
                 } else {
                     btn.classList.remove('text-volt');
                     btn.classList.add('text-muted');
                     countSpan.textContent = count;
+                    btn.setAttribute('aria-pressed', 'false');
                 }
             });
         };

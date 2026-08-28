@@ -16,3 +16,9 @@
 ## 2026-07-24 - ARIA labels on Admin form inputs
 **Learning:** Found that form inputs within administrative panels (like the "Merge Ghost" or "Delete User" forms in `admin.html`) often lacked proper `<label>` elements and `aria-label` attributes, relying entirely on visual placeholders. Since these tools are destructive or highly privileged, accessibility and clarity are paramount.
 **Action:** Added explicit `aria-label` attributes to the inputs for "Real User ID", "Ghost Email", and "User ID or Email" to provide essential context for screen reader users and prevent reliance on transient placeholder text.
+## 2026-07-28 - ARIA Pressed State on Toggle Buttons
+**Learning:** Found that interactive toggle buttons, specifically the "Cheers" (reaction) buttons on the user dashboard's activity feed, did not convey their active/inactive state to screen reader users. The visual state was updated via CSS classes (`text-volt` vs `text-muted`), but no semantic state was provided.
+**Action:** Always ensure that buttons functioning as toggles (e.g., likes, reactions, active filters) utilize the `aria-pressed` attribute. It must be initialized correctly in the server-side template and dynamically synchronized in JavaScript during optimistic UI updates, successful server responses, and any error rollbacks.
+## 2026-08-28 - Fixing tests by keeping test dependencies scoped
+**Learning:** Adding test tools like `Faker` to the global scope of production routes (like `admin/routes.py`) will cause `ModuleNotFoundError` during CI performance checks or production builds where those development dependencies are not installed.
+**Action:** When adding mock data generators or other test utilities to admin endpoints, import the necessary modules *locally* within the specific function (e.g., `def generate_users(): from faker import Faker`) to ensure the application still boots and functions correctly without dev packages.
