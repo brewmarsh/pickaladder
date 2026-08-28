@@ -84,26 +84,55 @@ class MessagingService:
     @staticmethod
     def get_inbox(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Retrieves the user's conversation list with enriched participant names."""
-        from pickaladder.group.repository import GroupRepository
-        from pickaladder.user.services import UserService
-
         conversations = MessagingRepository.get_user_conversations(db, user_id)
+
+        if not conversations:
+            return []
+
+        group_ids = set()
+        user_ids = set()
 
         for conv in conversations:
             if conv.get("type") == "group_announcement":
-                group = GroupRepository.get_by_id(db, conv["groupId"])
+                if "groupId" in conv:
+                    group_ids.add(conv["groupId"])
+            else:
+                # Find the OTHER participant
+                other_uid = next(
+                    (p for p in conv.get("participants", []) if p != user_id),
+                    user_id,
+                )
+                user_ids.add(other_uid)
+                conv["_other_uid"] = other_uid
+
+        user_map = {}
+        if user_ids:
+            user_refs = [db.collection("users").document(uid) for uid in user_ids]
+            for doc in db.get_all(user_refs):
+                if doc.exists:
+                    user_map[doc.id] = doc.to_dict()
+
+        group_map = {}
+        if group_ids:
+            group_refs = [db.collection("groups").document(gid) for gid in group_ids]
+            for doc in db.get_all(group_refs):
+                if doc.exists:
+                    group_map[doc.id] = doc.to_dict()
+
+        for conv in conversations:
+            if conv.get("type") == "group_announcement":
+                group_id = conv.get("groupId", "")
+                group = group_map.get(group_id)
+
                 group_name = (
                     group.get("name", "Unknown Group") if group else "Deleted Group"
                 )
                 conv["display_name"] = f"{group_name} (Announcements)"
                 conv["display_avatar"] = None  # Or a group icon if we have one
             else:
-                # Find the OTHER participant
-                other_uid = next(
-                    (p for p in conv["participants"] if p != user_id),
-                    user_id,
-                )
-                other_user = UserService.get_user_by_id(db, other_uid)
+                other_uid = conv.pop("_other_uid", user_id)
+                other_user = user_map.get(other_uid)
+
                 conv["display_name"] = (
                     other_user.get("username", "Unknown User")
                     if other_user
