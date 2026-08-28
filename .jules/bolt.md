@@ -41,3 +41,6 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+## 2025-02-21 - Avoiding N+1 Query in Messaging Inbox
+**Learning:** The `get_inbox` method in `pickaladder/messaging/services.py` iterated over conversations and individually fetched group or user data using `GroupRepository.get_by_id` or `UserService.get_user_by_id`. This created an N+1 query scenario, hitting the database once for the conversations, and then again for each individual conversation's display name.
+**Action:** When deriving UI-level details (like names/avatars) for a list of items, iterate over the list to collect required unique IDs (`user_ids` and `group_ids`), perform bulk fetches using `db.get_all(refs)`, map the results in memory, and populate the details in a second pass. This ensures constant database roundtrips regardless of list size.
