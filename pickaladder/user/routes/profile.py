@@ -160,28 +160,16 @@ def view_user(user_id: str) -> Response | str:
 def share_brag(user_id: str, group_id: str) -> Response | str:
     """Publicly shareable Brag Card."""
     db = firestore.client()
-    import concurrent.futures
 
-    # ⚡ Bolt Optimization:
-    # What: Fetch user data and group data concurrently instead of sequentially.
-    # Why: Eliminates sequential database I/O bottlenecks where the group fetch waits for the user fetch to complete.
-    # Impact: Reduces database latency.
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        user_future = executor.submit(
-            lambda: db.collection("users").document(user_id).get()
-        )
-        group_future = executor.submit(
-            lambda: db.collection("groups").document(group_id).get()
-        )
-
-        user_doc = user_future.result()
-        group_doc = group_future.result()
-
+    # Fetch user data
+    user_doc = db.collection("users").document(user_id).get()
     if not user_doc.exists:
         flash(USER_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for("main.index"))  # type: ignore
     user_data = user_doc.to_dict() or {}
 
+    # Fetch group data
+    group_doc = db.collection("groups").document(group_id).get()
     if not group_doc.exists:
         flash("Group not found", "danger")
         return redirect(url_for("main.index"))  # type: ignore

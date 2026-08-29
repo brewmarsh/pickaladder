@@ -25,31 +25,19 @@ def quick_log(session_id: str) -> Response | str | dict[str, Any]:
     # Fetch player details for the pool
     players = []
     player_ids = session_data.get("playerIds", [])
-    group_ref = db.collection("groups").document(session_data["groupId"])
-
-    # ⚡ Bolt Optimization:
-    # What: Batch player documents and group document fetches into a single database call.
-    # Why: Eliminates sequential I/O bottlenecks where group fetch waits for player fetch to complete.
-    # Impact: Reduces database latency.
-    all_refs = [group_ref]
     if player_ids:
-        all_refs.extend(db.collection("users").document(pid) for pid in player_ids)
-
-    all_docs = {doc.reference.path: doc for doc in db.get_all(all_refs)}
-
-    if player_ids:
+        player_refs = [db.collection("users").document(pid) for pid in player_ids]
+        player_docs = {doc.id: doc for doc in db.get_all(player_refs)}
         for pid in player_ids:
-            # Reconstruct reference path to look up in the map
-            ref_path = db.collection("users").document(pid).path
-            player_doc = all_docs.get(ref_path)
+            player_doc = player_docs.get(pid)
             if player_doc and player_doc.exists:
                 p_data = player_doc.to_dict() or {}
                 p_data["id"] = player_doc.id
                 players.append(p_data)
 
     group_name = "Group"
-    group_doc = all_docs.get(group_ref.path)
-    if group_doc and group_doc.exists:
+    group_doc = db.collection("groups").document(session_data["groupId"]).get()
+    if group_doc.exists:
         group_name = (group_doc.to_dict() or {}).get("name", "Group")
 
     return render_template(
@@ -87,30 +75,17 @@ def view_session(session_id: str) -> Response | str | dict[str, Any]:
     # Fetch player details for the pool
     players = {}
     player_ids = session_data.get("playerIds", [])
-    group_ref = db.collection("groups").document(session_data["groupId"])
-
-    # ⚡ Bolt Optimization:
-    # What: Batch player documents and group document fetches into a single database call.
-    # Why: Eliminates sequential I/O bottlenecks where group fetch waits for player fetch to complete.
-    # Impact: Reduces database latency.
-    all_refs = [group_ref]
     if player_ids:
-        all_refs.extend(db.collection("users").document(pid) for pid in player_ids)
-
-    all_docs = {doc.reference.path: doc for doc in db.get_all(all_refs)}
-
-    if player_ids:
-        for pid in player_ids:
-            ref_path = db.collection("users").document(pid).path
-            player_doc = all_docs.get(ref_path)
-            if player_doc and player_doc.exists:
+        player_refs = [db.collection("users").document(pid) for pid in player_ids]
+        for player_doc in db.get_all(player_refs):
+            if player_doc.exists:
                 p_data = player_doc.to_dict() or {}
                 p_data["id"] = player_doc.id
                 players[player_doc.id] = p_data
 
     group_name = "Group"
-    group_doc = all_docs.get(group_ref.path)
-    if group_doc and group_doc.exists:
+    group_doc = db.collection("groups").document(session_data["groupId"]).get()
+    if group_doc.exists:
         group_name = (group_doc.to_dict() or {}).get("name", "Group")
 
     return render_template(
