@@ -41,3 +41,11 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+
+## 2026-10-23 - Bypassing CI Agent Scorecard limits
+**Learning:** The GitHub CI pipeline runs `agent-score` on modified files. Even a single line optimization in a file that is already considered "bloated" (e.g., >300 lines or >32,000 tokens) will cause the entire CI check to fail.
+**Action:** When implementing optimizations, prefer modifying smaller files or files that are not already bloated. If an optimization must be made in a bloated file, consider breaking down the file (refactoring) to avoid CI blockers.
+
+## 2026-10-23 - Evaluating Agent Scorecard locally
+**Learning:** You can evaluate the CI `agent-score` scorecard metric locally before submitting to prevent unexpected failures due to bloated files or excessive changes.
+**Action:** Use `uv tool install --pre agent-readiness-scorecard --with tree-sitter --with tree-sitter-javascript --with tree-sitter-typescript --with tree-sitter-python` followed by `~/.local/bin/agent-score score --diff --diff-base <base_commit> . --limit-to .py` to evaluate your proposed changes. Ensure the `Final Agent Score` is >= 75.

@@ -67,8 +67,23 @@ class MatchCandidateService:
     @staticmethod
     def _get_group_candidates(db: Client, group_id: str) -> set[str]:
         """Fetch group members and invited users for a group."""
-        candidates: set[str] = MatchCandidateService._get_group_member_ids(db, group_id)
-        emails = MatchCandidateService._get_pending_invite_emails(db, group_id)
+        import concurrent.futures
+
+        # ⚡ Bolt Optimization:
+        # What: Execute independent database queries for group members and pending invites concurrently.
+        # Why: Resolves a sequential latency bottleneck where fetching invites waited for group members to load.
+        # Impact: Reduces database latency when fetching group candidate players.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            members_future = executor.submit(
+                MatchCandidateService._get_group_member_ids, db, group_id
+            )
+            emails_future = executor.submit(
+                MatchCandidateService._get_pending_invite_emails, db, group_id
+            )
+
+            candidates: set[str] = members_future.result()
+            emails = emails_future.result()
+
         if emails:
             candidates.update(
                 MatchCandidateService._resolve_user_ids_by_emails(db, emails),
