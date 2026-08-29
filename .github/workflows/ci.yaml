@@ -46,7 +46,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt -r requirements-test.txt ruff --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Lint with ruff
         env:
           UV_SYSTEM_PYTHON: 1
@@ -70,7 +70,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt -r requirements-test.txt ruff --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Format with ruff
         env:
           UV_SYSTEM_PYTHON: 1
@@ -94,7 +94,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt -r requirements-test.txt bandit --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Security Analysis with Bandit
         env:
           UV_SYSTEM_PYTHON: 1
@@ -118,7 +118,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt -r requirements-test.txt mypy --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Static Type Checking with mypy
         env:
           UV_SYSTEM_PYTHON: 1
@@ -144,7 +144,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv pip install --upgrade pip --system
-          uv pip install -r requirements.txt -r requirements-test.txt pip-audit --system
+          uv pip install -r requirements.txt mock-firestore coverage pip-audit --system
       - name: Scan for vulnerabilities
         env:
           UV_SYSTEM_PYTHON: 1
@@ -168,7 +168,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt -r requirements-test.txt refurb --system
+        run: uv pip install -r requirements.txt mock-firestore coverage refurb --system
       - name: Run refurb
         env:
           UV_SYSTEM_PYTHON: 1
@@ -193,12 +193,11 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt -r requirements-test.txt --system
+        run: uv pip install -r requirements.txt mock-firestore coverage --system
       - name: Run performance benchmark
         env:
           PYTHONPATH: .
-          UV_SYSTEM_PYTHON: 1
-        run: uv run --no-project python scripts/perf_check.py
+        run: python scripts/perf_check.py
 
   test:
     name: Quality Gate (Tests)
