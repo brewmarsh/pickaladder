@@ -167,8 +167,12 @@ def share_brag(user_id: str, group_id: str) -> Response | str:
     # Why: Eliminates sequential database I/O bottlenecks where the group fetch waits for the user fetch to complete.
     # Impact: Reduces database latency.
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        user_future = executor.submit(lambda: db.collection("users").document(user_id).get())
-        group_future = executor.submit(lambda: db.collection("groups").document(group_id).get())
+        user_future = executor.submit(
+            lambda: db.collection("users").document(user_id).get()
+        )
+        group_future = executor.submit(
+            lambda: db.collection("groups").document(group_id).get()
+        )
 
         user_doc = user_future.result()
         group_doc = group_future.result()
