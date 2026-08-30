@@ -44,3 +44,7 @@
 ## 2026-08-30 - N+1 Query in Inbox Iteration
 **Learning:** `MessagingService.get_inbox` iteratively called `GroupRepository.get_by_id` or `UserService.get_user_by_id` for each conversation in the user's inbox, creating a synchronous N+1 latency bottleneck.
 **Action:** Extract all necessary document references (`groups/{id}` and `users/{id}`) into a single list and use `db.get_all()` to pre-fetch all required data in a single batch request, then map them in memory. Use the format `f"{doc.reference.parent.id}/{doc.id}"` for caching keys to avoid collision. When testing `db.get_all`, ensure `mock_doc.reference.parent.id` is explicitly mocked for keys to resolve correctly.
+
+## 2026-08-30 - Scoping Dependencies
+**Learning:** `faker` was globally imported in an application route file (`pickaladder/admin/routes.py`), causing `ModuleNotFoundError` during CI when the testing/performance check dependencies were not installed globally.
+**Action:** Always verify that development/testing packages (like `faker`, `pytest`, `mock`) are imported locally inside the functions that use them, rather than globally, so the module isn't evaluated when testing without those dependencies installed.
