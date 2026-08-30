@@ -22,3 +22,8 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+
+## 2024-08-30 - Missing `join_policy` check on direct `/join` route
+**Vulnerability:** A Broken Access Control / IDOR vulnerability existed on the `/<group_id>/join` route in `pickaladder/group/routes/membership.py` where an authenticated user could issue a POST request to forcefully join *any* group, bypassing the group's specific `join_policy` (`OPEN`, `REQUEST`, `INVITE`). The UI might have hidden the button, but the API endpoint was unprotected.
+**Learning:** Never assume UI flow restrictions provide authorization. The backend must explicitly verify state-based permissions (like a group's `join_policy`) before executing state-altering logic (adding a user to `members`).
+**Prevention:** For any action route that alters relational state (joining, leaving, accepting invites), explicitly fetch the target document (`group.get()`) and validate all relevant policy constraints (e.g., `join_policy == 'OPEN'`) directly within the route logic before proceeding.
