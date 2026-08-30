@@ -41,3 +41,6 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+## 2026-08-30 - N+1 Query in Inbox Iteration
+**Learning:** `MessagingService.get_inbox` iteratively called `GroupRepository.get_by_id` or `UserService.get_user_by_id` for each conversation in the user's inbox, creating a synchronous N+1 latency bottleneck.
+**Action:** Extract all necessary document references (`groups/{id}` and `users/{id}`) into a single list and use `db.get_all()` to pre-fetch all required data in a single batch request, then map them in memory. Use the format `f"{doc.reference.parent.id}/{doc.id}"` for caching keys to avoid collision. When testing `db.get_all`, ensure `mock_doc.reference.parent.id` is explicitly mocked for keys to resolve correctly.

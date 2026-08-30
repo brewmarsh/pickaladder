@@ -84,14 +84,42 @@ class MessagingService:
     @staticmethod
     def get_inbox(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Retrieves the user's conversation list with enriched participant names."""
-        from pickaladder.group.repository import GroupRepository
-        from pickaladder.user.services import UserService
-
         conversations = MessagingRepository.get_user_conversations(db, user_id)
+        if not conversations:
+            return []
+
+        # ⚡ Bolt Optimization:
+        # What: Pre-fetch all groups and users in a single batch request
+        # Why: Resolves an N+1 latency bottleneck in the inbox fetching loop
+        # Impact: Expected to significantly reduce latency when loading the inbox
+        all_refs = []
+        seen_refs = set()
 
         for conv in conversations:
             if conv.get("type") == "group_announcement":
-                group = GroupRepository.get_by_id(db, conv["groupId"])
+                gid = conv["groupId"]
+                if f"groups/{gid}" not in seen_refs:
+                    all_refs.append(db.collection("groups").document(gid))
+                    seen_refs.add(f"groups/{gid}")
+            else:
+                other_uid = next(
+                    (p for p in conv["participants"] if p != user_id),
+                    user_id,
+                )
+                if f"users/{other_uid}" not in seen_refs:
+                    all_refs.append(db.collection("users").document(other_uid))
+                    seen_refs.add(f"users/{other_uid}")
+
+        fetched_data = {}
+        if all_refs:
+            for doc in db.get_all(all_refs):
+                if doc.exists:
+                    key = f"{doc.reference.parent.id}/{doc.id}"
+                    fetched_data[key] = doc.to_dict()
+
+        for conv in conversations:
+            if conv.get("type") == "group_announcement":
+                group = fetched_data.get(f"groups/{conv['groupId']}")
                 group_name = (
                     group.get("name", "Unknown Group") if group else "Deleted Group"
                 )
@@ -103,7 +131,7 @@ class MessagingService:
                     (p for p in conv["participants"] if p != user_id),
                     user_id,
                 )
-                other_user = UserService.get_user_by_id(db, other_uid)
+                other_user = fetched_data.get(f"users/{other_uid}")
                 conv["display_name"] = (
                     other_user.get("username", "Unknown User")
                     if other_user
