@@ -318,6 +318,7 @@ def verify_user(user_id: str) -> Response:
 def generate_users() -> str:
     """Generate fake users for testing."""
     from faker import Faker
+
     db, fake, new_users = firestore.client(), Faker(), []
     try:
         for _ in range(10):
