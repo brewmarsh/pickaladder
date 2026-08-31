@@ -44,3 +44,7 @@
 ## 2025-02-21 - Parallelizing Sequential Dashboard Fetch Calls
 **Learning:** `_fetch_social_and_tournaments` in `pickaladder/user/services/dashboard.py` previously fetched 8 pieces of data (friends, pending requests, group rankings, top groups, top teams, tournament invites, active tournaments, and past tournaments) by calling 8 independent database query functions sequentially. Since they do not depend on each other, this sequential execution structure causes an N+1 overall latency bottleneck as the app waits for each network response in turn.
 **Action:** When constructing complex data payload dictionaries composed of independent fetch operations (especially those querying a remote Firestore instance), always use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, drastically reducing overall latency.
+
+## 2025-02-21 - Avoiding Global Dev Dependency Imports
+**Learning:** Importing development dependencies (like `faker`) globally at the top of an application module (e.g., `pickaladder/admin/routes.py`) causes CI checks (like performance scripts) or production environments to crash with `ModuleNotFoundError: No module named 'faker'` when those dev packages are not installed.
+**Action:** Always scope dev dependency imports locally inside the specific functions (e.g., test data generators) that require them to prevent breaking application initialization in environments without dev dependencies.
