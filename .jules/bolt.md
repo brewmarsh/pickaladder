@@ -41,3 +41,7 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+
+## 2026-08-31 - Avoid Top-Level Dev Dependencies in Routes
+**Learning:** Importing development dependencies like `Faker` globally at the top level of application modules (e.g., `admin/routes.py`) causes `ModuleNotFoundError` during CI workflows or performance checks where dev packages are not installed, because these scripts load the app context which then tries to load the route definitions.
+**Prevention:** Always scope imports for development or test-only tools (like `faker`) locally inside the specific functions that require them.
