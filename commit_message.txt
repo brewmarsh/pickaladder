@@ -1,0 +1,5 @@
+Add loading states to login buttons and fix Faker CI error
+
+This commit adds loading spinners and disabled states to the email/password login and Google Sign-in buttons in the `login.html` template. It also includes error handling to restore the original button state if authentication fails, preventing the UI from getting permanently stuck in a "Loading..." state.
+
+Additionally, this commit resolves a GitHub Actions CI failure ("ModuleNotFoundError: No module named 'faker'") caused by a global import of `faker` in `pickaladder/admin/routes.py`. The `faker` library is a development dependency not available in all CI test environments. To fix this, the import of `faker` was scoped locally to the `generate_users()` function, ensuring it is only executed when test users are intentionally generated via the admin panel.
