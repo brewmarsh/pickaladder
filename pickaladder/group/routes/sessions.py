@@ -22,22 +22,30 @@ def quick_log(session_id: str) -> Response | str | dict[str, Any]:
         flash("Session not found", "danger")
         return redirect(url_for(".view_groups"))  # type: ignore
 
-    # Fetch player details for the pool
-    players = []
+    # ⚡ Bolt Optimization: Batch independent document reads into a single network request
+    # What: Fetch player documents and the group document concurrently using a single db.get_all()
+    # Why: Reduces N+1 latency bottlenecks by avoiding sequential database I/O for different collections
+    # Impact: Reduces database request roundtrips from 2 to 1, improving page load speed
     player_ids = session_data.get("playerIds", [])
-    if player_ids:
-        player_refs = [db.collection("users").document(pid) for pid in player_ids]
-        player_docs = {doc.id: doc for doc in db.get_all(player_refs)}
-        for pid in player_ids:
-            player_doc = player_docs.get(pid)
-            if player_doc and player_doc.exists:
-                p_data = player_doc.to_dict() or {}
-                p_data["id"] = player_doc.id
-                players.append(p_data)
+    player_refs = [db.collection("users").document(pid) for pid in player_ids]
+    group_ref = db.collection("groups").document(session_data["groupId"])
+
+    all_refs = player_refs + [group_ref]
+    all_docs = {doc.reference.path: doc for doc in db.get_all(all_refs) if doc.exists}
+
+    players = []
+    for pid in player_ids:
+        player_path = f"users/{pid}"
+        if player_path in all_docs:
+            player_doc = all_docs[player_path]
+            p_data = player_doc.to_dict() or {}
+            p_data["id"] = player_doc.id
+            players.append(p_data)
 
     group_name = "Group"
-    group_doc = db.collection("groups").document(session_data["groupId"]).get()
-    if group_doc.exists:
+    group_path = f"groups/{session_data['groupId']}"
+    if group_path in all_docs:
+        group_doc = all_docs[group_path]
         group_name = (group_doc.to_dict() or {}).get("name", "Group")
 
     return render_template(
@@ -59,33 +67,45 @@ def view_session(session_id: str) -> Response | str | dict[str, Any]:
         flash("Session not found", "danger")
         return redirect(url_for(".view_groups"))  # type: ignore
 
-    # Fetch matches
+    # ⚡ Bolt Optimization: Batch independent document reads into a single network request
+    # What: Fetch match documents, player documents, and the group document concurrently using a single db.get_all()
+    # Why: Reduces N+1 latency bottlenecks by avoiding sequential database I/O for different collections
+    # Impact: Reduces database request roundtrips from 3 to 1, improving page load speed
     match_ids = session_data.get("matchIds", [])
-    matches = []
-    if match_ids:
-        match_refs = [db.collection("matches").document(mid) for mid in match_ids]
-        match_docs = {doc.id: doc for doc in db.get_all(match_refs)}
-        for mid in match_ids:
-            match_doc = match_docs.get(mid)
-            if match_doc and match_doc.exists:
-                m_data = match_doc.to_dict() or {}
-                m_data["id"] = match_doc.id
-                matches.append(m_data)
-
-    # Fetch player details for the pool
-    players = {}
     player_ids = session_data.get("playerIds", [])
-    if player_ids:
-        player_refs = [db.collection("users").document(pid) for pid in player_ids]
-        for player_doc in db.get_all(player_refs):
-            if player_doc.exists:
-                p_data = player_doc.to_dict() or {}
-                p_data["id"] = player_doc.id
-                players[player_doc.id] = p_data
 
+    match_refs = [db.collection("matches").document(mid) for mid in match_ids]
+    player_refs = [db.collection("users").document(pid) for pid in player_ids]
+    group_ref = db.collection("groups").document(session_data["groupId"])
+
+    all_refs = match_refs + player_refs + [group_ref]
+    all_docs = {doc.reference.path: doc for doc in db.get_all(all_refs) if doc.exists}
+
+    # Process matches
+    matches = []
+    for mid in match_ids:
+        match_path = f"matches/{mid}"
+        if match_path in all_docs:
+            match_doc = all_docs[match_path]
+            m_data = match_doc.to_dict() or {}
+            m_data["id"] = match_doc.id
+            matches.append(m_data)
+
+    # Process players
+    players = {}
+    for pid in player_ids:
+        player_path = f"users/{pid}"
+        if player_path in all_docs:
+            player_doc = all_docs[player_path]
+            p_data = player_doc.to_dict() or {}
+            p_data["id"] = player_doc.id
+            players[player_doc.id] = p_data
+
+    # Process group
     group_name = "Group"
-    group_doc = db.collection("groups").document(session_data["groupId"]).get()
-    if group_doc.exists:
+    group_path = f"groups/{session_data['groupId']}"
+    if group_path in all_docs:
+        group_doc = all_docs[group_path]
         group_name = (group_doc.to_dict() or {}).get("name", "Group")
 
     return render_template(
