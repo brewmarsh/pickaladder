@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 try:
     from faker import Faker
 except ImportError:
-    Faker = None
+    Faker = None  # type: ignore
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -319,7 +319,7 @@ def verify_user(user_id: str) -> Response:
 
 @bp.route("/generate_users", methods=["POST"])
 @login_required(admin_required=True)
-def generate_users() -> str:
+def generate_users() -> str | Response:
     """Generate fake users for testing."""
     if Faker is None:
         flash("Faker module is not installed.", "danger")
