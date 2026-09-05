@@ -41,3 +41,8 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+## 2024-10-27 - Parallelize social and tournament data fetching
+
+**Learning:** Extracting data to show on a dashboard can lead to N+1 query problems where many independent queries to Firestore are run sequentially. Using python's `concurrent.futures.ThreadPoolExecutor` allows these independent database queries to run in parallel, reducing overall latency.
+
+**Action:** When aggregating multiple independent data sets (e.g., friends, rankings, invites) for a single page load, wrap the individual fetch functions in a `ThreadPoolExecutor` block instead of calling them sequentially.

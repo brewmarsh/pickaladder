@@ -129,13 +129,38 @@ def _fetch_recent_activity(db: Client, user_id: str) -> dict[str, Any]:
 
 def _fetch_social_and_tournaments(db: Client, user_id: str) -> dict[str, Any]:
     """Fetch social relations and tournament participation data."""
+    import concurrent.futures
+
+    # ⚡ Bolt Optimization:
+    # What: Execute independent database fetch calls concurrently instead of sequentially.
+    # Why: Resolves an N+1 latency bottleneck where each query waits for the previous one to complete.
+    # Impact: Expected to reduce total latency for fetching social and tournament data on dashboard load.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        f_friends = executor.submit(get_user_friends, db, user_id)
+        f_requests = executor.submit(get_user_pending_requests, db, user_id)
+        f_group_rankings = executor.submit(get_group_rankings, db, user_id)
+        f_top_groups = executor.submit(get_top_groups, db, limit=3)
+        f_top_teams = executor.submit(TeamService.get_top_teams, db, limit=3)
+        f_pending_invites = executor.submit(get_pending_tournament_invites, db, user_id)
+        f_active_tournaments = executor.submit(get_active_tournaments, db, user_id)
+        f_past_tournaments = executor.submit(get_past_tournaments, db, user_id)
+
+        friends = f_friends.result()
+        requests = f_requests.result()
+        group_rankings = f_group_rankings.result()
+        top_groups = f_top_groups.result()
+        top_teams = f_top_teams.result()
+        pending_invites = f_pending_invites.result()
+        active_tournaments = f_active_tournaments.result()
+        past_tournaments = f_past_tournaments.result()
+
     return {
-        "friends": get_user_friends(db, user_id),
-        "requests": get_user_pending_requests(db, user_id),
-        "group_rankings": get_group_rankings(db, user_id),
-        "top_groups": get_top_groups(db, limit=3),
-        "top_teams": TeamService.get_top_teams(db, limit=3),
-        "pending_tournament_invites": get_pending_tournament_invites(db, user_id),
-        "active_tournaments": get_active_tournaments(db, user_id),
-        "past_tournaments": get_past_tournaments(db, user_id),
+        "friends": friends,
+        "requests": requests,
+        "group_rankings": group_rankings,
+        "top_groups": top_groups,
+        "top_teams": top_teams,
+        "pending_tournament_invites": pending_invites,
+        "active_tournaments": active_tournaments,
+        "past_tournaments": past_tournaments,
     }
