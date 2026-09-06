@@ -41,3 +41,6 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+## 2024-05-24 - [Resolve N+1 database calls with get_all]
+**Learning:** You can batch fetch documents from multiple different collections (e.g., users, matches, groups) simultaneously using `db.get_all()` by passing a mixed list of `DocumentReference` objects.
+**Action:** When multiple independent endpoints or documents are queried sequentially for a given view, bundle their `DocumentReference` instances into a single `all_refs` list, execute `db.get_all(all_refs)`, and index the resulting map using `doc.reference.path` to avoid ID collisions.
