@@ -6,10 +6,6 @@ import datetime
 import random
 from typing import TYPE_CHECKING, Any
 
-try:
-    from faker import Faker
-except ImportError:
-    Faker = None  # type: ignore
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -319,9 +315,11 @@ def verify_user(user_id: str) -> Response:
 
 @bp.route("/generate_users", methods=["POST"])
 @login_required(admin_required=True)
-def generate_users() -> str:
+def generate_users() -> Any:
     """Generate fake users for testing."""
-    if Faker is None:
+    try:
+        from faker import Faker
+    except ImportError:
         flash("Faker module is not installed.", "danger")
         return redirect(url_for(".view_users"))
     db, fake, new_users = firestore.client(), Faker(), []
