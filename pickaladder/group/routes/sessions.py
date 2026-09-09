@@ -22,22 +22,33 @@ def quick_log(session_id: str) -> Response | str | dict[str, Any]:
         flash("Session not found", "danger")
         return redirect(url_for(".view_groups"))  # type: ignore
 
-    # Fetch player details for the pool
+    # ⚡ Bolt Optimization:
+    # What: Batch player and group document fetches into a single get_all request.
+    # Why: Eliminates sequential database fetches by getting dependent documents concurrently.
+    # Impact: Reduces database round-trips from 2 to 1 for this route.
     players = []
     player_ids = session_data.get("playerIds", [])
+    group_ref = db.collection("groups").document(session_data["groupId"])
+    refs_to_fetch = [group_ref]
+
+    player_refs = []
     if player_ids:
         player_refs = [db.collection("users").document(pid) for pid in player_ids]
-        player_docs = {doc.id: doc for doc in db.get_all(player_refs)}
-        for pid in player_ids:
-            player_doc = player_docs.get(pid)
+        refs_to_fetch.extend(player_refs)
+
+    doc_map = {doc.reference: doc for doc in db.get_all(refs_to_fetch)}
+
+    if player_refs:
+        for p_ref in player_refs:
+            player_doc = doc_map.get(p_ref)
             if player_doc and player_doc.exists:
                 p_data = player_doc.to_dict() or {}
                 p_data["id"] = player_doc.id
                 players.append(p_data)
 
     group_name = "Group"
-    group_doc = db.collection("groups").document(session_data["groupId"]).get()
-    if group_doc.exists:
+    group_doc = doc_map.get(group_ref)
+    if group_doc and group_doc.exists:
         group_name = (group_doc.to_dict() or {}).get("name", "Group")
 
     return render_template(
@@ -59,33 +70,43 @@ def view_session(session_id: str) -> Response | str | dict[str, Any]:
         flash("Session not found", "danger")
         return redirect(url_for(".view_groups"))  # type: ignore
 
-    # Fetch matches
+    # ⚡ Bolt Optimization:
+    # What: Batch match, player, and group document fetches into a single get_all request.
+    # Why: Eliminates an N+1 query bottleneck by fetching dependent documents concurrently rather than sequentially.
+    # Impact: Reduces database round-trips from 3 to 1 for this route.
     match_ids = session_data.get("matchIds", [])
+    player_ids = session_data.get("playerIds", [])
+    group_ref = db.collection("groups").document(session_data["groupId"])
+
+    refs_to_fetch = [group_ref]
+    if match_ids:
+        refs_to_fetch.extend([db.collection("matches").document(mid) for mid in match_ids])
+    if player_ids:
+        refs_to_fetch.extend([db.collection("users").document(pid) for pid in player_ids])
+
+    doc_map = {doc.reference.path: doc for doc in db.get_all(refs_to_fetch)}
+
     matches = []
     if match_ids:
-        match_refs = [db.collection("matches").document(mid) for mid in match_ids]
-        match_docs = {doc.id: doc for doc in db.get_all(match_refs)}
         for mid in match_ids:
-            match_doc = match_docs.get(mid)
+            match_doc = doc_map.get(f"matches/{mid}")
             if match_doc and match_doc.exists:
                 m_data = match_doc.to_dict() or {}
                 m_data["id"] = match_doc.id
                 matches.append(m_data)
 
-    # Fetch player details for the pool
     players = {}
-    player_ids = session_data.get("playerIds", [])
     if player_ids:
-        player_refs = [db.collection("users").document(pid) for pid in player_ids]
-        for player_doc in db.get_all(player_refs):
-            if player_doc.exists:
+        for pid in player_ids:
+            player_doc = doc_map.get(f"users/{pid}")
+            if player_doc and player_doc.exists:
                 p_data = player_doc.to_dict() or {}
                 p_data["id"] = player_doc.id
                 players[player_doc.id] = p_data
 
     group_name = "Group"
-    group_doc = db.collection("groups").document(session_data["groupId"]).get()
-    if group_doc.exists:
+    group_doc = doc_map.get(group_ref.path)
+    if group_doc and group_doc.exists:
         group_name = (group_doc.to_dict() or {}).get("name", "Group")
 
     return render_template(
