@@ -72,40 +72,45 @@ def view_session(session_id: str) -> Response | str | dict[str, Any]:
 
     # ⚡ Bolt Optimization:
     # What: Batch match, player, and group document fetches into a single get_all request.
-    # Why: Eliminates an N+1 query bottleneck by fetching dependent documents concurrently rather than sequentially.
+    # Why: Eliminates sequential database fetches by getting dependent documents concurrently.
     # Impact: Reduces database round-trips from 3 to 1 for this route.
     match_ids = session_data.get("matchIds", [])
     player_ids = session_data.get("playerIds", [])
     group_ref = db.collection("groups").document(session_data["groupId"])
 
     refs_to_fetch = [group_ref]
+    match_refs = []
     if match_ids:
-        refs_to_fetch.extend([db.collection("matches").document(mid) for mid in match_ids])
-    if player_ids:
-        refs_to_fetch.extend([db.collection("users").document(pid) for pid in player_ids])
+        match_refs = [db.collection("matches").document(mid) for mid in match_ids]
+        refs_to_fetch.extend(match_refs)
 
-    doc_map = {doc.reference.path: doc for doc in db.get_all(refs_to_fetch)}
+    player_refs = []
+    if player_ids:
+        player_refs = [db.collection("users").document(pid) for pid in player_ids]
+        refs_to_fetch.extend(player_refs)
+
+    doc_map = {doc.reference: doc for doc in db.get_all(refs_to_fetch)}
 
     matches = []
-    if match_ids:
-        for mid in match_ids:
-            match_doc = doc_map.get(f"matches/{mid}")
+    if match_refs:
+        for m_ref in match_refs:
+            match_doc = doc_map.get(m_ref)
             if match_doc and match_doc.exists:
                 m_data = match_doc.to_dict() or {}
                 m_data["id"] = match_doc.id
                 matches.append(m_data)
 
     players = {}
-    if player_ids:
-        for pid in player_ids:
-            player_doc = doc_map.get(f"users/{pid}")
+    if player_refs:
+        for p_ref in player_refs:
+            player_doc = doc_map.get(p_ref)
             if player_doc and player_doc.exists:
                 p_data = player_doc.to_dict() or {}
                 p_data["id"] = player_doc.id
                 players[player_doc.id] = p_data
 
     group_name = "Group"
-    group_doc = doc_map.get(group_ref.path)
+    group_doc = doc_map.get(group_ref)
     if group_doc and group_doc.exists:
         group_name = (group_doc.to_dict() or {}).get("name", "Group")
 
