@@ -41,3 +41,7 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+
+## 2026-09-09 - Avoid Importing Dev Dependencies Globally
+**Learning:** Found an issue where the application failed to start in production/performance check environments because a development dependency (`faker`) was imported globally at the top level of `pickaladder/admin/routes.py`.
+**Action:** When using development or testing libraries (like `faker`) to generate test data within application code, never import them at the top level. Always scope the import locally within the specific function that uses them, and wrap the import in a `try...except ImportError` block to handle environments where the dependency is legitimately missing.
