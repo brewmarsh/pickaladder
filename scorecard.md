@@ -1,7 +1,7 @@
 # Agent Readiness Scorecard Report
 
 **Target Agent Profile:** Standard Agent Readiness checks (ACL & Type Safety)
-**Overall Score: 79.4/100** - PASS
+**Overall Score: 82.6/100** - PASS
 
 ✅ **Status: PASSED** - This codebase is Agent-Ready.
 
@@ -14,9 +14,9 @@ ACL = (Depth * 2) + (Complexity * 1.5) + (LOC / 50). Target: ACL <= 10.
 
 | Function | File | ACL | Status |
 |----------|------|-----|--------|
-| `view_group` | `membership.py` | 11.8 | 🟡 Yellow |
-| `_handle_invite_friend_form` | `membership.py` | 10.4 | 🟡 Yellow |
-| `_handle_invite_email_form` | `membership.py` | 10.3 | 🟡 Yellow |
+| `_handle_invite_email_form` | `membership.py` | 13.7 | 🟡 Yellow |
+| `_handle_invite_friend_form` | `membership.py` | 10.2 | 🟡 Yellow |
+| `view_group` | `membership.py` | 10.1 | 🟡 Yellow |
 
 ## 🛡️ Type Safety Index
 

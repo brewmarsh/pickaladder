@@ -37,43 +37,31 @@ from pickaladder.group.utils import (
 from pickaladder.user import UserService
 
 
-def _handle_invite_friend_form(
-    db: Client,
-    group_id: str,
-    context: dict[str, Any],
-) -> tuple[InviteFriendForm, Any | None]:
-    """Process InviteFriendForm submission."""
+def _handle_invite_friend_form(db: Client, group_id: str, ctx: dict[str, Any]) -> tuple[InviteFriendForm, Any | None]:
     form = InviteFriendForm()
-    form.friend.choices = [
-        (friend.id, friend.to_dict().get("name", friend.id))
-        for friend in context["eligible_friends"]
-    ]
-
+    form.friend.choices = [(f.id, f.to_dict().get("name", f.id)) for f in ctx["eligible_friends"]]
     if form.validate_on_submit() and "friend" in request.form:
         try:
-            _process_friend_invite(db, group_id, form.friend.data)
+            GroupService.invite_friend(db, group_id, form.friend.data)
+            flash(GROUP_MESSAGES["FRIEND_INVITE_SUCCESS"], "success")
             return form, redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
             flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
     return form, None
 
 
-def _handle_invite_email_form(
-    db: Client,
-    group_id: str,
-    group_name: str,
-) -> tuple[InviteByEmailForm, Any | None]:
-    """Process InviteByEmailForm submission."""
-    invite_email_form = InviteByEmailForm()
-    if invite_email_form.validate_on_submit() and "email" in request.form:
+def _handle_invite_email_form(db: Client, group_id: str, group_name: str) -> tuple[InviteByEmailForm, Any | None]:
+    form = InviteByEmailForm()
+    if form.validate_on_submit() and "email" in request.form:
         try:
-            _process_email_invite(db, group_id, group_name, invite_email_form)
-            return invite_email_form, redirect(
-                url_for(".view_group", group_id=group_id),
-            )
+            name, email = form.name.data or "Friend", form.email.data
+            if email:
+                GroupService.invite_by_email(db, group_id, group_name, email, name, g.user.uid)
+                flash(GROUP_MESSAGES["INVITATION_SENDING"].format(email=email.lower()), "success")
+                return form, redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
             flash(GROUP_MESSAGES["INVITE_CREATE_ERROR"].format(error=e), "danger")
-    return invite_email_form, None
+    return form, None
 
 
 @bp.route("/<string:group_id>", methods=["GET", "POST"])
@@ -97,29 +85,26 @@ def view_group(group_id: str) -> Response | str | dict[str, Any]:
         flash(GROUP_MESSAGES["ACCESS_DENIED"], "danger")
         return redirect(url_for(".view_groups"))  # type: ignore
 
-    form, resp = _handle_invite_friend_form(db, group_id, context)
-    if resp:
-        return resp
-
-    invite_email_form, resp = _handle_invite_email_form(
-        db,
-        group_id,
-        context["group"].get("name", "Unknown Group"),
-    )
-    if resp:
+    resp = _process_view_group_forms(db, group_id, context)
+    if isinstance(resp, Response):
         return resp
 
     # 10. Fetch Seasons
     from pickaladder.season.services import SeasonService
-
     context["seasons"] = SeasonService.get_seasons_for_group(db, group_id)
 
     return render_template(
-        "group.html",
-        form=form,
-        invite_email_form=invite_email_form,
-        **context,
+        "group.html", form=resp[0], invite_email_form=resp[1], **context,
     )
+
+def _process_view_group_forms(db: Client, group_id: str, context: dict[str, Any]) -> Response | tuple[InviteFriendForm, InviteByEmailForm]:
+    f1, r1 = _handle_invite_friend_form(db, group_id, context)
+    if r1:
+        return r1
+    f2, r2 = _handle_invite_email_form(db, group_id, context["group"].get("name", "Unknown Group"))
+    if r2:
+        return r2
+    return f1, f2
 
 
 @bp.route("/<string:group_id>/request_join", methods=["POST"])
@@ -310,27 +295,10 @@ def _process_successful_invite(db: Client, group_id: str, invite_ref: Any, invit
     friend_group_members(db, group_id, user_ref)
 
 
-def _process_email_invite(db: Client, group_id: str, group_name: str, form: InviteByEmailForm) -> None:
-    name = form.name.data or "Friend"
-    email = form.email.data
-    if email:
-        GroupService.invite_by_email(
-            db,
-            group_id,
-            group_name,
-            email,
-            name,
-            g.user.uid,
-        )
-        flash(
-            GROUP_MESSAGES["INVITATION_SENDING"].format(email=email.lower()),
-            "success",
-        )
 
 
-def _process_friend_invite(db: Client, group_id: str, friend_id: str) -> None:
-    GroupService.invite_friend(db, group_id, friend_id)
-    flash(GROUP_MESSAGES["FRIEND_INVITE_SUCCESS"], "success")
+
+
 
 def _verify_admin_access(db: Client, group_id: str, uid: str) -> bool:
     group = db.collection("groups").document(group_id).get()
