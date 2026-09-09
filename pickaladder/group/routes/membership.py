@@ -191,22 +191,7 @@ def resend_invite(token: str) -> Response | str | dict[str, Any]:
 
     invite_ref.update({"status": "sending"})
 
-    invite_url = url_for(".handle_invite", token=token, _external=True)
-    email_data = {
-        "to": data.get("email"),
-        "subject": f"Join {group.to_dict().get('name')} on pickaladder!",  # type: ignore
-        "template": "email/group_invite.html",
-        "name": data.get("name"),
-        "group_name": group.to_dict().get("name"),  # type: ignore
-        "invite_url": invite_url,
-        "joke": get_random_joke(),
-    }
-
-    send_invite_email_background(
-        current_app._get_current_object(),  # type: ignore[attr-defined]
-        token,
-        email_data,
-    )
+    _send_invitation_email(token, data, group.to_dict() or {})
     flash(GROUP_MESSAGES["INVITE_RESENDING"].format(email=data.get("email")), "toast")
     return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
 
@@ -326,3 +311,22 @@ def leave_group(group_id: str) -> Response | str | dict[str, Any]:
         flash(GROUP_MESSAGES["LEAVE_ERROR"].format(error=e), "danger")
 
     return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+
+
+def _send_invitation_email(token: str, data: dict[str, Any], group_data: dict[str, Any]) -> None:
+    invite_url = url_for(".handle_invite", token=token, _external=True)
+    email_data = {
+        "to": data.get("email"),
+        "subject": f"Join {group_data.get('name')} on pickaladder!",
+        "template": "email/group_invite.html",
+        "name": data.get("name"),
+        "group_name": group_data.get("name"),
+        "invite_url": invite_url,
+        "joke": get_random_joke(),
+    }
+
+    send_invite_email_background(
+        current_app._get_current_object(),  # type: ignore[attr-defined]
+        token,
+        email_data,
+    )
