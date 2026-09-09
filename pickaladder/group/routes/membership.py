@@ -51,8 +51,7 @@ def _handle_invite_friend_form(
 
     if form.validate_on_submit() and "friend" in request.form:
         try:
-            GroupService.invite_friend(db, group_id, form.friend.data)
-            flash(GROUP_MESSAGES["FRIEND_INVITE_SUCCESS"], "success")
+            _process_friend_invite(db, group_id, form.friend.data)
             return form, redirect(url_for(".view_group", group_id=group_id))
         except Exception as e:
             flash(COMMON_MESSAGES["UNEXPECTED_ERROR"].format(error=e), "danger")
@@ -68,24 +67,10 @@ def _handle_invite_email_form(
     invite_email_form = InviteByEmailForm()
     if invite_email_form.validate_on_submit() and "email" in request.form:
         try:
-            name = invite_email_form.name.data or "Friend"
-            email = invite_email_form.email.data
-            if email:
-                GroupService.invite_by_email(
-                    db,
-                    group_id,
-                    group_name,
-                    email,
-                    name,
-                    g.user.uid,
-                )
-                flash(
-                    GROUP_MESSAGES["INVITATION_SENDING"].format(email=email.lower()),
-                    "success",
-                )
-                return invite_email_form, redirect(
-                    url_for(".view_group", group_id=group_id),
-                )
+            _process_email_invite(db, group_id, group_name, invite_email_form)
+            return invite_email_form, redirect(
+                url_for(".view_group", group_id=group_id),
+            )
         except Exception as e:
             flash(GROUP_MESSAGES["INVITE_CREATE_ERROR"].format(error=e), "danger")
     return invite_email_form, None
@@ -103,11 +88,7 @@ def view_group(group_id: str) -> Response | str | dict[str, Any]:
 
     try:
         context = GroupService.get_group_details(
-            db,
-            group_id,
-            g.user.uid,
-            player_a_id,
-            player_b_id,
+            db, group_id, g.user.uid, player_a_id, player_b_id,
         )
     except GroupNotFound:
         flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
@@ -174,15 +155,8 @@ def resend_invite(token: str) -> Response | str | dict[str, Any]:
     group_id = data.get("group_id", "")
 
     # Check permissions
-    group_ref = db.collection("groups").document(group_id)
-    group = group_ref.get()
-    if not group.exists:
-        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
+    if not _verify_admin_access(db, group_id, g.user.uid):
         return redirect(url_for("auth.login"))  # type: ignore
-
-    if not GroupService.is_group_admin(group.to_dict() or {}, g.user.uid):
-        flash(GROUP_MESSAGES["PERMISSION_DENIED"], "danger")
-        return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
 
     new_email = request.form.get("email")
     if new_email:
@@ -190,7 +164,7 @@ def resend_invite(token: str) -> Response | str | dict[str, Any]:
         invite_ref.update({"email": new_email})
 
     invite_ref.update({"status": "sending"})
-
+    group = db.collection("groups").document(group_id).get()
     _send_invitation_email(token, data, group.to_dict() or {})
     flash(GROUP_MESSAGES["INVITE_RESENDING"].format(email=data.get("email")), "toast")
     return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
@@ -243,23 +217,10 @@ def handle_invite(token: str) -> Response | str | dict[str, Any]:
         return redirect(url_for("auth.login"))  # type: ignore
 
     group_id = invite_data.get("group_id", "")
-    group_ref = db.collection("groups").document(group_id)
     user_ref = db.collection("users").document(g.user.uid)
 
     try:
-        # Merge ghost user if exists
-        invite_email = invite_data.get("email")
-        if invite_email:
-            UserService.merge_ghost_user(db, user_ref, invite_email)
-
-        # Add user to group
-        group_ref.update({"members": firestore.ArrayUnion([user_ref])})
-        # Mark invite as used
-        invite_ref.update({"used": True, "used_by": g.user.uid})
-
-        # Friend other group members
-        friend_group_members(db, group_id, user_ref)
-
+        _process_successful_invite(db, group_id, invite_ref, invite_data, user_ref)
         flash(GROUP_MESSAGES["WELCOME"], "success")
         return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
     except Exception as e:
@@ -330,3 +291,53 @@ def _send_invitation_email(token: str, data: dict[str, Any], group_data: dict[st
         token,
         email_data,
     )
+
+
+def _process_successful_invite(db: Client, group_id: str, invite_ref: Any, invite_data: dict[str, Any], user_ref: Any) -> None:
+    # Merge ghost user if exists
+    invite_email = invite_data.get("email")
+    if invite_email:
+        UserService.merge_ghost_user(db, user_ref, invite_email)
+
+    # Add user to group
+    group_ref = db.collection("groups").document(group_id)
+    group_ref.update({"members": firestore.ArrayUnion([user_ref])})
+
+    # Mark invite as used
+    invite_ref.update({"used": True, "used_by": g.user.uid})
+
+    # Friend other group members
+    friend_group_members(db, group_id, user_ref)
+
+
+def _process_email_invite(db: Client, group_id: str, group_name: str, form: InviteByEmailForm) -> None:
+    name = form.name.data or "Friend"
+    email = form.email.data
+    if email:
+        GroupService.invite_by_email(
+            db,
+            group_id,
+            group_name,
+            email,
+            name,
+            g.user.uid,
+        )
+        flash(
+            GROUP_MESSAGES["INVITATION_SENDING"].format(email=email.lower()),
+            "success",
+        )
+
+
+def _process_friend_invite(db: Client, group_id: str, friend_id: str) -> None:
+    GroupService.invite_friend(db, group_id, friend_id)
+    flash(GROUP_MESSAGES["FRIEND_INVITE_SUCCESS"], "success")
+
+def _verify_admin_access(db: Client, group_id: str, uid: str) -> bool:
+    group = db.collection("groups").document(group_id).get()
+    if not group.exists:
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
+        return False
+    if not GroupService.is_group_admin(group.to_dict() or {}, uid):
+        flash(GROUP_MESSAGES["PERMISSION_DENIED"], "danger")
+        return False
+    return True
