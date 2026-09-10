@@ -3,7 +3,12 @@ import sys
 import time
 import unittest.mock
 
+# Mock faker to prevent ModuleNotFoundError when importing app modules in CI
+from unittest.mock import MagicMock
+
 from mockfirestore import MockFirestore
+
+sys.modules['faker'] = MagicMock()
 
 from pickaladder import create_app
 from pickaladder.match.services import MatchService
