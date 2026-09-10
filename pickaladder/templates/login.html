@@ -80,6 +80,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     googleSignInButton.addEventListener('click', function() {
+        googleSignInButton.dataset.originalText = googleSignInButton.innerHTML;
+        googleSignInButton.disabled = true;
+        googleSignInButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+
         const provider = new firebase.auth.GoogleAuthProvider();
         const remember = document.getElementById('remember').checked;
         firebase.auth().signInWithPopup(provider)
@@ -105,6 +109,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
+                googleSignInButton.disabled = false;
+                if (googleSignInButton.dataset.originalText) {
+                    googleSignInButton.innerHTML = googleSignInButton.dataset.originalText;
+                }
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
                 flashes.innerHTML = ''; // Clear previous messages
@@ -120,6 +128,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.dataset.originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+        }
 
         firebase.auth().signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
@@ -146,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch((error) => {
                 console.error("Login error:", error);
 
-                // Re-enable the submit button on failure
+                // Re-enable the submit button on failure to allow retry, and restore original text
                 const submitBtn = form.querySelector('button[type="submit"]');
                 if (submitBtn) {
                     submitBtn.disabled = false;
