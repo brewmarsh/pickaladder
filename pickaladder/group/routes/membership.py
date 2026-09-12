@@ -23,6 +23,7 @@ from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import COMMON_MESSAGES, GROUP_MESSAGES
 from pickaladder.group import bp
 from pickaladder.group.forms import InviteByEmailForm, InviteFriendForm
+from pickaladder.group.repository import GroupRepository
 from pickaladder.group.routes.discovery import _handle_referrer
 from pickaladder.group.services.group_service import (
     AccessDenied,
@@ -287,6 +288,16 @@ def handle_invite(token: str) -> Response | str | dict[str, Any]:
 def join_group(group_id: str) -> Response | str | dict[str, Any]:
     """Join a group."""
     db = firestore.client()
+
+    group_data = GroupRepository.get_by_id(db, group_id)
+    if not group_data:
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
+        return redirect(url_for(".view_groups"))  # type: ignore
+
+    if group_data.get("join_policy") != "OPEN":
+        flash("This group is not open to public joining.", "danger")
+        return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+
     group_ref = db.collection("groups").document(group_id)
     user_ref = db.collection("users").document(g.user.uid)
 
