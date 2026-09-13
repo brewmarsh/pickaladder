@@ -6,7 +6,11 @@ import datetime
 import random
 from typing import TYPE_CHECKING, Any
 
-from faker import Faker
+try:
+    from faker import Faker
+except ImportError:
+    Faker = None  # type: ignore
+
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -67,10 +71,20 @@ def dashboard() -> str | Response:
     admin_ids = list({log["admin_id"] for log in audit_logs if log.get("admin_id")})
     admin_names = {}
     if admin_ids:
-        # Simple fetch, in production use batch get
-        for aid in admin_ids:
-            u = UserService.get_user_by_id(db, aid)
-            admin_names[aid] = UserService.smart_display_name(u) if u else aid
+        # ⚡ Bolt Optimization:
+        # What: Replaced sequential UserService.get_user_by_id queries with a batch db.get_all fetch.
+        # Why: Resolves an N+1 query bottleneck that occurs when multiple distinct admins perform actions in recent audit logs.
+        # Impact: Reduces database latency from N round trips to 1, speeding up the dashboard load time.
+        admin_refs = [db.collection("users").document(aid) for aid in admin_ids]
+        admin_docs = db.get_all(admin_refs)
+        for doc in admin_docs:
+            if doc.exists:
+                u = doc.to_dict() or {}
+                u["id"] = doc.id
+                u["uid"] = doc.id
+                admin_names[doc.id] = UserService.smart_display_name(u)
+            else:
+                admin_names[doc.id] = doc.id
 
     for log in audit_logs:
         log["admin_name"] = admin_names.get(log.get("admin_id"))
@@ -316,8 +330,10 @@ def verify_user(user_id: str) -> Response:
 
 @bp.route("/generate_users", methods=["POST"])
 @login_required(admin_required=True)
-def generate_users() -> str:
+def generate_users() -> str | Response:
     """Generate fake users for testing."""
+    if Faker is None:
+        return jsonify({"error": "Faker module is not installed."})
     db, fake, new_users = firestore.client(), Faker(), []
     try:
         for _ in range(10):
