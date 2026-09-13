@@ -16,3 +16,7 @@
 ## 2026-07-24 - ARIA labels on Admin form inputs
 **Learning:** Found that form inputs within administrative panels (like the "Merge Ghost" or "Delete User" forms in `admin.html`) often lacked proper `<label>` elements and `aria-label` attributes, relying entirely on visual placeholders. Since these tools are destructive or highly privileged, accessibility and clarity are paramount.
 **Action:** Added explicit `aria-label` attributes to the inputs for "Real User ID", "Ghost Email", and "User ID or Email" to provide essential context for screen reader users and prevent reliance on transient placeholder text.
+
+## 2024-05-24 - Interactive Toggle Button Accessibility
+**Learning:** While toggle buttons like reactions or likes often use CSS classes (e.g., `text-volt` vs `text-muted`) to convey state visually, screen readers rely on the `aria-pressed` attribute to understand both the toggleable nature of the button and its current state.
+**Action:** Always initialize `aria-pressed` dynamically in the server-side template (e.g., `aria-pressed="true"`) and update it synchronously with visual class changes via JavaScript during optimistic UI updates, success responses, and error rollbacks.
