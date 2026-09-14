@@ -80,12 +80,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     googleSignInButton.addEventListener('click', function() {
-        if (!googleSignInButton.disabled) {
-            googleSignInButton.dataset.originalText = googleSignInButton.innerHTML;
-            googleSignInButton.disabled = true;
-            googleSignInButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
-        }
-
         const provider = new firebase.auth.GoogleAuthProvider();
         const remember = document.getElementById('remember').checked;
         firebase.auth().signInWithPopup(provider)
@@ -111,12 +105,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
-                if (googleSignInButton) {
-                    googleSignInButton.disabled = false;
-                    if (googleSignInButton.dataset.originalText) {
-                        googleSignInButton.innerHTML = googleSignInButton.dataset.originalText;
-                    }
-                }
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
                 flashes.innerHTML = ''; // Clear previous messages
@@ -129,14 +117,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
-
-        const submitBtn = form.querySelector('button[type="submit"]');
-        if (submitBtn && !submitBtn.disabled) {
-            submitBtn.dataset.originalText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
-        }
-
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
