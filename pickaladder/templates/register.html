@@ -88,8 +88,24 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const googleSignInButton = document.getElementById('google-signin-btn');
+    const form = document.querySelector('form');
+
+    form.addEventListener('submit', function (event) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn && !submitBtn.disabled) {
+            submitBtn.dataset.originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+        }
+    });
 
     googleSignInButton.addEventListener('click', function() {
+        if (!googleSignInButton.disabled) {
+            googleSignInButton.dataset.originalText = googleSignInButton.innerHTML;
+            googleSignInButton.disabled = true;
+            googleSignInButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+        }
+
         const provider = new firebase.auth.GoogleAuthProvider();
         firebase.auth().signInWithPopup(provider)
             .then((result) => {
@@ -113,6 +129,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
+                if (googleSignInButton) {
+                    googleSignInButton.disabled = false;
+                    if (googleSignInButton.dataset.originalText) {
+                        googleSignInButton.innerHTML = googleSignInButton.dataset.originalText;
+                    }
+                }
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
                 flashes.innerHTML = ''; // Clear previous messages
