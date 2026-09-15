@@ -1,3 +1,7 @@
+import sys
+import unittest.mock
+
+sys.modules["faker"] = unittest.mock.MagicMock()
 import logging
 import sys
 import time
