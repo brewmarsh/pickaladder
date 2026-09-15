@@ -102,14 +102,14 @@
                                                 {% if member.id not in group.get('admins', []) %}
                                                 <form action="{{ url_for('group.promote_member', group_id=group.id, user_id=member.id) }}" method="POST" class="d-inline">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Promote to Admin">
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="Promote to Admin" aria-label="Promote to Admin">
                                                         <i class="fas fa-user-shield"></i> Promote
                                                     </button>
                                                 </form>
                                                 {% else %}
                                                 <form action="{{ url_for('group.demote_member', group_id=group.id, user_id=member.id) }}" method="POST" class="d-inline">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Demote to Member">
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Demote to Member" aria-label="Demote to Member">
                                                         <i class="fas fa-user-minus"></i> Demote
                                                     </button>
                                                 </form>
@@ -119,7 +119,7 @@
                                             {% if is_admin and member.id != group.ownerRef.id %}
                                             <form action="{{ url_for('group.remove_member', group_id=group.id, user_id=member.id) }}" method="POST" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Member" 
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Member" aria-label="Remove Member"
                                                     onclick="return confirm('Are you sure you want to remove this member?')">
                                                     <i class="fas fa-user-times"></i> Remove
                                                 </button>
@@ -167,13 +167,13 @@
                                         <div class="btn-group btn-group-sm">
                                             <form action="{{ url_for('group.handle_membership_request', group_id=group.id, request_id=req.id, action='approve') }}" method="POST">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-success">
+                                                <button type="submit" class="btn btn-success" aria-label="Approve">
                                                     <i class="fas fa-check"></i> Approve
                                                 </button>
                                             </form>
                                             <form action="{{ url_for('group.handle_membership_request', group_id=group.id, request_id=req.id, action='decline') }}" method="POST" class="ml-1">
                                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-outline-danger">
+                                                <button type="submit" class="btn btn-outline-danger" aria-label="Decline">
                                                     <i class="fas fa-times"></i> Decline
                                                 </button>
                                             </form>
@@ -239,13 +239,13 @@
                                                         {% if invite.status == 'failed' %}
                                                         <input type="hidden" name="email" value="{{ invite.email }}">
                                                         {% endif %}
-                                                        <button type="submit" class="btn btn-outline-primary">
+                                                        <button type="submit" class="btn btn-outline-primary" aria-label="{% if invite.status == 'failed' %}Retry{% else %}Resend{% endif %} Invite">
                                                             <i class="fas fa-redo"></i> {% if invite.status == 'failed' %}Retry{% else %}Resend{% endif %}
                                                         </button>
                                                     </form>
                                                     <form method="post" action="{{ url_for('group.delete_invite', token=invite.token) }}" class="d-inline ml-1">
                                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Cancel this invitation?')">
+                                                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Cancel this invitation?')" aria-label="Cancel Invite">
                                                             <i class="fas fa-trash"></i> Cancel
                                                         </button>
                                                     </form>
@@ -340,14 +340,14 @@
                                     <form method="post" action="{{ url_for('group.delete_group', group_id=group.id) }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-danger btn-block"
-                                            onclick="return confirm('Are you sure you want to permanently delete this group? This action cannot be undone.')">
+                                            onclick="return confirm('Are you sure you want to permanently delete this group? This action cannot be undone.')" aria-label="Delete Group">
                                             <i class="fas fa-trash-alt"></i> Delete Group
                                         </button>
                                     </form>
                                     {% else %}
                                     <form method="post" action="{{ url_for('group.leave_group', group_id=group.id) }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-outline-danger btn-block">
+                                        <button type="submit" class="btn btn-outline-danger btn-block" aria-label="Leave Group">
                                             <i class="fas fa-sign-out-alt"></i> Leave Group
                                         </button>
                                     </form>
