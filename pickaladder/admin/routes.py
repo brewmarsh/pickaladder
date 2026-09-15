@@ -6,6 +6,7 @@ import datetime
 import random
 from typing import TYPE_CHECKING, Any
 
+from faker import Faker
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -315,17 +316,8 @@ def verify_user(user_id: str) -> Response:
 
 @bp.route("/generate_users", methods=["POST"])
 @login_required(admin_required=True)
-def generate_users() -> Any:
+def generate_users() -> str:
     """Generate fake users for testing."""
-    try:
-        from faker import Faker
-    except ImportError:
-        Faker = None  # type: ignore
-
-    if Faker is None:
-        flash("Faker library is required to generate test data.", "error")
-        return redirect(url_for("admin.admin"))
-
     db, fake, new_users = firestore.client(), Faker(), []
     try:
         for _ in range(10):

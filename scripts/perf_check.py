@@ -5,6 +5,11 @@ import unittest.mock
 
 from mockfirestore import MockFirestore
 
+# Mock faker before importing pickaladder to prevent ModuleNotFoundError in CI
+import sys as _sys
+from unittest.mock import MagicMock
+_sys.modules["faker"] = MagicMock()
+
 from pickaladder import create_app
 from pickaladder.match.services import MatchService
 from pickaladder.user.services import UserService
