@@ -16,3 +16,6 @@
 ## 2026-07-24 - ARIA labels on Admin form inputs
 **Learning:** Found that form inputs within administrative panels (like the "Merge Ghost" or "Delete User" forms in `admin.html`) often lacked proper `<label>` elements and `aria-label` attributes, relying entirely on visual placeholders. Since these tools are destructive or highly privileged, accessibility and clarity are paramount.
 **Action:** Added explicit `aria-label` attributes to the inputs for "Real User ID", "Ghost Email", and "User ID or Email" to provide essential context for screen reader users and prevent reliance on transient placeholder text.
+## 2026-07-28 - Missing Alt Text on Avatar Images
+**Learning:** Images representing user-generated entities like avatars often lack `alt` text if they use dynamic rendering. Screen readers will read the raw image URL if the `alt` attribute is omitted, causing a poor experience.
+**Action:** Always ensure that dynamically rendered `<img>` tags (like those for users or groups) include a descriptive `alt` attribute, utilizing the entity's name (e.g., `alt="{{ user.username }}'s Avatar"`).

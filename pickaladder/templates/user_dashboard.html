@@ -151,7 +151,7 @@
                     <div class="list-group list-group-flush">
                         {% for item in feed %}
                         <div class="list-group-item border-0 px-4 py-3 border-bottom d-flex align-items-start gap-3">
-                            <img src="{{ item.user | avatar_url }}" class="avatar avatar-md mt-1" 
+                            <img src="{{ item.user | avatar_url }}" alt="{{ item.user.username }}'s Avatar" class="avatar avatar-md mt-1"
                                 onerror="this.onerror=null;this.src='{{ url_for('static', filename='user_icon.png') }}';">
                             <div class="flex-grow-1">
                                 <div class="fs-xs">
