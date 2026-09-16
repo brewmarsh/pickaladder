@@ -41,3 +41,6 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+## 2025-02-21 - Parallelizing Sequential I/O bound queries in Flask Routes
+**Learning:** Sequential calls to `db.collection(...).document(...).get()` without transaction constraints lead to latency bottlenecks and N+1 query patterns. These multiple queries can be combined into a single round trip to the database.
+**Action:** When you identify multiple independent single document retrievals on the same request context without dependencies between each other, collect all their DocumentReference objects and perform a single batch retrieval using `db.get_all([ref1, ref2])`, then unpack the returned documents. This optimizes network IO time.
