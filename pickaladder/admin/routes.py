@@ -67,10 +67,18 @@ def dashboard() -> str | Response:
     admin_ids = list({log["admin_id"] for log in audit_logs if log.get("admin_id")})
     admin_names = {}
     if admin_ids:
-        # Simple fetch, in production use batch get
-        for aid in admin_ids:
-            u = UserService.get_user_by_id(db, aid)
-            admin_names[aid] = UserService.smart_display_name(u) if u else aid
+        # ⚡ Bolt Optimization:
+        # What: Replaced sequential `UserService.get_user_by_id` fetching with a single batched `db.get_all()`.
+        # Why: Resolves an N+1 query latency bottleneck when loading the admin dashboard.
+        # Impact: Expected to reduce the latency of the audit log rendering from O(N) database requests to O(1).
+        admin_refs = [db.collection("users").document(aid) for aid in admin_ids]
+        for admin_doc in db.get_all(admin_refs):
+            if admin_doc.exists:
+                user_data = admin_doc.to_dict() or {}
+                user_data["uid"] = admin_doc.id
+                admin_names[admin_doc.id] = UserService.smart_display_name(user_data)
+            else:
+                admin_names[admin_doc.id] = admin_doc.id
 
     for log in audit_logs:
         log["admin_name"] = admin_names.get(log.get("admin_id"))
