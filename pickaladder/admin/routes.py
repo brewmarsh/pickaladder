@@ -63,14 +63,20 @@ def dashboard() -> str | Response:
     recent_errors = ErrorService.get_recent_errors(db, limit=5)
     audit_logs = AdminService.get_recent_audit_logs(db, limit=5)
 
-    # Optional: Resolve admin names for audit logs
+    # ⚡ Bolt Optimization:
+    # What: Replace sequential get_user_by_id calls with a single db.get_all() batched request.
+    # Why: Eliminates an N+1 query bottleneck when resolving admin names for audit logs.
+    # Impact: Reduces database reads and latency significantly on the admin dashboard.
     admin_ids = list({log["admin_id"] for log in audit_logs if log.get("admin_id")})
     admin_names = {}
     if admin_ids:
-        # Simple fetch, in production use batch get
-        for aid in admin_ids:
-            u = UserService.get_user_by_id(db, aid)
-            admin_names[aid] = UserService.smart_display_name(u) if u else aid
+        admin_refs = [db.collection("users").document(aid) for aid in admin_ids]
+        for snap in db.get_all(admin_refs):
+            if snap.exists:
+                user_data = snap.to_dict() or {}
+                admin_names[snap.id] = UserService.smart_display_name(user_data)
+            else:
+                admin_names[snap.id] = snap.id
 
     for log in audit_logs:
         log["admin_name"] = admin_names.get(log.get("admin_id"))
@@ -432,14 +438,23 @@ def view_feedback() -> str:
     db = firestore.client()
     feedback_list = FeedbackService.get_all_feedback(db)
 
-    # Resolve user names
+    # ⚡ Bolt Optimization:
+    # What: Replace sequential get_user_by_id calls with a single db.get_all() batched request.
+    # Why: Eliminates an N+1 query bottleneck when resolving user names for feedback items.
+    # Impact: Reduces database reads and latency significantly on the feedback page.
+    user_ids = list({item["userId"] for item in feedback_list if item.get("userId")})
+    user_names = {}
+    if user_ids:
+        user_refs = [db.collection("users").document(uid) for uid in user_ids]
+        for snap in db.get_all(user_refs):
+            if snap.exists:
+                user_data = snap.to_dict() or {}
+                user_names[snap.id] = UserService.smart_display_name(user_data)
+
     for item in feedback_list:
         user_id = item.get("userId")
         if user_id:
-            user = UserService.get_user_by_id(db, user_id)
-            item["user_name"] = (
-                UserService.smart_display_name(user) if user else "Unknown User"
-            )
+            item["user_name"] = user_names.get(user_id, "Unknown User")
         else:
             item["user_name"] = "Anonymous"
 
