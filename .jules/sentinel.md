@@ -22,3 +22,8 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+
+## 2024-05-18 - [Fix Authorization Bypass in Group Join]
+**Vulnerability:** The `/group/<group_id>/join` route lacked an authorization check to enforce the group's `join_policy`. Any user could join any group by sending a POST request directly to the endpoint, bypassing UI restrictions for "REQUEST" or "INVITE" policies.
+**Learning:** Action routes that modify group membership or permissions must always independently verify the resource's configuration (like `join_policy`) server-side before proceeding, rather than trusting the UI logic to hide the join button.
+**Prevention:** Always fetch the target group document and validate its state (`join_policy == "OPEN"`) within the POST route handler before executing any membership-altering database updates.
