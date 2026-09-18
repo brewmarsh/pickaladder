@@ -288,6 +288,17 @@ def join_group(group_id: str) -> Response | str | dict[str, Any]:
     """Join a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
+
+    group = group_ref.get()
+    if not group.exists:
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
+        return redirect(url_for("main.index"))  # type: ignore
+
+    group_data = group.to_dict() or {}
+    if group_data.get("join_policy") != "OPEN":
+        flash("This group does not allow open joining.", "danger")
+        return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+
     user_ref = db.collection("users").document(g.user.uid)
 
     try:
