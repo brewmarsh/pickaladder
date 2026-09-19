@@ -67,10 +67,16 @@ def dashboard() -> str | Response:
     admin_ids = list({log["admin_id"] for log in audit_logs if log.get("admin_id")})
     admin_names = {}
     if admin_ids:
-        # Simple fetch, in production use batch get
-        for aid in admin_ids:
-            u = UserService.get_user_by_id(db, aid)
-            admin_names[aid] = UserService.smart_display_name(u) if u else aid
+        # ⚡ Bolt Optimization: Replace sequential get_user_by_id queries with batch get_all
+        # to prevent N+1 queries when fetching admin names for audit logs.
+        admin_refs = [db.collection("users").document(aid) for aid in admin_ids]
+        admin_docs = db.get_all(admin_refs)
+        for doc in admin_docs:
+            if doc.exists:
+                admin_data = doc.to_dict() or {}
+                admin_names[doc.id] = UserService.smart_display_name(admin_data) or doc.id
+            else:
+                admin_names[doc.id] = doc.id
 
     for log in audit_logs:
         log["admin_name"] = admin_names.get(log.get("admin_id"))
@@ -432,14 +438,22 @@ def view_feedback() -> str:
     db = firestore.client()
     feedback_list = FeedbackService.get_all_feedback(db)
 
+    # ⚡ Bolt Optimization: Batch fetch user names to avoid N+1 query problem
+    # Instead of fetching each user individually in a loop, we collect unique IDs and fetch once
+    user_ids = {item.get("userId") for item in feedback_list if item.get("userId")}
+    user_names = {}
+    if user_ids:
+        user_refs = [db.collection("users").document(uid) for uid in user_ids]
+        user_docs = db.get_all(user_refs)
+        for doc in user_docs:
+            if doc.exists:
+                user_names[doc.id] = UserService.smart_display_name(doc.to_dict() or {})
+
     # Resolve user names
     for item in feedback_list:
         user_id = item.get("userId")
         if user_id:
-            user = UserService.get_user_by_id(db, user_id)
-            item["user_name"] = (
-                UserService.smart_display_name(user) if user else "Unknown User"
-            )
+            item["user_name"] = user_names.get(user_id) or "Unknown User"
         else:
             item["user_name"] = "Anonymous"
 
