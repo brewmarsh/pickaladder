@@ -197,7 +197,7 @@ jobs:
       - name: Run performance benchmark
         env:
           PYTHONPATH: .
-        run: python scripts/perf_check.py
+        run: uv run --no-project uv run --no-project python scripts/perf_check.py
 
   test:
     name: Quality Gate (Tests)

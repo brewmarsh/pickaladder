@@ -6,7 +6,10 @@ import datetime
 import random
 from typing import TYPE_CHECKING, Any
 
-from faker import Faker
+try:
+    from faker import Faker
+except ImportError:
+    Faker = None # type: ignore
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -318,24 +321,27 @@ def verify_user(user_id: str) -> Response:
 @login_required(admin_required=True)
 def generate_users() -> str:
     """Generate fake users for testing."""
-    db, fake, new_users = firestore.client(), Faker(), []
+    db, new_users = firestore.client(), []
+    if Faker:
+        fake = Faker()
+    else:
+        fake = None
+
     try:
         for _ in range(10):
-            email, password = (
-                fake.email(),
-                fake.password(
-                    length=12,
-                    special_chars=True,
-                    digits=True,
-                    upper_case=True,
-                    lower_case=True,
-                ),
-            )
+            email = fake.email() if fake else f"test_{random.randint(1000, 9999)}@test.com"
+            password = fake.password(
+                length=12,
+                special_chars=True,
+                digits=True,
+                upper_case=True,
+                lower_case=True,
+            ) if fake else "P@ssw0rd1234"
             user_record = auth.create_user(email=email, password=password)
             user_doc = {
-                "username": fake.user_name(),
+                "username": fake.user_name() if fake else f"user_{random.randint(1000, 9999)}",
                 "email": email,
-                "name": fake.name(),
+                "name": fake.name() if fake else f"User {random.randint(1000, 9999)}",
                 "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec B311
                 "isAdmin": False,
                 "createdAt": firestore.SERVER_TIMESTAMP,
