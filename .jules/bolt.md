@@ -41,3 +41,11 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+
+## 2023-10-24 - [Optimize Community Hub Data Fetching]
+**Learning:** The community hub fetched social connections and global objects sequentially, causing an N+1 latency bottleneck where each query waited for the previous one.
+**Action:** Used `concurrent.futures.ThreadPoolExecutor` to execute independent Firestore queries concurrently, significantly reducing data load latency for community hub.
+
+## 2025-02-21 - Passing Explicit Keyword Arguments in ThreadPoolExecutor
+**Learning:** When refactoring sequential functions that use explicit keyword arguments to run concurrently via `concurrent.futures.ThreadPoolExecutor`, converting keyword arguments to positional arguments in `executor.submit()` can cause `TypeError` or silent logical regressions if the underlying function relies on keyword-only arguments or has optional arguments interspersed before the targeted parameters.
+**Action:** When using `executor.submit()`, always preserve explicit keyword arguments natively supported by the method (e.g., `executor.submit(func, db=db, limit=20)`) to strictly mirror the original function invocation and ensure type safety and correctness.
