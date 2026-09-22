@@ -272,9 +272,9 @@ def get_community_data(db: Client, user_id: str, search_term: str) -> dict[str, 
     # Why: Resolves a sequential latency bottleneck.
     # Impact: Expected to reduce total latency for fetching user social connections.
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        friends_future = executor.submit(get_user_friends, db, user_id)
-        inc_future = executor.submit(get_user_pending_requests, db, user_id)
-        out_future = executor.submit(get_user_sent_requests, db, user_id)
+        friends_future = executor.submit(get_user_friends, db=db, user_id=user_id)
+        inc_future = executor.submit(get_user_pending_requests, db=db, user_id=user_id)
+        out_future = executor.submit(get_user_sent_requests, db=db, user_id=user_id)
 
         friends = friends_future.result()
         inc = inc_future.result()
