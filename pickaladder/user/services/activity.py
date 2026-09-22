@@ -257,6 +257,8 @@ def _filter_community_list(
 
 def get_community_data(db: Client, user_id: str, search_term: str) -> dict[str, Any]:
     """Fetch and filter community hub data."""
+    import concurrent.futures
+
     from .core import get_all_users
     from .friendship import (
         get_user_friends,
@@ -265,15 +267,43 @@ def get_community_data(db: Client, user_id: str, search_term: str) -> dict[str, 
     )
     from .user_tournament_service import get_pending_tournament_invites
 
-    friends = get_user_friends(db, user_id)
-    inc = get_user_pending_requests(db, user_id)
-    out = get_user_sent_requests(db, user_id)
+    # ⚡ Bolt Optimization:
+    # What: Execute independent database queries for friends and requests concurrently.
+    # Why: Resolves a sequential latency bottleneck.
+    # Impact: Expected to reduce total latency for fetching user social connections.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        friends_future = executor.submit(get_user_friends, db, user_id)
+        inc_future = executor.submit(get_user_pending_requests, db, user_id)
+        out_future = executor.submit(get_user_sent_requests, db, user_id)
+
+        friends = friends_future.result()
+        inc = inc_future.result()
+        out = out_future.result()
 
     exclude = [user_id] + [f["id"] for f in friends] + [r["id"] for r in inc + out]
 
-    users, _ = get_all_users(db, exclude, limit=20)
-    groups = get_public_groups(db, limit=10)
-    invites = get_pending_tournament_invites(db, user_id)
+    # ⚡ Bolt Optimization:
+    # What: Execute independent database queries for global data concurrently.
+    # Why: Resolves a sequential latency bottleneck.
+    # Impact: Expected to reduce total latency for fetching community data.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        users_future = executor.submit(
+            get_all_users,
+            db=db,
+            exclude_ids=exclude,
+            limit=20,
+        )
+        groups_future = executor.submit(get_public_groups, db=db, limit=10)
+        invites_future = executor.submit(
+            get_pending_tournament_invites,
+            db=db,
+            user_id=user_id,
+        )
+
+        users_res = users_future.result()
+        users = users_res[0] if isinstance(users_res, tuple) else users_res
+        groups = groups_future.result()
+        invites = invites_future.result()
 
     term = search_term.lower() if search_term else ""
     u_fields = ["username", "name", "email"]
