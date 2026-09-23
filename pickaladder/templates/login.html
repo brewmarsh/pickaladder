@@ -80,6 +80,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     googleSignInButton.addEventListener('click', function() {
+        googleSignInButton.dataset.originalText = googleSignInButton.innerHTML;
+        googleSignInButton.disabled = true;
+        googleSignInButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
         const provider = new firebase.auth.GoogleAuthProvider();
         const remember = document.getElementById('remember').checked;
         firebase.auth().signInWithPopup(provider)
@@ -105,6 +108,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
+                googleSignInButton.disabled = false;
+                if (googleSignInButton.dataset.originalText) {
+                    googleSignInButton.innerHTML = googleSignInButton.dataset.originalText;
+                }
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
                 flashes.innerHTML = ''; // Clear previous messages
