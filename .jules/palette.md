@@ -16,3 +16,6 @@
 ## 2026-07-24 - ARIA labels on Admin form inputs
 **Learning:** Found that form inputs within administrative panels (like the "Merge Ghost" or "Delete User" forms in `admin.html`) often lacked proper `<label>` elements and `aria-label` attributes, relying entirely on visual placeholders. Since these tools are destructive or highly privileged, accessibility and clarity are paramount.
 **Action:** Added explicit `aria-label` attributes to the inputs for "Real User ID", "Ghost Email", and "User ID or Email" to provide essential context for screen reader users and prevent reliance on transient placeholder text.
+## 2026-09-23 - Flash container requirements for JS errors
+**Learning:** Found that `register.html` lacked the `<div class="flashes"></div>` container. This is problematic because the Google Sign-In Javascript explicitly looks for `.flashes` to append error messages upon failure. If it's missing, the `.catch()` block throws a `TypeError` (cannot read properties of null), breaking the error state rollback.
+**Action:** When implementing JavaScript-driven form submissions or authentication flows that append error messages dynamically to the DOM, always ensure the corresponding HTML template actually contains the target container element.
