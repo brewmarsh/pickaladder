@@ -84,12 +84,14 @@ class MessagingService:
     @staticmethod
     def get_inbox(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Retrieves the user's conversation list with enriched participant names."""
+        import concurrent.futures
+
         from pickaladder.group.repository import GroupRepository
         from pickaladder.user.services import UserService
 
         conversations = MessagingRepository.get_user_conversations(db, user_id)
 
-        for conv in conversations:
+        def enrich_conversation(conv: dict[str, Any]) -> dict[str, Any]:
             if conv.get("type") == "group_announcement":
                 group = GroupRepository.get_by_id(db, conv["groupId"])
                 group_name = (
@@ -112,6 +114,16 @@ class MessagingService:
                 conv["display_avatar"] = (
                     other_user.get("profilePictureUrl") if other_user else None
                 )
+            return conv
+
+        # ⚡ Bolt Optimization:
+        # What: Execute independent database queries concurrently when enriching conversations.
+        # Why: Resolves a sequential latency bottleneck when loading the inbox, where each
+        #      conversation required an independent database lookup sequentially.
+        # Impact: Expected to significantly reduce latency when a user has multiple conversations.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            # We use executor.map to inherently preserve the sorted order of conversations
+            list(executor.map(enrich_conversation, conversations))
 
         return conversations
 
