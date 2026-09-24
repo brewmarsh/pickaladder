@@ -3,6 +3,11 @@ import sys
 import time
 import unittest.mock
 
+# Prevent ModuleNotFoundError when Faker is not installed (e.g. in CI)
+from unittest.mock import MagicMock
+
+sys.modules["faker"] = MagicMock()
+
 from mockfirestore import MockFirestore
 
 from pickaladder import create_app
