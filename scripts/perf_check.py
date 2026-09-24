@@ -3,6 +3,11 @@ import sys
 import time
 import unittest.mock
 
+# Prevent ModuleNotFoundError when Faker is not installed (e.g. in CI)
+from unittest.mock import MagicMock
+
+sys.modules["faker"] = MagicMock()
+
 from mockfirestore import MockFirestore
 
 from pickaladder import create_app
@@ -23,7 +28,7 @@ THRESHOLDS = {
 }
 
 
-def benchmark_get_all_users(db):
+def benchmark_get_all_users(db: MockFirestore) -> float:
     # Simulated load: add 100 users
     logger.info("  Adding 100 users to mock db...")
     for i in range(100):
@@ -37,7 +42,7 @@ def benchmark_get_all_users(db):
     return end_time - start_time
 
 
-def benchmark_record_match(db):
+def benchmark_record_match(db: MockFirestore) -> float:
     # Prepare dummy data for match recording
     current_user = {"uid": "perf_test_user", "username": "perf_tester"}
     group_id = "perf_test_group"
@@ -76,7 +81,7 @@ def benchmark_record_match(db):
     return end_time - start_time
 
 
-def benchmark_leaderboards(db):
+def benchmark_leaderboards(db: MockFirestore) -> tuple[float, float]:
     from pickaladder.group.services.leaderboard import get_group_leaderboard
     from pickaladder.match.services import MatchService
 
