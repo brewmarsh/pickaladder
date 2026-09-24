@@ -414,3 +414,12 @@ body .d-none { display: none !important; }
         grid-template-columns: 1fr 1fr;
     }
 }
+
+/* Form focus-visible */
+.form-control:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--primary-color) !important;
+    outline-offset: 2px;
+}
