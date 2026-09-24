@@ -300,14 +300,17 @@ function showToast(message, category = 'info', submissionId = null) {
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="toast-body">
-                ${message}
-                ${progressBar}
-            </div>
+            <div class="toast-body"></div>
         </div>
     `;
     toastContainer.insertAdjacentHTML('beforeend', toastHTML);
     const newToast = document.getElementById(toastId);
+
+    const toastBodyEl = newToast.querySelector(".toast-body");
+    toastBodyEl.textContent = message;
+    if (progressBar) {
+        toastBodyEl.insertAdjacentHTML("beforeend", progressBar);
+    }
 
     // Handle close button
     const closeBtn = newToast.querySelector('.close');
@@ -333,7 +336,7 @@ function updateToast(toastId, message, category) {
         progressBar.remove();
     }
 
-    toastBody.innerHTML = message;
+    toastBody.textContent = message;
 
     // Add a retry button for failed submissions
     if (category === 'danger') {
