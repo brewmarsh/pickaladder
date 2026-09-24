@@ -42,14 +42,14 @@ MIN_USERS_FOR_MATCH_GENERATION = 2
 
 @bp.route("/")
 @login_required(admin_required=True)
-def admin() -> str | Response:
+def admin() -> Any:
     """Render the main admin users list (legacy /)."""
     return redirect(url_for(".dashboard"))
 
 
 @bp.route("/dashboard")
 @login_required(admin_required=True)
-def dashboard() -> str | Response:
+def dashboard() -> Any:
     """Render the operational admin dashboard."""
     if not g.user or (not g.user.is_admin and not g.get("is_impersonating")):
         flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
@@ -84,7 +84,7 @@ def dashboard() -> str | Response:
 
 @bp.route("/users")
 @login_required(admin_required=True)
-def view_users() -> str | Response:
+def view_users() -> Any:
     """Render the user management page."""
     if not g.user or (not g.user.is_admin and not g.get("is_impersonating")):
         flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
@@ -108,7 +108,7 @@ def view_users() -> str | Response:
 
 @bp.route("/merge-ghost", methods=["POST"])
 @login_required(admin_required=True)
-def merge_ghost() -> Response:
+def merge_ghost() -> Any:
     """Merge a ghost account into a real user profile."""
     target_user_id = request.form.get("target_user_id")
     ghost_email = request.form.get("ghost_email")
@@ -132,7 +132,7 @@ def merge_ghost() -> Response:
 
 @bp.route("/announcement", methods=["POST"])
 @login_required(admin_required=True)
-def announcement() -> Response:
+def announcement() -> Any:
     """Update the global system announcement."""
     db = firestore.client()
     try:
@@ -163,7 +163,7 @@ def announcement() -> Response:
 
 @bp.route("/toggle_email_verification", methods=["POST"])
 @login_required(admin_required=True)
-def toggle_email_verification() -> Response:
+def toggle_email_verification() -> Any:
     """Toggle the global setting for requiring email verification."""
     db = firestore.client()
     try:
@@ -180,7 +180,7 @@ def toggle_email_verification() -> Response:
 
 @bp.route("/matches")
 @login_required(admin_required=True)
-def admin_matches() -> str:
+def admin_matches() -> Any:
     """Display a list of all matches."""
     db = firestore.client()
     try:
@@ -197,7 +197,7 @@ def admin_matches() -> str:
 
 @bp.route("/delete_match/<string:match_id>", methods=["POST"])
 @login_required(admin_required=True)
-def admin_delete_match(match_id: str) -> Response:
+def admin_delete_match(match_id: str) -> Any:
     """Delete a match document from Firestore."""
     db = firestore.client()
     try:
@@ -254,7 +254,7 @@ def _perform_user_deletion(db: firestore.Client, uid: str, email: str | None) ->
 
 @bp.route("/delete_user", methods=["POST"])
 @login_required(admin_required=True)
-def admin_delete_user() -> Response:
+def admin_delete_user() -> Any:
     """Delete a user by ID or Email."""
     user_identifier = request.form.get("user_identifier")
     if not user_identifier:
@@ -275,7 +275,7 @@ def admin_delete_user() -> Response:
 
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
-def delete_user(user_id: str) -> Response:
+def delete_user(user_id: str) -> Any:
     """Delete a user from Firebase Auth and Firestore."""
     try:
         db = firestore.client()
@@ -289,7 +289,7 @@ def delete_user(user_id: str) -> Response:
 
 @bp.route("/promote_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
-def promote_user(user_id: str) -> Response:
+def promote_user(user_id: str) -> Any:
     """Promote a user to admin status in Firestore."""
     try:
         db = firestore.client()
@@ -303,7 +303,7 @@ def promote_user(user_id: str) -> Response:
 
 @bp.route("/verify_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
-def verify_user(user_id: str) -> Response:
+def verify_user(user_id: str) -> Any:
     """Manually verify a user's email."""
     try:
         AdminService.verify_user(firestore.client(), user_id)
@@ -315,7 +315,7 @@ def verify_user(user_id: str) -> Response:
 
 @bp.route("/generate_users", methods=["POST"])
 @login_required(admin_required=True)
-def generate_users() -> str:
+def generate_users() -> Any:
     """Generate fake users for testing."""
     from faker import Faker
 
@@ -386,7 +386,7 @@ def _batch_generate_random_matches(
 
 @bp.route("/generate_matches", methods=["POST"])
 @login_required(admin_required=True)
-def generate_matches() -> Response:
+def generate_matches() -> Any:
     """Generate random matches between existing users."""
     db = firestore.client()
     try:
@@ -403,7 +403,7 @@ def generate_matches() -> Response:
 
 @bp.route("/merge_players", methods=["GET", "POST"])
 @login_required(admin_required=True)
-def merge_players() -> str | Response:
+def merge_players() -> Any:
     """Merge two player accounts (Source -> Target)."""
     db = firestore.client()
     if request.method == "POST":
@@ -428,7 +428,7 @@ def merge_players() -> str | Response:
 
 @bp.route("/feedback")
 @login_required(admin_required=True)
-def view_feedback() -> str:
+def view_feedback() -> Any:
     """Render the feedback management page."""
     db = firestore.client()
     feedback_list = FeedbackService.get_all_feedback(db)
@@ -449,7 +449,7 @@ def view_feedback() -> str:
 
 @bp.route("/feedback/status", methods=["POST"])
 @login_required(admin_required=True)
-def update_feedback_status() -> Response:
+def update_feedback_status() -> Any:
     """Update feedback status."""
     feedback_id = request.form.get("feedback_id")
     status = request.form.get("status")
@@ -476,7 +476,7 @@ def update_feedback_status() -> Response:
 
 @bp.route("/style-guide")
 @login_required(admin_required=True)
-def style_guide() -> str:
+def style_guide() -> Any:
     """Render the design system style guide."""
     # Mock data for Tournament Card
     mock_tournament = {
@@ -514,14 +514,14 @@ def style_guide() -> str:
 
 @bp.route("/styleguide")
 @login_required(admin_required=True)
-def styleguide() -> str:
+def styleguide() -> Any:
     """Render the legacy design system styleguide."""
     return render_template("admin/styleguide.html")
 
 
 @bp.route("/impersonate/<string:user_id>")
 @login_required(admin_required=True)
-def impersonate(user_id: str) -> Response:
+def impersonate(user_id: str) -> Any:
     """Start impersonating another user."""
     session["impersonate_id"] = user_id
     doc = firestore.client().collection("users").document(user_id).get()
@@ -532,7 +532,7 @@ def impersonate(user_id: str) -> Response:
 
 @bp.route("/stop_impersonating")
 @login_required
-def stop_impersonating() -> Response:
+def stop_impersonating() -> Any:
     """Stop impersonating and return to admin profile."""
     session.pop("impersonate_id", None)
     flash(ADMIN_MESSAGES["ADMIN_WELCOME"], "success")
