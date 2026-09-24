@@ -2,8 +2,12 @@ import logging
 import sys
 import time
 import unittest.mock
+from unittest.mock import MagicMock
 
 from mockfirestore import MockFirestore
+
+# Mock faker before importing pickaladder to avoid ModuleNotFoundError in CI
+sys.modules["faker"] = MagicMock()
 
 from pickaladder import create_app
 from pickaladder.match.services import MatchService
