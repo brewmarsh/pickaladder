@@ -16,3 +16,6 @@
 ## 2026-07-24 - ARIA labels on Admin form inputs
 **Learning:** Found that form inputs within administrative panels (like the "Merge Ghost" or "Delete User" forms in `admin.html`) often lacked proper `<label>` elements and `aria-label` attributes, relying entirely on visual placeholders. Since these tools are destructive or highly privileged, accessibility and clarity are paramount.
 **Action:** Added explicit `aria-label` attributes to the inputs for "Real User ID", "Ghost Email", and "User ID or Email" to provide essential context for screen reader users and prevent reliance on transient placeholder text.
+## 2024-09-25 - Standard HTML Form Submissions and Loading States
+**Learning:** For standard synchronous HTML form submissions (where the browser navigates to a new page or reloads completely), adding JavaScript loading states on the `submit` event only requires disabling the button and showing a spinner. Explicit error-handling and state reset logic (like a `.catch()` block or a timer) is entirely unnecessary because the page context is fully destroyed and replaced by the server upon completion, whether successful or failed.
+**Action:** When implementing button loading states, differentiate between asynchronous (AJAX/fetch) and synchronous form submissions. Only add button restoration logic for async operations.
