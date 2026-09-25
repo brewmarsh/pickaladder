@@ -2,6 +2,15 @@
 {% block title %}Register{% endblock %}
 {% block content %}
 <div class="form-container">
+    <div class="flashes">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    </div>
     <h2>Register</h2>
     {% if error %}
         <div class="alert alert-danger">{{ error }}</div>
@@ -88,8 +97,21 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const googleSignInButton = document.getElementById('google-signin-btn');
+    const form = document.querySelector('form');
+
+    form.addEventListener('submit', function (event) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.dataset.originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+        }
+    });
 
     googleSignInButton.addEventListener('click', function() {
+        googleSignInButton.dataset.originalText = googleSignInButton.innerHTML;
+        googleSignInButton.disabled = true;
+        googleSignInButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
         const provider = new firebase.auth.GoogleAuthProvider();
         firebase.auth().signInWithPopup(provider)
             .then((result) => {
@@ -113,13 +135,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
+                googleSignInButton.disabled = false;
+                if (googleSignInButton.dataset.originalText) {
+                    googleSignInButton.innerHTML = googleSignInButton.dataset.originalText;
+                }
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
-                flashes.innerHTML = ''; // Clear previous messages
-                const flash = document.createElement('div');
-                flash.className = 'alert alert-danger';
-                flash.textContent = `Google Sign-in failed: ${errorMessage}`;
-                flashes.appendChild(flash);
+                if (flashes) {
+                    flashes.innerHTML = ''; // Clear previous messages
+                    const flash = document.createElement('div');
+                    flash.className = 'alert alert-danger';
+                    flash.textContent = `Google Sign-in failed: ${errorMessage}`;
+                    flashes.appendChild(flash);
+                } else {
+                    console.error("Google Sign-in failed:", errorMessage);
+                }
             });
     });
 });
