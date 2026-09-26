@@ -41,3 +41,7 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+
+## 2024-05-24 - Batching Firestore Reads Across Collections
+**Learning:** In the Python google-cloud-firestore SDK, `db.get_all()` accepts an iterable of `DocumentReference` objects that can belong to different collections simultaneously. This is highly effective for batching multiple independent document reads (e.g., fetching users, matches, and groups together) into a single network request to drastically reduce database latency.
+**Action:** When fetching independent documents from different collections in a single request lifecycle, always construct a combined list of `DocumentReference` objects and pass them to `db.get_all()` instead of making sequential or separate queries.
