@@ -6,7 +6,6 @@ import datetime
 import random
 from typing import TYPE_CHECKING, Any
 
-from faker import Faker
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -318,6 +317,8 @@ def verify_user(user_id: str) -> Response:
 @login_required(admin_required=True)
 def generate_users() -> str:
     """Generate fake users for testing."""
+    from faker import Faker
+
     db, fake, new_users = firestore.client(), Faker(), []
     try:
         for _ in range(10):
