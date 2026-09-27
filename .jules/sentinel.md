@@ -22,3 +22,8 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+
+## 2024-02-24 - [Fix IDOR in Group Join Route]
+**Vulnerability:** Insecure Direct Object Reference (IDOR) and authorization bypass in `pickaladder/group/routes/membership.py` -> `join_group` route (`/<string:group_id>/join`). The route allowed any authenticated user to join any group without checking the group's `join_policy` (e.g., OPEN, REQUEST, INVITE).
+**Learning:** Action routes that modify memberships must explicitly verify that the group allows open joining or that the user has a valid invite/request. Relying solely on the UI to hide the "Join" button for non-open groups is insufficient, as attackers can directly send POST requests to the endpoint.
+**Prevention:** Always fetch the target group resource in the route handler and explicitly verify its `join_policy` before adding a user to its members list.
