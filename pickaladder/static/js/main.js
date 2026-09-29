@@ -333,7 +333,7 @@ function updateToast(toastId, message, category) {
         progressBar.remove();
     }
 
-    toastBody.innerHTML = message;
+    toastBody.textContent = message;
 
     // Add a retry button for failed submissions
     if (category === 'danger') {

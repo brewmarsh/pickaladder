@@ -176,10 +176,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     div.className = 'form-check';
                     div.innerHTML = `
                         <input class="form-check-input roster-check-${side}" type="checkbox" value="${member.id}" id="side${side}_member_${member.id}" onchange="handleRosterSelection(${side})">
-                        <label class="form-check-label" for="side${side}_member_${member.id}">
-                            ${member.name}
-                        </label>
                     `;
+                    const label = document.createElement('label');
+                    label.className = 'form-check-label';
+                    label.setAttribute('for', `side${side}_member_${member.id}`);
+                    label.textContent = member.name;
+                    div.appendChild(label);
                     rosterList.appendChild(div);
                 });
                 rosterContainer.style.display = 'block';
