@@ -161,16 +161,23 @@ def share_brag(user_id: str, group_id: str) -> Response | str:
     """Publicly shareable Brag Card."""
     db = firestore.client()
 
-    # Fetch user data
-    user_doc = db.collection("users").document(user_id).get()
-    if not user_doc.exists:
+    # Fetch user and group data concurrently
+    user_ref = db.collection("users").document(user_id)
+    group_ref = db.collection("groups").document(group_id)
+
+    # Using db.get_all to fetch documents from different collections simultaneously
+    docs = db.get_all([user_ref, group_ref])
+    docs_map = {doc.id: doc for doc in docs}
+
+    user_doc = docs_map.get(user_id)
+    group_doc = docs_map.get(group_id)
+
+    if not user_doc or not user_doc.exists:
         flash(USER_MESSAGES["NOT_FOUND"], "danger")
         return redirect(url_for("main.index"))  # type: ignore
     user_data = user_doc.to_dict() or {}
 
-    # Fetch group data
-    group_doc = db.collection("groups").document(group_id).get()
-    if not group_doc.exists:
+    if not group_doc or not group_doc.exists:
         flash("Group not found", "danger")
         return redirect(url_for("main.index"))  # type: ignore
     group_data = group_doc.to_dict() or {}

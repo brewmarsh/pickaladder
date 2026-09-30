@@ -41,3 +41,12 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+## 2026-09-30 - Batching Independent Cross-Collection Reads
+**Learning:** Sequential  calls to fetch independent documents from different collections (like jules and jules sudo docker) introduce an unnecessary network latency bottleneck due to the N+1 pattern.
+**Action:** When you need to fetch multiple independent documents simultaneously, even across different collections, initialize references for each and pass them together into a single  call. This batches the request, saving a network roundtrip without sacrificing readability.
+## 2025-02-21 - Batching Independent Cross-Collection Reads
+**Learning:** Sequential `.get()` calls to fetch independent documents from different collections (like `users` and `groups`) introduce an unnecessary network latency bottleneck due to the N+1 pattern.
+**Action:** When you need to fetch multiple independent documents simultaneously, even across different collections, initialize references for each and pass them together into a single `db.get_all([ref1, ref2])` call. This batches the request, saving a network roundtrip without sacrificing readability.
+## 2026-09-30 - Conditional Optional Dependencies in Standalone Scripts
+**Learning:** When test/standalone scripts directly import application routes (like `admin/routes.py`) that contain global imports of dev dependencies like `faker`, they fail with `ModuleNotFoundError` in environments without dev dependencies installed (like CI performance checks).
+**Action:** Use a conditional import wrapped in a `try-except ImportError` block with a fallback to `None` for optional development packages, and explicitly ignore type-checking for the fallback (e.g. `Faker = None  # type: ignore`). Check for `None` before execution.
