@@ -22,3 +22,8 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+
+## 2024-10-04 - Fix DOM-based Open Redirect in Login Flow
+**Vulnerability:** The login page used `nextUrl.startsWith('/')` to validate the redirect URL, which allows `//example.com` to bypass the check and cause a DOM-based open redirect.
+**Learning:** Using `startsWith('/')` is insufficient to ensure a relative URL because scheme-relative URLs (like `//example.com`) also start with a slash and can redirect users to external, malicious domains.
+**Prevention:** Always validate relative URLs by checking that they start with a single slash but not a double slash (`startsWith('/') && !startsWith('//')`), or use URL parsing objects to verify the origin matches.

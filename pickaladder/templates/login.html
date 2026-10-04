@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function handleLoginSuccess() {
         const urlParams = new URLSearchParams(window.location.search);
         const nextUrl = urlParams.get('next');
-        if (nextUrl && nextUrl.startsWith('/')) {
+        if (nextUrl && nextUrl.startsWith('/') && !nextUrl.startsWith('//')) {
             window.location.href = nextUrl;
         } else {
             window.location.href = "{{ url_for('user.dashboard') }}";
