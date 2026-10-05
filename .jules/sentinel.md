@@ -22,3 +22,11 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+## 2025-02-25 - [Fix Authorization Bypass in Group Join]
+**Vulnerability:** Authorization Bypass / IDOR in the `pickaladder/group/routes/membership.py` `/join` route. The endpoint allowed any authenticated user to join a group by supplying its ID, bypassing the group's `join_policy` (e.g., 'REQUEST', 'INVITE') which was only enforced in the UI.
+**Learning:** Security controls like `join_policy` must be enforced on the server side for all action routes (POST). Relying on the UI to hide the "Join" button for private groups is insufficient, as attackers can directly send POST requests to the endpoint with any group ID.
+**Prevention:** Always verify the target object's state and permissions (e.g., `group_doc.to_dict().get("join_policy") == "OPEN"`) within the action route handler before applying modifications like adding a user to a members array.
+## 2025-02-25 - [Upgrade Dependency to Patch Known Vulnerability]
+**Vulnerability:** Known vulnerabilities were identified by `pip-audit` in the `pyjwt` (v2.13.0) and `urllib3` (v2.7.0) dependencies listed in `requirements.txt`.
+**Learning:** Outdated dependencies can expose the application to publicly known CVEs, making it a target for automated exploits. Keeping dependencies up to date is a fundamental security practice.
+**Prevention:** Regularly audit dependencies using tools like `pip-audit` or `safety` and bump their versions in `requirements.txt` to the latest secure releases (e.g., `pyjwt==2.15.0` and `urllib3==2.8.0`).
