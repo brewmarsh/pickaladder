@@ -24,7 +24,11 @@ def quick_log(session_id: str) -> Response | str | dict[str, Any]:
 
     # Bolt: Batch independent group and player fetches to minimize network latency
     player_ids = session_data.get("playerIds", [])
-    player_refs = [db.collection("users").document(pid) for pid in player_ids] if player_ids else []
+    player_refs = (
+        [db.collection("users").document(pid) for pid in player_ids]
+        if player_ids
+        else []
+    )
     group_ref = db.collection("groups").document(session_data["groupId"])
 
     all_refs = [group_ref] + player_refs
@@ -64,10 +68,18 @@ def view_session(session_id: str) -> Response | str | dict[str, Any]:
 
     # Bolt: Batch independent match, player, and group fetches to minimize network latency
     match_ids = session_data.get("matchIds", [])
-    match_refs = [db.collection("matches").document(mid) for mid in match_ids] if match_ids else []
+    match_refs = (
+        [db.collection("matches").document(mid) for mid in match_ids]
+        if match_ids
+        else []
+    )
 
     player_ids = session_data.get("playerIds", [])
-    player_refs = [db.collection("users").document(pid) for pid in player_ids] if player_ids else []
+    player_refs = (
+        [db.collection("users").document(pid) for pid in player_ids]
+        if player_ids
+        else []
+    )
 
     group_ref = db.collection("groups").document(session_data["groupId"])
 
