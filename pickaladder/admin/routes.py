@@ -433,12 +433,23 @@ def view_feedback() -> str:
     feedback_list = FeedbackService.get_all_feedback(db)
 
     # Resolve user names
+    user_ids = {item.get("userId") for item in feedback_list if item.get("userId")}
+    user_docs_map = {}
+    if user_ids:
+        user_refs = [db.collection("users").document(uid) for uid in user_ids]
+        user_docs_map = {
+            doc.reference: doc.to_dict() or {}
+            for doc in db.get_all(user_refs)
+            if doc.exists
+        }
+
     for item in feedback_list:
         user_id = item.get("userId")
         if user_id:
-            user = UserService.get_user_by_id(db, user_id)
+            user_ref = db.collection("users").document(user_id)
+            user_data = user_docs_map.get(user_ref)
             item["user_name"] = (
-                UserService.smart_display_name(user) if user else "Unknown User"
+                UserService.smart_display_name(user_data) if user_data else "Unknown User"
             )
         else:
             item["user_name"] = "Anonymous"
