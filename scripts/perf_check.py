@@ -2,8 +2,11 @@ import logging
 import sys
 import time
 import unittest.mock
+from unittest.mock import MagicMock
 
 from mockfirestore import MockFirestore
+
+sys.modules['faker'] = MagicMock()
 
 from pickaladder import create_app
 from pickaladder.match.services import MatchService
