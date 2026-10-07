@@ -90,6 +90,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const googleSignInButton = document.getElementById('google-signin-btn');
 
     googleSignInButton.addEventListener('click', function() {
+        googleSignInButton.dataset.originalText = googleSignInButton.innerHTML;
+        googleSignInButton.disabled = true;
+        googleSignInButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Connecting...';
+
         const provider = new firebase.auth.GoogleAuthProvider();
         firebase.auth().signInWithPopup(provider)
             .then((result) => {
@@ -113,6 +117,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
+                googleSignInButton.disabled = false;
+                if (googleSignInButton.dataset.originalText) {
+                    googleSignInButton.innerHTML = googleSignInButton.dataset.originalText;
+                }
+
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
                 flashes.innerHTML = ''; // Clear previous messages
@@ -122,6 +131,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 flashes.appendChild(flash);
             });
     });
+
+    const registerForm = document.querySelector('form');
+    if (registerForm) {
+        registerForm.addEventListener('submit', function () {
+            const submitBtn = registerForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Registering...';
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
