@@ -16,3 +16,6 @@
 ## 2026-07-24 - ARIA labels on Admin form inputs
 **Learning:** Found that form inputs within administrative panels (like the "Merge Ghost" or "Delete User" forms in `admin.html`) often lacked proper `<label>` elements and `aria-label` attributes, relying entirely on visual placeholders. Since these tools are destructive or highly privileged, accessibility and clarity are paramount.
 **Action:** Added explicit `aria-label` attributes to the inputs for "Real User ID", "Ghost Email", and "User ID or Email" to provide essential context for screen reader users and prevent reliance on transient placeholder text.
+## 2024-XX-XX - Loading States on Async Auth
+**Learning:** Found that async Firebase Auth buttons lacked visual feedback and disability states upon clicking, allowing users to potentially click multiple times during network latency and failing to provide immediate UI feedback that the action was processing. The error catch block for the primary form submission assumed `disabled` had been set but the initial disable logic was missing.
+**Action:** When implementing async form submissions, always immediately disable the submit button and provide a visual loading indicator (like `spinner-border`), and ensure the button is re-enabled in the `.catch()` block if the request fails.
