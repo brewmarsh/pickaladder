@@ -50,7 +50,7 @@ class AnnouncementTestCase(unittest.TestCase):
     @patch(
         "pickaladder.messaging.repository.MessagingRepository.get_user_conversations",
     )
-    def test_get_inbox_with_announcements(self, mock_get_convs):
+    def test_get_inbox_with_announcements(self, mock_get_convs: MagicMock) -> None:
         """Test inbox display for announcements."""
         mock_get_convs.return_value = [
             {
