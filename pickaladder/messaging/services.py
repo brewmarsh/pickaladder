@@ -84,34 +84,54 @@ class MessagingService:
     @staticmethod
     def get_inbox(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Retrieves the user's conversation list with enriched participant names."""
-        from pickaladder.group.repository import GroupRepository
-        from pickaladder.user.services import UserService
-
         conversations = MessagingRepository.get_user_conversations(db, user_id)
 
+        if not conversations:
+            return []
+
+        # ⚡ Bolt Optimization:
+        # What: Replaced sequential `get_by_id` calls with a single `db.get_all()` cross-collection batch fetch.
+        # Why: Resolves an N+1 query bottleneck where each conversation required an independent network round-trip.
+        # Impact: Reduces database latency from O(N) to exactly 1 request for retrieving inbox metadata.
+        refs = []
         for conv in conversations:
             if conv.get("type") == "group_announcement":
-                group = GroupRepository.get_by_id(db, conv["groupId"])
-                group_name = (
-                    group.get("name", "Unknown Group") if group else "Deleted Group"
-                )
-                conv["display_name"] = f"{group_name} (Announcements)"
-                conv["display_avatar"] = None  # Or a group icon if we have one
+                refs.append(db.collection("groups").document(conv["groupId"]))
             else:
-                # Find the OTHER participant
                 other_uid = next(
                     (p for p in conv["participants"] if p != user_id),
                     user_id,
                 )
-                other_user = UserService.get_user_by_id(db, other_uid)
-                conv["display_name"] = (
-                    other_user.get("username", "Unknown User")
-                    if other_user
-                    else "Deleted User"
+                refs.append(db.collection("users").document(other_uid))
+
+        docs = db.get_all(refs)
+        doc_map = {doc.reference: doc for doc in docs}
+
+        for conv in conversations:
+            if conv.get("type") == "group_announcement":
+                ref = db.collection("groups").document(conv["groupId"])
+                doc = doc_map.get(ref)
+                if doc and doc.exists:
+                    group_data = doc.to_dict() or {}
+                    group_name = group_data.get("name", "Unknown Group")
+                else:
+                    group_name = "Deleted Group"
+                conv["display_name"] = f"{group_name} (Announcements)"
+                conv["display_avatar"] = None
+            else:
+                other_uid = next(
+                    (p for p in conv["participants"] if p != user_id),
+                    user_id,
                 )
-                conv["display_avatar"] = (
-                    other_user.get("profilePictureUrl") if other_user else None
-                )
+                ref = db.collection("users").document(other_uid)
+                doc = doc_map.get(ref)
+                if doc and doc.exists:
+                    user_data = doc.to_dict() or {}
+                    conv["display_name"] = user_data.get("username", "Unknown User")
+                    conv["display_avatar"] = user_data.get("profilePictureUrl")
+                else:
+                    conv["display_name"] = "Deleted User"
+                    conv["display_avatar"] = None
 
         return conversations
 

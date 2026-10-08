@@ -50,14 +50,7 @@ class AnnouncementTestCase(unittest.TestCase):
     @patch(
         "pickaladder.messaging.repository.MessagingRepository.get_user_conversations",
     )
-    @patch("pickaladder.group.repository.GroupRepository.get_by_id")
-    @patch("pickaladder.user.services.UserService.get_user_by_id")
-    def test_get_inbox_with_announcements(
-        self,
-        mock_get_user,
-        mock_get_group,
-        mock_get_convs,
-    ) -> None:
+    def test_get_inbox_with_announcements(self, mock_get_convs):
         """Test inbox display for announcements."""
         mock_get_convs.return_value = [
             {
@@ -68,7 +61,17 @@ class AnnouncementTestCase(unittest.TestCase):
                 "unreadCount": {"u1": 1},
             },
         ]
-        mock_get_group.return_value = {"name": "Test Group"}
+
+        # Mock the db.get_all behavior
+        mock_doc = MagicMock()
+        mock_doc.exists = True
+        mock_doc.to_dict.return_value = {"name": "Test Group"}
+
+        mock_ref = MagicMock()
+        mock_doc.reference = mock_ref
+
+        self.mock_db.collection.return_value.document.return_value = mock_ref
+        self.mock_db.get_all.return_value = [mock_doc]
 
         inbox = MessagingService.get_inbox(self.mock_db, "u1")
 
