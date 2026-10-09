@@ -2,6 +2,9 @@ import logging
 import sys
 import time
 import unittest.mock
+from unittest.mock import MagicMock
+
+sys.modules["faker"] = MagicMock()
 
 from mockfirestore import MockFirestore
 
