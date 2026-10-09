@@ -22,3 +22,8 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+
+## 2025-02-24 - [Fix DOM-based Open Redirect in Login Redirect]
+**Vulnerability:** Client-side JavaScript in `pickaladder/templates/login.html` validated relative redirect URLs by checking `nextUrl.startsWith('/')`. This is insufficient as it allows protocol-relative URLs (e.g., `//attacker.com`), leading to DOM-based Open Redirect vulnerabilities when assigned to `window.location.href`.
+**Learning:** `startsWith('/')` is a common but incomplete way to validate internal relative URLs in JavaScript. Attackers can exploit this by passing a double slash URL, which bypasses the check and redirects the user to an external domain.
+**Prevention:** Validate relative redirect URLs by checking that they start with a single slash but not a double slash (e.g., `nextUrl.startsWith('/') && !nextUrl.startsWith('//')`) to reliably reject scheme-relative external URLs.
