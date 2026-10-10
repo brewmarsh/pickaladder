@@ -41,3 +41,7 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+
+## 2025-02-21 - Batching Independent Single Document Fetches
+**Learning:** Fetching independent entities (such as a user profile and a group profile) sequentially via multiple `db.collection(...).document(...).get()` calls creates unnecessary network latency bottlenecks on page loads.
+**Action:** When multiple independent documents need to be fetched for a single route/function, always batch the reads into a single network round-trip using `db.get_all([ref1, ref2, ...])`.
