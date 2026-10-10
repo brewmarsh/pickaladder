@@ -6,7 +6,10 @@ import datetime
 import random
 from typing import TYPE_CHECKING, Any
 
-from faker import Faker
+try:
+    from faker import Faker
+except ImportError:
+    Faker = None  # type: ignore
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -56,7 +59,7 @@ def dashboard() -> str | Response:
         flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
         return redirect(url_for("auth.login"))
 
-    db = firestore.client()
+    db: Any = firestore.client()
     from pickaladder.services.error_service import ErrorService
 
     growth_data = AdminService.get_growth_metrics(db)
@@ -91,7 +94,7 @@ def view_users() -> str | Response:
         flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
         return redirect(url_for("auth.login"))
 
-    db = firestore.client()
+    db: Any = firestore.client()
     admin_stats = AdminService.get_admin_stats(db)
     setting_ref = db.collection("settings").document("enforceEmailVerification")
     email_verification_setting = setting_ref.get()
@@ -118,7 +121,7 @@ def merge_ghost() -> Response:
         flash(ADMIN_MESSAGES["MERGE_REQUIRED_FIELDS"], "danger")
         return redirect(url_for(".view_users"))
 
-    db = firestore.client()
+    db: Any = firestore.client()
     real_user_ref = db.collection("users").document(target_user_id)
     try:
         if UserService.merge_ghost_user(db, real_user_ref, ghost_email):
@@ -135,7 +138,7 @@ def merge_ghost() -> Response:
 @login_required(admin_required=True)
 def announcement() -> Response:
     """Update the global system announcement."""
-    db = firestore.client()
+    db: Any = firestore.client()
     try:
         announcement_text = request.form.get("announcement_text")
         is_active = request.form.get("is_active") == "on"
@@ -166,7 +169,7 @@ def announcement() -> Response:
 @login_required(admin_required=True)
 def toggle_email_verification() -> Response:
     """Toggle the global setting for requiring email verification."""
-    db = firestore.client()
+    db: Any = firestore.client()
     try:
         new_val = AdminService.toggle_setting(db, "enforceEmailVerification")
         status = "enabled" if new_val else "disabled"
@@ -183,7 +186,7 @@ def toggle_email_verification() -> Response:
 @login_required(admin_required=True)
 def admin_matches() -> str:
     """Display a list of all matches."""
-    db = firestore.client()
+    db: Any = firestore.client()
     try:
         matches = (
             db.collection("matches")
@@ -200,7 +203,7 @@ def admin_matches() -> str:
 @login_required(admin_required=True)
 def admin_delete_match(match_id: str) -> Response:
     """Delete a match document from Firestore."""
-    db = firestore.client()
+    db: Any = firestore.client()
     try:
         db.collection("matches").document(match_id).delete()
         AdminService.log_action(db, g.user.uid, match_id, "delete_match")
@@ -262,7 +265,7 @@ def admin_delete_user() -> Response:
         flash(ADMIN_MESSAGES["USER_ID_EMAIL_REQUIRED"], "danger")
         return redirect(url_for(".view_users"))
 
-    db = firestore.client()
+    db: Any = firestore.client()
     uid, email = _lookup_user_by_identifier(db, user_identifier)
     if uid:
         _perform_user_deletion(db, uid, email)
@@ -276,10 +279,10 @@ def admin_delete_user() -> Response:
 
 @bp.route("/delete_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
-def delete_user(user_id: str) -> Response:
+def delete_user(user_id: str) -> Any:
     """Delete a user from Firebase Auth and Firestore."""
     try:
-        db = firestore.client()
+        db: Any = firestore.client()
         AdminService.delete_user(db, user_id)
         AdminService.log_action(db, g.user.uid, user_id, "delete_user")
         flash(ADMIN_MESSAGES["USER_DELETE_SUCCESS"], "success")
@@ -290,10 +293,10 @@ def delete_user(user_id: str) -> Response:
 
 @bp.route("/promote_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
-def promote_user(user_id: str) -> Response:
+def promote_user(user_id: str) -> Any:
     """Promote a user to admin status in Firestore."""
     try:
-        db = firestore.client()
+        db: Any = firestore.client()
         name = AdminService.promote_user(db, user_id)
         AdminService.log_action(db, g.user.uid, user_id, "promote_user")
         flash(ADMIN_MESSAGES["ADMIN_PROMOTION"].format(name=name), "success")
@@ -304,7 +307,7 @@ def promote_user(user_id: str) -> Response:
 
 @bp.route("/verify_user/<string:user_id>", methods=["POST"])
 @login_required(admin_required=True)
-def verify_user(user_id: str) -> Response:
+def verify_user(user_id: str) -> Any:
     """Manually verify a user's email."""
     try:
         AdminService.verify_user(firestore.client(), user_id)
@@ -316,9 +319,11 @@ def verify_user(user_id: str) -> Response:
 
 @bp.route("/generate_users", methods=["POST"])
 @login_required(admin_required=True)
-def generate_users() -> str:
+def generate_users() -> Any:
     """Generate fake users for testing."""
-    db, fake, new_users = firestore.client(), Faker(), []
+    db: Any = firestore.client()
+    fake: Any = Faker()
+    new_users: list[dict[str, Any]] = []
     try:
         for _ in range(10):
             email, password = (
@@ -351,7 +356,7 @@ def generate_users() -> str:
     return render_template("generated_users.html", users=new_users)
 
 
-def _generate_single_random_match(db: firestore.Client, users: list[Any]) -> bool:
+def _generate_single_random_match(db: Any, users: list[Any]) -> bool:
     """Generate a single random match between users."""
     p1, p2 = random.sample(users, 2)  # nosec B311
     s1, s2 = 11, random.randint(0, 9)  # nosec B311
@@ -385,9 +390,9 @@ def _batch_generate_random_matches(
 
 @bp.route("/generate_matches", methods=["POST"])
 @login_required(admin_required=True)
-def generate_matches() -> Response:
+def generate_matches() -> Any:
     """Generate random matches between existing users."""
-    db = firestore.client()
+    db: Any = firestore.client()
     try:
         users = list(db.collection("users").limit(20).stream())
         if len(users) < MIN_USERS_FOR_MATCH_GENERATION:
@@ -404,7 +409,7 @@ def generate_matches() -> Response:
 @login_required(admin_required=True)
 def merge_players() -> str | Response:
     """Merge two player accounts (Source -> Target)."""
-    db = firestore.client()
+    db: Any = firestore.client()
     if request.method == "POST":
         sid, tid = request.form.get("source_id"), request.form.get("target_id")
         if not sid or not tid or sid == tid:
@@ -427,9 +432,9 @@ def merge_players() -> str | Response:
 
 @bp.route("/feedback")
 @login_required(admin_required=True)
-def view_feedback() -> str:
+def view_feedback() -> Any:
     """Render the feedback management page."""
-    db = firestore.client()
+    db: Any = firestore.client()
     feedback_list = FeedbackService.get_all_feedback(db)
 
     # Resolve user names
@@ -457,7 +462,7 @@ def update_feedback_status() -> Response:
         flash("Missing feedback ID or status", "danger")
         return redirect(url_for(".view_feedback"))
 
-    db = firestore.client()
+    db: Any = firestore.client()
     if FeedbackService.update_feedback_status(db, feedback_id, status, g.user.uid):
         AdminService.log_action(
             db,
@@ -475,7 +480,7 @@ def update_feedback_status() -> Response:
 
 @bp.route("/style-guide")
 @login_required(admin_required=True)
-def style_guide() -> str:
+def style_guide() -> Any:
     """Render the design system style guide."""
     # Mock data for Tournament Card
     mock_tournament = {
@@ -513,14 +518,14 @@ def style_guide() -> str:
 
 @bp.route("/styleguide")
 @login_required(admin_required=True)
-def styleguide() -> str:
+def styleguide() -> Any:
     """Render the legacy design system styleguide."""
     return render_template("admin/styleguide.html")
 
 
 @bp.route("/impersonate/<string:user_id>")
 @login_required(admin_required=True)
-def impersonate(user_id: str) -> Response:
+def impersonate(user_id: str) -> Any:
     """Start impersonating another user."""
     session["impersonate_id"] = user_id
     doc = firestore.client().collection("users").document(user_id).get()
