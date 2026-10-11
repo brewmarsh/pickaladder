@@ -93,7 +93,7 @@ def _handle_invite_email_form(
 
 @bp.route("/<string:group_id>", methods=["GET", "POST"])
 @login_required
-def view_group(group_id: str) -> Response | str | dict[str, Any]:
+def view_group(group_id: str) -> Response | str:
     """Display a single group's page."""
     _handle_referrer()
 
@@ -143,7 +143,7 @@ def view_group(group_id: str) -> Response | str | dict[str, Any]:
 
 @bp.route("/<string:group_id>/request_join", methods=["POST"])
 @login_required
-def request_membership(group_id: str) -> Response | str | dict[str, Any]:
+def request_membership(group_id: str) -> Response:
     """Request to join a group."""
     db = firestore.client()
     message = request.form.get("message")
@@ -160,7 +160,7 @@ def request_membership(group_id: str) -> Response | str | dict[str, Any]:
 
 @bp.route("/invite/<token>/resend", methods=["POST"])
 @login_required
-def resend_invite(token: str) -> Response | str | dict[str, Any]:
+def resend_invite(token: str) -> Response:
     """Resend a group invitation."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -213,7 +213,7 @@ def resend_invite(token: str) -> Response | str | dict[str, Any]:
 
 @bp.route("/invite/<token>/delete", methods=["POST"])
 @login_required
-def delete_invite(token: str) -> Response | str | dict[str, Any]:
+def delete_invite(token: str) -> Response:
     """Delete a pending invitation."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -242,7 +242,7 @@ def delete_invite(token: str) -> Response | str | dict[str, Any]:
 
 @bp.route("/invite/<token>")
 @login_required
-def handle_invite(token: str) -> Response | str | dict[str, Any]:
+def handle_invite(token: str) -> Response:
     """Handle an invitation link."""
     db = firestore.client()
     invite_ref = db.collection("group_invites").document(token)
@@ -284,7 +284,7 @@ def handle_invite(token: str) -> Response | str | dict[str, Any]:
 
 @bp.route("/<string:group_id>/join", methods=["POST"])
 @login_required
-def join_group(group_id: str) -> Response | str | dict[str, Any]:
+def join_group(group_id: str) -> Response:
     """Join a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
@@ -314,7 +314,7 @@ def join_group(group_id: str) -> Response | str | dict[str, Any]:
 
 @bp.route("/<string:group_id>/leave", methods=["POST"])
 @login_required
-def leave_group(group_id: str) -> Response | str | dict[str, Any]:
+def leave_group(group_id: str) -> Response:
     """Leave a group."""
     db = firestore.client()
     group_ref = db.collection("groups").document(group_id)
