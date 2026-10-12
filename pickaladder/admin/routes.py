@@ -47,6 +47,15 @@ def admin() -> str | Response:
     return redirect(url_for(".dashboard"))
 
 
+def _resolve_admin_names(db: firestore.Client, audit_logs: list[dict[str, Any]]) -> dict[str, str]:
+    admin_ids = list({log["admin_id"] for log in audit_logs if log.get("admin_id")})
+    admin_names = {}
+    if admin_ids:
+        for aid in admin_ids:
+            u = UserService.get_user_by_id(db, aid)
+            admin_names[aid] = UserService.smart_display_name(u) if u else aid
+    return admin_names
+
 @bp.route("/dashboard")
 @login_required(admin_required=True)
 def dashboard() -> str | Response:
@@ -62,17 +71,15 @@ def dashboard() -> str | Response:
     recent_errors = ErrorService.get_recent_errors(db, limit=5)
     audit_logs = AdminService.get_recent_audit_logs(db, limit=5)
 
-    # Optional: Resolve admin names for audit logs
-    admin_ids = list({log["admin_id"] for log in audit_logs if log.get("admin_id")})
-    admin_names = {}
-    if admin_ids:
-        # Simple fetch, in production use batch get
-        for aid in admin_ids:
-            u = UserService.get_user_by_id(db, aid)
-            admin_names[aid] = UserService.smart_display_name(u) if u else aid
+    # Resolve admin names for audit logs
+    admin_names = _resolve_admin_names(db, audit_logs)
 
     for log in audit_logs:
-        log["admin_name"] = admin_names.get(log.get("admin_id"))
+        admin_id = log.get("admin_id")
+        if isinstance(admin_id, str):
+            log["admin_name"] = admin_names.get(admin_id)
+        else:
+            log["admin_name"] = None
 
     return render_template(
         "admin/dashboard.html",
@@ -106,6 +113,17 @@ def view_users() -> str | Response:
     )
 
 
+def _perform_ghost_merge(db: firestore.Client, target_user_id: str, ghost_email: str) -> None:
+    real_user_ref = db.collection("users").document(target_user_id)
+    try:
+        if UserService.merge_ghost_user(db, real_user_ref, ghost_email):
+            flash(ADMIN_MESSAGES["GHOST_MERGE_SUCCESS"], "success")
+        else:
+            flash(ADMIN_MESSAGES["GHOST_MERGE_FAILED"], "danger")
+    except Exception as e:
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
+
+
 @bp.route("/merge-ghost", methods=["POST"])
 @login_required(admin_required=True)
 def merge_ghost() -> Response:
@@ -118,14 +136,7 @@ def merge_ghost() -> Response:
         return redirect(url_for(".view_users"))
 
     db = firestore.client()
-    real_user_ref = db.collection("users").document(target_user_id)
-    try:
-        if UserService.merge_ghost_user(db, real_user_ref, ghost_email):
-            flash(ADMIN_MESSAGES["GHOST_MERGE_SUCCESS"], "success")
-        else:
-            flash(ADMIN_MESSAGES["GHOST_MERGE_FAILED"], "danger")
-    except Exception as e:
-        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
+    _perform_ghost_merge(db, target_user_id, ghost_email)
 
     return redirect(url_for(".view_users"))
 
@@ -313,6 +324,28 @@ def verify_user(user_id: str) -> Response:
     return redirect(url_for(".view_users"))
 
 
+def _create_fake_user(db: firestore.Client, fake: Any) -> dict[str, Any]:
+    email = fake.email()
+    password = fake.password(
+        length=12,
+        special_chars=True,
+        digits=True,
+        upper_case=True,
+        lower_case=True,
+    )
+    user_record = auth.create_user(email=email, password=password)
+    user_doc = {
+        "username": fake.user_name(),
+        "email": email,
+        "name": fake.name(),
+        "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec B311
+        "isAdmin": False,
+        "createdAt": firestore.SERVER_TIMESTAMP,
+    }
+    db.collection("users").document(user_record.uid).set(user_doc)
+    return {"uid": user_record.uid, **user_doc}
+
+
 @bp.route("/generate_users", methods=["POST"])
 @login_required(admin_required=True)
 def generate_users() -> str | Response:
@@ -329,27 +362,7 @@ def generate_users() -> str | Response:
     db, fake, new_users = firestore.client(), Faker(), []
     try:
         for _ in range(10):
-            email, password = (
-                fake.email(),
-                fake.password(
-                    length=12,
-                    special_chars=True,
-                    digits=True,
-                    upper_case=True,
-                    lower_case=True,
-                ),
-            )
-            user_record = auth.create_user(email=email, password=password)
-            user_doc = {
-                "username": fake.user_name(),
-                "email": email,
-                "name": fake.name(),
-                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec B311
-                "isAdmin": False,
-                "createdAt": firestore.SERVER_TIMESTAMP,
-            }
-            db.collection("users").document(user_record.uid).set(user_doc)
-            new_users.append({"uid": user_record.uid, **user_doc})
+            new_users.append(_create_fake_user(db, fake))
         flash(
             ADMIN_MESSAGES["USERS_GEN_SUCCESS"].format(count=len(new_users)),
             "success",
@@ -408,22 +421,25 @@ def generate_matches() -> Response:
     return redirect(url_for(".view_users"))
 
 
+def _process_merge_players_post(db: firestore.Client) -> Response:
+    sid, tid = request.form.get("source_id"), request.form.get("target_id")
+    if not sid or not tid or sid == tid:
+        flash(ADMIN_MESSAGES["INVALID_MERGE_IDS"], "error")
+    else:
+        try:
+            UserService.merge_users(db, sid, tid)
+            flash(ADMIN_MESSAGES["PLAYERS_MERGE_SUCCESS"], "success")
+        except Exception as e:
+            flash(ADMIN_MESSAGES["PLAYERS_MERGE_ERROR"].format(error=e), "error")
+    return redirect(url_for(".merge_players"))
+
 @bp.route("/merge_players", methods=["GET", "POST"])
 @login_required(admin_required=True)
 def merge_players() -> str | Response:
     """Merge two player accounts (Source -> Target)."""
     db = firestore.client()
     if request.method == "POST":
-        sid, tid = request.form.get("source_id"), request.form.get("target_id")
-        if not sid or not tid or sid == tid:
-            flash(ADMIN_MESSAGES["INVALID_MERGE_IDS"], "error")
-        else:
-            try:
-                UserService.merge_users(db, sid, tid)
-                flash(ADMIN_MESSAGES["PLAYERS_MERGE_SUCCESS"], "success")
-            except Exception as e:
-                flash(ADMIN_MESSAGES["PLAYERS_MERGE_ERROR"].format(error=e), "error")
-        return redirect(url_for(".merge_players"))
+        return _process_merge_players_post(db)
 
     all_users, _ = UserService.get_all_users(db, public_only=False)
     users = sorted(
