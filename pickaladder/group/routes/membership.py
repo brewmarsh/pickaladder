@@ -290,6 +290,16 @@ def join_group(group_id: str) -> Response | str | dict[str, Any]:
     group_ref = db.collection("groups").document(group_id)
     user_ref = db.collection("users").document(g.user.uid)
 
+    group_doc = group_ref.get()
+    if not group_doc.exists:
+        flash(GROUP_MESSAGES["NOT_FOUND"], "danger")
+        return redirect(url_for(".view_groups"))  # type: ignore
+
+    group_data = group_doc.to_dict() or {}
+    if not group_data.get("is_public", False):
+        flash("Cannot join a private group directly.", "danger")
+        return redirect(url_for(".view_group", group_id=group_id))  # type: ignore
+
     try:
         group_ref.update({"members": firestore.ArrayUnion([user_ref])})
         friend_group_members(db, group_id, user_ref)
