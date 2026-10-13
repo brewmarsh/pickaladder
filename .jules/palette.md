@@ -16,3 +16,6 @@
 ## 2026-07-24 - ARIA labels on Admin form inputs
 **Learning:** Found that form inputs within administrative panels (like the "Merge Ghost" or "Delete User" forms in `admin.html`) often lacked proper `<label>` elements and `aria-label` attributes, relying entirely on visual placeholders. Since these tools are destructive or highly privileged, accessibility and clarity are paramount.
 **Action:** Added explicit `aria-label` attributes to the inputs for "Real User ID", "Ghost Email", and "User ID or Email" to provide essential context for screen reader users and prevent reliance on transient placeholder text.
+## 2026-07-25 - Error Messages Container (`.flashes`) in Client-Side JS Forms
+**Learning:** Found that when client-side JavaScript (like Firebase Auth logic) attempts to append form submission errors to a `.flashes` container, the script fails with a `TypeError: Cannot read properties of null (reading 'innerHTML')` if the `div.flashes` container does not exist in the HTML template. This breaks the error handling entirely, resulting in no visible error messaging for users upon failure.
+**Action:** Always ensure that templates containing client-side form submission error handling have a `<div class="flashes"></div>` container present in the DOM (as done in `register.html`).
