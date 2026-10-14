@@ -41,3 +41,6 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+## 2025-02-21 - Parallelizing Independent Database Reads in Tournament Details
+**Learning:** `TournamentService.get_tournament_details` performed several independent operations sequentially, such as resolving participants, fetching standings, checking invitable players, getting user groups, and determining team status, leading to accumulated latency.
+**Action:** When compiling complex payloads like tournament details that require multiple independent data points or lists, wrap the individual fetch methods in a `concurrent.futures.ThreadPoolExecutor` to drastically reduce request completion time.

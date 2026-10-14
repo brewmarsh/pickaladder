@@ -726,18 +726,43 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         meta = TournamentBase._get_tournament_metadata(data, uid)
 
         parts = data.get("participants", [])
-        resolved_parts = TournamentService._resolve_participants(db, parts)
-        stands = get_tournament_standings(db, t_id, data.get("matchType", "singles"))
         c_ids = TournamentService._extract_participant_ids(parts)
-        t_stat, pend = TournamentService._get_team_status_for_user(db, t_id, uid)
+
+        import concurrent.futures
+
+        # ⚡ Bolt Optimization:
+        # What: Execute independent database queries concurrently.
+        # Why: Resolves a sequential latency bottleneck when loading tournament details.
+        # Impact: Expected to significantly reduce total latency for tournament detail fetches.
+        # Measurement: Measure latency of TournamentService.get_tournament_details before and after this change.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            future_resolved = executor.submit(
+                TournamentService._resolve_participants, db, parts
+            )
+            future_stands = executor.submit(
+                get_tournament_standings, db, t_id, data.get("matchType", "singles")
+            )
+            future_invitable = executor.submit(
+                TournamentService._get_invitable_players, db, uid, c_ids
+            )
+            future_groups = executor.submit(UserService.get_user_groups, db, uid)
+            future_team_status = executor.submit(
+                TournamentService._get_team_status_for_user, db, t_id, uid
+            )
+
+            resolved_parts = future_resolved.result()
+            stands = future_stands.result()
+            invitable_users = future_invitable.result()
+            user_groups = future_groups.result()
+            t_stat, pend = future_team_status.result()
 
         return {
             "tournament": data,
             "participants": resolved_parts,
             "standings": stands,
             "podium": stands[:3] if data.get("status") == "Completed" else [],
-            "invitable_users": TournamentService._get_invitable_players(db, uid, c_ids),
-            "user_groups": UserService.get_user_groups(db, uid),
+            "invitable_users": invitable_users,
+            "user_groups": user_groups,
             "team_status": t_stat,
             "pending_partner_invite": pend,
             **meta,
