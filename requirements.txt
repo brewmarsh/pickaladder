@@ -215,7 +215,7 @@ pydantic-core==2.46.4
     # via
     #   -r requirements.txt
     #   pydantic
-pyjwt==2.13.0
+pyjwt==2.15.0
     # via
     #   -r requirements.txt
     #   firebase-admin
@@ -242,11 +242,11 @@ typing-inspection==0.4.2
     # via
     #   -r requirements.txt
     #   pydantic
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   -r requirements.txt
     #   requests
-werkzeug==3.1.8
+werkzeug==3.1.9
     # via
     #   -r requirements.txt
     #   flask

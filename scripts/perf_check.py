@@ -3,6 +3,10 @@ import sys
 import time
 import unittest.mock
 
+# Mock faker before anything from pickaladder is imported
+# since faker is a dev dependency not available in CI perf check
+sys.modules["faker"] = unittest.mock.MagicMock()
+
 from mockfirestore import MockFirestore
 
 from pickaladder import create_app
