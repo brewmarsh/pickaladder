@@ -3,6 +3,10 @@ import sys
 import time
 import unittest.mock
 
+# Mock faker before anything from pickaladder is imported
+# since faker is a dev dependency not available in CI perf check
+sys.modules["faker"] = unittest.mock.MagicMock()
+
 from mockfirestore import MockFirestore
 
 from pickaladder import create_app
@@ -23,7 +27,10 @@ THRESHOLDS = {
 }
 
 
-def benchmark_get_all_users(db):
+from typing import Any
+
+
+def benchmark_get_all_users(db: Any) -> float:
     # Simulated load: add 100 users
     logger.info("  Adding 100 users to mock db...")
     for i in range(100):
@@ -37,7 +44,7 @@ def benchmark_get_all_users(db):
     return end_time - start_time
 
 
-def benchmark_record_match(db):
+def benchmark_record_match(db: Any) -> float:
     # Prepare dummy data for match recording
     current_user = {"uid": "perf_test_user", "username": "perf_tester"}
     group_id = "perf_test_group"
@@ -76,7 +83,7 @@ def benchmark_record_match(db):
     return end_time - start_time
 
 
-def benchmark_leaderboards(db):
+def benchmark_leaderboards(db: Any) -> tuple[float, float]:
     from pickaladder.group.services.leaderboard import get_group_leaderboard
     from pickaladder.match.services import MatchService
 
@@ -140,6 +147,8 @@ def main() -> None:
             failed = False
             for name, duration in results.items():
                 threshold = THRESHOLDS.get(name)
+                if threshold is None:
+                    continue
                 status = "PASS" if duration <= threshold else "FAIL"
                 logger.info(
                     f"{name}: {duration:.4f}s (Threshold: {threshold}s) -> {status}",
