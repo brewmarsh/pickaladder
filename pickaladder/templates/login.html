@@ -80,6 +80,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     googleSignInButton.addEventListener('click', function() {
+        const originalGoogleText = googleSignInButton.innerHTML;
+        googleSignInButton.disabled = true;
+        googleSignInButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+
         const provider = new firebase.auth.GoogleAuthProvider();
         const remember = document.getElementById('remember').checked;
         firebase.auth().signInWithPopup(provider)
@@ -105,6 +109,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch((error) => {
+                googleSignInButton.disabled = false;
+                googleSignInButton.innerHTML = originalGoogleText;
                 const errorMessage = error.message;
                 const flashes = document.querySelector('.flashes');
                 flashes.innerHTML = ''; // Clear previous messages
@@ -117,6 +123,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalSubmitText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+        // Store original text just in case the existing error handler needs it
+        submitBtn.dataset.originalText = originalSubmitText;
+
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
