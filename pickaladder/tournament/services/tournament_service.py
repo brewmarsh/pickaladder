@@ -694,15 +694,45 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         user_uid: str,
     ) -> tuple[str | None, bool]:
         """Fetch team status and pending flag for a user."""
-        teams = db.collection("tournaments").document(t_id).collection("teams").stream()
-        for doc in teams:
+        from google.cloud.firestore_v1.base_query import FieldFilter, Or
+
+        # Bolt Optimization:
+        # By filtering on the server using `Or` and `FieldFilter` and pushing the evaluation
+        # to Firestore, we avoid streaming all N team documents to the client just to check if the user is in one.
+        teams_query = (
+            db.collection("tournaments")
+            .document(t_id)
+            .collection("teams")
+            .where(
+                filter=Or(
+                    [
+                        FieldFilter("p1_uid", "==", user_uid),
+                        FieldFilter("p2_uid", "==", user_uid),
+                    ]
+                )
+            )
+            .stream()
+        )
+
+        # Iterate through all matching records, preferring ACTIVE ones.
+        # This handles cases where a user has multiple history records (e.g. cancelled/rejected invites)
+        # preventing a regression where we accidentally return a historical document.
+        found_status = None
+        found_pending = False
+        for doc in teams_query:
             res = TournamentService._check_user_in_team(
                 user_uid,
                 cast("dict[str, Any]", doc.to_dict()),
             )
             if res:
-                return res
-        return None, False
+                status, is_pending = res
+                if status == "ACTIVE":
+                    return status, is_pending
+                # Fallback to the first found state if we don't find ACTIVE
+                if found_status is None:
+                    found_status, found_pending = status, is_pending
+
+        return found_status, found_pending
 
     @staticmethod
     def get_tournament_details(
