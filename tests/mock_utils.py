@@ -118,6 +118,51 @@ def _patched_update(self: Any, data: dict[str, Any]) -> Any:
     return None
 
 
+class CustomOrQuery:
+    """Custom iterable fallback for Or composite queries."""
+
+    def __init__(self, base_query: Any, filter_obj: Any) -> None:
+        self.base_query = base_query
+        self.filter = filter_obj
+        self._limit = None
+
+    def limit(self, count: int) -> Any:
+        """Mock limit function."""
+        self._limit = count
+        return self
+
+    def stream(self, transaction: Any = None, **kwargs: Any) -> Any:
+        """Stream documents matching the Or query."""
+        from google.cloud.firestore_v1.base_query import FieldFilter, Or
+
+        stream_method = getattr(self.base_query, "stream", None)
+        if not stream_method:
+            return []
+
+        try:
+            docs = stream_method(transaction=transaction, **kwargs)
+        except TypeError:
+            docs = stream_method()
+
+        yielded = 0
+        for doc in docs:
+            if self._limit is not None and yielded >= self._limit:
+                break
+
+            if not isinstance(self.filter, Or):
+                yield doc
+                yielded += 1
+                continue
+
+            doc_dict = doc.to_dict() or {}
+            for sub in self.filter.filters:
+                if isinstance(sub, FieldFilter) and sub.op_string == "==":
+                    if doc_dict.get(sub.field_path) == sub.value:
+                        yield doc
+                        yielded += 1
+                        break
+
+
 def _where_impl(
     self: Any,
     field_path: str | None = None,
@@ -128,46 +173,7 @@ def _where_impl(
     """Implementation of where that handles FieldFilter and Or."""
     if filter:
         if hasattr(filter, "filters"):
-            from google.cloud.firestore_v1.base_query import FieldFilter, Or
-
-            class CustomOrQuery:
-                def __init__(self, base_query: Any, filter_obj: Any) -> None:
-                    self.base_query = base_query
-                    self.filter = filter_obj
-
-                def limit(self, count: int) -> Any:
-                    return self
-
-                def stream(self, transaction: Any = None, **kwargs: Any) -> Any:
-                    stream_method = getattr(self.base_query, "stream", None)
-                    if not stream_method:
-                        return []
-
-                    try:
-                        docs = stream_method(transaction=transaction, **kwargs)
-                    except TypeError:
-                        docs = stream_method()
-
-                    for doc in docs:
-                        doc_dict = doc.to_dict() or {}
-                        if isinstance(self.filter, Or):
-                            match = False
-                            for sub in self.filter.filters:
-                                if (
-                                    isinstance(sub, FieldFilter)
-                                    and sub.op_string == "=="
-                                ):
-                                    val = doc_dict.get(sub.field_path)
-                                    if val == sub.value:
-                                        match = True
-                                        break
-                            if match:
-                                yield doc
-                        else:
-                            yield doc
-
             return CustomOrQuery(self, filter)
-
         return self._where(filter.field_path, filter.op_string, filter.value)
     return self._where(field_path, op_string, value)
 
