@@ -694,8 +694,25 @@ class TournamentService(TournamentInvites, TournamentTeams, TournamentBase):
         user_uid: str,
     ) -> tuple[str | None, bool]:
         """Fetch team status and pending flag for a user."""
-        teams = db.collection("tournaments").document(t_id).collection("teams").stream()
-        for doc in teams:
+        from google.cloud.firestore_v1.base_query import FieldFilter, Or
+
+        teams_query = (
+            db.collection("tournaments")
+            .document(t_id)
+            .collection("teams")
+            .where(
+                filter=Or(
+                    [
+                        FieldFilter("p1_uid", "==", user_uid),
+                        FieldFilter("p2_uid", "==", user_uid),
+                    ]
+                )
+            )
+            .limit(1)
+            .stream()
+        )
+
+        for doc in teams_query:
             res = TournamentService._check_user_in_team(
                 user_uid,
                 cast("dict[str, Any]", doc.to_dict()),

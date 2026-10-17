@@ -41,3 +41,7 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+
+## 2025-02-21 - Avoiding Client-Side Filtering for Firestore Collections
+**Learning:** In `_get_team_status_for_user`, streaming an entire collection and applying OR logic in-memory (e.g. checking `p1_uid == user_id or p2_uid == user_id` for every document) creates a severe N+1 latency bottleneck as the collection grows, downloading every document over the network needlessly.
+**Action:** Always push filtering to the Firestore server. Use `google.cloud.firestore_v1.base_query.Or` with `FieldFilter`s to perform server-side OR queries and append `.limit(1)` if only one result is expected, drastically reducing network payload and execution time.
