@@ -130,6 +130,10 @@ const ChallengeUI = {
     renderChallengeCard(c, type) {
         const isChallenger = c.challenger_id === currentUserId;
         const otherName = isChallenger ? c.challenged_name : c.challenger_name;
+
+        const escapeHtml = (text) => text ? text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
+        const escapedName = escapeHtml(otherName);
+
         const direction = isChallenger ? "Sent to" : "Received from";
         
         let actions = '';
@@ -164,7 +168,7 @@ const ChallengeUI = {
             <div class="list-group-item challenge-card ${type} mb-2 shadow-sm border-rounded">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <div class="fw-bold">${direction} ${otherName}</div>
+                        <div class="fw-bold">${direction} ${escapedName}</div>
                         <div class="text-muted small">Wager: <span class="wager-badge">🪙 ${c.wager_amount}</span></div>
                         ${expirationText}
                     </div>
