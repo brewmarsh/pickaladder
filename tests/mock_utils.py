@@ -119,39 +119,37 @@ def _patched_update(self: Any, data: dict[str, Any]) -> Any:
 
 
 def _where_impl(
-    self,
-    field_path=None,
-    op_string=None,
-    value=None,
-    filter=None,
-):
+    self: Any,
+    field_path: str | None = None,
+    op_string: str | None = None,
+    value: Any = None,
+    filter: Any = None,
+) -> Any:
+    """Implementation of where that handles FieldFilter and Or."""
     if filter:
         if hasattr(filter, "filters"):
             from google.cloud.firestore_v1.base_query import FieldFilter, Or
 
-            # MockFirestore does not support composite filters natively.
-            # We can mimic it by fetching ALL the docs and manually streaming only those that match.
-
-            # self here is a CollectionReference or a Query.
-            # Query in mockfirestore requires a CollectionReference, but parent could be a DocumentReference.
-            # Let's just create a custom iterable object instead of relying on mockfirestore Query class.
-
             class CustomOrQuery:
-                def __init__(self, base_query, filter_obj):
+                def __init__(self, base_query: Any, filter_obj: Any) -> None:
                     self.base_query = base_query
                     self.filter = filter_obj
 
-                def limit(self, count):
-                    # For simplicity, we ignore limit in tests, or we could slice
+                def limit(self, count: int) -> Any:
                     return self
 
-                def stream(self, transaction=None, **kwargs):
-                    for doc in self.base_query.stream(transaction=transaction, **kwargs):
+                def stream(self, transaction: Any = None, **kwargs: Any) -> Any:
+                    for doc in self.base_query.stream(
+                        transaction=transaction, **kwargs
+                    ):
                         doc_dict = doc.to_dict() or {}
                         if isinstance(self.filter, Or):
                             match = False
                             for sub in self.filter.filters:
-                                if isinstance(sub, FieldFilter) and sub.op_string == "==":
+                                if (
+                                    isinstance(sub, FieldFilter)
+                                    and sub.op_string == "=="
+                                ):
                                     val = doc_dict.get(sub.field_path)
                                     if val == sub.value:
                                         match = True
