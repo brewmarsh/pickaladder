@@ -322,41 +322,20 @@ def verify_user(user_id: str) -> Response:
 @login_required(admin_required=True)
 def generate_users() -> str:
     """Generate fake users for testing."""
-    if Faker is None:
-        flash("Faker package is not installed. Run 'pip install faker' to use this feature.", "danger")
-        return redirect(url_for("admin.admin"))
+    from pickaladder.admin.helpers import generate_fake_users
 
-    db, fake, new_users = firestore.client(), Faker(), []
     try:
-        for _ in range(10):
-            email, password = (
-                fake.email(),
-                fake.password(
-                    length=12,
-                    special_chars=True,
-                    digits=True,
-                    upper_case=True,
-                    lower_case=True,
-                ),
-            )
-            user_record = auth.create_user(email=email, password=password)
-            user_doc = {
-                "username": fake.user_name(),
-                "email": email,
-                "name": fake.name(),
-                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec B311
-                "isAdmin": False,
-                "createdAt": firestore.SERVER_TIMESTAMP,
-            }
-            db.collection("users").document(user_record.uid).set(user_doc)
-            new_users.append({"uid": user_record.uid, **user_doc})
+        new_users = generate_fake_users(10)
         flash(
             ADMIN_MESSAGES["USERS_GEN_SUCCESS"].format(count=len(new_users)),
             "success",
         )
+        return render_template("generated_users.html", users=new_users)
+    except ImportError:
+        flash("Faker package is not installed. Run 'pip install faker' to use this feature.", "danger")
     except Exception as e:
         flash(ADMIN_MESSAGES["USERS_GEN_ERROR"].format(error=e), "danger")
-    return render_template("generated_users.html", users=new_users)
+    return redirect(url_for("admin.admin"))
 
 
 def _generate_single_random_match(db: firestore.Client, users: list[Any]) -> bool:
