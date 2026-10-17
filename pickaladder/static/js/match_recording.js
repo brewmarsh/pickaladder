@@ -171,13 +171,17 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 rosterList.innerHTML = '';
+
+                const escapeHtml = (text) => text ? text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
+
                 data.members.forEach(member => {
                     const div = document.createElement('div');
                     div.className = 'form-check';
+                    const escapedMemberName = escapeHtml(member.name);
                     div.innerHTML = `
                         <input class="form-check-input roster-check-${side}" type="checkbox" value="${member.id}" id="side${side}_member_${member.id}" onchange="handleRosterSelection(${side})">
                         <label class="form-check-label" for="side${side}_member_${member.id}">
-                            ${member.name}
+                            ${escapedMemberName}
                         </label>
                     `;
                     rosterList.appendChild(div);
