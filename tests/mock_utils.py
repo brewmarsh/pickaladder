@@ -139,9 +139,16 @@ def _where_impl(
                     return self
 
                 def stream(self, transaction: Any = None, **kwargs: Any) -> Any:
-                    for doc in self.base_query.stream(
-                        transaction=transaction, **kwargs
-                    ):
+                    stream_method = getattr(self.base_query, "stream", None)
+                    if not stream_method:
+                        return []
+
+                    try:
+                        docs = stream_method(transaction=transaction, **kwargs)
+                    except TypeError:
+                        docs = stream_method()
+
+                    for doc in docs:
                         doc_dict = doc.to_dict() or {}
                         if isinstance(self.filter, Or):
                             match = False
