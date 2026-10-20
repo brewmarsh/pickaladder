@@ -1,8 +1,12 @@
 import logging
+import os
 import sys
 import time
 import unittest.mock
+from typing import Any
+from typing import Any, Tuple
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mockfirestore import MockFirestore
 
 from pickaladder import create_app
@@ -23,7 +27,7 @@ THRESHOLDS = {
 }
 
 
-def benchmark_get_all_users(db):
+def benchmark_get_all_users(db: Any) -> float:
     # Simulated load: add 100 users
     logger.info("  Adding 100 users to mock db...")
     for i in range(100):
@@ -37,7 +41,7 @@ def benchmark_get_all_users(db):
     return end_time - start_time
 
 
-def benchmark_record_match(db):
+def benchmark_record_match(db: Any) -> float:
     # Prepare dummy data for match recording
     current_user = {"uid": "perf_test_user", "username": "perf_tester"}
     group_id = "perf_test_group"
@@ -76,7 +80,7 @@ def benchmark_record_match(db):
     return end_time - start_time
 
 
-def benchmark_leaderboards(db):
+def benchmark_leaderboards(db: Any) -> Tuple[float, float]:
     from pickaladder.group.services.leaderboard import get_group_leaderboard
     from pickaladder.match.services import MatchService
 
@@ -99,6 +103,19 @@ def benchmark_leaderboards(db):
     hit_global = time.time() - start_time
 
     return hit_global, hit_group
+
+
+def _check_thresholds(results: dict[str, float]) -> bool:
+    failed = False
+    for name, duration in results.items():
+        threshold = THRESHOLDS.get(name)
+        if threshold is None:
+            continue
+        status = "PASS" if duration <= threshold else "FAIL"
+        logger.info(f"{name}: {duration:.4f}s (Threshold: {threshold}s) -> {status}")
+        if duration > threshold:
+            failed = True
+    return failed
 
 
 def main() -> None:
@@ -137,16 +154,7 @@ def main() -> None:
             results["Leaderboard.get_global"] = hit_global
             results["Leaderboard.get_group"] = hit_group
 
-            failed = False
-            for name, duration in results.items():
-                threshold = THRESHOLDS.get(name)
-                status = "PASS" if duration <= threshold else "FAIL"
-                logger.info(
-                    f"{name}: {duration:.4f}s (Threshold: {threshold}s) -> {status}",
-                )
-                if duration > threshold:
-                    failed = True
-
+            failed = _check_thresholds(results)
             if failed:
                 logger.error("Performance check failed!")
                 sys.exit(1)
