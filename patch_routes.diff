@@ -1,0 +1,18 @@
+--- pickaladder/admin/routes.py
++++ pickaladder/admin/routes.py
+@@ -21,6 +21,7 @@
+     url_for,
+ )
++from werkzeug.wrappers import Response
+
+ from pickaladder.constants.messages import ADMIN_MESSAGES, COMMON_MESSAGES
+ from pickaladder.core.pagination import get_page_info
+@@ -321,7 +322,7 @@
+
+ @bp.route("/generate_users", methods=["POST"])
+ @login_required(admin_required=True)
+-def generate_users() -> str:
++def generate_users() -> str | Response:
+     """Generate fake users for testing."""
+     if Faker is None:
+         flash("Faker is not installed. Cannot generate mock data.", "danger")

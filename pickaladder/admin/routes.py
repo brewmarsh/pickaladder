@@ -12,6 +12,7 @@ except ImportError:
     Faker = None  # type: ignore
 
 from firebase_admin import auth, firestore
+from werkzeug.wrappers.response import Response
 from flask import (
     flash,
     g,
@@ -20,6 +21,7 @@ from flask import (
     render_template,
     request,
     session,
+    Response,
     url_for,
 )
 
@@ -320,7 +322,7 @@ def verify_user(user_id: str) -> Response:
 
 @bp.route("/generate_users", methods=["POST"])
 @login_required(admin_required=True)
-def generate_users() -> str:
+def generate_users() -> str | Response:
     """Generate fake users for testing."""
     if Faker is None:
         flash("Faker is not installed. Cannot generate mock data.", "danger")
