@@ -1,0 +1,13 @@
+--- pickaladder/admin/routes.py
++++ pickaladder/admin/routes.py
+@@ -322,6 +322,10 @@
+ @login_required(admin_required=True)
+ def generate_users() -> str:
+     """Generate fake users for testing."""
++    if Faker is None:
++        flash("Faker is not installed. Cannot generate mock data.", "danger")
++        return redirect(url_for("admin.admin"))
++
+     db, fake, new_users = firestore.client(), Faker(), []
+     try:
+         for _ in range(10):

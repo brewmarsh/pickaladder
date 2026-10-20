@@ -1,0 +1,10 @@
+--- scripts/perf_check.py
++++ scripts/perf_check.py
+@@ -1,6 +1,7 @@
+ import logging
+ import sys
+ import time
++import os
+ import unittest.mock
+
+ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
