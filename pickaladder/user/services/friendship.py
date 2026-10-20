@@ -175,6 +175,8 @@ def send_friend_request(db: Client, user_id: str, friend_id: str) -> bool:
 
 def get_friends_page_data(db: Client, user_id: str) -> dict[str, Any]:
     """Fetch all data for the friends list page."""
+    import concurrent.futures
+
     f_ref = db.collection("users").document(user_id).collection("friends")
 
     def get_ids_by_filter(status: str, initiator: bool | None = None) -> list[str]:
@@ -183,8 +185,22 @@ def get_friends_page_data(db: Client, user_id: str) -> dict[str, Any]:
             q = q.where(filter=firestore.FieldFilter("initiator", "==", initiator))
         return [doc.id for doc in q.stream()]
 
+    # ⚡ Bolt Optimization:
+    # What: Execute independent database queries for friends and requests concurrently.
+    # Why: Resolves a sequential latency bottleneck where fetching the 3 disjoint subsets
+    #       (accepted, pending-received, pending-sent) blocked on sequential network streams.
+    # Impact: Expected to reduce total latency for fetching the friends page data by ~2-3x.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        friends_future = executor.submit(get_ids_by_filter, "accepted", None)
+        requests_future = executor.submit(get_ids_by_filter, "pending", False)
+        sent_requests_future = executor.submit(get_ids_by_filter, "pending", True)
+
+        friends_ids = friends_future.result()
+        requests_ids = requests_future.result()
+        sent_requests_ids = sent_requests_future.result()
+
     return {
-        "friends": _fetch_users_by_ids(db, get_ids_by_filter("accepted")),
-        "requests": _fetch_users_by_ids(db, get_ids_by_filter("pending", False)),
-        "sent_requests": _fetch_users_by_ids(db, get_ids_by_filter("pending", True)),
+        "friends": _fetch_users_by_ids(db, friends_ids),
+        "requests": _fetch_users_by_ids(db, requests_ids),
+        "sent_requests": _fetch_users_by_ids(db, sent_requests_ids),
     }

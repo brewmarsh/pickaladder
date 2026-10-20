@@ -41,3 +41,6 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+## 2025-02-21 - Parallelizing Independent Database Queries for Friendships
+**Learning:** In `pickaladder/user/services/friendship.py`, `get_friends_page_data` performed three sequential database streams to fetch accepted friends, received pending requests, and sent pending requests. This resulted in a sequential latency bottleneck.
+**Action:** When making multiple independent disjoint database queries for the same parent document (like friends vs received requests vs sent requests), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency significantly.
