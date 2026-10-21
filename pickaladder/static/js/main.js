@@ -266,6 +266,16 @@ function downloadCanvas(canvas, filename) {
     link.click();
 }
 
+/**
+ * Simple HTML escape utility
+ */
+function escapeHtml(text) {
+    if (!text) return text;
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function dismissToast(toast) {
     if (!toast || !toast.parentNode) return;
     toast.classList.add('fade-out');
@@ -301,7 +311,7 @@ function showToast(message, category = 'info', submissionId = null) {
                 </button>
             </div>
             <div class="toast-body">
-                ${message}
+                ${escapeHtml(message)}
                 ${progressBar}
             </div>
         </div>
@@ -333,7 +343,7 @@ function updateToast(toastId, message, category) {
         progressBar.remove();
     }
 
-    toastBody.innerHTML = message;
+    toastBody.textContent = message;
 
     // Add a retry button for failed submissions
     if (category === 'danger') {
