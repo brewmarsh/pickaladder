@@ -99,15 +99,6 @@ document.addEventListener('DOMContentLoaded', function() {
         container.scrollTop = container.scrollHeight;
     }
 
-    /**
-     * Simple HTML escape utility
-     */
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
     // Intercept form submission for "instant" feel
     const chatForm = container.closest('.card').querySelector('form');
     if (chatForm) {
