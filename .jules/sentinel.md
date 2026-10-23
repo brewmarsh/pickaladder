@@ -22,3 +22,8 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+
+## 2025-02-24 - Fix DOM-based XSS using document.createElement
+**Vulnerability:** Found two instances of DOM-based XSS where user-controlled strings (`member.name` in match recording and `p.username` in quick log) were being injected directly into the DOM as part of an HTML string assigned to `innerHTML`.
+**Learning:** Using `innerHTML` with template strings containing unescaped user data creates severe DOM XSS vulnerabilities. Rather than relying on custom sanitization functions (`escapeHtml`), a safer and more robust approach is to refactor the code to use native DOM APIs.
+**Prevention:** Avoid `innerHTML` for dynamic content creation. Use `document.createElement()`, assign attributes (e.g., `.className`, `.id`, `.htmlFor`), and use `.textContent` to inject user-provided data. This guarantees that the browser treats the input as text, not executable HTML.
