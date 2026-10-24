@@ -76,7 +76,7 @@ def view_match_summary(match_id: str) -> Response:
     return render_template("match/summary.html", **context)  # type: ignore
 
 
-def _populate_match_form_choices(  # noqa: PLR0913
+def _populate_match_form_choices(  # noqa: PLR0913, PLR0917
     db: firestore.Client,
     form: MatchForm,
     user_id: str,
@@ -114,7 +114,7 @@ def _populate_match_form_choices(  # noqa: PLR0913
     )
 
 
-def _handle_record_match_get(  # noqa: PLR0913
+def _handle_record_match_get(  # noqa: PLR0913, PLR0917
     db: firestore.Client,
     form: MatchForm,
     user_id: str,

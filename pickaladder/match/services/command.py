@@ -215,7 +215,7 @@ class MatchCommandService(BaseRepository):
         )
 
     @classmethod
-    def _record_match_batch(  # noqa: PLR0913
+    def _record_match_batch(  # noqa: PLR0913, PLR0917
         cls,
         db: Client,
         batch: WriteBatch,

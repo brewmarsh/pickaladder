@@ -9,7 +9,7 @@ class MatchStatsCalculator:
     """Utility class for match statistics calculations."""
 
     @staticmethod
-    def calculate_match_outcome(  # noqa: PLR0913
+    def calculate_match_outcome(  # noqa: PLR0913, PLR0917
         score1: int,
         score2: int,
         side1_ids: list[str],

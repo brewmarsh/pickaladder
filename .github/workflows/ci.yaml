@@ -122,7 +122,7 @@ jobs:
       - name: Static Type Checking with mypy
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv run --with mypy --with types-Flask --with types-requests --no-project python -m mypy --no-incremental pickaladder tests
+        run: uv run --with mypy --no-project python -m mypy --no-incremental pickaladder tests
 
   vulnerabilities:
     name: Vulnerabilities
