@@ -24,11 +24,11 @@ jobs:
     - name: Run ruff (Blocking Checks)
       env:
         UV_SYSTEM_PYTHON: 1
-      run: uv run --no-project ruff check --select UP,E,F,I .
+      run: uv run --with ruff --no-project ruff check --select UP,E,F,I .
     - name: Run ruff (Audit Checks)
       env:
         UV_SYSTEM_PYTHON: 1
-      run: uv run --no-project ruff check --select ANN,D,C90 .
+      run: uv run --with ruff --no-project ruff check --select ANN,D,C90 .
       continue-on-error: true
     - name: Run refurb
       env:
