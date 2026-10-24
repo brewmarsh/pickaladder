@@ -711,7 +711,7 @@ class GroupService:
         )
 
     @staticmethod
-    def invite_by_email(  # noqa: PLR0913, PLR0917
+    def invite_by_email(  # noqa: PLR0913
         db: Client,
         group_id: str,
         group_name: str,

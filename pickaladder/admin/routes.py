@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING
+import random
+from typing import TYPE_CHECKING, Any
 
 from faker import Faker
-from firebase_admin import firestore
+from firebase_admin import auth, firestore
 from flask import (
     flash,
     g,
@@ -18,12 +19,6 @@ from flask import (
     url_for,
 )
 
-from pickaladder.admin.utils import (
-    batch_generate_random_matches,
-    generate_fake_users,
-    lookup_user_by_identifier,
-    perform_user_deletion,
-)
 from pickaladder.auth.decorators import login_required
 from pickaladder.constants.messages import (
     ADMIN_MESSAGES,
@@ -31,8 +26,11 @@ from pickaladder.constants.messages import (
     COMMON_MESSAGES,
 )
 from pickaladder.extensions import cache
+from pickaladder.match.models import MatchSubmission
+from pickaladder.match.services import MatchService
 from pickaladder.services.feedback_service import FeedbackService
 from pickaladder.user import UserService
+from pickaladder.user.models import UserSession
 
 from . import bp
 from .services import AdminService
@@ -58,7 +56,7 @@ def dashboard() -> str | Response:
         flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
         return redirect(url_for("auth.login"))
 
-    db: firestore.Client = firestore.client()
+    db = firestore.client()
     from pickaladder.services.error_service import ErrorService
 
     growth_data = AdminService.get_growth_metrics(db)
@@ -93,7 +91,7 @@ def view_users() -> str | Response:
         flash(AUTH_MESSAGES["UNAUTHORIZED"], "danger")
         return redirect(url_for("auth.login"))
 
-    db: firestore.Client = firestore.client()
+    db = firestore.client()
     admin_stats = AdminService.get_admin_stats(db)
     setting_ref = db.collection("settings").document("enforceEmailVerification")
     email_verification_setting = setting_ref.get()
@@ -120,7 +118,7 @@ def merge_ghost() -> Response:
         flash(ADMIN_MESSAGES["MERGE_REQUIRED_FIELDS"], "danger")
         return redirect(url_for(".view_users"))
 
-    db: firestore.Client = firestore.client()
+    db = firestore.client()
     real_user_ref = db.collection("users").document(target_user_id)
     try:
         if UserService.merge_ghost_user(db, real_user_ref, ghost_email):
@@ -137,7 +135,7 @@ def merge_ghost() -> Response:
 @login_required(admin_required=True)
 def announcement() -> Response:
     """Update the global system announcement."""
-    db: firestore.Client = firestore.client()
+    db = firestore.client()
     try:
         announcement_text = request.form.get("announcement_text")
         is_active = request.form.get("is_active") == "on"
@@ -168,7 +166,7 @@ def announcement() -> Response:
 @login_required(admin_required=True)
 def toggle_email_verification() -> Response:
     """Toggle the global setting for requiring email verification."""
-    db: firestore.Client = firestore.client()
+    db = firestore.client()
     try:
         new_val = AdminService.toggle_setting(db, "enforceEmailVerification")
         status = "enabled" if new_val else "disabled"
@@ -185,7 +183,7 @@ def toggle_email_verification() -> Response:
 @login_required(admin_required=True)
 def admin_matches() -> str:
     """Display a list of all matches."""
-    db: firestore.Client = firestore.client()
+    db = firestore.client()
     try:
         matches = (
             db.collection("matches")
@@ -202,7 +200,7 @@ def admin_matches() -> str:
 @login_required(admin_required=True)
 def admin_delete_match(match_id: str) -> Response:
     """Delete a match document from Firestore."""
-    db: firestore.Client = firestore.client()
+    db = firestore.client()
     try:
         db.collection("matches").document(match_id).delete()
         AdminService.log_action(db, g.user.uid, match_id, "delete_match")
@@ -222,10 +220,37 @@ def friend_graph_data() -> Response | tuple[Response, int]:
         return jsonify({"error": str(e)}), 500
 
 
+def _lookup_user_by_identifier(
+    db: firestore.Client,
+    identifier: str,
+) -> tuple[str | None, str | None]:
+    """Look up a user UID and email by their identifier (ID or Email)."""
+    user_doc = db.collection("users").document(identifier).get()
+    if user_doc.exists:
+        return user_doc.id, user_doc.to_dict().get("email")
+
+    users = list(
+        db.collection("users")
+        .where(filter=firestore.FieldFilter("email", "==", identifier))
+        .limit(1)
+        .stream(),
+    )
+    if users:
+        return users[0].id, users[0].to_dict().get("email")
+    return None, None
 
 
-
-
+def _perform_user_deletion(db: firestore.Client, uid: str, email: str | None) -> None:
+    """Orchestrate the deletion of a user and flash results."""
+    try:
+        AdminService.delete_user(db, uid)
+        AdminService.log_action(db, g.user.uid, uid, "delete_user", {"email": email})
+        flash(
+            ADMIN_MESSAGES["USER_DELETED_COUNT"].format(identifier=email or uid),
+            "success",
+        )
+    except Exception as e:
+        flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
 
 
 @bp.route("/delete_user", methods=["POST"])
@@ -237,10 +262,10 @@ def admin_delete_user() -> Response:
         flash(ADMIN_MESSAGES["USER_ID_EMAIL_REQUIRED"], "danger")
         return redirect(url_for(".view_users"))
 
-    db: firestore.Client = firestore.client()
-    uid, email = lookup_user_by_identifier(db, user_identifier)
+    db = firestore.client()
+    uid, email = _lookup_user_by_identifier(db, user_identifier)
     if uid:
-        perform_user_deletion(db, uid, email)
+        _perform_user_deletion(db, uid, email)
     else:
         flash(
             ADMIN_MESSAGES["USER_NOT_FOUND"].format(identifier=user_identifier),
@@ -254,7 +279,7 @@ def admin_delete_user() -> Response:
 def delete_user(user_id: str) -> Response:
     """Delete a user from Firebase Auth and Firestore."""
     try:
-        db: firestore.Client = firestore.client()
+        db = firestore.client()
         AdminService.delete_user(db, user_id)
         AdminService.log_action(db, g.user.uid, user_id, "delete_user")
         flash(ADMIN_MESSAGES["USER_DELETE_SUCCESS"], "success")
@@ -268,7 +293,7 @@ def delete_user(user_id: str) -> Response:
 def promote_user(user_id: str) -> Response:
     """Promote a user to admin status in Firestore."""
     try:
-        db: firestore.Client = firestore.client()
+        db = firestore.client()
         name = AdminService.promote_user(db, user_id)
         AdminService.log_action(db, g.user.uid, user_id, "promote_user")
         flash(ADMIN_MESSAGES["ADMIN_PROMOTION"].format(name=name), "success")
@@ -295,7 +320,28 @@ def generate_users() -> str:
     """Generate fake users for testing."""
     db, fake, new_users = firestore.client(), Faker(), []
     try:
-        new_users = generate_fake_users(db, fake)
+        for _ in range(10):
+            email, password = (
+                fake.email(),
+                fake.password(
+                    length=12,
+                    special_chars=True,
+                    digits=True,
+                    upper_case=True,
+                    lower_case=True,
+                ),
+            )
+            user_record = auth.create_user(email=email, password=password)
+            user_doc = {
+                "username": fake.user_name(),
+                "email": email,
+                "name": fake.name(),
+                "duprRating": round(random.uniform(2.5, 7.0), 2),  # nosec B311
+                "isAdmin": False,
+                "createdAt": firestore.SERVER_TIMESTAMP,
+            }
+            db.collection("users").document(user_record.uid).set(user_doc)
+            new_users.append({"uid": user_record.uid, **user_doc})
         flash(
             ADMIN_MESSAGES["USERS_GEN_SUCCESS"].format(count=len(new_users)),
             "success",
@@ -305,20 +351,49 @@ def generate_users() -> str:
     return render_template("generated_users.html", users=new_users)
 
 
+def _generate_single_random_match(db: firestore.Client, users: list[Any]) -> bool:
+    """Generate a single random match between users."""
+    p1, p2 = random.sample(users, 2)  # nosec B311
+    s1, s2 = 11, random.randint(0, 9)  # nosec B311
+    if random.choice([True, False]):  # nosec B311
+        s1, s2 = s2, s1
 
+    submission = MatchSubmission(
+        player_1_id=p1.id,
+        player_2_id=p2.id,
+        score_p1=s1,
+        score_p2=s2,
+        match_type="singles",
+        match_date=datetime.datetime.now(datetime.timezone.utc),
+        created_by=p1.id,
+    )
+    try:
+        MatchService.record_match(db, submission, UserSession({"uid": p1.id}))
+        return True
+    except Exception:
+        return False
+
+
+def _batch_generate_random_matches(
+    db: firestore.Client,
+    users: list[Any],
+    count: int = 10,
+) -> int:
+    """Generate multiple random matches and return success count."""
+    return sum(1 for _ in range(count) if _generate_single_random_match(db, users))
 
 
 @bp.route("/generate_matches", methods=["POST"])
 @login_required(admin_required=True)
 def generate_matches() -> Response:
     """Generate random matches between existing users."""
-    db: firestore.Client = firestore.client()
+    db = firestore.client()
     try:
         users = list(db.collection("users").limit(20).stream())
         if len(users) < MIN_USERS_FOR_MATCH_GENERATION:
             flash(ADMIN_MESSAGES["NOT_ENOUGH_USERS_MATCHES"], "warning")
         else:
-            count = batch_generate_random_matches(db, users)
+            count = _batch_generate_random_matches(db, users)
             flash(ADMIN_MESSAGES["RANDOM_MATCHES_GEN"].format(count=count), "success")
     except Exception as e:
         flash(COMMON_MESSAGES["GENERIC_ERROR"].format(error=e), "danger")
@@ -329,7 +404,7 @@ def generate_matches() -> Response:
 @login_required(admin_required=True)
 def merge_players() -> str | Response:
     """Merge two player accounts (Source -> Target)."""
-    db: firestore.Client = firestore.client()
+    db = firestore.client()
     if request.method == "POST":
         sid, tid = request.form.get("source_id"), request.form.get("target_id")
         if not sid or not tid or sid == tid:
@@ -354,7 +429,7 @@ def merge_players() -> str | Response:
 @login_required(admin_required=True)
 def view_feedback() -> str:
     """Render the feedback management page."""
-    db: firestore.Client = firestore.client()
+    db = firestore.client()
     feedback_list = FeedbackService.get_all_feedback(db)
 
     # Resolve user names
@@ -382,7 +457,7 @@ def update_feedback_status() -> Response:
         flash("Missing feedback ID or status", "danger")
         return redirect(url_for(".view_feedback"))
 
-    db: firestore.Client = firestore.client()
+    db = firestore.client()
     if FeedbackService.update_feedback_status(db, feedback_id, status, g.user.uid):
         AdminService.log_action(
             db,

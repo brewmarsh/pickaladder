@@ -129,7 +129,7 @@ class MatchRoutesFirebaseTestCase(unittest.TestCase):
     ) -> None:
         """Test recording a new match."""
 
-        def get_candidates_side_effect(  # noqa: PLR0913, PLR0917
+        def get_candidates_side_effect(  # noqa: PLR0913
             db,
             user_id,
             group_id,
