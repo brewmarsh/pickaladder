@@ -16,3 +16,6 @@
 ## 2026-07-24 - ARIA labels on Admin form inputs
 **Learning:** Found that form inputs within administrative panels (like the "Merge Ghost" or "Delete User" forms in `admin.html`) often lacked proper `<label>` elements and `aria-label` attributes, relying entirely on visual placeholders. Since these tools are destructive or highly privileged, accessibility and clarity are paramount.
 **Action:** Added explicit `aria-label` attributes to the inputs for "Real User ID", "Ghost Email", and "User ID or Email" to provide essential context for screen reader users and prevent reliance on transient placeholder text.
+## 2026-07-31 - Missing Flashes Container Error Handling
+**Learning:** Client-side form submissions that attempt to append error messages to a `.flashes` container will result in a `TypeError: Cannot read properties of null (reading 'innerHTML')` if the `<div class="flashes"></div>` container is not explicitly defined in the template.
+**Action:** Always ensure that pages with JavaScript error handling that targets a `.flashes` class have the corresponding container in the DOM, even if they don't natively render server-side Jinja flashes.
