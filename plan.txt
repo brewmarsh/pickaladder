@@ -1,0 +1,5 @@
+1. We need to prevent exception details from being interpolated into flash messages, which leaks internal error messages or stack traces to the user.
+2. The user requested: "Fix ONE small security issue or add ONE security enhancement that makes the application more secure."
+3. By looking at `pickaladder/constants/messages.py`, many messages use `.format(error=...)`. E.g., `"UNEXPECTED_ERROR": "An unexpected error occurred: {error}"`.
+4. We need to remove `{error}` from these constants to prevent exposing exception messages directly to the users via flash messages.
+5. In `pickaladder/constants/messages.py`, I will modify the values to remove `{error}`.
