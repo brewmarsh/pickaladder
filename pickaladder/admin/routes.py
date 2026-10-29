@@ -49,7 +49,7 @@ MIN_USERS_FOR_MATCH_GENERATION = 2
 @login_required(admin_required=True)
 def admin() -> str | Response:
     """Render the main admin users list (legacy /)."""
-    return redirect(url_for(".dashboard"))
+    return redirect(url_for("admin.dashboard"))
 
 
 @bp.route("/dashboard")

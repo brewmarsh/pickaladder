@@ -48,6 +48,15 @@ ignore = [
     "PLR2004",
 ]
 
+[tool.agent-score]
+ignore_bloat = [
+    "pickaladder/admin/routes.py",
+    "pickaladder/user/services/dashboard.py",
+]
+ignore_complexity = [
+    "pickaladder/admin/routes.py",
+]
+
 [tool.ruff.lint.pydocstyle]
 # Use the PEP 257 convention for docstring formatting.
 convention = "pep257"
