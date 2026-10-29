@@ -6,10 +6,7 @@ import datetime
 import random
 from typing import TYPE_CHECKING, Any
 
-try:
-    from faker import Faker
-except ImportError:
-    Faker = None  # type: ignore
+from faker import Faker
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -349,8 +346,8 @@ def generate_users() -> str:
             ADMIN_MESSAGES["USERS_GEN_SUCCESS"].format(count=len(new_users)),
             "success",
         )
-    except Exception:
-        flash(ADMIN_MESSAGES["USERS_GEN_ERROR"], "danger")
+    except Exception as e:
+        flash(ADMIN_MESSAGES["USERS_GEN_ERROR"].format(error=e), "danger")
     return render_template("generated_users.html", users=new_users)
 
 
@@ -416,8 +413,8 @@ def merge_players() -> str | Response:
             try:
                 UserService.merge_users(db, sid, tid)
                 flash(ADMIN_MESSAGES["PLAYERS_MERGE_SUCCESS"], "success")
-            except Exception:
-                flash(ADMIN_MESSAGES["PLAYERS_MERGE_ERROR"], "error")
+            except Exception as e:
+                flash(ADMIN_MESSAGES["PLAYERS_MERGE_ERROR"].format(error=e), "error")
         return redirect(url_for(".merge_players"))
 
     all_users, _ = UserService.get_all_users(db, public_only=False)
