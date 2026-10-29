@@ -41,12 +41,12 @@
                         <div class="d-flex justify-content-end gap-2 flex-wrap mt-2 mt-md-0">
                             <form action="{{ url_for('user.accept_request', requester_id=request.id) }}" method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-primary btn-sm flex-shrink-0">Accept</button>
+                                <button type="submit" class="btn btn-primary btn-sm flex-shrink-0" aria-label="Accept friend request from {{ request | smart_display_name }}">Accept</button>
                             </form>
                             <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-secondary btn-sm flex-shrink-0"
-                                    onclick="return confirm('Are you sure you want to decline this friend request?');">Decline</button>
+                                    onclick="return confirm('Are you sure you want to decline this friend request?');" aria-label="Decline friend request from {{ request | smart_display_name }}">Decline</button>
                             </form>
                         </div>
                     </td>
@@ -106,7 +106,7 @@
                         <form action="{{ url_for('user.cancel_request', target_id=request.id) }}" method="post">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('Are you sure you want to cancel this friend request?');">Cancel</button>
+                                onclick="return confirm('Are you sure you want to cancel this friend request?');" aria-label="Cancel friend request to {{ request | smart_display_name }}">Cancel</button>
                         </form>
                     </td>
                 </tr>
@@ -288,7 +288,7 @@
                         <form action="{{ url_for('group.join_group', group_id=group.id) }}" method="post"
                             style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn">Join</button>
+                            <button type="submit" class="btn" aria-label="Join {{ group.name }}">Join</button>
                         </form>
                     </td>
                 </tr>
