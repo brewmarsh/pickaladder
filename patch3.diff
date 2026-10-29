@@ -1,0 +1,35 @@
+<<<<<<< SEARCH
+certifi==2026.6.17
+=======
+certifi==2026.10.19
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+dnspython==2.8.0
+=======
+dnspython==2.9.0
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+urllib3==2.7.0
+=======
+urllib3==2.8.0
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+pillow==12.3.0
+=======
+pillow==13.0.0
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+pyjwt==2.13.0
+=======
+pyjwt==2.15.0
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+werkzeug==3.1.8
+=======
+werkzeug==3.1.9
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+msgpack==1.2.1
+=======
+msgpack==1.2.3
+>>>>>>> REPLACE
