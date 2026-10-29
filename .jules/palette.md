@@ -16,3 +16,6 @@
 ## 2026-07-24 - ARIA labels on Admin form inputs
 **Learning:** Found that form inputs within administrative panels (like the "Merge Ghost" or "Delete User" forms in `admin.html`) often lacked proper `<label>` elements and `aria-label` attributes, relying entirely on visual placeholders. Since these tools are destructive or highly privileged, accessibility and clarity are paramount.
 **Action:** Added explicit `aria-label` attributes to the inputs for "Real User ID", "Ghost Email", and "User ID or Email" to provide essential context for screen reader users and prevent reliance on transient placeholder text.
+## 2026-07-28 - ARIA Labels on Repeated Action Buttons in Lists
+**Learning:** Tables and lists with repeated actions (like "Accept" or "Decline" friend requests) present an accessibility challenge. Without context, a screen reader user simply hears "Accept button, Decline button, Accept button" repeatedly when tabbing through the list.
+**Action:** When adding identical action buttons within an iterated list or table row (such as user management rosters, friend requests, or team lists), always add an `aria-label` that includes the target context (e.g., `aria-label="Accept friend request from {{ user.name }}"`) to disambiguate the action for screen reader users.
