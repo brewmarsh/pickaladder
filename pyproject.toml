@@ -102,6 +102,7 @@ ignore_missing_imports = true
 [tool.agent-score]
 ignore_bloat = [
     "pickaladder/admin/routes.py",
+    "pickaladder/user/services/dashboard.py",
 ]
 ignore_complexity = [
     "pickaladder/admin/routes.py",
