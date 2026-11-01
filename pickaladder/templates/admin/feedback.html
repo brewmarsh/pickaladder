@@ -56,7 +56,7 @@
                                 <form action="{{ url_for('admin.update_feedback_status') }}" method="post" class="form-inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="feedback_id" value="{{ item.id }}">
-                                    <select name="status" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                                    <select name="status" class="form-control form-control-sm mr-2" aria-label="Status" onchange="this.form.submit()">
                                         <option value="New" {% if item.status == 'New' %}selected{% endif %}>New</option>
                                         <option value="In Progress" {% if item.status == 'In Progress' %}selected{% endif %}>In Progress</option>
                                         <option value="Resolved" {% if item.status == 'Resolved' %}selected{% endif %}>Resolved</option>
