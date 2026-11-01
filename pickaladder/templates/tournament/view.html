@@ -350,7 +350,7 @@
                 <form action="{{ url_for('tournament.invite_group', tournament_id=tournament.id) }}" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-group">
-                        <select name="group_id" id="group_id" class="form-input" required>
+                        <select name="group_id" id="group_id" class="form-input" aria-label="Select a group" required>
                             <option value="" disabled selected>Select a group</option>
                             {% for group in user_groups %}
                                 <option value="{{ group.id }}">{{ group.name }}</option>
