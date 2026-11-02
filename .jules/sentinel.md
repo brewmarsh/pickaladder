@@ -22,3 +22,8 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+
+## 2025-02-24 - [Fix DOM-based Open Redirect in Login]
+**Vulnerability:** A DOM-based Open Redirect vulnerability was found in `pickaladder/templates/login.html` where `nextUrl.startsWith('/')` incorrectly allowed scheme-relative external URLs starting with `//`.
+**Learning:** Checking if a redirect URL starts with a single slash (`/`) is insufficient to prevent open redirects because URLs starting with two slashes (`//`) are treated as absolute URLs by browsers (e.g., `//malicious.com`).
+**Prevention:** To prevent DOM-based Open Redirect vulnerabilities when validating relative redirect URLs, check that they start with a single slash but explicitly reject URLs that start with a double slash (`&& !nextUrl.startsWith('//')`).
