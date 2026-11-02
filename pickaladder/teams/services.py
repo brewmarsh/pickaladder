@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, cast
@@ -127,8 +128,12 @@ class TeamService:
             return None
 
         # Decomposed calls with efficient data passing
-        members = TeamService._fetch_team_members(db, team_data)
-        recent_matches = TeamService._fetch_team_matches(db, team_id)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            members_future = executor.submit(TeamService._fetch_team_members, db=db, team_data=team_data)
+            matches_future = executor.submit(TeamService._fetch_team_matches, db=db, team_id=team_id)
+            members = members_future.result()
+            recent_matches = matches_future.result()
+
         stats = TeamService._calculate_team_stats(team_id, team_data, recent_matches)
 
         return {
@@ -211,7 +216,12 @@ class TeamService:
         q1 = matches_ref.where(filter=firestore.FieldFilter("team1Id", "==", team_id))
         q2 = matches_ref.where(filter=firestore.FieldFilter("team2Id", "==", team_id))
 
-        all_docs = {d.id: d for d in list(q1.stream()) + list(q2.stream())}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            q1_future = executor.submit(lambda q: list(q.stream()), q1)
+            q2_future = executor.submit(lambda q: list(q.stream()), q2)
+            all_docs_list = q1_future.result() + q2_future.result()
+
+        all_docs = {d.id: d for d in all_docs_list}
         sorted_docs = sorted(
             all_docs.values(),
             key=lambda d: (d.to_dict() or {}).get("matchDate", datetime.min),
