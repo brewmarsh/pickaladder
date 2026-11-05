@@ -131,12 +131,26 @@ class TournamentBase:
     @staticmethod
     def list_tournaments(user_uid: str, db: Client | None = None) -> list[Tournament]:
         """Fetch all tournaments for a user."""
+        import concurrent.futures
+
         from pickaladder.tournament import services as ts
 
         db = db or ts.firestore.client()
         u_ref = db.collection("users").document(user_uid)
-        owned = TournamentBase._fetch_owned_tournaments(db, u_ref)
-        parts = TournamentBase._fetch_participating_tournaments(db, user_uid)
+
+        # ⚡ Bolt Optimization:
+        # What: Execute independent database queries for owned and participating tournaments concurrently.
+        # Why: Resolves a sequential latency bottleneck where fetching participating tournaments waited for owned ones.
+        # Impact: Expected to reduce total latency for fetching user tournaments by ~2x.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            owned_future = executor.submit(
+                TournamentBase._fetch_owned_tournaments, db, u_ref
+            )
+            parts_future = executor.submit(
+                TournamentBase._fetch_participating_tournaments, db, user_uid
+            )
+            owned = owned_future.result()
+            parts = parts_future.result()
 
         return TournamentBase._merge_tournament_results(owned, parts)
 
