@@ -41,3 +41,6 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+## 2025-02-21 - Resolving N+1 Query in `admin/routes.py`
+**Learning:** Sequential `.get()` queries (via `UserService.get_user_by_id`) for resolving multiple user names in lists (like audit logs and feedback) creates a severe N+1 latency bottleneck.
+**Action:** Always batch fetch user documents using `db.get_all(refs)` when resolving related entity names in list views to minimize network round-trips.
