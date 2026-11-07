@@ -22,3 +22,8 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+
+## 2025-02-25 - [Fix DOM XSS in Toast Notifications]
+**Vulnerability:** DOM-based Cross-Site Scripting (XSS) in `showToast` and `updateToast` functions in `main.js` due to unsafe use of `insertAdjacentHTML` and `innerHTML` with user-controlled input (`message`).
+**Learning:** Directly injecting unescaped strings into the DOM via `innerHTML` or template literals is a security risk.
+**Prevention:** Reconstruct HTML safely using `document.createElement()` and `.textContent` assignments, or use secure templating mechanisms that automatically escape HTML entities.
