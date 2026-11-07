@@ -6,11 +6,7 @@ import datetime
 import random
 from typing import TYPE_CHECKING, Any
 
-try:
-    from faker import Faker
-except ImportError:
-    Faker = None  # type: ignore
-
+from faker import Faker
 from firebase_admin import auth, firestore
 from flask import (
     flash,
