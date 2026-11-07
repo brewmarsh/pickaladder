@@ -41,3 +41,6 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+## 2024-11-07 - [List View Name Resolution N+1 Bottleneck]
+**Learning:** Resolving user names sequentially in Python loops using `.get()` or `UserService.get_user_by_id` causes severe N+1 latency bottlenecks when iterating over lists like feedback logs.
+**Action:** Always extract unique user IDs, construct document references, and use `db.get_all(refs)` to batch fetch the related entities before mapping them to the list items.
