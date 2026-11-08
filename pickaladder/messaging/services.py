@@ -85,9 +85,22 @@ class MessagingService:
     def get_inbox(db: Client, user_id: str) -> list[dict[str, Any]]:
         """Retrieves the user's conversation list with enriched participant names."""
         from pickaladder.group.repository import GroupRepository
-        from pickaladder.user.services import UserService
 
         conversations = MessagingRepository.get_user_conversations(db, user_id)
+
+        # ⚡ Bolt: Collect all other participants for batch fetch
+        other_uids = list({
+            next((p for p in conv["participants"] if p != user_id), user_id)
+            for conv in conversations
+            if conv.get("type") != "group_announcement" and conv.get("participants")
+        })
+
+        user_lookups = {}
+        if other_uids:
+            user_refs = [db.collection("users").document(uid) for uid in other_uids]
+            for doc in db.get_all(user_refs):
+                if doc.exists:
+                    user_lookups[doc.id] = doc.to_dict()
 
         for conv in conversations:
             if conv.get("type") == "group_announcement":
@@ -103,7 +116,7 @@ class MessagingService:
                     (p for p in conv["participants"] if p != user_id),
                     user_id,
                 )
-                other_user = UserService.get_user_by_id(db, other_uid)
+                other_user = user_lookups.get(other_uid)
                 conv["display_name"] = (
                     other_user.get("username", "Unknown User")
                     if other_user
