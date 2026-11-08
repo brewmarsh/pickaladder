@@ -22,3 +22,8 @@
 **Vulnerability:** The `/send/<conversation_id>` route (an action route) lacked the authorization check that was present on the `/chat/<conversation_id>` route (the view route). A user could send a POST request with any `conversation_id` to send messages to conversations they were not a participant in.
 **Learning:** Developers often remember to add authorization checks to view routes (because they fetch and display data) but forget to add the same checks to corresponding action routes (like sending a message or updating an object), assuming the UI flow protects the action.
 **Prevention:** Always verify ownership or membership (authorization) on *both* view and action routes that use direct object references (like IDs). Do not rely on UI logic or hidden fields to protect endpoints.
+
+## 2026-11-08 - Fix DOM XSS in Quick Log Player Selection
+**Vulnerability:** A DOM-based XSS vulnerability was identified in `pickaladder/templates/group/quick_log.html`. The client-side JavaScript (`setupStep2` function) dynamically built HTML elements by interpolating the unescaped `p.username` directly into an `innerHTML` assignment: `card.innerHTML = \`<div class="player-name">${p.username}</div>\`;`.
+**Learning:** Using `innerHTML` with unsanitized user-generated data (like usernames) creates a serious DOM XSS vulnerability, allowing malicious scripts embedded in the username to be executed when the user's card is rendered in the Quick Log interface.
+**Prevention:** Avoid `innerHTML` for displaying user data. Always prefer safe DOM manipulation methods such as `document.createElement('div')` followed by setting `.textContent`, which inherently escapes and safely treats the input as text rather than executable HTML.

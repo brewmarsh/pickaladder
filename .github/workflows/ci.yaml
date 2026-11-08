@@ -9,7 +9,7 @@ on:
 jobs:
   check-conflicts:
     name: Check for Merge Conflicts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -31,7 +31,7 @@ jobs:
   lint:
     name: Lint
     needs: check-conflicts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -46,7 +46,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt mock-firestore coverage --system
+        run: uv pip install -r requirements.txt mock-firestore coverage ruff mypy pip-audit refurb faker bandit --system
       - name: Lint with ruff
         env:
           UV_SYSTEM_PYTHON: 1
@@ -55,7 +55,7 @@ jobs:
   format:
     name: Format
     needs: check-conflicts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -70,7 +70,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt mock-firestore coverage --system
+        run: uv pip install -r requirements.txt mock-firestore coverage ruff mypy pip-audit refurb faker bandit --system
       - name: Format with ruff
         env:
           UV_SYSTEM_PYTHON: 1
@@ -79,7 +79,7 @@ jobs:
   security:
     name: Security
     needs: check-conflicts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -94,7 +94,7 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt mock-firestore coverage --system
+        run: uv pip install -r requirements.txt mock-firestore coverage ruff mypy pip-audit refurb faker bandit --system
       - name: Security Analysis with Bandit
         env:
           UV_SYSTEM_PYTHON: 1
@@ -103,7 +103,7 @@ jobs:
   typing:
     name: Typing
     needs: check-conflicts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -118,16 +118,16 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt mock-firestore coverage --system
+        run: uv pip install -r requirements.txt mock-firestore coverage ruff mypy pip-audit refurb faker bandit --system
       - name: Static Type Checking with mypy
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv run --no-project python -m mypy --no-incremental pickaladder tests
+        run: uv run --no-project mypy --no-incremental pickaladder tests
 
   vulnerabilities:
     name: Vulnerabilities
     needs: check-conflicts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -144,7 +144,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv pip install --upgrade pip --system
-          uv pip install -r requirements.txt mock-firestore coverage pip-audit --system
+          uv pip install -r requirements.txt mock-firestore coverage pip-audit ruff mypy refurb faker bandit --system
       - name: Scan for vulnerabilities
         env:
           UV_SYSTEM_PYTHON: 1
@@ -153,7 +153,7 @@ jobs:
   refurb:
     name: Refurb
     needs: check-conflicts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -178,7 +178,7 @@ jobs:
   performance:
     name: Performance Check
     needs: check-conflicts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -193,16 +193,16 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: uv pip install -r requirements.txt mock-firestore coverage --system
+        run: uv pip install -r requirements.txt mock-firestore coverage ruff mypy pip-audit refurb faker bandit --system
       - name: Run performance benchmark
         env:
           PYTHONPATH: .
-        run: python scripts/perf_check.py
+        run: uv run --with faker scripts/perf_check.py
 
   test:
     name: Quality Gate (Tests)
     needs: check-conflicts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     services:
       postgres:
