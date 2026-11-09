@@ -41,3 +41,7 @@
 ## 2025-02-21 - Parallelizing Independent Database Queries for Complements
 **Learning:** In `pickaladder/match/services/challenge_service.py`, `get_user_challenges` performed two sequential `.get()` queries for sent challenges (`challenger_id == user_id`) and received challenges (`challenged_id == user_id`). This resulted in a sequential latency bottleneck.
 **Action:** When making multiple independent disjoint database queries (like sent vs received), use `concurrent.futures.ThreadPoolExecutor` to execute them concurrently, reducing total latency by ~2x.
+
+## 2024-05-24 - Batch Fetching User References in Loops
+**Learning:** In `pickaladder/admin/routes.py`, `UserService.get_user_by_id()` was being called sequentially inside loops (for audit logs and feedback items) to resolve user display names. This created a severe N+1 query bottleneck because each iteration blocked on a separate Firestore network request.
+**Action:** Always collect distinct entity IDs into a list of document references and perform a single batch fetch using `db.get_all(refs)`. Map the results to a dictionary (e.g., `{doc.id: ... for doc in db.get_all(refs)}`) for O(1) lookup during the subsequent formatting loop, drastically reducing database round-trips from O(N) to O(1).

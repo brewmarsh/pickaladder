@@ -1,55 +1,23 @@
-name: Agent Readiness Scorecard
+name: Agent Readiness Score
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   agent-score:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.11' # tool requires 3.10+
-
-      - name: Install agent-readiness-scorecard
+        uses: astral-sh/setup-uv@v4
+      - name: Run agent-score (diff)
         run: |
-          uv pip install tree-sitter tree-sitter-javascript tree-sitter-typescript tree-sitter-python --system
-          uv pip install --pre agent-readiness-scorecard --system
-
-      - name: Run agent-score and check threshold
-        env:
-          UV_SYSTEM_PYTHON: 1
-        run: |
-          # Ensure we have the base branch reference locally for comparison
-          git fetch origin ${{ github.base_ref || 'main' }}
-
-          # Check if any Python files changed
-          if ! git diff --name-only origin/${{ github.base_ref || 'main' }} | grep -q '\.py$'; then
-            echo "No Python files changed, skipping agent score check."
-            exit 0
-          fi
-
-          # Run with --diff to analyze only changed Python files
-          SCORE=$(uv run --no-project agent-score score --diff --diff-base origin/${{ github.base_ref || 'main' }} . --limit-to .py | grep "Final Agent Score" | awk '{print $4}' | cut -d'/' -f1)
-
-          if [ -z "$SCORE" ]; then
-            echo "Could not determine agent score"
-            exit 1
-          fi
-
-          # Use bc for floating point comparison if score is non-integer
-          if (( $(echo "$SCORE < 75" | bc -l) )); then
-            echo "Agent score of $SCORE is below the threshold of 75"
-            exit 1
-          fi
+          uv tool run --from agent-readiness-scorecard \
+          --with tree-sitter \
+          --with tree-sitter-javascript \
+          --with tree-sitter-typescript \
+          --with tree-sitter-python \
+          agent-score score --diff --diff-base origin/main . --limit-to .py

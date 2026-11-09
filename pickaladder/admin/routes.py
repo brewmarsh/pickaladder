@@ -4,9 +4,16 @@ from __future__ import annotations
 
 import datetime
 import random
+import typing
 from typing import TYPE_CHECKING, Any
 
-from faker import Faker
+if typing.TYPE_CHECKING:
+    from faker import Faker
+else:
+    try:
+        from faker import Faker
+    except ModuleNotFoundError:
+        Faker = None
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -67,10 +74,17 @@ def dashboard() -> str | Response:
     admin_ids = list({log["admin_id"] for log in audit_logs if log.get("admin_id")})
     admin_names = {}
     if admin_ids:
-        # Simple fetch, in production use batch get
-        for aid in admin_ids:
-            u = UserService.get_user_by_id(db, aid)
-            admin_names[aid] = UserService.smart_display_name(u) if u else aid
+        # BOLT OPTIMIZATION: Resolving N+1 Query in admin audit logs
+        # Replaced sequential db.get() calls with a single db.get_all(refs) batch fetch.
+        # This reduces database network round-trips from O(N) to O(1), significantly improving
+        # dashboard load time when there are multiple distinct admin interactions to resolve.
+        refs = [db.collection("users").document(aid) for aid in admin_ids]
+        admin_names = {
+            doc.id: UserService.smart_display_name(doc.to_dict() or {})
+            if doc.exists
+            else doc.id
+            for doc in db.get_all(refs)
+        }
 
     for log in audit_logs:
         log["admin_name"] = admin_names.get(log.get("admin_id"))
@@ -433,13 +447,27 @@ def view_feedback() -> str:
     feedback_list = FeedbackService.get_all_feedback(db)
 
     # Resolve user names
+    user_ids = list(
+        {item.get("userId") for item in feedback_list if item.get("userId")}
+    )
+    user_names = {}
+    if user_ids:
+        # BOLT OPTIMIZATION: Resolving N+1 Query in feedback list
+        # Replaced sequential db.get() calls with a single db.get_all(refs) batch fetch.
+        # This reduces database network round-trips from O(N) to O(1), scaling perfectly
+        # regardless of the number of feedback items displayed.
+        refs = [db.collection("users").document(uid) for uid in user_ids]
+        user_names = {
+            doc.id: UserService.smart_display_name(doc.to_dict() or {})
+            if doc.exists
+            else "Unknown User"
+            for doc in db.get_all(refs)
+        }
+
     for item in feedback_list:
         user_id = item.get("userId")
         if user_id:
-            user = UserService.get_user_by_id(db, user_id)
-            item["user_name"] = (
-                UserService.smart_display_name(user) if user else "Unknown User"
-            )
+            item["user_name"] = user_names.get(user_id, "Unknown User")
         else:
             item["user_name"] = "Anonymous"
 
