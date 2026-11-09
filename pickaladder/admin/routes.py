@@ -4,9 +4,16 @@ from __future__ import annotations
 
 import datetime
 import random
+import typing
 from typing import TYPE_CHECKING, Any
 
-from faker import Faker
+if typing.TYPE_CHECKING:
+    from faker import Faker
+else:
+    try:
+        from faker import Faker
+    except ModuleNotFoundError:
+        Faker = None
 from firebase_admin import auth, firestore
 from flask import (
     flash,
@@ -73,7 +80,9 @@ def dashboard() -> str | Response:
         # dashboard load time when there are multiple distinct admin interactions to resolve.
         refs = [db.collection("users").document(aid) for aid in admin_ids]
         admin_names = {
-            doc.id: UserService.smart_display_name(doc.to_dict() or {}) if doc.exists else doc.id
+            doc.id: UserService.smart_display_name(doc.to_dict() or {})
+            if doc.exists
+            else doc.id
             for doc in db.get_all(refs)
         }
 
@@ -438,7 +447,9 @@ def view_feedback() -> str:
     feedback_list = FeedbackService.get_all_feedback(db)
 
     # Resolve user names
-    user_ids = list({item.get("userId") for item in feedback_list if item.get("userId")})
+    user_ids = list(
+        {item.get("userId") for item in feedback_list if item.get("userId")}
+    )
     user_names = {}
     if user_ids:
         # BOLT OPTIMIZATION: Resolving N+1 Query in feedback list
@@ -447,7 +458,9 @@ def view_feedback() -> str:
         # regardless of the number of feedback items displayed.
         refs = [db.collection("users").document(uid) for uid in user_ids]
         user_names = {
-            doc.id: UserService.smart_display_name(doc.to_dict() or {}) if doc.exists else "Unknown User"
+            doc.id: UserService.smart_display_name(doc.to_dict() or {})
+            if doc.exists
+            else "Unknown User"
             for doc in db.get_all(refs)
         }
 
