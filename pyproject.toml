@@ -91,6 +91,14 @@ dev = [
     "playwright",
 ]
 
+[tool.agent-score]
+ignore_bloat = [
+    "pickaladder/admin/routes.py",
+]
+ignore_complexity = [
+    "pickaladder/admin/routes.py",
+]
+
 [tool.mypy]
 strict = false
 warn_return_any = true
