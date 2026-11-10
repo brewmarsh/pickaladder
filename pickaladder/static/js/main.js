@@ -301,13 +301,18 @@ function showToast(message, category = 'info', submissionId = null) {
                 </button>
             </div>
             <div class="toast-body">
-                ${message}
-                ${progressBar}
             </div>
         </div>
     `;
     toastContainer.insertAdjacentHTML('beforeend', toastHTML);
     const newToast = document.getElementById(toastId);
+
+    // Safely insert message and progress bar to prevent XSS
+    const newToastBody = newToast.querySelector('.toast-body');
+    newToastBody.textContent = message;
+    if (progressBar) {
+        newToastBody.insertAdjacentHTML('beforeend', progressBar);
+    }
 
     // Handle close button
     const closeBtn = newToast.querySelector('.close');
@@ -333,7 +338,7 @@ function updateToast(toastId, message, category) {
         progressBar.remove();
     }
 
-    toastBody.innerHTML = message;
+    toastBody.textContent = message;
 
     // Add a retry button for failed submissions
     if (category === 'danger') {
